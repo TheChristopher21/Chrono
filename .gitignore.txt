@@ -1,12 +1,16 @@
-# Java (Backend)
-target/
-*.class
-*.log
+# Node.js / React
+Chrono-frontend/node_modules/
+Chrono-frontend/dist/
+Chrono-frontend/.env
 
-# Node.js (Frontend)
-node_modules/
-dist/
+# Maven / Java / Spring Boot
+Chrono-backend/target/
+Chrono-backend/.mvn/
+Chrono-backend/*.log
+Chrono-backend/.idea/
 
-# IDE files
-.idea/
+# Allgemein
+.DS_Store
+Thumbs.db
 *.iml
+*.log
