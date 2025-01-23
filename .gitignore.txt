@@ -1,0 +1,12 @@
+# Java (Backend)
+target/
+*.class
+*.log
+
+# Node.js (Frontend)
+node_modules/
+dist/
+
+# IDE files
+.idea/
+*.iml
