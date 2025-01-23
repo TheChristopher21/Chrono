@@ -11,7 +11,6 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (token) {
-            // Optional: Token-Validierung
             setIsAuthenticated(true);
         }
         setLoading(false);
@@ -29,20 +28,9 @@ export const AuthProvider = ({ children }) => {
         navigate('/login');
     };
 
-    if (loading) {
-        return <div>Loading...</div>; // Ladeindikator
-    }
-
     return (
-        <AuthContext.Provider
-            value={{
-                isAuthenticated,
-                login,
-                logout,
-                loading,
-            }}
-        >
-            {children}
+        <AuthContext.Provider value={{ isAuthenticated, login, logout, loading }}>
+            {!loading && children}
         </AuthContext.Provider>
     );
 };

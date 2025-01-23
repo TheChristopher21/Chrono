@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import useAuth from '../hooks/useAuth';
 import axios from 'axios';
-import { API_BASE_URL } from '../constants';
+import { API_BASE_URL } from "../utils/constants";
 
 const Login = () => {
     const { login } = useAuth();
