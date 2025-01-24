@@ -1,7 +1,10 @@
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Optional;
@@ -9,31 +12,43 @@ import java.util.Optional;
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-    public UserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    public User authenticate(String username, String password) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found with username: " + username));
+
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new IllegalArgumentException("Invalid username or password");
+        }
+
+        return user;
     }
+
 
     public Optional<User> getUserById(Long id) {
-        return userRepository.findById(id);
+        return userRepository.findById(id)
+                .or(() -> {
+                    throw new UserNotFoundException("User not found with ID: " + id);
+                });
     }
 
-    public User updateUser(Long id, User userDetails) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        user.setUsername(userDetails.getUsername());
-        user.setPassword(userDetails.getPassword());
-        // Weitere Felder aktualisieren, falls notwendig
-
-        return userRepository.save(user);
+    public void updateUser(Long id, User userDetails) {
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
+        existingUser.setUsername(userDetails.getUsername());
+        existingUser.setPassword(passwordEncoder.encode(userDetails.getPassword()));
+        userRepository.save(existingUser);
     }
 
     public void deleteUser(Long id) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        userRepository.delete(user);
+        if (!userRepository.existsById(id)) {
+            throw new UserNotFoundException("User not found with ID: " + id);
+        }
+        userRepository.deleteById(id);
     }
 }

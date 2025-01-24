@@ -5,19 +5,21 @@ import com.chrono.chrono.dto.LoginRequest;
 import com.chrono.chrono.dto.RegisterRequest;
 import com.chrono.chrono.services.AuthService;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@ExtendWith(MockitoExtension.class)
+@WebMvcTest(AuthController.class)
 public class AuthControllerTest {
+
+    private MockMvc mockMvc;
 
     @Mock
     private AuthService authService;
@@ -27,13 +29,13 @@ public class AuthControllerTest {
 
     @Test
     public void testRegister() throws Exception {
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
-
         RegisterRequest request = new RegisterRequest();
         request.setUsername("testuser");
         request.setPassword("password");
 
-        when(authService.register(request)).thenReturn(new AuthResponse("token"));
+        doNothing().when(authService).register(any(RegisterRequest.class));
+
+        mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
 
         mockMvc.perform(post("/api/auth/register")
                         .contentType("application/json")
@@ -43,13 +45,15 @@ public class AuthControllerTest {
 
     @Test
     public void testLogin() throws Exception {
-        MockMvc mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
-
         LoginRequest request = new LoginRequest();
         request.setUsername("testuser");
         request.setPassword("password");
 
-        when(authService.login(request)).thenReturn(new AuthResponse("token"));
+        when(authService.login(any(LoginRequest.class)))
+                .thenReturn(new AuthResponse("testuser", "role", 1L, "token"));
+
+
+        mockMvc = MockMvcBuilders.standaloneSetup(authController).build();
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType("application/json")

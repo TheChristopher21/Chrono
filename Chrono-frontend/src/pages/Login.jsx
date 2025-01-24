@@ -1,48 +1,67 @@
-import React, { useState } from 'react';
-import useAuth from '../hooks/useAuth';
-import axios from 'axios';
-import { API_BASE_URL } from "../utils/constants";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { login } from "../utils/api"; // API-Aufruf für Login
 
 const Login = () => {
-    const { login } = useAuth();
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
+    const [username, setUsername] = useState("");
+    const [password, setPassword] = useState("");
+    const [errorMessage, setErrorMessage] = useState("");
+    const navigate = useNavigate();
+    const { login: setAuthUser } = useAuth();
 
-    const handleSubmit = async (e) => {
+    const handleLogin = async (e) => {
         e.preventDefault();
+
         try {
-            const response = await axios.post(`${API_BASE_URL}/auth/login`, {
-                username,
-                password,
+            const response = await login({ username, password });
+
+            console.log("Erfolgreich eingeloggt:", response);
+
+            // Speichere den Token im Local Storage
+            localStorage.setItem("token", response.token);
+
+            // Speichere die Benutzerdaten im Auth-Kontext
+            setAuthUser({
+                username: response.username,
+                role: response.role,
+                userId: response.userId,
             });
-            login(response.data.token);
-        } catch (err) {
-            setError('Invalid username or password');
+
+            // Weiterleitung zum Dashboard
+            navigate("/dashboard");
+        } catch (error) {
+            if (error.response) {
+                // Fehler vom Server
+                console.error("Login fehlgeschlagen:", error.response.data);
+                setErrorMessage("Login fehlgeschlagen: " + error.response.data);
+            } else {
+                // Netzwerkfehler
+                console.error("Netzwerkfehler:", error.message);
+                setErrorMessage("Netzwerkfehler: Bitte versuche es später erneut.");
+            }
         }
     };
 
     return (
-        <div className="login-container">
+        <div>
             <h1>Login</h1>
-            <form onSubmit={handleSubmit}>
-                {error && <p className="error">{error}</p>}
+            <form onSubmit={handleLogin}>
                 <input
                     type="text"
-                    placeholder="Username"
+                    placeholder="Benutzername"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    required
                 />
                 <input
                     type="password"
-                    placeholder="Password"
+                    placeholder="Passwort"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    required
                 />
-                <button type="submit">Login</button>
+                <button type="submit">Einloggen</button>
             </form>
+            {errorMessage && <p style={{ color: "red" }}>{errorMessage}</p>}
         </div>
     );
 };

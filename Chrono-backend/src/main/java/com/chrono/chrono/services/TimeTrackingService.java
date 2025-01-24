@@ -1,36 +1,45 @@
 package com.chrono.chrono.services;
 
-import com.chrono.chrono.dto.TimeTrackingRequest;
 import com.chrono.chrono.entities.TimeTracking;
 import com.chrono.chrono.repositories.TimeTrackingRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class TimeTrackingService {
 
-    private final TimeTrackingRepository timeTrackingRepository;
+    @Autowired
+    private TimeTrackingRepository timeTrackingRepository;
 
-    public TimeTrackingService(TimeTrackingRepository timeTrackingRepository) {
-        this.timeTrackingRepository = timeTrackingRepository;
+    public TimeTracking getLatestTimeTracking(Long userId) {
+        return timeTrackingRepository.findFirstByUserIdOrderByCheckInTimeDesc(userId).orElse(null);
     }
 
-    public TimeTracking punchIn(TimeTrackingRequest request) {
-        TimeTracking timeTracking = new TimeTracking();
-        timeTracking.setUser(request.getUser());
-        timeTracking.setPunchIn(request.getPunchIn());
-        return timeTrackingRepository.save(timeTracking);
+    public List<TimeTracking> getWeekStats(Long userId) {
+        LocalDateTime oneWeekAgo = LocalDateTime.now().minusDays(7);
+        return timeTrackingRepository.findAllByUserIdAndCheckInTimeAfter(userId, oneWeekAgo);
     }
 
-    public TimeTracking punchOut(TimeTrackingRequest request) {
-        TimeTracking timeTracking = timeTrackingRepository.findById(request.getId())
-                .orElseThrow(() -> new RuntimeException("TimeTracking entry not found"));
-        timeTracking.setPunchOut(request.getPunchOut());
-        return timeTrackingRepository.save(timeTracking);
+    public String checkIn(Long userId) {
+        TimeTracking entry = new TimeTracking();
+        entry.setUserId(userId);
+        entry.setCheckInTime(LocalDateTime.now());
+        timeTrackingRepository.save(entry);
+        return "Eingestempelt!";
     }
 
-    public List<TimeTracking> getUserTimeTracking(Long userId) {
-        return timeTrackingRepository.findByUserId(userId);
+    public String checkOut(Long userId) {
+        Optional<TimeTracking> lastEntry = timeTrackingRepository.findFirstByUserIdOrderByCheckInTimeDesc(userId);
+        if (lastEntry.isPresent() && lastEntry.get().getCheckOutTime() == null) {
+            TimeTracking entry = lastEntry.get();
+            entry.setCheckOutTime(LocalDateTime.now());
+            timeTrackingRepository.save(entry);
+            return "Ausgestempelt!";
+        }
+        return "Kein aktiver Check-In gefunden.";
     }
 }
