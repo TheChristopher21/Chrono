@@ -16,7 +16,8 @@ public class TimeTrackingService {
     private TimeTrackingRepository timeTrackingRepository;
 
     public TimeTracking getLatestTimeTracking(Long userId) {
-        return timeTrackingRepository.findFirstByUserIdOrderByCheckInTimeDesc(userId).orElse(null);
+        return timeTrackingRepository.findFirstByUserIdOrderByCheckInTimeDesc(userId)
+                .orElse(null);
     }
 
     public List<TimeTracking> getWeekStats(Long userId) {
@@ -26,7 +27,7 @@ public class TimeTrackingService {
 
     public String checkIn(Long userId) {
         TimeTracking entry = new TimeTracking();
-        entry.setUserId(userId);
+        entry.setUserId(userId); // Hier setzen wir die userId direkt
         entry.setCheckInTime(LocalDateTime.now());
         timeTrackingRepository.save(entry);
         return "Eingestempelt!";

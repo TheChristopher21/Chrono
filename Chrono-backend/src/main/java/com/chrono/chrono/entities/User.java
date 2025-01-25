@@ -9,8 +9,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private String username;
 
+    @Column(nullable = false)
     private String password;
 
     @ManyToOne(fetch = FetchType.EAGER)
@@ -19,6 +21,10 @@ public class User {
 
     public Long getId() {
         return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getUsername() {
@@ -37,10 +43,7 @@ public class User {
         this.password = password;
     }
 
-    public Role getRole() {
-        if (role == null) {
-            throw new IllegalStateException("Benutzer hat keine Rolle zugewiesen.");
-        }
+    public Role getRole() {  // Diese Methode muss existieren
         return role;
     }
 

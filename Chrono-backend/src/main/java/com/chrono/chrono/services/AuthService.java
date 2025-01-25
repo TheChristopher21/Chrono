@@ -1,39 +1,54 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.dto.AuthRequest;
 import com.chrono.chrono.dto.AuthResponse;
-import com.chrono.chrono.dto.LoginRequest;
-import com.chrono.chrono.dto.RegisterRequest;
 import com.chrono.chrono.entities.User;
-import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.chrono.chrono.utils.JwtUtil;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
 
-    @Autowired
-    private UserRepository userRepository;
+    private final AuthenticationManager authenticationManager;
+    private final JwtUtil jwtUtil;
+    private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    public void register(RegisterRequest request) {
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        userRepository.save(user);
+    public AuthService(AuthenticationManager authenticationManager, JwtUtil jwtUtil,
+                       UserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.authenticationManager = authenticationManager;
+        this.jwtUtil = jwtUtil;
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public AuthResponse login(LoginRequest request) {
-        User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+    public AuthResponse authenticate(AuthRequest authRequest) {
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
+        );
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new IllegalArgumentException("Invalid username or password");
+        User user = userRepository.findByUsername(authRequest.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String token = jwtUtil.generateToken(user.getUsername());
+        String roleName = user.getRole().getName(); // Attribut für den Rollennamen
+
+        return new AuthResponse(user.getUsername(), roleName, user.getId(), token);
+    }
+
+    public void register(AuthRequest authRequest) {
+        if (userRepository.existsByUsername(authRequest.getUsername())) {
+            throw new RuntimeException("User already exists");
         }
 
-        return new AuthResponse(user.getUsername(), user.getRole().getName(), user.getId(), "token");
+        User user = new User();
+        user.setUsername(authRequest.getUsername());
+        user.setPassword(passwordEncoder.encode(authRequest.getPassword()));
+
+        userRepository.save(user);
     }
 }

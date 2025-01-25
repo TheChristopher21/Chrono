@@ -4,15 +4,6 @@ public class AuthRequest {
     private String username;
     private String password;
 
-    // Standardkonstruktor
-    public AuthRequest() {}
-
-    // Konstruktor
-    public AuthRequest(String username, String password) {
-        this.username = username;
-        this.password = password;
-    }
-
     // Getter und Setter
     public String getUsername() {
         return username;

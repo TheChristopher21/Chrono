@@ -1,13 +1,11 @@
 package com.chrono.chrono.dto;
 
 public class AuthResponse {
-
     private String username;
     private String role;
     private Long userId;
     private String token;
 
-    // Konstruktor mit allen Argumenten
     public AuthResponse(String username, String role, Long userId, String token) {
         this.username = username;
         this.role = role;

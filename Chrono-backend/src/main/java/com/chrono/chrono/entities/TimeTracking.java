@@ -1,9 +1,6 @@
 package com.chrono.chrono.entities;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
@@ -13,13 +10,15 @@ public class TimeTracking {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Long userId;
+    @Column(nullable = false)
+    private LocalDateTime checkIn;
 
-    private LocalDateTime checkInTime;
+    private LocalDateTime checkOut;
 
-    private LocalDateTime checkOutTime;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -28,27 +27,27 @@ public class TimeTracking {
         this.id = id;
     }
 
-    public Long getUserId() {
-        return userId;
+    public LocalDateTime getCheckIn() {
+        return checkIn;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setCheckIn(LocalDateTime checkIn) {
+        this.checkIn = checkIn;
     }
 
-    public LocalDateTime getCheckInTime() {
-        return checkInTime;
+    public LocalDateTime getCheckOut() {
+        return checkOut;
     }
 
-    public void setCheckInTime(LocalDateTime checkInTime) {
-        this.checkInTime = checkInTime;
+    public void setCheckOut(LocalDateTime checkOut) {
+        this.checkOut = checkOut;
     }
 
-    public LocalDateTime getCheckOutTime() {
-        return checkOutTime;
+    public User getUser() {
+        return user;
     }
 
-    public void setCheckOutTime(LocalDateTime checkOutTime) {
-        this.checkOutTime = checkOutTime;
+    public void setUser(User user) {
+        this.user = user;
     }
 }
