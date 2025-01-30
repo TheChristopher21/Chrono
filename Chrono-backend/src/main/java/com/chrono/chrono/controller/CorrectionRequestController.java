@@ -1,6 +1,6 @@
 package com.chrono.chrono.controller;
 
-import com.chrono.chrono.entities.CorrectionRequest;
+import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.services.CorrectionRequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -45,8 +45,15 @@ public class CorrectionRequestController {
      */
     @GetMapping("/open")
     public List<CorrectionRequest> getAllOpenRequests() {
-        return correctionRequestService.getOpenRequests();
+        List<CorrectionRequest> requests = correctionRequestService.getOpenRequests();
+
+        for (CorrectionRequest req : requests) {
+            System.out.println("DEBUG API: ID=" + req.getId() + ", OrigStart=" + req.getOriginalStartTime() + ", OrigEnd=" + req.getOriginalEndTime());
+        }
+
+        return requests;
     }
+
 
     /**
      * Genehmigt eine Korrekturanfrage.

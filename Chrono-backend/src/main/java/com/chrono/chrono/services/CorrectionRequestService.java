@@ -1,6 +1,6 @@
 package com.chrono.chrono.services;
 
-import com.chrono.chrono.entities.CorrectionRequest;
+import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.entities.TimeTracking;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.CorrectionRequestRepository;
@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class CorrectionRequestService {
@@ -53,17 +52,23 @@ public class CorrectionRequestService {
     }
 
     /**
-     * Gibt alle offenen Korrekturanfragen zurück.
+     * Gibt alle offenen Korrekturanfragen zurück und lädt relevante Daten mit.
      */
     public List<CorrectionRequest> getOpenRequests() {
-        return correctionRepo.findByApprovedFalseAndDeniedFalse();
+        List<CorrectionRequest> requests = correctionRepo.findAll();
+        for (CorrectionRequest req : requests) {
+            System.out.println("DEBUG API: ID=" + req.getId() +
+                    ", OrigStart=" + (req.getOriginalTimeTracking() != null ? req.getOriginalTimeTracking().getStartTime() : "NULL") +
+                    ", OrigEnd=" + (req.getOriginalTimeTracking() != null ? req.getOriginalTimeTracking().getEndTime() : "NULL"));
+        }
+        return requests;
     }
 
     /**
      * Genehmigt eine Korrekturanfrage, falls der Benutzer ein Manager oder Admin ist.
      */
     @Transactional
-    public CorrectionRequest approveRequest(Long requestId, String adminOrManagerPassword) {
+    public CorrectionRequest approveRequest(Long requestId, String adminPassword) {
         CorrectionRequest req = correctionRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found"));
 
@@ -83,7 +88,7 @@ public class CorrectionRequestService {
             tt.setCorrected(true);
             timeRepo.save(tt);
         } else {
-            // Optional: Falls kein existierender TimeTracking-Eintrag existiert, kann ein neuer erstellt werden.
+            // Falls kein existierender TimeTracking-Eintrag existiert, kann ein neuer erstellt werden.
             TimeTracking newTracking = new TimeTracking();
             newTracking.setUser(req.getUser());
             newTracking.setStartTime(req.getDesiredStartTime());

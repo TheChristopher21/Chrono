@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../hooks/useAuth";
 import api from "../utils/api";
+import "../styles/Dashboard.css";
 
 const Dashboard = () => {
     const { currentUser } = useAuth();
@@ -21,12 +22,10 @@ const Dashboard = () => {
         setLoading(true);
 
         if (isAdmin) {
-            console.log("📡 Fetching admin correction requests...");
             api.get("/api/correction/open", {
                 headers: { Authorization: `Bearer ${authToken}` }
             })
                 .then(res => {
-                    console.log("✅ Correction requests received:", res.data);
                     setCorrectionRequests(res.data);
                     setLoading(false);
                 })
@@ -35,12 +34,10 @@ const Dashboard = () => {
                     setLoading(false);
                 });
         } else if (isUser) {
-            console.log("📡 Fetching user history...");
             api.get(`/api/timetracking/history?username=${currentUser.username}`, {
                 headers: { Authorization: `Bearer ${authToken}` }
             })
                 .then(res => {
-                    console.log("✅ User history received:", res.data);
                     setHistory(res.data);
                     setLoading(false);
                 })
@@ -51,18 +48,18 @@ const Dashboard = () => {
         }
     }, [currentUser, isAdmin, isUser, authToken]);
 
-    const refreshUserHistory = () => {
-        api.get(`/api/timetracking/history?username=${currentUser.username}`, {
+    const refreshAdminCorrections = () => {
+        api.get("/api/correction/open", {
             headers: { Authorization: `Bearer ${authToken}` }
         })
-            .then(res => setHistory(res.data))
-            .catch(err => console.error("❌ Refreshing user history failed", err));
+            .then(res => setCorrectionRequests(res.data))
+            .catch(err => console.error("❌ Refreshing admin corrections failed", err));
     };
 
     const handleOpenCorrectionForm = (entry) => {
         setEditCorrectionId(entry.id);
-        const date = new Date(entry.startTime).toISOString().split("T")[0]; // Datum bleibt gleich
-        setDesiredStart(`${date}T00:00`); // User gibt nur die Zeit ein
+        const date = new Date(entry.startTime).toISOString().split("T")[0];
+        setDesiredStart(`${date}T00:00`);
         setDesiredEnd(`${date}T00:00`);
         setReason("");
     };
@@ -86,7 +83,7 @@ const Dashboard = () => {
             .then(() => {
                 alert("Correction request sent!");
                 setEditCorrectionId(null);
-                refreshUserHistory();
+                refreshAdminCorrections();
             })
             .catch(err => console.error("❌ Correction request failed", err));
     };
@@ -104,19 +101,39 @@ const Dashboard = () => {
                     ) : correctionRequests.length === 0 ? (
                         <p>No correction requests found.</p>
                     ) : (
-                        <ul>
-                            {correctionRequests.map(req => (
-                                <li key={req.id}>
-                                    <strong>{req.username}</strong> requested correction:
-                                    <br />
-                                    <strong>Start:</strong> {new Date(req.desiredStart).toLocaleString()}
-                                    <br />
-                                    <strong>End:</strong> {new Date(req.desiredEnd).toLocaleString()}
-                                    <br />
-                                    <strong>Reason:</strong> {req.reason}
-                                </li>
-                            ))}
-                        </ul>
+                        <table className="correction-table">
+                            <thead>
+                            <tr>
+                                <th>User</th>
+                                <th>Original Start</th>
+                                <th>Original End</th>
+                                <th>Corrected Start</th>
+                                <th>Corrected End</th>
+                                <th>Reason</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {correctionRequests.map(req => {
+                                let originalStart = req.originalTimeTracking?.startTime ? new Date(req.originalTimeTracking.startTime) : null;
+                                let originalEnd = req.originalTimeTracking?.endTime ? new Date(req.originalTimeTracking.endTime) : null;
+                                let correctedStart = req.desiredStart ? new Date(req.desiredStart) : null;
+                                let correctedEnd = req.desiredEnd ? new Date(req.desiredEnd) : null;
+
+                                return (
+                                    <tr key={req.id}>
+                                        <td>{req.user?.username || "Unknown"}</td>
+                                        <td>{originalStart ? originalStart.toLocaleString() : "-"}</td>
+                                        <td>{originalEnd ? originalEnd.toLocaleString() : "-"}</td>
+                                        <td>{correctedStart ? correctedStart.toLocaleString() : "-"}</td>
+                                        <td>{correctedEnd ? correctedEnd.toLocaleString() : "-"}</td>
+                                        <td>{req.reason || "-"}</td>
+                                    </tr>
+                                );
+                            })}
+                            </tbody>
+
+
+                        </table>
                     )}
                 </>
             )}

@@ -1,54 +1,58 @@
 .dashboard-container {
-    max-width: 900px;
-    margin: auto;
+    max-width: 800px;
+    margin: 40px auto;
     padding: 20px;
-    font-family: 'Arial', sans-serif;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+h2, h3 {
+    text-align: center;
     color: #333;
 }
 
-button {
-    padding: 10px 15px;
-    border: none;
-    cursor: pointer;
-    font-size: 14px;
-    border-radius: 5px;
-    margin-right: 10px;
+p {
+    text-align: center;
+    font-size: 16px;
+    color: #555;
 }
 
-.btn-primary {
-    background-color: #28a745;
-    color: white;
-}
-
-.btn-danger {
-    background-color: #dc3545;
-    color: white;
-}
-
-.btn-warning {
-    background-color: #ffc107;
-    color: black;
-}
-
-.styled-table {
+.correction-table {
     width: 100%;
     border-collapse: collapse;
     margin-top: 20px;
 }
 
-.styled-table th, .styled-table td {
+.correction-table th, .correction-table td {
+    padding: 10px;
     border: 1px solid #ddd;
-    padding: 10px;
+    text-align: center;
 }
 
-.styled-table th {
-    background-color: #f4f4f4;
-    text-align: left;
+.correction-table th {
+    background: #f4f4f4;
 }
 
-.entry-card {
-    background: #f9f9f9;
-    padding: 10px;
-    margin-bottom: 10px;
+button {
+    padding: 8px 12px;
+    margin-top: 10px;
+    border: none;
+    background: #007BFF;
+    color: white;
+    cursor: pointer;
     border-radius: 5px;
+    transition: 0.3s;
+}
+
+button:hover {
+    background: #0056b3;
+}
+
+form input {
+    width: 100%;
+    padding: 8px;
+    margin: 5px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
 }
