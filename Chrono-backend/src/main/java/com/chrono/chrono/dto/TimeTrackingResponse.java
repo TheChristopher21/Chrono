@@ -3,41 +3,33 @@ package com.chrono.chrono.dto;
 import java.time.LocalDateTime;
 
 public class TimeTrackingResponse {
-    private LocalDateTime punchIn;
-    private LocalDateTime punchOut;
-    private String status;
 
-    // Konstruktoren
+    private Long id;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private boolean corrected;
+    private String statusColor;
+
     public TimeTrackingResponse() {}
 
-    public TimeTrackingResponse(LocalDateTime punchIn, LocalDateTime punchOut, String status) {
-        this.punchIn = punchIn;
-        this.punchOut = punchOut;
-        this.status = status;
+    public TimeTrackingResponse(Long id, LocalDateTime startTime, LocalDateTime endTime, boolean corrected, String statusColor) {
+        this.id = id;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.corrected = corrected;
+        this.statusColor = statusColor;
     }
 
-    // Getter und Setter
-    public LocalDateTime getPunchIn() {
-        return punchIn;
-    }
+    // Getter/Setter
+    public Long getId() { return id; }
+    public LocalDateTime getStartTime() { return startTime; }
+    public LocalDateTime getEndTime() { return endTime; }
+    public boolean isCorrected() { return corrected; }
+    public String getStatusColor() { return statusColor; }
 
-    public void setPunchIn(LocalDateTime punchIn) {
-        this.punchIn = punchIn;
-    }
-
-    public LocalDateTime getPunchOut() {
-        return punchOut;
-    }
-
-    public void setPunchOut(LocalDateTime punchOut) {
-        this.punchOut = punchOut;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
-    }
+    public void setId(Long id) { this.id = id; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+    public void setCorrected(boolean corrected) { this.corrected = corrected; }
+    public void setStatusColor(String statusColor) { this.statusColor = statusColor; }
 }

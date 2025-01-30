@@ -1,12 +1,12 @@
-import { Navigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import 'react';
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const PrivateRoute = ({ children }) => {
-    const { user } = useAuth();
+    const { authToken } = useAuth();
 
-    if (!user) {
-        console.error("Nicht authentifiziert.");
-        return <Navigate to="/login" />;
+    if (!authToken) {
+        return <Navigate to="/login" replace />;
     }
 
     return children;

@@ -1,44 +1,31 @@
 package com.chrono.chrono.dto;
 
-import com.chrono.chrono.entities.User;
 import java.time.LocalDateTime;
 
 public class TimeTrackingRequest {
-    private Long id;
-    private User user;
-    private LocalDateTime punchIn;
-    private LocalDateTime punchOut;
 
-    // Getter und Setter
-    public Long getId() {
-        return id;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+
+    public TimeTrackingRequest() {
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public TimeTrackingRequest(LocalDateTime startTime, LocalDateTime endTime) {
+        this.startTime = startTime;
+        this.endTime = endTime;
     }
 
-    public User getUser() {
-        return user;
+    // Getter/Setter
+    public LocalDateTime getStartTime() {
+        return startTime;
     }
-
-    public void setUser(User user) {
-        this.user = user;
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
     }
-
-    public LocalDateTime getPunchIn() {
-        return punchIn;
+    public LocalDateTime getEndTime() {
+        return endTime;
     }
-
-    public void setPunchIn(LocalDateTime punchIn) {
-        this.punchIn = punchIn;
-    }
-
-    public LocalDateTime getPunchOut() {
-        return punchOut;
-    }
-
-    public void setPunchOut(LocalDateTime punchOut) {
-        this.punchOut = punchOut;
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
     }
 }

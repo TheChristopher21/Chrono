@@ -1,20 +1,24 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { useAuth } from '../hooks/useAuth';
 
 const Navbar = () => {
+    const { authToken, logout } = useAuth();
+
     return (
-        <nav className="w-full bg-gray-800 text-white p-4 flex justify-between">
-            <div className="text-lg font-bold">
-                <Link to="/">Chrono</Link>
-            </div>
-            <div>
-                <Link to="/login" className="px-4">
-                    Login
-                </Link>
-                <Link to="/register" className="px-4">
-                    Register
-                </Link>
-            </div>
+        <nav style={{ display: 'flex', gap: '1rem', padding: '1rem' }}>
+            <Link to="/">Home</Link>
+            {authToken ? (
+                <>
+                    <Link to="/dashboard">Dashboard</Link>
+                    <button onClick={logout}>Logout</button>
+                </>
+            ) : (
+                <>
+                    <Link to="/login">Login</Link>
+                    <Link to="/register">Register</Link>
+                </>
+            )}
         </nav>
     );
 };

@@ -1,16 +1,12 @@
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.repositories.UserRepository;
-import com.chrono.chrono.exceptions.UserNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.core.userdetails.*;
 import org.springframework.stereotype.Service;
 
-import java.util.Collections;
 import java.util.stream.Collectors;
 
 @Service
@@ -19,15 +15,22 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Autowired
     private UserRepository userRepository;
 
+    // Diese Methode wird von Spring Security genutzt, um User+Rollen zu laden
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("Benutzer nicht gefunden: " + username));
+        User appUser = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
-        return new org.springframework.security.core.userdetails.User(
-                user.getUsername(),
-                user.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority(user.getRole().getName()))
-        );
+        // Rollen in Spring Security Roles konvertieren
+        var roles = appUser.getRoles().stream()
+                .map(Role::getRoleName)
+                .map(r -> "ROLE_" + r)
+                .collect(Collectors.toList());
+
+        return org.springframework.security.core.userdetails.User.builder()
+                .username(appUser.getUsername())
+                .password(appUser.getPassword())
+                .authorities(roles.toArray(String[]::new))
+                .build();
     }
 }

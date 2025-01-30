@@ -2,53 +2,87 @@ package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.AuthRequest;
 import com.chrono.chrono.dto.AuthResponse;
+import com.chrono.chrono.dto.RegisterRequest;
+import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.utils.JwtUtil;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class AuthService {
 
-    private final AuthenticationManager authenticationManager;
-    private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+    @Autowired
+    private UserRepository userRepository;
 
-    public AuthService(AuthenticationManager authenticationManager, JwtUtil jwtUtil,
-                       UserRepository userRepository, PasswordEncoder passwordEncoder) {
-        this.authenticationManager = authenticationManager;
-        this.jwtUtil = jwtUtil;
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
+    @Autowired
+    private RoleRepository roleRepository;
 
-    public AuthResponse authenticate(AuthRequest authRequest) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(authRequest.getUsername(), authRequest.getPassword())
-        );
+    @Autowired
+    private PasswordEncoder passwordEncoder; // Korrekte Injection
 
-        User user = userRepository.findByUsername(authRequest.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    @Autowired
+    private JwtUtil jwtUtil;
 
-        String token = jwtUtil.generateToken(user.getUsername());
-        String roleName = user.getRole().getName(); // Attribut für den Rollennamen
+    @Autowired
+    private UserDetailsService userDetailsService; // Nötig für Token-Generierung
 
-        return new AuthResponse(user.getUsername(), roleName, user.getId(), token);
-    }
-
-    public void register(AuthRequest authRequest) {
-        if (userRepository.existsByUsername(authRequest.getUsername())) {
-            throw new RuntimeException("User already exists");
+    public AuthResponse register(RegisterRequest request) {
+        Optional<User> existingUser = userRepository.findByUsername(request.getUsername());
+        if (existingUser.isPresent()) {
+            throw new RuntimeException("Username already exists!");
         }
 
         User user = new User();
-        user.setUsername(authRequest.getUsername());
-        user.setPassword(passwordEncoder.encode(authRequest.getPassword()));
+        user.setUsername(request.getUsername());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
+        user.setFirstName(request.getFirstName());
+        user.setLastName(request.getLastName());
+        user.setEmail(request.getEmail());
+
+        // Standardrolle "USER" zuweisen
+        Role role = roleRepository.findByRoleName("USER")
+                .orElseGet(() -> roleRepository.save(new Role("USER")));
+
+        Set<Role> roles = new HashSet<>();
+        roles.add(role);
+        user.setRoles(roles);
 
         userRepository.save(user);
+
+        // Lade User als UserDetails für Token-Generierung
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+        System.out.println("🔍 Rollen für " + user.getUsername() + ": " + user.getRoles());
+
+        // Token mit Rollen generieren
+        String token = jwtUtil.generateTokenWithRoles(userDetails);
+        return new AuthResponse(token);
+    }
+
+    public AuthResponse login(AuthRequest request) {
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found!"));
+
+        System.out.println("Eingegebenes Passwort: " + request.getPassword());
+        System.out.println("Gespeichertes Passwort (Hash): " + user.getPassword());
+
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        // Lade User als UserDetails für Token-Generierung
+        UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+
+        // Token mit Rollen generieren
+        String token = jwtUtil.generateTokenWithRoles(userDetails);
+        return new AuthResponse(token);
     }
 }

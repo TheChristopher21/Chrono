@@ -1,51 +1,155 @@
 import { useEffect, useState } from "react";
-import { getLatestTimeTracking } from "../utils/api"; // API-Aufruf
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/useAuth";
+import api from "../utils/api";
 
 const Dashboard = () => {
-    const { user } = useAuth();
-    const [timeData, setTimeData] = useState(null);
-    const [errorMessage, setErrorMessage] = useState("");
+    const { currentUser } = useAuth();
+    const [history, setHistory] = useState([]);
+    const [correctionRequests, setCorrectionRequests] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [editCorrectionId, setEditCorrectionId] = useState(null);
+    const [desiredStart, setDesiredStart] = useState("");
+    const [desiredEnd, setDesiredEnd] = useState("");
+    const [reason, setReason] = useState("");
+
+    const authToken = localStorage.getItem("token");
+    const isAdmin = currentUser?.roles?.includes("ROLE_ADMIN");
+    const isUser = currentUser?.roles?.includes("ROLE_USER");
 
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const data = await getLatestTimeTracking(user.userId); // Übermittle die userId
-                setTimeData(data);
-            } catch (error) {
-                if (error.response) {
-                    setErrorMessage("Fehler beim Abrufen der Zeitdaten: " + error.response.data);
-                } else {
-                    setErrorMessage("Netzwerkfehler: Bitte versuche es später erneut.");
-                }
-            }
-        };
+        if (!currentUser) return;
+        setLoading(true);
 
-        fetchData();
-    }, [user]);
+        if (isAdmin) {
+            console.log("📡 Fetching admin correction requests...");
+            api.get("/api/correction/open", {
+                headers: { Authorization: `Bearer ${authToken}` }
+            })
+                .then(res => {
+                    console.log("✅ Correction requests received:", res.data);
+                    setCorrectionRequests(res.data);
+                    setLoading(false);
+                })
+                .catch(err => {
+                    console.error("❌ Error fetching correction requests:", err);
+                    setLoading(false);
+                });
+        } else if (isUser) {
+            console.log("📡 Fetching user history...");
+            api.get(`/api/timetracking/history?username=${currentUser.username}`, {
+                headers: { Authorization: `Bearer ${authToken}` }
+            })
+                .then(res => {
+                    console.log("✅ User history received:", res.data);
+                    setHistory(res.data);
+                    setLoading(false);
+                })
+                .catch(err => {
+                    console.error("❌ Error fetching user history:", err);
+                    setLoading(false);
+                });
+        }
+    }, [currentUser, isAdmin, isUser, authToken]);
 
-    if (!user) {
-        return <p>Bitte einloggen...</p>;
-    }
+    const refreshUserHistory = () => {
+        api.get(`/api/timetracking/history?username=${currentUser.username}`, {
+            headers: { Authorization: `Bearer ${authToken}` }
+        })
+            .then(res => setHistory(res.data))
+            .catch(err => console.error("❌ Refreshing user history failed", err));
+    };
+
+    const handleOpenCorrectionForm = (entry) => {
+        setEditCorrectionId(entry.id);
+        const date = new Date(entry.startTime).toISOString().split("T")[0]; // Datum bleibt gleich
+        setDesiredStart(`${date}T00:00`); // User gibt nur die Zeit ein
+        setDesiredEnd(`${date}T00:00`);
+        setReason("");
+    };
+
+    const handleCancelCorrection = () => {
+        setEditCorrectionId(null);
+    };
+
+    const handleCreateCorrection = (e) => {
+        e.preventDefault();
+        const payload = new URLSearchParams({
+            username: currentUser.username,
+            desiredStart,
+            desiredEnd,
+            reason
+        });
+
+        api.post(`/api/correction/create?${payload.toString()}`, {}, {
+            headers: { Authorization: `Bearer ${authToken}` }
+        })
+            .then(() => {
+                alert("Correction request sent!");
+                setEditCorrectionId(null);
+                refreshUserHistory();
+            })
+            .catch(err => console.error("❌ Correction request failed", err));
+    };
 
     return (
-        <div>
-            <h1>Willkommen, {user.username}</h1>
-            <p>Rolle: {user.role}</p>
-            <h2>Aktuelle Zeiten</h2>
-            {errorMessage ? (
-                <p style={{ color: "red" }}>{errorMessage}</p>
-            ) : timeData ? (
-                <div>
-                    <p>Check-In: {timeData.punchIn || "Nicht eingestempelt"}</p>
-                    <p>Check-Out: {timeData.punchOut || "Nicht ausgestempelt"}</p>
-                    <p>Gesamtstunden: {timeData.totalHours || "0h"}</p>
-                </div>
-            ) : (
-                <p>Loading...</p>
+        <div className="dashboard-container">
+            <h2>Dashboard</h2>
+            <p>Welcome, {currentUser.username}!</p>
+
+            {isAdmin && (
+                <>
+                    <h3>Correction Requests</h3>
+                    {loading ? (
+                        <p>Loading...</p>
+                    ) : correctionRequests.length === 0 ? (
+                        <p>No correction requests found.</p>
+                    ) : (
+                        <ul>
+                            {correctionRequests.map(req => (
+                                <li key={req.id}>
+                                    <strong>{req.username}</strong> requested correction:
+                                    <br />
+                                    <strong>Start:</strong> {new Date(req.desiredStart).toLocaleString()}
+                                    <br />
+                                    <strong>End:</strong> {new Date(req.desiredEnd).toLocaleString()}
+                                    <br />
+                                    <strong>Reason:</strong> {req.reason}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </>
             )}
-            <button>Einchecken</button>
-            <button>Auschecken</button>
+
+            {isUser && (
+                <>
+                    <h3>Your Time Entries</h3>
+                    {loading ? (
+                        <p>Loading...</p>
+                    ) : history.length === 0 ? (
+                        <p>No entries yet</p>
+                    ) : (
+                        <ul>
+                            {history.map(entry => (
+                                <li key={entry.id}>
+                                    Start: {new Date(entry.startTime).toLocaleString()} -
+                                    End: {entry.endTime ? new Date(entry.endTime).toLocaleString() : "..."}
+                                    <button onClick={() => handleOpenCorrectionForm(entry)}>Request Correction</button>
+                                    {editCorrectionId === entry.id && (
+                                        <form onSubmit={handleCreateCorrection}>
+                                            <input type="time" value={desiredStart.split("T")[1]} onChange={(e) => setDesiredStart(`${desiredStart.split("T")[0]}T${e.target.value}`)} required />
+                                            <input type="time" value={desiredEnd.split("T")[1]} onChange={(e) => setDesiredEnd(`${desiredEnd.split("T")[0]}T${e.target.value}`)} required />
+                                            <input type="text" placeholder="Reason" value={reason} onChange={(e) => setReason(e.target.value)} required />
+                                            <button type="submit">Submit</button>
+                                            <button type="button" onClick={handleCancelCorrection}>Cancel</button>
+                                        </form>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </>
+            )}
         </div>
     );
 };

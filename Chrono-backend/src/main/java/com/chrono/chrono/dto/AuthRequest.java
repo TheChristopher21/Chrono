@@ -4,7 +4,15 @@ public class AuthRequest {
     private String username;
     private String password;
 
-    // Getter und Setter
+    public AuthRequest() {
+    }
+
+    public AuthRequest(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
+
+    // Getter / Setter
     public String getUsername() {
         return username;
     }

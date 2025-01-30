@@ -1,45 +1,92 @@
-import React, { useState } from 'react';
+import  { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useAuth } from '../hooks/useAuth';
 
 const Register = () => {
-    const [username, setUsername] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
     const navigate = useNavigate();
+    const { registerUser, error } = useAuth();
+
+    const [form, setForm] = useState({
+        username: '',
+        password: '',
+        firstName: '',
+        lastName: '',
+        email: ''
+    });
+
+    const handleChange = (e) => {
+        setForm({ ...form, [e.target.name]: e.target.value });
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            await axios.post('http://localhost:8080/api/auth/register', {
-                username,
-                password,
-            });
-            navigate('/login'); // Weiterleitung nach erfolgreicher Registrierung
-        } catch (err) {
-            setError('Registration failed. Please try again.');
+        const result = await registerUser(
+            form.username,
+            form.password,
+            form.firstName,
+            form.lastName,
+            form.email
+        );
+        if (result.success) {
+            alert('Registered successfully!');
+            navigate('/dashboard');
+        } else {
+            console.log('Registration error detail:', result.message);
         }
     };
 
     return (
-        <div style={{ maxWidth: '400px', margin: 'auto', padding: '20px' }}>
-            <h1>Register</h1>
+        <div className="register-container">
+            <h2>Register</h2>
             {error && <p style={{ color: 'red' }}>{error}</p>}
             <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    placeholder="Username"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    required
-                />
-                <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                />
+                <div>
+                    <label>Username:
+                        <input
+                            name="username"
+                            value={form.username}
+                            onChange={handleChange}
+                        />
+                    </label>
+                </div>
+                <div>
+                    <label>Password:
+                        <input
+                            name="password"
+                            type="password"
+                            value={form.password}
+                            onChange={handleChange}
+                        />
+                    </label>
+                </div>
+                <div>
+                    <label>First Name:
+                        <input
+                            name="firstName"
+                            value={form.firstName}
+                            onChange={handleChange}
+                        />
+                    </label>
+                </div>
+                <div>
+                    <label>Last Name:
+                        <input
+                            name="lastName"
+                            value={form.lastName}
+                            onChange={handleChange}
+                        />
+                    </label>
+                </div>
+                <div>
+                    <label>Email:
+                        <input
+                            name="email"
+                            type="email"
+                            value={form.email}
+                            onChange={handleChange}
+                        />
+                    </label>
+                </div>
                 <button type="submit">Register</button>
             </form>
         </div>

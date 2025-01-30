@@ -1,68 +1,54 @@
-.dashboard {
-    font-family: Arial, sans-serif;
-    margin: 20px;
+.dashboard-container {
+    max-width: 900px;
+    margin: auto;
     padding: 20px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background-color: #f9f9f9;
-}
-
-.dashboard-header {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.dashboard-header h1 {
-    margin: 0;
-    font-size: 24px;
-}
-
-.dashboard-header p {
-    margin: 0;
-    color: #555;
-}
-
-.today-stats,
-.weekly-stats,
-.actions,
-.admin-section {
-    margin-bottom: 20px;
-}
-
-h2 {
-    font-size: 20px;
-    margin-bottom: 10px;
-}
-
-ul {
-    list-style-type: none;
-    padding: 0;
-}
-
-ul li {
-    padding: 5px 0;
+    font-family: 'Arial', sans-serif;
+    color: #333;
 }
 
 button {
-    margin-right: 10px;
     padding: 10px 15px;
-    background-color: #007bff;
-    color: #fff;
     border: none;
-    border-radius: 5px;
     cursor: pointer;
+    font-size: 14px;
+    border-radius: 5px;
+    margin-right: 10px;
 }
 
-button:hover {
-    background-color: #0056b3;
+.btn-primary {
+    background-color: #28a745;
+    color: white;
 }
 
-.admin-section {
-    border-top: 1px solid #ddd;
-    padding-top: 10px;
+.btn-danger {
+    background-color: #dc3545;
+    color: white;
 }
-.actions p {
-    font-size: 18px;
-    margin-top: 10px;
-    color: #333;
+
+.btn-warning {
+    background-color: #ffc107;
+    color: black;
+}
+
+.styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 20px;
+}
+
+.styled-table th, .styled-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+
+.styled-table th {
+    background-color: #f4f4f4;
+    text-align: left;
+}
+
+.entry-card {
+    background: #f9f9f9;
+    padding: 10px;
+    margin-bottom: 10px;
+    border-radius: 5px;
 }

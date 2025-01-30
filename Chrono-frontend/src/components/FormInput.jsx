@@ -1,16 +1,18 @@
-import React from 'react';
+import 'react';
 
-const FormInput = ({ label, type, value, onChange, placeholder }) => {
+const FormInput = ({ label, type, name, value, onChange }) => {
     return (
-        <div className="mb-4">
-            <label className="block text-gray-700">{label}</label>
-            <input
-                type={type}
-                value={value}
-                onChange={onChange}
-                placeholder={placeholder}
-                className="w-full px-3 py-2 border rounded"
-            />
+        <div style={{ marginBottom: '1rem' }}>
+            <label>
+                {label}
+                <input
+                    style={{ marginLeft: '0.5rem' }}
+                    type={type}
+                    name={name}
+                    value={value}
+                    onChange={onChange}
+                />
+            </label>
         </div>
     );
 };

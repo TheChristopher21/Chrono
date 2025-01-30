@@ -4,50 +4,39 @@ import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "time_tracking")
 public class TimeTracking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private LocalDateTime checkIn;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private boolean corrected;
 
-    private LocalDateTime checkOut;
-
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
-    public Long getId() {
-        return id;
-    }
+    public TimeTracking() {}
 
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public LocalDateTime getCheckIn() {
-        return checkIn;
-    }
-
-    public void setCheckIn(LocalDateTime checkIn) {
-        this.checkIn = checkIn;
-    }
-
-    public LocalDateTime getCheckOut() {
-        return checkOut;
-    }
-
-    public void setCheckOut(LocalDateTime checkOut) {
-        this.checkOut = checkOut;
-    }
-
-    public User getUser() {
-        return user;
-    }
-
-    public void setUser(User user) {
+    public TimeTracking(LocalDateTime startTime, LocalDateTime endTime, User user) {
+        this.startTime = startTime;
+        this.endTime = endTime;
         this.user = user;
     }
+
+    // Getter / Setter
+    public Long getId() { return id; }
+    public LocalDateTime getStartTime() { return startTime; }
+    public LocalDateTime getEndTime() { return endTime; }
+    public boolean isCorrected() { return corrected; }
+    public User getUser() { return user; }
+
+    public void setId(Long id) { this.id = id; }
+    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+    public void setCorrected(boolean corrected) { this.corrected = corrected; }
+    public void setUser(User user) { this.user = user; }
 }
