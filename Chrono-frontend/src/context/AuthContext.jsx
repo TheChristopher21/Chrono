@@ -1,104 +1,78 @@
-import { createContext, useState, useEffect } from 'react';
-import api from '../utils/api';
-import jwt_decode from 'jwt-decode';
+// src/context/AuthContext.jsx
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
-export const AuthContext = createContext();
+const AuthContext = createContext();
+
+const SESSION_DURATION = 300000; // 5 Minuten in Millisekunden
 
 export const AuthProvider = ({ children }) => {
-    const [authToken, setAuthToken] = useState(null);
-    const [currentUser, setCurrentUser] = useState(null);
-    const [error, setError] = useState(null);
-
-    // Prüft, ob ein Token existiert und setzt den User
-    useEffect(() => {
-        const storedToken = localStorage.getItem('token');
-        if (storedToken) {
-            setAuthToken(storedToken);
-            decodeTokenAndSetUser(storedToken);
+    const [authToken, setAuthToken] = useState(localStorage.getItem('token'));
+    const [currentUser, setCurrentUser] = useState(() => {
+        if (authToken) {
+            try {
+                const decoded = JSON.parse(atob(authToken.split('.')[1]));
+                return {
+                    username: decoded.username || decoded.sub,
+                    roles: decoded.roles || [],
+                    firstName: decoded.firstName || '',
+                    lastName: decoded.lastName || '',
+                    email: decoded.email || ''
+                };
+            } catch (error) {
+                console.error("Error decoding token", error);
+            }
         }
+        return null;
+    });
+
+    const startSessionTimer = useCallback(() => {
+        localStorage.setItem('loginTime', Date.now().toString());
+        setTimeout(() => {
+            const loginTime = parseInt(localStorage.getItem('loginTime'), 10);
+            if (Date.now() - loginTime >= SESSION_DURATION) {
+                logout();
+                alert("Session expired. Please log in again.");
+            }
+        }, SESSION_DURATION);
     }, []);
 
-    const decodeTokenAndSetUser = (token) => {
+    useEffect(() => {
+        if (authToken) {
+            startSessionTimer();
+        }
+    }, [authToken, startSessionTimer]);
+
+    const login = (token) => {
+        localStorage.setItem('token', token);
+        setAuthToken(token);
+        localStorage.setItem('loginTime', Date.now().toString());
         try {
-            const decoded = jwt_decode(token);
-            console.log("🔍 Decoded Token:", decoded); // Debugging
+            const decoded = JSON.parse(atob(token.split('.')[1]));
             setCurrentUser({
-                username: decoded.sub,
-                roles: decoded.roles || [] // Falls undefined, setze leeres Array
+                username: decoded.username || decoded.sub,
+                roles: decoded.roles || [],
+                firstName: decoded.firstName || '',
+                lastName: decoded.lastName || '',
+                email: decoded.email || ''
             });
-        } catch (err) {
-            console.error('❌ Token decoding failed:', err);
-            setCurrentUser(null);
+        } catch (error) {
+            console.error("Error decoding token", error);
         }
-    };
-
-
-    const login = async (username, password) => {
-        try {
-            setError(null);
-            const response = await api.post('/api/auth/login', { username, password });
-            const { token } = response.data;
-            setAuthToken(token);
-            localStorage.setItem('token', token);
-
-            const decoded = jwt_decode(token);
-            console.log("Decoded Token:", decoded); // Hier prüfen!
-
-            setCurrentUser({
-                username: decoded.sub,
-                roles: decoded.roles || [] // Falls undefined, dann als leeres Array setzen
-            });
-
-            return { success: true };
-        } catch (err) {
-            console.error('Login failed:', err);
-            return { success: false, message: err };
-        }
-    };
-
-
-
-    const registerUser = async (username, password, firstName, lastName, email) => {
-        try {
-            setError(null);
-            const response = await api.post('/api/auth/register', {
-                username,
-                password,
-                firstName,
-                lastName,
-                email,
-            });
-
-            // Falls erfolgreich, speichere Token & setze User
-            const { token } = response.data;
-            setAuthToken(token);
-            localStorage.setItem('token', token);
-            decodeTokenAndSetUser(token);
-
-            return { success: true };
-        } catch (err) {
-            console.error('Registration failed:', err.response?.data || err.message);
-            setError(err.response?.data?.message || 'Registration error');
-            return { success: false, message: err.response?.data?.message || 'Error registering' };
-        }
+        startSessionTimer();
     };
 
     const logout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('loginTime');
         setAuthToken(null);
         setCurrentUser(null);
-        localStorage.removeItem('token');
     };
 
     return (
-        <AuthContext.Provider value={{
-            authToken,
-            currentUser,
-            error,
-            login,
-            registerUser,
-            logout
-        }}>
+        <AuthContext.Provider value={{ authToken, currentUser, login, logout, setCurrentUser }}>
             {children}
         </AuthContext.Provider>
     );
 };
+
+export const useAuth = () => useContext(AuthContext);

@@ -1,42 +1,35 @@
-import { AuthProvider } from "./context/AuthContext";
-import Navbar from "./components/Navbar.jsx";
-import {Route, Routes} from "react-router-dom";
-import Register from "./pages/Register.jsx";
-import Login from "./pages/Login.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
-import PrivateRoute from "./components/PrivateRoute.jsx";
-import ManagerDashboard from "./pages/ManagerDashboard.jsx";
-import NotFound from "./pages/NotFound.jsx"; // Stelle sicher, dass der Import korrekt ist
+// src/App.jsx
+import React from 'react';
+import { Routes, Route } from 'react-router-dom';
+import Login from './pages/Login';
+import UserDashboard from './pages/UserDashboard';
+import AdminDashboard from './pages/AdminDashboard';
+import PrivateRoute from './components/PrivateRoute';
 
-const App = () => {
+function App() {
     return (
-        <AuthProvider>
-            <Navbar />
-            <Routes>
-                <Route path="/" element={<h1>Willkommen bei Chrono</h1>} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Register />} />
-
-                <Route
-                    path="/dashboard"
-                    element={
-                        <PrivateRoute>
-                            <Dashboard />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/manager"
-                    element={
-                        <PrivateRoute>
-                            <ManagerDashboard />
-                        </PrivateRoute>
-                    }
-                />
-                <Route path="*" element={<NotFound />} />
-            </Routes>
-        </AuthProvider>
+        <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route
+                path="/user"
+                element={
+                    <PrivateRoute requiredRole="ROLE_USER">
+                        <UserDashboard />
+                    </PrivateRoute>
+                }
+            />
+            <Route
+                path="/admin"
+                element={
+                    <PrivateRoute requiredRole="ROLE_ADMIN">
+                        <AdminDashboard />
+                    </PrivateRoute>
+                }
+            />
+            {/* Fallback: Bei unbekannter Route wieder zum Login */}
+            <Route path="*" element={<Login />} />
+        </Routes>
     );
-};
+}
 
 export default App;

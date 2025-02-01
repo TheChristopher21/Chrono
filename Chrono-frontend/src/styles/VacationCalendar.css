@@ -1,0 +1,12 @@
+/* src/styles/VacationCalendar.css */
+.vacation-calendar {
+    margin: 1rem 0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    border-radius: 8px;
+}
+
+.vacation-day {
+    background: var(--primary-color) !important;
+    color: var(--background-color) !important;
+    border-radius: 50%;
+}

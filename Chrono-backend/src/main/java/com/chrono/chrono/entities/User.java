@@ -30,11 +30,6 @@ public class User {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private Set<TimeTracking> timeTracks = new HashSet<>();
 
-    // NEU: Wer ist der Manager dieses Users?
-    @ManyToOne
-    @JoinColumn(name = "manager_id")
-    private User manager;
-
     public User() {}
 
     public User(String username, String password) {
@@ -42,7 +37,7 @@ public class User {
         this.password = password;
     }
 
-    // Getter / Setter ...
+    // Getter/Setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -66,7 +61,4 @@ public class User {
 
     public Set<TimeTracking> getTimeTracks() { return timeTracks; }
     public void setTimeTracks(Set<TimeTracking> timeTracks) { this.timeTracks = timeTracks; }
-
-    public User getManager() { return manager; }
-    public void setManager(User manager) { this.manager = manager; }
 }

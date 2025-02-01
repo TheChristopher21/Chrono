@@ -1,3 +1,4 @@
+// src/main/java/com/chrono/chrono/controller/UserController.java
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.entities.User;
@@ -12,10 +13,8 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @GetMapping("/{username}")
-    public User getUser(@PathVariable("username") String username) {
-        return userService.getUserByUsername(username);
+    @PutMapping("/update")
+    public User updateUser(@RequestBody User updatedUser) {
+        return userService.updateUser(updatedUser);
     }
-
-    // Weitere Endpunkte (z.B. Update User, etc.)
 }

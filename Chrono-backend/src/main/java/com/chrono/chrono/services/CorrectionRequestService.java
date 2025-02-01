@@ -37,11 +37,19 @@ public class CorrectionRequestService {
         if (timeTrackingId != null) {
             original = timeRepo.findById(timeTrackingId)
                     .orElseThrow(() -> new RuntimeException("TimeTracking entry with ID " + timeTrackingId + " not found"));
+        } else {
+            // Falls timeTrackingId fehlt, muss ein neuer TimeTracking-Eintrag erstellt werden
+            original = new TimeTracking();
+            original.setUser(user);
+            original.setStartTime(desiredStart);
+            original.setEndTime(desiredEnd);
+            original.setCorrected(false);
+            timeRepo.save(original);  // Speichere den neuen TimeTracking-Eintrag
         }
 
         CorrectionRequest req = new CorrectionRequest();
         req.setUser(user);
-        req.setOriginalTimeTracking(original);
+        req.setOriginalTimeTracking(original);  // Stelle sicher, dass die Korrektur mit einer Zeitverfolgung verknüpft ist
         req.setDesiredStartTime(desiredStart);
         req.setDesiredEndTime(desiredEnd);
         req.setReason(reason);
@@ -55,12 +63,15 @@ public class CorrectionRequestService {
      * Gibt alle offenen Korrekturanfragen zurück und lädt relevante Daten mit.
      */
     public List<CorrectionRequest> getOpenRequests() {
-        List<CorrectionRequest> requests = correctionRepo.findAll();
+        List<CorrectionRequest> requests = correctionRepo.findAllWithOriginalTimes();
+
         for (CorrectionRequest req : requests) {
             System.out.println("DEBUG API: ID=" + req.getId() +
+                    ", TimeTracking ID=" + (req.getOriginalTimeTracking() != null ? req.getOriginalTimeTracking().getId() : "NULL") +
                     ", OrigStart=" + (req.getOriginalTimeTracking() != null ? req.getOriginalTimeTracking().getStartTime() : "NULL") +
                     ", OrigEnd=" + (req.getOriginalTimeTracking() != null ? req.getOriginalTimeTracking().getEndTime() : "NULL"));
         }
+
         return requests;
     }
 

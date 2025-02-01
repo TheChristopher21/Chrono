@@ -27,13 +27,13 @@ public class AuthService {
     private RoleRepository roleRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder; // Korrekte Injection
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private JwtUtil jwtUtil;
 
     @Autowired
-    private UserDetailsService userDetailsService; // Nötig für Token-Generierung
+    private UserDetailsService userDetailsService;
 
     public AuthResponse register(RegisterRequest request) {
         Optional<User> existingUser = userRepository.findByUsername(request.getUsername());
@@ -48,21 +48,15 @@ public class AuthService {
         user.setLastName(request.getLastName());
         user.setEmail(request.getEmail());
 
-        // Standardrolle "USER" zuweisen
-        Role role = roleRepository.findByRoleName("USER")
-                .orElseGet(() -> roleRepository.save(new Role("USER")));
+        Role role = roleRepository.findByRoleName("ROLE_USER")
+                .orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
 
         Set<Role> roles = new HashSet<>();
         roles.add(role);
         user.setRoles(roles);
-
         userRepository.save(user);
 
-        // Lade User als UserDetails für Token-Generierung
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-        System.out.println("🔍 Rollen für " + user.getUsername() + ": " + user.getRoles());
-
-        // Token mit Rollen generieren
         String token = jwtUtil.generateTokenWithRoles(userDetails);
         return new AuthResponse(token);
     }
@@ -71,17 +65,11 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found!"));
 
-        System.out.println("Eingegebenes Passwort: " + request.getPassword());
-        System.out.println("Gespeichertes Passwort (Hash): " + user.getPassword());
-
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }
 
-        // Lade User als UserDetails für Token-Generierung
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
-
-        // Token mit Rollen generieren
         String token = jwtUtil.generateTokenWithRoles(userDetails);
         return new AuthResponse(token);
     }

@@ -1,14 +1,16 @@
+// src/components/PrivateRoute.jsx
 import 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
 
-const PrivateRoute = ({ children }) => {
-    const { authToken } = useAuth();
-
+const PrivateRoute = ({ children, requiredRole }) => {
+    const { authToken, currentUser } = useAuth();
     if (!authToken) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/login" />;
     }
-
+    if (requiredRole && (!currentUser?.roles || !currentUser.roles.includes(requiredRole))) {
+        return <Navigate to="/login" />;
+    }
     return children;
 };
 

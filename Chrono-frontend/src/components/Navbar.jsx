@@ -1,24 +1,42 @@
+// src/components/Navbar.jsx
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
+import '../styles/Navbar.css';
 
 const Navbar = () => {
-    const { authToken, logout } = useAuth();
+    const { authToken, logout, currentUser } = useAuth();
+    const isAdmin = currentUser?.roles?.includes('ROLE_ADMIN');
 
     return (
-        <nav style={{ display: 'flex', gap: '1rem', padding: '1rem' }}>
-            <Link to="/">Home</Link>
-            {authToken ? (
-                <>
-                    <Link to="/dashboard">Dashboard</Link>
-                    <button onClick={logout}>Logout</button>
-                </>
-            ) : (
-                <>
-                    <Link to="/login">Login</Link>
-                    <Link to="/register">Register</Link>
-                </>
-            )}
+        <nav className="navbar">
+            <div className="navbar-brand">
+                <Link to="/">Chrono</Link>
+            </div>
+            <ul className="navbar-links">
+                {authToken ? (
+                    <>
+                        {isAdmin ? (
+                            <li>
+                                <Link to="/admin">Admin Panel</Link>
+                            </li>
+                        ) : (
+                            <li>
+                                <Link to="/user">Dashboard</Link>
+                            </li>
+                        )}
+                        <li className="navbar-username">Hi, {currentUser?.username}</li>
+                        <li>
+                            <button className="navbar-logout" onClick={logout}>Logout</button>
+                        </li>
+                    </>
+                ) : (
+                    <>
+                        <li><Link to="/login">Login</Link></li>
+                        <li><Link to="/register">Register</Link></li>
+                    </>
+                )}
+            </ul>
         </nav>
     );
 };

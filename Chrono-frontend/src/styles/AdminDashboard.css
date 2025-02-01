@@ -1,0 +1,283 @@
+/* src/styles/UserDashboard.css */
+:root {
+    --primary-color: #005f73;
+    --secondary-color: #0a9396;
+    --accent-color: #94d2bd;
+    --background-color: #ffffff;
+    --neutral-color: #f8f8f8;
+    --text-color: #333333;
+    --border-color: #dddddd;
+}
+
+.user-dashboard {
+    max-width: 900px;
+    margin: 2rem auto;
+    padding: 1rem;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: var(--text-color);
+    background-color: var(--background-color);
+}
+
+.dashboard-header {
+    background-color: var(--primary-color);
+    color: var(--background-color);
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+}
+
+.personal-info p {
+    margin: 0.5rem 0;
+}
+
+.vacation-reminder {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 1rem;
+    border-radius: 8px;
+    margin: 1rem 0;
+    text-align: center;
+}
+
+section {
+    margin-top: 2rem;
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: var(--neutral-color);
+    transition: transform 0.2s ease;
+}
+
+section:hover {
+    transform: translateY(-3px);
+}
+
+h3 {
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+    color: var(--primary-color);
+}
+
+/* Tracking Buttons */
+.tracking-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.tracking-buttons button {
+    flex: 1;
+    padding: 0.75rem;
+    background-color: var(--primary-color);
+    color: var(--background-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.tracking-buttons button:hover {
+    background-color: var(--secondary-color);
+}
+
+/* List Styles */
+.time-history ul,
+.vacation-history ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.time-history li,
+.vacation-history li {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+    background-color: var(--background-color);
+    transition: background-color 0.2s ease;
+}
+
+.time-history li:hover,
+.vacation-history li:hover {
+    background-color: #f1f1f1;
+}
+
+.entry-label {
+    font-weight: bold;
+    color: var(--primary-color);
+}
+
+/* Correction Button */
+.btn-correct {
+    margin-top: 0.5rem;
+    padding: 0.5rem 1rem;
+    background-color: #ffc107;
+    border: none;
+    border-radius: 4px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.btn-correct:hover {
+    background-color: #e0a800;
+}
+
+/* Form Styles */
+.form-correction,
+.form-vacation,
+.form-personal {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group label {
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    width: 100%;
+}
+
+.form-correction button,
+.form-vacation button,
+.form-personal button {
+    align-self: flex-start;
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: var(--background-color);
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.form-correction button:hover,
+.form-vacation button:hover,
+.form-personal button:hover {
+    background-color: var(--secondary-color);
+}
+
+/* Modal Styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--background-color);
+    padding: 2rem;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 90%;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    text-align: center;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.modal-buttons button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.modal-buttons button[type="submit"] {
+    background-color: #28a745;
+    color: var(--background-color);
+}
+
+.modal-buttons button[type="submit"]:hover {
+    background-color: #218838;
+}
+
+.modal-buttons button[type="button"] {
+    background-color: #dc3545;
+    color: var(--background-color);
+}
+
+.modal-buttons button[type="button"]:hover {
+    background-color: #c82333;
+}
+
+/* Vacation Section Enhancements */
+.vacation-section input[type="date"] {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="%23999" class="bi bi-calendar" viewBox="0 0 16 16"><path d="M3.5 0a.5.5 0 0 1 .5.5V1h8V.5a.5.5 0 0 1 1 0V1h1a2 2 0 0 1 2 2v1H0V3a2 2 0 0 1 2-2h1V.5a.5.5 0 0 1 .5-.5zM16 14V5H0v9a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2z"/></svg>');
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center;
+    background-size: 1rem;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    margin-left: 1rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    color: var(--background-color);
+}
+
+.status-badge.pending {
+    background-color: #ffc107;
+}
+
+.status-badge.approved {
+    background-color: #28a745;
+}
+
+.status-badge.denied {
+    background-color: #dc3545;
+}
+
+/* Personal Data Section */
+.personal-data-section {
+    margin-top: 2rem;
+    border: 1px solid var(--border-color);
+    padding: 1rem;
+    border-radius: 8px;
+    background-color: var(--neutral-color);
+    transition: transform 0.2s ease;
+}
+
+.personal-data-section:hover {
+    transform: translateY(-3px);
+}
+
+/* Vacation Calendar Section */
+.calendar-section {
+    margin-top: 1rem;
+}

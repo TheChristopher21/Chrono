@@ -1,5 +1,8 @@
+// src/main/java/com/chrono/chrono/entities/VacationRequest.java
 package com.chrono.chrono.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 
@@ -18,9 +21,9 @@ public class VacationRequest {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
+    @JsonIgnore  // Verhindert zyklische Serialisierung
     private User user;
 
-    // Konstruktoren, Getter, Setter ...
     public VacationRequest() {}
 
     public Long getId() { return id; }
@@ -36,4 +39,10 @@ public class VacationRequest {
     public void setApproved(boolean approved) { this.approved = approved; }
     public void setDenied(boolean denied) { this.denied = denied; }
     public void setUser(User user) { this.user = user; }
+
+    // Liefert den Benutzernamen für die JSON-Antwort
+    @JsonProperty("username")
+    public String getUsername() {
+        return (user != null) ? user.getUsername() : "Unknown";
+    }
 }

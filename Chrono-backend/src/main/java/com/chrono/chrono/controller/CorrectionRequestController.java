@@ -49,6 +49,7 @@ public class CorrectionRequestController {
 
         for (CorrectionRequest req : requests) {
             System.out.println("DEBUG API: ID=" + req.getId() + ", OrigStart=" + req.getOriginalStartTime() + ", OrigEnd=" + req.getOriginalEndTime());
+            System.out.println("API Response: " + requests);
         }
 
         return requests;

@@ -29,15 +29,16 @@ public class CorrectionRequest {
     private boolean approved;
     private boolean denied;
 
-    // Wer hat diesen Antrag erstellt?
-    @ManyToOne(fetch = FetchType.LAZY)  // FetchType.LAZY reduziert unnötige Abfragen
-    @JoinColumn(name = "user_id", nullable = false)  // Sicherstellen, dass `user_id` vorhanden ist
-    @JsonIgnore  // Verhindert rekursive Serialisierung
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    @JsonIgnore  // Verhindert Endlosschleife
     private User user;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "time_tracking_id", nullable = true)
+    @JsonIgnore  // Falls nicht nötig, entferne dies
     private TimeTracking originalTimeTracking;
+
 
 
 
@@ -60,11 +61,14 @@ public class CorrectionRequest {
         return (user != null) ? user.getUsername() : "Unknown";
     }
 
-    // **✅ Fix für `getOriginalTimeTracking()`-Fehler**
     @JsonProperty("originalStart")
     public LocalDateTime getOriginalStartTime() {
-        return (originalTimeTracking != null) ? originalTimeTracking.getStartTime() : null;
+        if (originalTimeTracking != null) {
+            return originalTimeTracking.getStartTime();
+        }
+        return desiredStartTime; // Falls keine Originalzeit gefunden wird, schicke nicht die gleiche Zeit zurück!
     }
+
 
     @JsonProperty("originalEnd")
     public LocalDateTime getOriginalEndTime() {

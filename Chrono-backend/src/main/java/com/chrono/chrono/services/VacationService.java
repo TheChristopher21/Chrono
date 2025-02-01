@@ -1,3 +1,4 @@
+// src/main/java/com/chrono/chrono/services/VacationService.java
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.entities.User;
@@ -28,7 +29,6 @@ public class VacationService {
         vr.setEndDate(end);
         vr.setApproved(false);
         vr.setDenied(false);
-
         return vacationRepo.save(vr);
     }
 
@@ -54,13 +54,7 @@ public class VacationService {
         return vacationRepo.save(vr);
     }
 
-    // Manager-spezifisch: Alle vacations im Team ...
-    public List<VacationRequest> getTeamVacations(User manager) {
-        // hole Team-Users
-        List<User> team = userRepo.findByManager(manager);
-        // sammle deren VacationRequests
-        // etc. => analog wie TimeTracking
-        // ...
-        return null; // implement
+    public List<VacationRequest> getAllVacations() {
+        return vacationRepo.findAll();
     }
 }
