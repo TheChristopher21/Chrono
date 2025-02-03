@@ -1,44 +1,63 @@
 // src/pages/UserDashboard.jsx
-import  { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
 import VacationCalendar from '../components/VacationCalendar';
 import '../styles/UserDashboard.css';
 
+const EXPECTED_WORK_HOURS = 8; // 8 Stunden pro Tag
+const THRESHOLD_MINUTES = 10;   // Toleranz in Minuten
+
+// Gruppiert Time‑Tracking‑Einträge nach Datum
+const groupEntriesByDate = (entries) => {
+    return entries.reduce((acc, entry) => {
+        const dateStr = new Date(entry.startTime).toLocaleDateString();
+        if (!acc[dateStr]) {
+            acc[dateStr] = [];
+        }
+        acc[dateStr].push(entry);
+        return acc;
+    }, {});
+};
+
+// Gruppiert Vacation Requests nach Woche (Beispiel: anhand des Startdatums)
+const groupVacationsByWeek = (vacations) => {
+    return vacations.reduce((acc, vac) => {
+        const weekKey = new Date(vac.startDate).toLocaleDateString();
+        if (!acc[weekKey]) acc[weekKey] = [];
+        acc[weekKey].push(vac);
+        return acc;
+    }, {});
+};
+
 const UserDashboard = () => {
-    const { currentUser, setCurrentUser } = useAuth();
+    const { currentUser } = useAuth();
     const [timeHistory, setTimeHistory] = useState([]);
+    const [groupedEntries, setGroupedEntries] = useState({});
     const [vacationForm, setVacationForm] = useState({ startDate: '', endDate: '' });
     const [vacationRequests, setVacationRequests] = useState([]);
-    const [personalData, setPersonalData] = useState({
-        firstName: currentUser?.firstName || '',
-        lastName: currentUser?.lastName || '',
-        email: currentUser?.email || ''
+    const [correctionModalVisible, setCorrectionModalVisible] = useState(false);
+    const [correctionForm, setCorrectionForm] = useState({
+        desiredStart: '',
+        desiredEnd: '',
+        reason: ''
     });
+    const [expandedDates, setExpandedDates] = useState({});
+    const [expandedVacationWeeks, setExpandedVacationWeeks] = useState({});
 
-    // Correction Modal State
-    const [showCorrectionModal, setShowCorrectionModal] = useState(false);
-    const [selectedEntry, setSelectedEntry] = useState(null);
-    const [correctionForm, setCorrectionForm] = useState({ desiredStart: '', desiredEnd: '', reason: '' });
-
-    // Hilfsfunktion: Formatierung für datetime-local
-    const formatDateTimeLocal = (date) => {
-        if (!date) return '';
-        const d = new Date(date);
-        const pad = (n) => (n < 10 ? '0' + n : n);
-        return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-    };
-
+    // Lädt die Time-Tracking-Daten
     const fetchTimeHistory = async () => {
         try {
             const res = await api.get(`/api/timetracking/history?username=${currentUser.username}`);
             setTimeHistory(res.data);
+            setGroupedEntries(groupEntriesByDate(res.data));
         } catch (err) {
             console.error("Error fetching time history", err);
         }
     };
 
+    // Lädt die Vacation Requests des Users
     const fetchVacationRequests = async () => {
         try {
             const res = await api.get('/api/vacation/my');
@@ -48,76 +67,54 @@ const UserDashboard = () => {
         }
     };
 
-    const fetchPersonalData = async () => {
-        try {
-            const res = await api.get('/api/auth/me');
-            setPersonalData({
-                firstName: res.data.firstName,
-                lastName: res.data.lastName,
-                email: res.data.email
-            });
-        } catch (err) {
-            console.error("Error fetching personal data", err);
-        }
-    };
-
     useEffect(() => {
         if (currentUser) {
             fetchTimeHistory();
             fetchVacationRequests();
-            fetchPersonalData();
         }
     }, [currentUser]);
 
-    // Automatischer Reminder: Wenn heute ein genehmigter Vacation Request existiert, soll ein Banner angezeigt werden
-    const isOnVacation = () => {
-        const today = new Date();
-        today.setHours(0,0,0,0);
-        return vacationRequests.some(vac => {
-            if (vac.approved) {
-                const start = new Date(vac.startDate);
-                const end = new Date(vac.endDate);
-                start.setHours(0,0,0,0);
-                end.setHours(0,0,0,0);
-                return today >= start && today <= end;
-            }
-            return false;
-        });
+    const hasActivePunch = () => {
+        return timeHistory.some(entry => !entry.endTime);
     };
 
     const handlePunchIn = async () => {
+        if (hasActivePunch()) {
+            alert("You have already punched in. Please punch out first.");
+            return;
+        }
         try {
             await api.post(`/api/timetracking/punch-in?username=${currentUser.username}`);
-            fetchTimeHistory();
+            await fetchTimeHistory();
         } catch (err) {
             console.error("Error punching in", err);
         }
     };
 
     const handlePunchOut = async () => {
+        if (!hasActivePunch()) {
+            alert("You are not punched in.");
+            return;
+        }
         try {
             await api.post(`/api/timetracking/punch-out?username=${currentUser.username}`);
-            fetchTimeHistory();
+            await fetchTimeHistory();
         } catch (err) {
             console.error("Error punching out", err);
         }
     };
 
-    // Öffnet das Correction Modal und füllt Standardwerte
-    const openCorrectionModal = (entry) => {
-        setSelectedEntry(entry);
-        setCorrectionForm({
-            desiredStart: formatDateTimeLocal(entry.startTime),
-            desiredEnd: entry.endTime ? formatDateTimeLocal(entry.endTime) : '',
-            reason: ''
-        });
-        setShowCorrectionModal(true);
+    const toggleDateGroup = (dateStr) => {
+        setExpandedDates(prev => ({ ...prev, [dateStr]: !prev[dateStr] }));
     };
 
-    const closeCorrectionModal = () => {
-        setShowCorrectionModal(false);
-        setSelectedEntry(null);
-        setCorrectionForm({ desiredStart: '', desiredEnd: '', reason: '' });
+    // Öffnet oder schließt das Correction-Modal
+    const toggleCorrectionModal = () => {
+        setCorrectionModalVisible(!correctionModalVisible);
+    };
+
+    const handleCorrectionFormChange = (e) => {
+        setCorrectionForm({ ...correctionForm, [e.target.name]: e.target.value });
     };
 
     const handleCorrectionSubmit = async (e) => {
@@ -126,15 +123,15 @@ const UserDashboard = () => {
             await api.post('/api/correction/create', null, {
                 params: {
                     username: currentUser.username,
-                    timeTrackingId: selectedEntry ? selectedEntry.id : null,
                     desiredStart: correctionForm.desiredStart,
                     desiredEnd: correctionForm.desiredEnd,
                     reason: correctionForm.reason
                 }
             });
             alert("Correction request submitted");
-            closeCorrectionModal();
-            fetchTimeHistory();
+            setCorrectionForm({ desiredStart: '', desiredEnd: '', reason: '' });
+            setCorrectionModalVisible(false);
+            await fetchTimeHistory();
         } catch (err) {
             console.error("Error submitting correction request", err);
         }
@@ -142,6 +139,10 @@ const UserDashboard = () => {
 
     const handleVacationSubmit = async (e) => {
         e.preventDefault();
+        if (new Date(vacationForm.startDate) > new Date(vacationForm.endDate)) {
+            alert("Start date cannot be after End date.");
+            return;
+        }
         try {
             await api.post('/api/vacation/create', null, {
                 params: {
@@ -152,27 +153,30 @@ const UserDashboard = () => {
             });
             alert("Vacation request submitted");
             setVacationForm({ startDate: '', endDate: '' });
-            fetchVacationRequests();
+            await fetchVacationRequests();
         } catch (err) {
             console.error("Error submitting vacation request", err);
         }
     };
 
-    const handlePersonalDataUpdate = async (e) => {
-        e.preventDefault();
-        try {
-            const res = await api.put('/api/user/update', {
-                username: currentUser.username,
-                firstName: personalData.firstName,
-                lastName: personalData.lastName,
-                email: personalData.email
-            });
-            alert("Profile updated");
-            setCurrentUser(res.data);
-        } catch (err) {
-            console.error("Error updating personal data", err);
-        }
+    const calculateWorkTime = (entries) => {
+        if (entries.length < 2) return null;
+        const sorted = [...entries].sort((a, b) => a.punchOrder - b.punchOrder);
+        if (!sorted[0].endTime || !sorted[sorted.length - 1].endTime) return null;
+        const start = new Date(sorted[0].startTime);
+        const end = new Date(sorted[sorted.length - 1].endTime);
+        return (end - start) / 60000; // in Minuten
     };
+
+    const getWorkTimeIndicator = (totalMinutes) => {
+        if (totalMinutes === null) return null;
+        const expectedMinutes = EXPECTED_WORK_HOURS * 60;
+        const diff = totalMinutes - expectedMinutes;
+        if (Math.abs(diff) < THRESHOLD_MINUTES) return null;
+        return diff > 0 ? { type: 'over', value: `+${Math.round(diff)} min` } : { type: 'under', value: `${Math.round(-diff)} min` };
+    };
+
+    const groupedVacations = groupVacationsByWeek(vacationRequests);
 
     return (
         <div className="user-dashboard">
@@ -184,35 +188,51 @@ const UserDashboard = () => {
                 </div>
             </header>
 
-            {isOnVacation() && (
-                <div className="vacation-reminder">
-                    <p>You are currently on vacation. Enjoy your break!</p>
-                </div>
-            )}
-
             <section className="time-tracking-section">
                 <h3>Time Tracking</h3>
                 <div className="tracking-buttons">
                     <button onClick={handlePunchIn}>Punch In</button>
                     <button onClick={handlePunchOut}>Punch Out</button>
+                    <button onClick={toggleCorrectionModal}>Request Correction</button>
                 </div>
                 <div className="time-history">
-                    <h4>Your Time Entries:</h4>
-                    {timeHistory.length === 0 ? (
+                    <h4>Your Time Entries by Day:</h4>
+                    {Object.keys(groupedEntries).length === 0 ? (
                         <p>No time entries found.</p>
                     ) : (
-                        <ul>
-                            {timeHistory.map(entry => (
-                                <li key={entry.id}>
-                                    <span className="entry-label">Start:</span> {new Date(entry.startTime).toLocaleString()}<br />
-                                    <span className="entry-label">End:</span> {entry.endTime ? new Date(entry.endTime).toLocaleString() : 'Ongoing'}<br />
-                                    <span className="entry-label">Status:</span> {entry.color}
-                                    {entry.endTime && !entry.corrected && (
-                                        <button className="btn-correct" onClick={() => openCorrectionModal(entry)}>Correct</button>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
+                        <div className="date-groups">
+                            {Object.keys(groupedEntries).map(dateStr => {
+                                const entries = groupedEntries[dateStr];
+                                const totalMinutes = calculateWorkTime(entries);
+                                const indicator = getWorkTimeIndicator(totalMinutes);
+                                return (
+                                    <div key={dateStr} className="date-group">
+                                        <div className="date-group-header" onClick={() => toggleDateGroup(dateStr)}>
+                                            <h5>{dateStr}</h5>
+                                            <button>{expandedDates[dateStr] ? '-' : '+'}</button>
+                                        </div>
+                                        {expandedDates[dateStr] && (
+                                            <ul>
+                                                {entries.map(entry => (
+                                                    <li key={entry.id} className="track-item">
+                                                        <span className="entry-label">Start:</span> {new Date(entry.startTime).toLocaleString()}<br />
+                                                        <span className="entry-label">End:</span> {entry.endTime ? new Date(entry.endTime).toLocaleString() : 'Ongoing'}<br />
+                                                        <span className="entry-label">Status:</span> {entry.color}
+                                                    </li>
+                                                ))}
+                                                {indicator && (
+                                                    <li className="work-indicator-container">
+                            <span className={`work-indicator ${indicator.type}`}>
+                              {indicator.value}
+                            </span>
+                                                    </li>
+                                                )}
+                                            </ul>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
                     )}
                 </div>
             </section>
@@ -225,7 +245,7 @@ const UserDashboard = () => {
                         <input
                             type="date"
                             name="startDate"
-                            value={vacationForm.startDate}
+                            value={vacationForm.startDate || ''}
                             onChange={(e) => setVacationForm({ ...vacationForm, startDate: e.target.value })}
                             required
                         />
@@ -235,7 +255,7 @@ const UserDashboard = () => {
                         <input
                             type="date"
                             name="endDate"
-                            value={vacationForm.endDate}
+                            value={vacationForm.endDate || ''}
                             onChange={(e) => setVacationForm({ ...vacationForm, endDate: e.target.value })}
                             required
                         />
@@ -243,80 +263,55 @@ const UserDashboard = () => {
                     <button type="submit">Submit Vacation</button>
                 </form>
                 <div className="vacation-history">
-                    <h4>Your Vacation Requests:</h4>
+                    <h4>Your Vacation Requests (grouped by week):</h4>
                     {vacationRequests.length === 0 ? (
                         <p>No vacation requests found.</p>
                     ) : (
-                        <ul>
-                            {vacationRequests.map(vac => (
-                                <li key={vac.id}>
-                                    <span className="entry-label">From:</span> {vac.startDate}<br />
-                                    <span className="entry-label">To:</span> {vac.endDate}<br />
-                                    <span className="entry-label">Status:</span> <span className={`status-badge ${vac.approved ? 'approved' : vac.denied ? 'denied' : 'pending'}`}>
-                    {vac.approved ? 'Approved' : vac.denied ? 'Denied' : 'Pending'}
-                  </span>
-                                </li>
-                            ))}
-                        </ul>
+                        Object.keys(groupedVacations)
+                            .sort()
+                            .map(weekKey => (
+                                <div key={weekKey} className="vacation-week-group">
+                                    <div className="vacation-week-header" onClick={() => setExpandedVacationWeeks(prev => ({ ...prev, [weekKey]: !prev[weekKey] }))}>
+                                        <h5>{weekKey}</h5>
+                                        <button>{expandedVacationWeeks[weekKey] ? '-' : '+'}</button>
+                                    </div>
+                                    {expandedVacationWeeks[weekKey] && (
+                                        <ul>
+                                            {groupedVacations[weekKey].map(vac => (
+                                                <li key={vac.id}>
+                                                    <span className="entry-label">From:</span> {vac.startDate}<br />
+                                                    <span className="entry-label">To:</span> {vac.endDate}<br />
+                                                    <span className="entry-label">Status:</span>{' '}
+                                                    <span className={`status-badge ${vac.approved ? 'approved' : vac.denied ? 'denied' : 'pending'}`}>
+                            {vac.approved ? 'Approved' : vac.denied ? 'Denied' : 'Pending'}
+                          </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            ))
                     )}
                 </div>
-                {/* Abwesenheitskalender */}
                 <div className="calendar-section">
                     <h4>Vacation Calendar</h4>
                     <VacationCalendar vacationRequests={vacationRequests.filter(vac => vac.approved)} />
                 </div>
             </section>
 
-            <section className="personal-data-section">
-                <h3>Update Personal Data</h3>
-                <form onSubmit={handlePersonalDataUpdate} className="form-personal">
-                    <div className="form-group">
-                        <label>First Name:</label>
-                        <input
-                            type="text"
-                            name="firstName"
-                            value={personalData.firstName}
-                            onChange={(e) => setPersonalData({ ...personalData, firstName: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Last Name:</label>
-                        <input
-                            type="text"
-                            name="lastName"
-                            value={personalData.lastName}
-                            onChange={(e) => setPersonalData({ ...personalData, lastName: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>Email:</label>
-                        <input
-                            type="email"
-                            name="email"
-                            value={personalData.email}
-                            onChange={(e) => setPersonalData({ ...personalData, email: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <button type="submit">Update Profile</button>
-                </form>
-            </section>
-
             {/* Correction Request Modal */}
-            {showCorrectionModal && (
+            {correctionModalVisible && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h3>Correction Request</h3>
+                        <h3>Request Time Correction</h3>
                         <form onSubmit={handleCorrectionSubmit} className="form-correction">
                             <div className="form-group">
                                 <label>Desired Start:</label>
                                 <input
                                     type="datetime-local"
                                     name="desiredStart"
-                                    value={correctionForm.desiredStart}
-                                    onChange={(e) => setCorrectionForm({ ...correctionForm, desiredStart: e.target.value })}
+                                    value={correctionForm.desiredStart || ''}
+                                    onChange={handleCorrectionFormChange}
                                     required
                                 />
                             </div>
@@ -325,8 +320,8 @@ const UserDashboard = () => {
                                 <input
                                     type="datetime-local"
                                     name="desiredEnd"
-                                    value={correctionForm.desiredEnd}
-                                    onChange={(e) => setCorrectionForm({ ...correctionForm, desiredEnd: e.target.value })}
+                                    value={correctionForm.desiredEnd || ''}
+                                    onChange={handleCorrectionFormChange}
                                     required
                                 />
                             </div>
@@ -335,15 +330,14 @@ const UserDashboard = () => {
                                 <input
                                     type="text"
                                     name="reason"
-                                    value={correctionForm.reason}
-                                    onChange={(e) => setCorrectionForm({ ...correctionForm, reason: e.target.value })}
-                                    placeholder="Enter reason"
+                                    value={correctionForm.reason || ''}
+                                    onChange={handleCorrectionFormChange}
                                     required
                                 />
                             </div>
                             <div className="modal-buttons">
-                                <button type="submit">Submit Correction</button>
-                                <button type="button" onClick={closeCorrectionModal}>Cancel</button>
+                                <button type="submit">Submit Correction Request</button>
+                                <button type="button" onClick={() => setCorrectionModalVisible(false)}>Cancel</button>
                             </div>
                         </form>
                     </div>

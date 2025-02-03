@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
 import '../styles/Login.css';
 
 const Login = () => {
@@ -17,41 +16,39 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        try {
-            const response = await api.post('/api/auth/login', form);
-            const token = response.data.token;
-            login(token);
-            const decoded = JSON.parse(atob(token.split('.')[1]));
-            if (decoded.roles && decoded.roles.includes('ROLE_ADMIN')) {
+        const res = await login(form.username, form.password);
+        if (res.success) {
+            // Entscheide anhand der Rollen: Falls der User ROLE_ADMIN hat, leite zu /admin weiter
+            if (res.user.roles && res.user.roles.includes("ROLE_ADMIN")) {
                 navigate('/admin');
             } else {
                 navigate('/user');
             }
-        } catch (err) {
+        } else {
             setError("Login failed. Please check your credentials.");
-            console.error(err);
         }
     };
 
-
     return (
-        <div className="login-container">
+        <div className="login-container card">
             <h2>Login</h2>
-            {error && <p className="error">{error}</p>}
+            {error && <p className="error-message">{error}</p>}
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"
                     name="username"
-                    placeholder="Username"
                     value={form.username}
                     onChange={handleChange}
+                    placeholder="Username"
+                    required
                 />
                 <input
                     type="password"
                     name="password"
-                    placeholder="Password"
                     value={form.password}
                     onChange={handleChange}
+                    placeholder="Password"
+                    required
                 />
                 <button type="submit">Login</button>
             </form>

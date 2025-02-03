@@ -1,7 +1,6 @@
+// src/main/java/com/chrono/chrono/utils/JwtUtil.java
 package com.chrono.chrono.utils;
 
-import com.chrono.chrono.entities.Role;
-import com.chrono.chrono.entities.User;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
@@ -55,17 +54,12 @@ public class JwtUtil {
 
     public String generateTokenWithRoles(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
-
-        // Prüfen, ob Rollen verfügbar sind und hinzufügen
         List<String> roles = userDetails.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
-
         claims.put("roles", roles);
-
         System.out.println("🔹 Generating Token for: " + userDetails.getUsername());
         System.out.println("🔹 Roles added to token: " + roles);
-
         return createToken(claims, userDetails.getUsername());
     }
 
@@ -74,7 +68,7 @@ public class JwtUtil {
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 Stunden
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

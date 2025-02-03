@@ -17,13 +17,15 @@ const Navbar = () => {
                 {authToken ? (
                     <>
                         {isAdmin ? (
-                            <li>
-                                <Link to="/admin">Admin Panel</Link>
-                            </li>
+                            <>
+                                <li><Link to="/admin">Admin Panel</Link></li>
+                                <li><Link to="/admin/users">User Management</Link></li>
+                            </>
                         ) : (
-                            <li>
-                                <Link to="/user">Dashboard</Link>
-                            </li>
+                            <>
+                                <li><Link to="/user">Dashboard</Link></li>
+                                <li><Link to="/profile">Profile</Link></li>
+                            </>
                         )}
                         <li className="navbar-username">Hi, {currentUser?.username}</li>
                         <li>

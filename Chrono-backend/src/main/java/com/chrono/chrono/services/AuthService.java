@@ -1,3 +1,4 @@
+// src/main/java/com/chrono/chrono/services/AuthService.java
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.AuthRequest;
@@ -43,6 +44,7 @@ public class AuthService {
 
         User user = new User();
         user.setUsername(request.getUsername());
+        // Passwort wird gehasht
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());

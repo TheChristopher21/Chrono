@@ -3,27 +3,11 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 
 const AuthContext = createContext();
 
-const SESSION_DURATION = 300000; // 5 Minuten in Millisekunden
+const SESSION_DURATION = 300000; // 5 Minuten
 
 export const AuthProvider = ({ children }) => {
     const [authToken, setAuthToken] = useState(localStorage.getItem('token'));
-    const [currentUser, setCurrentUser] = useState(() => {
-        if (authToken) {
-            try {
-                const decoded = JSON.parse(atob(authToken.split('.')[1]));
-                return {
-                    username: decoded.username || decoded.sub,
-                    roles: decoded.roles || [],
-                    firstName: decoded.firstName || '',
-                    lastName: decoded.lastName || '',
-                    email: decoded.email || ''
-                };
-            } catch (error) {
-                console.error("Error decoding token", error);
-            }
-        }
-        return null;
-    });
+    const [currentUser, setCurrentUser] = useState(null);
 
     const startSessionTimer = useCallback(() => {
         localStorage.setItem('loginTime', Date.now().toString());
@@ -38,16 +22,37 @@ export const AuthProvider = ({ children }) => {
 
     useEffect(() => {
         if (authToken) {
+            try {
+                const decoded = JSON.parse(atob(authToken.split('.')[1]));
+                setCurrentUser({
+                    username: decoded.username || decoded.sub,
+                    roles: decoded.roles || [],
+                    firstName: decoded.firstName || '',
+                    lastName: decoded.lastName || '',
+                    email: decoded.email || ''
+                });
+            } catch (error) {
+                console.error("Error decoding token", error);
+            }
             startSessionTimer();
         }
     }, [authToken, startSessionTimer]);
 
-    const login = (token) => {
-        localStorage.setItem('token', token);
-        setAuthToken(token);
-        localStorage.setItem('loginTime', Date.now().toString());
+    const login = async (username, password) => {
         try {
-            const decoded = JSON.parse(atob(token.split('.')[1]));
+            const response = await fetch('http://localhost:8080/api/auth/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            if (!response.ok) {
+                throw new Error('Login failed');
+            }
+            const data = await response.json();
+            localStorage.setItem('token', data.token);
+            setAuthToken(data.token);
+            localStorage.setItem('loginTime', Date.now().toString());
+            const decoded = JSON.parse(atob(data.token.split('.')[1]));
             setCurrentUser({
                 username: decoded.username || decoded.sub,
                 roles: decoded.roles || [],
@@ -55,10 +60,11 @@ export const AuthProvider = ({ children }) => {
                 lastName: decoded.lastName || '',
                 email: decoded.email || ''
             });
+            startSessionTimer();
+            return { success: true, token: data.token, user: decoded };
         } catch (error) {
-            console.error("Error decoding token", error);
+            return { success: false, message: error.message };
         }
-        startSessionTimer();
     };
 
     const logout = () => {

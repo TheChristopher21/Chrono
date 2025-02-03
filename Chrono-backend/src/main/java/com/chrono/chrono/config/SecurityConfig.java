@@ -1,4 +1,4 @@
-// SecurityConfig.java
+// src/main/java/com/chrono/chrono/config/SecurityConfig.java
 package com.chrono.chrono.config;
 
 import com.chrono.chrono.services.CustomUserDetailsService;
@@ -34,13 +34,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Ersetze "http://localhost:5173" durch die URL deines Frontends, falls abweichend.
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type", "Origin"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -62,11 +60,10 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/auth/**").permitAll();
+                    auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
                     auth.requestMatchers("/api/timetracking/**").hasAnyRole("USER", "ADMIN");
                     auth.requestMatchers("/api/correction/**").hasAnyRole("USER", "ADMIN");
-                    // Nur Admin darf alle Vacation Requests abrufen:
                     auth.requestMatchers("/api/vacation/all").hasRole("ADMIN");
-                    // Für normale Vacation-Endpoints sind sowohl USER als auch ADMIN zugelassen
                     auth.requestMatchers("/api/vacation/**").hasAnyRole("USER", "ADMIN");
                     auth.anyRequest().authenticated();
                 })

@@ -9,6 +9,7 @@ import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.TimeTrackingRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -20,6 +21,8 @@ import java.util.stream.Collectors;
 public class TimeTrackingService {
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
     private TimeTrackingRepository timeTrackingRepository;
     @Autowired
     private UserRepository userRepository;
@@ -27,8 +30,6 @@ public class TimeTrackingService {
     public TimeTrackingResponse punch(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found for time tracking"));
-
-        // Ermittle die Anzahl der heutigen Einträge
         List<TimeTracking> todaysEntries = timeTrackingRepository.findByUserOrderByStartTimeDesc(user)
                 .stream()
                 .filter(tt -> tt.getStartTime().toLocalDate().equals(LocalDate.now()))
@@ -37,7 +38,6 @@ public class TimeTrackingService {
         if (count >= 4) {
             throw new RuntimeException("All punches for today have been recorded.");
         }
-
         TimeTracking tt = new TimeTracking();
         LocalDateTime now = LocalDateTime.now();
         tt.setStartTime(now);
@@ -64,7 +64,7 @@ public class TimeTrackingService {
     }
 
     public List<AdminTimeTrackDTO> getAllTimeTracksWithUser() {
-        List<TimeTracking> all = timeTrackingRepository.findAll();
+        List<TimeTracking> all = timeTrackingRepository.findAllWithUser();
         return all.stream()
                 .map(tt -> new AdminTimeTrackDTO(
                         tt.getUser().getUsername(),
@@ -74,6 +74,35 @@ public class TimeTrackingService {
                         tt.getPunchOrder()
                 ))
                 .collect(Collectors.toList());
+    }
+
+    public AdminTimeTrackDTO updateTimeTrackEntry(Long id, LocalDateTime newStart, LocalDateTime newEnd,
+                                                  String adminPassword, String userPassword, String adminUsername) {
+        TimeTracking tt = timeTrackingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Time tracking entry not found"));
+
+        User admin = userRepository.findByUsername(adminUsername)
+                .orElseThrow(() -> new RuntimeException("Admin user not found"));
+        if (!passwordEncoder.matches(adminPassword, admin.getPassword())) {
+            throw new RuntimeException("Invalid admin password");
+        }
+
+        User affectedUser = tt.getUser();
+        if (!passwordEncoder.matches(userPassword, affectedUser.getPassword())) {
+            throw new RuntimeException("Invalid user password");
+        }
+
+        tt.setStartTime(newStart);
+        tt.setEndTime(newEnd);
+        TimeTracking updated = timeTrackingRepository.save(tt);
+
+        return new AdminTimeTrackDTO(
+                updated.getUser().getUsername(),
+                updated.getStartTime(),
+                updated.getEndTime(),
+                updated.isCorrected(),
+                updated.getPunchOrder()
+        );
     }
 
     private TimeTrackingResponse convertToResponse(TimeTracking tt) {
