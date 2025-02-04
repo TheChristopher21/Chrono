@@ -1,20 +1,23 @@
 // src/App.jsx
 import React from 'react';
-import { Routes, Route } from 'react-router-dom';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import UserDashboard from './pages/UserDashboard';
-import AdminDashboard from './pages/AdminDashboard';
-import AdminUserManagementPage from './pages/AdminUserManagementPage';
-import PersonalDataPage from './pages/PersonalDataPage';
-import PrivateRoute from './components/PrivateRoute';
-import './styles/global.css';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Login from './pages/Login.jsx';
+import Register from './pages/Register.jsx';
+import UserDashboard from './pages/UserDashboard.jsx';
+import AdminDashboard from './pages/AdminDashboard.jsx';
+import AdminUserManagementPage from './pages/AdminUserManagementPage.jsx';
+import PersonalDataPage from './pages/PersonalDataPage.jsx';
+import PrivateRoute from './components/PrivateRoute.jsx';
 
 function App() {
     return (
         <Routes>
+            {/* Setze die Root-Route auf Login */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
+
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+
             <Route
                 path="/user"
                 element={
@@ -47,7 +50,8 @@ function App() {
                     </PrivateRoute>
                 }
             />
-            <Route path="*" element={<Login />} />
+            {/* Fallback: Unbekannte Routen führen zu Login */}
+            <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
     );
 }

@@ -1,4 +1,3 @@
-// src/main/java/com/chrono/chrono/utils/JwtUtil.java
 package com.chrono.chrono.utils;
 
 import io.jsonwebtoken.*;
@@ -18,6 +17,10 @@ public class JwtUtil {
 
     @Value("${jwt.secret}")
     private String SECRET_KEY;
+
+    // Falls Du die Expiration nutzen möchtest:
+    @Value("${jwt.expiration}")
+    private long expirationMillis;
 
     private SecretKey getSigningKey() {
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
@@ -68,7 +71,8 @@ public class JwtUtil {
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10))
+                // Verwende hier expirationMillis statt der fest kodierten Zeit:
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

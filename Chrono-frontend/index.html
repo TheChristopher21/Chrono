@@ -2,10 +2,22 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <!-- Für responsives Design -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Chrono Frontend</title>
+  <link rel="stylesheet" href="/src/styles/global.css" />
+  <!-- CSP anpassen, um Verbindungen zum Backend zu erlauben -->
+  <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'self' 'unsafe-inline';
+      style-src 'self' 'unsafe-inline';
+      img-src 'self' data:;
+      connect-src 'self' http://localhost:8080;
+    ">
 </head>
 <body>
 <div id="root"></div>
+<noscript>You need to enable JavaScript to run this app.</noscript>
 <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
