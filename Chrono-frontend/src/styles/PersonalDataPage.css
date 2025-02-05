@@ -1,19 +1,47 @@
-/* src/styles/PersonalDataPage.css */
-@import 'global.css';
-
-.personal-data-page {
+/* PersonalDataPage.css */
+.personal-data-container {
     max-width: 600px;
     margin: 2rem auto;
-    padding: 1rem;
+    padding: 2rem;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+}
+
+.personal-data-container h3 {
+    color: #2a5d9f;
+    margin-bottom: 1.5rem;
 }
 
 .form-personal {
-    background: var(--background-color);
-    padding: 1rem;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
 }
 
-.form-personal .form-group {
-    margin-bottom: 1rem;
+.form-group label {
+    font-weight: 500;
+    margin-bottom: 0.25rem;
+}
+
+.form-group input {
+    padding: 0.75rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.form-personal button {
+    padding: 0.75rem;
+    background-color: #2a5d9f;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: background 0.3s;
+}
+
+.form-personal button:hover {
+    background-color: #1e4477;
 }

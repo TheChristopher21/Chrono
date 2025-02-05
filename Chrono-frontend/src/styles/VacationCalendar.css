@@ -1,87 +1,34 @@
-/* src/styles/VacationCalendar.css */
-
-/* Container des Kalenders */
+/* VacationCalendar.css */
 .vacation-calendar {
-    max-width: 400px;
     margin: 1rem auto;
-    background: #ffffff;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    padding: 1rem;
+    max-width: 400px;
 }
 
-/* Grundstil für das React Calendar-Element */
+/* Überschreibe Standardstile aus react-calendar */
 .react-calendar {
-    width: 100%;
-    background: #ffffff; /* heller Hintergrund */
-    border: none;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    line-height: 1.125em;
-    color: #2c3e50;  /* dunkle Schriftfarbe für bessere Lesbarkeit */
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
-/* Navigation (Monatswechsel) */
-.react-calendar__navigation {
-    display: flex;
-    justify-content: space-between;
-    margin-bottom: 0.5rem;
-}
-
-.react-calendar__navigation button {
-    background: none;
-    border: none;
-    color: #2c3e50;
-    font-size: 1rem;
-    cursor: pointer;
-    padding: 0.5rem;
-    border-radius: 4px;
-    transition: background-color 0.3s ease;
-}
-
-.react-calendar__navigation button:enabled:hover,
-.react-calendar__navigation button:enabled:focus {
-    background-color: #dce1e3;
-}
-
-/* Wochenüberschriften */
-.react-calendar__month-view__weekdays {
-    text-align: center;
-    text-transform: uppercase;
-    font-size: 0.75rem;
-    font-weight: bold;
-    color: #7f8c8d;
-    margin-bottom: 0.25rem;
-}
-
-/* Einzelne Tage (Tiles) */
 .react-calendar__tile {
-    max-width: 100%;
-    padding: 0.5rem;
+    max-width: initial !important;
+    padding: 0.75em 0.5em;
     background: none;
-    text-align: center;
     border: none;
-    cursor: pointer;
-    transition: background-color 0.3s ease, border-radius 0.3s ease;
-    color: #2c3e50;  /* Setzt die Schriftfarbe für die Tage auf dunkel */
+    color: #333;
 }
 
-/* Aktueller Tag */
-.react-calendar__tile--now {
-    background: #dff0d8;
+.react-calendar__tile--active {
+    background: #2a5d9f;
+    color: #fff;
     border-radius: 50%;
 }
 
-/* Hover-Effekt für Tage */
-.react-calendar__tile:hover {
-    background: #e1e8ed;
-    border-radius: 50%;
-}
-
-/* Markierung von Urlaubstagen */
 .vacation-day {
-    background: #3498db !important;
-    color: white !important;
-    border-radius: 50% !important;
-    font-weight: bold;
+    background: #a1c4fd !important;
+    color: #1e4477 !important;
+    border-radius: 50%;
 }

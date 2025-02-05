@@ -1,69 +1,96 @@
-/* src/styles/AdminDashboard.css */
-@import './global.css';
-
+/* AdminDashboard.css */
 .admin-dashboard {
-    max-width: 1200px;
-    margin: 2rem auto;
-    padding: 1rem;
+    padding: 1rem 2rem;
+    background-color: #f9fafb;
 }
 
 .dashboard-header {
-    background-color: var(--primary-color);
-    color: #fff;
-    padding: 1rem;
-    border-radius: 8px;
-    text-align: center;
-    margin-bottom: 1rem;
-}
-
-.user-groups, .vacation-groups {
-    margin-top: 1rem;
-}
-
-.user-group, .vacation-group {
-    border: 1px solid var(--border-color);
-    border-radius: 4px;
-    margin-bottom: 1rem;
-    background: var(--background-color);
-}
-
-.user-group-header, .vacation-group-header {
     display: flex;
-    justify-content: space-between;
+    flex-direction: column;
     align-items: center;
-    background: var(--neutral-color);
-    padding: 0.5rem;
-    cursor: pointer;
+    padding: 1rem 0;
+    border-bottom: 1px solid #e0e0e0;
+    margin-bottom: 1rem;
 }
 
-.user-group ul, .vacation-group ul {
-    list-style: none;
-    padding: 0.5rem;
+.dashboard-header h2 {
+    color: #2a5d9f;
     margin: 0;
 }
 
+.dashboard-header p {
+    margin: 0.5rem 0;
+    color: #555;
+}
+
+.admin-password {
+    margin-top: 0.5rem;
+}
+
+.admin-password input {
+    padding: 0.5rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.time-tracking-section, .vacation-section, .correction-section {
+    margin-bottom: 2rem;
+}
+
+.time-tracking-section h3,
+.vacation-section h3,
+.correction-section h3 {
+    color: #2a5d9f;
+    margin-bottom: 1rem;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+.track-item, .vacation-item {
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+}
+
+.track-item button, .vacation-item button {
+    padding: 0.5rem 1rem;
+    background-color: #2a5d9f;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+}
+
+.track-item button:hover, .vacation-item button:hover {
+    background-color: #1e4477;
+}
+
+/* Modal Styles */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.5);
+    background-color: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
+    z-index: 1000;
 }
 
 .modal-content {
-    background: var(--background-color);
-    padding: 2rem;
+    background-color: #ffffff;
+    padding: 1.5rem;
     border-radius: 8px;
     width: 90%;
     max-width: 500px;
-}
-
-.modal-buttons {
-    margin-top: 1rem;
-    display: flex;
-    justify-content: space-between;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
