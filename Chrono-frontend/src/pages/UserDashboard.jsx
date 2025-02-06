@@ -1,4 +1,3 @@
-// src/pages/UserDashboard.jsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
@@ -6,10 +5,6 @@ import Navbar from '../components/Navbar';
 import VacationCalendar from '../components/VacationCalendar';
 import '../styles/UserDashboard.css';
 
-const EXPECTED_WORK_HOURS = 8; // 8 Stunden pro Tag
-const THRESHOLD_MINUTES = 10;   // Toleranz in Minuten
-
-// Gruppiert Time‑Tracking‑Einträge nach Datum
 const groupEntriesByDate = (entries) => {
     return entries.reduce((acc, entry) => {
         const dateStr = new Date(entry.startTime).toLocaleDateString();
@@ -21,7 +16,6 @@ const groupEntriesByDate = (entries) => {
     }, {});
 };
 
-// Gruppiert Vacation Requests nach Woche (Beispiel: anhand des Startdatums)
 const groupVacationsByWeek = (vacations) => {
     return vacations.reduce((acc, vac) => {
         const weekKey = new Date(vac.startDate).toLocaleDateString();
@@ -45,8 +39,8 @@ const UserDashboard = () => {
     });
     const [expandedDates, setExpandedDates] = useState({});
     const [expandedVacationWeeks, setExpandedVacationWeeks] = useState({});
+    const [expectedWorkHours, setExpectedWorkHours] = useState(8);
 
-    // Lädt die Time-Tracking-Daten
     const fetchTimeHistory = async () => {
         try {
             const res = await api.get(`/api/timetracking/history?username=${currentUser.username}`);
@@ -57,7 +51,6 @@ const UserDashboard = () => {
         }
     };
 
-    // Lädt die Vacation Requests des Users
     const fetchVacationRequests = async () => {
         try {
             const res = await api.get('/api/vacation/my');
@@ -67,10 +60,22 @@ const UserDashboard = () => {
         }
     };
 
+    const fetchWorkConfig = async () => {
+        try {
+            const res = await api.get(`/api/admin/users/getWorkConfig/${currentUser.id}`);
+            if (res.data.dailyWorkHours) {
+                setExpectedWorkHours(res.data.dailyWorkHours);
+            }
+        } catch (err) {
+            console.error("Error fetching work config", err);
+        }
+    };
+
     useEffect(() => {
         if (currentUser) {
             fetchTimeHistory();
             fetchVacationRequests();
+            fetchWorkConfig();
         }
     }, [currentUser]);
 
@@ -108,7 +113,6 @@ const UserDashboard = () => {
         setExpandedDates(prev => ({ ...prev, [dateStr]: !prev[dateStr] }));
     };
 
-    // Öffnet oder schließt das Correction-Modal
     const toggleCorrectionModal = () => {
         setCorrectionModalVisible(!correctionModalVisible);
     };
@@ -170,10 +174,12 @@ const UserDashboard = () => {
 
     const getWorkTimeIndicator = (totalMinutes) => {
         if (totalMinutes === null) return null;
-        const expectedMinutes = EXPECTED_WORK_HOURS * 60;
+        const expectedMinutes = expectedWorkHours * 60;
         const diff = totalMinutes - expectedMinutes;
-        if (Math.abs(diff) < THRESHOLD_MINUTES) return null;
-        return diff > 0 ? { type: 'over', value: `+${Math.round(diff)} min` } : { type: 'under', value: `${Math.round(-diff)} min` };
+        if (Math.abs(diff) < 10) return null;
+        return diff > 0
+            ? { type: 'over', value: `+${Math.round(diff)} min` }
+            : { type: 'under', value: `${Math.round(-diff)} min` };
     };
 
     const groupedVacations = groupVacationsByWeek(vacationRequests);
@@ -185,9 +191,9 @@ const UserDashboard = () => {
                 <h2>User Dashboard</h2>
                 <div className="personal-info">
                     <p><strong>Username:</strong> {currentUser?.username}</p>
+                    <p><strong>Expected Work Hours:</strong> {expectedWorkHours}h</p>
                 </div>
             </header>
-
             <section className="time-tracking-section">
                 <h3>Time Tracking</h3>
                 <div className="tracking-buttons">
@@ -222,9 +228,9 @@ const UserDashboard = () => {
                                                 ))}
                                                 {indicator && (
                                                     <li className="work-indicator-container">
-                            <span className={`work-indicator ${indicator.type}`}>
-                              {indicator.value}
-                            </span>
+                                                        <span className={`work-indicator ${indicator.type}`}>
+                                                            {indicator.value}
+                                                        </span>
                                                     </li>
                                                 )}
                                             </ul>
@@ -236,7 +242,6 @@ const UserDashboard = () => {
                     )}
                 </div>
             </section>
-
             <section className="vacation-section">
                 <h3>Vacation Request</h3>
                 <form onSubmit={handleVacationSubmit} className="form-vacation">
@@ -245,7 +250,7 @@ const UserDashboard = () => {
                         <input
                             type="date"
                             name="startDate"
-                            value={vacationForm.startDate || ''}
+                            value={vacationForm.startDate}
                             onChange={(e) => setVacationForm({ ...vacationForm, startDate: e.target.value })}
                             required
                         />
@@ -255,7 +260,7 @@ const UserDashboard = () => {
                         <input
                             type="date"
                             name="endDate"
-                            value={vacationForm.endDate || ''}
+                            value={vacationForm.endDate}
                             onChange={(e) => setVacationForm({ ...vacationForm, endDate: e.target.value })}
                             required
                         />
@@ -283,8 +288,8 @@ const UserDashboard = () => {
                                                     <span className="entry-label">To:</span> {vac.endDate}<br />
                                                     <span className="entry-label">Status:</span>{' '}
                                                     <span className={`status-badge ${vac.approved ? 'approved' : vac.denied ? 'denied' : 'pending'}`}>
-                            {vac.approved ? 'Approved' : vac.denied ? 'Denied' : 'Pending'}
-                          </span>
+                                                        {vac.approved ? 'Approved' : vac.denied ? 'Denied' : 'Pending'}
+                                                    </span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -298,8 +303,6 @@ const UserDashboard = () => {
                     <VacationCalendar vacationRequests={vacationRequests.filter(vac => vac.approved)} />
                 </div>
             </section>
-
-            {/* Correction Request Modal */}
             {correctionModalVisible && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -310,7 +313,7 @@ const UserDashboard = () => {
                                 <input
                                     type="datetime-local"
                                     name="desiredStart"
-                                    value={correctionForm.desiredStart || ''}
+                                    value={correctionForm.desiredStart}
                                     onChange={handleCorrectionFormChange}
                                     required
                                 />
@@ -320,7 +323,7 @@ const UserDashboard = () => {
                                 <input
                                     type="datetime-local"
                                     name="desiredEnd"
-                                    value={correctionForm.desiredEnd || ''}
+                                    value={correctionForm.desiredEnd}
                                     onChange={handleCorrectionFormChange}
                                     required
                                 />
@@ -330,7 +333,7 @@ const UserDashboard = () => {
                                 <input
                                     type="text"
                                     name="reason"
-                                    value={correctionForm.reason || ''}
+                                    value={correctionForm.reason}
                                     onChange={handleCorrectionFormChange}
                                     required
                                 />

@@ -1,52 +1,51 @@
-// src/pages/PersonalDataPage.jsx
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
-import Navbar from '../components/Navbar';
-import '../styles/PersonalDataPage.css';
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '../context/AuthContext'
+import api from '../utils/api'
+import Navbar from '../components/Navbar'
+import '../styles/PersonalDataPage.css'
 
 const PersonalDataPage = () => {
-    const { currentUser, setCurrentUser } = useAuth();
+    const { currentUser, setCurrentUser } = useAuth()
     const [personalData, setPersonalData] = useState({
         firstName: currentUser?.firstName || '',
         lastName: currentUser?.lastName || '',
         email: currentUser?.email || ''
-    });
+    })
 
     const fetchPersonalData = async () => {
         try {
-            const res = await api.get('/api/auth/me');
+            const res = await api.get('/api/auth/me')
             setPersonalData({
                 firstName: res.data.firstName,
                 lastName: res.data.lastName,
                 email: res.data.email
-            });
+            })
         } catch (err) {
-            console.error("Error fetching personal data", err);
+            console.error("Error fetching personal data", err)
         }
-    };
+    }
 
     useEffect(() => {
         if (currentUser) {
-            fetchPersonalData();
+            fetchPersonalData()
         }
-    }, [currentUser]);
+    }, [currentUser])
 
     const handlePersonalDataUpdate = async (e) => {
-        e.preventDefault();
+        e.preventDefault()
         try {
             const res = await api.put('/api/user/update', {
                 username: currentUser.username,
                 firstName: personalData.firstName,
                 lastName: personalData.lastName,
                 email: personalData.email
-            });
-            alert("Profile updated");
-            setCurrentUser(res.data);
+            })
+            alert("Profile updated")
+            setCurrentUser(res.data)
         } catch (err) {
-            console.error("Error updating personal data", err);
+            console.error("Error updating personal data", err)
         }
-    };
+    }
 
     return (
         <div className="personal-data-page">
@@ -61,7 +60,7 @@ const PersonalDataPage = () => {
                         <input
                             type="text"
                             name="firstName"
-                            value={personalData.firstName || ''}
+                            value={personalData.firstName}
                             onChange={(e) => setPersonalData({ ...personalData, firstName: e.target.value })}
                             required
                         />
@@ -71,7 +70,7 @@ const PersonalDataPage = () => {
                         <input
                             type="text"
                             name="lastName"
-                            value={personalData.lastName || ''}
+                            value={personalData.lastName}
                             onChange={(e) => setPersonalData({ ...personalData, lastName: e.target.value })}
                             required
                         />
@@ -81,7 +80,7 @@ const PersonalDataPage = () => {
                         <input
                             type="email"
                             name="email"
-                            value={personalData.email || ''}
+                            value={personalData.email}
                             onChange={(e) => setPersonalData({ ...personalData, email: e.target.value })}
                             required
                         />
@@ -90,7 +89,7 @@ const PersonalDataPage = () => {
                 </form>
             </section>
         </div>
-    );
-};
+    )
+}
 
-export default PersonalDataPage;
+export default PersonalDataPage

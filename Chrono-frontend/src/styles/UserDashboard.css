@@ -1,130 +1,238 @@
-/* UserDashboard.css */
+body {
+    font-family: 'Helvetica Neue', Arial, sans-serif;
+    background-color: #f7f7f7;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
 .user-dashboard {
-    padding: 2rem;
-    background-color: #f9fafb;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
 }
 
 .dashboard-header {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 20px;
 }
 
 .dashboard-header h2 {
-    color: #2a5d9f;
+    font-size: 2em;
+    color: #1a237e;
 }
 
-.personal-info {
-    margin-top: 0.5rem;
-    font-size: 1rem;
-    color: #555;
+.personal-info p {
+    font-size: 1em;
+}
+
+.time-tracking-section, .vacation-section {
+    background: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .tracking-buttons {
-    text-align: center;
-    margin-bottom: 1rem;
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
 }
 
 .tracking-buttons button {
-    padding: 0.75rem 1.5rem;
-    margin: 0 0.5rem;
-    background-color: #2a5d9f;
+    flex: 1;
+    padding: 10px;
+    background-color: #1a237e;
     color: #fff;
     border: none;
     border-radius: 4px;
-    font-size: 1rem;
-    transition: background 0.3s;
+    cursor: pointer;
+    transition: background-color 0.3s;
 }
 
 .tracking-buttons button:hover {
-    background-color: #1e4477;
-}
-
-.date-groups {
-    margin-top: 1rem;
+    background-color: #303f9f;
 }
 
 .date-group {
-    margin-bottom: 1rem;
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
-    padding: 0.75rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    margin-bottom: 10px;
 }
 
 .date-group-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    background-color: #e8eaf6;
+    padding: 10px;
+    border-radius: 4px;
     cursor: pointer;
 }
 
 .date-group-header h5 {
     margin: 0;
-    color: #2a5d9f;
+    color: #1a237e;
+}
+
+.date-group-header button {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
 }
 
 .track-item {
-    margin-bottom: 0.5rem;
-    padding: 0.5rem;
+    padding: 8px;
     border-bottom: 1px solid #eee;
 }
 
-.work-indicator-container {
-    margin-top: 0.5rem;
-    text-align: right;
+.work-indicator {
+    font-weight: bold;
+    display: inline-block;
+    margin-top: 5px;
 }
 
 .work-indicator.over {
-    color: green;
-    font-weight: bold;
+    color: #2e7d32;
 }
 
 .work-indicator.under {
-    color: red;
-    font-weight: bold;
-}
-
-.form-vacation {
-    margin-top: 1rem;
-    background-color: #ffffff;
-    padding: 1rem;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
+    color: #c62828;
 }
 
 .form-vacation .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: 15px;
 }
 
 .form-vacation label {
     display: block;
-    margin-bottom: 0.25rem;
-    font-weight: 500;
-    color: #333;
+    margin-bottom: 5px;
+    color: #555;
 }
 
 .form-vacation input {
     width: 100%;
-    padding: 0.5rem;
+    padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
 
 .form-vacation button {
-    padding: 0.75rem 1.5rem;
-    background-color: #2a5d9f;
+    padding: 10px 20px;
+    background-color: #1a237e;
     color: #fff;
     border: none;
     border-radius: 4px;
-    transition: background 0.3s;
+    cursor: pointer;
 }
 
-.form-vacation button:hover {
-    background-color: #1e4477;
+.vacation-week-group {
+    margin-bottom: 10px;
 }
 
-/* Vacation Calendar Section */
-.calendar-section {
-    margin-top: 2rem;
+.vacation-week-header {
+    display: flex;
+    justify-content: space-between;
+    background-color: #e8eaf6;
+    padding: 10px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.vacation-week-header h5 {
+    margin: 0;
+    color: #1a237e;
+}
+
+.vacation-week-header button {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+}
+
+.status-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.9em;
+}
+
+.status-badge.approved {
+    background-color: #2e7d32;
+    color: #fff;
+}
+
+.status-badge.denied {
+    background-color: #c62828;
+    color: #fff;
+}
+
+.status-badge.pending {
+    background-color: #fbc02d;
+    color: #fff;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    width: 90%;
+    max-width: 500px;
+    border-radius: 6px;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    color: #1a237e;
+}
+
+.form-correction .form-group {
+    margin-bottom: 15px;
+}
+
+.form-correction label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.form-correction input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.modal-buttons button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.modal-buttons button:first-of-type {
+    background-color: #1a237e;
+    color: #fff;
+}
+
+.modal-buttons button:last-of-type {
+    background-color: #ccc;
+    color: #333;
 }

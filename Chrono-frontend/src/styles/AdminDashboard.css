@@ -1,96 +1,167 @@
-/* AdminDashboard.css */
 .admin-dashboard {
-    padding: 1rem 2rem;
-    background-color: #f9fafb;
+    max-width: 1200px;
+    margin: 20px auto;
+    padding: 20px;
 }
 
 .dashboard-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 1rem 0;
-    border-bottom: 1px solid #e0e0e0;
-    margin-bottom: 1rem;
+    text-align: center;
+    margin-bottom: 20px;
 }
 
 .dashboard-header h2 {
-    color: #2a5d9f;
-    margin: 0;
+    color: #1a237e;
 }
 
 .dashboard-header p {
-    margin: 0.5rem 0;
-    color: #555;
+    font-size: 1.1em;
 }
 
 .admin-password {
-    margin-top: 0.5rem;
+    margin-top: 10px;
+}
+
+.admin-password label {
+    margin-right: 10px;
+    color: #555;
 }
 
 .admin-password input {
-    padding: 0.5rem;
+    padding: 8px;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
 
 .time-tracking-section, .vacation-section, .correction-section {
-    margin-bottom: 2rem;
+    background: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
-.time-tracking-section h3,
-.vacation-section h3,
-.correction-section h3 {
-    color: #2a5d9f;
-    margin-bottom: 1rem;
+.user-groups, .vacation-groups {
+    margin-top: 15px;
 }
 
-ul {
-    list-style: none;
-    padding: 0;
+.user-group, .vacation-group {
+    margin-bottom: 15px;
 }
 
-.track-item, .vacation-item {
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0;
+.user-group-header, .vacation-group-header {
+    display: flex;
+    justify-content: space-between;
+    background-color: #e8eaf6;
+    padding: 10px;
     border-radius: 4px;
-    padding: 0.75rem;
-    margin-bottom: 0.75rem;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.03);
+    cursor: pointer;
 }
 
-.track-item button, .vacation-item button {
-    padding: 0.5rem 1rem;
-    background-color: #2a5d9f;
-    color: #fff;
+.user-group-header h4, .vacation-group-header h4 {
+    margin: 0;
+    color: #1a237e;
+}
+
+.user-group-header button, .vacation-group-header button {
+    background: none;
+    border: none;
+    font-size: 1.2em;
+    cursor: pointer;
+}
+
+.entry-label {
+    font-weight: bold;
+    color: #555;
+}
+
+.actions {
+    margin-top: 10px;
+}
+
+.actions button {
+    padding: 6px 12px;
+    margin-right: 5px;
     border: none;
     border-radius: 4px;
-    font-size: 0.9rem;
-    transition: background 0.3s;
+    cursor: pointer;
 }
 
-.track-item button:hover, .vacation-item button:hover {
-    background-color: #1e4477;
+.actions button:first-of-type {
+    background-color: #1a237e;
+    color: #fff;
 }
 
-/* Modal Styles */
+.actions button:last-of-type {
+    background-color: #c62828;
+    color: #fff;
+}
+
+.calendar-section {
+    margin-top: 20px;
+}
+
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.5);
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     z-index: 1000;
 }
 
 .modal-content {
-    background-color: #ffffff;
-    padding: 1.5rem;
-    border-radius: 8px;
+    background: #fff;
+    padding: 20px;
     width: 90%;
     max-width: 500px;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    border-radius: 6px;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    color: #1a237e;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    color: #555;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.modal-buttons button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.modal-buttons button:first-of-type {
+    background-color: #1a237e;
+    color: #fff;
+}
+
+.modal-buttons button:last-of-type {
+    background-color: #ccc;
+    color: #333;
 }

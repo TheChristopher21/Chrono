@@ -14,6 +14,7 @@ public class TimeTrackingController {
     @Autowired
     private TimeTrackingService timeTrackingService;
 
+
     @PostMapping("/punch-in")
     public TimeTrackingResponse punchIn(@RequestParam String username) {
         return timeTrackingService.punchIn(username);

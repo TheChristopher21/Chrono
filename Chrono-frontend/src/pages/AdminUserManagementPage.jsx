@@ -1,4 +1,3 @@
-// src/pages/AdminUserManagementPage.jsx
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
@@ -12,14 +11,16 @@ const AdminUserManagementPage = () => {
         lastName: '',
         email: '',
         password: '',
-        role: 'ROLE_USER'
+        role: 'ROLE_USER',
+        expectedWorkDays: '',
+        dailyWorkHours: '',
+        breakDuration: ''
     });
     const [editingUser, setEditingUser] = useState(null);
 
     const fetchUsers = async () => {
         try {
             const res = await api.get('/api/admin/users');
-            // Stelle sicher, dass res.data ein Array ist
             setUsers(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
             console.error("Error fetching users", err);
@@ -40,7 +41,10 @@ const AdminUserManagementPage = () => {
                 lastName: '',
                 email: '',
                 password: '',
-                role: 'ROLE_USER'
+                role: 'ROLE_USER',
+                expectedWorkDays: '',
+                dailyWorkHours: '',
+                breakDuration: ''
             });
             fetchUsers();
         } catch (err) {
@@ -49,7 +53,6 @@ const AdminUserManagementPage = () => {
     };
 
     const handleEditUser = (user) => {
-        // Beim Editieren wird nur die erste Rolle angezeigt (als Single-Choice)
         setEditingUser(user);
     };
 
@@ -90,6 +93,9 @@ const AdminUserManagementPage = () => {
                             <th>Name</th>
                             <th>Email</th>
                             <th>Role</th>
+                            <th>Expected Work Days</th>
+                            <th>Daily Work Hours</th>
+                            <th>Break Duration</th>
                             <th>Actions</th>
                         </tr>
                         </thead>
@@ -100,6 +106,9 @@ const AdminUserManagementPage = () => {
                                 <td>{user.firstName} {user.lastName}</td>
                                 <td>{user.email}</td>
                                 <td>{user.roles && user.roles.length > 0 ? user.roles[0] : 'ROLE_USER'}</td>
+                                <td>{user.expectedWorkDays || '-'}</td>
+                                <td>{user.dailyWorkHours || '-'}</td>
+                                <td>{user.breakDuration || '-'}</td>
                                 <td>
                                     <button onClick={() => handleEditUser(user)}>Edit</button>
                                     <button onClick={() => handleDeleteUser(user.id)}>Delete</button>
@@ -143,7 +152,6 @@ const AdminUserManagementPage = () => {
                                 onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
                                 required
                             />
-                            {/* Nur eine Auswahl: entweder ROLE_USER oder ROLE_ADMIN */}
                             <div className="form-group">
                                 <label>Role:</label>
                                 <select
@@ -153,6 +161,34 @@ const AdminUserManagementPage = () => {
                                     <option value="ROLE_USER">User</option>
                                     <option value="ROLE_ADMIN">Admin</option>
                                 </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Expected Work Days:</label>
+                                <input
+                                    type="number"
+                                    placeholder="Expected Work Days"
+                                    value={editingUser.expectedWorkDays || ''}
+                                    onChange={(e) => setEditingUser({ ...editingUser, expectedWorkDays: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Daily Work Hours:</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    placeholder="Daily Work Hours"
+                                    value={editingUser.dailyWorkHours || ''}
+                                    onChange={(e) => setEditingUser({ ...editingUser, dailyWorkHours: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Break Duration (min):</label>
+                                <input
+                                    type="number"
+                                    placeholder="Break Duration"
+                                    value={editingUser.breakDuration || ''}
+                                    onChange={(e) => setEditingUser({ ...editingUser, breakDuration: e.target.value })}
+                                />
                             </div>
                             <button type="submit">Update User</button>
                             <button type="button" onClick={() => setEditingUser(null)}>Cancel</button>
@@ -206,6 +242,34 @@ const AdminUserManagementPage = () => {
                                     <option value="ROLE_USER">User</option>
                                     <option value="ROLE_ADMIN">Admin</option>
                                 </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Expected Work Days:</label>
+                                <input
+                                    type="number"
+                                    placeholder="Expected Work Days"
+                                    value={newUser.expectedWorkDays || ''}
+                                    onChange={(e) => setNewUser({ ...newUser, expectedWorkDays: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Daily Work Hours:</label>
+                                <input
+                                    type="number"
+                                    step="0.1"
+                                    placeholder="Daily Work Hours"
+                                    value={newUser.dailyWorkHours || ''}
+                                    onChange={(e) => setNewUser({ ...newUser, dailyWorkHours: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Break Duration (min):</label>
+                                <input
+                                    type="number"
+                                    placeholder="Break Duration"
+                                    value={newUser.breakDuration || ''}
+                                    onChange={(e) => setNewUser({ ...newUser, breakDuration: e.target.value })}
+                                />
                             </div>
                             <button type="submit">Add User</button>
                         </form>

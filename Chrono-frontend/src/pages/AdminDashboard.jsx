@@ -1,104 +1,101 @@
-// src/pages/AdminDashboard.jsx
-import React, { useState, useEffect } from 'react';
-import api from '../utils/api';
-import Navbar from '../components/Navbar';
-import VacationCalendar from '../components/VacationCalendar';
-import '../styles/AdminDashboard.css';
-import { useAuth } from '../context/AuthContext';
+import React, { useState, useEffect } from 'react'
+import api from '../utils/api'
+import Navbar from '../components/Navbar'
+import VacationCalendar from '../components/VacationCalendar'
+import '../styles/AdminDashboard.css'
+import { useAuth } from '../context/AuthContext'
 
 const AdminDashboard = () => {
-    const { currentUser } = useAuth();
-    const [timeTracks, setTimeTracks] = useState([]);
-    const [vacationRequests, setVacationRequests] = useState([]);
-    const [correctionRequests, setCorrectionRequests] = useState([]);
-    const [adminPassword, setAdminPassword] = useState('');
-    const [expandedUserTimes, setExpandedUserTimes] = useState({});
-    const [expandedUserVacations, setExpandedUserVacations] = useState({});
-    const [editingTrack, setEditingTrack] = useState(null);
+    const { currentUser } = useAuth()
+    const [timeTracks, setTimeTracks] = useState([])
+    const [vacationRequests, setVacationRequests] = useState([])
+    const [correctionRequests, setCorrectionRequests] = useState([])
+    const [adminPassword, setAdminPassword] = useState('')
+    const [expandedUserTimes, setExpandedUserTimes] = useState({})
+    const [expandedUserVacations, setExpandedUserVacations] = useState({})
+    const [editingTrack, setEditingTrack] = useState(null)
     const [editForm, setEditForm] = useState({
         newStart: '',
         newEnd: '',
         adminPassword: '',
         userPassword: ''
-    });
+    })
 
     const fetchTimeTracks = async () => {
         try {
-            const res = await api.get('/api/admin/timetracking/all');
-            setTimeTracks(Array.isArray(res.data) ? res.data : []);
+            const res = await api.get('/api/admin/timetracking/all')
+            setTimeTracks(Array.isArray(res.data) ? res.data : [])
         } catch (err) {
-            console.error("Error fetching time tracks", err);
+            console.error("Error fetching time tracks", err)
         }
-    };
+    }
 
     const fetchVacationRequests = async () => {
         try {
-            const res = await api.get('/api/vacation/all');
-            setVacationRequests(Array.isArray(res.data) ? res.data : []);
+            const res = await api.get('/api/vacation/all')
+            setVacationRequests(Array.isArray(res.data) ? res.data : [])
         } catch (err) {
-            console.error("Error fetching vacation requests", err);
+            console.error("Error fetching vacation requests", err)
         }
-    };
+    }
 
     const fetchCorrectionRequests = async () => {
         try {
-            const res = await api.get('/api/correction/open');
-            setCorrectionRequests(Array.isArray(res.data) ? res.data : []);
+            const res = await api.get('/api/correction/open')
+            setCorrectionRequests(Array.isArray(res.data) ? res.data : [])
         } catch (err) {
-            console.error("Error fetching correction requests", err);
+            console.error("Error fetching correction requests", err)
         }
-    };
+    }
 
     useEffect(() => {
-        fetchTimeTracks();
-        fetchVacationRequests();
-        fetchCorrectionRequests();
-    }, []);
+        fetchTimeTracks()
+        fetchVacationRequests()
+        fetchCorrectionRequests()
+    }, [])
 
-    // Gruppiere Time Tracks nach Benutzer
     const userTimeGroups = timeTracks.reduce((acc, track) => {
-        const username = track.username;
-        if (!acc[username]) acc[username] = [];
-        acc[username].push(track);
-        return acc;
-    }, {});
+        const username = track.username
+        if (!acc[username]) acc[username] = []
+        acc[username].push(track)
+        return acc
+    }, {})
 
-    // Gruppiere Vacation Requests nach Benutzer
     const userVacationGroups = vacationRequests.reduce((acc, vac) => {
-        const username = vac.username;
-        if (!acc[username]) acc[username] = [];
-        acc[username].push(vac);
-        return acc;
-    }, {});
+        const username = vac.username
+        if (!acc[username]) acc[username] = []
+        acc[username].push(vac)
+        return acc
+    }, {})
 
     const toggleUserTimes = (username) => {
-        setExpandedUserTimes(prev => ({ ...prev, [username]: !prev[username] }));
-    };
+        setExpandedUserTimes(prev => ({ ...prev, [username]: !prev[username] }))
+    }
 
     const toggleUserVacations = (username) => {
-        setExpandedUserVacations(prev => ({ ...prev, [username]: !prev[username] }));
-    };
+        setExpandedUserVacations(prev => ({ ...prev, [username]: !prev[username] }))
+    }
 
     const handleEditClick = (track) => {
-        setEditingTrack(track);
+        setEditingTrack(track)
         const formatForInput = (dateStr) => {
-            const date = new Date(dateStr);
-            return date.toISOString().substring(0, 16);
-        };
+            const date = new Date(dateStr)
+            return date.toISOString().substring(0, 16)
+        }
         setEditForm({
             newStart: formatForInput(track.startTime),
             newEnd: track.endTime ? formatForInput(track.endTime) : '',
             adminPassword: '',
             userPassword: ''
-        });
-    };
+        })
+    }
 
     const handleEditFormChange = (e) => {
-        setEditForm({ ...editForm, [e.target.name]: e.target.value });
-    };
+        setEditForm({ ...editForm, [e.target.name]: e.target.value })
+    }
 
     const handleEditSubmit = async (e) => {
-        e.preventDefault();
+        e.preventDefault()
         try {
             await api.put(`/api/admin/timetracking/${editingTrack.id}`, null, {
                 params: {
@@ -107,62 +104,62 @@ const AdminDashboard = () => {
                     adminPassword: editForm.adminPassword,
                     userPassword: editForm.userPassword
                 }
-            });
-            setEditingTrack(null);
-            fetchTimeTracks();
+            })
+            setEditingTrack(null)
+            fetchTimeTracks()
         } catch (err) {
-            console.error("Error updating time track", err);
+            console.error("Error updating time track", err)
         }
-    };
+    }
 
     const closeEditModal = () => {
-        setEditingTrack(null);
-    };
+        setEditingTrack(null)
+    }
 
     const handleApproveCorrection = async (id) => {
         if (!adminPassword) {
-            alert("Please enter your admin password");
-            return;
+            alert("Please enter your admin password")
+            return
         }
         try {
-            await api.post(`/api/correction/approve/${id}`, null, { params: { adminPassword } });
-            fetchCorrectionRequests();
-            fetchTimeTracks();
+            await api.post(`/api/correction/approve/${id}`, null, { params: { adminPassword } })
+            fetchCorrectionRequests()
+            fetchTimeTracks()
         } catch (err) {
-            console.error("Error approving correction", err);
+            console.error("Error approving correction", err)
         }
-    };
+    }
 
     const handleDenyCorrection = async (id) => {
         try {
-            await api.post(`/api/correction/deny/${id}`);
-            fetchCorrectionRequests();
+            await api.post(`/api/correction/deny/${id}`)
+            fetchCorrectionRequests()
         } catch (err) {
-            console.error("Error denying correction", err);
+            console.error("Error denying correction", err)
         }
-    };
+    }
 
     const handleApproveVacation = async (id) => {
         if (!adminPassword) {
-            alert("Please enter your admin password");
-            return;
+            alert("Please enter your admin password")
+            return
         }
         try {
-            await api.post(`/api/vacation/approve/${id}`, null, { params: { adminPassword } });
-            fetchVacationRequests();
+            await api.post(`/api/vacation/approve/${id}`, null, { params: { adminPassword } })
+            fetchVacationRequests()
         } catch (err) {
-            console.error("Error approving vacation", err);
+            console.error("Error approving vacation", err)
         }
-    };
+    }
 
     const handleDenyVacation = async (id) => {
         try {
-            await api.post(`/api/vacation/deny/${id}`);
-            fetchVacationRequests();
+            await api.post(`/api/vacation/deny/${id}`)
+            fetchVacationRequests()
         } catch (err) {
-            console.error("Error denying vacation", err);
+            console.error("Error denying vacation", err)
         }
-    };
+    }
 
     return (
         <div className="admin-dashboard">
@@ -174,12 +171,11 @@ const AdminDashboard = () => {
                     <label>Admin Password:</label>
                     <input
                         type="password"
-                        value={adminPassword || ''}
+                        value={adminPassword}
                         onChange={(e) => setAdminPassword(e.target.value)}
                     />
                 </div>
             </header>
-
             <section className="time-tracking-section">
                 <h3>Time Tracking Overview</h3>
                 {Object.keys(userTimeGroups).length === 0 ? (
@@ -209,7 +205,6 @@ const AdminDashboard = () => {
                     </div>
                 )}
             </section>
-
             <section className="vacation-section">
                 <h3>Vacation Requests by User</h3>
                 {Object.keys(userVacationGroups).length === 0 ? (
@@ -249,7 +244,6 @@ const AdminDashboard = () => {
                     <VacationCalendar vacationRequests={vacationRequests.filter(vac => vac.approved)} />
                 </div>
             </section>
-
             <section className="correction-section">
                 <h3>Open Correction Requests</h3>
                 {correctionRequests.length === 0 ? (
@@ -273,8 +267,6 @@ const AdminDashboard = () => {
                     </ul>
                 )}
             </section>
-
-            {/* Modal for editing time track */}
             {editingTrack && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -329,7 +321,7 @@ const AdminDashboard = () => {
                 </div>
             )}
         </div>
-    );
-};
+    )
+}
 
-export default AdminDashboard;
+export default AdminDashboard

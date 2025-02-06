@@ -1,33 +1,31 @@
-// src/pages/Login.jsx
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import '../styles/Login.css';
+import React, { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import '../styles/Login.css'
 
 const Login = () => {
-    const navigate = useNavigate();
-    const { login } = useAuth();
-    const [form, setForm] = useState({ username: '', password: '' });
-    const [error, setError] = useState('');
+    const navigate = useNavigate()
+    const { login } = useAuth()
+    const [form, setForm] = useState({ username: '', password: '' })
+    const [error, setError] = useState('')
 
     const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
+        setForm({ ...form, [e.target.name]: e.target.value })
+    }
 
     const handleSubmit = async (e) => {
-        e.preventDefault();
-        const res = await login(form.username, form.password);
+        e.preventDefault()
+        const res = await login(form.username, form.password)
         if (res.success) {
-            // Entscheide anhand der Rollen: Falls der User ROLE_ADMIN hat, leite zu /admin weiter
             if (res.user.roles && res.user.roles.includes("ROLE_ADMIN")) {
-                navigate('/admin');
+                navigate('/admin')
             } else {
-                navigate('/user');
+                navigate('/user')
             }
         } else {
-            setError("Login failed. Please check your credentials.");
+            setError("Login failed. Please check your credentials.")
         }
-    };
+    }
 
     return (
         <div className="login-container card">
@@ -53,7 +51,7 @@ const Login = () => {
                 <button type="submit">Login</button>
             </form>
         </div>
-    );
-};
+    )
+}
 
-export default Login;
+export default Login

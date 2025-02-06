@@ -1,12 +1,11 @@
-// src/components/Navbar.jsx
-import React from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import '../styles/Navbar.css';
+import React from 'react'
+import { Link } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
+import '../styles/Navbar.css'
 
 const Navbar = () => {
-    const { authToken, logout, currentUser } = useAuth();
-    const isAdmin = currentUser?.roles?.includes('ROLE_ADMIN');
+    const { authToken, logout, currentUser } = useAuth()
+    const isAdmin = currentUser?.roles?.includes('ROLE_ADMIN')
 
     return (
         <nav className="navbar">
@@ -40,7 +39,7 @@ const Navbar = () => {
                 )}
             </ul>
         </nav>
-    );
-};
+    )
+}
 
-export default Navbar;
+export default Navbar
