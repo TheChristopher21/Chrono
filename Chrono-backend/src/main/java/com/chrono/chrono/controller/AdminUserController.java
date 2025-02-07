@@ -1,6 +1,7 @@
-// src/main/java/com/chrono/chrono/controller/AdminUserController.java
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.dto.WorkConfigDTO;
+import com.chrono.chrono.dto.UserDTO;
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.RoleRepository;
@@ -11,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -26,7 +28,7 @@ public class AdminUserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // GET all users – mapping to DTOs (ohne Passwort)
+    // GET all users – zurückgeben als DTO (ohne Passwort, dafür mit WorkConfig)
     @GetMapping
     public List<UserDTO> getAllUsers() {
         List<User> users = userRepository.findAll();
@@ -36,30 +38,61 @@ public class AdminUserController {
                 user.getFirstName(),
                 user.getLastName(),
                 user.getEmail(),
-                user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList())
+                user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList()),
+                user.getExpectedWorkDays(),
+                user.getDailyWorkHours(),
+                user.getBreakDuration()
         )).collect(Collectors.toList());
     }
 
-    // POST – Neuen User hinzufügen
+    // GET – Arbeitszeitkonfiguration eines Benutzers abrufen
+    @GetMapping("/getWorkConfig/{userId}")
+    public ResponseEntity<?> getWorkConfig(@PathVariable Long userId) {
+        Optional<User> optUser = userRepository.findById(userId);
+        if (optUser.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+        User user = optUser.get();
+        WorkConfigDTO config = new WorkConfigDTO();
+        config.setExpectedWorkDays(user.getExpectedWorkDays());
+        config.setDailyWorkHours(user.getDailyWorkHours());
+        config.setBreakDuration(user.getBreakDuration());
+        return ResponseEntity.ok(config);
+    }
+
+    // PUT – Arbeitszeitkonfiguration aktualisieren
+    @PutMapping("/updateWorkConfig/{userId}")
+    public ResponseEntity<?> updateWorkConfig(@PathVariable Long userId, @RequestBody WorkConfigDTO config) {
+        Optional<User> optUser = userRepository.findById(userId);
+        if (optUser.isEmpty()) {
+            return ResponseEntity.badRequest().body("User not found");
+        }
+        User user = optUser.get();
+        user.setExpectedWorkDays(config.getExpectedWorkDays());
+        user.setDailyWorkHours(config.getDailyWorkHours());
+        user.setBreakDuration(config.getBreakDuration());
+        userRepository.save(user);
+        return ResponseEntity.ok("Work configuration updated");
+    }
+
+    // POST – Benutzer hinzufügen
     @PostMapping
     public ResponseEntity<?> addUser(@RequestBody User user) {
-        if(userRepository.findByUsername(user.getUsername()).isPresent()){
+        if (userRepository.findByUsername(user.getUsername()).isPresent()) {
             return ResponseEntity.badRequest().body("Username already exists");
         }
-        // Passwort muss vorhanden sein und wird gehasht
-        if(user.getPassword() != null && !user.getPassword().isEmpty()){
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             user.setPassword(passwordEncoder.encode(user.getPassword()));
         } else {
             return ResponseEntity.badRequest().body("Password is required");
         }
-        // Wenn keine Rolle gesetzt ist, wird standardmäßig ROLE_USER verwendet
-        if(user.getRoles() == null || user.getRoles().isEmpty()){
+        // Standardmäßig ROLE_USER setzen, falls keine Rolle angegeben wurde
+        if (user.getRoles() == null || user.getRoles().isEmpty()) {
             Role role = roleRepository.findByRoleName("ROLE_USER")
                     .orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
             user.getRoles().add(role);
         } else {
-            // Falls Rollen gesetzt sind, nutze nur die erste (Einzelauswahl)
-            // Lösche alle und setze nur den ersten
+            // Nur den ersten Rollennamen übernehmen
             List<Role> roles = user.getRoles().stream().toList();
             user.getRoles().clear();
             Role role = roleRepository.findByRoleName(roles.get(0).getRoleName())
@@ -73,11 +106,14 @@ public class AdminUserController {
                 saved.getFirstName(),
                 saved.getLastName(),
                 saved.getEmail(),
-                saved.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList())
+                saved.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList()),
+                saved.getExpectedWorkDays(),
+                saved.getDailyWorkHours(),
+                saved.getBreakDuration()
         ));
     }
 
-    // PUT – User aktualisieren
+    // PUT – Benutzer aktualisieren
     @PutMapping
     public ResponseEntity<?> updateUser(@RequestBody User user) {
         User existing = userRepository.findById(user.getId())
@@ -86,18 +122,25 @@ public class AdminUserController {
         existing.setFirstName(user.getFirstName());
         existing.setLastName(user.getLastName());
         existing.setEmail(user.getEmail());
-        // Passwort nur aktualisieren, wenn ein neuer Wert angegeben wurde
-        if(user.getPassword() != null && !user.getPassword().isEmpty()){
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             existing.setPassword(passwordEncoder.encode(user.getPassword()));
         }
-        // Aktualisiere die Rolle – erwarte, dass nur eine Rolle (als String) angegeben wird
-        if(user.getRoles() != null && !user.getRoles().isEmpty()){
+        if (user.getRoles() != null && !user.getRoles().isEmpty()) {
             existing.getRoles().clear();
-            // Nehme den ersten Rollennamen aus der Liste
             String roleName = user.getRoles().iterator().next().getRoleName();
             Role role = roleRepository.findByRoleName(roleName)
                     .orElseGet(() -> roleRepository.save(new Role(roleName)));
             existing.getRoles().add(role);
+        }
+        // Arbeitszeit-Konfiguration aktualisieren (falls vorhanden)
+        if (user.getExpectedWorkDays() != null) {
+            existing.setExpectedWorkDays(user.getExpectedWorkDays());
+        }
+        if (user.getDailyWorkHours() != null) {
+            existing.setDailyWorkHours(user.getDailyWorkHours());
+        }
+        if (user.getBreakDuration() != null) {
+            existing.setBreakDuration(user.getBreakDuration());
         }
         User updated = userRepository.save(existing);
         return ResponseEntity.ok(new UserDTO(
@@ -106,21 +149,24 @@ public class AdminUserController {
                 updated.getFirstName(),
                 updated.getLastName(),
                 updated.getEmail(),
-                updated.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList())
+                updated.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList()),
+                updated.getExpectedWorkDays(),
+                updated.getDailyWorkHours(),
+                updated.getBreakDuration()
         ));
     }
 
-    // DELETE – User löschen
+    // DELETE – Benutzer löschen
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
-        if(!userRepository.existsById(id)){
+        if (!userRepository.existsById(id)) {
             return ResponseEntity.badRequest().body("User not found");
         }
         userRepository.deleteById(id);
         return ResponseEntity.ok("User deleted successfully");
     }
 
-    // DTO-Klasse, um User-Daten ohne Passwort zurückzugeben
+    // DTO-Klasse, um User-Daten ohne Passwort zurückzugeben (inklusive WorkConfig)
     public static class UserDTO {
         private Long id;
         private String username;
@@ -128,14 +174,21 @@ public class AdminUserController {
         private String lastName;
         private String email;
         private List<String> roles;
+        private Integer expectedWorkDays;
+        private Double dailyWorkHours;
+        private Integer breakDuration;
 
-        public UserDTO(Long id, String username, String firstName, String lastName, String email, List<String> roles) {
+        public UserDTO(Long id, String username, String firstName, String lastName, String email, List<String> roles,
+                       Integer expectedWorkDays, Double dailyWorkHours, Integer breakDuration) {
             this.id = id;
             this.username = username;
             this.firstName = firstName;
             this.lastName = lastName;
             this.email = email;
             this.roles = roles;
+            this.expectedWorkDays = expectedWorkDays;
+            this.dailyWorkHours = dailyWorkHours;
+            this.breakDuration = breakDuration;
         }
 
         // Getter & Setter
@@ -151,5 +204,11 @@ public class AdminUserController {
         public void setEmail(String email) { this.email = email; }
         public List<String> getRoles() { return roles; }
         public void setRoles(List<String> roles) { this.roles = roles; }
+        public Integer getExpectedWorkDays() { return expectedWorkDays; }
+        public void setExpectedWorkDays(Integer expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }
+        public Double getDailyWorkHours() { return dailyWorkHours; }
+        public void setDailyWorkHours(Double dailyWorkHours) { this.dailyWorkHours = dailyWorkHours; }
+        public Integer getBreakDuration() { return breakDuration; }
+        public void setBreakDuration(Integer breakDuration) { this.breakDuration = breakDuration; }
     }
 }

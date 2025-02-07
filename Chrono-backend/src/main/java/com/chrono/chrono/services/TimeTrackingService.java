@@ -1,4 +1,3 @@
-// src/main/java/com/chrono/chrono/services/TimeTrackingService.java
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.AdminTimeTrackDTO;
@@ -9,7 +8,6 @@ import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.TimeTrackingRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -17,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 
 @Service
 public class TimeTrackingService {
@@ -27,47 +26,82 @@ public class TimeTrackingService {
     @Autowired
     private UserRepository userRepository;
 
-    // Für das Einstempeln (Punch In)
-    public TimeTrackingResponse punchIn(String username) {
+
+    public TimeTrackingResponse handlePunch(String username, String newStatus) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found for time tracking"));
 
-        // Prüfe, ob bereits ein aktiver Eintrag (ohne Endzeit) existiert
-        Optional<TimeTracking> activePunch = timeTrackingRepository.findFirstByUserAndEndTimeIsNullOrderByStartTimeDesc(user);
-        if (activePunch.isPresent()) {
-            throw new RuntimeException("Already punched in. Please punch out first.");
+        // Letzten Eintrag suchen, der noch nicht beendet (endTime == null)
+        Optional<TimeTracking> activePunchOpt = timeTrackingRepository
+                .findFirstByUserAndEndTimeIsNullOrderByStartTimeDesc(user);
+        TimeTracking activePunch = activePunchOpt.orElse(null);
+
+        // Außerdem den allerletzten Eintrag (auch wenn endTime != null) um den punchOrder zu kennen.
+        TimeTracking lastFinished = timeTrackingRepository.findTopByUserOrderByIdDesc(user).orElse(null);
+        Integer lastPunchOrder = (activePunch != null)
+                ? activePunch.getPunchOrder()
+                : (lastFinished != null ? lastFinished.getPunchOrder() : null);
+
+        // Prüfen, ob der Übergang erlaubt ist
+        if (!isTransitionAllowed(lastPunchOrder, newStatus)) {
+            throw new RuntimeException("Transition not allowed from punchOrder=" + lastPunchOrder + " to " + newStatus);
         }
 
-        // Ermittle die Anzahl der heutigen Einträge (zur Bestimmung der Punch-Reihenfolge)
-        List<TimeTracking> todaysEntries = timeTrackingRepository.findByUserOrderByStartTimeAsc(user)
-                .stream()
-                .filter(tt -> tt.getStartTime().toLocalDate().equals(LocalDate.now()))
-                .collect(Collectors.toList());
-        int count = todaysEntries.size();
+        // Den aktiven Eintrag schließen (endTime setzen), wenn vorhanden
+        if (activePunch != null) {
+            activePunch.setEndTime(LocalDateTime.now());
+            timeTrackingRepository.save(activePunch);
+        }
 
+        // Neuen Eintrag anlegen (punchOrder je nach Status)
+        int nextOrder = mapStatusToPunchOrder(newStatus);
+        TimeTracking newEntry = createNewPunch(user, nextOrder);
+
+        return convertToResponse(newEntry);
+    }
+
+
+    private boolean isTransitionAllowed(Integer lastPunchOrder, String newStatus) {
+        switch (newStatus) {
+            case "WORK_START":
+                // Erlaubt, wenn noch gar nichts da oder der letzte PunchOrder = 4 (Work End)
+                return lastPunchOrder == null || lastPunchOrder == 4;
+            case "BREAK_START":
+                // Erlaubt, wenn letzter PunchOrder = 1 (Work Start)
+                return lastPunchOrder != null && lastPunchOrder == 1;
+            case "BREAK_END":
+                // Erlaubt, wenn letzter PunchOrder = 2 (Break Start)
+                return lastPunchOrder != null && lastPunchOrder == 2;
+            case "WORK_END":
+                // Erlaubt, wenn letzter PunchOrder = 1 (Work Start) oder 3 (Break End)
+                return lastPunchOrder != null && (lastPunchOrder == 1 || lastPunchOrder == 3);
+            default:
+                return false;
+        }
+    }
+
+
+    private int mapStatusToPunchOrder(String newStatus) {
+        switch (newStatus) {
+            case "WORK_START":  return 1;
+            case "BREAK_START": return 2;
+            case "BREAK_END":   return 3;
+            case "WORK_END":    return 4;
+            default:            return 0; // "Unknown"
+        }
+    }
+
+
+    private TimeTracking createNewPunch(User user, int punchOrder) {
         TimeTracking tt = new TimeTracking();
-        tt.setStartTime(LocalDateTime.now());
-        tt.setPunchOrder(count + 1);
-        tt.setCorrected(false);
         tt.setUser(user);
-
+        tt.setPunchOrder(punchOrder);
+        tt.setStartTime(LocalDateTime.now());
+        tt.setCorrected(false);
         TimeTracking saved = timeTrackingRepository.save(tt);
-        return convertToResponse(saved);
+        return saved;
     }
 
-    // Für das Ausstempeln (Punch Out)
-    public TimeTrackingResponse punchOut(String username) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found for time tracking"));
-
-        // Suche den aktuell aktiven Eintrag (ohne Endzeit)
-        TimeTracking activePunch = timeTrackingRepository.findFirstByUserAndEndTimeIsNullOrderByStartTimeDesc(user)
-                .orElseThrow(() -> new RuntimeException("No active punch found. Please punch in first."));
-        activePunch.setEndTime(LocalDateTime.now());
-
-        TimeTracking saved = timeTrackingRepository.save(activePunch);
-        return convertToResponse(saved);
-    }
 
     public List<TimeTrackingResponse> getUserHistory(String username) {
         User user = userRepository.findByUsername(username)
@@ -75,6 +109,7 @@ public class TimeTrackingService {
         List<TimeTracking> list = timeTrackingRepository.findByUserOrderByStartTimeDesc(user);
         return list.stream().map(this::convertToResponse).collect(Collectors.toList());
     }
+
 
     public List<AdminTimeTrackDTO> getAllTimeTracksWithUser() {
         List<TimeTracking> all = timeTrackingRepository.findAllWithUser();
@@ -89,24 +124,17 @@ public class TimeTrackingService {
                 .collect(Collectors.toList());
     }
 
-    public AdminTimeTrackDTO updateTimeTrackEntry(Long id, LocalDateTime newStart, LocalDateTime newEnd,
-                                                  String adminPassword, String userPassword, String adminUsername) {
+
+    public AdminTimeTrackDTO updateTimeTrackEntry(Long id,
+                                                  LocalDateTime newStart,
+                                                  LocalDateTime newEnd,
+                                                  String adminPassword,
+                                                  String userPassword,
+                                                  String adminUsername) {
         TimeTracking tt = timeTrackingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Time tracking entry not found"));
 
-        // Prüfe Admin-Passwort:
-        User admin = userRepository.findByUsername(adminUsername)
-                .orElseThrow(() -> new RuntimeException("Admin user not found"));
-        // Hier wird vorausgesetzt, dass ein PasswordEncoder verwendet wird, um Passwörter zu prüfen.
-        // (Dieser Code setzt voraus, dass das Passwort bereits gehasht vorliegt.)
-        // Falls du den PasswordEncoder nicht injizierst, musst du das anpassen.
-        // Beispiel: if (!passwordEncoder.matches(adminPassword, admin.getPassword())) { ... }
-
-        // Prüfe das Passwort des betroffenen Users:
-        User affectedUser = tt.getUser();
-        // if (!passwordEncoder.matches(userPassword, affectedUser.getPassword())) { ... }
-
-        // Aktualisiere die Zeiten:
+        // Passwörter prüfen, falls nötig, ausgelassen:
         tt.setStartTime(newStart);
         tt.setEndTime(newEnd);
         TimeTracking updated = timeTrackingRepository.save(tt);
@@ -120,13 +148,15 @@ public class TimeTrackingService {
         );
     }
 
+
     private TimeTrackingResponse convertToResponse(TimeTracking tt) {
+        // punchOrder -> Text
         String color;
         switch (tt.getPunchOrder()) {
-            case 1: color = "Work Start"; break;
-            case 2: color = "Break Start"; break;
-            case 3: color = "Break End"; break;
-            case 4: color = "Work End"; break;
+            case 1:  color = "Work Start";  break;
+            case 2:  color = "Break Start"; break;
+            case 3:  color = "Break End";   break;
+            case 4:  color = "Work End";    break;
             default: color = "Unknown";
         }
         return new TimeTrackingResponse(

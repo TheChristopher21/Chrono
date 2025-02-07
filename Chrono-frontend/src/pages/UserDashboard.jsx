@@ -5,6 +5,9 @@ import Navbar from '../components/Navbar';
 import VacationCalendar from '../components/VacationCalendar';
 import '../styles/UserDashboard.css';
 
+/**
+ * Gruppiert Einträge nach Datum
+ */
 const groupEntriesByDate = (entries) => {
     return entries.reduce((acc, entry) => {
         const dateStr = new Date(entry.startTime).toLocaleDateString();
@@ -16,6 +19,9 @@ const groupEntriesByDate = (entries) => {
     }, {});
 };
 
+/**
+ * Gruppiert Urlaubseinträge nach "Woche"
+ */
 const groupVacationsByWeek = (vacations) => {
     return vacations.reduce((acc, vac) => {
         const weekKey = new Date(vac.startDate).toLocaleDateString();
@@ -27,92 +33,103 @@ const groupVacationsByWeek = (vacations) => {
 
 const UserDashboard = () => {
     const { currentUser } = useAuth();
-    const [timeHistory, setTimeHistory] = useState([]);
+
+    // Statt timeHistory nutzen wir direkt groupedEntries
     const [groupedEntries, setGroupedEntries] = useState({});
+
+    // Vacation
     const [vacationForm, setVacationForm] = useState({ startDate: '', endDate: '' });
     const [vacationRequests, setVacationRequests] = useState([]);
+
+    // Correction (Modal)
     const [correctionModalVisible, setCorrectionModalVisible] = useState(false);
     const [correctionForm, setCorrectionForm] = useState({
         desiredStart: '',
         desiredEnd: '',
         reason: ''
     });
+
+    // Expand states
     const [expandedDates, setExpandedDates] = useState({});
     const [expandedVacationWeeks, setExpandedVacationWeeks] = useState({});
-    const [expectedWorkHours, setExpectedWorkHours] = useState(8);
 
+    // Harte Annahme, z.B. 8h (kein dynamisches WorkConfig)
+    const [expectedWorkHours] = useState(8);
+
+    // 1) Time History laden
     const fetchTimeHistory = async () => {
+        if (!currentUser || !currentUser.username) return;
         try {
             const res = await api.get(`/api/timetracking/history?username=${currentUser.username}`);
-            setTimeHistory(res.data);
+            // Wir setzen nur groupedEntries, kein "timeHistory" mehr.
             setGroupedEntries(groupEntriesByDate(res.data));
         } catch (err) {
-            console.error("Error fetching time history", err);
+            console.error('Error fetching time history', err);
         }
     };
 
+    // 2) Vacation Requests laden
     const fetchVacationRequests = async () => {
         try {
             const res = await api.get('/api/vacation/my');
             setVacationRequests(res.data);
         } catch (err) {
-            console.error("Error fetching vacation requests", err);
+            console.error('Error fetching vacation requests', err);
         }
     };
 
-    const fetchWorkConfig = async () => {
-        try {
-            const res = await api.get(`/api/admin/users/getWorkConfig/${currentUser.id}`);
-            if (res.data.dailyWorkHours) {
-                setExpectedWorkHours(res.data.dailyWorkHours);
-            }
-        } catch (err) {
-            console.error("Error fetching work config", err);
-        }
-    };
-
+    // useEffect: Sobald currentUser da ist, lade timeHistory & vacations
     useEffect(() => {
         if (currentUser) {
             fetchTimeHistory();
             fetchVacationRequests();
-            fetchWorkConfig();
         }
     }, [currentUser]);
 
-    const hasActivePunch = () => {
-        return timeHistory.some(entry => !entry.endTime);
-    };
-
-    const handlePunchIn = async () => {
-        if (hasActivePunch()) {
-            alert("You have already punched in. Please punch out first.");
-            return;
-        }
+    /*
+     * Vier Methoden für das 4-Schritte-Einstempeln
+     */
+    const handleWorkStart = async () => {
         try {
-            await api.post(`/api/timetracking/punch-in?username=${currentUser.username}`);
-            await fetchTimeHistory();
+            await api.post(`/api/timetracking/work-start?username=${currentUser.username}`);
+            fetchTimeHistory();
         } catch (err) {
-            console.error("Error punching in", err);
+            console.error("Error in Work Start", err);
+            alert(err.response?.data?.message || "Work Start failed");
         }
     };
 
-    const handlePunchOut = async () => {
-        if (!hasActivePunch()) {
-            alert("You are not punched in.");
-            return;
-        }
+    const handleBreakStart = async () => {
         try {
-            await api.post(`/api/timetracking/punch-out?username=${currentUser.username}`);
-            await fetchTimeHistory();
+            await api.post(`/api/timetracking/break-start?username=${currentUser.username}`);
+            fetchTimeHistory();
         } catch (err) {
-            console.error("Error punching out", err);
+            console.error("Error in Break Start", err);
+            alert(err.response?.data?.message || "Break Start failed");
         }
     };
 
-    const toggleDateGroup = (dateStr) => {
-        setExpandedDates(prev => ({ ...prev, [dateStr]: !prev[dateStr] }));
+    const handleBreakEnd = async () => {
+        try {
+            await api.post(`/api/timetracking/break-end?username=${currentUser.username}`);
+            fetchTimeHistory();
+        } catch (err) {
+            console.error("Error in Break End", err);
+            alert(err.response?.data?.message || "Break End failed");
+        }
     };
 
+    const handleWorkEnd = async () => {
+        try {
+            await api.post(`/api/timetracking/work-end?username=${currentUser.username}`);
+            fetchTimeHistory();
+        } catch (err) {
+            console.error("Error in Work End", err);
+            alert(err.response?.data?.message || "Work End failed");
+        }
+    };
+
+    // Correction Modal toggeln
     const toggleCorrectionModal = () => {
         setCorrectionModalVisible(!correctionModalVisible);
     };
@@ -141,6 +158,7 @@ const UserDashboard = () => {
         }
     };
 
+    // Vacation Submit
     const handleVacationSubmit = async (e) => {
         e.preventDefault();
         if (new Date(vacationForm.startDate) > new Date(vacationForm.endDate)) {
@@ -163,30 +181,39 @@ const UserDashboard = () => {
         }
     };
 
+    const toggleDateGroup = (dateStr) => {
+        setExpandedDates(prev => ({ ...prev, [dateStr]: !prev[dateStr] }));
+    };
+
+    // Arbeitszeit berechnen (Start->End)
     const calculateWorkTime = (entries) => {
         if (entries.length < 2) return null;
         const sorted = [...entries].sort((a, b) => a.punchOrder - b.punchOrder);
+
         if (!sorted[0].endTime || !sorted[sorted.length - 1].endTime) return null;
+
         const start = new Date(sorted[0].startTime);
         const end = new Date(sorted[sorted.length - 1].endTime);
-        return (end - start) / 60000; // in Minuten
+        return (end - start) / 60000; // Minuten
     };
 
     const getWorkTimeIndicator = (totalMinutes) => {
         if (totalMinutes === null) return null;
         const expectedMinutes = expectedWorkHours * 60;
         const diff = totalMinutes - expectedMinutes;
-        if (Math.abs(diff) < 10) return null;
+        if (Math.abs(diff) < 10) return null; // 10 Min Toleranz
         return diff > 0
             ? { type: 'over', value: `+${Math.round(diff)} min` }
             : { type: 'under', value: `${Math.round(-diff)} min` };
     };
 
+    // Urlaub gruppieren
     const groupedVacations = groupVacationsByWeek(vacationRequests);
 
     return (
         <div className="user-dashboard">
             <Navbar />
+
             <header className="dashboard-header">
                 <h2>User Dashboard</h2>
                 <div className="personal-info">
@@ -194,13 +221,23 @@ const UserDashboard = () => {
                     <p><strong>Expected Work Hours:</strong> {expectedWorkHours}h</p>
                 </div>
             </header>
+
+            {/* =====================
+          Time Tracking
+         ===================== */}
             <section className="time-tracking-section">
                 <h3>Time Tracking</h3>
                 <div className="tracking-buttons">
-                    <button onClick={handlePunchIn}>Punch In</button>
-                    <button onClick={handlePunchOut}>Punch Out</button>
+                    {/* Nur die 4-Button-Lösung */}
+                    <button onClick={handleWorkStart}>Work Start</button>
+                    <button onClick={handleBreakStart}>Break Start</button>
+                    <button onClick={handleBreakEnd}>Break End</button>
+                    <button onClick={handleWorkEnd}>Work End</button>
+
+                    {/* Correction-Antrag */}
                     <button onClick={toggleCorrectionModal}>Request Correction</button>
                 </div>
+
                 <div className="time-history">
                     <h4>Your Time Entries by Day:</h4>
                     {Object.keys(groupedEntries).length === 0 ? (
@@ -213,7 +250,10 @@ const UserDashboard = () => {
                                 const indicator = getWorkTimeIndicator(totalMinutes);
                                 return (
                                     <div key={dateStr} className="date-group">
-                                        <div className="date-group-header" onClick={() => toggleDateGroup(dateStr)}>
+                                        <div
+                                            className="date-group-header"
+                                            onClick={() => toggleDateGroup(dateStr)}
+                                        >
                                             <h5>{dateStr}</h5>
                                             <button>{expandedDates[dateStr] ? '-' : '+'}</button>
                                         </div>
@@ -221,16 +261,23 @@ const UserDashboard = () => {
                                             <ul>
                                                 {entries.map(entry => (
                                                     <li key={entry.id} className="track-item">
-                                                        <span className="entry-label">Start:</span> {new Date(entry.startTime).toLocaleString()}<br />
-                                                        <span className="entry-label">End:</span> {entry.endTime ? new Date(entry.endTime).toLocaleString() : 'Ongoing'}<br />
-                                                        <span className="entry-label">Status:</span> {entry.color}
+                                                        <span className="entry-label">Start:</span>{' '}
+                                                        {new Date(entry.startTime).toLocaleString()}
+                                                        <br />
+                                                        <span className="entry-label">End:</span>{' '}
+                                                        {entry.endTime
+                                                            ? new Date(entry.endTime).toLocaleString()
+                                                            : 'Ongoing'}
+                                                        <br />
+                                                        <span className="entry-label">Status:</span>{' '}
+                                                        {entry.color}
                                                     </li>
                                                 ))}
                                                 {indicator && (
                                                     <li className="work-indicator-container">
-                                                        <span className={`work-indicator ${indicator.type}`}>
-                                                            {indicator.value}
-                                                        </span>
+                            <span className={`work-indicator ${indicator.type}`}>
+                              {indicator.value}
+                            </span>
                                                     </li>
                                                 )}
                                             </ul>
@@ -242,6 +289,10 @@ const UserDashboard = () => {
                     )}
                 </div>
             </section>
+
+            {/* =====================
+          Vacation
+         ===================== */}
             <section className="vacation-section">
                 <h3>Vacation Request</h3>
                 <form onSubmit={handleVacationSubmit} className="form-vacation">
@@ -251,7 +302,9 @@ const UserDashboard = () => {
                             type="date"
                             name="startDate"
                             value={vacationForm.startDate}
-                            onChange={(e) => setVacationForm({ ...vacationForm, startDate: e.target.value })}
+                            onChange={(e) =>
+                                setVacationForm({ ...vacationForm, startDate: e.target.value })
+                            }
                             required
                         />
                     </div>
@@ -261,35 +314,60 @@ const UserDashboard = () => {
                             type="date"
                             name="endDate"
                             value={vacationForm.endDate}
-                            onChange={(e) => setVacationForm({ ...vacationForm, endDate: e.target.value })}
+                            onChange={(e) =>
+                                setVacationForm({ ...vacationForm, endDate: e.target.value })
+                            }
                             required
                         />
                     </div>
                     <button type="submit">Submit Vacation</button>
                 </form>
+
                 <div className="vacation-history">
                     <h4>Your Vacation Requests (grouped by week):</h4>
                     {vacationRequests.length === 0 ? (
                         <p>No vacation requests found.</p>
                     ) : (
-                        Object.keys(groupedVacations)
+                        Object.keys(groupVacationsByWeek(vacationRequests))
                             .sort()
                             .map(weekKey => (
                                 <div key={weekKey} className="vacation-week-group">
-                                    <div className="vacation-week-header" onClick={() => setExpandedVacationWeeks(prev => ({ ...prev, [weekKey]: !prev[weekKey] }))}>
+                                    <div
+                                        className="vacation-week-header"
+                                        onClick={() =>
+                                            setExpandedVacationWeeks(prev => ({
+                                                ...prev,
+                                                [weekKey]: !prev[weekKey]
+                                            }))
+                                        }
+                                    >
                                         <h5>{weekKey}</h5>
                                         <button>{expandedVacationWeeks[weekKey] ? '-' : '+'}</button>
                                     </div>
                                     {expandedVacationWeeks[weekKey] && (
                                         <ul>
-                                            {groupedVacations[weekKey].map(vac => (
+                                            {groupVacationsByWeek(vacationRequests)[weekKey].map(vac => (
                                                 <li key={vac.id}>
-                                                    <span className="entry-label">From:</span> {vac.startDate}<br />
-                                                    <span className="entry-label">To:</span> {vac.endDate}<br />
+                                                    <span className="entry-label">From:</span> {vac.startDate}
+                                                    <br />
+                                                    <span className="entry-label">To:</span> {vac.endDate}
+                                                    <br />
                                                     <span className="entry-label">Status:</span>{' '}
-                                                    <span className={`status-badge ${vac.approved ? 'approved' : vac.denied ? 'denied' : 'pending'}`}>
-                                                        {vac.approved ? 'Approved' : vac.denied ? 'Denied' : 'Pending'}
-                                                    </span>
+                                                    <span
+                                                        className={`status-badge ${
+                                                            vac.approved
+                                                                ? 'approved'
+                                                                : vac.denied
+                                                                    ? 'denied'
+                                                                    : 'pending'
+                                                        }`}
+                                                    >
+                            {vac.approved
+                                ? 'Approved'
+                                : vac.denied
+                                    ? 'Denied'
+                                    : 'Pending'}
+                          </span>
                                                 </li>
                                             ))}
                                         </ul>
@@ -298,11 +376,16 @@ const UserDashboard = () => {
                             ))
                     )}
                 </div>
+
                 <div className="calendar-section">
                     <h4>Vacation Calendar</h4>
                     <VacationCalendar vacationRequests={vacationRequests.filter(vac => vac.approved)} />
                 </div>
             </section>
+
+            {/* =====================
+          Correction Modal
+         ===================== */}
             {correctionModalVisible && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -340,7 +423,12 @@ const UserDashboard = () => {
                             </div>
                             <div className="modal-buttons">
                                 <button type="submit">Submit Correction Request</button>
-                                <button type="button" onClick={() => setCorrectionModalVisible(false)}>Cancel</button>
+                                <button
+                                    type="button"
+                                    onClick={() => setCorrectionModalVisible(false)}
+                                >
+                                    Cancel
+                                </button>
                             </div>
                         </form>
                     </div>

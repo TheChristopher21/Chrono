@@ -15,15 +15,26 @@ public class TimeTrackingController {
     private TimeTrackingService timeTrackingService;
 
 
-    @PostMapping("/punch-in")
-    public TimeTrackingResponse punchIn(@RequestParam String username) {
-        return timeTrackingService.punchIn(username);
+    @PostMapping("/work-start")
+    public TimeTrackingResponse workStart(@RequestParam String username) {
+        return timeTrackingService.handlePunch(username, "WORK_START");
     }
 
-    @PostMapping("/punch-out")
-    public TimeTrackingResponse punchOut(@RequestParam String username) {
-        return timeTrackingService.punchOut(username);
+    @PostMapping("/break-start")
+    public TimeTrackingResponse breakStart(@RequestParam String username) {
+        return timeTrackingService.handlePunch(username, "BREAK_START");
     }
+
+    @PostMapping("/break-end")
+    public TimeTrackingResponse breakEnd(@RequestParam String username) {
+        return timeTrackingService.handlePunch(username, "BREAK_END");
+    }
+
+    @PostMapping("/work-end")
+    public TimeTrackingResponse workEnd(@RequestParam String username) {
+        return timeTrackingService.handlePunch(username, "WORK_END");
+    }
+
 
     @GetMapping("/history")
     public List<TimeTrackingResponse> getUserHistory(@RequestParam String username) {
