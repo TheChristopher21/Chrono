@@ -1,174 +1,198 @@
-import React, { useState, useEffect } from 'react'
-import api from '../utils/api'
-import Navbar from '../components/Navbar'
-import VacationCalendar from '../components/VacationCalendar'
-import '../styles/AdminDashboard.css'
-import { useAuth } from '../context/AuthContext'
+import React, { useState, useEffect } from 'react';
+import Navbar from '../components/Navbar';
+import api from '../utils/api';
+import VacationCalendar from '../components/VacationCalendar';
+import { useAuth } from '../context/AuthContext';
+import '../styles/AdminDashboard.css';
 
-const AdminDashboard = () => {
-    const { currentUser } = useAuth()
-    const [timeTracks, setTimeTracks] = useState([])
-    const [vacationRequests, setVacationRequests] = useState([])
-    const [correctionRequests, setCorrectionRequests] = useState([])
-    const [adminPassword, setAdminPassword] = useState('')
-    const [expandedUserTimes, setExpandedUserTimes] = useState({})
-    const [expandedUserVacations, setExpandedUserVacations] = useState({})
-    const [editingTrack, setEditingTrack] = useState(null)
+// Hilfsfunktionen (getMondayOfWeek, addDays, etc.)
+
+function getMondayOfWeek(date) {
+    const copy = new Date(date);
+    const day = copy.getDay();
+    const diff = day === 0 ? 6 : day - 1;
+    copy.setDate(copy.getDate() - diff);
+    copy.setHours(0,0,0,0);
+    return copy;
+}
+function addDays(date, days) {
+    const d = new Date(date);
+    d.setDate(d.getDate() + days);
+    return d;
+}
+
+function calcDayMinutes(entries) {
+    if (entries.length < 2) return null;
+    const sorted = [...entries].sort((a,b) => a.punchOrder - b.punchOrder);
+    if (!sorted[0].endTime || !sorted[sorted.length - 1].endTime) return null;
+    const start = new Date(sorted[0].startTime);
+    const end   = new Date(sorted[sorted.length - 1].endTime);
+    return (end - start) / 60000; // in Minuten
+}
+
+function AdminDashboard() {
+    const { currentUser } = useAuth();
+    const [adminPassword, setAdminPassword] = useState('');
+
+    const [allTracks, setAllTracks] = useState([]);
+    const [allVacations, setAllVacations] = useState([]);
+
+    const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
+    const expectedWorkHours = 8;
+
+    // Ausklappen pro User
+    const [expandedUsers, setExpandedUsers] = useState({});
+
+    // Edit Modal
+    const [editingTrack, setEditingTrack] = useState(null);
     const [editForm, setEditForm] = useState({
         newStart: '',
         newEnd: '',
-        adminPassword: '',
         userPassword: ''
-    })
-
-    const fetchTimeTracks = async () => {
-        try {
-            const res = await api.get('/api/admin/timetracking/all')
-            setTimeTracks(Array.isArray(res.data) ? res.data : [])
-        } catch (err) {
-            console.error("Error fetching time tracks", err)
-        }
-    }
-
-    const fetchVacationRequests = async () => {
-        try {
-            const res = await api.get('/api/vacation/all')
-            setVacationRequests(Array.isArray(res.data) ? res.data : [])
-        } catch (err) {
-            console.error("Error fetching vacation requests", err)
-        }
-    }
-
-    const fetchCorrectionRequests = async () => {
-        try {
-            const res = await api.get('/api/correction/open')
-            setCorrectionRequests(Array.isArray(res.data) ? res.data : [])
-        } catch (err) {
-            console.error("Error fetching correction requests", err)
-        }
-    }
+    });
 
     useEffect(() => {
-        fetchTimeTracks()
-        fetchVacationRequests()
-        fetchCorrectionRequests()
-    }, [])
+        fetchAllTracks();
+        fetchAllVacations();
+    }, []);
 
-    const userTimeGroups = timeTracks.reduce((acc, track) => {
-        const username = track.username
-        if (!acc[username]) acc[username] = []
-        acc[username].push(track)
-        return acc
-    }, {})
-
-    const userVacationGroups = vacationRequests.reduce((acc, vac) => {
-        const username = vac.username
-        if (!acc[username]) acc[username] = []
-        acc[username].push(vac)
-        return acc
-    }, {})
-
-    const toggleUserTimes = (username) => {
-        setExpandedUserTimes(prev => ({ ...prev, [username]: !prev[username] }))
-    }
-
-    const toggleUserVacations = (username) => {
-        setExpandedUserVacations(prev => ({ ...prev, [username]: !prev[username] }))
-    }
-
-    const handleEditClick = (track) => {
-        setEditingTrack(track)
-        const formatForInput = (dateStr) => {
-            const date = new Date(dateStr)
-            return date.toISOString().substring(0, 16)
+    async function fetchAllTracks() {
+        try {
+            const res = await api.get('/api/admin/timetracking/all');
+            setAllTracks(res.data || []);
+        } catch (err) {
+            console.error("Fehler beim Laden aller Zeiteinträge", err);
         }
+    }
+    async function fetchAllVacations() {
+        try {
+            const res = await api.get('/api/vacation/all');
+            setAllVacations(res.data || []);
+        } catch (err) {
+            console.error("Fehler beim Laden aller Urlaubsanträge", err);
+        }
+    }
+
+    // Woche
+    function handlePrevWeek() {
+        setSelectedMonday(prev => addDays(prev, -7));
+    }
+    function handleNextWeek() {
+        setSelectedMonday(prev => addDays(prev, +7));
+    }
+    function handleWeekJump(e) {
+        const picked = new Date(e.target.value);
+        if (!isNaN(picked.getTime())) {
+            setSelectedMonday(getMondayOfWeek(picked));
+        }
+    }
+    const weekDates = Array.from({length:7}, (_,i)=> addDays(selectedMonday,i));
+    const weekStrs = weekDates.map(d => d.toLocaleDateString());
+
+    // Filtern
+    const filteredTracks = allTracks.filter(t => {
+        const ds = new Date(t.startTime).toLocaleDateString();
+        return weekStrs.includes(ds);
+    });
+
+    // Gruppieren nach username
+    const userGroups = filteredTracks.reduce((acc, track) => {
+        const uname = track.username;
+        if (!acc[uname]) acc[uname] = [];
+        acc[uname].push(track);
+        return acc;
+    }, {});
+
+    function toggleUserExpand(username) {
+        setExpandedUsers(prev => ({
+            ...prev,
+            [username]: !prev[username]
+        }));
+    }
+
+    // Edit-Funktionen
+    function handleEditClick(track) {
+        setEditingTrack(track);
         setEditForm({
-            newStart: formatForInput(track.startTime),
-            newEnd: track.endTime ? formatForInput(track.endTime) : '',
-            adminPassword: '',
+            newStart: toLocalInputString(track.startTime),
+            newEnd: track.endTime ? toLocalInputString(track.endTime) : '',
             userPassword: ''
-        })
+        });
     }
-
-    const handleEditFormChange = (e) => {
-        setEditForm({ ...editForm, [e.target.name]: e.target.value })
+    function toLocalInputString(dateStr) {
+        const d = new Date(dateStr);
+        return d.toISOString().slice(0,16);
     }
-
-    const handleEditSubmit = async (e) => {
-        e.preventDefault()
+    function handleEditFormChange(e) {
+        setEditForm(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    }
+    async function handleEditSubmit(e) {
+        e.preventDefault();
+        if (!editingTrack) return;
         try {
             await api.put(`/api/admin/timetracking/${editingTrack.id}`, null, {
                 params: {
                     newStart: editForm.newStart,
                     newEnd: editForm.newEnd,
-                    adminPassword: editForm.adminPassword,
+                    adminPassword: adminPassword,
                     userPassword: editForm.userPassword
                 }
-            })
-            setEditingTrack(null)
-            fetchTimeTracks()
+            });
+            setEditingTrack(null);
+            fetchAllTracks();
         } catch (err) {
-            console.error("Error updating time track", err)
+            console.error("Fehler beim Update eines Eintrags", err);
         }
     }
-
-    const closeEditModal = () => {
-        setEditingTrack(null)
+    function closeEditModal() {
+        setEditingTrack(null);
     }
 
-    const handleApproveCorrection = async (id) => {
+    // Urlaubs-Genehmigung
+    async function handleApproveVacation(id) {
         if (!adminPassword) {
-            alert("Please enter your admin password")
-            return
+            alert("Bitte Admin-Passwort eingeben!");
+            return;
         }
         try {
-            await api.post(`/api/correction/approve/${id}`, null, { params: { adminPassword } })
-            fetchCorrectionRequests()
-            fetchTimeTracks()
+            await api.post(`/api/vacation/approve/${id}`, null, { params: { adminPassword } });
+            fetchAllVacations();
         } catch (err) {
-            console.error("Error approving correction", err)
+            console.error("Fehler beim Genehmigen", err);
+        }
+    }
+    async function handleDenyVacation(id) {
+        try {
+            await api.post(`/api/vacation/deny/${id}`);
+            fetchAllVacations();
+        } catch (err) {
+            console.error("Fehler beim Ablehnen", err);
         }
     }
 
-    const handleDenyCorrection = async (id) => {
-        try {
-            await api.post(`/api/correction/deny/${id}`)
-            fetchCorrectionRequests()
-        } catch (err) {
-            console.error("Error denying correction", err)
-        }
+    function calcDiffIndicator(totalMin) {
+        if (totalMin == null) return null;
+        const expected = expectedWorkHours * 60;
+        const diff = totalMin - expected;
+        if (Math.abs(diff) < 10) return null;
+        return diff > 0
+            ? { type:'over', text:`+${diff} Min` }
+            : { type:'under', text:`-${Math.abs(diff)} Min` };
     }
 
-    const handleApproveVacation = async (id) => {
-        if (!adminPassword) {
-            alert("Please enter your admin password")
-            return
-        }
-        try {
-            await api.post(`/api/vacation/approve/${id}`, null, { params: { adminPassword } })
-            fetchVacationRequests()
-        } catch (err) {
-            console.error("Error approving vacation", err)
-        }
-    }
-
-    const handleDenyVacation = async (id) => {
-        try {
-            await api.post(`/api/vacation/deny/${id}`)
-            fetchVacationRequests()
-        } catch (err) {
-            console.error("Error denying vacation", err)
-        }
-    }
+    // Sortierte Urlaubsanträge
+    const sortedVacations = [...allVacations].sort((a,b) =>
+        new Date(a.startDate) - new Date(b.startDate)
+    );
 
     return (
-        <div className="admin-dashboard">
+        <div className="admin-dashboard fancy-bg">
             <Navbar />
             <header className="dashboard-header">
-                <h2>Admin Dashboard</h2>
-                <p>Welcome, {currentUser?.username}</p>
+                <h2>Admin-Dashboard (Wochenansicht)</h2>
+                <p>Angemeldet als: {currentUser?.username}</p>
                 <div className="admin-password">
-                    <label>Admin Password:</label>
+                    <label>Admin-Passwort:</label>
                     <input
                         type="password"
                         value={adminPassword}
@@ -176,104 +200,125 @@ const AdminDashboard = () => {
                     />
                 </div>
             </header>
-            <section className="time-tracking-section">
-                <h3>Time Tracking Overview</h3>
-                {Object.keys(userTimeGroups).length === 0 ? (
-                    <p>No time tracks found.</p>
-                ) : (
-                    <div className="user-groups">
-                        {Object.keys(userTimeGroups).map(username => (
-                            <div key={username} className="user-group">
-                                <div className="user-group-header" onClick={() => toggleUserTimes(username)}>
-                                    <h4>{username}</h4>
-                                    <button>{expandedUserTimes[username] ? '-' : '+'}</button>
-                                </div>
-                                {expandedUserTimes[username] && (
-                                    <ul>
-                                        {userTimeGroups[username].map(track => (
-                                            <li key={track.id}>
-                                                <span className="entry-label">Start:</span> {new Date(track.startTime).toLocaleString()}<br />
-                                                <span className="entry-label">End:</span> {track.endTime ? new Date(track.endTime).toLocaleString() : 'Ongoing'}<br />
-                                                <span className="entry-label">Status:</span> {track.color}<br />
-                                                <button onClick={() => handleEditClick(track)}>Edit</button>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
-            </section>
-            <section className="vacation-section">
-                <h3>Vacation Requests by User</h3>
-                {Object.keys(userVacationGroups).length === 0 ? (
-                    <p>No vacation requests found.</p>
-                ) : (
-                    <div className="vacation-groups">
-                        {Object.keys(userVacationGroups).map(username => (
-                            <div key={username} className="vacation-group">
-                                <div className="vacation-group-header" onClick={() => toggleUserVacations(username)}>
-                                    <h4>{username}</h4>
-                                    <button>{expandedUserVacations[username] ? '-' : '+'}</button>
-                                </div>
-                                {expandedUserVacations[username] && (
-                                    <ul>
-                                        {userVacationGroups[username].map(vac => (
-                                            <li key={vac.id}>
-                                                <span className="entry-label">From:</span> {vac.startDate}<br />
-                                                <span className="entry-label">To:</span> {vac.endDate}<br />
-                                                <span className="entry-label">Status:</span>{' '}
-                                                <span className={`status-badge ${vac.approved ? 'approved' : vac.denied ? 'denied' : 'pending'}`}>
-                          {vac.approved ? 'Approved' : vac.denied ? 'Denied' : 'Pending'}
-                        </span>
-                                                <div className="actions">
-                                                    <button onClick={() => handleApproveVacation(vac.id)}>Approve</button>
-                                                    <button onClick={() => handleDenyVacation(vac.id)}>Deny</button>
-                                                </div>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-                )}
-                <div className="calendar-section">
-                    <h4>Vacation Calendar</h4>
-                    <VacationCalendar vacationRequests={vacationRequests.filter(vac => vac.approved)} />
+
+            <section className="week-section">
+                <h3>Zeiterfassung - aktuelle Woche</h3>
+                <div className="week-navigation">
+                    <button onClick={handlePrevWeek}>← Vorherige Woche</button>
+                    <input
+                        type="date"
+                        onChange={handleWeekJump}
+                        value={selectedMonday.toISOString().slice(0,10)}
+                    />
+                    <button onClick={handleNextWeek}>Nächste Woche →</button>
                 </div>
-            </section>
-            <section className="correction-section">
-                <h3>Open Correction Requests</h3>
-                {correctionRequests.length === 0 ? (
-                    <p>No correction requests found.</p>
+
+                {Object.keys(userGroups).length === 0 ? (
+                    <p>Keine Einträge in dieser Woche</p>
                 ) : (
-                    <ul>
-                        {correctionRequests.map(req => (
-                            <li key={req.id}>
-                                <span className="entry-label">User:</span> {req.username}<br />
-                                <span className="entry-label">Original Start:</span> {req.originalStart ? new Date(req.originalStart).toLocaleString() : 'N/A'}<br />
-                                <span className="entry-label">Original End:</span> {req.originalEnd ? new Date(req.originalEnd).toLocaleString() : 'N/A'}<br />
-                                <span className="entry-label">Desired Start:</span> {new Date(req.desiredStart).toLocaleString()}<br />
-                                <span className="entry-label">Desired End:</span> {new Date(req.desiredEnd).toLocaleString()}<br />
-                                <span className="entry-label">Reason:</span> {req.reason}<br />
-                                <div className="actions">
-                                    <button onClick={() => handleApproveCorrection(req.id)}>Approve</button>
-                                    <button onClick={() => handleDenyCorrection(req.id)}>Deny</button>
+                    <div className="admin-user-groups">
+                        {Object.keys(userGroups).map(username => {
+                            const userEntries = userGroups[username];
+                            // Pro Tag gruppieren
+                            const dayMap = {};
+                            for (let t of userEntries) {
+                                const ds = new Date(t.startTime).toLocaleDateString();
+                                if (!dayMap[ds]) dayMap[ds] = [];
+                                dayMap[ds].push(t);
+                            }
+
+                            // Ausklappen je user
+                            const isExpanded = !!expandedUsers[username];
+
+                            return (
+                                <div key={username} className="admin-user-block">
+                                    <div className="admin-user-header" onClick={() => toggleUserExpand(username)}>
+                                        <h4>{username}</h4>
+                                        <button>{isExpanded ? '–' : '+'}</button>
+                                    </div>
+                                    {isExpanded && (
+                                        <div className="admin-week-display">
+                                            {weekDates.map((wd, i) => {
+                                                const ds = wd.toLocaleDateString();
+                                                const dayEntries = dayMap[ds] || [];
+                                                const totalMin = calcDayMinutes(dayEntries);
+                                                const diffInd = calcDiffIndicator(totalMin);
+
+                                                return (
+                                                    <div key={i} className="admin-day-card">
+                                                        <div className="admin-day-card-header">
+                                                            <strong>{wd.toLocaleDateString('de-DE',{weekday:'long'})}, {ds}</strong>
+                                                            {diffInd && (
+                                                                <span className={`indicator ${diffInd.type}`}>
+                                  {diffInd.text}
+                                </span>
+                                                            )}
+                                                        </div>
+                                                        {dayEntries.length === 0 ? (
+                                                            <p className="no-entries">Keine Einträge</p>
+                                                        ) : (
+                                                            <ul>
+                                                                {dayEntries.map(tr => (
+                                                                    <li key={tr.id}>
+                                                                        <span className="entry-label">Status:</span> {tr.color} <br/>
+                                                                        <span className="entry-label">Start:</span> {new Date(tr.startTime).toLocaleString()} <br/>
+                                                                        <span className="entry-label">Ende:</span> {tr.endTime ? new Date(tr.endTime).toLocaleString() : 'laufend'} <br/>
+                                                                        <button onClick={() => handleEditClick(tr)}>Bearbeiten</button>
+                                                                    </li>
+                                                                ))}
+                                                            </ul>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </section>
+
+            <section className="vacation-section">
+                <h3>Urlaubsanträge (alle Benutzer)</h3>
+                {sortedVacations.length === 0 ? (
+                    <p>Keine Urlaubsanträge gefunden</p>
+                ) : (
+                    <ul className="vacation-list">
+                        {sortedVacations.map(v => (
+                            <li key={v.id} className="vacation-item">
+                                <strong>{v.username}</strong>: {v.startDate} - {v.endDate}{' '}
+                                {v.approved ? (
+                                    <span className="approved">Genehmigt</span>
+                                ) : v.denied ? (
+                                    <span className="denied">Abgelehnt</span>
+                                ) : (
+                                    <span className="pending">Offen</span>
+                                )}
+                                {!v.approved && !v.denied && (
+                                    <span>
+                    <button onClick={() => handleApproveVacation(v.id)}>Genehmigen</button>
+                    <button onClick={() => handleDenyVacation(v.id)}>Ablehnen</button>
+                  </span>
+                                )}
                             </li>
                         ))}
                     </ul>
                 )}
+                <div className="calendar-section">
+                    <h4>Urlaubskalender</h4>
+                    <VacationCalendar vacationRequests={sortedVacations.filter(v => v.approved)} />
+                </div>
             </section>
+
             {editingTrack && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h3>Edit Time Track</h3>
+                        <h3>Zeit-Eintrag bearbeiten</h3>
                         <form onSubmit={handleEditSubmit}>
                             <div className="form-group">
-                                <label>New Start Time:</label>
+                                <label>Neuer Start:</label>
                                 <input
                                     type="datetime-local"
                                     name="newStart"
@@ -283,7 +328,7 @@ const AdminDashboard = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>New End Time:</label>
+                                <label>Neues Ende:</label>
                                 <input
                                     type="datetime-local"
                                     name="newEnd"
@@ -293,17 +338,7 @@ const AdminDashboard = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Admin Password:</label>
-                                <input
-                                    type="password"
-                                    name="adminPassword"
-                                    value={editForm.adminPassword}
-                                    onChange={handleEditFormChange}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>User Password:</label>
+                                <label>User-Passwort:</label>
                                 <input
                                     type="password"
                                     name="userPassword"
@@ -312,16 +347,17 @@ const AdminDashboard = () => {
                                     required
                                 />
                             </div>
+                            <p><em>Das Admin-Passwort hast du oben eingegeben.</em></p>
                             <div className="modal-buttons">
-                                <button type="submit">Save Changes</button>
-                                <button type="button" onClick={closeEditModal}>Cancel</button>
+                                <button type="submit">Speichern</button>
+                                <button type="button" onClick={closeEditModal}>Abbrechen</button>
                             </div>
                         </form>
                     </div>
                 </div>
             )}
         </div>
-    )
+    );
 }
 
-export default AdminDashboard
+export default AdminDashboard;

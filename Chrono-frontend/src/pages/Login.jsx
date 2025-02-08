@@ -1,31 +1,32 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext'
-import '../styles/Login.css'
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import '../styles/Login.css';
 
 const Login = () => {
-    const navigate = useNavigate()
-    const { login } = useAuth()
-    const [form, setForm] = useState({ username: '', password: '' })
-    const [error, setError] = useState('')
+    const navigate = useNavigate();
+    const { login } = useAuth();
+
+    const [form, setForm] = useState({ username: '', password: '' });
+    const [error, setError] = useState('');
 
     const handleChange = (e) => {
-        setForm({ ...form, [e.target.name]: e.target.value })
-    }
+        setForm({ ...form, [e.target.name]: e.target.value });
+    };
 
     const handleSubmit = async (e) => {
-        e.preventDefault()
-        const res = await login(form.username, form.password)
+        e.preventDefault();
+        const res = await login(form.username, form.password);
         if (res.success) {
-            if (res.user.roles && res.user.roles.includes("ROLE_ADMIN")) {
-                navigate('/admin')
+            if (res.user.roles && res.user.roles.includes('ROLE_ADMIN')) {
+                navigate('/admin');
             } else {
-                navigate('/user')
+                navigate('/user');
             }
         } else {
-            setError("Login failed. Please check your credentials.")
+            setError('Login fehlgeschlagen. Bitte Zugangsdaten prüfen.');
         }
-    }
+    };
 
     return (
         <div className="login-container card">
@@ -37,7 +38,7 @@ const Login = () => {
                     name="username"
                     value={form.username}
                     onChange={handleChange}
-                    placeholder="Username"
+                    placeholder="Benutzername"
                     required
                 />
                 <input
@@ -45,13 +46,13 @@ const Login = () => {
                     name="password"
                     value={form.password}
                     onChange={handleChange}
-                    placeholder="Password"
+                    placeholder="Passwort"
                     required
                 />
-                <button type="submit">Login</button>
+                <button type="submit">Einloggen</button>
             </form>
         </div>
-    )
-}
+    );
+};
 
-export default Login
+export default Login;

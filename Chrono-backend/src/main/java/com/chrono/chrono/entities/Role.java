@@ -12,27 +12,14 @@ public class Role {
 
     private String roleName;
 
-    public Role() {
-    }
-
+    public Role() {}
     public Role(String roleName) {
         this.roleName = roleName;
     }
 
-    // Getter und Setter
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public String getRoleName() {
-        return roleName;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setRoleName(String roleName) {
-        this.roleName = roleName;
-    }
+    public String getRoleName() { return roleName; }
+    public void setRoleName(String roleName) { this.roleName = roleName; }
 }

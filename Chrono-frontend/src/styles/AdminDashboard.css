@@ -1,167 +1,197 @@
+/* ============== ADMINDASHBOARD.CSS ============== */
+
 .admin-dashboard {
     max-width: 1200px;
-    margin: 20px auto;
-    padding: 20px;
+    margin: 0 auto;
+    padding: 1.5rem;
 }
 
 .dashboard-header {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
-.dashboard-header h2 {
-    color: #1a237e;
-}
-
-.dashboard-header p {
-    font-size: 1.1em;
+    margin-bottom: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .admin-password {
-    margin-top: 10px;
-}
-
-.admin-password label {
-    margin-right: 10px;
-    color: #555;
+    margin-top: 0.5rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .admin-password input {
-    padding: 8px;
+    padding: 0.4rem;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
 
-.time-tracking-section, .vacation-section, .correction-section {
-    background: #fff;
-    padding: 20px;
-    margin-bottom: 20px;
+.week-section {
+    background-color: #fff;
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+.week-navigation {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.week-navigation button {
+    background-color: #83b5a3;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    padding: 6px 12px;
+    cursor: pointer;
+}
+.week-navigation button:hover {
+    background-color: #5c9d8a;
+}
+
+.week-navigation input {
+    padding: 0.4rem;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.admin-user-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.admin-user-block {
+    background: #f9f9f9;
+    border: 1px solid #ccc;
     border-radius: 6px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    padding: 0.5rem;
 }
 
-.user-groups, .vacation-groups {
-    margin-top: 15px;
-}
-
-.user-group, .vacation-group {
-    margin-bottom: 15px;
-}
-
-.user-group-header, .vacation-group-header {
+.admin-user-header {
     display: flex;
     justify-content: space-between;
-    background-color: #e8eaf6;
-    padding: 10px;
-    border-radius: 4px;
+    align-items: center;
     cursor: pointer;
+    padding: 0.4rem 0;
+    border-bottom: 1px solid #ccc;
 }
 
-.user-group-header h4, .vacation-group-header h4 {
-    margin: 0;
-    color: #1a237e;
-}
-
-.user-group-header button, .vacation-group-header button {
+.admin-user-header button {
     background: none;
     border: none;
-    font-size: 1.2em;
+    font-size: 1.2rem;
     cursor: pointer;
 }
 
-.entry-label {
-    font-weight: bold;
-    color: #555;
+.admin-week-display {
+    margin-top: 0.5rem;
 }
 
-.actions {
-    margin-top: 10px;
-}
-
-.actions button {
-    padding: 6px 12px;
-    margin-right: 5px;
-    border: none;
+.admin-day-card {
+    background: #fff;
+    border: 1px solid #e2e2e2;
     border-radius: 4px;
-    cursor: pointer;
+    margin-bottom: 0.75rem;
+    padding: 0.5rem;
 }
 
-.actions button:first-of-type {
-    background-color: #1a237e;
-    color: #fff;
+.admin-day-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
-.actions button:last-of-type {
-    background-color: #c62828;
-    color: #fff;
+.indicator.over {
+    color: #2b8c2b;
+    font-weight: bold;
+}
+.indicator.under {
+    color: #c00;
+    font-weight: bold;
 }
 
-.calendar-section {
-    margin-top: 20px;
+.no-entries {
+    color: #999;
 }
 
+/* Urlaub */
+.vacation-section {
+    background-color: #fff;
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.vacation-list {
+    list-style: none;
+    padding: 0;
+    margin-top: 1rem;
+}
+
+.vacation-item {
+    border-bottom: 1px solid #e2e2e2;
+    padding: 0.5rem 0;
+}
+
+.approved {
+    color: #2b8c2b;
+    font-weight: bold;
+}
+.denied {
+    color: #c00;
+    font-weight: bold;
+}
+.pending {
+    color: #cc9900;
+    font-weight: bold;
+}
+
+/* Modal */
 .modal-overlay {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0,0,0,0.4);
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 999;
     display: flex;
-    justify-content: center;
     align-items: center;
-    z-index: 1000;
+    justify-content: center;
 }
 
 .modal-content {
     background: #fff;
-    padding: 20px;
-    width: 90%;
-    max-width: 500px;
-    border-radius: 6px;
-}
-
-.modal-content h3 {
-    margin-top: 0;
-    color: #1a237e;
+    padding: 1.5rem;
+    width: 400px;
+    border-radius: 8px;
 }
 
 .form-group {
-    margin-bottom: 15px;
+    margin-bottom: 0.75rem;
+    display: flex;
+    flex-direction: column;
 }
-
 .form-group label {
-    display: block;
-    margin-bottom: 5px;
-    color: #555;
-}
-
-.form-group input {
-    width: 100%;
-    padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    margin-bottom: 0.3rem;
+    font-weight: bold;
 }
 
 .modal-buttons {
+    margin-top: 1rem;
     display: flex;
-    gap: 10px;
-    justify-content: flex-end;
+    gap: 0.5rem;
 }
 
 .modal-buttons button {
-    padding: 8px 16px;
+    background-color: #83b5a3;
+    color: #fff;
     border: none;
+    padding: 6px 12px;
     border-radius: 4px;
     cursor: pointer;
 }
-
-.modal-buttons button:first-of-type {
-    background-color: #1a237e;
-    color: #fff;
-}
-
-.modal-buttons button:last-of-type {
-    background-color: #ccc;
-    color: #333;
+.modal-buttons button:hover {
+    background-color: #5c9d8a;
 }
