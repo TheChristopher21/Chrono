@@ -4,10 +4,10 @@ import com.chrono.chrono.entities.TimeTracking;
 import com.chrono.chrono.entities.User;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "correction_requests")
@@ -17,6 +17,7 @@ public class CorrectionRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Gewünschte (korrigierte) Zeiten als Datum+Zeit
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @JsonProperty("desiredStart")
     private LocalDateTime desiredStartTime;
@@ -29,23 +30,55 @@ public class CorrectionRequest {
     private boolean approved;
     private boolean denied;
 
+    // Neue (korrigierte) Zeitfelder als LocalTime (nur Uhrzeit)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    @Column(name = "work_start")
+    private LocalTime workStart;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    @Column(name = "break_start")
+    private LocalTime breakStart;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    @Column(name = "break_end")
+    private LocalTime breakEnd;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    @Column(name = "work_end")
+    private LocalTime workEnd;
+
+    // Felder für die originalen Zeiten (werden beim Approve übernommen)
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    @Column(name = "original_work_start")
+    private LocalTime originalWorkStart;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    @Column(name = "original_break_start")
+    private LocalTime originalBreakStart;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    @Column(name = "original_break_end")
+    private LocalTime originalBreakEnd;
+
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
+    @Column(name = "original_work_end")
+    private LocalTime originalWorkEnd;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
-    @JsonIgnore  // Verhindert Endlosschleife
+    @JsonIgnore
     private User user;
 
+    // Optionale Verknüpfung zu einem existierenden TimeTracking-Eintrag
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "time_tracking_id", nullable = true)
-    @JsonIgnore  // Falls nicht nötig, entferne dies
+    @JsonIgnore
     private TimeTracking originalTimeTracking;
 
-
-
-
-    // **🚀 Neuer Fix: Leere Konstruktoren & Benutzername direkt abrufbar**
     public CorrectionRequest() {}
 
-    public CorrectionRequest(User user, TimeTracking originalTimeTracking, LocalDateTime desiredStart, LocalDateTime desiredEnd, String reason) {
+    public CorrectionRequest(User user, TimeTracking originalTimeTracking,
+                             LocalDateTime desiredStart, LocalDateTime desiredEnd, String reason) {
         this.user = user;
         this.originalTimeTracking = originalTimeTracking;
         this.desiredStartTime = desiredStart;
@@ -53,30 +86,16 @@ public class CorrectionRequest {
         this.reason = reason;
         this.approved = false;
         this.denied = false;
-    }
-
-    // **✅ Fix für `getUser()`-Fehler**
-    @JsonProperty("username")
-    public String getUsername() {
-        return (user != null) ? user.getUsername() : "Unknown";
-    }
-
-    @JsonProperty("originalStart")
-    public LocalDateTime getOriginalStartTime() {
+        // Falls ein originalTimeTracking vorhanden ist, werden hier die Originalzeiten übernommen.
         if (originalTimeTracking != null) {
-            return originalTimeTracking.getStartTime();
+            this.originalWorkStart = originalTimeTracking.getWorkStart();
+            this.originalBreakStart = originalTimeTracking.getBreakStart();
+            this.originalBreakEnd = originalTimeTracking.getBreakEnd();
+            this.originalWorkEnd = originalTimeTracking.getWorkEnd();
         }
-        return desiredStartTime; // Falls keine Originalzeit gefunden wird, schicke nicht die gleiche Zeit zurück!
     }
 
-
-    @JsonProperty("originalEnd")
-    public LocalDateTime getOriginalEndTime() {
-        return (originalTimeTracking != null) ? originalTimeTracking.getEndTime() : null;
-    }
-
-    // --- Getter / Setter ---
-
+    // --- Getter & Setter ---
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -95,9 +114,51 @@ public class CorrectionRequest {
     public boolean isDenied() { return denied; }
     public void setDenied(boolean denied) { this.denied = denied; }
 
+    public LocalTime getWorkStart() { return workStart; }
+    public void setWorkStart(LocalTime workStart) { this.workStart = workStart; }
+
+    public LocalTime getBreakStart() { return breakStart; }
+    public void setBreakStart(LocalTime breakStart) { this.breakStart = breakStart; }
+
+    public LocalTime getBreakEnd() { return breakEnd; }
+    public void setBreakEnd(LocalTime breakEnd) { this.breakEnd = breakEnd; }
+
+    public LocalTime getWorkEnd() { return workEnd; }
+    public void setWorkEnd(LocalTime workEnd) { this.workEnd = workEnd; }
+
+    public LocalTime getOriginalWorkStart() { return originalWorkStart; }
+    public void setOriginalWorkStart(LocalTime originalWorkStart) { this.originalWorkStart = originalWorkStart; }
+
+    public LocalTime getOriginalBreakStart() { return originalBreakStart; }
+    public void setOriginalBreakStart(LocalTime originalBreakStart) { this.originalBreakStart = originalBreakStart; }
+
+    public LocalTime getOriginalBreakEnd() { return originalBreakEnd; }
+    public void setOriginalBreakEnd(LocalTime originalBreakEnd) { this.originalBreakEnd = originalBreakEnd; }
+
+    public LocalTime getOriginalWorkEnd() { return originalWorkEnd; }
+    public void setOriginalWorkEnd(LocalTime originalWorkEnd) { this.originalWorkEnd = originalWorkEnd; }
+
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
 
     public TimeTracking getOriginalTimeTracking() { return originalTimeTracking; }
     public void setOriginalTimeTracking(TimeTracking originalTimeTracking) { this.originalTimeTracking = originalTimeTracking; }
+
+    @JsonProperty("username")
+    public String getUsername() {
+        return (user != null) ? user.getUsername() : "Unknown";
+    }
+
+    @JsonProperty("originalStart")
+    public LocalDateTime getOriginalStartTime() {
+        if (originalTimeTracking != null) {
+            return originalTimeTracking.getStartTime();
+        }
+        return desiredStartTime;
+    }
+
+    @JsonProperty("originalEnd")
+    public LocalDateTime getOriginalEndTime() {
+        return (originalTimeTracking != null) ? originalTimeTracking.getEndTime() : null;
+    }
 }

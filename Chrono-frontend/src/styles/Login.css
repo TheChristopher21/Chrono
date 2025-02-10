@@ -1,44 +1,54 @@
-/* ============== LOGIN.CSS ============== */
-
+/* Login.css */
 .login-container {
     max-width: 400px;
-    margin: 2rem auto;
-    background-color: #fff;
-    padding: 2rem;
+    margin: 80px auto;
+    padding: 30px;
+    background: #fff;
     border-radius: 8px;
-    border: 1px solid #e2e2e2;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .login-container h2 {
-    margin-bottom: 1rem;
-    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #007BFF;
+}
+
+.login-container form {
+    display: flex;
+    flex-direction: column;
+}
+
+.login-container input {
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+
+.login-container button {
+    padding: 10px;
+    background-color: #007BFF;
+    color: #fff;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+
+.login-container button:hover {
+    background-color: #0056b3;
 }
 
 .error-message {
-    color: #c00;
-    margin-bottom: 1rem;
-    font-weight: bold;
+    color: red;
+    margin-bottom: 15px;
+    text-align: center;
 }
 
-.login-container form input {
-    width: 100%;
-    margin-bottom: 1rem;
-    padding: 0.6rem;
-    border: 1px solid #ccc;
+.punch-message {
+    background: #e0ffe0;
+    color: #2e7d32;
+    padding: 10px;
     border-radius: 4px;
-    font-size: 1rem;
-}
-
-.login-container form button {
-    width: 100%;
-    background-color: #83b5a3;
-    color: #fff;
-    border: none;
-    padding: 0.6rem 1rem;
-    font-size: 1rem;
-    border-radius: 4px;
-    cursor: pointer;
-}
-.login-container form button:hover {
-    background-color: #5c9d8a;
+    text-align: center;
+    margin-bottom: 15px;
 }

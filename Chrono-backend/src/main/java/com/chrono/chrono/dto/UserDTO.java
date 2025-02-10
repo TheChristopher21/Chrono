@@ -2,7 +2,6 @@ package com.chrono.chrono.dto;
 
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
-
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -16,9 +15,9 @@ public class UserDTO {
     private Integer expectedWorkDays;
     private Double dailyWorkHours;
     private Integer breakDuration;
+    private String color; // Neues Feld
 
-    public UserDTO() {
-    }
+    public UserDTO() {}
 
     public UserDTO(User user) {
         this.id = user.getId();
@@ -26,16 +25,16 @@ public class UserDTO {
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.email = user.getEmail();
-        this.roles = user.getRoles().stream()
-                .map(Role::getRoleName).collect(Collectors.toList());
+        this.roles = user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList());
         this.expectedWorkDays = user.getExpectedWorkDays();
         this.dailyWorkHours = user.getDailyWorkHours();
         this.breakDuration = user.getBreakDuration();
+        this.color = user.getColor();
     }
 
     public UserDTO(Long id, String username, String firstName, String lastName,
                    String email, List<String> roles, Integer expectedWorkDays,
-                   Double dailyWorkHours, Integer breakDuration) {
+                   Double dailyWorkHours, Integer breakDuration, String color) {
         this.id = id;
         this.username = username;
         this.firstName = firstName;
@@ -45,81 +44,28 @@ public class UserDTO {
         this.expectedWorkDays = expectedWorkDays;
         this.dailyWorkHours = dailyWorkHours;
         this.breakDuration = breakDuration;
+        this.color = color;
     }
 
-    // ---------------------------
     // Getter & Setter
-    // ---------------------------
-
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public String getFirstName() {
-        return firstName;
-    }
-
-    public void setFirstName(String firstName) {
-        this.firstName = firstName;
-    }
-
-    public String getLastName() {
-        return lastName;
-    }
-
-    public void setLastName(String lastName) {
-        this.lastName = lastName;
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public List<String> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(List<String> roles) {
-        this.roles = roles;
-    }
-
-    public Integer getExpectedWorkDays() {
-        return expectedWorkDays;
-    }
-
-    public void setExpectedWorkDays(Integer expectedWorkDays) {
-        this.expectedWorkDays = expectedWorkDays;
-    }
-
-    public Double getDailyWorkHours() {
-        return dailyWorkHours;
-    }
-
-    public void setDailyWorkHours(Double dailyWorkHours) {
-        this.dailyWorkHours = dailyWorkHours;
-    }
-
-    public Integer getBreakDuration() {
-        return breakDuration;
-    }
-
-    public void setBreakDuration(Integer breakDuration) {
-        this.breakDuration = breakDuration;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
+    public String getUsername() { return username; }
+    public void setUsername(String username) { this.username = username; }
+    public String getFirstName() { return firstName; }
+    public void setFirstName(String firstName) { this.firstName = firstName; }
+    public String getLastName() { return lastName; }
+    public void setLastName(String lastName) { this.lastName = lastName; }
+    public String getEmail() { return email; }
+    public void setEmail(String email) { this.email = email; }
+    public List<String> getRoles() { return roles; }
+    public void setRoles(List<String> roles) { this.roles = roles; }
+    public Integer getExpectedWorkDays() { return expectedWorkDays; }
+    public void setExpectedWorkDays(Integer expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }
+    public Double getDailyWorkHours() { return dailyWorkHours; }
+    public void setDailyWorkHours(Double dailyWorkHours) { this.dailyWorkHours = dailyWorkHours; }
+    public Integer getBreakDuration() { return breakDuration; }
+    public void setBreakDuration(Integer breakDuration) { this.breakDuration = breakDuration; }
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
 }

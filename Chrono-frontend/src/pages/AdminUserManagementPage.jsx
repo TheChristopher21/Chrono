@@ -3,6 +3,13 @@ import api from '../utils/api';
 import Navbar from '../components/Navbar';
 import '../styles/AdminUserManagementPage.css';
 
+const STANDARD_COLORS = [
+    "#FF5733", "#33FF57", "#3357FF", "#F0FF33",
+    "#FF33F0", "#33FFF0", "#FF8C00", "#8A2BE2",
+    "#FF1493", "#00BFFF", "#ADFF2F", "#FFD700",
+    "#FF4500", "#00FA9A", "#7B68EE", "#FF6347"
+];
+
 const AdminUserManagementPage = () => {
     const [users, setUsers] = useState([]);
     const [newUser, setNewUser] = useState({
@@ -14,11 +21,12 @@ const AdminUserManagementPage = () => {
         role: 'ROLE_USER',
         expectedWorkDays: '',
         dailyWorkHours: '',
-        breakDuration: ''
+        breakDuration: '',
+        color: STANDARD_COLORS[0]
     });
     const [editingUser, setEditingUser] = useState(null);
+    const [showColorPicker, setShowColorPicker] = useState(false);
 
-    // Benutzer laden
     const fetchUsers = async () => {
         try {
             const res = await api.get('/api/admin/users');
@@ -32,7 +40,6 @@ const AdminUserManagementPage = () => {
         fetchUsers();
     }, []);
 
-    // Neuen Benutzer anlegen
     const handleAddUser = async (e) => {
         e.preventDefault();
         try {
@@ -45,7 +52,8 @@ const AdminUserManagementPage = () => {
                 roles: [{ roleName: newUser.role }],
                 expectedWorkDays: newUser.expectedWorkDays ? Number(newUser.expectedWorkDays) : null,
                 dailyWorkHours: newUser.dailyWorkHours ? Number(newUser.dailyWorkHours) : null,
-                breakDuration: newUser.breakDuration ? Number(newUser.breakDuration) : null
+                breakDuration: newUser.breakDuration ? Number(newUser.breakDuration) : null,
+                color: newUser.color
             });
             setNewUser({
                 username: '',
@@ -56,7 +64,8 @@ const AdminUserManagementPage = () => {
                 role: 'ROLE_USER',
                 expectedWorkDays: '',
                 dailyWorkHours: '',
-                breakDuration: ''
+                breakDuration: '',
+                color: STANDARD_COLORS[0]
             });
             fetchUsers();
         } catch (err) {
@@ -64,7 +73,6 @@ const AdminUserManagementPage = () => {
         }
     };
 
-    // Bearbeiten
     const handleEditUser = (user) => {
         setEditingUser({
             ...user,
@@ -72,7 +80,6 @@ const AdminUserManagementPage = () => {
         });
     };
 
-    // Update
     const handleUpdateUser = async (e) => {
         e.preventDefault();
         try {
@@ -82,11 +89,13 @@ const AdminUserManagementPage = () => {
                 firstName: editingUser.firstName,
                 lastName: editingUser.lastName,
                 email: editingUser.email,
-                password: editingUser.password,
+                // Passwort aktualisieren: Nur wenn ein neues Passwort eingegeben wurde, andernfalls nicht ändern.
+                password: editingUser.newPassword ? editingUser.newPassword : editingUser.password,
                 roles: [{ roleName: editingUser.role }],
                 expectedWorkDays: editingUser.expectedWorkDays ? Number(editingUser.expectedWorkDays) : null,
                 dailyWorkHours: editingUser.dailyWorkHours ? Number(editingUser.dailyWorkHours) : null,
-                breakDuration: editingUser.breakDuration ? Number(editingUser.breakDuration) : null
+                breakDuration: editingUser.breakDuration ? Number(editingUser.breakDuration) : null,
+                color: editingUser.color
             });
             setEditingUser(null);
             fetchUsers();
@@ -95,7 +104,6 @@ const AdminUserManagementPage = () => {
         }
     };
 
-    // Löschen
     const handleDeleteUser = async (id) => {
         try {
             await api.delete(`/api/admin/users/${id}`);
@@ -105,19 +113,34 @@ const AdminUserManagementPage = () => {
         }
     };
 
-    // Karte programmieren via Electron IPC
     const handleProgramCard = async (user) => {
-        if (!window.electronAPI?.invoke) {
-            alert("Electron-API nicht verfügbar. Läuft die App in Electron?");
-            return;
-        }
-        // Beispiel: Verwende den Benutzernamen als Kennung
-        const userId = user.username;
-        const res = await window.electronAPI.invoke('write-card', userId);
-        if (res.success) {
-            alert("Karte erfolgreich beschrieben mit: " + userId);
-        } else {
-            alert("Fehler beim Kartenbeschreiben: " + res.error);
+        try {
+            const blockNumber = 4;
+            const stringToHex16 = (text) => {
+                let asciiData = text.slice(0, 16);
+                asciiData = asciiData.padEnd(16, '\0');
+                let hexResult = '';
+                for (let i = 0; i < asciiData.length; i++) {
+                    const code = asciiData.charCodeAt(i);
+                    hexResult += code.toString(16).padStart(2, '0');
+                }
+                return hexResult.toUpperCase();
+            };
+            const hexData = stringToHex16(user.username);
+            const response = await fetch('http://localhost:8080/api/nfc/write', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ block: blockNumber, data: hexData })
+            });
+            const result = await response.json();
+            if (result.status === 'success') {
+                alert(`Karte erfolgreich beschrieben mit: ${user.username}`);
+            } else {
+                alert(`Fehler beim Kartenbeschreiben: ${result.message}`);
+            }
+        } catch (err) {
+            console.error("Fehler beim Kartenbeschreiben:", err);
+            alert("Fehler beim Kartenbeschreiben: " + err.message);
         }
     };
 
@@ -146,7 +169,7 @@ const AdminUserManagementPage = () => {
                         </thead>
                         <tbody>
                         {users.map(user => (
-                            <tr key={user.id}>
+                            <tr key={user.id} style={{ backgroundColor: user.color || 'transparent' }}>
                                 <td>{user.username}</td>
                                 <td>{user.firstName} {user.lastName}</td>
                                 <td>{user.email}</td>
@@ -209,6 +232,24 @@ const AdminUserManagementPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
+                                <label>Aktuelles Passwort:</label>
+                                <input
+                                    type="password"
+                                    placeholder="Aktuelles Passwort"
+                                    value={editingUser.currentPassword || ''}
+                                    onChange={(e) => setEditingUser({ ...editingUser, currentPassword: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Neues Passwort:</label>
+                                <input
+                                    type="password"
+                                    placeholder="Neues Passwort"
+                                    value={editingUser.newPassword || ''}
+                                    onChange={(e) => setEditingUser({ ...editingUser, newPassword: e.target.value })}
+                                />
+                            </div>
+                            <div className="form-group">
                                 <label>Expected Work Days:</label>
                                 <input
                                     type="number"
@@ -235,6 +276,19 @@ const AdminUserManagementPage = () => {
                                     value={editingUser.breakDuration || ''}
                                     onChange={(e) => setEditingUser({ ...editingUser, breakDuration: e.target.value })}
                                 />
+                            </div>
+                            <div className="form-group">
+                                <label>Farbe:</label>
+                                <button type="button" onClick={() => setShowColorPicker(!showColorPicker)}>
+                                    Farbe auswählen
+                                </button>
+                                {showColorPicker && (
+                                    <input
+                                        type="color"
+                                        value={editingUser.color || '#FF5733'}
+                                        onChange={(e) => setEditingUser({ ...editingUser, color: e.target.value })}
+                                    />
+                                )}
                             </div>
                             <button type="submit">Speichern</button>
                             <button type="button" onClick={() => setEditingUser(null)}>Abbrechen</button>
@@ -316,6 +370,19 @@ const AdminUserManagementPage = () => {
                                     value={newUser.breakDuration}
                                     onChange={(e) => setNewUser({ ...newUser, breakDuration: e.target.value })}
                                 />
+                            </div>
+                            <div className="form-group">
+                                <label>Farbe:</label>
+                                <button type="button" onClick={() => setShowColorPicker(!showColorPicker)}>
+                                    Farbe auswählen
+                                </button>
+                                {showColorPicker && (
+                                    <input
+                                        type="color"
+                                        value={newUser.color || '#FF5733'}
+                                        onChange={(e) => setNewUser({ ...newUser, color: e.target.value })}
+                                    />
+                                )}
                             </div>
                             <button type="submit">Anlegen</button>
                         </form>

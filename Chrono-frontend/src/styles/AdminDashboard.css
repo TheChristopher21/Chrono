@@ -1,197 +1,327 @@
-/* ============== ADMINDASHBOARD.CSS ============== */
-
+/* AdminDashboard.css */
 .admin-dashboard {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
+    padding: 20px;
+    background: #f4f7fa;
+    min-height: 100vh;
+}
+
+.fancy-bg {
+    background: linear-gradient(135deg, #e0eafc, #cfdef3);
 }
 
 .dashboard-header {
-    margin-bottom: 1.5rem;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
+    text-align: center;
+    margin-bottom: 30px;
+    color: #007BFF;
 }
 
 .admin-password {
-    margin-top: 0.5rem;
-    display: flex;
-    gap: 0.5rem;
-    align-items: center;
+    text-align: center;
+    margin-bottom: 20px;
 }
 
-.admin-password input {
-    padding: 0.4rem;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+.admin-password label {
+    margin-right: 10px;
+    font-weight: bold;
 }
 
 .week-section {
-    background-color: #fff;
-    border: 1px solid #e2e2e2;
+    background: #fff;
+    padding: 20px;
     border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 2rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
 }
 
 .week-navigation {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
-.week-navigation button {
-    background-color: #83b5a3;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 12px;
-    cursor: pointer;
-}
-.week-navigation button:hover {
-    background-color: #5c9d8a;
-}
-
-.week-navigation input {
-    padding: 0.4rem;
+.week-navigation button,
+.week-navigation input[type="date"] {
+    padding: 8px 12px;
     border: 1px solid #ccc;
     border-radius: 4px;
 }
 
 .admin-user-groups {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    margin-top: 20px;
 }
 
 .admin-user-block {
-    background: #f9f9f9;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    padding: 0.5rem;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    overflow: hidden;
 }
 
 .admin-user-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding: 10px 15px;
     cursor: pointer;
-    padding: 0.4rem 0;
-    border-bottom: 1px solid #ccc;
 }
 
-.admin-user-header button {
-    background: none;
-    border: none;
-    font-size: 1.2rem;
-    cursor: pointer;
+.admin-user-header h4 {
+    margin: 0;
+    color: #fff;
+}
+
+.admin-user-header .edit-button {
+    background: rgba(255, 255, 255, 0.3);
+    padding: 5px 10px;
+    border-radius: 4px;
+    color: #fff;
 }
 
 .admin-week-display {
-    margin-top: 0.5rem;
+    padding: 15px;
+    background: #fafafa;
 }
 
 .admin-day-card {
     background: #fff;
-    border: 1px solid #e2e2e2;
-    border-radius: 4px;
-    margin-bottom: 0.75rem;
-    padding: 0.5rem;
+    border: 1px solid #eee;
+    border-radius: 6px;
+    margin-bottom: 15px;
+    padding: 10px;
 }
 
 .admin-day-card-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 10px;
+}
+
+.indicator {
+    font-size: 0.9rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: #fff;
 }
 
 .indicator.over {
-    color: #2b8c2b;
-    font-weight: bold;
+    background: green;
 }
+
 .indicator.under {
-    color: #c00;
-    font-weight: bold;
+    background: red;
+}
+
+.time-entry-list,
+.correction-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+.time-entry-list li,
+.correction-item {
+    padding: 4px 0;
 }
 
 .no-entries {
-    color: #999;
+    font-style: italic;
+    color: #888;
 }
 
-/* Urlaub */
+/* Corrections Container */
+.corrections-container {
+    background: #f0f8ff;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+.corrections-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.corrections-column {
+    flex: 1;
+    text-align: center;
+    padding: 4px 0;
+    border-bottom: 2px solid #ccc;
+}
+
+.corrected-column {
+    color: orange;
+    border-color: orange;
+}
+
+.original-column {
+    color: #333;
+}
+
+.corrections-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.correction-item {
+    border: 1px solid #ddd;
+    padding: 8px;
+    background: #fff;
+}
+
+.correction-details {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 6px;
+}
+
+.corrected-details,
+.original-details {
+    flex: 1;
+    padding: 0 10px;
+}
+
+.corrected-details p,
+.original-details p {
+    margin: 2px 0;
+    font-size: 0.9rem;
+}
+
+.correction-buttons {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.accept-button,
+.reject-button {
+    padding: 5px 10px;
+    border-radius: 4px;
+    color: #fff;
+    transition: background 0.3s;
+    border: none;
+}
+
+.accept-button {
+    background: green;
+}
+
+.accept-button:hover {
+    background: darkgreen;
+}
+
+.reject-button {
+    background: red;
+}
+
+.reject-button:hover {
+    background: darkred;
+}
+
+/* Vacation Section */
 .vacation-section {
-    background-color: #fff;
-    border: 1px solid #e2e2e2;
+    background: #fff;
+    padding: 20px;
     border-radius: 8px;
-    padding: 1rem;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 30px;
 }
 
 .vacation-list {
     list-style: none;
-    padding: 0;
-    margin-top: 1rem;
+    padding-left: 0;
 }
 
 .vacation-item {
-    border-bottom: 1px solid #e2e2e2;
-    padding: 0.5rem 0;
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
 }
 
-.approved {
-    color: #2b8c2b;
-    font-weight: bold;
-}
-.denied {
-    color: #c00;
-    font-weight: bold;
-}
-.pending {
-    color: #cc9900;
-    font-weight: bold;
-}
-
-/* Modal */
-.modal-overlay {
-    position: fixed;
-    top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0,0,0,0.5);
-    z-index: 999;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-content {
-    background: #fff;
-    padding: 1.5rem;
-    width: 400px;
-    border-radius: 8px;
-}
-
-.form-group {
-    margin-bottom: 0.75rem;
-    display: flex;
-    flex-direction: column;
-}
-.form-group label {
-    margin-bottom: 0.3rem;
-    font-weight: bold;
-}
-
-.modal-buttons {
-    margin-top: 1rem;
-    display: flex;
-    gap: 0.5rem;
-}
-
-.modal-buttons button {
-    background-color: #83b5a3;
-    color: #fff;
-    border: none;
-    padding: 6px 12px;
+.vacation-buttons button {
+    margin-right: 10px;
+    padding: 5px 10px;
     border-radius: 4px;
-    cursor: pointer;
+    background-color: #007BFF;
+    color: #fff;
+    transition: background 0.3s;
 }
-.modal-buttons button:hover {
-    background-color: #5c9d8a;
+
+.vacation-buttons button:hover {
+    background-color: #0056b3;
+}
+
+.calendar-section {
+    margin-top: 20px;
+}
+/* Corrections Container */
+/* Corrections Container */
+.corrections-container {
+    background: #f0f8ff;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+}
+
+/* Standardstil für ein Correction Item */
+.correction-item {
+    border: 1px solid #ddd;
+    padding: 8px;
+    background: #fff;
+    margin-bottom: 8px;
+}
+
+/* Für den einspaltigen Zustand */
+.correction-details.one-column .corrected-details {
+    text-align: left;
+}
+
+/* Für den zweispaltigen Zustand (nach Approve) */
+.correction-details.two-column {
+    display: flex;
+    justify-content: space-between;
+}
+
+.corrected-details, .original-details {
+    flex: 1;
+    padding: 0 10px;
+}
+
+.corrected-details p, .original-details p {
+    margin: 2px 0;
+    font-size: 0.9rem;
+}
+
+.correction-buttons {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+}
+
+.accept-button,
+.reject-button {
+    padding: 5px 10px;
+    border-radius: 4px;
+    color: #fff;
+    transition: background 0.3s;
+    border: none;
+}
+
+.accept-button {
+    background: green;
+}
+
+.accept-button:hover {
+    background: darkgreen;
+}
+
+.reject-button {
+    background: red;
+}
+
+.reject-button:hover {
+    background: darkred;
 }

@@ -1,10 +1,9 @@
 // src/electron-main.js
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow } from 'electron';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import { startNfcReader, writeUserIdToCard } from './nfcReader.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,30 +12,32 @@ let mainWindow;
 let backendProcess;
 
 /**
- * Ermittelt den Basis-Pfad:
- * - Im Produktionsmodus wird process.resourcesPath genutzt.
- * - Im Entwicklungsmodus (app.isPackaged false) gehen wir eine Ebene höher,
- *   da __dirname normalerweise im "src" Ordner liegt.
+ * Ermittelt den Basis-Pfad.
+ * - Im Entwicklungsmodus: ../
+ * - Im Produktionsmodus: process.resourcesPath
  */
 function getBasePath() {
-    return app.isPackaged ? process.resourcesPath : path.join(__dirname, '..');
+    return app.isPackaged
+        ? process.resourcesPath
+        : path.join(__dirname, '..');
 }
 
 /**
- * Startet das Spring-Boot-Backend.
+ * Startet das Spring-Boot-Backend aus dem JAR.
  */
 function startBackend() {
     const basePath = getBasePath();
     const backendJar = path.join(basePath, 'backend', 'Chrono-0.0.1-SNAPSHOT.jar');
+
     console.log("[INFO] Basis-Pfad:", basePath);
     console.log("[INFO] Backend-JAR Pfad:", backendJar);
 
     if (!fs.existsSync(backendJar)) {
-        console.error("[ERROR] Backend-JAR nicht gefunden! Stelle sicher, dass die Datei unter", backendJar, "vorhanden ist.");
+        console.error("[ERROR] Backend-JAR nicht gefunden! Pfad:", backendJar);
         return;
     }
 
-    const javaPath = "java"; // Stelle sicher, dass "java" im PATH ist
+    const javaPath = "java"; // Java muss im PATH liegen
     backendProcess = spawn(javaPath, ['-jar', backendJar], {
         detached: true,
         shell: false,
@@ -53,13 +54,13 @@ function startBackend() {
     });
 
     backendProcess.on('error', (err) => {
-        console.error("[BACKEND] Fehler beim Starten des Backend-Prozesses:", err);
+        console.error("[BACKEND] Fehler beim Starten:", err);
     });
 
     backendProcess.on('exit', (code, signal) => {
         console.log("[BACKEND] Prozess beendet mit Code:", code, "Signal:", signal);
         if (code !== 0) {
-            console.error("[BACKEND] Es gab einen Fehler beim Starten des Backends.");
+            console.error("[BACKEND] Fehler beim Backend.");
         }
     });
 
@@ -67,15 +68,15 @@ function startBackend() {
 }
 
 /**
- * Erzeugt das Hauptfenster.
+ * Erzeugt das Hauptfenster und lädt index.html (aus dist/).
  */
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1024,
         height: 768,
-        show: false, // Zunächst versteckt
+        show: false,
         webPreferences: {
-            preload: path.join(__dirname, 'preload.js'),
+            // preload: path.join(__dirname, 'preload.js'), // Falls du gar kein Preload brauchst, kannst du das weglassen
             nodeIntegration: false,
             contextIsolation: true
         }
@@ -84,17 +85,16 @@ function createWindow() {
     const indexPath = path.join(getBasePath(), 'dist', 'index.html');
     console.log("[INFO] Lade index.html von:", indexPath);
 
-    // Fehler-Listener für das Laden der index.html
-    mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
-        console.error(`[ERROR] Laden der index.html fehlgeschlagen: ${errorDescription} (Code: ${errorCode}) für URL: ${validatedURL}`);
+    mainWindow.webContents.on('did-fail-load', (event, code, desc, validatedURL) => {
+        console.error(`[ERROR] Laden von index.html fehlgeschlagen: ${desc} (Code: ${code}), URL: ${validatedURL}`);
     });
 
     mainWindow.loadFile(indexPath)
         .then(() => {
-            console.log("[INFO] index.html erfolgreich geladen.");
+            console.log("[INFO] index.html geladen.");
             mainWindow.once('ready-to-show', () => {
                 mainWindow.show();
-                console.log("[INFO] Hauptfenster wird angezeigt.");
+                console.log("[INFO] Hauptfenster angezeigt.");
             });
         })
         .catch(err => {
@@ -102,28 +102,10 @@ function createWindow() {
         });
 }
 
-/**
- * IPC-Handler: "write-card" ruft writeUserIdToCard auf.
- */
-function initIPC() {
-    ipcMain.handle('write-card', async (event, userId) => {
-        try {
-            console.log("[IPC] write-card aufgerufen für:", userId);
-            await writeUserIdToCard(userId);
-            return { success: true };
-        } catch (err) {
-            console.error("[IPC] Fehler beim Kartenbeschreiben:", err);
-            return { success: false, error: err.message };
-        }
-    });
-}
-
 app.whenReady().then(() => {
     console.log("[APP] App ist bereit.");
-    startBackend();
-    createWindow();
-    startNfcReader();
-    initIPC();
+    startBackend();   // Spring-Boot-Backend starten
+    createWindow();   // BrowserWindow erstellen
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {
@@ -134,6 +116,7 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
+        // Backend-Prozess ggf. beenden
         if (backendProcess) backendProcess.kill();
         app.quit();
     }

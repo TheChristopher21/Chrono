@@ -2,22 +2,25 @@ package com.chrono.chrono.dto;
 
 import java.time.LocalDateTime;
 
+/**
+ * Einfache DTO-Klasse für die Rückgabe eines TimeTracking-Eintrags,
+ * inkl. "color" (also Art des Punches) und "punchOrder".
+ */
 public class TimeTrackingResponse {
+
     private Long id;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     private boolean corrected;
-    private String color;     // "Work Start", "Break Start", ...
-    private Integer punchOrder;
+    private String color;       // z. B. "Work Start", "Break Start", ...
+    private Integer punchOrder; // 1..4
 
-    public TimeTrackingResponse(
-            Long id,
-            LocalDateTime startTime,
-            LocalDateTime endTime,
-            boolean corrected,
-            String color,
-            Integer punchOrder
-    ) {
+    public TimeTrackingResponse(Long id,
+                                LocalDateTime startTime,
+                                LocalDateTime endTime,
+                                boolean corrected,
+                                String color,
+                                Integer punchOrder) {
         this.id = id;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -26,7 +29,6 @@ public class TimeTrackingResponse {
         this.punchOrder = punchOrder;
     }
 
-    // Getter + Setter
     public Long getId() {
         return id;
     }

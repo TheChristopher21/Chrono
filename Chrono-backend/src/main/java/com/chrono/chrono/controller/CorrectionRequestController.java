@@ -6,8 +6,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
@@ -18,47 +19,36 @@ public class CorrectionRequestController {
     @Autowired
     private CorrectionRequestService correctionRequestService;
 
-    /**
-     * Erstellt eine neue Korrekturanfrage.
-     */
-    @PostMapping("/create")
+    @PostMapping("/create-full")
     public CorrectionRequest createRequest(
             @RequestParam String username,
-            @RequestParam(required = false) Long timeTrackingId,
+            @RequestParam String date,
+            @RequestParam(required = false) String workStart,
+            @RequestParam(required = false) String breakStart,
+            @RequestParam(required = false) String breakEnd,
+            @RequestParam(required = false) String workEnd,
+            @RequestParam String reason,
             @RequestParam String desiredStart,
-            @RequestParam String desiredEnd,
-            @RequestParam String reason
+            @RequestParam String desiredEnd
     ) {
         try {
-            LocalDateTime start = LocalDateTime.parse(desiredStart);
-            LocalDateTime end = LocalDateTime.parse(desiredEnd);
-
-            return correctionRequestService.createRequest(username, timeTrackingId, start, end, reason);
+            DateTimeFormatter desiredFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
+            LocalDateTime dStart = LocalDateTime.parse(desiredStart, desiredFormatter);
+            LocalDateTime dEnd = LocalDateTime.parse(desiredEnd, desiredFormatter);
+            LocalDate d = LocalDate.parse(date);
+            return correctionRequestService.createRequest(username, null, dStart, dEnd, reason,
+                    workStart, breakStart, breakEnd, workEnd, d);
         } catch (DateTimeParseException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid date format. Use 'yyyy-MM-ddTHH:mm:ss'");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Invalid date/time format. Use yyyy-MM-dd for date and yyyy-MM-dd'T'HH:mm for desiredStart and desiredEnd");
         }
     }
 
-
-    /**
-     * Liefert alle offenen Korrekturanfragen.
-     */
     @GetMapping("/open")
     public List<CorrectionRequest> getAllOpenRequests() {
-        List<CorrectionRequest> requests = correctionRequestService.getOpenRequests();
-
-        for (CorrectionRequest req : requests) {
-            System.out.println("DEBUG API: ID=" + req.getId() + ", OrigStart=" + req.getOriginalStartTime() + ", OrigEnd=" + req.getOriginalEndTime());
-            System.out.println("API Response: " + requests);
-        }
-
-        return requests;
+        return correctionRequestService.getOpenRequests();
     }
 
-
-    /**
-     * Genehmigt eine Korrekturanfrage.
-     */
     @PostMapping("/approve/{id}")
     public CorrectionRequest approveRequest(
             @PathVariable Long id,
@@ -67,9 +57,6 @@ public class CorrectionRequestController {
         return correctionRequestService.approveRequest(id, adminPassword);
     }
 
-    /**
-     * Lehnt eine Korrekturanfrage ab.
-     */
     @PostMapping("/deny/{id}")
     public CorrectionRequest denyRequest(
             @PathVariable Long id

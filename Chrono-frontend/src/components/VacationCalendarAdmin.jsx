@@ -2,13 +2,14 @@ import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import '../styles/VacationCalendar.css';
+import '../styles/VacationCalendarAdmin.css';
 
 const VacationCalendarAdmin = ({ vacationRequests }) => {
     const [date, setDate] = useState(new Date());
 
     const tileContent = ({ date, view }) => {
         if (view === 'month') {
+            // Finde alle Urlaubseinträge für diesen Tag
             const vacationsForDay = vacationRequests.filter(vac => {
                 const start = new Date(vac.startDate);
                 const end = new Date(vac.endDate);
@@ -19,15 +20,19 @@ const VacationCalendarAdmin = ({ vacationRequests }) => {
                 return current >= start && current <= end;
             });
             if (vacationsForDay.length > 0) {
-                const color = vacationsForDay[0].color || '#ccc';
                 return (
-                    <div style={{
-                        backgroundColor: color,
-                        borderRadius: '50%',
-                        width: '16px',
-                        height: '16px',
-                        margin: '0 auto'
-                    }} />
+                    <div className="vacation-markers">
+                        {vacationsForDay.map((vac, index) => (
+                            <div
+                                key={index}
+                                className="vacation-marker"
+                                style={{ backgroundColor: vac.color || '#ccc' }}
+                                title={vac.username}
+                            >
+                                {vac.username}
+                            </div>
+                        ))}
+                    </div>
                 );
             }
         }
@@ -35,7 +40,7 @@ const VacationCalendarAdmin = ({ vacationRequests }) => {
     };
 
     return (
-        <div className="vacation-calendar">
+        <div className="vacation-calendar-admin">
             <Calendar
                 onChange={setDate}
                 value={date}
@@ -52,7 +57,8 @@ VacationCalendarAdmin.propTypes = {
             endDate: PropTypes.string.isRequired,
             approved: PropTypes.bool,
             denied: PropTypes.bool,
-            color: PropTypes.string
+            color: PropTypes.string,
+            username: PropTypes.string.isRequired
         })
     ).isRequired
 };

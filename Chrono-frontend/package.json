@@ -43,13 +43,12 @@
     "appId": "com.deinunternehmen.chrono",
     "productName": "Chrono",
     "directories": {
-      "output": "dist"
+      "output": "dist_electron"
     },
     "files": [
       "dist/**/*",
       "src/electron-main.js",
-      "src/preload.js",
-      "src/nfcReader.js"
+      "src/preload.js"
     ],
     "extraResources": [
       {

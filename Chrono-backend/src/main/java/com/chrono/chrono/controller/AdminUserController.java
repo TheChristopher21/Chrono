@@ -14,9 +14,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-/**
- * Rest-Controller für ADMIN-Operationen rund um User
- */
 @RestController
 @RequestMapping("/api/admin/users")
 public class AdminUserController {
@@ -30,10 +27,6 @@ public class AdminUserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /**
-     * GET /api/admin/users
-     * Alle User zurückgeben
-     */
     @GetMapping
     public List<UserDTO> getAllUsers() {
         List<User> users = userRepository.findAll();
@@ -49,46 +42,34 @@ public class AdminUserController {
                                 .collect(Collectors.toList()),
                         user.getExpectedWorkDays(),
                         user.getDailyWorkHours(),
-                        user.getBreakDuration()
+                        user.getBreakDuration(),
+                        user.getColor()
                 ))
                 .collect(Collectors.toList());
     }
 
-    /**
-     * POST /api/admin/users
-     * Neuen User anlegen
-     */
     @PostMapping
     public ResponseEntity<?> addUser(@RequestBody User userBody) {
-        // Prüfen, ob Username schon existiert
         if (userRepository.existsByUsername(userBody.getUsername())) {
             return ResponseEntity.badRequest().body("Username already exists");
         }
-        // Passwort encoden
         if (userBody.getPassword() != null && !userBody.getPassword().isEmpty()) {
             userBody.setPassword(passwordEncoder.encode(userBody.getPassword()));
         } else {
             return ResponseEntity.badRequest().body("Password is required");
         }
-        // Rolle
         if (userBody.getRoles() == null || userBody.getRoles().isEmpty()) {
-            // Standard: ROLE_USER
             Role defaultRole = roleRepository.findByRoleName("ROLE_USER")
                     .orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
             userBody.getRoles().add(defaultRole);
         } else {
-            // Falls nur eine Rolle mitgegeben wird, holen wir uns das Role-Objekt
-            // (oder erstellen es bei Bedarf)
             Role inputRole = userBody.getRoles().iterator().next();
             Role dbRole = roleRepository.findByRoleName(inputRole.getRoleName())
                     .orElseGet(() -> roleRepository.save(new Role(inputRole.getRoleName())));
             userBody.getRoles().clear();
             userBody.getRoles().add(dbRole);
         }
-        // expectedWorkDays, dailyWorkHours, breakDuration sind bereits im userBody gesetzt
         User saved = userRepository.save(userBody);
-
-        // Antwort mit UserDTO
         UserDTO dto = new UserDTO(
                 saved.getId(),
                 saved.getUsername(),
@@ -98,21 +79,19 @@ public class AdminUserController {
                 saved.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList()),
                 saved.getExpectedWorkDays(),
                 saved.getDailyWorkHours(),
-                saved.getBreakDuration()
+                saved.getBreakDuration(),
+                saved.getColor()
         );
         return ResponseEntity.ok(dto);
     }
 
-    /**
-     * PUT /api/admin/users
-     * Vorhandenen User aktualisieren
-     */
     @PutMapping
-    public ResponseEntity<?> updateUser(@RequestBody User userBody) {
+    public ResponseEntity<?> updateUser(@RequestBody User userBody,
+                                        @RequestParam(value = "currentPassword", required = false) String currentPassword,
+                                        @RequestParam(value = "newPassword", required = false) String newPassword) {
         if (userBody.getId() == null) {
             return ResponseEntity.badRequest().body("User ID is required for update");
         }
-        // User holen
         User existing = userRepository.findById(userBody.getId())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -120,23 +99,20 @@ public class AdminUserController {
         existing.setFirstName(userBody.getFirstName());
         existing.setLastName(userBody.getLastName());
         existing.setEmail(userBody.getEmail());
-
-        // Password nur ändern, wenn mitgegeben
-        if (userBody.getPassword() != null && !userBody.getPassword().isEmpty()) {
-            existing.setPassword(passwordEncoder.encode(userBody.getPassword()));
+        // Falls ein neues Passwort gesetzt werden soll, muss das aktuelle Passwort stimmen
+        if (newPassword != null && !newPassword.isEmpty()) {
+            if (currentPassword == null || !passwordEncoder.matches(currentPassword, existing.getPassword())) {
+                return ResponseEntity.badRequest().body("Current password is incorrect");
+            }
+            existing.setPassword(passwordEncoder.encode(newPassword));
         }
-        // Rollen
         if (userBody.getRoles() != null && !userBody.getRoles().isEmpty()) {
-            // Nur eine Rolle annehmen
             Role inputRole = userBody.getRoles().iterator().next();
             Role dbRole = roleRepository.findByRoleName(inputRole.getRoleName())
                     .orElseGet(() -> roleRepository.save(new Role(inputRole.getRoleName())));
-
             existing.getRoles().clear();
             existing.getRoles().add(dbRole);
         }
-
-        // Arbeitszeiten
         if (userBody.getExpectedWorkDays() != null) {
             existing.setExpectedWorkDays(userBody.getExpectedWorkDays());
         }
@@ -146,7 +122,7 @@ public class AdminUserController {
         if (userBody.getBreakDuration() != null) {
             existing.setBreakDuration(userBody.getBreakDuration());
         }
-
+        existing.setColor(userBody.getColor());
         User updated = userRepository.save(existing);
         UserDTO dto = new UserDTO(
                 updated.getId(),
@@ -157,15 +133,12 @@ public class AdminUserController {
                 updated.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList()),
                 updated.getExpectedWorkDays(),
                 updated.getDailyWorkHours(),
-                updated.getBreakDuration()
+                updated.getBreakDuration(),
+                updated.getColor()
         );
         return ResponseEntity.ok(dto);
     }
 
-    /**
-     * DELETE /api/admin/users/{id}
-     * Benutzer löschen
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
         if (!userRepository.existsById(id)) {
@@ -175,10 +148,6 @@ public class AdminUserController {
         return ResponseEntity.ok("User deleted successfully");
     }
 
-    /**
-     * Optional: GET /api/admin/users/getWorkConfig/{userId}
-     * Falls du separat die WorkConfig abfragen willst
-     */
     @GetMapping("/getWorkConfig/{userId}")
     public ResponseEntity<?> getWorkConfig(@PathVariable Long userId) {
         Optional<User> opt = userRepository.findById(userId);
@@ -193,13 +162,8 @@ public class AdminUserController {
         );
     }
 
-    /**
-     * Optional: PUT /api/admin/users/updateWorkConfig/{userId}
-     * Falls du separat die WorkConfig updaten willst
-     */
     @PutMapping("/updateWorkConfig/{userId}")
-    public ResponseEntity<?> updateWorkConfig(@PathVariable Long userId,
-                                              @RequestBody UserDTO dto) {
+    public ResponseEntity<?> updateWorkConfig(@PathVariable Long userId, @RequestBody UserDTO dto) {
         Optional<User> opt = userRepository.findById(userId);
         if (opt.isEmpty()) {
             return ResponseEntity.badRequest().body("User not found");

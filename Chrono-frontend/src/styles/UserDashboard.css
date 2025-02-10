@@ -1,186 +1,182 @@
-/* ============== USERDASHBOARD.CSS ============== */
-
+/* UserDashboard.css */
 .user-dashboard {
     max-width: 1200px;
-    margin: 0 auto;
-    padding: 1.5rem;
-    background: #fdfdfd; /* etwas helles */
+    margin: 20px auto;
+    padding: 20px;
 }
 
 .dashboard-header {
-    margin-bottom: 1.5rem;
+    text-align: center;
+    margin-bottom: 20px;
+    color: #007BFF;
 }
 
-/* Zeitabschnitt */
-.time-tracking-section {
-    background-color: #f8f8f8;
-    border: 1px solid #ccc;
+.personal-info p {
+    margin: 5px 0;
+}
+
+.punch-message {
+    background: #e0ffe0;
+    color: #2e7d32;
+    padding: 10px;
+    border-radius: 4px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.time-tracking-section,
+.vacation-section {
+    background: #fff;
+    padding: 20px;
     border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 2rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
 }
 
-/* Wochen-Navigation */
 .week-navigation {
     display: flex;
-    gap: 1rem;
-    margin-bottom: 1rem;
+    justify-content: center;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
 }
 
-.week-navigation button {
-    background-color: #39747e; /* dunkleres Grün/Blau */
-    color: #fff;
-    border: none;
+.week-navigation input[type="date"] {
+    padding: 8px;
+    border: 1px solid #ccc;
     border-radius: 4px;
-    padding: 6px 12px;
-    cursor: pointer;
-}
-.week-navigation button:hover {
-    background-color: #2f5e66;
-}
-.week-navigation input {
-    padding: 4px;
-    border: 1px solid #aaa;
-    border-radius: 4px;
-}
-
-.tracking-buttons {
-    margin-bottom: 1rem;
-}
-.tracking-buttons button {
-    background-color: #83b5a3;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 12px;
-    margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
-    cursor: pointer;
-}
-.tracking-buttons button:hover {
-    background-color: #5c9d8a;
 }
 
 .week-display {
     display: flex;
-    flex-direction: column;
-    gap: 1rem;
+    flex-wrap: wrap;
+    gap: 20px;
+    justify-content: center;
 }
 
-/* Day-Card */
 .day-card {
-    background: #fff;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 1rem;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    background: #f9f9f9;
+    padding: 15px;
+    border-radius: 8px;
+    width: calc(33.333% - 20px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
 .day-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    margin-bottom: 10px;
+    color: #007BFF;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 5px;
 }
-.indicator-badge {
-    font-weight: bold;
-}
-.indicator-badge.over { color: #208020; }
-.indicator-badge.under { color: #cc0000; }
+
 .no-entries {
-    color: #999;
+    font-style: italic;
+    color: #888;
 }
 
 .correction-button-day {
-    margin-top: 0.5rem;
+    margin-top: 10px;
+    text-align: center;
 }
+
 .correction-button-day button {
-    background-color: #f18a8a;
+    background-color: #FFA500;
+    padding: 8px 12px;
+    border-radius: 4px;
     border: none;
     color: #fff;
-    padding: 6px 12px;
-    border-radius: 4px;
-    cursor: pointer;
+    transition: background 0.3s;
 }
+
 .correction-button-day button:hover {
-    background-color: #ee6e6e;
+    background-color: #e59400;
 }
 
-/* Vacation Section */
-.vacation-section {
-    background-color: #f8f8f8;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 1rem;
-    margin-bottom: 2rem;
-}
-.form-vacation .form-group {
-    margin-bottom: 0.75rem;
-}
-.form-vacation .form-group label {
-    margin-bottom: 0.3rem;
-    font-weight: bold;
-}
-.form-vacation input {
-    padding: 4px;
-    border: 1px solid #aaa;
-    border-radius: 4px;
-}
-.form-vacation button {
-    background-color: #83b5a3;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 12px;
-}
-.form-vacation button:hover {
-    background-color: #5c9d8a;
+.vacation-section form,
+.vacation-history {
+    margin-top: 20px;
 }
 
-.approved { color: #2b8c2b; }
-.denied { color: #c00; }
-.pending { color: #cc9900; }
-
-/* Modal */
-.modal-overlay {
-    position: fixed; top:0; left:0; right:0; bottom:0;
-    background: rgba(0,0,0,0.5);
-    z-index: 999;
+.form-vacation {
     display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
     align-items: center;
-    justify-content: center;
+    margin-bottom: 20px;
 }
-.modal-content {
-    background: #fff;
-    padding: 1.5rem;
-    width: 420px;
-    border-radius: 8px;
-}
-.form-correction .form-group {
-    margin-bottom: 0.75rem;
+
+.form-vacation .form-group {
+    flex: 1;
+    min-width: 150px;
     display: flex;
     flex-direction: column;
 }
-.form-correction .form-group label {
-    margin-bottom: 0.3rem;
+
+.form-vacation label {
+    margin-bottom: 5px;
     font-weight: bold;
 }
-.form-correction input {
-    padding: 4px;
-    border: 1px solid #aaa;
+
+.form-vacation input {
+    padding: 8px;
+    border: 1px solid #ccc;
     border-radius: 4px;
 }
+
+.vacation-history ul {
+    list-style: none;
+    padding-left: 0;
+}
+
+.vacation-history li {
+    padding: 10px;
+    border-bottom: 1px solid #ddd;
+}
+
+.approved {
+    color: green;
+    font-weight: bold;
+}
+
+.denied {
+    color: red;
+    font-weight: bold;
+}
+
+.pending {
+    color: orange;
+    font-weight: bold;
+}
+
+/* Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+}
+
+.form-correction {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
 .modal-buttons {
     display: flex;
-    gap: 0.5rem;
-    margin-top: 1rem;
-}
-.modal-buttons button {
-    background-color: #83b5a3;
-    color: #fff;
-    border: none;
-    border-radius: 4px;
-    padding: 6px 12px;
-    cursor: pointer;
-}
-.modal-buttons button:hover {
-    background-color: #5c9d8a;
+    justify-content: space-between;
 }

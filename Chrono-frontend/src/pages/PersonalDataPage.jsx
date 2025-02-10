@@ -11,6 +11,11 @@ const PersonalDataPage = () => {
         lastName: currentUser?.lastName || '',
         email: currentUser?.email || ''
     });
+    const [passwordData, setPasswordData] = useState({
+        currentPassword: '',
+        newPassword: ''
+    });
+    const [message, setMessage] = useState('');
 
     const fetchPersonalData = async () => {
         try {
@@ -44,6 +49,24 @@ const PersonalDataPage = () => {
             setCurrentUser(res.data);
         } catch (err) {
             console.error('Fehler beim Aktualisieren des Profils', err);
+        }
+    };
+
+    const handlePasswordChange = async (e) => {
+        e.preventDefault();
+        try {
+            await api.put('/api/user/change-password', null, {
+                params: {
+                    username: currentUser.username,
+                    currentPassword: passwordData.currentPassword,
+                    newPassword: passwordData.newPassword
+                }
+            });
+            setMessage('Passwort erfolgreich geändert');
+            setPasswordData({ currentPassword: '', newPassword: '' });
+        } catch (err) {
+            console.error('Fehler beim Ändern des Passworts', err);
+            setMessage('Fehler beim Ändern des Passworts');
         }
     };
 
@@ -87,6 +110,33 @@ const PersonalDataPage = () => {
                     </div>
                     <button type="submit">Speichern</button>
                 </form>
+            </section>
+            <section className="password-change-section">
+                <h3>Passwort ändern</h3>
+                <form onSubmit={handlePasswordChange} className="form-password">
+                    <div className="form-group">
+                        <label>Aktuelles Passwort:</label>
+                        <input
+                            type="password"
+                            name="currentPassword"
+                            value={passwordData.currentPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, currentPassword: e.target.value })}
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>Neues Passwort:</label>
+                        <input
+                            type="password"
+                            name="newPassword"
+                            value={passwordData.newPassword}
+                            onChange={(e) => setPasswordData({ ...passwordData, newPassword: e.target.value })}
+                            required
+                        />
+                    </div>
+                    <button type="submit">Passwort ändern</button>
+                </form>
+                {message && <p className="message">{message}</p>}
             </section>
         </div>
     );

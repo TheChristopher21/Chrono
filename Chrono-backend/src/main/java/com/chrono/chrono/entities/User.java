@@ -7,7 +7,6 @@ import java.util.Set;
 @Entity
 @Table(name = "users")
 public class User {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -26,27 +25,20 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
-    // Für Time-Tracking
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private Set<TimeTracking> timeTracks = new HashSet<>();
 
-    /**
-     * Beispiel: 5 (Montag-Freitag)
-     */
     @Column(name = "expected_work_days")
     private Integer expectedWorkDays;
 
-    /**
-     * Beispiel: 8.0 Stunden pro Tag
-     */
     @Column(name = "daily_work_hours")
     private Double dailyWorkHours;
 
-    /**
-     * Beispiel: 30 Minuten Pause
-     */
     @Column(name = "break_duration")
     private Integer breakDuration;
+
+    @Column(name = "color")
+    private String color; // Neues Feld
 
     public User() {}
 
@@ -83,4 +75,7 @@ public class User {
 
     public Integer getBreakDuration() { return breakDuration; }
     public void setBreakDuration(Integer breakDuration) { this.breakDuration = breakDuration; }
+
+    public String getColor() { return color; }
+    public void setColor(String color) { this.color = color; }
 }

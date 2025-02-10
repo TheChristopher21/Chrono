@@ -14,7 +14,13 @@ public class TimeTrackingController {
     @Autowired
     private TimeTrackingService timeTrackingService;
 
+    // Smarter Punch-Endpoint – ausschließlich verwenden!
+    @PostMapping("/punch")
+    public TimeTrackingResponse punch(@RequestParam String username) {
+        return timeTrackingService.handleSmartPunch(username);
+    }
 
+    // Alte Endpunkte – nur zu Testzwecken (diese sollten im Frontend nicht mehr aufgerufen werden)
     @PostMapping("/work-start")
     public TimeTrackingResponse workStart(@RequestParam String username) {
         return timeTrackingService.handlePunch(username, "WORK_START");
@@ -34,7 +40,6 @@ public class TimeTrackingController {
     public TimeTrackingResponse workEnd(@RequestParam String username) {
         return timeTrackingService.handlePunch(username, "WORK_END");
     }
-
 
     @GetMapping("/history")
     public List<TimeTrackingResponse> getUserHistory(@RequestParam String username) {

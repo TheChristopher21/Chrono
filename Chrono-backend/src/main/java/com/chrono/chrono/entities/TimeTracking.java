@@ -2,7 +2,11 @@ package com.chrono.chrono.entities;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 
+/**
+ * Datenbank-Entität für Zeiterfassungseinträge.
+ */
 @Entity
 @Table(name = "time_tracking")
 public class TimeTracking {
@@ -16,7 +20,7 @@ public class TimeTracking {
     private boolean corrected;
 
     /**
-     * punchOrder:
+     * punchOrder gibt an, was dieser Eintrag darstellt:
      *   1 => WORK_START
      *   2 => BREAK_START
      *   3 => BREAK_END
@@ -26,46 +30,95 @@ public class TimeTracking {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private User user;
+    private User user;  // Bezug auf die User-Entität
 
-    public TimeTracking() {}
+    // Neue Felder für korrigierte Zeiten (nur Uhrzeit)
+    @Column(name = "work_start", columnDefinition = "TIME")
+    private LocalTime workStart;
 
-    // Getter + Setter
+    @Column(name = "break_start", columnDefinition = "TIME")
+    private LocalTime breakStart;
+
+    @Column(name = "break_end", columnDefinition = "TIME")
+    private LocalTime breakEnd;
+
+    @Column(name = "work_end", columnDefinition = "TIME")
+    private LocalTime workEnd;
+
+    public TimeTracking() {
+    }
+
+    // Getter & Setter für die vorhandenen Felder
+
     public Long getId() {
         return id;
     }
-    public LocalDateTime getStartTime() {
-        return startTime;
-    }
-    public LocalDateTime getEndTime() {
-        return endTime;
-    }
-    public boolean isCorrected() {
-        return corrected;
-    }
-    public Integer getPunchOrder() {
-        return punchOrder;
-    }
-    public User getUser() {
-        return user;
-    }
-
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
     }
     public void setStartTime(LocalDateTime startTime) {
         this.startTime = startTime;
     }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
     public void setEndTime(LocalDateTime endTime) {
         this.endTime = endTime;
+    }
+
+    public boolean isCorrected() {
+        return corrected;
     }
     public void setCorrected(boolean corrected) {
         this.corrected = corrected;
     }
+
+    public Integer getPunchOrder() {
+        return punchOrder;
+    }
     public void setPunchOrder(Integer punchOrder) {
         this.punchOrder = punchOrder;
     }
+
+    public User getUser() {
+        return user;
+    }
     public void setUser(User user) {
         this.user = user;
+    }
+
+    // Getter & Setter für die neuen Felder
+
+    public LocalTime getWorkStart() {
+        return workStart;
+    }
+    public void setWorkStart(LocalTime workStart) {
+        this.workStart = workStart;
+    }
+
+    public LocalTime getBreakStart() {
+        return breakStart;
+    }
+    public void setBreakStart(LocalTime breakStart) {
+        this.breakStart = breakStart;
+    }
+
+    public LocalTime getBreakEnd() {
+        return breakEnd;
+    }
+    public void setBreakEnd(LocalTime breakEnd) {
+        this.breakEnd = breakEnd;
+    }
+
+    public LocalTime getWorkEnd() {
+        return workEnd;
+    }
+    public void setWorkEnd(LocalTime workEnd) {
+        this.workEnd = workEnd;
     }
 }

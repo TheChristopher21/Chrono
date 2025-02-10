@@ -1,4 +1,3 @@
-// src/main/java/com/chrono/chrono/config/SecurityConfig.java
 package com.chrono.chrono.config;
 
 import com.chrono.chrono.services.CustomUserDetailsService;
@@ -9,6 +8,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -26,8 +26,10 @@ public class SecurityConfig {
 
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
+
     @Autowired
     private PasswordEncoderConfig passwordEncoderConfig;
+
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
@@ -35,11 +37,12 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOrigins(List.of("http://localhost:5173"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Cache-Control", "Content-Type", "Origin"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization","Content-Type","Origin"));
         configuration.setAllowCredentials(true);
+
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        // Für alle Endpunkte:
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
@@ -56,19 +59,17 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/api/auth/**").permitAll();
+                    // Freigabe für NFC, Timetracking und Korrektur-Endpunkte
+                    auth.requestMatchers("/api/nfc/**", "/api/timetracking/**", "/api/correction/**").permitAll();
                     auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
-                    auth.requestMatchers("/api/timetracking/**").hasAnyRole("USER", "ADMIN");
-                    auth.requestMatchers("/api/correction/**").hasAnyRole("USER", "ADMIN");
-                    auth.requestMatchers("/api/vacation/all").hasRole("ADMIN");
                     auth.requestMatchers("/api/vacation/**").hasAnyRole("USER", "ADMIN");
+                    auth.requestMatchers("/api/auth/**").permitAll();
                     auth.anyRequest().authenticated();
                 })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 }
