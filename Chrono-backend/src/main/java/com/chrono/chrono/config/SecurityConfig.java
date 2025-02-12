@@ -63,7 +63,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/nfc/**", "/api/timetracking/**", "/api/correction/**").permitAll();
-                    auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
+                    auth.requestMatchers("/api/admin/**").permitAll();
                     auth.requestMatchers("/api/vacation/**").hasAnyRole("USER", "ADMIN");
                     auth.requestMatchers("/api/auth/**").permitAll();
                     auth.requestMatchers("/api/timetracking/editDay").permitAll();

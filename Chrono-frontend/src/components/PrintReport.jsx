@@ -45,12 +45,9 @@ const PrintReport = () => {
             return;
         }
         try {
-            // Erstelle einen Canvas des Report-Elements
             const canvas = await html2canvas(input, { scale: 2 });
             const imgData = canvas.toDataURL('image/png');
             const pdf = new jsPDF('p', 'mm', 'a4');
-
-            // Berechne die Breite und Höhe (A4)
             const pdfWidth = pdf.internal.pageSize.getWidth();
             const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
             pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);

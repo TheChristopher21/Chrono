@@ -1,32 +1,32 @@
-/* Allgemeine Layout-Stile */
+/* PrintReport.css */
+
+/* Standard-Styles für den Report-Bereich */
 .print-report {
-    max-width: 800px;
-    margin: 20px auto;
+    background: #fff;
     padding: 20px;
-    background-color: #fff;
+    margin: 20px auto;
+    max-width: 800px;
     color: #333;
-    font-family: 'Roboto', sans-serif;
+    border: 1px solid #ddd;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
 
-/* Header */
-.report-header {
+.print-report header {
     text-align: center;
     margin-bottom: 20px;
 }
 
-.report-header h1 {
-    font-size: 24px;
-    margin-bottom: 10px;
+.print-report header h1 {
+    margin: 0;
+    font-size: 2rem;
 }
 
-.report-header p {
-    font-size: 16px;
+.print-report header p {
+    margin: 0;
+    font-size: 1.2rem;
 }
 
-/* Hauptinhalt */
-.report-content {
+.print-report main {
     margin-bottom: 20px;
 }
 
@@ -36,40 +36,47 @@
 }
 
 .report-day h2 {
-    font-size: 18px;
-    margin-bottom: 5px;
+    margin: 0 0 5px;
+    font-size: 1.5rem;
 }
 
 .report-day p {
-    margin: 2px 0;
-    font-size: 14px;
+    margin: 3px 0;
+    font-size: 1rem;
 }
 
-/* Footer mit Buttons */
-.report-footer {
+.print-buttons {
     text-align: center;
     margin-top: 20px;
 }
 
-.report-footer button {
+.print-buttons button {
+    padding: 10px 20px;
     background-color: #007BFF;
     color: #fff;
     border: none;
-    padding: 10px 20px;
     margin: 0 10px;
     border-radius: 5px;
     cursor: pointer;
-    font-size: 14px;
     transition: background-color 0.3s;
 }
 
-.report-footer button:hover {
+.print-buttons button:hover {
     background-color: #0056b3;
 }
 
-/* Für den Druckmodus: Blende unnötige Elemente aus */
+/* Print media: Zeige nur den Report-Inhalt */
 @media print {
-    .report-footer, .report-header p {
-        display: none;
+    body * {
+        visibility: hidden;
+    }
+    #reportContent, #reportContent * {
+        visibility: visible;
+    }
+    #reportContent {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
     }
 }

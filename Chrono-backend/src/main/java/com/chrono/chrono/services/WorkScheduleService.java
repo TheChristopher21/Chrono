@@ -9,12 +9,46 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class WorkScheduleService {
 
     @Autowired
     private UserScheduleRuleRepository ruleRepo;
+
+    /**
+     * Berechnet die erwarteten Arbeitsstunden basierend auf dem individuellen Wochenplan.
+     * Hierbei wird davon ausgegangen, dass das Feld weeklySchedule in der User-Entity
+     * bereits als List<Map<String, Integer>> vorliegt (mittels eines AttributeConverters).
+     *
+     * Falls keine individuelle Konfiguration vorhanden ist, wird der Wert aus dailyWorkHours
+     * oder 8 Stunden als Fallback verwendet.
+     */
+    public double getExpectedWorkHours(User user, LocalDate date) {
+        // Wenn ein effektives Datum gesetzt ist und das Datum vor diesem liegt,
+        // verwenden wir den Fallback (dailyWorkHours oder 8 Stunden).
+        if (user.getScheduleEffectiveDate() != null && date.isBefore(user.getScheduleEffectiveDate())) {
+            return (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.0;
+        }
+        List<Map<String, Integer>> schedule = user.getWeeklySchedule();
+        if (schedule != null && user.getScheduleCycle() != null) {
+            try {
+                int cycleLength = user.getScheduleCycle();
+                LocalDate epoch = LocalDate.of(2020, 1, 1);
+                long diffWeeks = ChronoUnit.WEEKS.between(epoch, date);
+                int index = (int)(diffWeeks % cycleLength);
+                Map<String, Integer> weekSchedule = schedule.get(index);
+                String dayOfWeek = date.getDayOfWeek().toString().toLowerCase();
+                if (weekSchedule.containsKey(dayOfWeek)) {
+                    return weekSchedule.get(dayOfWeek);
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.0;
+    }
 
     public boolean isDayOff(User user, LocalDate date) {
         List<UserScheduleRule> rules = ruleRepo.findByUser(user);
@@ -48,14 +82,13 @@ public class WorkScheduleService {
     }
 
     public int computeExpectedWorkMinutes(User user, LocalDate date) {
-        // Nehme die täglichen Arbeitsstunden aus dem User-Objekt; Standard: 8 Stunden
-        double dailyWorkHours = (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.0;
+        double expectedHours = getExpectedWorkHours(user, date);
         if (isDayOff(user, date)) {
             return 0;
         } else if (isHalfDay(user, date)) {
-            return (int) Math.round((dailyWorkHours * 60) / 2);
+            return (int) Math.round((expectedHours * 60) / 2);
         } else {
-            return (int) Math.round(dailyWorkHours * 60);
+            return (int) Math.round(expectedHours * 60);
         }
     }
 }

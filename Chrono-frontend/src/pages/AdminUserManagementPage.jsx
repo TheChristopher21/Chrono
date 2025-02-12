@@ -1,3 +1,4 @@
+// src/components/AdminUserManagementPage.jsx
 import React, { useState, useEffect } from 'react';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
@@ -10,7 +11,19 @@ const STANDARD_COLORS = [
     "#FF4500", "#00FA9A", "#7B68EE", "#FF6347"
 ];
 
+// Default-Wochenplan (für einen Zyklus-Woche)
+const defaultWeeklySchedule = {
+    monday: 8,
+    tuesday: 8,
+    wednesday: 8,
+    thursday: 8,
+    friday: 8,
+    saturday: 0,
+    sunday: 0
+};
+
 const AdminUserManagementPage = () => {
+    // States für Benutzer und Formularfelder
     const [users, setUsers] = useState([]);
     const [newUser, setNewUser] = useState({
         username: '',
@@ -20,13 +33,15 @@ const AdminUserManagementPage = () => {
         password: '',
         role: 'ROLE_USER',
         expectedWorkDays: '',
-        dailyWorkHours: '',
         breakDuration: '',
-        color: STANDARD_COLORS[0]
+        color: STANDARD_COLORS[0],
+        scheduleCycle: 1, // Anzahl der Wochen im Zyklus
+        weeklySchedule: [ { ...defaultWeeklySchedule } ]
     });
     const [editingUser, setEditingUser] = useState(null);
     const [showColorPicker, setShowColorPicker] = useState(false);
 
+    // Benutzer laden
     const fetchUsers = async () => {
         try {
             const res = await api.get('/api/admin/users');
@@ -51,10 +66,12 @@ const AdminUserManagementPage = () => {
                 password: newUser.password,
                 roles: [{ roleName: newUser.role }],
                 expectedWorkDays: newUser.expectedWorkDays ? Number(newUser.expectedWorkDays) : null,
-                dailyWorkHours: newUser.dailyWorkHours ? Number(newUser.dailyWorkHours) : null,
                 breakDuration: newUser.breakDuration ? Number(newUser.breakDuration) : null,
-                color: newUser.color
+                color: newUser.color,
+                scheduleCycle: newUser.scheduleCycle,
+                weeklySchedule: newUser.weeklySchedule
             });
+            // Reset newUser
             setNewUser({
                 username: '',
                 firstName: '',
@@ -63,9 +80,10 @@ const AdminUserManagementPage = () => {
                 password: '',
                 role: 'ROLE_USER',
                 expectedWorkDays: '',
-                dailyWorkHours: '',
                 breakDuration: '',
-                color: STANDARD_COLORS[0]
+                color: STANDARD_COLORS[0],
+                scheduleCycle: 1,
+                weeklySchedule: [ { ...defaultWeeklySchedule } ]
             });
             fetchUsers();
         } catch (err) {
@@ -77,14 +95,18 @@ const AdminUserManagementPage = () => {
         setEditingUser({
             ...user,
             currentPassword: '',
-            newPassword: ''
+            newPassword: '',
+            // Falls weeklySchedule noch nicht als Array vorliegt, setzen wir einen Default-Wert:
+            scheduleCycle: user.scheduleCycle || 1,
+            weeklySchedule: Array.isArray(user.weeklySchedule)
+                ? user.weeklySchedule
+                : [ { ...defaultWeeklySchedule } ]
         });
     };
 
     const handleUpdateUser = async (e) => {
         e.preventDefault();
         try {
-            // Erstelle zunächst das Payload-Objekt für die PUT-Anfrage
             const payload = {
                 id: editingUser.id,
                 username: editingUser.username,
@@ -92,13 +114,13 @@ const AdminUserManagementPage = () => {
                 lastName: editingUser.lastName,
                 email: editingUser.email,
                 expectedWorkDays: editingUser.expectedWorkDays ? Number(editingUser.expectedWorkDays) : null,
-                dailyWorkHours: editingUser.dailyWorkHours ? Number(editingUser.dailyWorkHours) : null,
                 breakDuration: editingUser.breakDuration ? Number(editingUser.breakDuration) : null,
                 color: editingUser.color,
-                role: editingUser.role
+                role: editingUser.role,
+                scheduleCycle: editingUser.scheduleCycle,
+                weeklySchedule: editingUser.weeklySchedule
             };
 
-            // Baue die Query-Parameter für die Passwörter. Wenn kein neues Passwort angegeben ist, wird es nicht gesendet.
             const queryParams = {
                 currentPassword: editingUser.currentPassword
             };
@@ -106,7 +128,6 @@ const AdminUserManagementPage = () => {
                 queryParams.newPassword = editingUser.newPassword;
             }
 
-            // Sende die PUT-Anfrage mit axios: Der Payload wird im Request-Body und die Passwörter als Query-Parameter übermittelt.
             await api.put('/api/admin/users', payload, { params: queryParams });
             setEditingUser(null);
             fetchUsers();
@@ -173,7 +194,6 @@ const AdminUserManagementPage = () => {
                             <th>Email</th>
                             <th>Rolle</th>
                             <th>Expected Work Days</th>
-                            <th>Daily Work Hours</th>
                             <th>Break Duration</th>
                             <th>Aktionen</th>
                         </tr>
@@ -186,7 +206,6 @@ const AdminUserManagementPage = () => {
                                 <td>{user.email}</td>
                                 <td>{user.roles && user.roles.length > 0 ? user.roles[0] : 'ROLE_USER'}</td>
                                 <td>{user.expectedWorkDays ?? '-'}</td>
-                                <td>{user.dailyWorkHours ?? '-'}</td>
                                 <td>{user.breakDuration ?? '-'}</td>
                                 <td>
                                     <button onClick={() => handleEditUser(user)}>Bearbeiten</button>
@@ -270,16 +289,6 @@ const AdminUserManagementPage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Daily Work Hours:</label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    placeholder="z.B. 8.0"
-                                    value={editingUser.dailyWorkHours || ''}
-                                    onChange={(e) => setEditingUser({ ...editingUser, dailyWorkHours: e.target.value })}
-                                />
-                            </div>
-                            <div className="form-group">
                                 <label>Break Duration (min):</label>
                                 <input
                                     type="number"
@@ -287,6 +296,152 @@ const AdminUserManagementPage = () => {
                                     value={editingUser.breakDuration || ''}
                                     onChange={(e) => setEditingUser({ ...editingUser, breakDuration: e.target.value })}
                                 />
+                            </div>
+                            {/* Neuer Bereich: Arbeitszeiten Konfiguration */}
+                            <h4>Arbeitszeiten Konfiguration</h4>
+                            <div className="form-group">
+                                <label>Cycle Length (Wochen):</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={editingUser.scheduleCycle}
+                                    onChange={(e) => {
+                                        const newCycle = Number(e.target.value);
+                                        let newSchedule = editingUser.weeklySchedule || [];
+                                        if (newCycle > newSchedule.length) {
+                                            const diff = newCycle - newSchedule.length;
+                                            for (let i = 0; i < diff; i++) {
+                                                newSchedule.push({ ...defaultWeeklySchedule });
+                                            }
+                                        } else {
+                                            newSchedule = newSchedule.slice(0, newCycle);
+                                        }
+                                        setEditingUser({
+                                            ...editingUser,
+                                            scheduleCycle: newCycle,
+                                            weeklySchedule: newSchedule
+                                        });
+                                    }}
+                                />
+                            </div>
+                            <div className="weekly-schedule">
+                                {editingUser.weeklySchedule.map((week, index) => (
+                                    <div key={index} className="schedule-week">
+                                        <h5>Woche {index + 1}</h5>
+                                        <div>
+                                            <label>Montag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.monday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, monday: newVal } : w
+                                                    );
+                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Dienstag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.tuesday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, tuesday: newVal } : w
+                                                    );
+                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Mittwoch:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.wednesday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, wednesday: newVal } : w
+                                                    );
+                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Donnerstag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.thursday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, thursday: newVal } : w
+                                                    );
+                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Freitag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.friday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, friday: newVal } : w
+                                                    );
+                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Samstag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.saturday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, saturday: newVal } : w
+                                                    );
+                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Sonntag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.sunday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, sunday: newVal } : w
+                                                    );
+                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                             <div className="form-group">
                                 <label>Farbe:</label>
@@ -296,12 +451,11 @@ const AdminUserManagementPage = () => {
                                 {showColorPicker && (
                                     <input
                                         type="color"
-                                        value={editingUser.color || '#FF5733'}
+                                        value={newUser.color || '#FF5733'}
                                         onChange={(e) => setEditingUser({ ...editingUser, color: e.target.value })}
                                     />
                                 )}
                             </div>
-                            {/* Für die Zeit-Edit-Funktion wird nur das User-Passwort benötigt */}
                             <div className="form-group">
                                 <label>User Password:</label>
                                 <input
@@ -375,16 +529,6 @@ const AdminUserManagementPage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Daily Work Hours:</label>
-                                <input
-                                    type="number"
-                                    step="0.1"
-                                    placeholder="z.B. 8.0"
-                                    value={newUser.dailyWorkHours}
-                                    onChange={(e) => setNewUser({ ...newUser, dailyWorkHours: e.target.value })}
-                                />
-                            </div>
-                            <div className="form-group">
                                 <label>Break Duration (min):</label>
                                 <input
                                     type="number"
@@ -392,6 +536,148 @@ const AdminUserManagementPage = () => {
                                     value={newUser.breakDuration}
                                     onChange={(e) => setNewUser({ ...newUser, breakDuration: e.target.value })}
                                 />
+                            </div>
+                            {/* Neuer Bereich: Arbeitszeiten Konfiguration */}
+                            <h4>Arbeitszeiten Konfiguration</h4>
+                            <div className="form-group">
+                                <label>Cycle Length (Wochen):</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    value={newUser.scheduleCycle}
+                                    onChange={(e) => {
+                                        const newCycle = Number(e.target.value);
+                                        let newSchedule = newUser.weeklySchedule || [];
+                                        if (newCycle > newSchedule.length) {
+                                            const diff = newCycle - newSchedule.length;
+                                            for (let i = 0; i < diff; i++) {
+                                                newSchedule.push({ ...defaultWeeklySchedule });
+                                            }
+                                        } else {
+                                            newSchedule = newSchedule.slice(0, newCycle);
+                                        }
+                                        setNewUser({ ...newUser, scheduleCycle: newCycle, weeklySchedule: newSchedule });
+                                    }}
+                                />
+                            </div>
+                            <div className="weekly-schedule">
+                                {newUser.weeklySchedule.map((week, index) => (
+                                    <div key={index} className="schedule-week">
+                                        <h5>Woche {index + 1}</h5>
+                                        <div>
+                                            <label>Montag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.monday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, monday: newVal } : w
+                                                    );
+                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Dienstag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.tuesday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, tuesday: newVal } : w
+                                                    );
+                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Mittwoch:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.wednesday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, wednesday: newVal } : w
+                                                    );
+                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Donnerstag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.thursday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, thursday: newVal } : w
+                                                    );
+                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Freitag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.friday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, friday: newVal } : w
+                                                    );
+                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Samstag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.saturday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, saturday: newVal } : w
+                                                    );
+                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                        <div>
+                                            <label>Sonntag:</label>
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                max="24"
+                                                value={week.sunday}
+                                                onChange={(e) => {
+                                                    const newVal = Number(e.target.value);
+                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
+                                                        i === index ? { ...w, sunday: newVal } : w
+                                                    );
+                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                             <div className="form-group">
                                 <label>Farbe:</label>
