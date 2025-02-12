@@ -5,9 +5,12 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.UserScheduleRule;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.UserScheduleRuleRepository;
+import com.chrono.chrono.services.WorkScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
 import java.util.Optional;
 
 @RestController
@@ -18,11 +21,15 @@ public class AdminScheduleRuleController {
     private UserRepository userRepository;
 
     @Autowired
+    private WorkScheduleService workScheduleService;
+
+
+    @Autowired
     private UserScheduleRuleRepository ruleRepository;
 
     /**
      * GET /api/admin/schedule-rules?userId=XY
-     * Liefert alle Regeln für einen bestimmten User
+     * Liefert alle Regeln für einen bestimmten User.
      */
     @GetMapping
     public ResponseEntity<?> getRulesByUser(@RequestParam Long userId) {
@@ -35,10 +42,14 @@ public class AdminScheduleRuleController {
         return ResponseEntity.ok(rules);
     }
 
-    /**
-     * POST /api/admin/schedule-rules
-     * Neue Regel anlegen
-     */
+    @GetMapping("/expected-work-minutes")
+    public int getExpectedWorkMinutes(@RequestParam String username, @RequestParam String date) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        LocalDate parsedDate = LocalDate.parse(date);
+        return workScheduleService.computeExpectedWorkMinutes(user, parsedDate);
+    }
+
     @PostMapping
     public ResponseEntity<?> createRule(@RequestBody UserScheduleRuleDTO dto) {
         Optional<User> userOpt = userRepository.findById(dto.getUserId());
@@ -60,7 +71,7 @@ public class AdminScheduleRuleController {
 
     /**
      * PUT /api/admin/schedule-rules/{id}
-     * Update einer Regel
+     * Update einer Regel.
      */
     @PutMapping("/{id}")
     public ResponseEntity<?> updateRule(@PathVariable Long id, @RequestBody UserScheduleRuleDTO dto) {
@@ -69,7 +80,6 @@ public class AdminScheduleRuleController {
             return ResponseEntity.badRequest().body("Rule not found");
         }
         UserScheduleRule rule = ruleOpt.get();
-        // UserId ändern wir normalerweise nicht mehr, wenn wir die Regel dem User zugewiesen haben
         if (dto.getRuleType() != null) {
             rule.setRuleType(dto.getRuleType());
         }
@@ -91,7 +101,7 @@ public class AdminScheduleRuleController {
 
     /**
      * DELETE /api/admin/schedule-rules/{id}
-     * Löscht eine Regel
+     * Löscht eine Regel.
      */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteRule(@PathVariable Long id) {

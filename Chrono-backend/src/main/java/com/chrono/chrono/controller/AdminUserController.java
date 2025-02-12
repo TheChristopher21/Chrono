@@ -54,7 +54,12 @@ public class AdminUserController {
             return ResponseEntity.badRequest().body("Username already exists");
         }
         if (userBody.getPassword() != null && !userBody.getPassword().isEmpty()) {
-            userBody.setPassword(passwordEncoder.encode(userBody.getPassword()));
+            // Hash das normale Passwort und setze auch das Admin-Passwort, falls der User ein Admin ist.
+            String hashed = passwordEncoder.encode(userBody.getPassword());
+            userBody.setPassword(hashed);
+            if (userBody.getRoles() != null && userBody.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN"))) {
+                userBody.setAdminPassword(hashed);
+            }
         } else {
             return ResponseEntity.badRequest().body("Password is required");
         }
@@ -85,6 +90,12 @@ public class AdminUserController {
         return ResponseEntity.ok(dto);
     }
 
+    /**
+     * Update-Endpoint: Aktualisiert einen Benutzer.
+     * Erwartet:
+     * - JSON-Body mit den User-Daten (ohne Passwortfelder)
+     * - Request-Parameter "currentPassword" und "newPassword" für die Passwortänderung
+     */
     @PutMapping
     public ResponseEntity<?> updateUser(@RequestBody User userBody,
                                         @RequestParam(value = "currentPassword", required = false) String currentPassword,
@@ -104,7 +115,12 @@ public class AdminUserController {
             if (currentPassword == null || !passwordEncoder.matches(currentPassword, existing.getPassword())) {
                 return ResponseEntity.badRequest().body("Current password is incorrect");
             }
-            existing.setPassword(passwordEncoder.encode(newPassword));
+            String hashed = passwordEncoder.encode(newPassword);
+            existing.setPassword(hashed);
+            // Falls der User Admin ist, aktualisiere auch das Admin-Passwort
+            if (existing.getRoles() != null && existing.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN"))) {
+                existing.setAdminPassword(hashed);
+            }
         }
         if (userBody.getRoles() != null && !userBody.getRoles().isEmpty()) {
             Role inputRole = userBody.getRoles().iterator().next();

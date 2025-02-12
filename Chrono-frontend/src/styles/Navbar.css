@@ -1,52 +1,53 @@
 /* Navbar.css */
 .navbar {
     display: flex;
-    align-items: center;
     justify-content: space-between;
-    background-color: #007BFF;
+    align-items: center;
+    background-color: #343a40;
     padding: 10px 20px;
-    color: #fff;
 }
 
-.navbar-brand {
+.navbar-brand .navbar-logo {
     font-size: 1.5rem;
-    font-weight: bold;
-}
-
-.navbar-logo {
     color: #fff;
+    font-weight: bold;
 }
 
 .navbar-links {
-    list-style: none;
     display: flex;
-    gap: 15px;
     align-items: center;
+    list-style: none;
 }
 
-.navbar-links li a {
+.navbar-links li {
+    margin-left: 15px;
+}
+
+.navbar-links a {
     color: #fff;
-    padding: 5px 10px;
-    transition: background 0.3s;
+    padding: 8px 12px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
 }
 
-.navbar-links li a:hover {
-    background: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
+.navbar-links a:hover {
+    background-color: #495057;
 }
 
 .navbar-username {
+    color: #fff;
     font-weight: bold;
+    margin-left: 10px;
 }
 
 .navbar-logout {
-    background: #fff;
-    color: #007BFF;
-    padding: 5px 10px;
-    border-radius: 4px;
-    transition: background 0.3s;
+    background-color: #dc3545;
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
 }
 
 .navbar-logout:hover {
-    background: #e0e0e0;
+    background-color: #c82333;
 }

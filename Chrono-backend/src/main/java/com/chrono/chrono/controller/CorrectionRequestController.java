@@ -6,8 +6,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -33,11 +31,18 @@ public class CorrectionRequestController {
     ) {
         try {
             DateTimeFormatter desiredFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm");
-            LocalDateTime dStart = LocalDateTime.parse(desiredStart, desiredFormatter);
-            LocalDateTime dEnd = LocalDateTime.parse(desiredEnd, desiredFormatter);
-            LocalDate d = LocalDate.parse(date);
-            return correctionRequestService.createRequest(username, null, dStart, dEnd, reason,
-                    workStart, breakStart, breakEnd, workEnd, d);
+            return correctionRequestService.createRequest(
+                    username,
+                    null,
+                    java.time.LocalDateTime.parse(desiredStart, desiredFormatter),
+                    java.time.LocalDateTime.parse(desiredEnd, desiredFormatter),
+                    reason,
+                    workStart,
+                    breakStart,
+                    breakEnd,
+                    workEnd,
+                    java.time.LocalDate.parse(date)
+            );
         } catch (DateTimeParseException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Invalid date/time format. Use yyyy-MM-dd for date and yyyy-MM-dd'T'HH:mm for desiredStart and desiredEnd");
@@ -47,6 +52,11 @@ public class CorrectionRequestController {
     @GetMapping("/open")
     public List<CorrectionRequest> getAllOpenRequests() {
         return correctionRequestService.getOpenRequests();
+    }
+
+    @GetMapping("/all")
+    public List<CorrectionRequest> getAllRequests() {
+        return correctionRequestService.getAllRequests();
     }
 
     @PostMapping("/approve/{id}")

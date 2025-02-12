@@ -76,27 +76,38 @@ const AdminUserManagementPage = () => {
     const handleEditUser = (user) => {
         setEditingUser({
             ...user,
-            role: user.roles && user.roles.length > 0 ? user.roles[0] : 'ROLE_USER'
+            currentPassword: '',
+            newPassword: ''
         });
     };
 
     const handleUpdateUser = async (e) => {
         e.preventDefault();
         try {
-            await api.put('/api/admin/users', {
+            // Erstelle zunächst das Payload-Objekt für die PUT-Anfrage
+            const payload = {
                 id: editingUser.id,
                 username: editingUser.username,
                 firstName: editingUser.firstName,
                 lastName: editingUser.lastName,
                 email: editingUser.email,
-                // Passwort aktualisieren: Nur wenn ein neues Passwort eingegeben wurde, andernfalls nicht ändern.
-                password: editingUser.newPassword ? editingUser.newPassword : editingUser.password,
-                roles: [{ roleName: editingUser.role }],
                 expectedWorkDays: editingUser.expectedWorkDays ? Number(editingUser.expectedWorkDays) : null,
                 dailyWorkHours: editingUser.dailyWorkHours ? Number(editingUser.dailyWorkHours) : null,
                 breakDuration: editingUser.breakDuration ? Number(editingUser.breakDuration) : null,
-                color: editingUser.color
-            });
+                color: editingUser.color,
+                role: editingUser.role
+            };
+
+            // Baue die Query-Parameter für die Passwörter. Wenn kein neues Passwort angegeben ist, wird es nicht gesendet.
+            const queryParams = {
+                currentPassword: editingUser.currentPassword
+            };
+            if (editingUser.newPassword && editingUser.newPassword.trim() !== "") {
+                queryParams.newPassword = editingUser.newPassword;
+            }
+
+            // Sende die PUT-Anfrage mit axios: Der Payload wird im Request-Body und die Passwörter als Query-Parameter übermittelt.
+            await api.put('/api/admin/users', payload, { params: queryParams });
             setEditingUser(null);
             fetchUsers();
         } catch (err) {
@@ -289,6 +300,17 @@ const AdminUserManagementPage = () => {
                                         onChange={(e) => setEditingUser({ ...editingUser, color: e.target.value })}
                                     />
                                 )}
+                            </div>
+                            {/* Für die Zeit-Edit-Funktion wird nur das User-Passwort benötigt */}
+                            <div className="form-group">
+                                <label>User Password:</label>
+                                <input
+                                    type="password"
+                                    placeholder="User Password"
+                                    value={editingUser.userPassword || ''}
+                                    onChange={(e) => setEditingUser({ ...editingUser, userPassword: e.target.value })}
+                                    required
+                                />
                             </div>
                             <button type="submit">Speichern</button>
                             <button type="button" onClick={() => setEditingUser(null)}>Abbrechen</button>

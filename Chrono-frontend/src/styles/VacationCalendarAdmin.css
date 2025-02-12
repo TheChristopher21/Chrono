@@ -1,44 +1,66 @@
 /* VacationCalendarAdmin.css */
 .vacation-calendar-admin {
-    max-width: 100%;
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
-.react-calendar {
-    width: 100%;
+.vacation-calendar-admin .react-calendar {
+    width: 100% !important;
     border: none;
     font-family: 'Roboto', sans-serif;
     line-height: 1.125em;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.react-calendar__tile {
-    max-width: initial;
-    padding: 10px 6.6667px;
+.vacation-calendar-admin .react-calendar__navigation button {
+    color: #007BFF;
+    min-width: 44px;
     background: none;
-    text-align: center;
-    border-radius: 4px;
-    transition: background 0.3s;
+    font-size: 1rem;
+    margin: 2px;
+}
+
+.vacation-calendar-admin .react-calendar__month-view__days__day {
+    margin: 2px;
+    border-radius: 6px;
     position: relative;
+}
+
+.vacation-calendar-admin .react-calendar__tile {
+    padding: 10px 6.6667px;
+    border-radius: 6px;
+    transition: background-color 0.3s;
+    text-align: center; /* Sorgt dafür, dass der Tag-Text zentriert ist */
+}
+
+.vacation-calendar-admin .react-calendar__tile:enabled:hover {
+    background-color: #e6f7ff;
+}
+
+/* Neue Regel: Sicherstellen, dass die Tageszahlen sichtbar sind */
+.vacation-calendar-admin .react-calendar__tile abbr {
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1rem;
+    color: #333;
 }
 
 .vacation-markers {
     display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
     justify-content: center;
     align-items: center;
-    gap: 2px;
-    margin-top: 4px;
+    margin-top: 5px;
 }
 
 .vacation-marker {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    font-size: 0.7rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background-color: #ccc;
     color: #fff;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    font-size: 0.7rem;
+    padding: 2px 4px;
+    border-radius: 4px;
     white-space: nowrap;
 }

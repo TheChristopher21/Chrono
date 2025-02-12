@@ -1,7 +1,6 @@
 package com.chrono.chrono.dto;
 
 import com.chrono.chrono.entities.UserScheduleRule;
-
 import java.time.LocalDate;
 
 public class UserScheduleRuleDTO {
@@ -11,7 +10,7 @@ public class UserScheduleRuleDTO {
     private String ruleType;           // z.B. "EVERY_2_WEEKS_FRIDAY_OFF"
     private LocalDate startDate;       // ab wann die Regel gilt
     private Integer repeatIntervalDays;
-    private Integer dayOfWeek;         // 1=Mo,...5=Fr,...
+    private Integer dayOfWeek;         // 1=Mo,..., 5=Fr,...
     private String dayMode;            // z.B. "OFF", "HALF_DAY" etc.
 
     public UserScheduleRuleDTO() {
@@ -27,9 +26,7 @@ public class UserScheduleRuleDTO {
         this.dayMode = rule.getDayMode();
     }
 
-    // ---------------------------
     // Getter & Setter
-    // ---------------------------
 
     public Long getId() {
         return id;

@@ -1,32 +1,79 @@
-/* VacationCalendar.css */
+/* VacationCalendar.css für den UserDashboard-Calendar */
+
 .vacation-calendar {
-    max-width: 100%;
-    margin: 0 auto;
+    width: 100%;
+    margin: 0;
+    padding: 0;
 }
 
-.react-calendar {
-    width: 100%;
+/* Der eigentliche React Calendar soll über die volle Breite gehen */
+.vacation-calendar .react-calendar {
+    width: 100% !important;
     border: none;
     font-family: 'Roboto', sans-serif;
     line-height: 1.125em;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.react-calendar__tile {
-    max-width: initial;
-    padding: 10px 6.6667px;
+/* Navigation (oben im Kalender) */
+.vacation-calendar .react-calendar__navigation {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.vacation-calendar .react-calendar__navigation button {
     background: none;
+    border: none;
+    font-size: 1rem;
+    margin: 2px;
+    color: #007BFF;
+    cursor: pointer;
+}
+
+/* Wochentage oben im Kalender */
+.vacation-calendar .react-calendar__month-view__weekdays {
+    display: flex;
+    justify-content: space-around;
     text-align: center;
-    border-radius: 4px;
-    transition: background 0.3s;
+    font-weight: bold;
+    margin-bottom: 5px;
 }
 
-.react-calendar__tile:enabled:hover,
-.react-calendar__tile:enabled:focus {
-    background: #e6f7ff;
+.vacation-calendar .react-calendar__month-view__weekdays div {
+    flex: 1;
 }
 
-.react-calendar__tile--active {
-    background: #007BFF;
-    color: white;
-    border-radius: 4px;
+/* Tage im Kalender: Wir erzwingen hier eine 7-Spalten-Aufteilung */
+.vacation-calendar .react-calendar__month-view__days {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.vacation-calendar .react-calendar__month-view__days__day {
+    flex: 1 0 14.28%;
+    display: flex;
+    flex-direction: column; /* Damit der Inhalt (normalerweise nur die Zahl) als Block dargestellt wird */
+    justify-content: center;
+    align-items: center;
+    height: 60px;  /* Höhe kann je nach Bedarf angepasst werden */
+    margin: 2px 0;
+    border-radius: 6px;
+    transition: background-color 0.3s;
+    text-align: center;
+}
+
+.vacation-calendar .react-calendar__month-view__days__day:hover {
+    background-color: #e6f7ff;
+}
+
+/* Sicherstellen, dass in jedem Day-Element (über das abbr-Element) die Zahl (Datum) angezeigt wird */
+.vacation-calendar .react-calendar__month-view__days__day abbr {
+    display: block;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 1rem;
+    color: #333;
 }

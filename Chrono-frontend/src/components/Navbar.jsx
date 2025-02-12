@@ -9,6 +9,7 @@ const Navbar = () => {
 
     return (
         <nav className="navbar">
+
             <div className="navbar-brand">
                 <Link to="/" className="navbar-logo">Chrono</Link>
             </div>

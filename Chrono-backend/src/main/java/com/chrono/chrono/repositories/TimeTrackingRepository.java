@@ -18,12 +18,10 @@ public interface TimeTrackingRepository extends JpaRepository<TimeTracking, Long
 
     Optional<TimeTracking> findTopByUserOrderByIdDesc(User user);
 
-    // Liefert den letzten abgeschlossenen Eintrag (mit endTime) im angegebenen Zeitraum
     Optional<TimeTracking> findTopByUserAndEndTimeIsNotNullAndStartTimeBetweenOrderByStartTimeDesc(User user, LocalDateTime start, LocalDateTime end);
 
     @Query("SELECT t FROM TimeTracking t JOIN FETCH t.user")
     List<TimeTracking> findAllWithUser();
 
-    // Neue Methode: Finde alle Einträge eines Nutzers, deren Startzeit innerhalb des angegebenen Zeitraums liegt
     List<TimeTracking> findByUserAndStartTimeBetween(User user, LocalDateTime start, LocalDateTime end);
 }

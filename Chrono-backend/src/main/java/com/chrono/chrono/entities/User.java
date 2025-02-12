@@ -13,6 +13,10 @@ public class User {
 
     private String username;
     private String password;
+
+    @Column(name = "admin_password")
+    private String adminPassword;
+
     private String firstName;
     private String lastName;
     private String email;
@@ -38,7 +42,7 @@ public class User {
     private Integer breakDuration;
 
     @Column(name = "color")
-    private String color; // Neues Feld
+    private String color;
 
     public User() {}
 
@@ -51,6 +55,9 @@ public class User {
 
     public String getPassword() { return password; }
     public void setPassword(String password) { this.password = password; }
+
+    public String getAdminPassword() { return adminPassword; }
+    public void setAdminPassword(String adminPassword) { this.adminPassword = adminPassword; }
 
     public String getFirstName() { return firstName; }
     public void setFirstName(String firstName) { this.firstName = firstName; }

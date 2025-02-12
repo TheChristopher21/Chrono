@@ -1,0 +1,75 @@
+/* Allgemeine Layout-Stile */
+.print-report {
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background-color: #fff;
+    color: #333;
+    font-family: 'Roboto', sans-serif;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+/* Header */
+.report-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.report-header h1 {
+    font-size: 24px;
+    margin-bottom: 10px;
+}
+
+.report-header p {
+    font-size: 16px;
+}
+
+/* Hauptinhalt */
+.report-content {
+    margin-bottom: 20px;
+}
+
+.report-day {
+    border-bottom: 1px solid #ddd;
+    padding: 10px 0;
+}
+
+.report-day h2 {
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.report-day p {
+    margin: 2px 0;
+    font-size: 14px;
+}
+
+/* Footer mit Buttons */
+.report-footer {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.report-footer button {
+    background-color: #007BFF;
+    color: #fff;
+    border: none;
+    padding: 10px 20px;
+    margin: 0 10px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.report-footer button:hover {
+    background-color: #0056b3;
+}
+
+/* Für den Druckmodus: Blende unnötige Elemente aus */
+@media print {
+    .report-footer, .report-header p {
+        display: none;
+    }
+}

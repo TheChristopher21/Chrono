@@ -16,50 +16,46 @@ public class WorkScheduleService {
     @Autowired
     private UserScheduleRuleRepository ruleRepo;
 
-    /**
-     * Prüft, ob ein bestimmter User an einem Datum 'frei' hat.
-     * Je nach 'dayMode' könnte es sein, dass er nur halben Tag arbeitet.
-     */
     public boolean isDayOff(User user, LocalDate date) {
         List<UserScheduleRule> rules = ruleRepo.findByUser(user);
-
         for (UserScheduleRule r : rules) {
-            // Bsp: "EVERY_2_WEEKS_FRIDAY_OFF"
             if ("EVERY_2_WEEKS_FRIDAY_OFF".equals(r.getRuleType())) {
-                // Prüfe Freitag
-                if (date.getDayOfWeek().getValue() == 5) {
-                    // Startdate + repeatIntervalDays
+                if (date.getDayOfWeek().getValue() == 5) { // Freitag
                     if (r.getStartDate() == null || !date.isBefore(r.getStartDate())) {
                         if (r.getRepeatIntervalDays() != null) {
                             long diff = ChronoUnit.DAYS.between(r.getStartDate(), date);
                             if (diff >= 0 && diff % r.getRepeatIntervalDays() == 0) {
-                                return true; // => Tag ist frei
+                                return true;
                             }
                         }
                     }
                 }
             }
-            // Du kannst weitere if-Blöcke machen,
-            // z.B. "EVERY_2_WEEKS_XDAY_OFF" etc.
         }
         return false;
     }
 
-    /**
-     * Beispiel: Gibt an, ob nur halber Tag gearbeitet wird.
-     */
     public boolean isHalfDay(User user, LocalDate date) {
         List<UserScheduleRule> rules = ruleRepo.findByUser(user);
-
         for (UserScheduleRule r : rules) {
-            // dayMode = "HALF_DAY"
             if ("HALF_DAY".equalsIgnoreCase(r.getDayMode())) {
                 if (r.getDayOfWeek() != null && date.getDayOfWeek().getValue() == r.getDayOfWeek()) {
-                    // ggf. Intervall checken
                     return true;
                 }
             }
         }
         return false;
+    }
+
+    public int computeExpectedWorkMinutes(User user, LocalDate date) {
+        // Nehme die täglichen Arbeitsstunden aus dem User-Objekt; Standard: 8 Stunden
+        double dailyWorkHours = (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.0;
+        if (isDayOff(user, date)) {
+            return 0;
+        } else if (isHalfDay(user, date)) {
+            return (int) Math.round((dailyWorkHours * 60) / 2);
+        } else {
+            return (int) Math.round(dailyWorkHours * 60);
+        }
     }
 }

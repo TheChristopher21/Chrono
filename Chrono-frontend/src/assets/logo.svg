@@ -1,6 +1,86 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
-    <circle cx="50" cy="50" r="48" stroke="#4CAF50" stroke-width="4"/>
-    <text x="50%" y="50%" text-anchor="middle" fill="#4CAF50" dy=".3em" font-size="20">
-        Chrono
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="800" height="400" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+    <!-- Definitionsbereich -->
+    <defs>
+        <!-- Radialer Hintergrundverlauf in tiefem Dunkelblau -->
+        <radialGradient id="bgGrad" cx="50%" cy="50%" r="80%">
+            <stop offset="0%" stop-color="#0d243b"/>
+            <stop offset="100%" stop-color="#00182a"/>
+        </radialGradient>
+        <!-- Linearer Farbverlauf für Linien und Akzente -->
+        <linearGradient id="lineGrad" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="#00e6e6"/>
+            <stop offset="100%" stop-color="#00509e"/>
+        </linearGradient>
+        <!-- Filter für einen sanften Glüheffekt -->
+        <filter id="glow">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blurred"/>
+            <feMerge>
+                <feMergeNode in="blurred"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+        <!-- Filter für einen Drop-Shadow-Effekt beim Text -->
+        <filter id="textShadow" x="-50%" y="-50%" width="200%" height="200%">
+            <feDropShadow dx="2" dy="2" stdDeviation="2" flood-color="#000000" flood-opacity="0.5"/>
+        </filter>
+    </defs>
+
+    <!-- Hintergrund -->
+    <rect width="800" height="400" fill="url(#bgGrad)"/>
+
+    <!-- Futuristische Formen mit Glüheffekt -->
+    <g filter="url(#glow)">
+        <!-- Abgerundeter Hexagon-Pfad -->
+        <path d="
+      M210,60
+      L590,60
+      Q600,60 610,70
+      L680,180
+      Q690,200 680,220
+      L610,330
+      Q600,340 590,340
+      L210,340
+      Q200,340 190,330
+      L120,220
+      Q110,200 120,180
+      L190,70
+      Q200,60 210,60 Z
+      "
+              fill="none"
+              stroke="url(#lineGrad)"
+              stroke-width="6"
+              stroke-dasharray="12,6"/>
+        <!-- Zwei konzentrische Kreise als digitale Akzente -->
+        <circle cx="400" cy="200" r="120"
+                fill="none"
+                stroke="url(#lineGrad)"
+                stroke-width="5"
+                stroke-dasharray="10,5"/>
+        <circle cx="400" cy="200" r="100"
+                fill="none"
+                stroke="url(#lineGrad)"
+                stroke-width="3"
+                stroke-dasharray="6,4"/>
+        <!-- Diagonale Linien als futuristische Unterteilung -->
+        <line x1="400" y1="80" x2="400" y2="320"
+              stroke="url(#lineGrad)"
+              stroke-width="4"
+              stroke-dasharray="8,4"/>
+        <line x1="250" y1="200" x2="550" y2="200"
+              stroke="url(#lineGrad)"
+              stroke-width="4"
+              stroke-dasharray="8,4"/>
+    </g>
+
+    <!-- Zentraler Schriftzug "CHRONO" mit Drop-Shadow -->
+    <text x="400" y="210" text-anchor="middle" dominant-baseline="middle"
+          font-family="'Montserrat', sans-serif"
+          font-size="55"
+          fill="#ffffff"
+          font-weight="600"
+          letter-spacing="2"
+          filter="url(#textShadow)">
+        CHRONO
     </text>
 </svg>

@@ -1,14 +1,23 @@
 /* UserDashboard.css */
 .user-dashboard {
-    max-width: 1200px;
-    margin: 20px auto;
+    width: 100%;
+    margin: 0;
     padding: 20px;
 }
 
 .dashboard-header {
-    text-align: center;
+    background-color: #fff;
+    padding: 20px;
     margin-bottom: 20px;
-    color: #007BFF;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.dashboard-header h2 {
+    margin-bottom: 10px;
 }
 
 .personal-info p {
@@ -16,35 +25,53 @@
 }
 
 .punch-message {
-    background: #e0ffe0;
-    color: #2e7d32;
-    padding: 10px;
-    border-radius: 4px;
+    background-color: #e0ffe0;
+    color: #006400;
+    padding: 10px 20px;
+    margin: 10px 0;
+    border: 1px solid #90ee90;
+    border-radius: 5px;
     text-align: center;
+}
+
+.time-tracking-section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     margin-bottom: 20px;
 }
 
-.time-tracking-section,
-.vacation-section {
-    background: #fff;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    margin-bottom: 20px;
+.time-tracking-section h3 {
+    margin-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
 }
 
 .week-navigation {
     display: flex;
-    justify-content: center;
     align-items: center;
+    justify-content: center;
     gap: 15px;
     margin-bottom: 20px;
 }
 
+.week-navigation button {
+    padding: 8px 16px;
+    background-color: #007BFF;
+    color: #fff;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.week-navigation button:hover {
+    background-color: #0056b3;
+}
+
 .week-navigation input[type="date"] {
     padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
 }
 
 .week-display {
@@ -55,46 +82,91 @@
 }
 
 .day-card {
-    background: #f9f9f9;
+    background-color: #fafafa;
+    border: 1px solid #e0e0e0;
+    border-radius: 10px;
     padding: 15px;
-    border-radius: 8px;
-    width: calc(33.333% - 20px);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    flex: 1 1 calc(33% - 40px);
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
 }
 
-.day-card-header {
+.day-card-header h4 {
     margin-bottom: 10px;
-    color: #007BFF;
-    border-bottom: 1px solid #ddd;
-    padding-bottom: 5px;
+    font-size: 1.1rem;
+}
+
+.day-card ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+/* Gestempelte Zeiten hinterlegt in Grau */
+.day-card li {
+    background-color: #e0e0e0;
+    padding: 6px;
+    border-radius: 5px;
+    margin-bottom: 6px;
+}
+
+.entry-label {
+    font-weight: bold;
 }
 
 .no-entries {
     font-style: italic;
-    color: #888;
+    color: #777;
+    text-align: center;
+    margin: 20px 0;
 }
 
 .correction-button-day {
-    margin-top: 10px;
-    text-align: center;
+    text-align: right;
 }
 
 .correction-button-day button {
-    background-color: #FFA500;
-    padding: 8px 12px;
-    border-radius: 4px;
-    border: none;
-    color: #fff;
-    transition: background 0.3s;
+    background-color: #FFC107;
+    color: #333;
+    padding: 6px 12px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
 }
 
 .correction-button-day button:hover {
-    background-color: #e59400;
+    background-color: #e0a800;
 }
 
-.vacation-section form,
-.vacation-history {
-    margin-top: 20px;
+.print-report-container {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.print-report-container button {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: #fff;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.print-report-container button:hover {
+    background-color: #218838;
+}
+
+.vacation-section {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.vacation-section h3 {
+    margin-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 10px;
 }
 
 .form-vacation {
@@ -102,12 +174,11 @@
     gap: 15px;
     flex-wrap: wrap;
     align-items: center;
+    justify-content: center;
     margin-bottom: 20px;
 }
 
 .form-vacation .form-group {
-    flex: 1;
-    min-width: 150px;
     display: flex;
     flex-direction: column;
 }
@@ -117,45 +188,65 @@
     font-weight: bold;
 }
 
-.form-vacation input {
+.form-vacation input[type="date"] {
     padding: 8px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+}
+
+.form-vacation button {
+    padding: 10px 20px;
+    background-color: #007BFF;
+    color: #fff;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.form-vacation button:hover {
+    background-color: #0056b3;
+}
+
+.vacation-history {
+    margin-top: 20px;
+}
+
+.vacation-history h4 {
+    margin-bottom: 10px;
 }
 
 .vacation-history ul {
     list-style: none;
-    padding-left: 0;
+    padding: 0;
 }
 
 .vacation-history li {
-    padding: 10px;
-    border-bottom: 1px solid #ddd;
+    padding: 8px;
+    border-bottom: 1px solid #eee;
 }
 
 .approved {
-    color: green;
+    color: #28a745;
     font-weight: bold;
 }
 
 .denied {
-    color: red;
+    color: #dc3545;
     font-weight: bold;
 }
 
 .pending {
-    color: orange;
+    color: #ffc107;
     font-weight: bold;
 }
 
-/* Modal */
+/* Modal Styles */
 .modal-overlay {
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -164,19 +255,61 @@
 
 .modal-content {
     background: #fff;
-    padding: 20px;
-    border-radius: 8px;
+    padding: 30px;
+    border-radius: 10px;
     width: 90%;
     max-width: 500px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-.form-correction {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group input[type="time"],
+.form-group input[type="date"],
+.form-group input[type="number"],
+.form-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
 }
 
 .modal-buttons {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+.modal-buttons button {
+    padding: 8px 16px;
+    border-radius: 5px;
+    transition: background-color 0.3s;
+}
+
+.modal-buttons button:first-child {
+    background-color: #007BFF;
+    color: #fff;
+}
+
+.modal-buttons button:first-child:hover {
+    background-color: #0056b3;
+}
+
+.modal-buttons button:last-child {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.modal-buttons button:last-child:hover {
+    background-color: #5a6268;
 }

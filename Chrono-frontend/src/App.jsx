@@ -8,6 +8,7 @@ import AdminDashboard from './pages/AdminDashboard.jsx';
 import AdminUserManagementPage from './pages/AdminUserManagementPage.jsx';
 import PersonalDataPage from './pages/PersonalDataPage.jsx';
 import PrivateRoute from './components/PrivateRoute.jsx';
+import PrintReport from "./components/PrintReport.jsx";
 
 function App() {
     return (
@@ -26,6 +27,7 @@ function App() {
                     </PrivateRoute>
                 }
             />
+            <Route path="/print-report" element={<PrintReport />} />
             <Route
                 path="/profile"
                 element={

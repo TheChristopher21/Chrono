@@ -17,7 +17,7 @@ public class CorrectionRequest {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Gewünschte (korrigierte) Zeiten als Datum+Zeit
+    // Gewünschte (korrigierte) Start- und Endzeit (Datum + Uhrzeit)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @JsonProperty("desiredStart")
     private LocalDateTime desiredStartTime;
@@ -30,7 +30,7 @@ public class CorrectionRequest {
     private boolean approved;
     private boolean denied;
 
-    // Neue (korrigierte) Zeitfelder als LocalTime (nur Uhrzeit)
+    // Neue (korrigierte) Zeiten (nur Uhrzeit)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
     @Column(name = "work_start")
     private LocalTime workStart;
@@ -47,7 +47,7 @@ public class CorrectionRequest {
     @Column(name = "work_end")
     private LocalTime workEnd;
 
-    // Felder für die originalen Zeiten (werden beim Approve übernommen)
+    // Originale Zeiten (werden beim Approve übernommen)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
     @Column(name = "original_work_start")
     private LocalTime originalWorkStart;
@@ -69,7 +69,7 @@ public class CorrectionRequest {
     @JsonIgnore
     private User user;
 
-    // Optionale Verknüpfung zu einem existierenden TimeTracking-Eintrag
+    // Optional: Verknüpfung zu einem existierenden TimeTracking-Eintrag
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "time_tracking_id", nullable = true)
     @JsonIgnore
@@ -86,7 +86,6 @@ public class CorrectionRequest {
         this.reason = reason;
         this.approved = false;
         this.denied = false;
-        // Falls ein originalTimeTracking vorhanden ist, werden hier die Originalzeiten übernommen.
         if (originalTimeTracking != null) {
             this.originalWorkStart = originalTimeTracking.getWorkStart();
             this.originalBreakStart = originalTimeTracking.getBreakStart();
@@ -96,6 +95,7 @@ public class CorrectionRequest {
     }
 
     // --- Getter & Setter ---
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "user_schedule_rules")  // oder wie du es nennen willst
+@Table(name = "user_schedule_rules")
 public class UserScheduleRule {
 
     @Id
@@ -24,22 +24,22 @@ public class UserScheduleRule {
     private String ruleType;
 
     /**
-     * Startdatum der Regel, optional
+     * Startdatum der Regel, optional.
      */
     private LocalDate startDate;
 
     /**
-     * Intervall in Tagen, z.B. 14
+     * Intervall in Tagen, z.B. 14.
      */
     private Integer repeatIntervalDays;
 
     /**
-     * Wochentag (1=Montag, 2=Dienstag,... 5=Freitag usw.)
+     * Wochentag (1=Montag, 2=Dienstag, …, 5=Freitag usw.).
      */
     private Integer dayOfWeek;
 
     /**
-     * dayMode: "OFF", "HALF_DAY", ...
+     * dayMode: z.B. "OFF", "HALF_DAY" etc.
      */
     private String dayMode;
 
@@ -61,9 +61,7 @@ public class UserScheduleRule {
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
 
     public Integer getRepeatIntervalDays() { return repeatIntervalDays; }
-    public void setRepeatIntervalDays(Integer repeatIntervalDays) {
-        this.repeatIntervalDays = repeatIntervalDays;
-    }
+    public void setRepeatIntervalDays(Integer repeatIntervalDays) { this.repeatIntervalDays = repeatIntervalDays; }
 
     public Integer getDayOfWeek() { return dayOfWeek; }
     public void setDayOfWeek(Integer dayOfWeek) { this.dayOfWeek = dayOfWeek; }
