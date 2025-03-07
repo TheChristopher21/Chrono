@@ -1,8 +1,11 @@
-import React, { useState, useEffect } from 'react';
+// src/pages/PersonalDataPage.jsx
+import React, { useState, useEffect, useContext } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
 import '../styles/PersonalDataPage.css';
+import { useNotification } from '../context/NotificationContext';
+import { useTranslation, LanguageContext } from '../context/LanguageContext';
 
 const PersonalDataPage = () => {
     const { currentUser, setCurrentUser } = useAuth();
@@ -17,6 +20,9 @@ const PersonalDataPage = () => {
     });
     const [message, setMessage] = useState('');
 
+    const { notify } = useNotification();
+    const { t } = useTranslation();
+
     const fetchPersonalData = async () => {
         try {
             const res = await api.get('/api/auth/me');
@@ -26,7 +32,7 @@ const PersonalDataPage = () => {
                 email: res.data.email
             });
         } catch (err) {
-            console.error('Fehler beim Laden der Profil-Daten', err);
+            console.error(t("personalData.errorLoading"), err);
         }
     };
 
@@ -45,10 +51,11 @@ const PersonalDataPage = () => {
                 lastName: personalData.lastName,
                 email: personalData.email
             });
-            alert('Profil aktualisiert');
+            notify(t("personalData.saved"));
             setCurrentUser(res.data);
         } catch (err) {
-            console.error('Fehler beim Aktualisieren des Profils', err);
+            console.error(t("personalData.errorUpdating"), err);
+            notify(t("personalData.errorUpdating"));
         }
     };
 
@@ -62,11 +69,13 @@ const PersonalDataPage = () => {
                     newPassword: passwordData.newPassword
                 }
             });
-            setMessage('Passwort erfolgreich geändert');
+            setMessage(t("personalData.passwordChanged"));
+            notify(t("personalData.passwordChanged"));
             setPasswordData({ currentPassword: '', newPassword: '' });
         } catch (err) {
-            console.error('Fehler beim Ändern des Passworts', err);
-            setMessage('Fehler beim Ändern des Passworts');
+            console.error(t("personalData.errorChangingPassword"), err);
+            setMessage(t("personalData.errorChangingPassword"));
+            notify(t("personalData.errorChangingPassword"));
         }
     };
 
@@ -74,12 +83,12 @@ const PersonalDataPage = () => {
         <div className="personal-data-page">
             <Navbar />
             <header className="page-header">
-                <h2>Mein Profil</h2>
+                <h2>{t("personalData.title")}</h2>
             </header>
             <section className="personal-data-section">
                 <form onSubmit={handlePersonalDataUpdate} className="form-personal">
                     <div className="form-group">
-                        <label>Vorname:</label>
+                        <label>{t("personalData.firstName")}:</label>
                         <input
                             type="text"
                             name="firstName"
@@ -89,7 +98,7 @@ const PersonalDataPage = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label>Nachname:</label>
+                        <label>{t("personalData.lastName")}:</label>
                         <input
                             type="text"
                             name="lastName"
@@ -99,7 +108,7 @@ const PersonalDataPage = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label>E-Mail:</label>
+                        <label>{t("personalData.email")}:</label>
                         <input
                             type="email"
                             name="email"
@@ -108,14 +117,14 @@ const PersonalDataPage = () => {
                             required
                         />
                     </div>
-                    <button type="submit">Speichern</button>
+                    <button type="submit">{t("personalData.saveButton")}</button>
                 </form>
             </section>
             <section className="password-change-section">
-                <h3>Passwort ändern</h3>
+                <h3>{t("personalData.changePassword")}</h3>
                 <form onSubmit={handlePasswordChange} className="form-password">
                     <div className="form-group">
-                        <label>Aktuelles Passwort:</label>
+                        <label>{t("personalData.currentPassword")}:</label>
                         <input
                             type="password"
                             name="currentPassword"
@@ -125,7 +134,7 @@ const PersonalDataPage = () => {
                         />
                     </div>
                     <div className="form-group">
-                        <label>Neues Passwort:</label>
+                        <label>{t("personalData.newPassword")}:</label>
                         <input
                             type="password"
                             name="newPassword"
@@ -134,9 +143,9 @@ const PersonalDataPage = () => {
                             required
                         />
                     </div>
-                    <button type="submit">Passwort ändern</button>
+                    <button type="submit">{t("personalData.changePassword")}</button>
                 </form>
-                {message && <p className="message">{message}</p>}
+                {message && <p>{message}</p>}
             </section>
         </div>
     );

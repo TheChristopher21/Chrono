@@ -1,8 +1,10 @@
-// src/components/AdminUserManagementPage.jsx
-import React, { useState, useEffect } from 'react';
+// src/pages/AdminUserManagementPage.jsx
+import React, { useState, useEffect, useContext } from 'react';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
 import '../styles/AdminUserManagementPage.css';
+import { useNotification } from '../context/NotificationContext';
+import { useTranslation, LanguageContext } from '../context/LanguageContext';
 
 const STANDARD_COLORS = [
     "#FF5733", "#33FF57", "#3357FF", "#F0FF33",
@@ -11,7 +13,6 @@ const STANDARD_COLORS = [
     "#FF4500", "#00FA9A", "#7B68EE", "#FF6347"
 ];
 
-// Default-Wochenplan (für einen Zyklus-Woche)
 const defaultWeeklySchedule = {
     monday: 8,
     tuesday: 8,
@@ -23,7 +24,6 @@ const defaultWeeklySchedule = {
 };
 
 const AdminUserManagementPage = () => {
-    // States für Benutzer und Formularfelder
     const [users, setUsers] = useState([]);
     const [newUser, setNewUser] = useState({
         username: '',
@@ -35,21 +35,25 @@ const AdminUserManagementPage = () => {
         expectedWorkDays: '',
         breakDuration: '',
         color: STANDARD_COLORS[0],
-        scheduleCycle: 1, // Anzahl der Wochen im Zyklus
-        weeklySchedule: [ { ...defaultWeeklySchedule } ]
+        scheduleCycle: 1,
+        weeklySchedule: [{ ...defaultWeeklySchedule }]
     });
     const [editingUser, setEditingUser] = useState(null);
     const [showColorPicker, setShowColorPicker] = useState(false);
 
+    const { notify } = useNotification();
+    const { t } = useTranslation();
+    const { language, setLanguage } = useContext(LanguageContext); // Auch hier falls du später dynamische Anpassungen möchtest
+
     // Benutzer laden
-    const fetchUsers = async () => {
+    async function fetchUsers() {
         try {
             const res = await api.get('/api/admin/users');
             setUsers(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
-            console.error("Fehler beim Laden der Benutzer", err);
+            console.error(t("adminUserManagement.errorLoadingUsers"), err);
         }
-    };
+    }
 
     useEffect(() => {
         fetchUsers();
@@ -83,11 +87,11 @@ const AdminUserManagementPage = () => {
                 breakDuration: '',
                 color: STANDARD_COLORS[0],
                 scheduleCycle: 1,
-                weeklySchedule: [ { ...defaultWeeklySchedule } ]
+                weeklySchedule: [{ ...defaultWeeklySchedule }]
             });
             fetchUsers();
         } catch (err) {
-            console.error("Fehler beim Anlegen des Benutzers", err);
+            console.error(t("adminUserManagement.errorAddingUser"), err);
         }
     };
 
@@ -96,11 +100,10 @@ const AdminUserManagementPage = () => {
             ...user,
             currentPassword: '',
             newPassword: '',
-            // Falls weeklySchedule noch nicht als Array vorliegt, setzen wir einen Default-Wert:
             scheduleCycle: user.scheduleCycle || 1,
             weeklySchedule: Array.isArray(user.weeklySchedule)
                 ? user.weeklySchedule
-                : [ { ...defaultWeeklySchedule } ]
+                : [{ ...defaultWeeklySchedule }]
         });
     };
 
@@ -132,7 +135,7 @@ const AdminUserManagementPage = () => {
             setEditingUser(null);
             fetchUsers();
         } catch (err) {
-            console.error("Fehler beim Updaten des Benutzers", err);
+            console.error(t("adminUserManagement.errorUpdatingUser"), err);
         }
     };
 
@@ -141,7 +144,7 @@ const AdminUserManagementPage = () => {
             await api.delete(`/api/admin/users/${id}`);
             fetchUsers();
         } catch (err) {
-            console.error("Fehler beim Löschen des Benutzers", err);
+            console.error(t("adminUserManagement.errorDeletingUser"), err);
         }
     };
 
@@ -166,13 +169,13 @@ const AdminUserManagementPage = () => {
             });
             const result = await response.json();
             if (result.status === 'success') {
-                alert(`Karte erfolgreich beschrieben mit: ${user.username}`);
+                notify(t("adminUserManagement.programCardSuccess") + ": " + user.username);
             } else {
-                alert(`Fehler beim Kartenbeschreiben: ${result.message}`);
+                notify(t("adminUserManagement.programCardError") + ": " + result.message);
             }
         } catch (err) {
-            console.error("Fehler beim Kartenbeschreiben:", err);
-            alert("Fehler beim Kartenbeschreiben: " + err.message);
+            console.error(t("adminUserManagement.programCardError"), err);
+            notify(t("adminUserManagement.programCardError") + ": " + err.message);
         }
     };
 
@@ -180,22 +183,22 @@ const AdminUserManagementPage = () => {
         <div className="admin-user-management">
             <Navbar />
             <header className="page-header">
-                <h2>Benutzerverwaltung</h2>
+                <h2>{t("adminUserManagement.title")}</h2>
             </header>
             <section className="user-list">
                 {users.length === 0 ? (
-                    <p>Keine Benutzer gefunden.</p>
+                    <p>{t("adminUserManagement.noUsers")}</p>
                 ) : (
                     <table>
                         <thead>
                         <tr>
-                            <th>Benutzername</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Rolle</th>
-                            <th>Expected Work Days</th>
-                            <th>Break Duration</th>
-                            <th>Aktionen</th>
+                            <th>{t("adminUserManagement.username")}</th>
+                            <th>{t("adminUserManagement.firstName")} {t("adminUserManagement.lastName")}</th>
+                            <th>{t("adminUserManagement.email")}</th>
+                            <th>{t("adminUserManagement.role")}</th>
+                            <th>{t("adminUserManagement.expectedWorkDays")}</th>
+                            <th>{t("adminUserManagement.breakDuration")}</th>
+                            <th>{t("adminUserManagement.table.actions")}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -208,9 +211,9 @@ const AdminUserManagementPage = () => {
                                 <td>{user.expectedWorkDays ?? '-'}</td>
                                 <td>{user.breakDuration ?? '-'}</td>
                                 <td>
-                                    <button onClick={() => handleEditUser(user)}>Bearbeiten</button>
-                                    <button onClick={() => handleDeleteUser(user.id)}>Löschen</button>
-                                    <button onClick={() => handleProgramCard(user)}>Karte programmieren</button>
+                                    <button onClick={() => handleEditUser(user)}>{t("adminUserManagement.table.edit")}</button>
+                                    <button onClick={() => handleDeleteUser(user.id)}>{t("adminUserManagement.table.delete")}</button>
+                                    <button onClick={() => handleProgramCard(user)}>{t("adminUserManagement.table.programCard")}</button>
                                 </td>
                             </tr>
                         ))}
@@ -221,38 +224,38 @@ const AdminUserManagementPage = () => {
             <section className="user-form">
                 {editingUser ? (
                     <>
-                        <h3>Benutzer bearbeiten</h3>
+                        <h3>{t("adminUserManagement.editUser")}</h3>
                         <form onSubmit={handleUpdateUser}>
                             <input
                                 type="text"
-                                placeholder="Benutzername"
+                                placeholder={t("adminUserManagement.username")}
                                 value={editingUser.username || ''}
                                 onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
                                 required
                             />
                             <input
                                 type="text"
-                                placeholder="Vorname"
+                                placeholder={t("adminUserManagement.firstName")}
                                 value={editingUser.firstName || ''}
                                 onChange={(e) => setEditingUser({ ...editingUser, firstName: e.target.value })}
                                 required
                             />
                             <input
                                 type="text"
-                                placeholder="Nachname"
+                                placeholder={t("adminUserManagement.lastName")}
                                 value={editingUser.lastName || ''}
                                 onChange={(e) => setEditingUser({ ...editingUser, lastName: e.target.value })}
                                 required
                             />
                             <input
                                 type="email"
-                                placeholder="E-Mail"
+                                placeholder={t("adminUserManagement.email")}
                                 value={editingUser.email || ''}
                                 onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
                                 required
                             />
                             <div className="form-group">
-                                <label>Rolle:</label>
+                                <label>{t("adminUserManagement.role")}:</label>
                                 <select
                                     value={editingUser.role || 'ROLE_USER'}
                                     onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
@@ -262,25 +265,25 @@ const AdminUserManagementPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Aktuelles Passwort:</label>
+                                <label>{t("adminUserManagement.currentPassword")}:</label>
                                 <input
                                     type="password"
-                                    placeholder="Aktuelles Passwort"
+                                    placeholder={t("adminUserManagement.currentPassword")}
                                     value={editingUser.currentPassword || ''}
                                     onChange={(e) => setEditingUser({ ...editingUser, currentPassword: e.target.value })}
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Neues Passwort:</label>
+                                <label>{t("adminUserManagement.newPassword")}:</label>
                                 <input
                                     type="password"
-                                    placeholder="Neues Passwort"
+                                    placeholder={t("adminUserManagement.newPassword")}
                                     value={editingUser.newPassword || ''}
                                     onChange={(e) => setEditingUser({ ...editingUser, newPassword: e.target.value })}
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Expected Work Days:</label>
+                                <label>{t("adminUserManagement.expectedWorkDays")}:</label>
                                 <input
                                     type="number"
                                     placeholder="z.B. 5"
@@ -289,7 +292,7 @@ const AdminUserManagementPage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Break Duration (min):</label>
+                                <label>{t("adminUserManagement.breakDuration")}:</label>
                                 <input
                                     type="number"
                                     placeholder="z.B. 30"
@@ -297,10 +300,9 @@ const AdminUserManagementPage = () => {
                                     onChange={(e) => setEditingUser({ ...editingUser, breakDuration: e.target.value })}
                                 />
                             </div>
-                            {/* Neuer Bereich: Arbeitszeiten Konfiguration */}
-                            <h4>Arbeitszeiten Konfiguration</h4>
+                            <h4>{t("adminUserManagement.scheduleConfig")}</h4>
                             <div className="form-group">
-                                <label>Cycle Length (Wochen):</label>
+                                <label>{t("adminUserManagement.cycleLength")}</label>
                                 <input
                                     type="number"
                                     min="1"
@@ -327,190 +329,96 @@ const AdminUserManagementPage = () => {
                             <div className="weekly-schedule">
                                 {editingUser.weeklySchedule.map((week, index) => (
                                     <div key={index} className="schedule-week">
-                                        <h5>Woche {index + 1}</h5>
-                                        <div>
-                                            <label>Montag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.monday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, monday: newVal } : w
-                                                    );
-                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Dienstag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.tuesday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, tuesday: newVal } : w
-                                                    );
-                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Mittwoch:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.wednesday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, wednesday: newVal } : w
-                                                    );
-                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Donnerstag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.thursday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, thursday: newVal } : w
-                                                    );
-                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Freitag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.friday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, friday: newVal } : w
-                                                    );
-                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Samstag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.saturday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, saturday: newVal } : w
-                                                    );
-                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Sonntag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.sunday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = editingUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, sunday: newVal } : w
-                                                    );
-                                                    setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
+                                        <h5>{t("adminUserManagement.week")} {index + 1}</h5>
+                                        {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(dayKey => (
+                                            <div key={dayKey}>
+                                                <label>{dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}:</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="24"
+                                                    value={week[dayKey]}
+                                                    onChange={(e) => {
+                                                        const newVal = Number(e.target.value);
+                                                        const newSchedule = editingUser.weeklySchedule.map((w, i) =>
+                                                            i === index ? { ...w, [dayKey]: newVal } : w
+                                                        );
+                                                        setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
                                     </div>
                                 ))}
                             </div>
                             <div className="form-group">
-                                <label>Farbe:</label>
+                                <label>{t("adminUserManagement.color")}:</label>
                                 <button type="button" onClick={() => setShowColorPicker(!showColorPicker)}>
-                                    Farbe auswählen
+                                    {t("adminUserManagement.chooseColor")}
                                 </button>
                                 {showColorPicker && (
                                     <input
                                         type="color"
-                                        value={newUser.color || '#FF5733'}
+                                        value={editingUser.color || '#FF5733'}
                                         onChange={(e) => setEditingUser({ ...editingUser, color: e.target.value })}
                                     />
                                 )}
                             </div>
                             <div className="form-group">
-                                <label>User Password:</label>
+                                <label>{t("adminUserManagement.userPassword")}:</label>
                                 <input
                                     type="password"
-                                    placeholder="User Password"
+                                    placeholder={t("adminUserManagement.userPassword")}
                                     value={editingUser.userPassword || ''}
                                     onChange={(e) => setEditingUser({ ...editingUser, userPassword: e.target.value })}
                                     required
                                 />
                             </div>
-                            <button type="submit">Speichern</button>
-                            <button type="button" onClick={() => setEditingUser(null)}>Abbrechen</button>
+                            <button type="submit">{t("adminUserManagement.button.save")}</button>
+                            <button type="button" onClick={() => setEditingUser(null)}>{t("adminUserManagement.button.cancel")}</button>
                         </form>
                     </>
                 ) : (
                     <>
-                        <h3>Neuen Benutzer anlegen</h3>
+                        <h3>{t("adminUserManagement.newUser")}</h3>
                         <form onSubmit={handleAddUser}>
                             <input
                                 type="text"
-                                placeholder="Benutzername"
+                                placeholder={t("adminUserManagement.username")}
                                 value={newUser.username}
                                 onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
                                 required
                             />
                             <input
                                 type="text"
-                                placeholder="Vorname"
+                                placeholder={t("adminUserManagement.firstName")}
                                 value={newUser.firstName}
                                 onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
                                 required
                             />
                             <input
                                 type="text"
-                                placeholder="Nachname"
+                                placeholder={t("adminUserManagement.lastName")}
                                 value={newUser.lastName}
                                 onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
                                 required
                             />
                             <input
                                 type="email"
-                                placeholder="E-Mail"
+                                placeholder={t("adminUserManagement.email")}
                                 value={newUser.email}
                                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                                 required
                             />
                             <input
                                 type="password"
-                                placeholder="Passwort"
+                                placeholder={t("adminUserManagement.password")}
                                 value={newUser.password}
                                 onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                                 required
                             />
                             <div className="form-group">
-                                <label>Rolle:</label>
+                                <label>{t("adminUserManagement.role")}:</label>
                                 <select
                                     value={newUser.role}
                                     onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
@@ -520,7 +428,7 @@ const AdminUserManagementPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Expected Work Days:</label>
+                                <label>{t("adminUserManagement.expectedWorkDays")}:</label>
                                 <input
                                     type="number"
                                     placeholder="z.B. 5"
@@ -529,7 +437,7 @@ const AdminUserManagementPage = () => {
                                 />
                             </div>
                             <div className="form-group">
-                                <label>Break Duration (min):</label>
+                                <label>{t("adminUserManagement.breakDuration")}:</label>
                                 <input
                                     type="number"
                                     placeholder="z.B. 30"
@@ -537,10 +445,9 @@ const AdminUserManagementPage = () => {
                                     onChange={(e) => setNewUser({ ...newUser, breakDuration: e.target.value })}
                                 />
                             </div>
-                            {/* Neuer Bereich: Arbeitszeiten Konfiguration */}
-                            <h4>Arbeitszeiten Konfiguration</h4>
+                            <h4>{t("adminUserManagement.scheduleConfig")}</h4>
                             <div className="form-group">
-                                <label>Cycle Length (Wochen):</label>
+                                <label>{t("adminUserManagement.cycleLength")}</label>
                                 <input
                                     type="number"
                                     min="1"
@@ -563,126 +470,32 @@ const AdminUserManagementPage = () => {
                             <div className="weekly-schedule">
                                 {newUser.weeklySchedule.map((week, index) => (
                                     <div key={index} className="schedule-week">
-                                        <h5>Woche {index + 1}</h5>
-                                        <div>
-                                            <label>Montag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.monday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, monday: newVal } : w
-                                                    );
-                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Dienstag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.tuesday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, tuesday: newVal } : w
-                                                    );
-                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Mittwoch:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.wednesday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, wednesday: newVal } : w
-                                                    );
-                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Donnerstag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.thursday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, thursday: newVal } : w
-                                                    );
-                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Freitag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.friday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, friday: newVal } : w
-                                                    );
-                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Samstag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.saturday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, saturday: newVal } : w
-                                                    );
-                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
-                                        <div>
-                                            <label>Sonntag:</label>
-                                            <input
-                                                type="number"
-                                                min="0"
-                                                max="24"
-                                                value={week.sunday}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = newUser.weeklySchedule.map((w, i) =>
-                                                        i === index ? { ...w, sunday: newVal } : w
-                                                    );
-                                                    setNewUser({ ...newUser, weeklySchedule: newSchedule });
-                                                }}
-                                            />
-                                        </div>
+                                        <h5>{t("adminUserManagement.week")} {index + 1}</h5>
+                                        {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(dayKey => (
+                                            <div key={dayKey}>
+                                                <label>{dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}:</label>
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="24"
+                                                    value={week[dayKey]}
+                                                    onChange={(e) => {
+                                                        const newVal = Number(e.target.value);
+                                                        const newSchedule = newUser.weeklySchedule.map((w, i) =>
+                                                            i === index ? { ...w, [dayKey]: newVal } : w
+                                                        );
+                                                        setNewUser({ ...newUser, weeklySchedule: newSchedule });
+                                                    }}
+                                                />
+                                            </div>
+                                        ))}
                                     </div>
                                 ))}
                             </div>
                             <div className="form-group">
-                                <label>Farbe:</label>
+                                <label>{t("adminUserManagement.color")}:</label>
                                 <button type="button" onClick={() => setShowColorPicker(!showColorPicker)}>
-                                    Farbe auswählen
+                                    {t("adminUserManagement.chooseColor")}
                                 </button>
                                 {showColorPicker && (
                                     <input
@@ -692,7 +505,7 @@ const AdminUserManagementPage = () => {
                                     />
                                 )}
                             </div>
-                            <button type="submit">Anlegen</button>
+                            <button type="submit">{t("adminUserManagement.button.save")}</button>
                         </form>
                     </>
                 )}

@@ -6,8 +6,12 @@ import Navbar from '../components/Navbar';
 import VacationCalendar from '../components/VacationCalendar';
 import { jsPDF } from "jspdf";
 import '../styles/UserDashboard.css';
+import { useNotification } from '../context/NotificationContext';
 
-// Liefert den Montag der Woche des übergebenen Datums
+//////////////////////
+// Helper Functions //
+//////////////////////
+
 function getMondayOfWeek(date) {
     const copy = new Date(date);
     const day = copy.getDay();
@@ -17,14 +21,12 @@ function getMondayOfWeek(date) {
     return copy;
 }
 
-// Fügt dem Datum eine bestimmte Anzahl Tage hinzu
 function addDays(date, days) {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
     return d;
 }
 
-// Parst einen 32‑stelligen Hex‑String zu einem ASCII‑String
 function parseHex16(hexString) {
     if (!hexString) return null;
     const clean = hexString.replace(/\s+/g, '');
@@ -40,7 +42,6 @@ function parseHex16(hexString) {
     return output;
 }
 
-// Formatiert einen Zeitstempel (HH:MM) in der deutschen Zeitzone
 function formatTime(dateStr) {
     const d = new Date(dateStr);
     return isNaN(d.getTime())
@@ -52,7 +53,6 @@ function formatTime(dateStr) {
         });
 }
 
-// Gibt den Label für den punchOrder zurück
 function getStatusLabel(punchOrder) {
     switch (punchOrder) {
         case 1: return "Work Start";
@@ -63,7 +63,6 @@ function getStatusLabel(punchOrder) {
     }
 }
 
-// Formatiert ein Datum in das Format "yyyy-MM-dd"
 function formatLocalDate(date) {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -71,7 +70,6 @@ function formatLocalDate(date) {
     return `${year}-${month}-${day}`;
 }
 
-// Formatiert ein Datum für die Anzeige (z. B. "10-02-2025")
 function formatDate(dateStr) {
     const date = new Date(dateStr);
     const day = String(date.getDate()).padStart(2, '0');
@@ -80,13 +78,11 @@ function formatDate(dateStr) {
     return `${day}-${month}-${year}`;
 }
 
-// Gibt die Minuten seit Mitternacht zurück
 function getMinutesSinceMidnight(datetimeStr) {
     const d = new Date(datetimeStr);
     return d.getHours() * 60 + d.getMinutes();
 }
 
-// Wandelt einen Zeitstring ("HH:mm" oder "HH:mm:ss") in Minuten um
 function parseTimeToMinutes(timeStr) {
     const parts = timeStr.split(':');
     const hours = parseInt(parts[0], 10);
@@ -94,11 +90,6 @@ function parseTimeToMinutes(timeStr) {
     return hours * 60 + minutes;
 }
 
-/**
- * Berechnet den Unterschied (in Minuten) zwischen der tatsächlich gearbeiteten Zeit
- * (Work End minus Work Start minus Pausendauer) und der erwarteten Arbeitszeit.
- * Gibt einen numerischen Wert zurück.
- */
 function computeDailyDiffValue(dayEntries, expectedWorkHours) {
     const entryStart = dayEntries.find(e => e.punchOrder === 1);
     const entryBreakStart = dayEntries.find(e => e.punchOrder === 2);
@@ -122,28 +113,18 @@ function computeDailyDiffValue(dayEntries, expectedWorkHours) {
     return 0;
 }
 
-/**
- * Gibt den formatierten Differenz-String für einen Tag zurück (z. B. "+20 min")
- */
 function computeDailyDiff(dayEntries, expectedWorkHours) {
     const diff = computeDailyDiffValue(dayEntries, expectedWorkHours);
     const sign = diff >= 0 ? '+' : '';
     return `${sign}${Math.round(diff)} min`;
 }
 
-/**
- * Ermittelt anhand des individuellen Wochenplans (userProfile.weeklySchedule)
- * den erwarteten Stundenwert für einen bestimmten Tag.
- * Falls kein individueller Plan existiert, wird der Standard (defaultExpectedHours) verwendet.
- * Der Plan wird zyklisch anhand eines festen Epochendatums (1. Jan 2020) ermittelt.
- * Wichtig: Wird ein Wert von 0 konfiguriert (z. B. Sonntags 0 Stunden), soll 0 zurückgegeben werden.
- */
 function getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours) {
     let expectedForDay = defaultExpectedHours;
     if (userProfile && userProfile.weeklySchedule && userProfile.scheduleCycle) {
-        const epoch = new Date(2020, 0, 1); // 1. Januar 2020
+        const epoch = new Date(2020, 0, 1);
         const diffWeeks = Math.floor((dayObj - epoch) / (7 * 24 * 60 * 60 * 1000));
-        const cycleIndex = diffWeeks % userProfile.scheduleCycle; // Index im Zyklus
+        const cycleIndex = diffWeeks % userProfile.scheduleCycle;
         const dayOfWeek = dayObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
         if (Array.isArray(userProfile.weeklySchedule) && userProfile.weeklySchedule[cycleIndex]) {
             const scheduleValue = Number(userProfile.weeklySchedule[cycleIndex][dayOfWeek]);
@@ -154,6 +135,10 @@ function getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours) {
     }
     return expectedForDay;
 }
+
+////////////////////
+// Component Code //
+////////////////////
 
 const UserDashboard = () => {
     const { currentUser } = useAuth();
@@ -174,20 +159,19 @@ const UserDashboard = () => {
         workEnd: '',
         reason: ''
     });
-    // Falls im Profil kein Wert für dailyWorkHours gesetzt ist, verwenden wir 8 als Fallback.
     const defaultExpectedHours = (userProfile && userProfile.dailyWorkHours !== undefined)
         ? Number(userProfile.dailyWorkHours)
         : 8;
     const [punchMessage, setPunchMessage] = useState('');
     const [lastPunchTime, setLastPunchTime] = useState(0);
 
-    // Profil laden; falls weeklySchedule nicht gesetzt ist, für Testzwecke konfigurieren wir es
+    const { notify } = useNotification();
+
     useEffect(() => {
         async function fetchProfile() {
             try {
                 const res = await api.get('/api/auth/me');
                 const profile = res.data;
-                // Falls kein individueller Wochenplan vorhanden ist, setzen wir Testwerte:
                 if (!profile.weeklySchedule) {
                     profile.weeklySchedule = [
                         { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 0, sunday: 0 }
@@ -228,7 +212,6 @@ const UserDashboard = () => {
         }
     }
 
-    // NFC-Polling alle 2 Sekunden
     useEffect(() => {
         const interval = setInterval(() => {
             doNfcCheck();
@@ -275,7 +258,6 @@ const UserDashboard = () => {
         setTimeout(() => setPunchMessage(''), 3000);
     }
 
-    // Wochen-Navigation
     function handlePrevWeek() {
         setSelectedMonday(prev => addDays(prev, -7));
     }
@@ -296,7 +278,6 @@ const UserDashboard = () => {
         return weekDateStrings.includes(ds);
     });
 
-    // Gruppiere Einträge nach Datum
     const dayMap = {};
     filteredEntries.forEach(entry => {
         const ds = new Date(entry.startTime).toLocaleDateString();
@@ -304,7 +285,6 @@ const UserDashboard = () => {
         dayMap[ds].push(entry);
     });
 
-    // Berechne Gesamtdifferenz über alle Tage (in Minuten), basierend auf dem individuellen Plan
     const summaryDiff = Object.keys(dayMap).reduce((acc, dayStr) => {
         const dayDate = new Date(dayStr);
         const expectedForDay = getExpectedHoursForDay(dayDate, userProfile, defaultExpectedHours);
@@ -315,7 +295,6 @@ const UserDashboard = () => {
     const totalDiffMinutes = absDiff % 60;
     const diffSign = summaryDiff >= 0 ? "Plus" : "Minus";
 
-    // Öffnet das Korrektur-Modal für einen bestimmten Tag
     function openCorrectionModal(ds) {
         const parts = ds.split('.');
         if (parts.length === 3) {
@@ -369,11 +348,11 @@ const UserDashboard = () => {
                     desiredEnd: desiredEnd
                 }
             });
-            alert("Korrektur-Antrag wurde erfolgreich eingereicht.");
+            notify("Korrektur-Antrag wurde erfolgreich eingereicht.");
             setCorrectionModalVisible(false);
         } catch (err) {
             console.error("Error sending correction request", err);
-            alert("Error sending correction request: " + (err.response?.data || err.message));
+            notify("Error sending correction request: " + (err.response?.data || err.message));
         }
     }
 
@@ -387,17 +366,16 @@ const UserDashboard = () => {
                     endDate: vacationForm.endDate
                 }
             });
-            alert("Urlaubsantrag wurde erfolgreich eingereicht.");
+            notify("Urlaubsantrag wurde erfolgreich eingereicht.");
         } catch (err) {
             console.error("Error submitting vacation request:", err);
-            alert("Error submitting vacation request.");
+            notify("Error submitting vacation request.");
         }
     }
 
-    // PDF-Erstellung mittels jsPDF und html2canvas
     function handlePrintReport() {
         if (!printStartDate || !printEndDate) {
-            alert("Bitte wählen Sie sowohl ein Start- als auch ein Enddatum.");
+            notify("Bitte wählen Sie sowohl ein Start- als auch ein Enddatum.");
             return;
         }
         const groupedByDate = {};
@@ -467,16 +445,11 @@ const UserDashboard = () => {
                     </p>
                 </div>
             </header>
-
-            {/* Punch-Nachricht */}
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
-
-            {/* Übersichtsbereich für die gesamte Woche */}
             <section className="overview-section">
                 <h3>Gesamte Arbeitszeiten Übersicht</h3>
                 <p>{diffSign}: {totalDiffHours} Std {totalDiffMinutes} min</p>
             </section>
-
             <section className="time-tracking-section">
                 <h3>Wochenübersicht</h3>
                 <div className="week-navigation">
@@ -529,7 +502,6 @@ const UserDashboard = () => {
                     })}
                 </div>
             </section>
-
             <div className="print-report-container">
                 <button onClick={() => setPrintModalVisible(true)}>Zeiten drucken</button>
             </div>
@@ -552,7 +524,6 @@ const UserDashboard = () => {
                     </div>
                 </div>
             )}
-
             <section className="vacation-section">
                 <h3>Urlaub beantragen</h3>
                 <form onSubmit={handleVacationSubmit} className="form-vacation">
@@ -592,7 +563,6 @@ const UserDashboard = () => {
                     <VacationCalendar vacationRequests={vacationRequests.filter(v => v.approved)} />
                 </div>
             </section>
-
             {correctionModalVisible && (
                 <div className="modal-overlay">
                     <div className="modal-content">

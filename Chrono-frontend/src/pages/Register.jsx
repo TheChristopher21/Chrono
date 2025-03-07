@@ -1,11 +1,12 @@
-import  { useState } from 'react';
+// src/pages/Register.jsx
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useNotification } from '../context/NotificationContext'; // Neu
 
 const Register = () => {
     const navigate = useNavigate();
     const { registerUser, error } = useAuth();
-
     const [form, setForm] = useState({
         username: '',
         password: '',
@@ -13,6 +14,9 @@ const Register = () => {
         lastName: '',
         email: ''
     });
+
+    // Neu
+    const { notify } = useNotification();
 
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
@@ -28,10 +32,11 @@ const Register = () => {
             form.email
         );
         if (result.success) {
-            alert('Registered successfully!');
+            notify('Registered successfully!');
             navigate('/dashboard');
         } else {
             console.log('Registration error detail:', result.message);
+            notify('Registration failed!');
         }
     };
 

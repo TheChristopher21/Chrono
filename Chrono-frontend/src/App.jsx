@@ -13,7 +13,7 @@ import PrintReport from "./components/PrintReport.jsx";
 function App() {
     return (
         <Routes>
-            {/* Setze die Root-Route auf Login */}
+            {/* Standard: alles Unbekannte -> /login */}
             <Route path="*" element={<Navigate to="/login" replace />} />
 
             <Route path="/login" element={<Login />} />
@@ -52,8 +52,6 @@ function App() {
                     </PrivateRoute>
                 }
             />
-            {/* Fallback: Unbekannte Routen führen zu Login */}
-            <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
     );
 }

@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/Login.css';
 import api from "../utils/api.js";
+import { LanguageContext, useTranslation } from '../context/LanguageContext';
 
+// Funktion, um einen 32-stelligen Hex-String in ASCII umzuwandeln
 function parseHex16(hexString) {
     if (!hexString) return null;
     const clean = hexString.replace(/\s+/g, '');
@@ -26,6 +28,7 @@ const Login = () => {
     const [error, setError] = useState('');
     const [punchMessage, setPunchMessage] = useState('');
 
+    // NFC-Polling alle 2 Sekunden
     useEffect(() => {
         const interval = setInterval(() => {
             doNfcCheck();
@@ -64,9 +67,7 @@ const Login = () => {
 
     function showPunchMessage(msg) {
         setPunchMessage(msg);
-        setTimeout(() => {
-            setPunchMessage('');
-        }, 3000);
+        setTimeout(() => setPunchMessage(''), 3000);
     }
 
     const handleChange = (e) => {
@@ -88,22 +89,32 @@ const Login = () => {
         }
     };
 
+    // Hole LanguageContext und Übersetzungsfunktion
+    const { language, setLanguage } = useContext(LanguageContext);
+    const { t } = useTranslation();
+
     return (
         <div className="login-container card">
-            <h2>Login</h2>
+            <h2>{t("login.title")}</h2>
             {error && <p className="error-message">{error}</p>}
             {punchMessage && (
-                <div className="punch-message">
-                    {punchMessage}
-                </div>
+                <div className="punch-message">{punchMessage}</div>
             )}
+            {/* Sprachwahl-Dropdown: Nur auf der Login-Seite */}
+            <div className="language-switch">
+                <label>{t("login.languageLabel")}</label>
+                <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                    <option value="de">DE</option>
+                    <option value="en">EN</option>
+                </select>
+            </div>
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"
                     name="username"
                     value={form.username}
                     onChange={handleChange}
-                    placeholder="Benutzername"
+                    placeholder={t("login.username")}
                     required
                 />
                 <input
@@ -111,10 +122,10 @@ const Login = () => {
                     name="password"
                     value={form.password}
                     onChange={handleChange}
-                    placeholder="Passwort"
+                    placeholder={t("login.password")}
                     required
                 />
-                <button type="submit">Einloggen</button>
+                <button type="submit">{t("login.button")}</button>
             </form>
         </div>
     );
