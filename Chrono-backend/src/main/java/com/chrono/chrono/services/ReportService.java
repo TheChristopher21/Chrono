@@ -1,3 +1,4 @@
+// src/main/java/com/chrono/chrono/services/ReportService.java
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.TimeTrackingResponse;
@@ -14,25 +15,29 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.Duration;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 public class ReportService {
 
     @Autowired
-    private TimeTrackingService timeTrackingService; // your existing 4-steps logic
+    private TimeTrackingService timeTrackingService;
     @Autowired
     private UserRepository userRepository;
 
+    // Erzeugt einen PDF-Bericht – hier kannst du bei stundenbasierten Mitarbeitern einen speziellen Abschnitt einfügen.
     public byte[] generatePdf(String username, LocalDate start, LocalDate end) throws IOException {
-        // check user
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
 
         List<TimeTrackingResponse> all = timeTrackingService.getUserHistory(username);
 
-        // Filtern auf Zeitraum
+        // Filtere nach Zeitraum
         List<TimeTrackingResponse> filtered = all.stream()
                 .filter(t -> {
                     LocalDate d = t.getStartTime().toLocalDate();
@@ -50,9 +55,20 @@ public class ReportService {
         doc.add(new Paragraph("Zeitraum: " + start + " - " + end));
         doc.add(new Paragraph(" "));
 
+        // Bei stundenbasierten Mitarbeitern: Summiere alle gearbeiteten Stunden ohne Pausensubtraktion
+        if (Boolean.TRUE.equals(user.getIsHourly())) {
+            long totalMinutes = filtered.stream()
+                    .filter(t -> t.getEndTime() != null)
+                    .mapToLong(t -> Duration.between(t.getStartTime(), t.getEndTime()).toMinutes())
+                    .sum();
+            long hours = totalMinutes / 60;
+            long minutes = totalMinutes % 60;
+            doc.add(new Paragraph("Monatliche Stunden (stundenbasiert): " + hours + " hrs " + minutes + " min"));
+            doc.add(new Paragraph(" "));
+        }
+
         for (TimeTrackingResponse r : filtered) {
-            String line = String.format("%s | Start: %s | End: %s",
-                    r.getColor(),
+            String line = String.format("Start: %s | End: %s",
                     r.getStartTime(),
                     r.getEndTime() == null ? "Ongoing" : r.getEndTime());
             doc.add(new Paragraph(line));
@@ -77,12 +93,11 @@ public class ReportService {
         StringBuilder sb = new StringBuilder();
         sb.append("User;").append(user.getUsername()).append("\n");
         sb.append("Name;").append(user.getFirstName()).append(" ").append(user.getLastName()).append("\n");
-        sb.append("Start;End;Status\n");
+        sb.append("Start;End\n");
 
         for (TimeTrackingResponse r : filtered) {
             sb.append(r.getStartTime()).append(";");
-            sb.append(r.getEndTime() == null ? "" : r.getEndTime()).append(";");
-            sb.append(r.getColor()).append("\n");
+            sb.append(r.getEndTime() == null ? "" : r.getEndTime()).append("\n");
         }
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }

@@ -45,7 +45,8 @@ public class AdminUserController {
                         user.getColor(),
                         user.getScheduleCycle(),
                         user.getWeeklySchedule(),
-                        user.getScheduleEffectiveDate()
+                        user.getScheduleEffectiveDate(),
+                        user.getIsHourly()   // NEU: isHourly-Feld übernehmen
                 ))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
@@ -79,6 +80,7 @@ public class AdminUserController {
         // Setze die Konfiguration ab heute:
         userBody.setScheduleEffectiveDate(LocalDate.now());
         User saved = userRepository.save(userBody);
+        // Erstelle das DTO inklusive des neuen isHourly-Feldes
         UserDTO dto = new UserDTO(
                 saved.getId(),
                 saved.getUsername(),
@@ -92,7 +94,8 @@ public class AdminUserController {
                 saved.getColor(),
                 saved.getScheduleCycle(),
                 saved.getWeeklySchedule(),
-                saved.getScheduleEffectiveDate()
+                saved.getScheduleEffectiveDate(),
+                saved.getIsHourly()  // NEU: Feld übernehmen
         );
         return ResponseEntity.ok(dto);
     }
@@ -168,7 +171,12 @@ public class AdminUserController {
             // Setze die neue Konfiguration ab heute:
             existing.setScheduleEffectiveDate(LocalDate.now());
         }
+        // Falls isHourly übermittelt wird, übernehmen wir es
+        if (userBody.getIsHourly() != null) {
+            existing.setIsHourly(userBody.getIsHourly());
+        }
         User updated = userRepository.save(existing);
+        // Erstelle ein neues UserDTO inklusive isHourly-Feld
         UserDTO dto = new UserDTO(
                 updated.getId(),
                 updated.getUsername(),
@@ -182,7 +190,8 @@ public class AdminUserController {
                 updated.getColor(),
                 updated.getScheduleCycle(),
                 updated.getWeeklySchedule(),
-                updated.getScheduleEffectiveDate()
+                updated.getScheduleEffectiveDate(),
+                updated.getIsHourly()  // NEU: isHourly übernehmen
         );
         return ResponseEntity.ok(dto);
     }
@@ -209,7 +218,8 @@ public class AdminUserController {
                         ", breakDuration=" + u.getBreakDuration() +
                         ", scheduleCycle=" + u.getScheduleCycle() +
                         ", weeklySchedule=" + u.getWeeklySchedule() +
-                        ", scheduleEffectiveDate=" + u.getScheduleEffectiveDate()
+                        ", scheduleEffectiveDate=" + u.getScheduleEffectiveDate() +
+                        ", isHourly=" + u.getIsHourly()
         );
     }
 
@@ -235,6 +245,10 @@ public class AdminUserController {
         if (dto.getWeeklySchedule() != null) {
             user.setWeeklySchedule(dto.getWeeklySchedule());
             user.setScheduleEffectiveDate(LocalDate.now());
+        }
+        // Auch das isHourly-Feld aktualisieren:
+        if (dto.getIsHourly() != null) {
+            user.setIsHourly(dto.getIsHourly());
         }
         userRepository.save(user);
         return ResponseEntity.ok("Work configuration updated");

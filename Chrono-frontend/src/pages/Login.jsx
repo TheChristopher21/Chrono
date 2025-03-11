@@ -1,9 +1,18 @@
+// src/pages/Login.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import '../styles/Login.css';
 import api from "../utils/api.js";
 import { LanguageContext, useTranslation } from '../context/LanguageContext';
+import { Howl } from 'howler';
+import stampMp3 from '/sounds/stamp.mp3'; // Direktimport aus dem public-Ordner
+
+// Definiere den Sound mit Howler
+const stampSound = new Howl({
+    src: [stampMp3],
+    volume: 0.5
+});
 
 // Funktion, um einen 32-stelligen Hex-String in ASCII umzuwandeln
 function parseHex16(hexString) {
@@ -27,6 +36,22 @@ const Login = () => {
     const [form, setForm] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
     const [punchMessage, setPunchMessage] = useState('');
+
+    // Automatisch einloggen, wenn wir im Testmodus sind
+    useEffect(() => {
+        if (process.env.NODE_ENV === 'test') {
+            // Hier kannst du die Test-Credentials definieren
+            const testUsername = 'testuser';
+            const testPassword = 'testpass';
+            login(testUsername, testPassword).then((res) => {
+                if (res.success) {
+                    navigate('/user');
+                } else {
+                    setError('Test-Login fehlgeschlagen');
+                }
+            });
+        }
+    }, [login, navigate]);
 
     // NFC-Polling alle 2 Sekunden
     useEffect(() => {
@@ -67,6 +92,7 @@ const Login = () => {
 
     function showPunchMessage(msg) {
         setPunchMessage(msg);
+        stampSound.play(); // Howler.play() gibt kein Promise zurück
         setTimeout(() => setPunchMessage(''), 3000);
     }
 
@@ -108,6 +134,9 @@ const Login = () => {
                     <option value="en">EN</option>
                 </select>
             </div>
+            <button onClick={() => showPunchMessage("Test-Stempel ausgeführt.")}>
+                Sound testen
+            </button>
             <form onSubmit={handleSubmit}>
                 <input
                     type="text"

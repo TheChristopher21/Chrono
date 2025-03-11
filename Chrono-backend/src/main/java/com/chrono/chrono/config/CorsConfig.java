@@ -16,14 +16,12 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                // Erlaube CORS für alle Pfade (/**),
-                // gestattet als Origin nur "http://localhost:5173",
-                // alle HTTP-Methoden, alle Header,
-                // und Credentials (Cookies/Authorization) sind erlaubt.
+                // Erlaube Anfragen von http://localhost:5173 und http://localhost:3000
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173")   // kein "*"
+                        .allowedOrigins("http://localhost:5173", "http://localhost:3000")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
+                        .allowedOriginPatterns("*")
                         .exposedHeaders("Authorization")
                         .allowCredentials(true);
             }

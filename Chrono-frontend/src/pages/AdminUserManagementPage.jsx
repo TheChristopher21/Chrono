@@ -13,6 +13,7 @@ const STANDARD_COLORS = [
     "#FF4500", "#00FA9A", "#7B68EE", "#FF6347"
 ];
 
+// Default-Wochenplan (für nicht stundenbasierte Arbeit)
 const defaultWeeklySchedule = {
     monday: 8,
     tuesday: 8,
@@ -24,6 +25,10 @@ const defaultWeeklySchedule = {
 };
 
 const AdminUserManagementPage = () => {
+    const { notify } = useNotification();
+    const { t } = useTranslation();
+    const { language, setLanguage } = useContext(LanguageContext);
+
     const [users, setUsers] = useState([]);
     const [newUser, setNewUser] = useState({
         username: '',
@@ -36,22 +41,18 @@ const AdminUserManagementPage = () => {
         breakDuration: '',
         color: STANDARD_COLORS[0],
         scheduleCycle: 1,
-        weeklySchedule: [{ ...defaultWeeklySchedule }]
+        weeklySchedule: [{ ...defaultWeeklySchedule }],
+        isHourly: false
     });
     const [editingUser, setEditingUser] = useState(null);
     const [showColorPicker, setShowColorPicker] = useState(false);
 
-    const { notify } = useNotification();
-    const { t } = useTranslation();
-    const { language, setLanguage } = useContext(LanguageContext); // Auch hier falls du später dynamische Anpassungen möchtest
-
-    // Benutzer laden
     async function fetchUsers() {
         try {
             const res = await api.get('/api/admin/users');
             setUsers(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
-            console.error(t("adminUserManagement.errorLoadingUsers"), err);
+            console.error(t("userManagement.errorLoadingUsers"), err);
         }
     }
 
@@ -69,13 +70,13 @@ const AdminUserManagementPage = () => {
                 email: newUser.email,
                 password: newUser.password,
                 roles: [{ roleName: newUser.role }],
-                expectedWorkDays: newUser.expectedWorkDays ? Number(newUser.expectedWorkDays) : null,
-                breakDuration: newUser.breakDuration ? Number(newUser.breakDuration) : null,
+                expectedWorkDays: newUser.isHourly ? null : (newUser.expectedWorkDays ? Number(newUser.expectedWorkDays) : null),
+                breakDuration: newUser.isHourly ? null : (newUser.breakDuration ? Number(newUser.breakDuration) : null),
                 color: newUser.color,
-                scheduleCycle: newUser.scheduleCycle,
-                weeklySchedule: newUser.weeklySchedule
+                scheduleCycle: newUser.isHourly ? null : newUser.scheduleCycle,
+                weeklySchedule: newUser.isHourly ? null : newUser.weeklySchedule,
+                isHourly: newUser.isHourly
             });
-            // Reset newUser
             setNewUser({
                 username: '',
                 firstName: '',
@@ -87,11 +88,12 @@ const AdminUserManagementPage = () => {
                 breakDuration: '',
                 color: STANDARD_COLORS[0],
                 scheduleCycle: 1,
-                weeklySchedule: [{ ...defaultWeeklySchedule }]
+                weeklySchedule: [{ ...defaultWeeklySchedule }],
+                isHourly: false
             });
             fetchUsers();
         } catch (err) {
-            console.error(t("adminUserManagement.errorAddingUser"), err);
+            console.error(t("userManagement.errorAddingUser"), err);
         }
     };
 
@@ -116,12 +118,13 @@ const AdminUserManagementPage = () => {
                 firstName: editingUser.firstName,
                 lastName: editingUser.lastName,
                 email: editingUser.email,
-                expectedWorkDays: editingUser.expectedWorkDays ? Number(editingUser.expectedWorkDays) : null,
-                breakDuration: editingUser.breakDuration ? Number(editingUser.breakDuration) : null,
+                expectedWorkDays: editingUser.isHourly ? null : (editingUser.expectedWorkDays ? Number(editingUser.expectedWorkDays) : null),
+                breakDuration: editingUser.isHourly ? null : (editingUser.breakDuration ? Number(editingUser.breakDuration) : null),
                 color: editingUser.color,
                 role: editingUser.role,
-                scheduleCycle: editingUser.scheduleCycle,
-                weeklySchedule: editingUser.weeklySchedule
+                scheduleCycle: editingUser.isHourly ? null : editingUser.scheduleCycle,
+                weeklySchedule: editingUser.isHourly ? null : editingUser.weeklySchedule,
+                isHourly: editingUser.isHourly
             };
 
             const queryParams = {
@@ -135,7 +138,7 @@ const AdminUserManagementPage = () => {
             setEditingUser(null);
             fetchUsers();
         } catch (err) {
-            console.error(t("adminUserManagement.errorUpdatingUser"), err);
+            console.error(t("userManagement.errorUpdatingUser"), err);
         }
     };
 
@@ -144,7 +147,7 @@ const AdminUserManagementPage = () => {
             await api.delete(`/api/admin/users/${id}`);
             fetchUsers();
         } catch (err) {
-            console.error(t("adminUserManagement.errorDeletingUser"), err);
+            console.error(t("userManagement.errorDeletingUser"), err);
         }
     };
 
@@ -169,13 +172,13 @@ const AdminUserManagementPage = () => {
             });
             const result = await response.json();
             if (result.status === 'success') {
-                notify(t("adminUserManagement.programCardSuccess") + ": " + user.username);
+                notify(t("userManagement.programCardSuccess") + ": " + user.username);
             } else {
-                notify(t("adminUserManagement.programCardError") + ": " + result.message);
+                notify(t("userManagement.programCardError") + ": " + result.message);
             }
         } catch (err) {
-            console.error(t("adminUserManagement.programCardError"), err);
-            notify(t("adminUserManagement.programCardError") + ": " + err.message);
+            console.error(t("userManagement.programCardError"), err);
+            notify(t("userManagement.programCardError") + ": " + err.message);
         }
     };
 
@@ -183,22 +186,22 @@ const AdminUserManagementPage = () => {
         <div className="admin-user-management">
             <Navbar />
             <header className="page-header">
-                <h2>{t("adminUserManagement.title")}</h2>
+                <h2>{t("userManagement.title")}</h2>
             </header>
             <section className="user-list">
                 {users.length === 0 ? (
-                    <p>{t("adminUserManagement.noUsers")}</p>
+                    <p>{t("userManagement.noUsers")}</p>
                 ) : (
                     <table>
                         <thead>
                         <tr>
-                            <th>{t("adminUserManagement.username")}</th>
-                            <th>{t("adminUserManagement.firstName")} {t("adminUserManagement.lastName")}</th>
-                            <th>{t("adminUserManagement.email")}</th>
-                            <th>{t("adminUserManagement.role")}</th>
-                            <th>{t("adminUserManagement.expectedWorkDays")}</th>
-                            <th>{t("adminUserManagement.breakDuration")}</th>
-                            <th>{t("adminUserManagement.table.actions")}</th>
+                            <th>{t("userManagement.username")}</th>
+                            <th>{t("userManagement.firstName")} {t("userManagement.lastName")}</th>
+                            <th>{t("userManagement.email")}</th>
+                            <th>{t("userManagement.role")}</th>
+                            <th>{t("userManagement.expectedWorkDays")}</th>
+                            <th>{t("userManagement.breakDuration")}</th>
+                            <th>{t("userManagement.table.actions")}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -211,9 +214,9 @@ const AdminUserManagementPage = () => {
                                 <td>{user.expectedWorkDays ?? '-'}</td>
                                 <td>{user.breakDuration ?? '-'}</td>
                                 <td>
-                                    <button onClick={() => handleEditUser(user)}>{t("adminUserManagement.table.edit")}</button>
-                                    <button onClick={() => handleDeleteUser(user.id)}>{t("adminUserManagement.table.delete")}</button>
-                                    <button onClick={() => handleProgramCard(user)}>{t("adminUserManagement.table.programCard")}</button>
+                                    <button onClick={() => handleEditUser(user)}>{t("userManagement.table.edit")}</button>
+                                    <button onClick={() => handleDeleteUser(user.id)}>{t("userManagement.table.delete")}</button>
+                                    <button onClick={() => handleProgramCard(user)}>{t("userManagement.table.programCard")}</button>
                                 </td>
                             </tr>
                         ))}
@@ -224,38 +227,38 @@ const AdminUserManagementPage = () => {
             <section className="user-form">
                 {editingUser ? (
                     <>
-                        <h3>{t("adminUserManagement.editUser")}</h3>
+                        <h3>{t("userManagement.editUser")}</h3>
                         <form onSubmit={handleUpdateUser}>
                             <input
                                 type="text"
-                                placeholder={t("adminUserManagement.username")}
+                                placeholder={t("userManagement.username")}
                                 value={editingUser.username || ''}
                                 onChange={(e) => setEditingUser({ ...editingUser, username: e.target.value })}
                                 required
                             />
                             <input
                                 type="text"
-                                placeholder={t("adminUserManagement.firstName")}
+                                placeholder={t("userManagement.firstName")}
                                 value={editingUser.firstName || ''}
                                 onChange={(e) => setEditingUser({ ...editingUser, firstName: e.target.value })}
                                 required
                             />
                             <input
                                 type="text"
-                                placeholder={t("adminUserManagement.lastName")}
+                                placeholder={t("userManagement.lastName")}
                                 value={editingUser.lastName || ''}
                                 onChange={(e) => setEditingUser({ ...editingUser, lastName: e.target.value })}
                                 required
                             />
                             <input
                                 type="email"
-                                placeholder={t("adminUserManagement.email")}
+                                placeholder={t("userManagement.email")}
                                 value={editingUser.email || ''}
                                 onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
                                 required
                             />
                             <div className="form-group">
-                                <label>{t("adminUserManagement.role")}:</label>
+                                <label>{t("userManagement.role")}:</label>
                                 <select
                                     value={editingUser.role || 'ROLE_USER'}
                                     onChange={(e) => setEditingUser({ ...editingUser, role: e.target.value })}
@@ -265,160 +268,159 @@ const AdminUserManagementPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>{t("adminUserManagement.currentPassword")}:</label>
+                                <label>Stundenbasiert:</label>
+                                <input
+                                    type="checkbox"
+                                    checked={editingUser.isHourly}
+                                    onChange={(e) => setEditingUser({ ...editingUser, isHourly: e.target.checked })}
+                                />
+                            </div>
+                            {!editingUser.isHourly && (
+                                <>
+                                    <div className="form-group">
+                                        <label>{t("userManagement.expectedWorkDays")}:</label>
+                                        <input
+                                            type="number"
+                                            placeholder="z.B. 5"
+                                            value={editingUser.expectedWorkDays || ''}
+                                            onChange={(e) => setEditingUser({ ...editingUser, expectedWorkDays: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>{t("userManagement.breakDuration")}:</label>
+                                        <input
+                                            type="number"
+                                            placeholder="z.B. 30"
+                                            value={editingUser.breakDuration || ''}
+                                            onChange={(e) => setEditingUser({ ...editingUser, breakDuration: e.target.value })}
+                                        />
+                                    </div>
+                                    <h4>{t("userManagement.scheduleConfig")}</h4>
+                                    <div className="form-group">
+                                        <label>{t("userManagement.cycleLength")}</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={editingUser.scheduleCycle}
+                                            onChange={(e) => {
+                                                const newCycle = Number(e.target.value);
+                                                let newSchedule = editingUser.weeklySchedule || [];
+                                                if (newCycle > newSchedule.length) {
+                                                    const diff = newCycle - newSchedule.length;
+                                                    for (let i = 0; i < diff; i++) {
+                                                        newSchedule.push({ ...defaultWeeklySchedule });
+                                                    }
+                                                } else {
+                                                    newSchedule = newSchedule.slice(0, newCycle);
+                                                }
+                                                setEditingUser({
+                                                    ...editingUser,
+                                                    scheduleCycle: newCycle,
+                                                    weeklySchedule: newSchedule
+                                                });
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="weekly-schedule">
+                                        {editingUser.weeklySchedule.map((week, index) => (
+                                            <div key={index} className="schedule-week">
+                                                <h5>{t("userManagement.week")} {index + 1}</h5>
+                                                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(dayKey => (
+                                                    <div key={dayKey}>
+                                                        <label>{dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}:</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="24"
+                                                            value={week[dayKey]}
+                                                            onChange={(e) => {
+                                                                const newVal = Number(e.target.value);
+                                                                const newSchedule = editingUser.weeklySchedule.map((w, i) =>
+                                                                    i === index ? { ...w, [dayKey]: newVal } : w
+                                                                );
+                                                                setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )}
+                            <div className="form-group">
+                                <label>{t("userManagement.currentPassword")}:</label>
                                 <input
                                     type="password"
-                                    placeholder={t("adminUserManagement.currentPassword")}
+                                    placeholder={t("userManagement.currentPassword")}
                                     value={editingUser.currentPassword || ''}
                                     onChange={(e) => setEditingUser({ ...editingUser, currentPassword: e.target.value })}
                                 />
                             </div>
                             <div className="form-group">
-                                <label>{t("adminUserManagement.newPassword")}:</label>
+                                <label>{t("userManagement.newPassword")}:</label>
                                 <input
                                     type="password"
-                                    placeholder={t("adminUserManagement.newPassword")}
+                                    placeholder={t("userManagement.newPassword")}
                                     value={editingUser.newPassword || ''}
                                     onChange={(e) => setEditingUser({ ...editingUser, newPassword: e.target.value })}
                                 />
                             </div>
                             <div className="form-group">
-                                <label>{t("adminUserManagement.expectedWorkDays")}:</label>
-                                <input
-                                    type="number"
-                                    placeholder="z.B. 5"
-                                    value={editingUser.expectedWorkDays || ''}
-                                    onChange={(e) => setEditingUser({ ...editingUser, expectedWorkDays: e.target.value })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>{t("adminUserManagement.breakDuration")}:</label>
-                                <input
-                                    type="number"
-                                    placeholder="z.B. 30"
-                                    value={editingUser.breakDuration || ''}
-                                    onChange={(e) => setEditingUser({ ...editingUser, breakDuration: e.target.value })}
-                                />
-                            </div>
-                            <h4>{t("adminUserManagement.scheduleConfig")}</h4>
-                            <div className="form-group">
-                                <label>{t("adminUserManagement.cycleLength")}</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={editingUser.scheduleCycle}
-                                    onChange={(e) => {
-                                        const newCycle = Number(e.target.value);
-                                        let newSchedule = editingUser.weeklySchedule || [];
-                                        if (newCycle > newSchedule.length) {
-                                            const diff = newCycle - newSchedule.length;
-                                            for (let i = 0; i < diff; i++) {
-                                                newSchedule.push({ ...defaultWeeklySchedule });
-                                            }
-                                        } else {
-                                            newSchedule = newSchedule.slice(0, newCycle);
-                                        }
-                                        setEditingUser({
-                                            ...editingUser,
-                                            scheduleCycle: newCycle,
-                                            weeklySchedule: newSchedule
-                                        });
-                                    }}
-                                />
-                            </div>
-                            <div className="weekly-schedule">
-                                {editingUser.weeklySchedule.map((week, index) => (
-                                    <div key={index} className="schedule-week">
-                                        <h5>{t("adminUserManagement.week")} {index + 1}</h5>
-                                        {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(dayKey => (
-                                            <div key={dayKey}>
-                                                <label>{dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}:</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="24"
-                                                    value={week[dayKey]}
-                                                    onChange={(e) => {
-                                                        const newVal = Number(e.target.value);
-                                                        const newSchedule = editingUser.weeklySchedule.map((w, i) =>
-                                                            i === index ? { ...w, [dayKey]: newVal } : w
-                                                        );
-                                                        setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
-                                                    }}
-                                                />
-                                            </div>
-                                        ))}
-                                    </div>
-                                ))}
-                            </div>
-                            <div className="form-group">
-                                <label>{t("adminUserManagement.color")}:</label>
-                                <button type="button" onClick={() => setShowColorPicker(!showColorPicker)}>
-                                    {t("adminUserManagement.chooseColor")}
-                                </button>
-                                {showColorPicker && (
-                                    <input
-                                        type="color"
-                                        value={editingUser.color || '#FF5733'}
-                                        onChange={(e) => setEditingUser({ ...editingUser, color: e.target.value })}
-                                    />
-                                )}
-                            </div>
-                            <div className="form-group">
-                                <label>{t("adminUserManagement.userPassword")}:</label>
+                                <label>{t("userManagement.userPassword")}:</label>
                                 <input
                                     type="password"
-                                    placeholder={t("adminUserManagement.userPassword")}
+                                    placeholder={t("userManagement.userPassword")}
                                     value={editingUser.userPassword || ''}
                                     onChange={(e) => setEditingUser({ ...editingUser, userPassword: e.target.value })}
                                     required
                                 />
                             </div>
-                            <button type="submit">{t("adminUserManagement.button.save")}</button>
-                            <button type="button" onClick={() => setEditingUser(null)}>{t("adminUserManagement.button.cancel")}</button>
+                            <button type="submit">{t("userManagement.button.save")}</button>
+                            <button type="button" onClick={() => setEditingUser(null)}>{t("userManagement.button.cancel")}</button>
                         </form>
                     </>
                 ) : (
                     <>
-                        <h3>{t("adminUserManagement.newUser")}</h3>
+                        <h3>{t("userManagement.newUser")}</h3>
                         <form onSubmit={handleAddUser}>
                             <input
                                 type="text"
-                                placeholder={t("adminUserManagement.username")}
+                                placeholder={t("userManagement.username")}
                                 value={newUser.username}
                                 onChange={(e) => setNewUser({ ...newUser, username: e.target.value })}
                                 required
                             />
                             <input
                                 type="text"
-                                placeholder={t("adminUserManagement.firstName")}
+                                placeholder={t("userManagement.firstName")}
                                 value={newUser.firstName}
                                 onChange={(e) => setNewUser({ ...newUser, firstName: e.target.value })}
                                 required
                             />
                             <input
                                 type="text"
-                                placeholder={t("adminUserManagement.lastName")}
+                                placeholder={t("userManagement.lastName")}
                                 value={newUser.lastName}
                                 onChange={(e) => setNewUser({ ...newUser, lastName: e.target.value })}
                                 required
                             />
                             <input
                                 type="email"
-                                placeholder={t("adminUserManagement.email")}
+                                placeholder={t("userManagement.email")}
                                 value={newUser.email}
                                 onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
                                 required
                             />
                             <input
                                 type="password"
-                                placeholder={t("adminUserManagement.password")}
+                                placeholder={t("userManagement.password")}
                                 value={newUser.password}
                                 onChange={(e) => setNewUser({ ...newUser, password: e.target.value })}
                                 required
                             />
                             <div className="form-group">
-                                <label>{t("adminUserManagement.role")}:</label>
+                                <label>{t("userManagement.role")}:</label>
                                 <select
                                     value={newUser.role}
                                     onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
@@ -428,84 +430,83 @@ const AdminUserManagementPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>{t("adminUserManagement.expectedWorkDays")}:</label>
+                                <label>Stundenbasiert:</label>
                                 <input
-                                    type="number"
-                                    placeholder="z.B. 5"
-                                    value={newUser.expectedWorkDays}
-                                    onChange={(e) => setNewUser({ ...newUser, expectedWorkDays: e.target.value })}
+                                    type="checkbox"
+                                    checked={newUser.isHourly}
+                                    onChange={(e) => setNewUser({ ...newUser, isHourly: e.target.checked })}
                                 />
                             </div>
-                            <div className="form-group">
-                                <label>{t("adminUserManagement.breakDuration")}:</label>
-                                <input
-                                    type="number"
-                                    placeholder="z.B. 30"
-                                    value={newUser.breakDuration}
-                                    onChange={(e) => setNewUser({ ...newUser, breakDuration: e.target.value })}
-                                />
-                            </div>
-                            <h4>{t("adminUserManagement.scheduleConfig")}</h4>
-                            <div className="form-group">
-                                <label>{t("adminUserManagement.cycleLength")}</label>
-                                <input
-                                    type="number"
-                                    min="1"
-                                    value={newUser.scheduleCycle}
-                                    onChange={(e) => {
-                                        const newCycle = Number(e.target.value);
-                                        let newSchedule = newUser.weeklySchedule || [];
-                                        if (newCycle > newSchedule.length) {
-                                            const diff = newCycle - newSchedule.length;
-                                            for (let i = 0; i < diff; i++) {
-                                                newSchedule.push({ ...defaultWeeklySchedule });
-                                            }
-                                        } else {
-                                            newSchedule = newSchedule.slice(0, newCycle);
-                                        }
-                                        setNewUser({ ...newUser, scheduleCycle: newCycle, weeklySchedule: newSchedule });
-                                    }}
-                                />
-                            </div>
-                            <div className="weekly-schedule">
-                                {newUser.weeklySchedule.map((week, index) => (
-                                    <div key={index} className="schedule-week">
-                                        <h5>{t("adminUserManagement.week")} {index + 1}</h5>
-                                        {['monday','tuesday','wednesday','thursday','friday','saturday','sunday'].map(dayKey => (
-                                            <div key={dayKey}>
-                                                <label>{dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}:</label>
-                                                <input
-                                                    type="number"
-                                                    min="0"
-                                                    max="24"
-                                                    value={week[dayKey]}
-                                                    onChange={(e) => {
-                                                        const newVal = Number(e.target.value);
-                                                        const newSchedule = newUser.weeklySchedule.map((w, i) =>
-                                                            i === index ? { ...w, [dayKey]: newVal } : w
-                                                        );
-                                                        setNewUser({ ...newUser, weeklySchedule: newSchedule });
-                                                    }}
-                                                />
+                            {!newUser.isHourly && (
+                                <>
+                                    <div className="form-group">
+                                        <label>{t("userManagement.expectedWorkDays")}:</label>
+                                        <input
+                                            type="number"
+                                            placeholder="z.B. 5"
+                                            value={newUser.expectedWorkDays}
+                                            onChange={(e) => setNewUser({ ...newUser, expectedWorkDays: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>{t("userManagement.breakDuration")}:</label>
+                                        <input
+                                            type="number"
+                                            placeholder="z.B. 30"
+                                            value={newUser.breakDuration}
+                                            onChange={(e) => setNewUser({ ...newUser, breakDuration: e.target.value })}
+                                        />
+                                    </div>
+                                    <h4>{t("userManagement.scheduleConfig")}</h4>
+                                    <div className="form-group">
+                                        <label>{t("userManagement.cycleLength")}</label>
+                                        <input
+                                            type="number"
+                                            min="1"
+                                            value={newUser.scheduleCycle}
+                                            onChange={(e) => {
+                                                const newCycle = Number(e.target.value);
+                                                let newSchedule = newUser.weeklySchedule || [];
+                                                if (newCycle > newSchedule.length) {
+                                                    const diff = newCycle - newSchedule.length;
+                                                    for (let i = 0; i < diff; i++) {
+                                                        newSchedule.push({ ...defaultWeeklySchedule });
+                                                    }
+                                                } else {
+                                                    newSchedule = newSchedule.slice(0, newCycle);
+                                                }
+                                                setNewUser({ ...newUser, scheduleCycle: newCycle, weeklySchedule: newSchedule });
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="weekly-schedule">
+                                        {newUser.weeklySchedule.map((week, index) => (
+                                            <div key={index} className="schedule-week">
+                                                <h5>{t("userManagement.week")} {index + 1}</h5>
+                                                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(dayKey => (
+                                                    <div key={dayKey}>
+                                                        <label>{dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}:</label>
+                                                        <input
+                                                            type="number"
+                                                            min="0"
+                                                            max="24"
+                                                            value={week[dayKey]}
+                                                            onChange={(e) => {
+                                                                const newVal = Number(e.target.value);
+                                                                const newSchedule = newUser.weeklySchedule.map((w, i) =>
+                                                                    i === index ? { ...w, [dayKey]: newVal } : w
+                                                                );
+                                                                setNewUser({ ...newUser, weeklySchedule: newSchedule });
+                                                            }}
+                                                        />
+                                                    </div>
+                                                ))}
                                             </div>
                                         ))}
                                     </div>
-                                ))}
-                            </div>
-                            <div className="form-group">
-                                <label>{t("adminUserManagement.color")}:</label>
-                                <button type="button" onClick={() => setShowColorPicker(!showColorPicker)}>
-                                    {t("adminUserManagement.chooseColor")}
-                                </button>
-                                {showColorPicker && (
-                                    <input
-                                        type="color"
-                                        value={newUser.color || '#FF5733'}
-                                        onChange={(e) => setNewUser({ ...newUser, color: e.target.value })}
-                                    />
-                                )}
-                            </div>
-                            <button type="submit">{t("adminUserManagement.button.save")}</button>
+                                </>
+                            )}
+                            <button type="submit">{t("userManagement.button.save")}</button>
                         </form>
                     </>
                 )}

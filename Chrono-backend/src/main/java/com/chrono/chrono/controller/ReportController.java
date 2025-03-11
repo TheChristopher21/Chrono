@@ -15,7 +15,6 @@ public class ReportController {
     @Autowired
     private ReportService reportService;
 
-    // PDF Download
     @GetMapping("/timesheet/pdf")
     public ResponseEntity<byte[]> downloadPdf(
             @RequestParam String username,
@@ -33,13 +32,11 @@ public class ReportController {
             headers.setContentDisposition(ContentDisposition.attachment().filename("timesheet.pdf").build());
 
             return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
-
         } catch (IOException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }
 
-    // CSV Download
     @GetMapping("/timesheet/csv")
     public ResponseEntity<byte[]> downloadCsv(
             @RequestParam String username,

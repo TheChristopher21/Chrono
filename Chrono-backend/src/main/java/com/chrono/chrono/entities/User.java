@@ -61,9 +61,21 @@ public class User {
     @Column(name = "schedule_effective_date")
     private LocalDate scheduleEffectiveDate;
 
+    @Column(name = "is_hourly")
+    private Boolean isHourly;
+
     public User() {}
 
     // Getter & Setter
+
+    // Angepasster Getter für isHourly: Falls null, wird false zurückgegeben.
+    public Boolean getIsHourly() {
+        return isHourly != null ? isHourly : false;
+    }
+
+    public void setIsHourly(Boolean isHourly) {
+        this.isHourly = isHourly;
+    }
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

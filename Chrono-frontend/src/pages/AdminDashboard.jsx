@@ -1,5 +1,5 @@
-// src/components/AdminDashboard.jsx
-import React, { useState, useEffect, useContext } from 'react';
+// src/pages/AdminDashboard.jsx
+import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import VacationCalendarAdmin from '../components/VacationCalendarAdmin';
@@ -8,10 +8,9 @@ import '../styles/AdminDashboard.css';
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
 
-//////////////////////
-// Helper Functions //
-//////////////////////
-
+/* =============================
+   HELPER FUNCTIONS
+============================= */
 function getMondayOfWeek(date) {
     const copy = new Date(date);
     const day = copy.getDay();
@@ -37,11 +36,16 @@ function addDays(date, days) {
 
 function getStatusLabel(punchOrder) {
     switch (punchOrder) {
-        case 1: return "Work Start";
-        case 2: return "Break Start";
-        case 3: return "Break End";
-        case 4: return "Work End";
-        default: return "";
+        case 1:
+            return "Work Start";
+        case 2:
+            return "Break Start";
+        case 3:
+            return "Break End";
+        case 4:
+            return "Work End";
+        default:
+            return "";
     }
 }
 
@@ -76,8 +80,9 @@ function parseTimeToMinutes(timeStr) {
 }
 
 /**
- * Berechnet den Unterschied (in Minuten) zwischen tatsächlich gearbeiteter Zeit
- * und erwarteter Arbeitszeit.
+ * Berechnet für tagesbasierte (nicht-stundenbasierte) Nutzer
+ * die Differenz (in Minuten) zwischen der tatsächlichen Arbeitszeit
+ * (Work End - Work Start minus Pausendauer) und dem Sollwert.
  */
 function computeDailyDiffValue(dayEntries, expectedWorkHours) {
     const entryStart = dayEntries.find(e => e.punchOrder === 1);
@@ -88,7 +93,6 @@ function computeDailyDiffValue(dayEntries, expectedWorkHours) {
         const workStartMins = getMinutesSinceMidnight(entryStart.startTime);
         const workEndMins = getMinutesSinceMidnight(entryEnd.endTime);
         const workDuration = workEndMins - workStartMins;
-
         const breakStartMins = entryBreakStart.breakStart
             ? parseTimeToMinutes(entryBreakStart.breakStart)
             : getMinutesSinceMidnight(entryBreakStart.startTime);
@@ -96,7 +100,6 @@ function computeDailyDiffValue(dayEntries, expectedWorkHours) {
             ? parseTimeToMinutes(entryBreakEnd.breakEnd)
             : getMinutesSinceMidnight(entryBreakEnd.startTime);
         const breakDuration = breakEndMins - breakStartMins;
-
         const actualWorked = workDuration - breakDuration;
         const expectedMinutes = expectedWorkHours * 60;
         return actualWorked - expectedMinutes;
@@ -111,10 +114,13 @@ function computeDailyDiff(dayEntries, expectedWorkHours) {
 }
 
 /**
- * Ermittelt anhand des individuellen Wochenplans (userConfig.weeklySchedule)
- * den erwarteten Stundenwert für einen bestimmten Tag.
+ * Ermittelt den erwarteten Stundenwert für einen Tag anhand des WeeklySchedule.
+ * Für stundenbasierte Nutzer wird 0 zurückgegeben.
  */
 function getExpectedHoursForDay(dayObj, userConfig, defaultExpectedHours) {
+    if (userConfig?.isHourly) {
+        return 0;
+    }
     let expectedForDay = defaultExpectedHours;
     if (userConfig && userConfig.weeklySchedule && userConfig.scheduleCycle) {
         const epoch = new Date(2020, 0, 1);
@@ -131,10 +137,9 @@ function getExpectedHoursForDay(dayObj, userConfig, defaultExpectedHours) {
     return expectedForDay;
 }
 
-////////////////////
-// Component Code //
-////////////////////
-
+/* =============================
+   COMPONENT: AdminDashboard
+============================= */
 const AdminDashboard = () => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -148,7 +153,7 @@ const AdminDashboard = () => {
     const [expandedUsers, setExpandedUsers] = useState({});
     const [users, setUsers] = useState([]);
 
-    // Edit Modal
+    // Edit Modal (Zeitkorrektur)
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [editDate, setEditDate] = useState(null);
     const [editTargetUsername, setEditTargetUsername] = useState('');
@@ -175,7 +180,7 @@ const AdminDashboard = () => {
             const res = await api.get('/api/admin/users');
             setUsers(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
-            console.error(t("adminUserManagement.errorLoadingUsers"), err);
+            console.error("Error loading users", err);
         }
     }
 
@@ -185,7 +190,7 @@ const AdminDashboard = () => {
             const validEntries = (res.data || []).filter(e => [1, 2, 3, 4].includes(e.punchOrder));
             setAllTracks(validEntries);
         } catch (err) {
-            console.error(t("adminUserManagement.errorLoadingTracks"), err);
+            console.error("Error loading time entries", err);
         }
     }
 
@@ -194,7 +199,7 @@ const AdminDashboard = () => {
             const res = await api.get('/api/vacation/all');
             setAllVacations(res.data || []);
         } catch (err) {
-            console.error(t("adminUserManagement.errorLoadingVacations"), err);
+            console.error("Error loading vacation requests", err);
         }
     }
 
@@ -203,10 +208,11 @@ const AdminDashboard = () => {
             const res = await api.get('/api/correction/all');
             setAllCorrections(res.data || []);
         } catch (err) {
-            console.error(t("adminUserManagement.errorLoadingCorrections"), err);
+            console.error("Error loading correction requests", err);
         }
     }
 
+    // Wochen-Navigation
     function handlePrevWeek() {
         setSelectedMonday(prev => addDays(prev, -7));
     }
@@ -219,12 +225,10 @@ const AdminDashboard = () => {
             setSelectedMonday(getMondayOfWeek(picked));
         }
     }
-
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
     const weekStrs = weekDates.map(d => d.toLocaleDateString());
-
-    const filteredTracks = allTracks.filter(tItem => {
-        const ds = new Date(tItem.startTime).toLocaleDateString();
+    const filteredTracks = allTracks.filter(track => {
+        const ds = new Date(track.startTime).toLocaleDateString();
         return weekStrs.includes(ds);
     });
 
@@ -250,7 +254,7 @@ const AdminDashboard = () => {
             await api.post(`/api/vacation/approve/${id}`, null, { params: { adminPassword } });
             fetchAllVacations();
         } catch (err) {
-            console.error(t("adminDashboard.errorApprovingVacation"), err);
+            console.error("Error approving vacation", err);
         }
     }
 
@@ -259,7 +263,7 @@ const AdminDashboard = () => {
             await api.post(`/api/vacation/deny/${id}`);
             fetchAllVacations();
         } catch (err) {
-            console.error(t("adminDashboard.errorDenyingVacation"), err);
+            console.error("Error denying vacation", err);
         }
     }
 
@@ -273,8 +277,8 @@ const AdminDashboard = () => {
             await api.post(`/api/correction/approve/${id}`, null, { params: { adminPassword } });
             fetchAllCorrections();
         } catch (err) {
-            console.error(t("adminDashboard.errorApproving"), err);
-            notify(t("adminDashboard.errorApproving") + ": " + err.message);
+            console.error("Error approving correction", err);
+            notify("Error approving correction: " + err.message);
         }
     }
 
@@ -283,34 +287,27 @@ const AdminDashboard = () => {
             await api.post(`/api/correction/deny/${id}`);
             fetchAllCorrections();
         } catch (err) {
-            console.error(t("adminDashboard.errorDenying"), err);
-            notify(t("adminDashboard.errorDenying") + ": " + err.message);
+            console.error("Error denying correction", err);
+            notify("Error denying correction: " + err.message);
         }
     }
 
-    // Edit Modal
+    // Edit Modal (Time Tracking)
     function openEditModal(targetUsername, date, entries) {
         const defaultTime = "00:00";
         const workStartEntry = entries.find(e => e.punchOrder === 1);
-        const breakStartEntry = entries.find(e => e.punchOrder === 2);
-        const breakEndEntry = entries.find(e => e.punchOrder === 3);
-        const workEndEntry = entries.find(e => e.punchOrder === 4);
-
+        let workEndEntry = entries.find(e => e.punchOrder === 4);
+        if (!workEndEntry) {
+            workEndEntry = entries.find(e => e.punchOrder === 2);
+        }
         const workStartVal = workStartEntry ? formatTime(workStartEntry.startTime) : defaultTime;
-        const breakStartVal = breakStartEntry
-            ? (breakStartEntry.breakStart ? formatTime(breakStartEntry.breakStart) : formatTime(breakStartEntry.startTime))
-            : defaultTime;
-        const breakEndVal = breakEndEntry
-            ? (breakEndEntry.breakEnd ? formatTime(breakEndEntry.breakEnd) : formatTime(breakEndEntry.startTime))
-            : defaultTime;
-        const workEndVal = workEndEntry ? formatTime(workEndEntry.endTime) : defaultTime;
-
+        const workEndVal = workEndEntry ? formatTime(workEndEntry.endTime || workEndEntry.startTime) : defaultTime;
         setEditTargetUsername(targetUsername);
         setEditDate(date);
         setEditData({
             workStart: workStartVal,
-            breakStart: breakStartVal,
-            breakEnd: breakEndVal,
+            breakStart: defaultTime,
+            breakEnd: defaultTime,
             workEnd: workEndVal,
             adminPassword: '',
             userPassword: ''
@@ -338,7 +335,6 @@ const AdminDashboard = () => {
         if (editTargetUsername !== currentUser.username) {
             params.adminPassword = editData.adminPassword;
         } else {
-            // Self‑Edit: Beide Passwörter müssen gleich sein
             params.adminPassword = editData.userPassword;
         }
         try {
@@ -346,7 +342,7 @@ const AdminDashboard = () => {
             setEditModalVisible(false);
             fetchAllTracks();
         } catch (err) {
-            console.error(t("adminDashboard.editFailed"), err);
+            console.error("Edit failed", err);
             notify(t("adminDashboard.editFailed") + ": " + err.message);
         }
     }
@@ -363,7 +359,7 @@ const AdminDashboard = () => {
                 <h2>{t("adminDashboard.titleWeekly")}</h2>
                 <p>{t("adminDashboard.loggedInAs")}: {currentUser?.username}</p>
                 <div className="admin-password">
-                    <label>{t("adminDashboard.adminPassword")}:</label>
+                    <label>{t("adminDashboard.adminPassword")}: </label>
                     <input
                         type="password"
                         value={adminPassword}
@@ -371,9 +367,7 @@ const AdminDashboard = () => {
                     />
                 </div>
             </header>
-
             <div className="dashboard-content">
-                {/* Linke Spalte: Time Tracking & Vacation */}
                 <div className="left-column">
                     <section className="week-section">
                         <h3>{t("adminDashboard.timeTrackingCurrentWeek")}</h3>
@@ -393,13 +387,11 @@ const AdminDashboard = () => {
                                 {Object.keys(userGroups).map(username => {
                                     const userConfig = users.find(u => u.username === username) || {};
                                     const dayMap = {};
-                                    userGroups[username].forEach(tEntry => {
-                                        const ds = new Date(tEntry.startTime).toLocaleDateString();
+                                    userGroups[username].forEach(entry => {
+                                        const ds = new Date(entry.startTime).toLocaleDateString();
                                         if (!dayMap[ds]) dayMap[ds] = [];
-                                        dayMap[ds].push(tEntry);
+                                        dayMap[ds].push(entry);
                                     });
-
-                                    // Gesamtdifferenz für die Woche
                                     let userTotalDiff = 0;
                                     weekDates.forEach(wd => {
                                         const ds = wd.toLocaleDateString();
@@ -412,15 +404,12 @@ const AdminDashboard = () => {
                                     const totalHours = Math.floor(absTotal / 60);
                                     const totalMinutes = absTotal % 60;
                                     const totalSign = userTotalDiff >= 0 ? '+' : '-';
-
-                                    // Expand/Collapse
                                     const isExpanded = !!expandedUsers[username];
                                     const userColor =
                                         (userGroups[username][0].color &&
                                             /^#[0-9A-Fa-f]{6}$/.test(userGroups[username][0].color))
                                             ? userGroups[username][0].color
                                             : '#007BFF';
-
                                     return (
                                         <div key={username} className="admin-user-block">
                                             <div
@@ -440,63 +429,99 @@ const AdminDashboard = () => {
                                                         const ds = wd.toLocaleDateString();
                                                         const dayEntries = dayMap[ds] || [];
                                                         const expectedForDay = getExpectedHoursForDay(wd, userConfig, defaultExpectedHours);
-                                                        const dailyDiff = dayEntries.length >= 4 ? computeDailyDiff(dayEntries, expectedForDay) : "";
-
-                                                        return (
-                                                            <div key={i} className="admin-day-card">
-                                                                <div className="admin-day-card-header">
-                                                                    <strong>
-                                                                        {wd.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}
-                                                                        <span className="expected-hours">({t("adminDashboard.expected")}: {expectedForDay} {t("adminDashboard.hours")})</span>
-                                                                    </strong>
-                                                                    {dailyDiff && <span className="daily-diff">({dailyDiff})</span>}
-                                                                    {dayEntries.length > 0 && (
-                                                                        <button
-                                                                            onClick={() => openEditModal(username, wd, dayEntries)}
-                                                                            className="edit-day-button"
-                                                                        >
-                                                                            {t("adminDashboard.editButton")}
-                                                                        </button>
-                                                                    )}
-                                                                </div>
-                                                                <div className="admin-day-content">
-                                                                    <div className="time-entries">
+                                                        if (userConfig.isHourly) {
+                                                            const workStartEntry = dayEntries.find(e => e.punchOrder === 1);
+                                                            let workEndEntry = dayEntries.find(e => e.punchOrder === 4);
+                                                            if (!workEndEntry) {
+                                                                workEndEntry = dayEntries.find(e => e.punchOrder === 2);
+                                                            }
+                                                            if (workStartEntry && workEndEntry) {
+                                                                const startTime = formatTime(workStartEntry.startTime);
+                                                                const endTime = formatTime(workEndEntry.endTime || workEndEntry.startTime);
+                                                                const workedMins =
+                                                                    getMinutesSinceMidnight(workEndEntry.endTime || workEndEntry.startTime) -
+                                                                    getMinutesSinceMidnight(workStartEntry.startTime);
+                                                                const hrs = Math.floor(workedMins / 60);
+                                                                const mins = workedMins % 60;
+                                                                return (
+                                                                    <div key={i} className="admin-day-card">
+                                                                        <div className="admin-day-card-header">
+                                                                            <strong>
+                                                                                {wd.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}
+                                                                            </strong>
+                                                                        </div>
+                                                                        <div className="admin-day-content">
+                                                                            <ul className="time-entry-list">
+                                                                                <li>
+                                                                                    <span className="entry-label">Work Start:</span> {startTime}
+                                                                                </li>
+                                                                                <li>
+                                                                                    <span className="entry-label">Work End:</span> {endTime}
+                                                                                </li>
+                                                                                <li>
+                                                                                    <span className="entry-label">Total:</span> {hrs} Std {mins} min
+                                                                                </li>
+                                                                            </ul>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            } else {
+                                                                return (
+                                                                    <div key={i} className="admin-day-card">
+                                                                        <div className="admin-day-card-header">
+                                                                            <strong>
+                                                                                {wd.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}
+                                                                            </strong>
+                                                                        </div>
+                                                                        <div className="admin-day-content">
+                                                                            <p className="no-entries">Keine Einträge</p>
+                                                                        </div>
+                                                                    </div>
+                                                                );
+                                                            }
+                                                        } else {
+                                                            const dailyDiff = dayEntries.length >= 4 ? computeDailyDiff(dayEntries, expectedForDay) : "";
+                                                            return (
+                                                                <div key={i} className="admin-day-card">
+                                                                    <div className="admin-day-card-header">
+                                                                        <strong>
+                                                                            {wd.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}
+                                                                            <span className="expected-hours">({t("adminDashboard.expected")}: {expectedForDay} {t("adminDashboard.hours")})</span>
+                                                                        </strong>
+                                                                        {dailyDiff && <span className="daily-diff">({dailyDiff})</span>}
+                                                                        {dayEntries.length > 0 && (
+                                                                            <button onClick={() => openEditModal(username, wd, dayEntries)} className="edit-day-button">
+                                                                                {t("adminDashboard.editButton")}
+                                                                            </button>
+                                                                        )}
+                                                                    </div>
+                                                                    <div className="admin-day-content">
                                                                         {dayEntries.length === 0 ? (
-                                                                            <p className="no-entries">{t("adminDashboard.noEntries")}</p>
+                                                                            <p className="no-entries">{t("adminDashboard.noEntriesThisWeek")}</p>
                                                                         ) : (
                                                                             <ul className="time-entry-list">
-                                                                                {dayEntries
-                                                                                    .sort((a, b) => a.punchOrder - b.punchOrder)
-                                                                                    .map(e => {
-                                                                                        let displayTime = "-";
-                                                                                        if (e.punchOrder === 1) {
-                                                                                            displayTime = formatTime(e.startTime);
-                                                                                        } else if (e.punchOrder === 2) {
-                                                                                            displayTime = e.breakStart
-                                                                                                ? formatTime(e.breakStart)
-                                                                                                : formatTime(e.startTime);
-                                                                                        } else if (e.punchOrder === 3) {
-                                                                                            displayTime = e.breakEnd
-                                                                                                ? formatTime(e.breakEnd)
-                                                                                                : formatTime(e.startTime);
-                                                                                        } else if (e.punchOrder === 4) {
-                                                                                            displayTime = formatTime(e.endTime);
-                                                                                        }
-                                                                                        return (
-                                                                                            <li key={e.id}>
-                                                <span className="entry-label">
-                                                  {getStatusLabel(e.punchOrder)}:
-                                                </span>{" "}
-                                                                                                {displayTime}
-                                                                                            </li>
-                                                                                        );
-                                                                                    })}
+                                                                                {dayEntries.sort((a, b) => a.punchOrder - b.punchOrder).map(e => {
+                                                                                    let displayTime = "-";
+                                                                                    if (e.punchOrder === 1)
+                                                                                        displayTime = formatTime(e.startTime);
+                                                                                    else if (e.punchOrder === 2)
+                                                                                        displayTime = e.breakStart ? formatTime(e.breakStart) : formatTime(e.startTime);
+                                                                                    else if (e.punchOrder === 3)
+                                                                                        displayTime = e.breakEnd ? formatTime(e.breakEnd) : formatTime(e.startTime);
+                                                                                    else if (e.punchOrder === 4)
+                                                                                        displayTime = formatTime(e.endTime);
+                                                                                    return (
+                                                                                        <li key={e.id}>
+                                                                                            <span className="entry-label">{getStatusLabel(e.punchOrder)}:</span> {displayTime}
+                                                                                        </li>
+                                                                                    );
+                                                                                })}
                                                                             </ul>
                                                                         )}
                                                                     </div>
                                                                 </div>
-                                                            </div>
-                                                        );
+                                                            );
+                                                        }
                                                     })}
                                                 </div>
                                             )}
@@ -506,7 +531,6 @@ const AdminDashboard = () => {
                             </div>
                         )}
                     </section>
-
                     <section className="vacation-section">
                         <h3>{t("adminDashboard.vacationRequestsTitle")}</h3>
                         {allVacations.length === 0 ? (
@@ -515,31 +539,25 @@ const AdminDashboard = () => {
                             <ul className="vacation-list">
                                 {allVacations.map(v => (
                                     <li key={v.id} className="vacation-item">
-                    <span className="vacation-text">
-                      <strong>{v.username}</strong>: {formatDate(v.startDate)} - {formatDate(v.endDate)}{" "}
-                        {v.approved ? (
-                            <span className="approved">{t("adminDashboard.approved")}</span>
-                        ) : v.denied ? (
-                            <span className="denied">{t("adminDashboard.denied")}</span>
-                        ) : (
-                            <span className="pending">{t("adminDashboard.pending")}</span>
-                        )}
-                    </span>
-                                        {!v.approved && !v.denied && (
+                                        <span className="vacation-text">
+                                            <strong>{v.username}</strong>: {formatDate(v.startDate)} - {formatDate(v.endDate)}{' '}
+                                            {v.approved ? (
+                                                <span className="approved">{t("adminDashboard.approved")}</span>
+                                            ) : v.denied ? (
+                                                <span className="denied">{t("adminDashboard.denied")}</span>
+                                            ) : (
+                                                <span className="pending">{t("adminDashboard.pending")}</span>
+                                            )}
+                                        </span>
+                                        {(!v.approved && !v.denied) && (
                                             <span className="vacation-buttons">
-                        <button
-                            className="approve-btn"
-                            onClick={() => handleApproveVacation(v.id)}
-                        >
-                          {t("adminDashboard.acceptButton")}
-                        </button>
-                        <button
-                            className="reject-btn"
-                            onClick={() => handleDenyVacation(v.id)}
-                        >
-                          {t("adminDashboard.rejectButton")}
-                        </button>
-                      </span>
+                                                <button className="approve-btn" onClick={() => handleApproveVacation(v.id)}>
+                                                    {t("adminDashboard.acceptButton")}
+                                                </button>
+                                                <button className="reject-btn" onClick={() => handleDenyVacation(v.id)}>
+                                                    {t("adminDashboard.rejectButton")}
+                                                </button>
+                                            </span>
                                         )}
                                     </li>
                                 ))}
@@ -547,14 +565,11 @@ const AdminDashboard = () => {
                         )}
                     </section>
                 </div>
-
-                {/* Rechte Spalte: Correction Requests */}
                 <div className="right-column">
-                    {/* Entfernt: VacationCalendarAdmin, damit kein Kalender in der Korrekturanträge-Spalte */}
                     <section className="correction-section">
                         <h3>{t("adminDashboard.correctionRequestsTitle")} {t("adminDashboard.forDate")} {formatDate(new Date())}</h3>
                         {allCorrections.length === 0 ? (
-                            <p>{t("adminDashboard.noCorrectionsFound")} {formatDate(new Date())}</p>
+                            <p>{t("adminDashboard.noEntriesThisWeek")} {formatDate(new Date())}</p>
                         ) : (
                             <ul className="correction-list">
                                 {allCorrections.map(corr => (
@@ -583,55 +598,22 @@ const AdminDashboard = () => {
                     </section>
                 </div>
             </div>
-
-            {/* Vollbreiter Kalender NUR hier */}
             <div className="full-width-calendar">
                 <h4>{t("adminDashboard.vacationCalendarTitle")}</h4>
                 <VacationCalendarAdmin vacationRequests={allVacations.filter(v => v.approved)} />
             </div>
-
-            {/* Edit Modal for Time Tracking */}
+            {/* Edit Modal */}
             {editModalVisible && (
                 <div className="modal-overlay">
                     <div className="modal-content">
                         <h3>{t("adminDashboard.editTrackingTitle")} {editDate?.toLocaleDateString('de-DE')}</h3>
                         <form onSubmit={handleEditSubmit}>
                             <div className="form-group">
-                                <label>{t("adminDashboard.workStart")}:</label>
+                                <label>{t("userDashboard.workStart") || "Work Start"}:</label>
                                 <input
                                     type="time"
                                     name="workStart"
                                     value={editData.workStart}
-                                    onChange={handleEditInputChange}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>{t("adminDashboard.breakStart")}:</label>
-                                <input
-                                    type="time"
-                                    name="breakStart"
-                                    value={editData.breakStart}
-                                    onChange={handleEditInputChange}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>{t("adminDashboard.breakEnd")}:</label>
-                                <input
-                                    type="time"
-                                    name="breakEnd"
-                                    value={editData.breakEnd}
-                                    onChange={handleEditInputChange}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>{t("adminDashboard.workEnd")}:</label>
-                                <input
-                                    type="time"
-                                    name="workEnd"
-                                    value={editData.workEnd}
                                     onChange={handleEditInputChange}
                                     required
                                 />
@@ -649,21 +631,16 @@ const AdminDashboard = () => {
                                 </div>
                             )}
                             <div className="form-group">
-                                <label>{t("adminDashboard.userPassword")}:</label>
+                                <label>{t("adminDashboard.newPassword")}:</label>
                                 <input
                                     type="password"
                                     name="userPassword"
-                                    value={editData.userPassword}
+                                    value={editData.userPassword || ''}
                                     onChange={handleEditInputChange}
-                                    required
                                 />
                             </div>
-                            <div className="modal-buttons">
-                                <button type="submit">{t("adminDashboard.button.save")}</button>
-                                <button type="button" onClick={() => setEditModalVisible(false)}>
-                                    {t("adminDashboard.button.cancel")}
-                                </button>
-                            </div>
+                            <button type="submit">{t("adminDashboard.button.save")}</button>
+                            <button type="button" onClick={() => setEditModalVisible(false)}>{t("adminDashboard.button.cancel")}</button>
                         </form>
                     </div>
                 </div>

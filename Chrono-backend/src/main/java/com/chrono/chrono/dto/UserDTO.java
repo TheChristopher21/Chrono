@@ -21,6 +21,7 @@ public class UserDTO {
     private Integer scheduleCycle;
     private List<Map<String, Integer>> weeklySchedule;
     private LocalDate scheduleEffectiveDate; // Neu
+    private Boolean isHourly;  // NEU: Feld für stundenbasierte Beschäftigung
 
     public UserDTO() {}
 
@@ -38,13 +39,14 @@ public class UserDTO {
         this.scheduleCycle = user.getScheduleCycle();
         this.weeklySchedule = user.getWeeklySchedule();
         this.scheduleEffectiveDate = user.getScheduleEffectiveDate();
+        this.isHourly = user.getIsHourly();  // NEU übernehmen
     }
 
     public UserDTO(Long id, String username, String firstName, String lastName,
                    String email, List<String> roles, Integer expectedWorkDays,
                    Double dailyWorkHours, Integer breakDuration, String color,
                    Integer scheduleCycle, List<Map<String, Integer>> weeklySchedule,
-                   LocalDate scheduleEffectiveDate) {
+                   LocalDate scheduleEffectiveDate, Boolean isHourly) {
         this.id = id;
         this.username = username;
         this.firstName = firstName;
@@ -58,9 +60,10 @@ public class UserDTO {
         this.scheduleCycle = scheduleCycle;
         this.weeklySchedule = weeklySchedule;
         this.scheduleEffectiveDate = scheduleEffectiveDate;
+        this.isHourly = isHourly;
     }
 
-    // Getter & Setter für alle Felder
+    // Getter & Setter
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -100,4 +103,7 @@ public class UserDTO {
 
     public LocalDate getScheduleEffectiveDate() { return scheduleEffectiveDate; }
     public void setScheduleEffectiveDate(LocalDate scheduleEffectiveDate) { this.scheduleEffectiveDate = scheduleEffectiveDate; }
+
+    public Boolean getIsHourly() { return isHourly; }
+    public void setIsHourly(Boolean isHourly) { this.isHourly = isHourly; }
 }
