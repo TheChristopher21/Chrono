@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -99,10 +98,8 @@ public class TimeTrackingController {
             @RequestParam String userPassword
     ) {
         LocalDate parsedDate = LocalDate.parse(date);
-        LocalTime parsedWorkStart = LocalTime.parse(workStart);
-        LocalTime parsedWorkEnd = LocalTime.parse(workEnd);
-        LocalDateTime newStart = parsedDate.atTime(parsedWorkStart);
-        LocalDateTime newEnd = parsedDate.atTime(parsedWorkEnd);
+        LocalDateTime newStart = parsedDate.atTime(java.time.LocalTime.parse(workStart));
+        LocalDateTime newEnd = parsedDate.atTime(java.time.LocalTime.parse(workEnd));
         return timeTrackingService.updateTimeTrackEntry(id, newStart, newEnd, userPassword, adminUsername, adminPassword);
     }
 
@@ -117,6 +114,7 @@ public class TimeTrackingController {
     /**
      * Neuer Endpoint: Berechnet die Differenz (in Minuten) zwischen der tatsächlich gearbeiteten Zeit
      * und der erwarteten Arbeitszeit für einen Nutzer an einem bestimmten Datum.
+     * Für stundenbasierte Nutzer wird nur die Zeit von Einstempel bis Mitternacht gezählt.
      *
      * @param username der Nutzername (z. B. "test")
      * @param date     Datum im ISO-Format (z. B. "2025-02-11")
@@ -127,17 +125,41 @@ public class TimeTrackingController {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         LocalDate parsedDate = LocalDate.parse(date);
-        int expectedMinutes = workScheduleService.computeExpectedWorkMinutes(user, parsedDate);
 
+        // Für stundenbasierte Nutzer soll expectedMinutes 0 sein.
+        int expectedMinutes = user.isHourly() ? 0 : workScheduleService.computeExpectedWorkMinutes(user, parsedDate);
+
+        // Lade alle Einträge des Tages
         LocalDateTime dayStart = parsedDate.atStartOfDay();
         LocalDateTime dayEnd = parsedDate.plusDays(1).atStartOfDay();
         List<TimeTracking> entries = timeTrackingService.getTimeTrackingEntriesForUserAndDate(user, dayStart, dayEnd);
 
-        TimeTracking workStartEntry = entries.stream().filter(e -> e.getPunchOrder() == 1).findFirst().orElse(null);
-        TimeTracking workEndEntry = entries.stream().filter(e -> e.getPunchOrder() == 4).findFirst().orElse(null);
+        // Suchen Sie Work Start (punchOrder 1) und Work End (punchOrder 4)
+        TimeTracking workStartEntry = entries.stream()
+                .filter(e -> e.getPunchOrder() == 1)
+                .findFirst()
+                .orElse(null);
+        TimeTracking workEndEntry = entries.stream()
+                .filter(e -> e.getPunchOrder() == 4)
+                .findFirst()
+                .orElse(null);
+
         int actualMinutes = 0;
         if (workStartEntry != null && workEndEntry != null) {
-            actualMinutes = (int) ChronoUnit.MINUTES.between(workStartEntry.getStartTime(), workEndEntry.getEndTime());
+            LocalDateTime start = workStartEntry.getStartTime();
+            LocalDateTime end = workEndEntry.getEndTime();
+            if (user.isHourly()) {
+                if (start.toLocalDate().equals(end.toLocalDate())) {
+                    // Gleicher Tag: Differenz berechnen
+                    actualMinutes = (int) ChronoUnit.MINUTES.between(start, end);
+                } else {
+                    // Schicht geht über Mitternacht: Nur Zeit von Start bis Mitternacht zählen
+                    LocalDateTime midnight = start.toLocalDate().plusDays(1).atStartOfDay();
+                    actualMinutes = (int) ChronoUnit.MINUTES.between(start, midnight);
+                }
+            } else {
+                actualMinutes = (int) ChronoUnit.MINUTES.between(start, end);
+            }
         }
         return actualMinutes - expectedMinutes;
     }

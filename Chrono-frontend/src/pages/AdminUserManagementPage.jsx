@@ -153,7 +153,7 @@ const AdminUserManagementPage = () => {
 
     const handleProgramCard = async (user) => {
         try {
-            const blockNumber = 4;
+            // Hier gehen wir davon aus, dass du im Sektor 0, Block 1 beschreiben möchtest.
             const stringToHex16 = (text) => {
                 let asciiData = text.slice(0, 16);
                 asciiData = asciiData.padEnd(16, '\0');
@@ -165,20 +165,20 @@ const AdminUserManagementPage = () => {
                 return hexResult.toUpperCase();
             };
             const hexData = stringToHex16(user.username);
-            const response = await fetch('http://localhost:8080/api/nfc/write', {
+            const response = await fetch('http://localhost:8080/api/nfc/write-sector0', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ block: blockNumber, data: hexData })
+                body: JSON.stringify({ data: hexData })
             });
             const result = await response.json();
             if (result.status === 'success') {
-                notify(t("userManagement.programCardSuccess") + ": " + user.username);
+                notify(`Karte erfolgreich beschrieben mit: ${user.username}`);
             } else {
-                notify(t("userManagement.programCardError") + ": " + result.message);
+                notify(`Fehler beim Kartenbeschreiben: ${result.message}`);
             }
         } catch (err) {
-            console.error(t("userManagement.programCardError"), err);
-            notify(t("userManagement.programCardError") + ": " + err.message);
+            console.error("Fehler beim Kartenbeschreiben:", err);
+            notify("Fehler beim Kartenbeschreiben: " + err.message);
         }
     };
 

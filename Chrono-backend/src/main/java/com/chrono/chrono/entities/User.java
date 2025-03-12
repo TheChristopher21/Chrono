@@ -66,11 +66,14 @@ public class User {
 
     public User() {}
 
-    // Getter & Setter
-
     // Angepasster Getter für isHourly: Falls null, wird false zurückgegeben.
     public Boolean getIsHourly() {
         return isHourly != null ? isHourly : false;
+    }
+
+    // Neuer Getter, der als boolean zurückgibt, ob der Nutzer stundenbasiert ist.
+    public boolean isHourly() {
+        return getIsHourly();
     }
 
     public void setIsHourly(Boolean isHourly) {

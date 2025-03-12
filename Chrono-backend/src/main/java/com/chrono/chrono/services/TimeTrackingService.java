@@ -143,124 +143,110 @@ public class TimeTrackingService {
         System.out.println("DEBUG: adminPassword (input): " + adminPassword);
         System.out.println("DEBUG: userPassword (input): " + userPassword);
 
-        // Lade Zieluser und Admin
+        // 1) Benutzer laden
         User targetUser = userRepository.findByUsername(targetUsername)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
         User adminUser = userRepository.findByUsername(adminUsername)
                 .orElseThrow(() -> new RuntimeException("Admin user not found"));
 
-        // Admin-Passwort: Falls kein separates Admin-Passwort gesetzt ist, verwende das Login-Passwort.
+        // 2) Admin-Passwort prüfen (separates Admin-Passwort oder fallback auf Login-PW)
         String storedAdminPwd = adminUser.getAdminPassword();
         if (storedAdminPwd == null || storedAdminPwd.trim().isEmpty()) {
             storedAdminPwd = adminUser.getPassword();
             System.out.println("DEBUG: No separate admin password found, using login password");
         }
 
+        // 3) Passwörter matchen
         if (targetUsername.equals(adminUsername)) {
+            // Self-edit: adminPassword == userPassword
             if (!adminPassword.equals(userPassword)) {
-                System.out.println("DEBUG: Self-edit: Password inputs do not match");
-                throw new RuntimeException("For self-edit, admin and user passwords must be the same");
+                throw new RuntimeException("For self-edit, admin and user passwords must match");
             }
             boolean adminPwdMatch = passwordEncoder.matches(adminPassword, storedAdminPwd);
-            boolean userPwdMatch = passwordEncoder.matches(userPassword, targetUser.getPassword());
-            System.out.println("DEBUG: Self-edit: adminPwdMatch = " + adminPwdMatch + ", userPwdMatch = " + userPwdMatch);
-            if (!adminPwdMatch) {
-                throw new RuntimeException("Invalid admin password");
-            }
-            if (!userPwdMatch) {
-                throw new RuntimeException("Invalid user password");
-            }
+            boolean userPwdMatch  = passwordEncoder.matches(userPassword, targetUser.getPassword());
+            if (!adminPwdMatch) throw new RuntimeException("Invalid admin password");
+            if (!userPwdMatch)  throw new RuntimeException("Invalid user password");
         } else {
+            // Fremd-Edit: Admin und User
             boolean adminPwdMatch = passwordEncoder.matches(adminPassword, storedAdminPwd);
-            boolean userPwdMatch = passwordEncoder.matches(userPassword, targetUser.getPassword());
-            System.out.println("DEBUG: Other-edit: adminPwdMatch = " + adminPwdMatch + ", userPwdMatch = " + userPwdMatch);
-            if (!adminPwdMatch) {
-                throw new RuntimeException("Invalid admin password");
-            }
-            if (!userPwdMatch) {
-                throw new RuntimeException("Invalid user password");
-            }
+            boolean userPwdMatch  = passwordEncoder.matches(userPassword, targetUser.getPassword());
+            if (!adminPwdMatch) throw new RuntimeException("Invalid admin password");
+            if (!userPwdMatch)  throw new RuntimeException("Invalid user password");
         }
 
-        // Parse Datum und Zeiten
+        // 4) Datum/Zeit parsen
         LocalDate parsedDate = LocalDate.parse(date);
         LocalTime newWorkStart = LocalTime.parse(workStartStr);
-        LocalTime newBreakStart = LocalTime.parse(breakStartStr);
-        LocalTime newBreakEnd = LocalTime.parse(breakEndStr);
-        LocalTime newWorkEnd = LocalTime.parse(workEndStr);
+        LocalTime newWorkEnd   = LocalTime.parse(workEndStr);
 
-        LocalDateTime newWorkStartDT = parsedDate.atTime(newWorkStart);
-        LocalDateTime newBreakStartDT = parsedDate.atTime(newBreakStart);
-        LocalDateTime newBreakEndDT = parsedDate.atTime(newBreakEnd);
-        LocalDateTime newWorkEndDT = parsedDate.atTime(newWorkEnd);
+        // Pausenlogik: Falls breakStart/breakEnd == "00:00", interpretieren wir das als keine Pause
+        boolean hasBreak = !(breakStartStr.equals("00:00") && breakEndStr.equals("00:00"));
+        LocalTime newBreakStart = hasBreak ? LocalTime.parse(breakStartStr) : null;
+        LocalTime newBreakEnd   = hasBreak ? LocalTime.parse(breakEndStr)   : null;
 
-        System.out.println("DEBUG: Parsed times: newWorkStartDT = " + newWorkStartDT + ", newWorkEndDT = " + newWorkEndDT);
+        LocalDateTime newWorkStartDT  = parsedDate.atTime(newWorkStart);
+        LocalDateTime newWorkEndDT    = parsedDate.atTime(newWorkEnd);
+        LocalDateTime newBreakStartDT = hasBreak ? parsedDate.atTime(newBreakStart) : null;
+        LocalDateTime newBreakEndDT   = hasBreak ? parsedDate.atTime(newBreakEnd)   : null;
 
-        LocalDateTime dayStart = parsedDate.atStartOfDay();
-        LocalDateTime dayEnd = parsedDate.plusDays(1).atStartOfDay();
+        // 5) Zeitfenster definieren und ALTE Einträge entfernen
+        LocalDateTime dayStart = parsedDate.atStartOfDay();             // z.B. 2025-03-13 00:00
+        LocalDateTime dayEnd   = parsedDate.plusDays(1).atStartOfDay(); // 2025-03-14 00:00
 
-        // Lade alle TimeTracking-Einträge des Zielusers für den Tag
-        List<TimeTracking> entries = timeTrackingRepository.findByUserAndStartTimeBetween(targetUser, dayStart, dayEnd);
-        System.out.println("DEBUG: Found " + entries.size() + " time tracking entries for " + targetUsername + " on " + date);
+        List<TimeTracking> oldEntries = timeTrackingRepository.findByUserAndStartTimeBetween(targetUser, dayStart, dayEnd);
+        // Falls Sie ganz sicher sein wollen, dass auch Einträge gelöscht werden, die evtl. "über die Mitternacht" hinausragen,
+        // müssten Sie eine Query verwenden, die auch endTime prüft. Für Standardfälle reicht dies oft aus.
+        timeTrackingRepository.deleteAll(oldEntries);
+        System.out.println("DEBUG: Deleted " + oldEntries.size() + " old entries for " + date);
 
-        // Work Start (PunchOrder 1)
-        TimeTracking ts1 = entries.stream().filter(e -> e.getPunchOrder() == 1).findFirst().orElse(null);
-        if (ts1 == null) {
-            ts1 = new TimeTracking();
-            ts1.setUser(targetUser);
-            ts1.setPunchOrder(1);
-            System.out.println("DEBUG: Creating new Work Start entry");
-        }
+        // 6) Neue Einträge anlegen
+
+        // (a) Work Start (PunchOrder = 1)
+        TimeTracking ts1 = new TimeTracking();
+        ts1.setUser(targetUser);
+        ts1.setPunchOrder(1);
         ts1.setStartTime(newWorkStartDT);
-        ts1.setWorkStart(newWorkStart); // LocalTime
+        ts1.setWorkStart(newWorkStart);
         ts1.setCorrected(true);
         timeTrackingRepository.save(ts1);
-        System.out.println("DEBUG: Work Start entry saved: " + ts1);
+        System.out.println("DEBUG: Created Work Start: " + ts1);
 
-        // Break Start (PunchOrder 2)
-        TimeTracking ts2 = entries.stream().filter(e -> e.getPunchOrder() == 2).findFirst().orElse(null);
-        if (ts2 == null) {
-            ts2 = new TimeTracking();
+        // (b) Break Start (PunchOrder = 2)
+        if (hasBreak) {
+            TimeTracking ts2 = new TimeTracking();
             ts2.setUser(targetUser);
             ts2.setPunchOrder(2);
-            System.out.println("DEBUG: Creating new Break Start entry");
+            ts2.setStartTime(newBreakStartDT);
+            ts2.setBreakStart(newBreakStart);
+            ts2.setCorrected(true);
+            timeTrackingRepository.save(ts2);
+            System.out.println("DEBUG: Created Break Start: " + ts2);
         }
-        ts2.setStartTime(newBreakStartDT); // Update start time for break start
-        ts2.setBreakStart(newBreakStart);   // LocalTime
-        ts2.setCorrected(true);
-        timeTrackingRepository.save(ts2);
-        System.out.println("DEBUG: Break Start entry saved: " + ts2);
 
-        // Break End (PunchOrder 3)
-        TimeTracking ts3 = entries.stream().filter(e -> e.getPunchOrder() == 3).findFirst().orElse(null);
-        if (ts3 == null) {
-            ts3 = new TimeTracking();
+        // (c) Break End (PunchOrder = 3)
+        if (hasBreak) {
+            TimeTracking ts3 = new TimeTracking();
             ts3.setUser(targetUser);
             ts3.setPunchOrder(3);
-            System.out.println("DEBUG: Creating new Break End entry");
+            ts3.setStartTime(newBreakEndDT);
+            ts3.setBreakEnd(newBreakEnd);
+            ts3.setCorrected(true);
+            timeTrackingRepository.save(ts3);
+            System.out.println("DEBUG: Created Break End: " + ts3);
         }
-        ts3.setStartTime(newBreakEndDT); // Update start time for break end
-        ts3.setBreakEnd(newBreakEnd);     // LocalTime
-        ts3.setCorrected(true);
-        timeTrackingRepository.save(ts3);
-        System.out.println("DEBUG: Break End entry saved: " + ts3);
 
-        // Work End (PunchOrder 4)
-        TimeTracking ts4 = entries.stream().filter(e -> e.getPunchOrder() == 4).findFirst().orElse(null);
-        if (ts4 == null) {
-            ts4 = new TimeTracking();
-            ts4.setUser(targetUser);
-            ts4.setPunchOrder(4);
-            System.out.println("DEBUG: Creating new Work End entry");
-            ts4.setStartTime(newWorkEndDT);
-        }
+        // (d) Work End (PunchOrder = 4)
+        TimeTracking ts4 = new TimeTracking();
+        ts4.setUser(targetUser);
+        ts4.setPunchOrder(4);
+        ts4.setStartTime(newWorkEndDT);
         ts4.setEndTime(newWorkEndDT);
-        ts4.setWorkEnd(newWorkEnd); // LocalTime
+        ts4.setWorkEnd(newWorkEnd);
         ts4.setCorrected(true);
         timeTrackingRepository.save(ts4);
-        System.out.println("DEBUG: Work End entry saved: " + ts4);
+        System.out.println("DEBUG: Created Work End: " + ts4);
 
-        return "Day entries updated successfully";
+        return "Day entries updated successfully (old entries removed, new entries created)";
     }
 
     public List<TimeTrackingResponse> getUserHistory(String username) {
@@ -421,12 +407,12 @@ public class TimeTrackingService {
                 pOrder
         );
     }
+
     public List<TimeTracking> getTimeTrackingEntriesForUserAndDate(User user, LocalDateTime start, LocalDateTime end) {
         return timeTrackingRepository.findByUserAndStartTimeBetween(user, start, end);
     }
 
     public List<TimeReportDTO> getReport(String username, String startDateStr, String endDateStr) {
-        // Datum parsen (Format: yyyy-MM-dd)
         LocalDate startDate = LocalDate.parse(startDateStr);
         LocalDate endDate = LocalDate.parse(endDateStr);
         LocalDateTime startDateTime = startDate.atStartOfDay();
@@ -437,13 +423,11 @@ public class TimeTrackingService {
 
         List<TimeTracking> entries = timeTrackingRepository.findByUserAndStartTimeBetween(user, startDateTime, endDateTime);
 
-        // Gruppieren nach Datum (aus startTime)
         Map<LocalDate, List<TimeTracking>> grouped = entries.stream()
                 .collect(Collectors.groupingBy(e -> e.getStartTime().toLocalDate()));
 
         List<TimeReportDTO> report = new ArrayList<>();
 
-        // Formatter: Datum im deutschen Format und Zeit als HH:mm
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, d.M.yyyy", Locale.GERMAN);
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -452,7 +436,6 @@ public class TimeTrackingService {
 
         for (LocalDate date : sortedDates) {
             List<TimeTracking> dayEntries = grouped.get(date);
-            // Sortiere Einträge nach punchOrder
             dayEntries.sort(Comparator.comparingInt(e -> e.getPunchOrder() != null ? e.getPunchOrder() : 0));
 
             String workStart = "-";
@@ -480,7 +463,6 @@ public class TimeTrackingService {
                 }
             }
             String formattedDate = date.format(dateFormatter);
-            // Erstelle das DTO mit dem Benutzernamen
             report.add(new TimeReportDTO(user.getUsername(), formattedDate, workStart, breakStart, breakEnd, workEnd));
         }
         return report;

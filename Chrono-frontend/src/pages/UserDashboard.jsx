@@ -1,5 +1,5 @@
 // src/pages/UserDashboard.jsx
-import { useState, useEffect } from 'react';
+import {useState, useEffect, useRef} from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
@@ -205,6 +205,7 @@ const UserDashboard = () => {
     const [monthlyDiff, setMonthlyDiff] = useState(0);
     const [overallDiff, setOverallDiff] = useState(0);
     const [monthlyDiffAll, setMonthlyDiffAll] = useState({}); // { "YYYY-MM": diff }
+    const lastPunchTimeRef = useRef(0);
 
     // Für Wochenansicht
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
@@ -213,6 +214,17 @@ const UserDashboard = () => {
         userProfile && userProfile.dailyWorkHours !== undefined
             ? Number(userProfile.dailyWorkHours)
             : 8;
+
+    // Neuer State für Korrekturanträge
+    const [showCorrectionModal, setShowCorrectionModal] = useState(false);
+    const [correctionDate, setCorrectionDate] = useState("");
+    const [correctionData, setCorrectionData] = useState({
+        workStart: "",
+        breakStart: "",
+        breakEnd: "",
+        workEnd: "",
+        reason: ""
+    });
 
     /* ===== Profil laden ===== */
     useEffect(() => {
@@ -267,39 +279,42 @@ const UserDashboard = () => {
             doNfcCheck();
         }, 2000);
         return () => clearInterval(interval);
-    }, [userProfile, lastPunchTime]);
+    }, []); // leere Dependency-Liste
 
     async function doNfcCheck() {
         try {
-            const response = await fetch('http://localhost:8080/api/nfc/read/4');
+            const response = await fetch('http://localhost:8080/api/nfc/read/1');
             if (!response.ok) return;
             const json = await response.json();
-            if (json.status === 'no-card' || json.status === 'error') return;
-            if (json.status === 'success' && json.data) {
+            if (json.status === 'no-card') return;
+            else if (json.status === 'error') {
+                console.error("NFC read => error:", json.message);
+                return;
+            } else if (json.status === 'success') {
                 const cardUser = parseHex16(json.data);
                 if (cardUser) {
                     const now = Date.now();
-                    if (now - lastPunchTime < 5000) return;
-                    setLastPunchTime(now);
+                    // Verwende den Ref-Wert, um das Polling zu drosseln
+                    if (now - lastPunchTimeRef.current < 5000) return;
+                    lastPunchTimeRef.current = now;
+                    console.log("Karte gefunden, user:", cardUser);
+                    showPunchMessage(`Eingestempelt: ${cardUser}`);
                     try {
-                        const params = { username: cardUser };
-                        if (userProfile && userProfile.isHourly) params.isHourly = true;
-                        await api.post('/api/timetracking/punch', null, { params });
-                        setPunchMessage(`${t("punchMessage")}: ${cardUser}`);
-                        setTimeout(() => setPunchMessage(''), 3000);
-                        if (userProfile && userProfile.username.toLowerCase() === cardUser.toLowerCase()) {
-                            fetchEntries();
-                        }
-                    } catch (punchErr) {
-                        const errMsg = punchErr.response?.data?.message || punchErr.message;
-                        console.error('Punch error:', errMsg);
+                        await api.post('/api/timetracking/punch', null, {
+                            params: { username: cardUser }
+                        });
+                        console.log("Punch executed for", cardUser);
+                    } catch (err) {
+                        console.error("Punch-Fehler:", err);
                     }
                 }
             }
         } catch (err) {
-            console.error('NFC fetch error:', err);
+            console.error("NFC fetch error:", err);
         }
     }
+
+
 
     function showPunchMessage(msg) {
         setPunchMessage(msg);
@@ -308,9 +323,9 @@ const UserDashboard = () => {
 
     async function handleManualPunch() {
         try {
-            const params = { username: userProfile.username };
-            if (userProfile.isHourly) params.isHourly = true;
-            await api.post('/api/timetracking/punch', null, { params });
+            await api.post('/api/timetracking/punch', null, {
+                params: { username: userProfile.username }
+            });
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username}`);
             fetchEntries();
         } catch (err) {
@@ -318,6 +333,8 @@ const UserDashboard = () => {
             notify(t("manualPunchError"));
         }
     }
+
+
 
     async function handleVacationSubmit(e) {
         e.preventDefault();
@@ -492,6 +509,54 @@ const UserDashboard = () => {
         setPrintModalVisible(false);
     }
 
+    // ---- Funktionen für den Korrekturantrag ----
+    const openCorrectionModal = (dateObj) => {
+        setCorrectionDate(formatLocalDate(dateObj));
+        setCorrectionData({
+            workStart: "",
+            breakStart: "",
+            breakEnd: "",
+            workEnd: "",
+            reason: ""
+        });
+        setShowCorrectionModal(true);
+    };
+
+    const handleCorrectionInputChange = (e) => {
+        const { name, value } = e.target;
+        setCorrectionData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleCorrectionSubmit = async (e) => {
+        e.preventDefault();
+        if (!correctionData.workStart || !correctionData.workEnd) {
+            notify("Bitte füllen Sie Work Start und Work End aus.");
+            return;
+        }
+        const desiredStart = `${correctionDate}T${correctionData.workStart}`;
+        const desiredEnd = `${correctionDate}T${correctionData.workEnd}`;
+        try {
+            await api.post('/api/correction/create-full', null, {
+                params: {
+                    username: userProfile.username,
+                    date: correctionDate,
+                    workStart: correctionData.workStart,
+                    breakStart: correctionData.breakStart,
+                    breakEnd: correctionData.breakEnd,
+                    workEnd: correctionData.workEnd,
+                    reason: correctionData.reason,
+                    desiredStart: desiredStart,
+                    desiredEnd: desiredEnd
+                }
+            });
+            notify("Korrekturantrag erfolgreich gestellt.");
+            setShowCorrectionModal(false);
+        } catch (err) {
+            console.error("Fehler beim Absenden des Korrekturantrags:", err);
+            notify("Fehler beim Absenden des Korrekturantrags.");
+        }
+    };
+
     return (
         <div className="user-dashboard">
             <Navbar />
@@ -556,8 +621,8 @@ const UserDashboard = () => {
                                     <h4>
                                         {dayObj.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}{' '}
                                         <span className="expected-hours">
-                      ({t("expectedWorkHours")}: {expectedForDay} {t("hours")})
-                    </span>
+                                            ({t("expectedWorkHours")}: {expectedForDay} {t("hours")})
+                                        </span>
                                     </h4>
                                     {dailyDiff && <span className="daily-diff">({dailyDiff})</span>}
                                 </div>
@@ -588,6 +653,9 @@ const UserDashboard = () => {
                                         })}
                                     </ul>
                                 )}
+                                <button className="correction-button" onClick={() => openCorrectionModal(dayObj)}>
+                                    Korrekturantrag stellen
+                                </button>
                             </div>
                         );
                     })}
@@ -704,6 +772,70 @@ const UserDashboard = () => {
                     <VacationCalendar vacationRequests={vacationRequests.filter(v => v.approved)} />
                 </div>
             </section>
+
+            {/* ---- Korrekturantrag Modal ---- */}
+            {showCorrectionModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h3>Korrekturantrag für {correctionDate}</h3>
+                        <form onSubmit={handleCorrectionSubmit}>
+                            <div className="form-group">
+                                <label>Work Start:</label>
+                                <input
+                                    type="time"
+                                    name="workStart"
+                                    value={correctionData.workStart}
+                                    onChange={handleCorrectionInputChange}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Break Start:</label>
+                                <input
+                                    type="time"
+                                    name="breakStart"
+                                    value={correctionData.breakStart}
+                                    onChange={handleCorrectionInputChange}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Break End:</label>
+                                <input
+                                    type="time"
+                                    name="breakEnd"
+                                    value={correctionData.breakEnd}
+                                    onChange={handleCorrectionInputChange}
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Work End:</label>
+                                <input
+                                    type="time"
+                                    name="workEnd"
+                                    value={correctionData.workEnd}
+                                    onChange={handleCorrectionInputChange}
+                                    required
+                                />
+                            </div>
+                            <div className="form-group">
+                                <label>Grund (Reason):</label>
+                                <textarea
+                                    name="reason"
+                                    value={correctionData.reason}
+                                    onChange={handleCorrectionInputChange}
+                                    required
+                                ></textarea>
+                            </div>
+                            <div className="modal-buttons">
+                                <button type="submit">Antrag senden</button>
+                                <button type="button" onClick={() => setShowCorrectionModal(false)}>
+                                    Abbrechen
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

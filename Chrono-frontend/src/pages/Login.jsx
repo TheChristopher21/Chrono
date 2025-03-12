@@ -63,7 +63,7 @@ const Login = () => {
 
     async function doNfcCheck() {
         try {
-            const response = await fetch('http://localhost:8080/api/nfc/read/4');
+            const response = await fetch('http://localhost:8080/api/nfc/read/1');
             if (!response.ok) return;
             const json = await response.json();
             if (json.status === 'no-card') return;
@@ -135,7 +135,6 @@ const Login = () => {
                 </select>
             </div>
             <button onClick={() => showPunchMessage("Test-Stempel ausgeführt.")}>
-                Sound testen
             </button>
             <form onSubmit={handleSubmit}>
                 <input
