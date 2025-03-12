@@ -1,24 +1,50 @@
-/* AdminDashboard.css */
-
-/* Grundlayout des Dashboards */
-.admin-dashboard {
-    width: 100%;
-    margin: 0;
-    padding: 20px;
+/* Improved AdminDashboard CSS - Modern, Smart, Clean */
+:root {
+    --primary-color: #007BFF;
+    --primary-hover: #0056b3;
+    --secondary-color: #FF9800;
+    --secondary-hover: #E68900;
+    --success-color: #28a745;
+    --success-hover: #218838;
+    --warning-color: #ffc107;
+    --danger-color: #dc3545;
+    --light-bg: #f4f7fa;
+    --card-bg: #ffffff;
+    --text-color: #333333;
+    --subtext-color: #555555;
+    --border-color: #dddddd;
+    --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    --radius: 10px;
+    --transition: 0.3s ease-in-out;
+    --font-family: 'Roboto', sans-serif;
 }
 
-/* Header-Bereich */
-.dashboard-header {
-    background-color: #fff;
+body {
+    font-family: var(--font-family);
+    background-color: var(--light-bg);
+    margin: 0;
+    padding: 0;
+}
+
+.admin-dashboard {
+    width: 100%;
     padding: 20px;
-    border-radius: 10px;
+    box-sizing: border-box;
+}
+
+/* Dashboard Header */
+.dashboard-header {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: var(--radius);
     text-align: center;
     margin-bottom: 20px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow);
 }
 
 .dashboard-header h2 {
     margin-bottom: 10px;
+    color: var(--text-color);
 }
 
 .admin-password {
@@ -27,37 +53,42 @@
 
 .admin-password input {
     padding: 8px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
+    transition: border-color var(--transition);
 }
 
-/* Vollbreiter Kalender-Container – soll den gesamten Bildschirm horizontal ausnutzen */
+.admin-password input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+/* Full-Width Calendar */
 .full-width-calendar {
     width: 100%;
-    margin: 0;             /* Kein linker/rechter Rand */
     padding: 20px 0;
-    background-color: #fff;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
     margin-bottom: 20px;
 }
 
 .full-width-calendar h4 {
     text-align: center;
     margin-bottom: 10px;
+    color: var(--text-color);
 }
 
-/* Kalender-Styling, angewendet von der VacationCalendarAdmin-Komponente */
+/* Vacation Calendar Admin */
 .vacation-calendar-admin .react-calendar {
     width: 100% !important;
     border: none;
-    font-family: 'Roboto', sans-serif;
+    font-family: var(--font-family);
     line-height: 1.125em;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
 
-/* Navigation (oben im Kalender) */
 .vacation-calendar-admin .react-calendar__navigation {
     display: flex;
     justify-content: center;
@@ -70,24 +101,28 @@
     border: none;
     font-size: 1rem;
     margin: 2px;
-    color: #007BFF;
+    color: var(--primary-color);
     cursor: pointer;
+    transition: color var(--transition);
 }
 
-/* Wochentage oben im Kalender */
+.vacation-calendar-admin .react-calendar__navigation button:hover {
+    color: var(--primary-hover);
+}
+
 .vacation-calendar-admin .react-calendar__month-view__weekdays {
     display: flex;
     justify-content: space-around;
     text-align: center;
     font-weight: bold;
     margin-bottom: 5px;
+    color: var(--text-color);
 }
 
 .vacation-calendar-admin .react-calendar__month-view__weekdays div {
     flex: 1;
 }
 
-/* Tage im Kalender – wir erzwingen sieben Spalten (14.28% Breite pro Tag) */
 .vacation-calendar-admin .react-calendar__month-view__days {
     display: flex;
     flex-wrap: wrap;
@@ -98,26 +133,26 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 60px;  /* Passe die Höhe ggf. an */
+    height: 60px;
     margin: 2px 0;
     border-radius: 6px;
-    transition: background-color 0.3s;
+    transition: background-color var(--transition);
     text-align: center;
+    cursor: pointer;
 }
 
 .vacation-calendar-admin .react-calendar__month-view__days__day:hover {
     background-color: #e6f7ff;
 }
 
-/* Tageszahlen in jedem Tile – sicherstellen, dass auch Sonntage angezeigt werden */
 .vacation-calendar-admin .react-calendar__month-view__days__day abbr {
     display: block;
     text-decoration: none;
     font-size: 1rem;
-    color: #333;
+    color: var(--text-color);
 }
 
-/* Dashboard-Inhalt, der die Left- und Right-Spalten enthält */
+/* Dashboard Content Layout */
 .dashboard-content {
     display: flex;
     gap: 20px;
@@ -130,23 +165,23 @@
     min-width: 300px;
 }
 
-/* Weitere Bereiche (z. B. Time Tracking, User-Gruppen etc.) */
-
-/* Time Tracking / Week Section */
+/* Week Section (Time Tracking) */
 .week-section {
-    background-color: #fff;
+    background-color: var(--card-bg);
     padding: 20px;
-    border-radius: 10px;
+    border-radius: var(--radius);
     margin-bottom: 20px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow);
 }
 
 .week-section h3 {
     margin-bottom: 15px;
-    border-bottom: 2px solid #ddd;
+    border-bottom: 2px solid var(--border-color);
     padding-bottom: 10px;
+    color: var(--text-color);
 }
 
+/* Week Navigation */
 .week-navigation {
     display: flex;
     align-items: center;
@@ -157,23 +192,28 @@
 
 .week-navigation button {
     padding: 8px 16px;
-    background-color: #007BFF;
+    background-color: var(--primary-color);
     color: #fff;
+    border: none;
     border-radius: 5px;
-    transition: background-color 0.3s;
+    cursor: pointer;
+    transition: background-color var(--transition), transform var(--transition);
 }
 
 .week-navigation button:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
 }
 
 .week-navigation input[type="date"] {
     padding: 8px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
+    background-color: #fff;
+    color: var(--text-color);
 }
 
-/* Benutzergruppen / Block */
+/* Admin User Groups and Blocks */
 .admin-user-groups {
     display: flex;
     flex-direction: column;
@@ -181,11 +221,11 @@
 }
 
 .admin-user-block {
-    border: 1px solid #ddd;
-    border-radius: 10px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
     overflow: hidden;
-    background-color: #fff;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: var(--card-bg);
+    box-shadow: var(--shadow);
 }
 
 .admin-user-header {
@@ -199,26 +239,41 @@
 .admin-user-header h4 {
     margin: 0;
     color: #fff;
+    font-size: 1.1rem;
 }
 
-.admin-user-header button {
+.admin-user-header button.edit-button {
     background: transparent;
     border: none;
     color: #fff;
     font-size: 1.2rem;
+    cursor: pointer;
 }
 
+/* Week Display for Users */
 .admin-week-display {
     padding: 15px;
     background-color: #f9f9f9;
 }
 
-/* Tageskarten innerhalb der Benutzergruppe */
+.user-total-diff {
+    text-align: center;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+    color: var(--text-color);
+}
+
+/* Admin Day Card */
 .admin-day-card {
     margin-bottom: 15px;
     border: 1px solid #eee;
-    border-radius: 10px;
+    border-radius: var(--radius);
     overflow: hidden;
+    transition: transform var(--transition);
+}
+
+.admin-day-card:hover {
+    transform: translateY(-2px);
 }
 
 .admin-day-card-header {
@@ -232,14 +287,16 @@
 
 .admin-day-card-header button.edit-day-button {
     padding: 4px 8px;
-    background-color: #ffc107;
+    background-color: var(--secondary-color);
     color: #333;
+    border: none;
     border-radius: 5px;
-    transition: background-color 0.3s;
+    cursor: pointer;
+    transition: background-color var(--transition);
 }
 
 .admin-day-card-header button.edit-day-button:hover {
-    background-color: #e0a800;
+    background-color: var(--secondary-hover);
 }
 
 .admin-day-content {
@@ -254,20 +311,30 @@
 
 .time-entry-list li {
     margin-bottom: 5px;
+    font-size: 0.95rem;
+    color: var(--text-color);
 }
 
-/* Correction Requests Bereich */
+.no-entries {
+    text-align: center;
+    font-style: italic;
+    color: var(--subtext-color);
+}
+
+/* Correction Section */
 .correction-section {
-    background-color: #fff;
+    background-color: var(--card-bg);
     padding: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
 }
 
 .correction-section h3 {
     margin-bottom: 15px;
-    border-bottom: 2px solid #ddd;
+    border-bottom: 2px solid var(--border-color);
     padding-bottom: 10px;
+    color: var(--text-color);
 }
 
 .correction-list {
@@ -281,100 +348,116 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-size: 0.95rem;
 }
 
 .correction-buttons button {
     padding: 6px 12px;
     margin-left: 5px;
-    background-color: #007BFF;
+    background-color: var(--primary-color);
     color: #fff;
+    border: none;
     border-radius: 5px;
-    transition: background-color 0.3s;
+    cursor: pointer;
+    transition: background-color var(--transition);
 }
 
 .correction-buttons button:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-hover);
 }
 
-/* Vacation Requests Styling */
+/* Vacation Requests */
+.vacation-section {
+    background-color: var(--card-bg);
+    padding: 20px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+}
+
+.vacation-section h3 {
+    margin-bottom: 15px;
+    color: var(--text-color);
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
 .vacation-list {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-/* Layout für einzelne Vacation Requests:
-   Username, Datum und Status sollen nahe beieinander stehen */
 .vacation-item {
     display: flex;
     align-items: center;
     gap: 10px;
     padding: 10px;
     border-bottom: 1px solid #eee;
+    font-size: 0.95rem;
 }
 
 .vacation-text {
     display: flex;
     align-items: center;
     gap: 5px;
+    color: var(--text-color);
 }
 
 .vacation-text strong {
     margin-right: 5px;
 }
 
-/* Die Button-Gruppe wird an das Ende geschoben */
 .vacation-buttons {
     margin-left: auto;
     display: flex;
     gap: 10px;
 }
 
-/* Approve Button */
 .approve-btn {
-    background-color: #28a745;
+    background-color: var(--success-color);
     color: #fff;
     padding: 6px 12px;
     border: none;
     border-radius: 5px;
-    transition: background-color 0.3s;
+    cursor: pointer;
+    transition: background-color var(--transition);
 }
 
 .approve-btn:hover {
-    background-color: #218838;
+    background-color: var(--success-hover);
 }
 
-/* Reject Button */
 .reject-btn {
-    background-color: #dc3545;
+    background-color: var(--danger-color);
     color: #fff;
     padding: 6px 12px;
     border: none;
     border-radius: 5px;
-    transition: background-color 0.3s;
+    cursor: pointer;
+    transition: background-color var(--transition);
 }
 
 .reject-btn:hover {
     background-color: #c82333;
 }
 
-/* Status-Farben */
 .vacation-item .approved {
-    color: #28a745;
+    color: var(--success-color);
     font-weight: bold;
 }
 
 .vacation-item .denied {
-    color: #dc3545;
+    color: var(--danger-color);
     font-weight: bold;
 }
 
 .vacation-item .pending {
-    color: #ffc107;
+    color: var(--warning-color);
     font-weight: bold;
 }
 
-/* Edit Modal (Time Tracking) */
+/* Modal (Edit etc.) */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -389,9 +472,9 @@
 }
 
 .modal-content {
-    background: #fff;
+    background-color: var(--card-bg);
     padding: 30px;
-    border-radius: 10px;
+    border-radius: var(--radius);
     width: 90%;
     max-width: 500px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
@@ -399,6 +482,7 @@
 
 .modal-content h3 {
     margin-bottom: 20px;
+    color: var(--text-color);
 }
 
 .form-group {
@@ -409,13 +493,21 @@
     display: block;
     margin-bottom: 5px;
     font-weight: bold;
+    color: var(--text-color);
 }
 
 .form-group input {
     width: 100%;
     padding: 8px;
-    border: 1px solid #ddd;
+    border: 1px solid var(--border-color);
     border-radius: 5px;
+    box-sizing: border-box;
+    transition: border-color var(--transition);
+}
+
+.form-group input:focus {
+    border-color: var(--primary-color);
+    outline: none;
 }
 
 .modal-buttons {
@@ -426,17 +518,21 @@
 
 .modal-buttons button {
     padding: 8px 16px;
+    border: none;
     border-radius: 5px;
-    transition: background-color 0.3s;
+    cursor: pointer;
+    transition: background-color var(--transition), transform var(--transition);
+    font-weight: 500;
 }
 
 .modal-buttons button:first-child {
-    background-color: #007BFF;
+    background-color: var(--primary-color);
     color: #fff;
 }
 
 .modal-buttons button:first-child:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
 }
 
 .modal-buttons button:last-child {
@@ -446,4 +542,12 @@
 
 .modal-buttons button:last-child:hover {
     background-color: #5a6268;
+    transform: translateY(-2px);
+}
+
+/* Responsive Styles */
+@media (max-width: 768px) {
+    .dashboard-content {
+        flex-direction: column;
+    }
 }

@@ -6,12 +6,13 @@ import api from '../utils/api';
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
 import '../styles/UserDashboard.css';
+import VacationCalendar from "../components/VacationCalendar.jsx";
 
 /* =====================================
    HELPER FUNCTIONS
 ==================================== */
 
-// Gibt den Montag der Woche des übergebenen Datums zurück.
+// Returns the Monday of the week for a given date.
 const getMondayOfWeek = (date) => {
     const copy = new Date(date);
     const day = copy.getDay();
@@ -21,14 +22,14 @@ const getMondayOfWeek = (date) => {
     return copy;
 };
 
-// Fügt einem Datum eine bestimmte Anzahl an Tagen hinzu.
+// Adds a given number of days to a date.
 const addDays = (date, days) => {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
     return d;
 };
 
-// Konvertiert einen 32-stelligen Hex-String in ASCII.
+// Converts a 32-character hex string to ASCII.
 const parseHex16 = (hexString) => {
     if (!hexString) return null;
     const clean = hexString.replace(/\s+/g, '');
@@ -44,14 +45,14 @@ const parseHex16 = (hexString) => {
     return output;
 };
 
-// Gibt die Minuten seit Mitternacht für einen Datums-/Zeit-String zurück.
+// Returns the number of minutes since midnight for a given datetime string.
 const getMinutesSinceMidnight = (datetimeStr) => {
     if (!datetimeStr) return 0;
     const d = new Date(datetimeStr);
     return d.getHours() * 60 + d.getMinutes();
 };
 
-// Formatiert ein Datum als "YYYY-MM-DD".
+// Formats a date as "YYYY-MM-DD".
 const formatLocalDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -59,8 +60,16 @@ const formatLocalDate = (date) => {
     return `${year}-${month}-${day}`;
 };
 
-// Formatiert einen Datums-String als "DD-MM-YYYY".
-// Formatiert ein Datum als Uhrzeit "HH:MM" (2-stellig).
+// Formats a date string as "DD-MM-YYYY".
+const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}-${month}-${year}`;
+};
+
+// Formats a date object as a short time string "HH:MM".
 const formatTimeShort = (dateObj) => {
     return dateObj.toLocaleTimeString('de-DE', {
         hour: '2-digit',
@@ -71,8 +80,8 @@ const formatTimeShort = (dateObj) => {
 
 /**
  * computeDailyDiffValue:
- * Berechnet die Differenz (in Minuten) eines Tages (gearbeitete Zeit minus Sollzeit).
- * Hier werden die Stempel für Work Start, Break Start, Break End und Work End berücksichtigt.
+ * Calculates the difference (in minutes) for a day (worked time minus expected time).
+ * Considers Work Start, Break Start, Break End, and Work End.
  */
 const computeDailyDiffValue = (dayEntries, expectedWorkHours) => {
     const entryStart = dayEntries.find(e => e.punchOrder === 1);
@@ -103,7 +112,6 @@ const computeDailyDiffValue = (dayEntries, expectedWorkHours) => {
     return 0;
 };
 
-// Gibt die Tages-Differenz als formatierten String zurück.
 const computeDailyDiff = (dayEntries, expectedWorkHours) => {
     const diff = computeDailyDiffValue(dayEntries, expectedWorkHours);
     const sign = diff >= 0 ? '+' : '';
@@ -112,8 +120,8 @@ const computeDailyDiff = (dayEntries, expectedWorkHours) => {
 
 /**
  * getExpectedHoursForDay:
- * Bestimmt anhand des WeeklySchedule den erwarteten Sollwert für einen Tag.
- * Für stundenbasierte Nutzer (isHourly === true) wird 0 zurückgegeben.
+ * Determines the expected work hours for a day based on the user's weekly schedule.
+ * For hourly users, returns 0.
  */
 const getExpectedHoursForDay = (dayObj, userConfig, defaultExpectedHours) => {
     if (userConfig?.isHourly) return 0;
@@ -133,9 +141,20 @@ const getExpectedHoursForDay = (dayObj, userConfig, defaultExpectedHours) => {
     return expectedForDay;
 };
 
-// Gibt einen Text-Label für einen gegebenen Punch-Order zurück.
-// Formatiert eine Differenz (in Minuten) als "+hh hrs mm min".
-// Gibt alle Einträge des aktuellen Tages (im 'de-DE'-Format) zurück.
+// Groups entries by day ("DD.MM.YYYY")
+const groupEntriesByDay = (entries) => {
+    const dayMap = {};
+    entries.forEach(entry => {
+        const ds = new Date(entry.startTime).toLocaleDateString('de-DE');
+        if (!dayMap[ds]) {
+            dayMap[ds] = [];
+        }
+        dayMap[ds].push(entry);
+    });
+    return dayMap;
+};
+
+// Returns all entries for today (formatted in 'de-DE')
 const getTodayEntries = (entries) => {
     const todayStr = new Date().toLocaleDateString('de-DE');
     return entries.filter(e => new Date(e.startTime).toLocaleDateString('de-DE') === todayStr);
@@ -155,19 +174,23 @@ function HourlyDashboard() {
     const [selectedMonth, setSelectedMonth] = useState(
         new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     );
-    // dailyData speichert pro Tag: totalMins, earliestStart, latestEnd
+    // dailyData stores for each day: totalMins, earliestStart, latestEnd
     const [dailyData, setDailyData] = useState({});
     const [printModalVisible, setPrintModalVisible] = useState(false);
     const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date()));
     const [printEndDate, setPrintEndDate] = useState(formatLocalDate(new Date()));
 
-    // defaultExpectedHours aus dem Profil, falls vorhanden
+    // Vacation states (optional, falls benötigt)
+    const [vacationRequests, setVacationRequests] = useState([]);
+    const [vacationForm, setVacationForm] = useState({ startDate: '', endDate: '' });
+
+    // Use defaultExpectedHours from profile if available
     const defaultExpectedHours =
         userProfile && userProfile.dailyWorkHours !== undefined
             ? Number(userProfile.dailyWorkHours)
             : 8;
 
-    /* ===== Profil laden ===== */
+    /* ===== Load Profile ===== */
     useEffect(() => {
         async function fetchProfile() {
             try {
@@ -187,7 +210,14 @@ function HourlyDashboard() {
         fetchProfile();
     }, [t]);
 
-    /* ===== Einträge laden ===== */
+    /* ===== Load Entries and Vacations ===== */
+    useEffect(() => {
+        if (userProfile) {
+            fetchEntries();
+            fetchVacations();
+        }
+    }, [userProfile]);
+
     const fetchEntries = useCallback(async () => {
         if (!userProfile) return;
         try {
@@ -199,14 +229,19 @@ function HourlyDashboard() {
         }
     }, [userProfile]);
 
-    useEffect(() => {
-        fetchEntries();
-    }, [fetchEntries]);
+    const fetchVacations = async () => {
+        try {
+            const res = await api.get('/api/vacation/my');
+            setVacationRequests(res.data || []);
+        } catch (err) {
+            console.error("Error loading vacation requests", err);
+        }
+    };
 
     /* ===== NFC-Polling ===== */
     const doNfcCheck = useCallback(async () => {
         if (!userProfile?.isHourly) return;
-        // Prüfe, ob bereits 2 Stempel für heute vorhanden sind.
+        // Allow a maximum of 2 stamps per day.
         if (getTodayEntries(allEntries).length >= 2) return;
         try {
             const response = await fetch('http://localhost:8080/api/nfc/read/4');
@@ -219,14 +254,15 @@ function HourlyDashboard() {
                     const now = Date.now();
                     if (now - lastPunchTime < 5000) return;
                     setLastPunchTime(now);
-                    // Nochmals prüfen, ob 2 Stempel schon vorhanden sind.
+                    // Re-check if already 2 stamps exist
                     if (getTodayEntries(allEntries).length >= 2) {
                         notify(t("maxStampsReached"));
                         return;
                     }
                     try {
+                        // Pass currentDate to force creation of a new entry for a new day.
                         await api.post('/api/timetracking/punch', null, {
-                            params: { username: cardUser, isHourly: true }
+                            params: { username: cardUser, isHourly: true, currentDate: formatLocalDate(new Date()) }
                         });
                         setPunchMessage(`${t("punchMessage")}: ${cardUser}`);
                         setTimeout(() => setPunchMessage(''), 3000);
@@ -250,7 +286,7 @@ function HourlyDashboard() {
         return () => clearInterval(interval);
     }, [doNfcCheck]);
 
-    /* ===== Manuelles Stempeln ===== */
+    /* ===== Manual Punch ===== */
     const handleManualPunch = async () => {
         if (!userProfile?.isHourly) {
             notify("User is not hourly!");
@@ -262,7 +298,7 @@ function HourlyDashboard() {
         }
         try {
             await api.post('/api/timetracking/punch', null, {
-                params: { username: userProfile.username, isHourly: true }
+                params: { username: userProfile.username, isHourly: true, currentDate: formatLocalDate(new Date()) }
             });
             setPunchMessage(`${t("manualPunchMessage")} ${userProfile.username}`);
             setTimeout(() => setPunchMessage(''), 3000);
@@ -273,7 +309,7 @@ function HourlyDashboard() {
         }
     };
 
-    /* ===== Monatsübersicht berechnen ===== */
+    /* ===== Monthly Overview Calculation ===== */
     useEffect(() => {
         if (!userProfile?.isHourly) {
             setDailyData({});
@@ -307,7 +343,7 @@ function HourlyDashboard() {
         setDailyData(daily);
     }, [allEntries, selectedMonth, userProfile]);
 
-    // Gesamtarbeitszeit im aktuellen Monat
+    // Total work time in current month
     let totalMins = 0;
     Object.values(dailyData).forEach(dayObj => {
         totalMins += dayObj.totalMins;
@@ -315,7 +351,7 @@ function HourlyDashboard() {
     const totalHrs = Math.floor(totalMins / 60);
     const totalRemMins = totalMins % 60;
 
-    // Monatsnavigation
+    // Monthly navigation
     const handlePrevMonth = () => {
         setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1, 1));
     };
@@ -335,8 +371,25 @@ function HourlyDashboard() {
         setPrintModalVisible(false);
     };
 
-    /* ===== Rendering ===== */
+    /* ===== Vacation Submission ===== */
+    const handleVacationSubmit = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/api/vacation/create', null, {
+                params: {
+                    username: userProfile.username,
+                    startDate: vacationForm.startDate,
+                    endDate: vacationForm.endDate
+                }
+            });
+            notify(t("vacationSubmitSuccess"));
+        } catch (err) {
+            console.error('Error submitting vacation request:', err);
+            notify(t("vacationSubmitError"));
+        }
+    };
 
+    /* ===== Rendering ===== */
     if (!userProfile) {
         return (
             <div className="user-dashboard">
@@ -346,30 +399,8 @@ function HourlyDashboard() {
         );
     }
 
-    // Für die Anzeige in der Wochenansicht: Gruppiere Einträge nach Tag
-    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(getMondayOfWeek(new Date()), i));
-    const dayMapWeek = {};
-    weekDates.forEach(d => {
-        dayMapWeek[d.toLocaleDateString()] = [];
-    });
-    allEntries.forEach(entry => {
-        const ds = new Date(entry.startTime).toLocaleDateString();
-        if (dayMapWeek[ds] !== undefined) {
-            dayMapWeek[ds].push(entry);
-        }
-    });
-
-    // Diff für heute (nur für nicht-stundenbasierte Nutzer)
-    let dailyDiffDisplay = null;
-    if (userProfile && !userProfile.isHourly) {
-        const todayStr = new Date().toLocaleDateString('de-DE');
-        const dayEntriesToday = allEntries.filter(e => new Date(e.startTime).toLocaleDateString('de-DE') === todayStr);
-        if (dayEntriesToday.length > 0) {
-            const expectedForToday = getExpectedHoursForDay(new Date(), userProfile, defaultExpectedHours);
-            dailyDiffDisplay = computeDailyDiff(dayEntriesToday, expectedForToday);
-            dailyDiffDisplay = `${dailyDiffDisplay} (${t("expectedWorkHours")}: ${expectedForToday} ${t("hours")})`;
-        }
-    }
+    // For weekly grouping (not used in hourly view; we display only the monthly overview)
+    // Optionally you could add a weekly view as well.
 
     return (
         <div className="user-dashboard">
@@ -476,6 +507,64 @@ function HourlyDashboard() {
                     </div>
                 </div>
             )}
+
+            <section className="vacation-section">
+                <h3>{t("vacationTitle")}</h3>
+                <form onSubmit={handleVacationSubmit} className="form-vacation">
+                    <div className="form-group">
+                        <label>{t("startDate")}:</label>
+                        <input
+                            type="date"
+                            name="startDate"
+                            value={vacationForm.startDate}
+                            onChange={(e) =>
+                                setVacationForm({ ...vacationForm, startDate: e.target.value })
+                            }
+                            required
+                        />
+                    </div>
+                    <div className="form-group">
+                        <label>{t("endDate")}:</label>
+                        <input
+                            type="date"
+                            name="endDate"
+                            value={vacationForm.endDate}
+                            onChange={(e) =>
+                                setVacationForm({ ...vacationForm, endDate: e.target.value })
+                            }
+                            required
+                        />
+                    </div>
+                    <button type="submit">{t("vacationSubmitButton")}</button>
+                </form>
+                <div className="vacation-history">
+                    <h4>{t("myVacations")}</h4>
+                    {vacationRequests.length === 0 ? (
+                        <p>{t("noVacations")}</p>
+                    ) : (
+                        <ul>
+                            {vacationRequests.map((v) => (
+                                <li key={v.id}>
+                                    {formatDate(v.startDate)} {t("to")} {formatDate(v.endDate)}{' '}
+                                    {v.approved ? (
+                                        <span className="approved">{t("approved")}</span>
+                                    ) : v.denied ? (
+                                        <span className="denied">{t("denied")}</span>
+                                    ) : (
+                                        <span className="pending">{t("pending")}</span>
+                                    )}
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+                <div className="calendar-section">
+                    <h4>{t("vacationCalendarTitle")}</h4>
+                    {/* Hier wird angenommen, dass VacationCalendar eine eigene Komponente ist */}
+                    {/* und dass sie alle genehmigten Urlaubsanträge erhält */}
+                    <VacationCalendar vacationRequests={vacationRequests.filter(v => v.approved)} />
+                </div>
+            </section>
         </div>
     );
 }
