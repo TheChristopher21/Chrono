@@ -1,4 +1,3 @@
-// src/components/PrintReport.jsx
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import api from '../utils/api';
@@ -6,7 +5,6 @@ import { jsPDF } from 'jspdf';
 import html2canvas from 'html2canvas';
 import '../styles/PrintReport.css';
 
-// Hilfs-Hook, um die Query-Parameter auszulesen
 function useQuery() {
     return new URLSearchParams(useLocation().search);
 }
@@ -18,7 +16,6 @@ const PrintReport = () => {
     const endDate = query.get('endDate') || '';
     const [reportData, setReportData] = useState([]);
 
-    // Lade den Report aus dem Backend
     useEffect(() => {
         if (username && startDate && endDate) {
             api
@@ -32,12 +29,10 @@ const PrintReport = () => {
         }
     }, [username, startDate, endDate]);
 
-    // Öffnet den Druckdialog
     const handlePrint = () => {
         window.print();
     };
 
-    // Erzeugt ein PDF aus dem Report-Container
     const handleGeneratePDF = async () => {
         const input = document.getElementById('reportContent');
         if (!input) {

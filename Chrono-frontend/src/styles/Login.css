@@ -1,4 +1,4 @@
-/* src/styles/Login.css */
+
 
 .login-container {
     max-width: 400px;
@@ -7,7 +7,7 @@
     background: #ffffff;
     border-radius: 8px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    position: relative; /* Damit der Footer relativ zum Container positioniert werden kann */
+    position: relative;
 }
 
 .login-container h2 {
@@ -56,7 +56,6 @@ form button:hover {
     background-color: #005bb5;
 }
 
-/* Impressum-Footer, fixiert unten links im Container */
 .impressum-footer {
     position: absolute;
     bottom: 10px;
@@ -68,7 +67,6 @@ form button:hover {
     border-radius: 4px;
     z-index: 1000;
 }
-/* Sprachwahl-Styling */
 .language-switch {
     display: flex;
     align-items: center;

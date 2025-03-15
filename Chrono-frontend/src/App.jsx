@@ -1,4 +1,3 @@
-// src/App.jsx
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login.jsx';
@@ -13,7 +12,6 @@ import PrintReport from "./components/PrintReport.jsx";
 function App() {
     return (
         <Routes>
-            {/* Standard: alles Unbekannte -> /login */}
             <Route path="*" element={<Navigate to="/login" replace />} />
 
             <Route path="/login" element={<Login />} />

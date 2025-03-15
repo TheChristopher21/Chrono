@@ -4,9 +4,9 @@ import react from '@vitejs/plugin-react'
 
 export default defineConfig({
     plugins: [react()],
-    base: './', // relative Pfade, damit die Assets in dist korrekt gefunden werden
+    base: './',
     build: {
-        chunkSizeWarningLimit: 5000 // Erhöht das Limit auf 5000 kB
+        chunkSizeWarningLimit: 10000
     },
     server: {
         proxy: {

@@ -1,4 +1,3 @@
-// src/pages/AdminDashboard.jsx
 import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
@@ -7,12 +6,13 @@ import { useAuth } from '../context/AuthContext';
 import '../styles/AdminDashboard.css';
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
+import { jsPDF } from 'jspdf';
+import autoTable from "jspdf-autotable";
 
 /* =============================
    HELPER FUNCTIONS
 ============================= */
 
-// Gibt den Montag der Woche zurück
 function getMondayOfWeek(date) {
     const copy = new Date(date);
     const day = copy.getDay();
@@ -22,7 +22,6 @@ function getMondayOfWeek(date) {
     return copy;
 }
 
-// Formatiert ein Datum als "DD-MM-YYYY"
 function formatDate(dateStrOrObj) {
     const date = new Date(dateStrOrObj);
     const day = String(date.getDate()).padStart(2, '0');
@@ -31,14 +30,12 @@ function formatDate(dateStrOrObj) {
     return `${day}-${month}-${year}`;
 }
 
-// Fügt einem Datum Tage hinzu
 function addDays(date, days) {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
     return d;
 }
 
-// Formatiert die Uhrzeit
 function formatTime(dateStr) {
     const d = new Date(dateStr);
     return isNaN(d.getTime())
@@ -50,7 +47,6 @@ function formatTime(dateStr) {
         });
 }
 
-// **NEU**: Erzeugt lokales "YYYY-MM-DD"
 function formatLocalDateYMD(d) {
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -58,14 +54,12 @@ function formatLocalDateYMD(d) {
     return `${year}-${month}-${day}`;
 }
 
-// Berechnet die Minuten seit Mitternacht
 function getMinutesSinceMidnight(datetimeStr) {
     if (!datetimeStr) return 0;
     const d = new Date(datetimeStr);
     return d.getHours() * 60 + d.getMinutes();
 }
 
-// Konvertiert "HH:MM" in Minuten
 function parseTimeToMinutes(timeStr) {
     if (!timeStr) return 0;
     const parts = timeStr.split(':');
@@ -79,18 +73,16 @@ function computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly) {
         const entryStart = dayEntries.find(e => e.punchOrder === 1);
         let entryEnd = dayEntries.find(e => e.punchOrder === 4);
         if (!entryEnd) {
-            // Fallback, falls kein punchOrder=4 da ist
             entryEnd = dayEntries.find(e => e.punchOrder === 2);
         }
         if (entryStart && entryEnd) {
             const startTime = new Date(entryStart.startTime);
             const endTime = new Date(entryEnd.endTime ? entryEnd.endTime : entryEnd.startTime);
-            // Falls End an anderem Kalendertag liegt, nur bis Mitternacht zählen
             if (endTime.toDateString() !== startTime.toDateString()) {
                 const midnight = new Date(startTime);
                 midnight.setHours(24, 0, 0, 0);
                 const minutesWorked = (midnight - startTime) / 60000;
-                const expectedMinutes = expectedWorkHours * 60; // Normalerweise 0 für Stundenlöhner
+                const expectedMinutes = expectedWorkHours * 60;
                 return minutesWorked - expectedMinutes;
             } else {
                 const workStartMins = getMinutesSinceMidnight(entryStart.startTime);
@@ -103,7 +95,6 @@ function computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly) {
         return 0;
     }
 
-    // Für tagesbasierte Nutzer
     const entryStart = dayEntries.find(e => e.punchOrder === 1);
     const entryBreakStart = dayEntries.find(e => e.punchOrder === 2);
     const entryBreakEnd = dayEntries.find(e => e.punchOrder === 3);
@@ -115,7 +106,6 @@ function computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly) {
             workEndMins += 24 * 60;
         }
         const workDuration = workEndMins - workStartMins;
-
         let breakStartMins = entryBreakStart.breakStart
             ? parseTimeToMinutes(entryBreakStart.breakStart)
             : getMinutesSinceMidnight(entryBreakStart.startTime);
@@ -146,13 +136,8 @@ function getExpectedHoursForDay(dayObj, userConfig, defaultExpectedHours) {
         const epoch = new Date(2020, 0, 1);
         const diffWeeks = Math.floor((dayObj - epoch) / (7 * 24 * 60 * 60 * 1000));
         const cycleIndex = diffWeeks % userConfig.scheduleCycle;
-        const dayOfWeek = dayObj
-            .toLocaleDateString('en-US', { weekday: 'long' })
-            .toLowerCase();
-        if (
-            Array.isArray(userConfig.weeklySchedule) &&
-            userConfig.weeklySchedule[cycleIndex]
-        ) {
+        const dayOfWeek = dayObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+        if (Array.isArray(userConfig.weeklySchedule) && userConfig.weeklySchedule[cycleIndex]) {
             const scheduleValue = Number(userConfig.weeklySchedule[cycleIndex][dayOfWeek]);
             if (!isNaN(scheduleValue)) {
                 expectedForDay = scheduleValue;
@@ -177,6 +162,7 @@ function getStatusLabel(punchOrder) {
     }
 }
 
+
 const AdminDashboard = () => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -190,7 +176,6 @@ const AdminDashboard = () => {
     const [expandedUsers, setExpandedUsers] = useState({});
     const [users, setUsers] = useState([]);
 
-    // Edit Modal
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [editDate, setEditDate] = useState(null);
     const [editTargetUsername, setEditTargetUsername] = useState('');
@@ -202,6 +187,11 @@ const AdminDashboard = () => {
         adminPassword: '',
         userPassword: ''
     });
+
+    const [printUserModalVisible, setPrintUserModalVisible] = useState(false);
+    const [printUser, setPrintUser] = useState('');
+    const [printUserStartDate, setPrintUserStartDate] = useState(formatLocalDateYMD(new Date()));
+    const [printUserEndDate, setPrintUserEndDate] = useState(formatLocalDateYMD(new Date()));
 
     const defaultExpectedHours = 8;
 
@@ -249,7 +239,6 @@ const AdminDashboard = () => {
         }
     }
 
-    // Wochen-Navigation
     function handlePrevWeek() {
         setSelectedMonday(prev => addDays(prev, -7));
     }
@@ -263,19 +252,14 @@ const AdminDashboard = () => {
         }
     }
 
-    // Erzeuge "YYYY-MM-DD"-Strings für die 7 Tage der Woche (lokal)
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
     const weekStrs = weekDates.map(d => formatLocalDateYMD(d));
 
-    // Filter allTracks => Nur Einträge, die in diese Woche fallen
     const filteredTracks = allTracks.filter(track => {
-        // Vorher: toISOString().slice(0,10) -> UTC
-        // Jetzt: lokales YYYY-MM-DD
         const localDate = formatLocalDateYMD(new Date(track.startTime));
         return weekStrs.includes(localDate);
     });
 
-    // Gruppiere Einträge pro Benutzer
     const userGroups = filteredTracks.reduce((acc, track) => {
         const uname = track.username;
         if (!acc[uname]) acc[uname] = [];
@@ -287,7 +271,6 @@ const AdminDashboard = () => {
         setExpandedUsers(prev => ({ ...prev, [username]: !prev[username] }));
     }
 
-    // Vacation-Actions
     async function handleApproveVacation(id) {
         if (!adminPassword) {
             notify(t('adminDashboard.adminPassword') + ' ' + t('adminDashboard.pleaseEnter'));
@@ -310,7 +293,6 @@ const AdminDashboard = () => {
         }
     }
 
-    // Correction-Actions
     async function handleApproveCorrection(id) {
         if (!adminPassword) {
             notify(t('adminDashboard.adminPassword') + ' ' + t('adminDashboard.pleaseEnter'));
@@ -335,7 +317,6 @@ const AdminDashboard = () => {
         }
     }
 
-    // Edit Modal (Time Tracking)
     function openEditModal(targetUsername, dateObj, entries) {
         const defaultTime = '00:00';
         const workStartEntry = entries.find(e => e.punchOrder === 1);
@@ -365,9 +346,7 @@ const AdminDashboard = () => {
             notify(t('adminDashboard.noValidDate'));
             return;
         }
-        // Lokales Datum in YYYY-MM-DD
         const formattedDate = formatLocalDateYMD(editDate);
-
         const params = {
             targetUsername: editTargetUsername,
             date: formattedDate,
@@ -398,6 +377,92 @@ const AdminDashboard = () => {
         setEditData(prev => ({ ...prev, [name]: value }));
     }
 
+    function openPrintUserModal(username) {
+        setPrintUser(username);
+        setPrintUserStartDate(formatLocalDateYMD(new Date()));
+        setPrintUserEndDate(formatLocalDateYMD(new Date()));
+        setPrintUserModalVisible(true);
+    }
+
+    async function handlePrintUserTimesPeriodSubmit() {
+        const userEntries = allTracks.filter(e => {
+            const entryDate = new Date(e.startTime);
+            return (
+                e.username === printUser &&
+                entryDate >= new Date(printUserStartDate) &&
+                entryDate <= new Date(printUserEndDate)
+            );
+        });
+
+        const grouped = {};
+        userEntries.forEach(entry => {
+            const entryDate = new Date(entry.startTime);
+            const ds = entryDate.toLocaleDateString("de-DE");
+            if (!grouped[ds]) grouped[ds] = [];
+            grouped[ds].push(entry);
+        });
+
+        const sortedDates = Object.keys(grouped).sort((a, b) => {
+            return new Date(a) - new Date(b);
+        });
+        const tableBody = sortedDates.map(dateStr => {
+            const dayEntries = grouped[dateStr].sort((a, b) => a.punchOrder - b.punchOrder);
+            const workStart = dayEntries.find(e => e.punchOrder === 1)
+                ? formatTime(dayEntries.find(e => e.punchOrder === 1).startTime)
+                : "-";
+            const breakStart = dayEntries.find(e => e.punchOrder === 2)
+                ? (dayEntries.find(e => e.punchOrder === 2).breakStart
+                    ? formatTime(dayEntries.find(e => e.punchOrder === 2).breakStart)
+                    : formatTime(dayEntries.find(e => e.punchOrder === 2).startTime))
+                : "-";
+            const breakEnd = dayEntries.find(e => e.punchOrder === 3)
+                ? (dayEntries.find(e => e.punchOrder === 3).breakEnd
+                    ? formatTime(dayEntries.find(e => e.punchOrder === 3).breakEnd)
+                    : formatTime(dayEntries.find(e => e.punchOrder === 3).startTime))
+                : "-";
+            const workEnd = dayEntries.find(e => e.punchOrder === 4)
+                ? formatTime(dayEntries.find(e => e.punchOrder === 4).endTime)
+                : "-";
+
+            const userConfig = users.find(u => u.username === printUser) || {};
+            const expected = getExpectedHoursForDay(new Date(dayEntries[0].startTime), userConfig, defaultExpectedHours);
+            const diffValue = computeDailyDiffValue(dayEntries, expected, userConfig.isHourly);
+            const diffText = `${diffValue >= 0 ? '+' : '-'}${Math.abs(diffValue)} min`;
+
+            return [dateStr, workStart, breakStart, breakEnd, workEnd, diffText];
+        });
+
+        const doc = new jsPDF("p", "mm", "a4");
+        doc.setFontSize(12);
+        doc.text(`Zeiten für ${printUser}`, 14, 15);
+        autoTable(doc, {
+            head: [["Datum", "Work Start", "Break Start", "Break End", "Work End", "Diff"]],
+            body: tableBody,
+            startY: 25,
+            styles: {
+                fontSize: 9,
+                cellPadding: 3
+            },
+            headStyles: {
+                fillColor: [0, 123, 255],
+                textColor: 255,
+                fontStyle: "bold"
+            },
+            theme: "grid"
+        });
+
+        const dataUri = doc.output("datauristring");
+        const pdfBase64 = dataUri.split(",")[1];
+
+        try {
+            await window.electron.ipcRenderer.invoke("saveAndOpenPDF", pdfBase64);
+        } catch (err) {
+            console.error("Fehler beim Drucken der Zeiten für", printUser, ":", err);
+            notify("Fehler beim Drucken der Zeiten für " + printUser);
+        }
+        setPrintUserModalVisible(false);
+    }
+
     return (
         <div className="admin-dashboard">
             <Navbar />
@@ -415,7 +480,6 @@ const AdminDashboard = () => {
                     />
                 </div>
             </header>
-
             <div className="dashboard-content">
                 {/* Linke Spalte: Time Tracking & Vacation */}
                 <div className="left-column">
@@ -430,22 +494,18 @@ const AdminDashboard = () => {
                             />
                             <button onClick={handleNextWeek}>{t('adminDashboard.nextWeek')} →</button>
                         </div>
-
                         {Object.keys(userGroups).length === 0 ? (
                             <p>{t('adminDashboard.noEntriesThisWeek')}</p>
                         ) : (
                             <div className="admin-user-groups">
                                 {Object.keys(userGroups).map(username => {
                                     const userConfig = users.find(u => u.username === username) || {};
-                                    // Tagweise Einträge in dayMap gruppieren (lokal statt UTC)
                                     const dayMap = {};
                                     userGroups[username].forEach(entry => {
                                         const ds = formatLocalDateYMD(new Date(entry.startTime));
                                         if (!dayMap[ds]) dayMap[ds] = [];
                                         dayMap[ds].push(entry);
                                     });
-
-                                    // Summiere die Differenz für die Woche
                                     let userTotalDiff = 0;
                                     weekDates.forEach(wd => {
                                         const isoDay = formatLocalDateYMD(wd);
@@ -455,12 +515,10 @@ const AdminDashboard = () => {
                                             userTotalDiff += computeDailyDiffValue(dayEntries, expectedForDay, userConfig.isHourly);
                                         }
                                     });
-
                                     const absTotal = Math.abs(userTotalDiff);
                                     const totalHours = Math.floor(absTotal / 60);
                                     const totalMinutes = absTotal % 60;
                                     const totalSign = userTotalDiff >= 0 ? '+' : '-';
-
                                     const isExpanded = !!expandedUsers[username];
                                     let userColor = '#007BFF';
                                     if (userGroups[username].length > 0 && userGroups[username][0].color) {
@@ -469,7 +527,6 @@ const AdminDashboard = () => {
                                             userColor = c;
                                         }
                                     }
-
                                     return (
                                         <div key={username} className="admin-user-block">
                                             <div
@@ -480,21 +537,17 @@ const AdminDashboard = () => {
                                                 <h4 style={{ color: '#fff' }}>{username}</h4>
                                                 <button className="edit-button">{isExpanded ? '–' : '+'}</button>
                                             </div>
-
                                             {isExpanded && (
                                                 <div className="admin-week-display">
                                                     <div className="user-total-diff">
                                                         {t('adminDashboard.total')}: {totalSign}
                                                         {totalHours} {t('adminDashboard.hours')} {totalMinutes} {t('adminDashboard.minutes')}
                                                     </div>
-
                                                     {weekDates.map((wd, i) => {
                                                         const isoDay = formatLocalDateYMD(wd);
                                                         const dayEntries = dayMap[isoDay] || [];
                                                         const expectedForDay = getExpectedHoursForDay(wd, userConfig, defaultExpectedHours);
-
                                                         if (userConfig.isHourly) {
-                                                            // Stundenbasierter Nutzer
                                                             const workStartEntry = dayEntries.find(e => e.punchOrder === 1);
                                                             let workEndEntry = dayEntries.find(e => e.punchOrder === 4);
                                                             if (!workEndEntry) {
@@ -560,7 +613,6 @@ const AdminDashboard = () => {
                                                                 );
                                                             }
                                                         } else {
-                                                            // Tagesbasierter Nutzer
                                                             const dailyDiff =
                                                                 dayEntries.length >= 4
                                                                     ? computeDailyDiff(dayEntries, expectedForDay, false)
@@ -628,6 +680,13 @@ const AdminDashboard = () => {
                                                             );
                                                         }
                                                     })}
+                                                    {/* NEU: Button zum Drucken der Zeiten für diesen User (mit Zeitraumwahl) */}
+                                                    <button
+                                                        className="print-times-button"
+                                                        onClick={() => openPrintUserModal(username)}
+                                                    >
+                                                        {t('Zeiten Drucken')}
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -808,6 +867,35 @@ const AdminDashboard = () => {
                                 {t('cancel')}
                             </button>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* NEU: Print Modal für User-Zeiten mit Zeitraumwahl */}
+            {printUserModalVisible && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h3>Zeiten für {printUser} drucken</h3>
+                        <div className="form-group">
+                            <label>Startdatum:</label>
+                            <input
+                                type="date"
+                                value={printUserStartDate}
+                                onChange={(e) => setPrintUserStartDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label>Enddatum:</label>
+                            <input
+                                type="date"
+                                value={printUserEndDate}
+                                onChange={(e) => setPrintUserEndDate(e.target.value)}
+                            />
+                        </div>
+                        <div className="modal-buttons">
+                            <button onClick={handlePrintUserTimesPeriodSubmit}>Drucken</button>
+                            <button onClick={() => setPrintUserModalVisible(false)}>Abbrechen</button>
+                        </div>
                     </div>
                 </div>
             )}

@@ -112,29 +112,28 @@ public class TimeTrackingController {
     }
 
     /**
-     * Neuer Endpoint: Berechnet die Differenz (in Minuten) zwischen der tatsächlich gearbeiteten Zeit
-     * und der erwarteten Arbeitszeit für einen Nutzer an einem bestimmten Datum.
-     * Für stundenbasierte Nutzer wird nur die Zeit von Einstempel bis Mitternacht gezählt.
-     *
-     * @param username der Nutzername (z. B. "test")
-     * @param date     Datum im ISO-Format (z. B. "2025-02-11")
-     * @return Differenz in Minuten (positiv = Überstunden, negativ = Fehlminuten)
+     * Neuer Endpunkt: Aktualisiert die tägliche Notiz (dailyNote) für einen stundenbasierten Nutzer an einem bestimmten Datum.
+     * Hier wird zusätzlich das Feld dailyDate genutzt, um Zeitzonen-Probleme zu vermeiden.
      */
+    @PostMapping("/daily-note")
+    public TimeTrackingResponse updateDailyNote(@RequestParam String username,
+                                                @RequestParam String date,
+                                                @RequestParam String note) {
+        return timeTrackingService.updateDailyNote(username, date, note);
+    }
+
     @GetMapping("/work-difference")
     public int getWorkDifference(@RequestParam String username, @RequestParam String date) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         LocalDate parsedDate = LocalDate.parse(date);
 
-        // Für stundenbasierte Nutzer soll expectedMinutes 0 sein.
         int expectedMinutes = user.isHourly() ? 0 : workScheduleService.computeExpectedWorkMinutes(user, parsedDate);
 
-        // Lade alle Einträge des Tages
         LocalDateTime dayStart = parsedDate.atStartOfDay();
         LocalDateTime dayEnd = parsedDate.plusDays(1).atStartOfDay();
         List<TimeTracking> entries = timeTrackingService.getTimeTrackingEntriesForUserAndDate(user, dayStart, dayEnd);
 
-        // Suchen Sie Work Start (punchOrder 1) und Work End (punchOrder 4)
         TimeTracking workStartEntry = entries.stream()
                 .filter(e -> e.getPunchOrder() == 1)
                 .findFirst()
@@ -150,10 +149,8 @@ public class TimeTrackingController {
             LocalDateTime end = workEndEntry.getEndTime();
             if (user.isHourly()) {
                 if (start.toLocalDate().equals(end.toLocalDate())) {
-                    // Gleicher Tag: Differenz berechnen
                     actualMinutes = (int) ChronoUnit.MINUTES.between(start, end);
                 } else {
-                    // Schicht geht über Mitternacht: Nur Zeit von Start bis Mitternacht zählen
                     LocalDateTime midnight = start.toLocalDate().plusDays(1).atStartOfDay();
                     actualMinutes = (int) ChronoUnit.MINUTES.between(start, midnight);
                 }

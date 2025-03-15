@@ -1,9 +1,9 @@
 package com.chrono.chrono.entities;
 
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
-
 
 @Entity
 @Table(name = "time_tracking")
@@ -17,14 +17,13 @@ public class TimeTracking {
     private LocalDateTime endTime;
     private boolean corrected;
 
-
     private Integer punchOrder;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
 
-    // Neue Felder für korrigierte Zeiten (nur Uhrzeit)
+    // Felder für korrigierte Zeiten (nur Uhrzeit)
     @Column(name = "work_start", columnDefinition = "TIME")
     private LocalTime workStart;
 
@@ -36,6 +35,14 @@ public class TimeTracking {
 
     @Column(name = "work_end", columnDefinition = "TIME")
     private LocalTime workEnd;
+
+    // Tägliche Notiz (dailyNote) für Stundenlöhner
+    @Column(name = "daily_note", columnDefinition = "TEXT")
+    private String dailyNote;
+
+    // Reines Datum für die Notiz (ohne Uhrzeit – vermeidet Zeitzonenprobleme)
+    @Column(name = "daily_date")
+    private LocalDate dailyDate;
 
     public TimeTracking() {
     }
@@ -70,4 +77,10 @@ public class TimeTracking {
 
     public LocalTime getWorkEnd() { return workEnd; }
     public void setWorkEnd(LocalTime workEnd) { this.workEnd = workEnd; }
+
+    public String getDailyNote() { return dailyNote; }
+    public void setDailyNote(String dailyNote) { this.dailyNote = dailyNote; }
+
+    public LocalDate getDailyDate() { return dailyDate; }
+    public void setDailyDate(LocalDate dailyDate) { this.dailyDate = dailyDate; }
 }

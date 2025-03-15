@@ -1,5 +1,4 @@
-// src/pages/UserDashboard.jsx
-import {useState, useEffect, useRef} from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
@@ -9,12 +8,10 @@ import '../styles/UserDashboard.css';
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
 import HourlyDashboard from './HourlyDashboard';
+import autoTable from "jspdf-autotable";
 
-/* ================================
-   HELPER FUNCTIONS
-================================ */
 
-// Gibt den Montag der Woche des übergebenen Datums zurück.
+
 const getMondayOfWeek = (date) => {
     const copy = new Date(date);
     const day = copy.getDay();
@@ -24,14 +21,12 @@ const getMondayOfWeek = (date) => {
     return copy;
 };
 
-// Fügt einem Datum eine bestimmte Anzahl an Tagen hinzu.
 const addDays = (date, days) => {
     const d = new Date(date);
     d.setDate(d.getDate() + days);
     return d;
 };
 
-// Konvertiert einen 32-stelligen Hex-String in ASCII.
 const parseHex16 = (hexString) => {
     if (!hexString) return null;
     const clean = hexString.replace(/\s+/g, '');
@@ -47,7 +42,6 @@ const parseHex16 = (hexString) => {
     return output;
 };
 
-// Formatiert einen Datums-/Zeit-String als Uhrzeit (deutsch, 2-stellig).
 const formatTime = (dateStr) => {
     const d = new Date(dateStr);
     return isNaN(d.getTime())
@@ -59,7 +53,6 @@ const formatTime = (dateStr) => {
         });
 };
 
-// Formatiert ein Datum als "YYYY-MM-DD".
 const formatLocalDate = (date) => {
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -67,7 +60,6 @@ const formatLocalDate = (date) => {
     return `${year}-${month}-${day}`;
 };
 
-// Formatiert einen Datums-String als "DD-MM-YYYY".
 const formatDate = (dateStr) => {
     const date = new Date(dateStr);
     const day = String(date.getDate()).padStart(2, '0');
@@ -76,17 +68,12 @@ const formatDate = (dateStr) => {
     return `${day}-${month}-${year}`;
 };
 
-// Gibt die Minuten seit Mitternacht zurück.
 const getMinutesSinceMidnight = (datetimeStr) => {
     if (!datetimeStr) return 0;
     const d = new Date(datetimeStr);
     return d.getHours() * 60 + d.getMinutes();
 };
 
-/**
- * computeDailyDiffValue:
- * Berechnet (in Minuten) die Differenz eines Tages (gearbeitete Zeit minus Sollzeit).
- */
 const computeDailyDiffValue = (dayEntries, expectedWorkHours) => {
     const entryStart = dayEntries.find(e => e.punchOrder === 1);
     const entryBreakStart = dayEntries.find(e => e.punchOrder === 2);
@@ -122,11 +109,6 @@ const computeDailyDiff = (dayEntries, expectedWorkHours) => {
     return `${sign}${Math.round(diff)} min`;
 };
 
-/**
- * getExpectedHoursForDay:
- * Ermittelt anhand des WeeklySchedule den erwarteten Sollwert für einen Tag.
- * Für stundenbasierte Nutzer (isHourly === true) wird 0 zurückgegeben.
- */
 const getExpectedHoursForDay = (dayObj, userConfig, defaultExpectedHours) => {
     if (userConfig?.isHourly) return 0;
     let expectedForDay = defaultExpectedHours;
@@ -160,7 +142,6 @@ const getStatusLabel = (punchOrder) => {
     }
 };
 
-// Formatiert eine Differenz (in Minuten) als +/- hh mm.
 const formatDiff = (diff, t) => {
     const sign = diff >= 0 ? '+' : '-';
     const abs = Math.abs(diff);
@@ -169,7 +150,6 @@ const formatDiff = (diff, t) => {
     return `${sign}${hrs} ${t("hours")} ${mins} ${t("minutes")}`;
 };
 
-// Gruppiert Einträge nach Tag ("DD.MM.YYYY").
 const groupEntriesByDay = (entries) => {
     const dayMap = {};
     entries.forEach(entry => {
@@ -182,9 +162,7 @@ const groupEntriesByDay = (entries) => {
     return dayMap;
 };
 
-/* ================================
-   COMPONENT: UserDashboard
-================================ */
+
 const UserDashboard = () => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -200,14 +178,12 @@ const UserDashboard = () => {
     const [punchMessage, setPunchMessage] = useState('');
     const [lastPunchTime, setLastPunchTime] = useState(0);
 
-    // Für nicht-stundenbasierte Nutzer: Differenzen
     const [weeklyDiff, setWeeklyDiff] = useState(0);
     const [monthlyDiff, setMonthlyDiff] = useState(0);
     const [overallDiff, setOverallDiff] = useState(0);
-    const [monthlyDiffAll, setMonthlyDiffAll] = useState({}); // { "YYYY-MM": diff }
+    const [monthlyDiffAll, setMonthlyDiffAll] = useState({});
     const lastPunchTimeRef = useRef(0);
 
-    // Für Wochenansicht
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
 
     const defaultExpectedHours =
@@ -215,7 +191,6 @@ const UserDashboard = () => {
             ? Number(userProfile.dailyWorkHours)
             : 8;
 
-    // Neuer State für Korrekturanträge
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
     const [correctionDate, setCorrectionDate] = useState("");
     const [correctionData, setCorrectionData] = useState({
@@ -226,7 +201,6 @@ const UserDashboard = () => {
         reason: ""
     });
 
-    /* ===== Profil laden ===== */
     useEffect(() => {
         async function fetchProfile() {
             try {
@@ -257,6 +231,7 @@ const UserDashboard = () => {
     async function fetchEntries() {
         try {
             const res = await api.get(`/api/timetracking/history?username=${userProfile.username}`);
+            // Nur Einträge mit punchOrder 1–4 für die Berechnungen (Notiz-Einträge werden separat geladen)
             const validEntries = (res.data || []).filter(e => [1, 2, 3, 4].includes(e.punchOrder));
             setAllEntries(validEntries);
         } catch (err) {
@@ -279,7 +254,7 @@ const UserDashboard = () => {
             doNfcCheck();
         }, 2000);
         return () => clearInterval(interval);
-    }, []); // leere Dependency-Liste
+    }, []);
 
     async function doNfcCheck() {
         try {
@@ -287,23 +262,18 @@ const UserDashboard = () => {
             if (!response.ok) return;
             const json = await response.json();
             if (json.status === 'no-card') return;
-            else if (json.status === 'error') {
-                console.error("NFC read => error:", json.message);
-                return;
-            } else if (json.status === 'success') {
+            else if (json.status === 'error') return;
+            else if (json.status === 'success') {
                 const cardUser = parseHex16(json.data);
                 if (cardUser) {
                     const now = Date.now();
-                    // Verwende den Ref-Wert, um das Polling zu drosseln
                     if (now - lastPunchTimeRef.current < 5000) return;
                     lastPunchTimeRef.current = now;
-                    console.log("Karte gefunden, user:", cardUser);
                     showPunchMessage(`Eingestempelt: ${cardUser}`);
                     try {
                         await api.post('/api/timetracking/punch', null, {
                             params: { username: cardUser }
                         });
-                        console.log("Punch executed for", cardUser);
                     } catch (err) {
                         console.error("Punch-Fehler:", err);
                     }
@@ -313,8 +283,6 @@ const UserDashboard = () => {
             console.error("NFC fetch error:", err);
         }
     }
-
-
 
     function showPunchMessage(msg) {
         setPunchMessage(msg);
@@ -334,8 +302,6 @@ const UserDashboard = () => {
         }
     }
 
-
-
     async function handleVacationSubmit(e) {
         e.preventDefault();
         try {
@@ -353,8 +319,6 @@ const UserDashboard = () => {
         }
     }
 
-    /* ===== Differenzen berechnen (nur für nicht-stundenbasierte Nutzer) ===== */
-    // Wöchentliche Differenz
     useEffect(() => {
         if (!userProfile || userProfile.isHourly) {
             setWeeklyDiff(0);
@@ -384,7 +348,6 @@ const UserDashboard = () => {
         setWeeklyDiff(sum);
     }, [allEntries, userProfile, selectedMonday, defaultExpectedHours]);
 
-    // Monatliche Differenz (aktueller Monat)
     useEffect(() => {
         if (!userProfile || userProfile.isHourly) {
             setMonthlyDiff(0);
@@ -415,7 +378,6 @@ const UserDashboard = () => {
         setMonthlyDiff(sum);
     }, [allEntries, userProfile, selectedMonday, defaultExpectedHours]);
 
-    // Gesamtdifferenz über alle Zeit
     useEffect(() => {
         if (!userProfile || userProfile.isHourly) {
             setOverallDiff(0);
@@ -434,7 +396,6 @@ const UserDashboard = () => {
         setOverallDiff(sum);
     }, [allEntries, userProfile, defaultExpectedHours]);
 
-    // Differenz für alle Monate (als Objekt { "YYYY-MM": diff })
     useEffect(() => {
         if (!userProfile || userProfile.isHourly) {
             setMonthlyDiffAll({});
@@ -466,7 +427,6 @@ const UserDashboard = () => {
         setMonthlyDiffAll(diffs);
     }, [allEntries, userProfile, defaultExpectedHours]);
 
-    // Wochenanzeige: Gruppierung nach Tag
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
     const dayMapWeek = {};
     weekDates.forEach(d => {
@@ -479,7 +439,6 @@ const UserDashboard = () => {
         }
     });
 
-    // Diff für heute (nur für nicht-stundenbasierte Nutzer)
     let dailyDiffDisplay = null;
     if (userProfile && !userProfile.isHourly) {
         const todayStr = new Date().toLocaleDateString('de-DE');
@@ -492,24 +451,85 @@ const UserDashboard = () => {
         }
     }
 
-    // Falls der User stundenbasiert arbeitet, leite zur HourlyDashboard-Seite weiter
     if (userProfile?.isHourly) {
         return <HourlyDashboard />;
     }
 
-    // Druck-Funktion (als Beispiel – hier kann noch erweitert werden)
-    function handlePrintReport() {
+    async function handlePrintReport() {
         if (!printStartDate || !printEndDate) {
             notify(t("printReportError"));
             return;
         }
-        const doc = new jsPDF();
-        doc.text(t("printReportTitle"), 10, 10);
-        window.open(doc.output('bloburl'), '_blank');
+        const doc = new jsPDF("p", "mm", "a4");
+        doc.setFontSize(12);
+        doc.text(`${t("printReportTitle")} - ${userProfile.username}`, 10, 15);
+
+        const filteredEntries = allEntries.filter(e => {
+            const entryDate = new Date(e.startTime);
+            return entryDate >= new Date(printStartDate) && entryDate <= new Date(printEndDate);
+        });
+        const grouped = {};
+        filteredEntries.forEach(entry => {
+            const ds = new Date(entry.startTime).toLocaleDateString("de-DE");
+            if (!grouped[ds]) grouped[ds] = [];
+            grouped[ds].push(entry);
+        });
+
+        const tableBody = Object.keys(grouped)
+            .sort((a, b) => new Date(a) - new Date(b))
+            .map(dateStr => {
+                const dayEntries = grouped[dateStr].sort((a, b) => a.punchOrder - b.punchOrder);
+                const workStart = dayEntries.find(e => e.punchOrder === 1)
+                    ? formatTime(dayEntries.find(e => e.punchOrder === 1).startTime)
+                    : "-";
+                const breakStart = dayEntries.find(e => e.punchOrder === 2)
+                    ? (dayEntries.find(e => e.punchOrder === 2).breakStart
+                        ? formatTime(dayEntries.find(e => e.punchOrder === 2).breakStart)
+                        : formatTime(dayEntries.find(e => e.punchOrder === 2).startTime))
+                    : "-";
+                const breakEnd = dayEntries.find(e => e.punchOrder === 3)
+                    ? (dayEntries.find(e => e.punchOrder === 3).breakEnd
+                        ? formatTime(dayEntries.find(e => e.punchOrder === 3).breakEnd)
+                        : formatTime(dayEntries.find(e => e.punchOrder === 3).startTime))
+                    : "-";
+                const workEnd = dayEntries.find(e => e.punchOrder === 4)
+                    ? formatTime(dayEntries.find(e => e.punchOrder === 4).endTime)
+                    : "-";
+                const expected = getExpectedHoursForDay(new Date(dayEntries[0].startTime), userProfile, defaultExpectedHours);
+                const diffValue = computeDailyDiffValue(dayEntries, expected);
+                const diffText = `${diffValue >= 0 ? '+' : '-'}${Math.abs(diffValue)} min`;
+                return [dateStr, workStart, breakStart, breakEnd, workEnd, diffText];
+            });
+
+        autoTable(doc, {
+            head: [["Datum", "Work Start", "Break Start", "Break End", "Work End", "Diff"]],
+            body: tableBody,
+            startY: 25,
+            styles: {
+                fontSize: 9,
+                cellPadding: 3
+            },
+            headStyles: {
+                fillColor: [0, 123, 255],
+                textColor: 255,
+                fontStyle: "bold"
+            },
+            theme: "grid"
+        });
+
+        const dataUri = doc.output("datauristring");
+        const pdfBase64 = dataUri.split(",")[1];
+        try {
+            await window.electron.ipcRenderer.invoke("saveAndOpenPDF", pdfBase64);
+        } catch (err) {
+            console.error("Fehler beim Speichern/Öffnen des PDFs:", err);
+            notify("Fehler beim Öffnen des Berichts.");
+        }
         setPrintModalVisible(false);
     }
 
-    // ---- Funktionen für den Korrekturantrag ----
+
+
     const openCorrectionModal = (dateObj) => {
         setCorrectionDate(formatLocalDate(dateObj));
         setCorrectionData({
@@ -621,8 +641,8 @@ const UserDashboard = () => {
                                     <h4>
                                         {dayObj.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}{' '}
                                         <span className="expected-hours">
-                                            ({t("expectedWorkHours")}: {expectedForDay} {t("hours")})
-                                        </span>
+                      ({t("expectedWorkHours")}: {expectedForDay} {t("hours")})
+                    </span>
                                     </h4>
                                     {dailyDiff && <span className="daily-diff">({dailyDiff})</span>}
                                 </div>
@@ -773,7 +793,7 @@ const UserDashboard = () => {
                 </div>
             </section>
 
-            {/* ---- Korrekturantrag Modal ---- */}
+            {/* Korrekturantrag Modal */}
             {showCorrectionModal && (
                 <div className="modal-overlay">
                     <div className="modal-content">

@@ -4,16 +4,15 @@
     padding: 20px;
     box-sizing: border-box;
     font-family: Arial, sans-serif;
-    background-color: #f4f7fa; /* Helles Grau/Blau als Hintergrund */
+    background-color: #f4f7fa;
 }
-
 
 .dashboard-header {
     background-color: #fff;
     padding: 20px;
     margin-bottom: 20px;
     border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     text-align: center;
 }
 
@@ -28,6 +27,7 @@
     font-size: 1rem;
     color: #555;
 }
+
 .punch-message {
     background-color: #e0ffe0;
     color: #006400;
@@ -67,37 +67,14 @@
     background-color: #0056b3;
 }
 
-
-.overall-diff {
-    background-color: #fff;
-    padding: 15px;
-    margin-bottom: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-    text-align: center;
-}
-
-.overall-diff h3 {
-    margin-bottom: 10px;
-    font-size: 1.3rem;
-    color: #333;
-}
-
-.overall-diff p {
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: #444;
-}
-
-.time-tracking-section {
+.monthly-overview {
     background-color: #fff;
     padding: 20px;
     margin-bottom: 20px;
     border-radius: 10px;
     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
-
-.time-tracking-section h3 {
+.monthly-overview h3 {
     margin-bottom: 15px;
     font-size: 1.5rem;
     color: #333;
@@ -105,17 +82,16 @@
     padding-bottom: 10px;
 }
 
-.week-navigation {
+.month-navigation {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 15px;
+    gap: 20px;
     margin-bottom: 20px;
 }
-
-.week-navigation button {
-    padding: 8px 16px;
-    background-color: #007BFF;
+.month-navigation button {
+    padding: 10px 20px;
+    background-color: #FF9800;
     color: #fff;
     border: none;
     border-radius: 5px;
@@ -123,113 +99,53 @@
     transition: background-color 0.3s;
     font-weight: 500;
 }
-.week-navigation button:hover {
-    background-color: #0056b3;
-}
-.week-navigation input[type="date"] {
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+.month-navigation button:hover {
+    background-color: #E68900;
 }
 
-.week-diff {
+.month-total {
     text-align: center;
+    margin: 10px 0;
     font-size: 1.1rem;
-    margin-bottom: 10px;
     color: #333;
 }
 
-.week-display {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 20px;
-    justify-content: center;
-}
-
-
-.day-card {
-    background-color: #fafafa;
-    border: 1px solid #e0e0e0;
-    border-radius: 10px;
-    padding: 15px;
-    flex: 1 1 calc(32% - 20px);
-    min-width: 250px;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-}
-@media (max-width: 768px) {
-    .day-card {
-        flex: 1 1 100%;
-    }
-}
-
-.day-card-header {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    margin-bottom: 10px;
-}
-
-.day-card-header h4 {
-    margin: 0;
-    font-size: 1.1rem;
-    text-align: center;
-    color: #444;
-}
-
-.expected-hours {
-    font-size: 0.9rem;
-    color: #777;
-    margin-top: 4px;
-}
-
-.daily-diff {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #333;
-    margin-top: 5px;
-}
-
-.time-entry-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-}
-.time-entry-list li {
-    background-color: #e0e0e0;
-    padding: 6px;
-    border-radius: 5px;
-    margin-bottom: 6px;
-    color: #333;
+.daily-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
     font-size: 0.95rem;
+    text-align: left;
 }
-.entry-label {
+.daily-summary-table th,
+.daily-summary-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+}
+.daily-summary-table th {
+    background-color: #f8f8f8;
     font-weight: 600;
 }
-
-.no-entries {
-    font-style: italic;
-    color: #777;
-    text-align: center;
-    margin: 20px 0;
+.daily-summary-table tr:nth-child(even) {
+    background-color: #fdfdfd;
 }
 
-.monthly-all {
-    background-color: #fff;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-}
-.monthly-all h3 {
-    margin-bottom: 15px;
-    font-size: 1.5rem;
-    color: #333;
-    border-bottom: 2px solid #ddd;
-    padding-bottom: 10px;
+.daily-summary-table input[type="text"] {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
 }
 
+.daily-summary-table textarea {
+    width: 100%;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+    resize: vertical;
+}
 
 .print-report-container {
     text-align: center;
@@ -322,7 +238,6 @@
 .modal-buttons button:last-child:hover {
     background-color: #5a6268;
 }
-
 
 .vacation-section {
     background-color: #fff;
@@ -427,19 +342,4 @@
     .form-vacation {
         flex-direction: column;
     }
-}
-.correction-button {
-    padding: 10px 20px;
-    background-color: #ff9800;
-    color: #fff;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color 0.3s;
-    margin-top: 10px;
-}
-
-.correction-button:hover {
-    background-color: #e68900;
 }

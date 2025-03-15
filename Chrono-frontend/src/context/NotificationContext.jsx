@@ -1,10 +1,6 @@
 // src/context/NotificationContext.jsx
 import React, { createContext, useState, useContext } from 'react';
 
-/**
- * NotificationContext stellt eine einfache API bereit:
- *   - notify(message): Zeigt eine Meldung in einem Modal an
- */
 const NotificationContext = createContext({
     notify: () => {},
 });
@@ -13,7 +9,6 @@ export function NotificationProvider({ children }) {
     const [message, setMessage] = useState('');
     const [visible, setVisible] = useState(false);
 
-    // Wird aufgerufen statt alert(...)
     function notify(msg) {
         setMessage(msg);
         setVisible(true);

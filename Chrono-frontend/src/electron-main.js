@@ -1,9 +1,10 @@
-// src/electron-main.js
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import { spawn } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import os from 'os'; // Neuer Import
+import { Buffer } from 'buffer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,33 +12,23 @@ const __dirname = path.dirname(__filename);
 let mainWindow;
 let backendProcess;
 
-/**
- * Gibt den Basis-Pfad zurück.
- * Im Produktionsmodus: process.resourcesPath (in dem sich beispielsweise app.asar befindet)
- * Im Entwicklungsmodus: den Ordner oberhalb von __dirname.
- */
+
 function getBasePath() {
     return app.isPackaged ? process.resourcesPath : path.join(__dirname, '..');
 }
 
-/**
- * Ermittelt den Pfad zum "dist"-Ordner.
- * Wird zunächst geprüft, ob im Basis-Pfad (resources) ein Ordner "dist" vorhanden ist.
- * Falls nicht – wird angenommen, dass die Dateien im asar-Archiv liegen.
- */
+
 function getDistPath() {
     const basePath = getBasePath();
     const distPath = path.join(basePath, 'dist');
     if (fs.existsSync(distPath)) {
         return distPath;
     } else {
-        // Falls nicht, vermute, dass sich der dist-Ordner innerhalb von app.asar befindet.
         const asarDistPath = path.join(basePath, 'app.asar', 'dist');
         if (fs.existsSync(asarDistPath)) {
             return asarDistPath;
         }
     }
-    // Fallback: Gib den ursprünglichen dist-Pfad zurück
     return distPath;
 }
 
@@ -52,12 +43,11 @@ function startBackend() {
         return;
     }
 
-    const javaPath = "java"; // Stelle sicher, dass java im PATH verfügbar ist.
-    // Nutze stdio: 'inherit' für volle Log-Ausgabe
+    const javaPath = "java";
     backendProcess = spawn(javaPath, ['-jar', backendJar], {
         detached: true,
         shell: true,
-        stdio: 'inherit', // Alle Ausgaben werden in der Konsole angezeigt
+        stdio: 'inherit',
         windowsHide: true
     });
 
@@ -79,22 +69,21 @@ function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1920,
         height: 1080,
-        show: true,
         webPreferences: {
-            // Kein Preload‑Script
+            preload: path.join(getBasePath(), 'preload.js'),
             nodeIntegration: false,
             contextIsolation: true,
-            webSecurity: false // Erlaubt das Laden lokaler file://-Ressourcen
+            webSecurity: false
         }
     });
 
-    // CSP-Anpassung: Erlaube lokale Dateien (file:) und den Zugriff auf http://localhost:8080
+
     mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
         callback({
             responseHeaders: {
                 ...details.responseHeaders,
                 'Content-Security-Policy': [
-                    "default-src 'self' file:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' http://localhost:8080"
+                    "default-src 'self' blob: file:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' http://localhost:8080"
                 ]
             }
         });
@@ -108,7 +97,6 @@ function createWindow() {
         console.error("[ERROR] index.html wurde nicht gefunden unter:", indexPath);
     }
 
-    // Lade die index.html per loadFile
     mainWindow.loadFile(indexPath)
         .then(() => {
             console.log("[INFO] index.html erfolgreich geladen.");
@@ -122,9 +110,7 @@ function createWindow() {
         });
 }
 
-/**
- * IPC-Handler zum Öffnen eines neuen Fensters für den Report.
- */
+
 ipcMain.handle('openPrintReport', async (event, reportUrl) => {
     const printWindow = new BrowserWindow({
         width: 800,
@@ -141,7 +127,7 @@ ipcMain.handle('openPrintReport', async (event, reportUrl) => {
             responseHeaders: {
                 ...details.responseHeaders,
                 'Content-Security-Policy': [
-                    "default-src 'self' file:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' http://localhost:8080"
+                    "default-src 'self' blob: file:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' http://localhost:8080"
                 ]
             }
         });
@@ -154,15 +140,14 @@ ipcMain.handle('openPrintReport', async (event, reportUrl) => {
         console.error("[ERROR] Fehler beim Laden der Report-URL:", err);
     }
 
-    // Nach dem Laden injiziere einen Meta-Tag zur weiteren Verstärkung der CSP
     printWindow.webContents.executeJavaScript(`
-    if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
-      const meta = document.createElement('meta');
-      meta.httpEquiv = "Content-Security-Policy";
-      meta.content = "default-src 'self' file:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' http://localhost:8080";
-      document.head.appendChild(meta);
-    }
-  `).then(() => {
+      if (!document.querySelector('meta[http-equiv="Content-Security-Policy"]')) {
+        const meta = document.createElement('meta');
+        meta.httpEquiv = "Content-Security-Policy";
+        meta.content = "default-src 'self' blob: file:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; object-src 'none'; connect-src 'self' http://localhost:8080";
+        document.head.appendChild(meta);
+      }
+    `).then(() => {
         console.log("[INFO] CSP-Meta-Tag im Report-Fenster eingefügt.");
     }).catch(err => {
         console.error("[ERROR] Beim Einfügen des CSP-Meta-Tags im Report-Fenster:", err);
@@ -171,10 +156,19 @@ ipcMain.handle('openPrintReport', async (event, reportUrl) => {
     printWindow.show();
 });
 
+
+ipcMain.handle('saveAndOpenPDF', async (event, pdfBase64) => {
+    const tempDir = os.tmpdir();
+    const tempPath = path.join(tempDir, 'report.pdf');
+    fs.writeFileSync(tempPath, Buffer.from(pdfBase64, 'base64'));
+    await shell.openPath(tempPath);
+    return tempPath;
+});
+
 app.whenReady().then(() => {
     console.log("[APP] App ist bereit.");
-    startBackend();   // Starte das Backend
-    createWindow();   // Erstelle und zeige das Hauptfenster
+    startBackend();
+    createWindow();
 
     app.on('activate', () => {
         if (BrowserWindow.getAllWindows().length === 0) {

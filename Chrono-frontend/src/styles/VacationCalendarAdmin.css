@@ -1,4 +1,3 @@
-/* VacationCalendarAdmin.css */
 .vacation-calendar-admin {
     width: 100%;
     margin: 0;
@@ -32,14 +31,13 @@
     padding: 10px 6.6667px;
     border-radius: 6px;
     transition: background-color 0.3s;
-    text-align: center; /* Sorgt dafür, dass der Tag-Text zentriert ist */
+    text-align: center;
 }
 
 .vacation-calendar-admin .react-calendar__tile:enabled:hover {
     background-color: #e6f7ff;
 }
 
-/* Neue Regel: Sicherstellen, dass die Tageszahlen sichtbar sind */
 .vacation-calendar-admin .react-calendar__tile abbr {
     text-decoration: none;
     font-weight: bold;

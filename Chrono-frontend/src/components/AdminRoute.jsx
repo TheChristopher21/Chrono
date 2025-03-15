@@ -8,7 +8,6 @@ const AdminRoute = ({ children }) => {
     if (!authToken || !currentUser) {
         return <Navigate to="/login" replace />;
     }
-    // Angenommen, du hast die Admin-Rolle in currentUser oder im decoded Token
     if (!currentUser.roles?.includes('ADMIN')) {
         return <Navigate to="/dashboard" replace />;
     }

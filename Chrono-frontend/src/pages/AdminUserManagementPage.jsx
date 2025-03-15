@@ -1,4 +1,3 @@
-// src/pages/AdminUserManagementPage.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
@@ -13,7 +12,6 @@ const STANDARD_COLORS = [
     "#FF4500", "#00FA9A", "#7B68EE", "#FF6347"
 ];
 
-// Default-Wochenplan (für nicht stundenbasierte Arbeit)
 const defaultWeeklySchedule = {
     monday: 8,
     tuesday: 8,
@@ -153,7 +151,6 @@ const AdminUserManagementPage = () => {
 
     const handleProgramCard = async (user) => {
         try {
-            // Hier gehen wir davon aus, dass du im Sektor 0, Block 1 beschreiben möchtest.
             const stringToHex16 = (text) => {
                 let asciiData = text.slice(0, 16);
                 asciiData = asciiData.padEnd(16, '\0');
@@ -266,6 +263,25 @@ const AdminUserManagementPage = () => {
                                     <option value="ROLE_USER">User</option>
                                     <option value="ROLE_ADMIN">Admin</option>
                                 </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Farbe:</label>
+                                <div className="color-picker">
+                                    {STANDARD_COLORS.map((color, index) => (
+                                        <div key={index}
+                                             className={`color-swatch ${editingUser.color === color ? 'selected' : ''}`}
+                                             style={{
+                                                 backgroundColor: color,
+                                                 width: "20px",
+                                                 height: "20px",
+                                                 display: "inline-block",
+                                                 margin: "0 5px",
+                                                 cursor: "pointer"
+                                             }}
+                                             onClick={() => setEditingUser({ ...editingUser, color })}
+                                        ></div>
+                                    ))}
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Stundenbasiert:</label>
@@ -428,6 +444,25 @@ const AdminUserManagementPage = () => {
                                     <option value="ROLE_USER">User</option>
                                     <option value="ROLE_ADMIN">Admin</option>
                                 </select>
+                            </div>
+                            <div className="form-group">
+                                <label>Farbe:</label>
+                                <div className="color-picker">
+                                    {STANDARD_COLORS.map((color, index) => (
+                                        <div key={index}
+                                             className={`color-swatch ${newUser.color === color ? 'selected' : ''}`}
+                                             style={{
+                                                 backgroundColor: color,
+                                                 width: "20px",
+                                                 height: "20px",
+                                                 display: "inline-block",
+                                                 margin: "0 5px",
+                                                 cursor: "pointer"
+                                             }}
+                                             onClick={() => setNewUser({ ...newUser, color })}
+                                        ></div>
+                                    ))}
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>Stundenbasiert:</label>

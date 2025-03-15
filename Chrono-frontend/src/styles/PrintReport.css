@@ -1,6 +1,3 @@
-/* PrintReport.css */
-
-/* Standard-Styles für den Report-Bereich */
 .print-report {
     background: #fff;
     padding: 20px;
@@ -65,7 +62,6 @@
     background-color: #0056b3;
 }
 
-/* Print media: Zeige nur den Report-Inhalt */
 @media print {
     body * {
         visibility: hidden;

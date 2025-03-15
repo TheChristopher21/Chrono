@@ -1,12 +1,9 @@
-/* VacationCalendar.css für den UserDashboard-Calendar */
-
 .vacation-calendar {
     width: 100%;
     margin: 0;
     padding: 0;
 }
 
-/* Der eigentliche React Calendar soll über die volle Breite gehen */
 .vacation-calendar .react-calendar {
     width: 100% !important;
     border: none;
@@ -16,7 +13,6 @@
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-/* Navigation (oben im Kalender) */
 .vacation-calendar .react-calendar__navigation {
     display: flex;
     justify-content: center;
@@ -33,7 +29,6 @@
     cursor: pointer;
 }
 
-/* Wochentage oben im Kalender */
 .vacation-calendar .react-calendar__month-view__weekdays {
     display: flex;
     justify-content: space-around;
@@ -46,7 +41,6 @@
     flex: 1;
 }
 
-/* Tage im Kalender: Wir erzwingen hier eine 7-Spalten-Aufteilung */
 .vacation-calendar .react-calendar__month-view__days {
     display: flex;
     flex-wrap: wrap;
@@ -55,10 +49,10 @@
 .vacation-calendar .react-calendar__month-view__days__day {
     flex: 1 0 14.28%;
     display: flex;
-    flex-direction: column; /* Damit der Inhalt (normalerweise nur die Zahl) als Block dargestellt wird */
+    flex-direction: column;
     justify-content: center;
     align-items: center;
-    height: 60px;  /* Höhe kann je nach Bedarf angepasst werden */
+    height: 60px;
     margin: 2px 0;
     border-radius: 6px;
     transition: background-color 0.3s;
@@ -69,7 +63,6 @@
     background-color: #e6f7ff;
 }
 
-/* Sicherstellen, dass in jedem Day-Element (über das abbr-Element) die Zahl (Datum) angezeigt wird */
 .vacation-calendar .react-calendar__month-view__days__day abbr {
     display: block;
     text-decoration: none;

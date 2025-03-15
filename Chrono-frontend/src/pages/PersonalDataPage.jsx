@@ -1,4 +1,3 @@
-// src/pages/PersonalDataPage.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';

@@ -348,11 +348,6 @@ export function LanguageProvider({ children }) {
     );
 }
 
-/**
- * useTranslation:
- *  - Beispiel: t("adminDashboard.titleWeekly")
- *  - Sucht in translations[language] nach dem entsprechenden Schlüssel
- */
 export function useTranslation() {
     const { language } = React.useContext(LanguageContext);
     function t(key) {

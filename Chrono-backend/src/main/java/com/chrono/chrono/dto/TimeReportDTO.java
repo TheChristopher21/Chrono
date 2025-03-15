@@ -1,20 +1,22 @@
 package com.chrono.chrono.dto;
 
 public class TimeReportDTO {
-    private String username;   // Neuer Benutzername
+    private String username;   // Benutzername
     private String date;       // z. B. "Dienstag, 11.2.2025"
     private String workStart;
     private String breakStart;
     private String breakEnd;
     private String workEnd;
+    private String dailyNote;  // Tägliche Notiz
 
-    public TimeReportDTO(String username, String date, String workStart, String breakStart, String breakEnd, String workEnd) {
+    public TimeReportDTO(String username, String date, String workStart, String breakStart, String breakEnd, String workEnd, String dailyNote) {
         this.username = username;
         this.date = date;
         this.workStart = workStart;
         this.breakStart = breakStart;
         this.breakEnd = breakEnd;
         this.workEnd = workEnd;
+        this.dailyNote = dailyNote;
     }
 
     public String getUsername() {
@@ -57,5 +59,12 @@ public class TimeReportDTO {
     }
     public void setWorkEnd(String workEnd) {
         this.workEnd = workEnd;
+    }
+
+    public String getDailyNote() {
+        return dailyNote;
+    }
+    public void setDailyNote(String dailyNote) {
+        this.dailyNote = dailyNote;
     }
 }

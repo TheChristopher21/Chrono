@@ -65,6 +65,10 @@
     ],
     "extraResources": [
       {
+        "from": "src/preload.js",
+        "to": "preload.js"
+      },
+      {
         "from": "backend/Chrono-0.0.1-SNAPSHOT.jar",
         "to": "backend/Chrono-0.0.1-SNAPSHOT.jar"
       }

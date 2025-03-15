@@ -1,4 +1,3 @@
-// src/main.jsx
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { HashRouter } from "react-router-dom";
@@ -13,7 +12,6 @@ root.render(
     <HashRouter>
         <AuthProvider>
             <NotificationProvider>
-                {/* NEU: LanguageProvider umschließt alles */}
                 <LanguageProvider>
                     <React.StrictMode>
                         <App />
