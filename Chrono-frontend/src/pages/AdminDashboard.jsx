@@ -680,7 +680,6 @@ const AdminDashboard = () => {
                                                             );
                                                         }
                                                     })}
-                                                    {/* NEU: Button zum Drucken der Zeiten für diesen User (mit Zeitraumwahl) */}
                                                     <button
                                                         className="print-times-button"
                                                         onClick={() => openPrintUserModal(username)}
@@ -742,12 +741,10 @@ const AdminDashboard = () => {
                     <section className="correction-section">
                         <h3>
                             {t('adminDashboard.correctionRequestsTitle')} {t('adminDashboard.forDate')}{' '}
-                            {formatDate(new Date())}
                         </h3>
                         {allCorrections.length === 0 ? (
                             <p>
                                 {t('adminDashboard.noEntriesThisWeek')}{' '}
-                                {formatDate(new Date())}
                             </p>
                         ) : (
                             <ul className="correction-list">
@@ -871,7 +868,6 @@ const AdminDashboard = () => {
                 </div>
             )}
 
-            {/* NEU: Print Modal für User-Zeiten mit Zeitraumwahl */}
             {printUserModalVisible && (
                 <div className="modal-overlay">
                     <div className="modal-content">

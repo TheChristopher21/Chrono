@@ -96,10 +96,10 @@ const AdminUserManagementPage = () => {
     };
 
     const handleEditUser = (user) => {
+        // Passwortfeld entfernen, damit es nicht angezeigt wird
+        const { password, ...rest } = user;
         setEditingUser({
-            ...user,
-            currentPassword: '',
-            newPassword: '',
+            ...rest,
             scheduleCycle: user.scheduleCycle || 1,
             weeklySchedule: Array.isArray(user.weeklySchedule)
                 ? user.weeklySchedule
@@ -125,14 +125,7 @@ const AdminUserManagementPage = () => {
                 isHourly: editingUser.isHourly
             };
 
-            const queryParams = {
-                currentPassword: editingUser.currentPassword
-            };
-            if (editingUser.newPassword && editingUser.newPassword.trim() !== "") {
-                queryParams.newPassword = editingUser.newPassword;
-            }
-
-            await api.put('/api/admin/users', payload, { params: queryParams });
+            await api.put('/api/admin/users', payload);
             setEditingUser(null);
             fetchUsers();
         } catch (err) {
@@ -364,34 +357,6 @@ const AdminUserManagementPage = () => {
                                     </div>
                                 </>
                             )}
-                            <div className="form-group">
-                                <label>{t("userManagement.currentPassword")}:</label>
-                                <input
-                                    type="password"
-                                    placeholder={t("userManagement.currentPassword")}
-                                    value={editingUser.currentPassword || ''}
-                                    onChange={(e) => setEditingUser({ ...editingUser, currentPassword: e.target.value })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>{t("userManagement.newPassword")}:</label>
-                                <input
-                                    type="password"
-                                    placeholder={t("userManagement.newPassword")}
-                                    value={editingUser.newPassword || ''}
-                                    onChange={(e) => setEditingUser({ ...editingUser, newPassword: e.target.value })}
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>{t("userManagement.userPassword")}:</label>
-                                <input
-                                    type="password"
-                                    placeholder={t("userManagement.userPassword")}
-                                    value={editingUser.userPassword || ''}
-                                    onChange={(e) => setEditingUser({ ...editingUser, userPassword: e.target.value })}
-                                    required
-                                />
-                            </div>
                             <button type="submit">{t("userManagement.button.save")}</button>
                             <button type="button" onClick={() => setEditingUser(null)}>{t("userManagement.button.cancel")}</button>
                         </form>

@@ -1,32 +1,51 @@
+:root {
+    --primary-color: #5A67D8;
+    --primary-hover: #434190;
+    --secondary-color: #48BB78;
+    --secondary-hover: #38A169;
+    --success-color: #48BB78;
+    --danger-color: #E53E3E;
+    --warning-color: #F6AD55;
+    --light-bg: #F7FAFC;
+    --card-bg: #FFFFFF;
+    --text-color: #2D3748;
+    --subtext-color: #718096;
+    --border-color: #E2E8F0;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --radius: 12px;
+    --transition: 0.3s ease;
+    --font-family: 'Poppins', sans-serif;
+}
+
 .personal-data-page {
     width: 100%;
-    margin: 0;
-    padding: 20px;
+    padding: 2rem;
+    background-color: var(--light-bg);
 }
 
 .page-header {
-    background-color: #fff;
-    padding: 20px;
-    margin-bottom: 20px;
-    border-radius: 10px;
+    background-color: var(--card-bg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
     text-align: center;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow);
 }
 
 .personal-data-section,
 .password-change-section {
-    background-color: #fff;
-    padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    background-color: var(--card-bg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
 
 .form-personal,
 .form-password {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 1rem;
 }
 
 .form-personal .form-group,
@@ -37,34 +56,39 @@
 
 .form-personal label,
 .form-password label {
-    font-weight: bold;
-    margin-bottom: 5px;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
 }
 
 .form-personal input,
 .form-password input {
-    padding: 8px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 1rem;
 }
 
 .form-personal button,
 .form-password button {
-    padding: 10px;
-    background-color: #007BFF;
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary-color);
     color: #fff;
-    border-radius: 5px;
-    transition: background-color 0.3s;
     border: none;
+    border-radius: var(--radius);
+    transition: background-color var(--transition);
+    font-size: 1rem;
+    cursor: pointer;
 }
 
 .form-personal button:hover,
 .form-password button:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-hover);
 }
 
 .message {
     text-align: center;
-    font-weight: bold;
-    margin-top: 10px;
+    font-weight: 600;
+    margin-top: 1rem;
+    color: var(--text-color);
 }

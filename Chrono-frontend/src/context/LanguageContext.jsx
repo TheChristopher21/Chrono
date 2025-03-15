@@ -1,5 +1,5 @@
 // src/context/LanguageContext.jsx
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useState } from 'react';
 
 const translations = {
     de: {
@@ -67,7 +67,7 @@ const translations = {
             acceptButton: "Accept",
             rejectButton: "Reject",
             vacationCalendarTitle: "Urlaubskalender",
-            forDate: "für",
+            forDate: "",
             monthlyOverview: "Monatsübersicht",
             noEntriesThisMonth: "Keine Einträge in diesem Monat",
             startDate: "Startdatum",
@@ -126,7 +126,7 @@ const translations = {
             profile: "Profil"
         },
         // Top-Level Schlüssel für den UserDashboard-Bereich
-        title: "Mein Dashboard (NFC aktiv)",
+        title: "Mein Dashboard",
         usernameLabel: "Benutzer",
         notLoggedIn: "Nicht eingeloggt",
         expectedWorkHours: "Erwartete Arbeitszeit/Tag",

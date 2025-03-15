@@ -1,3 +1,18 @@
+:root {
+    --primary-color: #5A67D8;
+    --primary-hover: #434190;
+    --secondary-color: #48BB78;
+    --secondary-hover: #38A169;
+    --light-bg: #F7FAFC;
+    --card-bg: #FFFFFF;
+    --text-color: #2D3748;
+    --border-color: #E2E8F0;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --radius: 12px;
+    --transition: 0.3s ease;
+    --font-family: 'Poppins', sans-serif;
+}
+
 .vacation-calendar-admin {
     width: 100%;
     margin: 0;
@@ -7,30 +22,30 @@
 .vacation-calendar-admin .react-calendar {
     width: 100% !important;
     border: none;
-    font-family: 'Roboto', sans-serif;
+    font-family: var(--font-family);
     line-height: 1.125em;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
 
 .vacation-calendar-admin .react-calendar__navigation button {
-    color: #007BFF;
+    color: var(--primary-color);
     min-width: 44px;
     background: none;
     font-size: 1rem;
-    margin: 2px;
+    margin: 0.125rem;
 }
 
 .vacation-calendar-admin .react-calendar__month-view__days__day {
-    margin: 2px;
-    border-radius: 6px;
+    margin: 0.125rem;
+    border-radius: calc(var(--radius) / 1.5);
     position: relative;
 }
 
 .vacation-calendar-admin .react-calendar__tile {
-    padding: 10px 6.6667px;
-    border-radius: 6px;
-    transition: background-color 0.3s;
+    padding: 0.625rem 0.4167rem;
+    border-radius: calc(var(--radius) / 1.5);
+    transition: background-color var(--transition);
     text-align: center;
 }
 
@@ -40,25 +55,25 @@
 
 .vacation-calendar-admin .react-calendar__tile abbr {
     text-decoration: none;
-    font-weight: bold;
+    font-weight: 600;
     font-size: 1rem;
-    color: #333;
+    color: var(--text-color);
 }
 
 .vacation-markers {
     display: flex;
     flex-wrap: wrap;
-    gap: 2px;
+    gap: 0.125rem;
     justify-content: center;
     align-items: center;
-    margin-top: 5px;
+    margin-top: 0.3125rem;
 }
 
 .vacation-marker {
     background-color: #ccc;
     color: #fff;
     font-size: 0.7rem;
-    padding: 2px 4px;
+    padding: 0.125rem 0.25rem;
     border-radius: 4px;
     white-space: nowrap;
 }

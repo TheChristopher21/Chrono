@@ -19,13 +19,21 @@ function formatTime(dateStr) {
         timeZone: 'Europe/Berlin'
     });
 }
-
 function getMinutesSinceMidnight(dateStr) {
     if (!dateStr) return 0;
     const d = new Date(dateStr);
     return d.getHours() * 60 + d.getMinutes();
 }
 
+function formatTimeShort(dateObj) {
+    if (!dateObj) return '-';
+    const d = new Date(dateObj);
+    return d.toLocaleTimeString('de-DE', {
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Berlin'
+    });
+}
 
 function computeDailyDiffValue(dayEntries, expectedWorkHours) {
     const entryStart = dayEntries.find(e => e.punchOrder === 1);
@@ -258,8 +266,17 @@ function HourlyDashboard() {
             setDailyData({});
             return;
         }
+        // Filtere Einträge, die zum ausgewählten Monat gehören
+        const filteredEntries = allEntries.filter(entry => {
+            const d = new Date(entry.startTime);
+            return (
+                d.getFullYear() === selectedMonth.getFullYear() &&
+                d.getMonth() === selectedMonth.getMonth()
+            );
+        });
+
         const dayMap = {};
-        allEntries.forEach(entry => {
+        filteredEntries.forEach(entry => {
             const dayStr = entry.startTime.slice(0, 10);
             if (!dayMap[dayStr]) dayMap[dayStr] = [];
             dayMap[dayStr].push(entry);
@@ -275,7 +292,6 @@ function HourlyDashboard() {
             }
             let endEntry = entries.find(e => e.punchOrder === 4);
             if (!endEntry) {
-
                 endEntry = entries.find(e => e.punchOrder === 2 || e.punchOrder === 3);
             }
             if (startEntry && endEntry) {
@@ -299,6 +315,7 @@ function HourlyDashboard() {
         });
         setDailyData(daily);
     }, [allEntries, selectedMonth, userProfile]);
+
 
     let totalMinsCalc = 0;
     Object.values(dailyData).forEach(dayObj => {
@@ -423,6 +440,13 @@ function HourlyDashboard() {
                 <p>Loading...</p>
             </div>
         );
+    }
+    function formatDisplayDate(dateStr) {
+        const d = new Date(dateStr);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}-${month}-${year}`;
     }
 
     return (

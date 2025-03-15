@@ -1,3 +1,22 @@
+:root {
+    --primary-color: #5A67D8;
+    --primary-hover: #434190;
+    --secondary-color: #48BB78;
+    --secondary-hover: #38A169;
+    --success-color: #48BB78;
+    --danger-color: #E53E3E;
+    --warning-color: #F6AD55;
+    --light-bg: #F7FAFC;
+    --card-bg: #FFFFFF;
+    --text-color: #2D3748;
+    --subtext-color: #718096;
+    --border-color: #E2E8F0;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --radius: 12px;
+    --transition: 0.3s ease;
+    --font-family: 'Poppins', sans-serif;
+}
+
 * {
     box-sizing: border-box;
     margin: 0;
@@ -5,9 +24,9 @@
 }
 
 body {
-    font-family: 'Roboto', sans-serif;
-    background-color: #f4f7fa;
-    color: #333;
+    font-family: var(--font-family);
+    background-color: var(--light-bg);
+    color: var(--text-color);
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
 }
@@ -38,7 +57,7 @@ input, button, select, textarea {
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0,0,0,0.4); /* Abdunklung des Hintergrundes */
+    background: rgba(0,0,0,0.4);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -46,32 +65,32 @@ input, button, select, textarea {
 }
 
 .notification-modal {
-    background: #ffffff;
-    padding: 20px 30px;
+    background: var(--card-bg);
+    padding: 1.25rem 1.875rem;
     border-radius: 6px;
     min-width: 280px;
     max-width: 400px;
     box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    border-top: 4px solid #007BFF; /* Blaues Akzent-Element oben */
+    border-top: 4px solid var(--primary-color);
     text-align: center;
 }
 
 .notification-modal p {
-    margin: 0 0 20px;
-    color: #333;
+    margin: 0 0 1.25rem;
+    color: var(--text-color);
     font-size: 1rem;
     line-height: 1.4;
 }
 
 .notification-modal button {
-    background-color: #007BFF;
+    background-color: var(--primary-color);
     color: #fff;
-    padding: 8px 16px;
+    padding: 0.5rem 1rem;
     font-size: 0.95rem;
     border-radius: 4px;
     transition: background-color 0.2s ease;
 }
 
 .notification-modal button:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-hover);
 }

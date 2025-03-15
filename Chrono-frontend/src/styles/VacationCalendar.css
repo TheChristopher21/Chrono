@@ -1,3 +1,18 @@
+:root {
+    --primary-color: #5A67D8;
+    --primary-hover: #434190;
+    --secondary-color: #48BB78;
+    --secondary-hover: #38A169;
+    --light-bg: #F7FAFC;
+    --card-bg: #FFFFFF;
+    --text-color: #2D3748;
+    --border-color: #E2E8F0;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --radius: 12px;
+    --transition: 0.3s ease;
+    --font-family: 'Poppins', sans-serif;
+}
+
 .vacation-calendar {
     width: 100%;
     margin: 0;
@@ -7,25 +22,25 @@
 .vacation-calendar .react-calendar {
     width: 100% !important;
     border: none;
-    font-family: 'Roboto', sans-serif;
+    font-family: var(--font-family);
     line-height: 1.125em;
-    border-radius: 10px;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
 }
 
 .vacation-calendar .react-calendar__navigation {
     display: flex;
     justify-content: center;
     align-items: center;
-    margin-bottom: 10px;
+    margin-bottom: 0.625rem;
 }
 
 .vacation-calendar .react-calendar__navigation button {
     background: none;
     border: none;
     font-size: 1rem;
-    margin: 2px;
-    color: #007BFF;
+    margin: 0.125rem;
+    color: var(--primary-color);
     cursor: pointer;
 }
 
@@ -34,7 +49,7 @@
     justify-content: space-around;
     text-align: center;
     font-weight: bold;
-    margin-bottom: 5px;
+    margin-bottom: 0.3125rem;
 }
 
 .vacation-calendar .react-calendar__month-view__weekdays div {
@@ -53,9 +68,9 @@
     justify-content: center;
     align-items: center;
     height: 60px;
-    margin: 2px 0;
-    border-radius: 6px;
-    transition: background-color 0.3s;
+    margin: 0.125rem 0;
+    border-radius: var(--radius);
+    transition: background-color var(--transition);
     text-align: center;
 }
 
@@ -68,5 +83,5 @@
     text-decoration: none;
     font-weight: bold;
     font-size: 1rem;
-    color: #333;
+    color: var(--text-color);
 }
