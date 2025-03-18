@@ -277,7 +277,7 @@ const AdminUserManagementPage = () => {
                                 </div>
                             </div>
                             <div className="form-group">
-                                <label>Stundenbasiert:</label>
+                                <label>{t("userManagement.isHourly")}</label>
                                 <input
                                     type="checkbox"
                                     checked={editingUser.isHourly}
@@ -336,7 +336,7 @@ const AdminUserManagementPage = () => {
                                                 <h5>{t("userManagement.week")} {index + 1}</h5>
                                                 {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(dayKey => (
                                                     <div key={dayKey}>
-                                                        <label>{dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}:</label>
+                                                        <label>{t("days." + dayKey)}:</label>
                                                         <input
                                                             type="number"
                                                             min="0"
@@ -411,7 +411,7 @@ const AdminUserManagementPage = () => {
                                 </select>
                             </div>
                             <div className="form-group">
-                                <label>Farbe:</label>
+                                <label>{t("userManagement.color")}</label>
                                 <div className="color-picker">
                                     {STANDARD_COLORS.map((color, index) => (
                                         <div key={index}
@@ -430,7 +430,7 @@ const AdminUserManagementPage = () => {
                                 </div>
                             </div>
                             <div className="form-group">
-                                <label>Stundenbasiert:</label>
+                                <label>{t("userManagement.isHourly")}</label>
                                 <input
                                     type="checkbox"
                                     checked={newUser.isHourly}
@@ -485,7 +485,7 @@ const AdminUserManagementPage = () => {
                                                 <h5>{t("userManagement.week")} {index + 1}</h5>
                                                 {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(dayKey => (
                                                     <div key={dayKey}>
-                                                        <label>{dayKey.charAt(0).toUpperCase() + dayKey.slice(1)}:</label>
+                                                        <label>{t("days." + dayKey)}:</label>
                                                         <input
                                                             type="number"
                                                             min="0"

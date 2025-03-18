@@ -27,7 +27,11 @@ public interface TimeTrackingRepository extends JpaRepository<TimeTracking, Long
 
     List<TimeTracking> findByUserAndStartTimeBetween(User user, LocalDateTime start, LocalDateTime end);
 
-    // Methode, um den täglichen Notiz-Eintrag (punchOrder 0) anhand des reinen Datums zu finden
+    List<TimeTracking> findByEndTimeIsNullAndStartTimeBetween(LocalDateTime start, LocalDateTime end);
+
+    @Query("SELECT t FROM TimeTracking t WHERE t.user = :user AND t.punchOrder = :punchOrder ORDER BY t.startTime DESC")
+    Optional<TimeTracking> findTopByUserAndPunchOrder(@Param("user") User user, @Param("punchOrder") Integer punchOrder);
+
     List<TimeTracking> findByUserAndDailyDateAndPunchOrder(User user, LocalDate dailyDate, Integer punchOrder);
 
     default List<TimeTracking> findDailyNoteByUserAndDate(User user, LocalDate dailyDate) {

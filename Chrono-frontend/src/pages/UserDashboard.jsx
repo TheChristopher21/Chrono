@@ -10,8 +10,6 @@ import { useTranslation } from '../context/LanguageContext';
 import HourlyDashboard from './HourlyDashboard';
 import autoTable from "jspdf-autotable";
 
-
-
 const getMondayOfWeek = (date) => {
     const copy = new Date(date);
     const day = copy.getDay();
@@ -162,7 +160,6 @@ const groupEntriesByDay = (entries) => {
     return dayMap;
 };
 
-
 const UserDashboard = () => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -177,19 +174,13 @@ const UserDashboard = () => {
     const [printEndDate, setPrintEndDate] = useState(formatLocalDate(new Date()));
     const [punchMessage, setPunchMessage] = useState('');
     const [lastPunchTime, setLastPunchTime] = useState(0);
-
     const [weeklyDiff, setWeeklyDiff] = useState(0);
     const [monthlyDiff, setMonthlyDiff] = useState(0);
     const [overallDiff, setOverallDiff] = useState(0);
     const [monthlyDiffAll, setMonthlyDiffAll] = useState({});
     const lastPunchTimeRef = useRef(0);
-
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
-
-    const defaultExpectedHours =
-        userProfile && userProfile.dailyWorkHours !== undefined
-            ? Number(userProfile.dailyWorkHours)
-            : 8;
+    const [showAllCorrections, setShowAllCorrections] = useState(false);
 
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
     const [correctionDate, setCorrectionDate] = useState("");
@@ -200,6 +191,14 @@ const UserDashboard = () => {
         workEnd: "",
         reason: ""
     });
+
+    // Neuer State für Korrekturanträge und deren Panel-Steuerung
+    const [correctionRequests, setCorrectionRequests] = useState([]);
+    const [showCorrectionsPanel, setShowCorrectionsPanel] = useState(false);
+    const [selectedCorrectionMonday, setSelectedCorrectionMonday] = useState(getMondayOfWeek(new Date()));
+
+    // Zentrale Berechnung der erwarteten Stunden: Wenn userProfile noch null ist, verwenden wir 8
+    const defaultExpectedHours = userProfile ? Number(userProfile.dailyWorkHours || 8) : 8;
 
     useEffect(() => {
         async function fetchProfile() {
@@ -220,18 +219,18 @@ const UserDashboard = () => {
         fetchProfile();
     }, [currentUser, t]);
 
-    /* ===== Einträge und Urlaubsanträge laden ===== */
+    /* ===== Einträge, Urlaubsanträge und Korrekturanträge laden ===== */
     useEffect(() => {
         if (userProfile) {
             fetchEntries();
             fetchVacations();
+            fetchCorrections();
         }
     }, [userProfile]);
 
     async function fetchEntries() {
         try {
             const res = await api.get(`/api/timetracking/history?username=${userProfile.username}`);
-            // Nur Einträge mit punchOrder 1–4 für die Berechnungen (Notiz-Einträge werden separat geladen)
             const validEntries = (res.data || []).filter(e => [1, 2, 3, 4].includes(e.punchOrder));
             setAllEntries(validEntries);
         } catch (err) {
@@ -245,6 +244,16 @@ const UserDashboard = () => {
             setVacationRequests(res.data || []);
         } catch (err) {
             console.error('Error loading vacation requests', err);
+        }
+    }
+
+    // Neue Funktion zum Laden der Korrekturanträge des Users
+    async function fetchCorrections() {
+        try {
+            const res = await api.get(`/api/correction/my?username=${userProfile.username}`);
+            setCorrectionRequests(res.data || []);
+        } catch (err) {
+            console.error('Error loading correction requests', err);
         }
     }
 
@@ -346,7 +355,7 @@ const UserDashboard = () => {
             }
         }
         setWeeklyDiff(sum);
-    }, [allEntries, userProfile, selectedMonday, defaultExpectedHours]);
+    }, [allEntries, userProfile, selectedMonday]);
 
     useEffect(() => {
         if (!userProfile || userProfile.isHourly) {
@@ -376,7 +385,7 @@ const UserDashboard = () => {
             }
         }
         setMonthlyDiff(sum);
-    }, [allEntries, userProfile, selectedMonday, defaultExpectedHours]);
+    }, [allEntries, userProfile, selectedMonday]);
 
     useEffect(() => {
         if (!userProfile || userProfile.isHourly) {
@@ -394,7 +403,7 @@ const UserDashboard = () => {
             }
         }
         setOverallDiff(sum);
-    }, [allEntries, userProfile, defaultExpectedHours]);
+    }, [allEntries, userProfile]);
 
     useEffect(() => {
         if (!userProfile || userProfile.isHourly) {
@@ -425,7 +434,7 @@ const UserDashboard = () => {
             diffs[monthKey] = sumMonth;
         }
         setMonthlyDiffAll(diffs);
-    }, [allEntries, userProfile, defaultExpectedHours]);
+    }, [allEntries, userProfile]);
 
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
     const dayMapWeek = {};
@@ -454,6 +463,15 @@ const UserDashboard = () => {
     if (userProfile?.isHourly) {
         return <HourlyDashboard />;
     }
+
+    const correctionsForWeek = correctionRequests.filter(req => {
+        const reqDate = new Date(req.desiredStart);
+        return reqDate >= selectedCorrectionMonday && reqDate < addDays(selectedCorrectionMonday, 7);
+    });
+
+
+    // Formatierung der Wochenanzeige (z. B. "01.03.2025 - 07.03.2025")
+    const correctionWeekLabel = `${formatDate(selectedCorrectionMonday)} - ${formatDate(addDays(selectedCorrectionMonday, 6))}`;
 
     async function handlePrintReport() {
         if (!printStartDate || !printEndDate) {
@@ -528,8 +546,6 @@ const UserDashboard = () => {
         setPrintModalVisible(false);
     }
 
-
-
     const openCorrectionModal = (dateObj) => {
         setCorrectionDate(formatLocalDate(dateObj));
         setCorrectionData({
@@ -570,12 +586,29 @@ const UserDashboard = () => {
                 }
             });
             notify("Korrekturantrag erfolgreich gestellt.");
+            fetchCorrections();  // Aktualisiere die Liste der Korrekturanträge
             setShowCorrectionModal(false);
         } catch (err) {
             console.error("Fehler beim Absenden des Korrekturantrags:", err);
             notify("Fehler beim Absenden des Korrekturantrags.");
         }
     };
+
+    {/* Hilfsfunktion zum Formatieren von "HH:mm:ss" zu "HH:mm" */}
+    function formatLocalTime(hmsString) {
+        if (!hmsString) return '-';
+        // "HH:mm:ss" -> "HH:mm"
+        return hmsString.slice(0, 5);
+    }
+    const sortedCorrections = (showAllCorrections ? correctionRequests : correctionsForWeek)
+        .slice() // Kopie erstellen, damit das Original nicht verändert wird
+        .sort((a, b) => {
+            // Falls deine Daten in "desiredStart" liegen:
+            const dateA = new Date(a.desiredStart);
+            const dateB = new Date(b.desiredStart);
+            // Absteigend sortieren
+            return dateB - dateA;
+        });
 
     return (
         <div className="user-dashboard">
@@ -589,7 +622,8 @@ const UserDashboard = () => {
                     {!userProfile?.isHourly && (
                         <>
                             <p>
-                                <strong>{t("expectedWorkHours")}:</strong> {getExpectedHoursForDay(new Date(), userProfile, defaultExpectedHours)} {t("hours")}
+                                <strong>{t("expectedWorkHours")}:</strong>{" "}
+                                {userProfile ? getExpectedHoursForDay(new Date(), userProfile, defaultExpectedHours) : 8} {t("hours")}
                             </p>
                             {dailyDiffDisplay && (
                                 <p>
@@ -641,8 +675,8 @@ const UserDashboard = () => {
                                     <h4>
                                         {dayObj.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}{' '}
                                         <span className="expected-hours">
-                      ({t("expectedWorkHours")}: {expectedForDay} {t("hours")})
-                    </span>
+                                            ({t("expectedWorkHours")}: {expectedForDay} {t("hours")})
+                                        </span>
                                     </h4>
                                     {dailyDiff && <span className="daily-diff">({dailyDiff})</span>}
                                 </div>
@@ -682,9 +716,68 @@ const UserDashboard = () => {
                 </div>
             </section>
 
+            {/* Neuer, einklappbarer Bereich für Korrekturanträge */}
+            {/* Neuer, einklappbarer Bereich für Korrekturanträge */}
+            <section className="correction-panel">
+                <div className="corrections-header" onClick={() => setShowCorrectionsPanel(prev => !prev)}>
+                    <h3>{t("correctionRequests") || "Korrekturanträge"}</h3>
+                    <span className="toggle-icon">{showCorrectionsPanel ? "▲" : "▼"}</span>
+                </div>
+                {showCorrectionsPanel && (
+                    <div className="corrections-content">
+                        {/* Nur anzeigen, wenn wir in der Wochenansicht sind */}
+                        {!showAllCorrections && (
+                            <div className="week-navigation corrections-nav">
+                                <button onClick={() => setSelectedCorrectionMonday(prev => addDays(prev, -7))}>
+                                    ← {t("prevWeek")}
+                                </button>
+                                <span className="week-label">{correctionWeekLabel}</span>
+                                <button onClick={() => setSelectedCorrectionMonday(prev => addDays(prev, 7))}>
+                                    {t("nextWeek")} →
+                                </button>
+                            </div>
+                        )}
+                        {/* Umschaltbutton */}
+                        <div className="toggle-all-button">
+                            <button onClick={() => setShowAllCorrections(prev => !prev)}>
+                                {showAllCorrections ? (t("showWeeklyOnly") || "Nur aktuelle Woche") : (t("showAll") || "Alle anzeigen")}
+                            </button>
+                        </div>
+                        {(showAllCorrections ? correctionRequests : correctionsForWeek).length === 0 ? (
+                            <p>{t("noCorrections") || "Keine Korrekturanträge vorhanden"}</p>
+                        ) : (
+                            <ul className="corrections-list">
+                                {sortedCorrections.map(req => {
+                                    const desiredDate = new Date(req.desiredStart);
+                                    return (
+                                        <li key={req.id}>
+                                            {formatDate(desiredDate)}{' '}
+                                            {req.approved ? (
+                                                <span className="approved">Bestätigt</span>
+                                            ) : req.denied ? (
+                                                <span className="denied">Abgelehnt</span>
+                                            ) : (
+                                                <span className="pending">Offen</span>
+                                            )}
+                                            <br />
+                                            {req.reason}
+                                            <br />
+                                            <strong>Work Start:</strong> {formatLocalTime(req.workStart)}<br/>
+                                            <strong>Break Start:</strong> {formatLocalTime(req.breakStart)}<br/>
+                                            <strong>Break End:</strong> {formatLocalTime(req.breakEnd)}<br/>
+                                            <strong>Work End:</strong> {formatLocalTime(req.workEnd)}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        )}
+                    </div>
+                )}
+            </section>
+
             {!userProfile?.isHourly && (
                 <section className="monthly-all">
-                    <h3>{t("monthlyOverview")} - {t("allMonths")}</h3>
+                    <h3>{t("allMonths")}</h3>
                     {Object.keys(monthlyDiffAll).length === 0 ? (
                         <p>{t("noEntries")}</p>
                     ) : (

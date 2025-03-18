@@ -36,8 +36,11 @@
     margin: 0.125rem;
 }
 
+/* Anpassung der Tages-Kacheln: Keine horizontalen Abstände und 7 Spalten */
 .vacation-calendar-admin .react-calendar__month-view__days__day {
-    margin: 0.125rem;
+    margin: 0.125rem 0; /* nur vertikaler Abstand */
+    flex-basis: calc(100% / 7);
+    box-sizing: border-box;
     border-radius: calc(var(--radius) / 1.5);
     position: relative;
 }

@@ -463,3 +463,42 @@ body {
         flex-direction: column;
     }
 }
+.correction-list {
+    /* Damit die Einträge etwas Abstand zueinander haben */
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+}
+
+.correction-item {
+    list-style: none;             /* Damit kein Bullet Point erscheint */
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.correction-item h4 {
+    margin: 0;
+    font-size: 1.125rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.correction-info p {
+    margin: 0.25rem 0;
+    line-height: 1.4;
+}
+
+.correction-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 1rem;
+}

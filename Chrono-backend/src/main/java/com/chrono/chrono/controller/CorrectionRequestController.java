@@ -59,6 +59,12 @@ public class CorrectionRequestController {
         return correctionRequestService.getAllRequests();
     }
 
+    // Neuer Endpunkt: Alle Korrekturanträge des angemeldeten Users abrufen
+    @GetMapping("/my")
+    public List<CorrectionRequest> getMyRequests(@RequestParam String username) {
+        return correctionRequestService.getRequestsForUser(username);
+    }
+
     @PostMapping("/approve/{id}")
     public CorrectionRequest approveRequest(
             @PathVariable Long id,

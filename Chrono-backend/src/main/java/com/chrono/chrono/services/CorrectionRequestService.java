@@ -7,8 +7,12 @@ import com.chrono.chrono.repositories.CorrectionRequestRepository;
 import com.chrono.chrono.repositories.TimeTrackingRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -18,6 +22,9 @@ public class CorrectionRequestService {
 
     @Autowired
     private CorrectionRequestRepository correctionRepo;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private UserRepository userRepo;
@@ -68,6 +75,13 @@ public class CorrectionRequestService {
         return correctionRepo.findAllWithOriginalTimes();
     }
 
+    // Neue Methode: Alle Korrekturanträge eines Users abrufen
+    public List<CorrectionRequest> getRequestsForUser(String username) {
+        User user = userRepo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User '" + username + "' not found"));
+        return correctionRepo.findByUser(user);
+    }
+
     @Transactional
     public CorrectionRequest approveRequest(Long requestId, String adminPassword) {
         CorrectionRequest req = correctionRepo.findById(requestId)
@@ -77,11 +91,21 @@ public class CorrectionRequestService {
             throw new RuntimeException("Request with ID " + requestId + " has already been processed.");
         }
 
+        // Beispiel: Hole den Admin-User aus der DB (angenommen, der Admin heißt "admin")
+        User adminUser = userRepo.findByUsername("admin")
+                .orElseThrow(() -> new RuntimeException("Admin user not found"));
+
+        // Prüfe das eingegebene Passwort gegen das gespeicherte (verwende hier z. B. den PasswordEncoder)
+        if (!passwordEncoder.matches(adminPassword, adminUser.getPassword())) {
+            // Falls das Passwort falsch ist, sende einen 403-Fehler
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid admin password");
+        }
+
         req.setApproved(true);
         req.setDenied(false);
         CorrectionRequest saved = correctionRepo.save(req);
 
-        // Übernehme die gewünschten Zeiten in den TimeTracking-Einträgen
+        // Aktualisiere die TimeTracking-Einträge (wie bisher)
         LocalDate correctionDay = req.getDesiredStartTime().toLocalDate();
         LocalDateTime dayStart = correctionDay.atStartOfDay();
         LocalDateTime dayEnd = dayStart.plusDays(1);
@@ -90,7 +114,6 @@ public class CorrectionRequestService {
         System.out.println("DEBUG: Found " + entries.size() + " time tracking entries for user "
                 + req.getUser().getUsername() + " on " + correctionDay);
 
-        // Falls Originalzeiten noch nicht gesetzt wurden, übernehmen wir sie aus den Einträgen
         if (req.getOriginalWorkStart() == null || req.getOriginalBreakStart() == null ||
                 req.getOriginalBreakEnd() == null || req.getOriginalWorkEnd() == null) {
             for (TimeTracking tt : entries) {
@@ -115,24 +138,23 @@ public class CorrectionRequestService {
             correctionRepo.save(req);
         }
 
-        // Aktualisiere die vorhandenen TimeTracking-Einträge oder erstelle neue, falls keine vorhanden sind.
         if (!entries.isEmpty()) {
             for (TimeTracking tt : entries) {
                 int order = (tt.getPunchOrder() != null) ? tt.getPunchOrder() : 0;
                 if (order == 1) {
-                    System.out.println("DEBUG: Updating Work Start for entry (punchOrder 1)");
                     tt.setStartTime(req.getDesiredStartTime());
                     tt.setWorkStart(req.getWorkStart());
                 } else if (order == 2) {
-                    System.out.println("DEBUG: Updating Break Start for entry (punchOrder 2)");
-                    tt.setBreakStart(req.getBreakStart());
-                    tt.setStartTime(LocalDateTime.of(tt.getStartTime().toLocalDate(), req.getBreakStart()));
+                    if (req.getBreakStart() != null) {
+                        tt.setBreakStart(req.getBreakStart());
+                        tt.setStartTime(LocalDateTime.of(tt.getStartTime().toLocalDate(), req.getBreakStart()));
+                    }
                 } else if (order == 3) {
-                    System.out.println("DEBUG: Updating Break End for entry (punchOrder 3)");
-                    tt.setBreakEnd(req.getBreakEnd());
-                    tt.setStartTime(LocalDateTime.of(tt.getStartTime().toLocalDate(), req.getBreakEnd()));
+                    if (req.getBreakEnd() != null) {
+                        tt.setBreakEnd(req.getBreakEnd());
+                        tt.setStartTime(LocalDateTime.of(tt.getStartTime().toLocalDate(), req.getBreakEnd()));
+                    }
                 } else if (order == 4) {
-                    System.out.println("DEBUG: Updating Work End for entry (punchOrder 4)");
                     tt.setEndTime(req.getDesiredEndTime());
                     tt.setWorkEnd(req.getWorkEnd());
                 } else {
@@ -140,11 +162,9 @@ public class CorrectionRequestService {
                 }
                 tt.setCorrected(true);
                 timeRepo.save(tt);
-                System.out.println("DEBUG: Updated entry with punchOrder " + order + ": " + tt);
             }
         } else {
             System.out.println("DEBUG: No existing time tracking entries found for correction, creating new ones.");
-            // Neue Einträge erstellen
             TimeTracking tt1 = new TimeTracking();
             tt1.setUser(req.getUser());
             tt1.setPunchOrder(1);
@@ -152,26 +172,25 @@ public class CorrectionRequestService {
             tt1.setWorkStart(req.getWorkStart());
             tt1.setCorrected(true);
             timeRepo.save(tt1);
-            System.out.println("DEBUG: Created new entry: " + tt1);
 
-            TimeTracking tt2 = new TimeTracking();
-            tt2.setUser(req.getUser());
-            tt2.setPunchOrder(2);
-            tt2.setBreakStart(req.getBreakStart());
-            tt2.setStartTime(LocalDateTime.of(req.getDesiredStartTime().toLocalDate(), req.getBreakStart()));
-            tt2.setCorrected(true);
-            timeRepo.save(tt2);
-            System.out.println("DEBUG: Created new entry: " + tt2);
-
-            TimeTracking tt3 = new TimeTracking();
-            tt3.setUser(req.getUser());
-            tt3.setPunchOrder(3);
-            tt3.setBreakEnd(req.getBreakEnd());
-            tt3.setStartTime(LocalDateTime.of(req.getDesiredStartTime().toLocalDate(), req.getBreakEnd()));
-            tt3.setCorrected(true);
-            timeRepo.save(tt3);
-            System.out.println("DEBUG: Created new entry: " + tt3);
-
+            if (req.getBreakStart() != null) {
+                TimeTracking tt2 = new TimeTracking();
+                tt2.setUser(req.getUser());
+                tt2.setPunchOrder(2);
+                tt2.setBreakStart(req.getBreakStart());
+                tt2.setStartTime(LocalDateTime.of(req.getDesiredStartTime().toLocalDate(), req.getBreakStart()));
+                tt2.setCorrected(true);
+                timeRepo.save(tt2);
+            }
+            if (req.getBreakEnd() != null) {
+                TimeTracking tt3 = new TimeTracking();
+                tt3.setUser(req.getUser());
+                tt3.setPunchOrder(3);
+                tt3.setBreakEnd(req.getBreakEnd());
+                tt3.setStartTime(LocalDateTime.of(req.getDesiredStartTime().toLocalDate(), req.getBreakEnd()));
+                tt3.setCorrected(true);
+                timeRepo.save(tt3);
+            }
             TimeTracking tt4 = new TimeTracking();
             tt4.setUser(req.getUser());
             tt4.setPunchOrder(4);
@@ -179,11 +198,9 @@ public class CorrectionRequestService {
             tt4.setWorkEnd(req.getWorkEnd());
             tt4.setCorrected(true);
             timeRepo.save(tt4);
-            System.out.println("DEBUG: Created new entry: " + tt4);
         }
         return saved;
     }
-
     @Transactional
     public CorrectionRequest denyRequest(Long requestId) {
         CorrectionRequest req = correctionRepo.findById(requestId)

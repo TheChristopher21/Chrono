@@ -504,3 +504,102 @@ body {
 .correction-button:hover {
     background-color: #e68900;
 }
+/* Neuer Block für den einklappbaren Korrekturanträge-Bereich */
+.correction-panel {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    margin-bottom: 2rem;
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.corrections-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background-color: var(--warning-color);
+    color: #fff;
+    cursor: pointer;
+}
+
+.corrections-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.toggle-icon {
+    font-size: 1.5rem;
+}
+
+.corrections-content {
+    padding: 1rem 1.5rem;
+    background-color: #fff;
+}
+
+.corrections-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.corrections-nav button {
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color var(--transition);
+    font-weight: 500;
+}
+
+.corrections-nav button:hover {
+    background-color: var(--primary-hover);
+}
+
+.week-label {
+    font-size: 1rem;
+    font-weight: 500;
+}
+
+.toggle-all-button {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.toggle-all-button button {
+    padding: 0.5rem 1rem;
+    background-color: var(--secondary-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color var(--transition);
+    font-weight: 500;
+}
+
+.toggle-all-button button:hover {
+    background-color: var(--secondary-hover);
+}
+
+.corrections-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.corrections-list li {
+    padding: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+.corrections-list li:last-child {
+    border-bottom: none;
+}

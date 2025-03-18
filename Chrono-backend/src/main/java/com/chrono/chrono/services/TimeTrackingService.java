@@ -9,6 +9,7 @@ import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.TimeTrackingRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -110,6 +111,83 @@ public class TimeTrackingService {
         return handlePunch(username, nextStatus);
     }
 
+    /**
+     * Diese Methode läuft täglich um 23:00 Uhr und schließt alle offenen Zeiteinträge
+     * des aktuellen Tages automatisch, falls der Benutzer vergessen hat, auszustempeln.
+     */
+    @Scheduled(cron = "0 0 23 * * *")
+    @Transactional
+    public void autoPunchOut() {
+        LocalDate today = LocalDate.now();
+        LocalDateTime startOfDay = today.atStartOfDay();
+        LocalDateTime autoEndTime = LocalDateTime.now(); // Testweise auf "jetzt" setzen
+
+        List<TimeTracking> openPunches = timeTrackingRepository.findByEndTimeIsNullAndStartTimeBetween(startOfDay, autoEndTime);
+        System.out.println("AutoPunchOut: Gefundene offene Einträge: " + openPunches.size());
+
+        for (TimeTracking tt : openPunches) {
+            User user = tt.getUser();
+            List<TimeTracking> userEntriesToday = timeTrackingRepository.findByUserAndStartTimeBetween(user, startOfDay, autoEndTime);
+
+            Set<Integer> existingPunchOrders = userEntriesToday.stream()
+                    .map(TimeTracking::getPunchOrder)
+                    .collect(Collectors.toSet());
+
+            System.out.println("AutoPunchOut: User " + user.getUsername() + " hat folgende Punches: " + existingPunchOrders);
+
+            boolean breakStartMissing = !existingPunchOrders.contains(2);
+            boolean breakEndMissing = !existingPunchOrders.contains(3);
+            boolean workEndMissing = !existingPunchOrders.contains(4);
+
+            // Falls nur "Work Start" (1) existiert, füge Break Start (2), Break End (3) und Work End (4) hinzu (nur wenn sie fehlen)
+            if (existingPunchOrders.contains(1) && workEndMissing) {
+                if (breakStartMissing) {
+                    addMissingPunch(user, 2, autoEndTime.plusMinutes(1)); // Break Start
+                }
+                if (breakEndMissing) {
+                    addMissingPunch(user, 3, autoEndTime.plusMinutes(2)); // Break End
+                }
+                addMissingPunch(user, 4, autoEndTime.plusMinutes(3)); // Work End
+                continue; // Job für diesen User ist abgeschlossen
+            }
+
+            // Falls "Break Start" (2) existiert, aber kein "Break End" und kein "Work End", füge beide hinzu
+            if (existingPunchOrders.contains(2) && breakEndMissing && workEndMissing) {
+                addMissingPunch(user, 3, autoEndTime.plusMinutes(1)); // Break End
+                addMissingPunch(user, 4, autoEndTime.plusMinutes(2)); // Work End
+                continue; // Job für diesen User ist abgeschlossen
+            }
+
+            // Falls "Break End" (3) existiert, aber kein "Work End", füge Work End hinzu
+            if (existingPunchOrders.contains(3) && workEndMissing) {
+                addMissingPunch(user, 4, autoEndTime.plusMinutes(1)); // Work End
+            }
+        }
+    }
+
+    /**
+     * Erstellt einen neuen TimeTracking-Eintrag mit dem gewünschten PunchOrder, aber nur, wenn er noch nicht existiert.
+     */
+    private void addMissingPunch(User user, int punchOrder, LocalDateTime time) {
+        Optional<TimeTracking> existingEntry = timeTrackingRepository.findTopByUserAndPunchOrder(user, punchOrder);
+        if (existingEntry.isPresent()) {
+            System.out.println("AutoPunchOut: Punch " + punchOrder + " für User " + user.getUsername() + " existiert bereits. Kein neuer Eintrag.");
+            return;
+        }
+
+        TimeTracking entry = new TimeTracking();
+        entry.setUser(user);
+        entry.setPunchOrder(punchOrder);
+        entry.setStartTime(time);
+        entry.setEndTime(time);
+        entry.setCorrected(true);
+        timeTrackingRepository.save(entry);
+
+        System.out.println("AutoPunchOut: Fehlender Punch " + punchOrder + " für User " + user.getUsername() + " um " + time + " erstellt.");
+    }
+
+
+
     @Transactional
     public TimeTrackingResponse updateDailyNote(String username, String date, String note) {
         User user = userRepository.findByUsername(username)
@@ -117,9 +195,7 @@ public class TimeTrackingService {
         if (!user.isHourly()) {
             throw new RuntimeException("Daily note is only available for hourly employees.");
         }
-        // Parse the input date as LocalDate (z. B. "2023-05-25")
         LocalDate localDate = LocalDate.parse(date);
-        // Suche vorhandene Notiz-Einträge für diesen Tag (punchOrder = 0) anhand des reinen Datums
         List<TimeTracking> noteEntries = timeTrackingRepository.findDailyNoteByUserAndDate(user, localDate);
         TimeTracking noteEntry;
         if (!noteEntries.isEmpty()) {
@@ -128,8 +204,7 @@ public class TimeTrackingService {
         } else {
             noteEntry = new TimeTracking();
             noteEntry.setUser(user);
-            noteEntry.setPunchOrder(0); // Kennzeichnung für Notiz-Eintrag
-            // Setze Start- und Endzeit als Tagesstart (optional)
+            noteEntry.setPunchOrder(0);
             noteEntry.setStartTime(localDate.atStartOfDay());
             noteEntry.setEndTime(localDate.atStartOfDay());
             noteEntry.setDailyNote(note);
@@ -410,7 +485,7 @@ public class TimeTrackingService {
                 tt.isCorrected(),
                 label,
                 pOrder,
-                tt.getDailyNote()  // dailyNote wird hier mitgegeben
+                tt.getDailyNote()
         );
     }
 

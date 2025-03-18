@@ -9,7 +9,9 @@ const translations = {
             password: "Passwort",
             button: "Einloggen",
             languageLabel: "Sprache:",
-            error: "Login fehlgeschlagen. Bitte Zugangsdaten prüfen."
+            error: "Login fehlgeschlagen. Bitte Zugangsdaten prüfen.",
+            testStampMessage: "Test-Stempel ausgeführt",
+            testStampButton: "Test-Stempel"
         },
         register: {
             title: "Registrieren",
@@ -98,6 +100,7 @@ const translations = {
             scheduleConfig: "Arbeitszeiten Konfiguration",
             cycleLength: "Cycle Length (Wochen):",
             week: "Woche",
+            isHourly: "Stundenbasiert:",
             color: "Farbe",
             chooseColor: "Farbe auswählen",
             currentPassword: "Aktuelles Passwort",
@@ -165,7 +168,25 @@ const translations = {
         month: "Monat",
         hours: "Std",
         minutes: "Min",
-        expected: "Soll"
+        expected: "Soll",
+        // Wochentage
+        days: {
+            monday: "Montag",
+            tuesday: "Dienstag",
+            wednesday: "Mittwoch",
+            thursday: "Donnerstag",
+            friday: "Freitag",
+            saturday: "Samstag",
+            sunday: "Sonntag"
+        },
+        // Zusätzliche Keys für die Stundenansicht und Notizen
+        hourlyDashboard: {
+            title: "Stundenbasierte Ansicht",
+            mode: "Stundenbasiert"
+        },
+        dailyNotePlaceholder: "Tagesnotiz",
+        printReportError: "Fehler beim Erstellen des Berichts",
+        loading: "Lade..."
     },
     en: {
         login: {
@@ -174,7 +195,9 @@ const translations = {
             password: "Password",
             button: "Log in",
             languageLabel: "Language:",
-            error: "Login failed. Please check your credentials."
+            error: "Login failed. Please check your credentials.",
+            testStampMessage: "Test stamp executed",
+            testStampButton: "Test Stamp"
         },
         register: {
             title: "Register",
@@ -207,7 +230,7 @@ const translations = {
             timeTrackingCurrentWeek: "Time Tracking - Current Week",
             prevWeek: "Previous Week",
             nextWeek: "Next Week",
-            noEntriesThisWeek: "No entries in this week",
+            noEntriesThisWeek: "No entries for this week",
             total: "Total",
             hours: "hrs",
             minutes: "min",
@@ -232,9 +255,9 @@ const translations = {
             acceptButton: "Accept",
             rejectButton: "Reject",
             vacationCalendarTitle: "Vacation Calendar",
-            forDate: "for",
+            forDate: "",
             monthlyOverview: "Monthly Overview",
-            noEntriesThisMonth: "No entries in this month",
+            noEntriesThisMonth: "No entries for this month",
             startDate: "Start Date",
             endDate: "End Date",
             printReportTitle: "Generate Report"
@@ -260,9 +283,10 @@ const translations = {
                 delete: "Delete",
                 programCard: "Program Card"
             },
-            scheduleConfig: "Schedule Configuration",
-            cycleLength: "Cycle Length (weeks):",
+            scheduleConfig: "Work Hours Configuration",
+            cycleLength: "Cycle Length (Weeks):",
             week: "Week",
+            isHourly: "Hourly:",
             color: "Color",
             chooseColor: "Choose Color",
             currentPassword: "Current Password",
@@ -273,7 +297,7 @@ const translations = {
             errorAddingUser: "Error adding user",
             errorUpdatingUser: "Error updating user",
             errorDeletingUser: "Error deleting user",
-            programCardSuccess: "Card programmed successfully",
+            programCardSuccess: "Card successfully programmed",
             programCardError: "Error programming card",
             noUsers: "No users found.",
             errorLoadingTracks: "Error loading time entries",
@@ -290,35 +314,35 @@ const translations = {
             myDashboard: "My Dashboard",
             profile: "Profile"
         },
-        // Top-Level keys for UserDashboard area
-        title: "My Dashboard (NFC active)",
-        usernameLabel: "Username",
+        // Top-Level keys for the User Dashboard
+        title: "My Dashboard",
+        usernameLabel: "User",
         notLoggedIn: "Not logged in",
-        expectedWorkHours: "Expected work hours/day",
-        diffToday: "Difference today",
+        expectedWorkHours: "Expected Work Hours per Day",
+        diffToday: "Difference Today",
         overallDiff: "Overall Difference",
         weekDiff: "Weekly Difference",
-        punchMessage: "Stamped in",
-        manualPunchTitle: "Manual Stamp",
-        manualPunchButton: "Stamp in",
-        manualPunchMessage: "Manually stamped in",
+        punchMessage: "Stamped",
+        manualPunchTitle: "Manual Stamping",
+        manualPunchButton: "Stamp",
+        manualPunchMessage: "Manually stamped",
         manualPunchError: "Error during manual stamping",
         vacationSubmitSuccess: "Vacation request submitted successfully",
         vacationSubmitError: "Error submitting vacation request",
         weeklyOverview: "Weekly Overview",
         noEntries: "No entries",
-        totalHours: "Total hours in month",
+        totalHours: "Total Hours in Month",
         weekday: "Weekday",
         date: "Date",
         workTime: "Work Time",
-        printReportButton: "Print Report",
-        selectPeriod: "Select period",
+        printReportButton: "Print Times",
+        selectPeriod: "Select Period",
         startDate: "Start Date",
         endDate: "End Date",
         cancel: "Cancel",
         vacationTitle: "Request Vacation",
         vacationSubmitButton: "Submit Vacation Request",
-        myVacations: "My Vacations",
+        myVacations: "My Vacation Requests",
         to: "to",
         vacationCalendarTitle: "Vacation Calendar",
         printReportTitle: "Generate Report",
@@ -330,38 +354,54 @@ const translations = {
         month: "Month",
         hours: "hrs",
         minutes: "min",
-        expected: "Expected"
+        expected: "Expected",
+        // Wochentage
+        days: {
+            monday: "Monday",
+            tuesday: "Tuesday",
+            wednesday: "Wednesday",
+            thursday: "Thursday",
+            friday: "Friday",
+            saturday: "Saturday",
+            sunday: "Sunday"
+        },
+        // Zusätzliche Keys für die Stundenansicht und Notizen
+        hourlyDashboard: {
+            title: "Hourly Dashboard",
+            mode: "Hourly"
+        },
+        dailyNotePlaceholder: "Daily note",
+        printReportError: "Error generating report",
+        loading: "Loading..."
     }
 };
 
-const LanguageContext = createContext({
-    language: 'de',
-    setLanguage: () => {}
-});
+export const LanguageContext = createContext();
 
-export function LanguageProvider({ children }) {
-    const [language, setLanguage] = useState('de');
+export const LanguageProvider = ({ children }) => {
+    const [language, setLanguage] = useState("de");
+
+    const t = (key) => {
+        const keys = key.split(".");
+        let translation = translations[language];
+        for (const k of keys) {
+            if (translation[k]) {
+                translation = translation[k];
+            } else {
+                return key;
+            }
+        }
+        return translation;
+    };
+
     return (
-        <LanguageContext.Provider value={{ language, setLanguage }}>
+        <LanguageContext.Provider value={{ language, setLanguage, t }}>
             {children}
         </LanguageContext.Provider>
     );
-}
+};
 
-export function useTranslation() {
-    const { language } = React.useContext(LanguageContext);
-    function t(key) {
-        const parts = key.split('.');
-        let obj = translations[language];
-        for (let p of parts) {
-            if (!obj || typeof obj !== 'object') {
-                return key;
-            }
-            obj = obj[p];
-        }
-        return typeof obj === 'string' ? obj : key;
-    }
+export const useTranslation = () => {
+    const { t } = React.useContext(LanguageContext);
     return { t };
-}
-
-export { LanguageContext };
+};

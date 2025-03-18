@@ -163,6 +163,8 @@ function getStatusLabel(punchOrder) {
 }
 
 
+
+
 const AdminDashboard = () => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -277,7 +279,7 @@ const AdminDashboard = () => {
             return;
         }
         try {
-            await api.post(`/api/vacation/approve/${id}`, null, { params: { adminPassword } });
+            await api.post(`/api/correction/approve/${id}`, null, { params: { adminPassword } });
             fetchAllVacations();
         } catch (err) {
             console.error('Error approving vacation', err);
@@ -303,9 +305,16 @@ const AdminDashboard = () => {
             fetchAllCorrections();
         } catch (err) {
             console.error('Error approving correction', err);
-            notify('Error approving correction: ' + err.message);
+            if (err.response && err.response.status === 403) {
+                // Zeige deine gewünschte Fehlermeldung
+                notify("Falsches Admin Passwort");
+            } else {
+                // Falls ein anderer Fehler auftritt, kannst du den Standardtext ausgeben
+                notify('Error approving correction: ' + err.message);
+            }
         }
     }
+
 
     async function handleDenyCorrection(id) {
         try {
@@ -740,7 +749,7 @@ const AdminDashboard = () => {
                 <div className="right-column">
                     <section className="correction-section">
                         <h3>
-                            {t('adminDashboard.correctionRequestsTitle')} {t('adminDashboard.forDate')}{' '}
+                            {t('adminDashboard.correctionRequestsTitle')} {t('')}{' '}
                         </h3>
                         {allCorrections.length === 0 ? (
                             <p>
@@ -748,40 +757,44 @@ const AdminDashboard = () => {
                             </p>
                         ) : (
                             <ul className="correction-list">
-                                {allCorrections.map(corr => (
-                                    <li key={corr.id} className="correction-item">
-                                        <div className="correction-info">
-                                            <strong>{corr.username}</strong> on{' '}
-                                            {new Date(corr.desiredStartTime).toLocaleDateString()}:
-                                            <br />
-                                            Work Start: {corr.workStart}
-                                            <br />
-                                            Break Start: {corr.breakStart}
-                                            <br />
-                                            Break End: {corr.breakEnd}
-                                            <br />
-                                            Work End: {corr.workEnd}
-                                            <br />
-                                            Reason: {corr.reason}
-                                            <br />
-                                            Status:{' '}
-                                            {corr.approved
-                                                ? t('adminDashboard.approved')
-                                                : corr.denied
-                                                    ? t('adminDashboard.denied')
-                                                    : t('adminDashboard.pending')}
-                                        </div>
-                                        <div className="correction-buttons">
-                                            <button onClick={() => handleApproveCorrection(corr.id)}>
-                                                {t('adminDashboard.acceptButton')}
-                                            </button>
-                                            <button onClick={() => handleDenyCorrection(corr.id)}>
-                                                {t('adminDashboard.rejectButton')}
-                                            </button>
-                                        </div>
-                                    </li>
-                                ))}
+                                {allCorrections.map(corr => {
+                                    const dateStr = new Date(corr.desiredStartTime).toLocaleDateString();
+                                    return (
+                                        <li key={corr.id} className="correction-item">
+                                            <h4>Korrektur vom {dateStr}</h4>
+                                            <div className="correction-info">
+                                                <p><strong>User:</strong> {corr.username}</p>
+                                                <p><strong>Work Start:</strong> {corr.workStart || "-"}</p>
+                                                <p><strong>Break Start:</strong> {corr.breakStart || "-"}</p>
+                                                <p><strong>Break End:</strong> {corr.breakEnd || "-"}</p>
+                                                <p><strong>Work End:</strong> {corr.workEnd || "-"}</p>
+                                                <p><strong>Reason:</strong> {corr.reason}</p>
+                                                <p>
+                                                    <strong>Status:</strong>{" "}
+                                                    {corr.approved
+                                                        ? t("adminDashboard.approved")
+                                                        : corr.denied
+                                                            ? t("adminDashboard.denied")
+                                                            : t("adminDashboard.pending")}
+                                                </p>
+                                            </div>
+                                            <div className="correction-buttons">
+                                                {!corr.approved && !corr.denied && (
+                                                    <>
+                                                        <button onClick={() => handleApproveCorrection(corr.id)}>
+                                                            {t('adminDashboard.acceptButton')}
+                                                        </button>
+                                                        <button onClick={() => handleDenyCorrection(corr.id)}>
+                                                            {t('adminDashboard.rejectButton')}
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </li>
+                                    );
+                                })}
                             </ul>
+
                         )}
                     </section>
                 </div>
@@ -796,48 +809,23 @@ const AdminDashboard = () => {
             {editModalVisible && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h3>
-                            {t('adminDashboard.editTrackingTitle')}{' '}
-                            {editDate?.toLocaleDateString('de-DE')}
-                        </h3>
+                        <h3>{t('adminDashboard.editTrackingTitle')} {editDate?.toLocaleDateString('de-DE')}</h3>
                         <form onSubmit={handleEditSubmit}>
                             <div className="form-group">
                                 <label>Work Start:</label>
-                                <input
-                                    type="time"
-                                    name="workStart"
-                                    value={editData.workStart}
-                                    onChange={handleEditInputChange}
-                                    required
-                                />
-                            </div>
-                            <div className="form-group">
-                                <label>Work End:</label>
-                                <input
-                                    type="time"
-                                    name="workEnd"
-                                    value={editData.workEnd}
-                                    onChange={handleEditInputChange}
-                                    required
-                                />
+                                <input type="time" name="workStart" value={editData.workStart} onChange={handleEditInputChange} required />
                             </div>
                             <div className="form-group">
                                 <label>Break Start:</label>
-                                <input
-                                    type="time"
-                                    name="breakStart"
-                                    value={editData.breakStart}
-                                    onChange={handleEditInputChange}
-                                />
+                                <input type="time" name="breakStart" value={editData.breakStart} onChange={handleEditInputChange} />
                             </div>
                             <div className="form-group">
                                 <label>Break End:</label>
-                                <input
-                                    type="time"
-                                    name="breakEnd"
-                                    value={editData.breakEnd}
-                                    onChange={handleEditInputChange}
-                                />
+                                <input type="time" name="breakEnd" value={editData.breakEnd} onChange={handleEditInputChange} />
+                            </div>
+                            <div className="form-group">
+                                <label>Work End:</label>
+                                <input type="time" name="workEnd" value={editData.workEnd} onChange={handleEditInputChange} required />
                             </div>
                             <div className="form-group">
                                 <label>{t('adminPassword')}:</label>
