@@ -13,19 +13,56 @@
     --font-family: 'Poppins', sans-serif;
 }
 
+/* Container-Stil des gesamten Admin-Kalenders */
 .vacation-calendar-admin {
     width: 100%;
-    margin: 0;
-    padding: 0;
+    margin: 0 auto;
+    padding: 1rem;
+    font-family: var(--font-family);
+    color: var(--text-color);
 }
 
+/* Überschrift / Admin-Anweisungen */
+.vacation-calendar-admin h2 {
+    margin-bottom: 1rem;
+    font-size: 1.5rem;
+    text-align: center;
+}
+
+/* Admin-Passwort-Feld */
+.admin-password-input {
+    margin: 1rem 0 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.admin-password-input label {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.admin-password-input input[type="password"] {
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    max-width: 300px;
+}
+
+/* React-Calendar Grundlayout */
 .vacation-calendar-admin .react-calendar {
     width: 100% !important;
     border: none;
-    font-family: var(--font-family);
     line-height: 1.125em;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
+    background-color: var(--card-bg);
+    padding: 1rem;
+}
+
+/* Navigation (Monat/Jahr) */
+.vacation-calendar-admin .react-calendar__navigation {
+    margin-bottom: 0.5rem;
 }
 
 .vacation-calendar-admin .react-calendar__navigation button {
@@ -34,35 +71,45 @@
     background: none;
     font-size: 1rem;
     margin: 0.125rem;
+    border: none;
+    cursor: pointer;
+    transition: color var(--transition);
 }
 
-/* Anpassung der Tages-Kacheln: Keine horizontalen Abstände und 7 Spalten */
-.vacation-calendar-admin .react-calendar__month-view__days__day {
-    margin: 0.125rem 0; /* nur vertikaler Abstand */
-    flex-basis: calc(100% / 7);
-    box-sizing: border-box;
-    border-radius: calc(var(--radius) / 1.5);
-    position: relative;
+.vacation-calendar-admin .react-calendar__navigation button:hover {
+    color: var(--primary-hover);
 }
 
+/* Tages-Kacheln */
 .vacation-calendar-admin .react-calendar__tile {
     padding: 0.625rem 0.4167rem;
     border-radius: calc(var(--radius) / 1.5);
     transition: background-color var(--transition);
     text-align: center;
+    border: none;
 }
 
 .vacation-calendar-admin .react-calendar__tile:enabled:hover {
     background-color: #e6f7ff;
 }
 
-.vacation-calendar-admin .react-calendar__tile abbr {
-    text-decoration: none;
+/* Tage-Kürzel (Mo, Di, usw.) */
+.vacation-calendar-admin .react-calendar__month-view__weekdays {
+    text-transform: uppercase;
+    font-size: 0.8rem;
     font-weight: 600;
-    font-size: 1rem;
     color: var(--text-color);
 }
 
+/* Abkürzungen in den Feldern */
+.vacation-calendar-admin .react-calendar__tile abbr {
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+/* Markierungen (Urlaubseinträge an einzelnen Tagen) */
 .vacation-markers {
     display: flex;
     flex-wrap: wrap;
@@ -79,4 +126,101 @@
     padding: 0.125rem 0.25rem;
     border-radius: 4px;
     white-space: nowrap;
+}
+
+/* Modal-Overlay & -Content */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.modal-content {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: var(--radius);
+    width: 500px;
+    max-width: 90%;
+    box-shadow: var(--shadow);
+    position: relative;
+}
+
+.modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    font-size: 1.2rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.modal-content h4 {
+    margin: 1rem 0 0.5rem;
+}
+
+.modal-content .form-group {
+    margin-bottom: 1rem;
+}
+
+.modal-content label {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+}
+
+.modal-content input[type="text"],
+.modal-content input[type="password"],
+.modal-content select {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+}
+
+.modal-content button {
+    margin-right: 1rem;
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: var(--radius);
+    background-color: var(--primary-color);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color var(--transition);
+    font-size: 0.9rem;
+}
+
+.modal-content button:hover {
+    background-color: var(--primary-hover);
+}
+
+.modal-content ul {
+    list-style: none;
+    padding: 0;
+    margin: 0.5rem 0;
+}
+
+.modal-content ul li {
+    margin-bottom: 0.5rem;
+}
+
+.modal-content hr {
+    margin: 1rem 0;
+    border: none;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Smartphones / kleine Screens */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 90%;
+        padding: 1rem;
+    }
 }

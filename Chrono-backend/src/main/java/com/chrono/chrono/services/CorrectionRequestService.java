@@ -82,8 +82,12 @@ public class CorrectionRequestService {
         return correctionRepo.findByUser(user);
     }
 
+    /**
+     * Genehmigt den Korrekturantrag, ohne Admin-Passwort zu verlangen.
+     * Anschließend werden die Zeiteinträge für den entsprechenden Tag überschrieben.
+     */
     @Transactional
-    public CorrectionRequest approveRequest(Long requestId, String adminPassword) {
+    public CorrectionRequest approveRequest(Long requestId) {
         CorrectionRequest req = correctionRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found"));
 
@@ -91,21 +95,12 @@ public class CorrectionRequestService {
             throw new RuntimeException("Request with ID " + requestId + " has already been processed.");
         }
 
-        // Beispiel: Hole den Admin-User aus der DB (angenommen, der Admin heißt "admin")
-        User adminUser = userRepo.findByUsername("admin")
-                .orElseThrow(() -> new RuntimeException("Admin user not found"));
-
-        // Prüfe das eingegebene Passwort gegen das gespeicherte (verwende hier z. B. den PasswordEncoder)
-        if (!passwordEncoder.matches(adminPassword, adminUser.getPassword())) {
-            // Falls das Passwort falsch ist, sende einen 403-Fehler
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Invalid admin password");
-        }
-
+        // Markiere den Request als genehmigt
         req.setApproved(true);
         req.setDenied(false);
         CorrectionRequest saved = correctionRepo.save(req);
 
-        // Aktualisiere die TimeTracking-Einträge (wie bisher)
+        // Aktualisiere die TimeTracking-Einträge
         LocalDate correctionDay = req.getDesiredStartTime().toLocalDate();
         LocalDateTime dayStart = correctionDay.atStartOfDay();
         LocalDateTime dayEnd = dayStart.plusDays(1);
@@ -114,6 +109,7 @@ public class CorrectionRequestService {
         System.out.println("DEBUG: Found " + entries.size() + " time tracking entries for user "
                 + req.getUser().getUsername() + " on " + correctionDay);
 
+        // Falls Originalzeiten nicht gesetzt sind, fülle sie ggf. aus bestehenden Einträgen
         if (req.getOriginalWorkStart() == null || req.getOriginalBreakStart() == null ||
                 req.getOriginalBreakEnd() == null || req.getOriginalWorkEnd() == null) {
             for (TimeTracking tt : entries) {
@@ -139,6 +135,7 @@ public class CorrectionRequestService {
         }
 
         if (!entries.isEmpty()) {
+            // Überschreibe bestehende Stempel
             for (TimeTracking tt : entries) {
                 int order = (tt.getPunchOrder() != null) ? tt.getPunchOrder() : 0;
                 if (order == 1) {
@@ -164,6 +161,7 @@ public class CorrectionRequestService {
                 timeRepo.save(tt);
             }
         } else {
+            // Keine Einträge vorhanden: Neue Stempel erzeugen
             System.out.println("DEBUG: No existing time tracking entries found for correction, creating new ones.");
             TimeTracking tt1 = new TimeTracking();
             tt1.setUser(req.getUser());
@@ -194,6 +192,7 @@ public class CorrectionRequestService {
             TimeTracking tt4 = new TimeTracking();
             tt4.setUser(req.getUser());
             tt4.setPunchOrder(4);
+            tt4.setStartTime(req.getDesiredEndTime());
             tt4.setEndTime(req.getDesiredEndTime());
             tt4.setWorkEnd(req.getWorkEnd());
             tt4.setCorrected(true);
@@ -201,6 +200,7 @@ public class CorrectionRequestService {
         }
         return saved;
     }
+
     @Transactional
     public CorrectionRequest denyRequest(Long requestId) {
         CorrectionRequest req = correctionRepo.findById(requestId)

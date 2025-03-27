@@ -10,6 +10,9 @@ import { useTranslation } from '../context/LanguageContext';
 import HourlyDashboard from './HourlyDashboard';
 import autoTable from "jspdf-autotable";
 
+/**
+ * Ermittelt den Montag der aktuellen Woche.
+ */
 const getMondayOfWeek = (date) => {
     const copy = new Date(date);
     const day = copy.getDay();
@@ -66,12 +69,20 @@ const formatDate = (dateStr) => {
     return `${day}-${month}-${year}`;
 };
 
+/**
+ * Gibt die seit Mitternacht vergangenen Minuten zurück.
+ */
 const getMinutesSinceMidnight = (datetimeStr) => {
     if (!datetimeStr) return 0;
     const d = new Date(datetimeStr);
     return d.getHours() * 60 + d.getMinutes();
 };
 
+/**
+ * Rechnet die tatsächlich gearbeiteten Minuten minus die erwarteten Minuten aus.
+ * dayEntries = { startTime, endTime, breakStart, breakEnd, punchOrder }
+ * expectedWorkHours (z.B. 8.5 => 8 Stunden 30 Min)
+ */
 const computeDailyDiffValue = (dayEntries, expectedWorkHours) => {
     const entryStart = dayEntries.find(e => e.punchOrder === 1);
     const entryBreakStart = dayEntries.find(e => e.punchOrder === 2);
@@ -79,37 +90,46 @@ const computeDailyDiffValue = (dayEntries, expectedWorkHours) => {
     const entryEnd = dayEntries.find(e => e.punchOrder === 4);
 
     if (entryStart && entryBreakStart && entryBreakEnd && entryEnd) {
+        // Tatsächlich gestempelte Zeiten
         const workStartMins = getMinutesSinceMidnight(entryStart.startTime);
         const workEndMins = getMinutesSinceMidnight(entryEnd.endTime);
-        const workDuration = workEndMins - workStartMins;
-
         const breakStartMins = entryBreakStart.breakStart
             ? parseInt(entryBreakStart.breakStart.slice(0, 2), 10) * 60 +
             parseInt(entryBreakStart.breakStart.slice(3, 5), 10)
             : getMinutesSinceMidnight(entryBreakStart.startTime);
-
         const breakEndMins = entryBreakEnd.breakEnd
             ? parseInt(entryBreakEnd.breakEnd.slice(0, 2), 10) * 60 +
             parseInt(entryBreakEnd.breakEnd.slice(3, 5), 10)
             : getMinutesSinceMidnight(entryBreakEnd.startTime);
 
+        const workDuration = workEndMins - workStartMins;
         const breakDuration = breakEndMins - breakStartMins;
         const actualWorked = workDuration - breakDuration;
+
+        // Erwartete Stunden * 60 => erwartete Minuten (z.B. 8.5 * 60 => 510)
         const expectedMinutes = expectedWorkHours * 60;
         return actualWorked - expectedMinutes;
     }
     return 0;
 };
 
-const computeDailyDiff = (dayEntries, expectedWorkHours) => {
-    const diff = computeDailyDiffValue(dayEntries, expectedWorkHours);
-    const sign = diff >= 0 ? '+' : '';
-    return `${sign}${Math.round(diff)} min`;
+/**
+ * Hilfsfunktion, um z.B. +0.50 h oder -1.25 h aus einer Differenz in Minuten zu erhalten.
+ */
+const formatDiffDecimal = (diffInMinutes) => {
+    const sign = diffInMinutes >= 0 ? '+' : '-';
+    const absHours = Math.abs(diffInMinutes) / 60; // => Dezimalstunden
+    // Wir runden auf 2 Nachkommastellen
+    return `${sign}${absHours.toFixed(2)}h`;
 };
 
+/**
+ * Liest "expectedWorkHours" aus userProfile.schedule, falls hinterlegt (z. B. 8.5).
+ * Fallback: defaultExpectedHours = 8.
+ */
 const getExpectedHoursForDay = (dayObj, userConfig, defaultExpectedHours) => {
     if (userConfig?.isHourly) return 0;
-    let expectedForDay = defaultExpectedHours;
+    let expectedForDay = defaultExpectedHours; // in Stunden
     if (userConfig && userConfig.weeklySchedule && userConfig.scheduleCycle) {
         const epoch = new Date(2020, 0, 1);
         const diffWeeks = Math.floor((dayObj - epoch) / (7 * 24 * 60 * 60 * 1000));
@@ -125,6 +145,9 @@ const getExpectedHoursForDay = (dayObj, userConfig, defaultExpectedHours) => {
     return expectedForDay;
 };
 
+/**
+ * Zeigt "Work Start", "Break Start", etc. statt reiner Punchnummer.
+ */
 const getStatusLabel = (punchOrder) => {
     switch (punchOrder) {
         case 1:
@@ -140,14 +163,9 @@ const getStatusLabel = (punchOrder) => {
     }
 };
 
-const formatDiff = (diff, t) => {
-    const sign = diff >= 0 ? '+' : '-';
-    const abs = Math.abs(diff);
-    const hrs = Math.floor(abs / 60);
-    const mins = abs % 60;
-    return `${sign}${hrs} ${t("hours")} ${mins} ${t("minutes")}`;
-};
-
+/**
+ * Gruppiert Einträge nach Datum => { "01.04.2023": [...], "02.04.2023": [...], ... }
+ */
 const groupEntriesByDay = (entries) => {
     const dayMap = {};
     entries.forEach(entry => {
@@ -168,17 +186,15 @@ const UserDashboard = () => {
     const [userProfile, setUserProfile] = useState(null);
     const [allEntries, setAllEntries] = useState([]);
     const [vacationRequests, setVacationRequests] = useState([]);
-    const [vacationForm, setVacationForm] = useState({ startDate: '', endDate: '' });
     const [printModalVisible, setPrintModalVisible] = useState(false);
     const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date()));
     const [printEndDate, setPrintEndDate] = useState(formatLocalDate(new Date()));
     const [punchMessage, setPunchMessage] = useState('');
-    const [lastPunchTime, setLastPunchTime] = useState(0);
-    const [weeklyDiff, setWeeklyDiff] = useState(0);
-    const [monthlyDiff, setMonthlyDiff] = useState(0);
-    const [overallDiff, setOverallDiff] = useState(0);
-    const [monthlyDiffAll, setMonthlyDiffAll] = useState({});
     const lastPunchTimeRef = useRef(0);
+    const [weeklyDiff, setWeeklyDiff] = useState(0);   // in Minuten
+    const [monthlyDiff, setMonthlyDiff] = useState(0); // in Minuten
+    const [overallDiff, setOverallDiff] = useState(0); // in Minuten
+    const [monthlyDiffAll, setMonthlyDiffAll] = useState({});
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
     const [showAllCorrections, setShowAllCorrections] = useState(false);
 
@@ -192,22 +208,30 @@ const UserDashboard = () => {
         reason: ""
     });
 
-    // Neuer State für Korrekturanträge und deren Panel-Steuerung
     const [correctionRequests, setCorrectionRequests] = useState([]);
     const [showCorrectionsPanel, setShowCorrectionsPanel] = useState(false);
     const [selectedCorrectionMonday, setSelectedCorrectionMonday] = useState(getMondayOfWeek(new Date()));
 
-    // Zentrale Berechnung der erwarteten Stunden: Wenn userProfile noch null ist, verwenden wir 8
+    // Falls dailyWorkHours nicht gesetzt => 8
+    // Manchmal userProfile.dailyWorkHours = "8.5" => wir parsen Number
     const defaultExpectedHours = userProfile ? Number(userProfile.dailyWorkHours || 8) : 8;
 
+    // ----------------------------
+    // 1) Profil laden
+    // ----------------------------
     useEffect(() => {
         async function fetchProfile() {
             try {
                 const res = await api.get('/api/auth/me');
                 const profile = res.data;
+                // wandle weeklySchedule in Array um, wenn es keines ist
+                if (profile.weeklySchedule && !Array.isArray(profile.weeklySchedule)) {
+                    profile.weeklySchedule = [profile.weeklySchedule];
+                }
+                // falls gar nichts da => defaults
                 if (!profile.weeklySchedule) {
                     profile.weeklySchedule = [
-                        { monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 0, sunday: 0 }
+                        { monday: 8, tuesday: 8, wednesday: 8, thursday: 8, friday: 8, saturday: 0, sunday: 0 }
                     ];
                     profile.scheduleCycle = 1;
                 }
@@ -219,13 +243,14 @@ const UserDashboard = () => {
         fetchProfile();
     }, [currentUser, t]);
 
-    /* ===== Einträge, Urlaubsanträge und Korrekturanträge laden ===== */
+    // ----------------------------
+    // 2) Daten laden
+    // ----------------------------
     useEffect(() => {
-        if (userProfile) {
-            fetchEntries();
-            fetchVacations();
-            fetchCorrections();
-        }
+        if (!userProfile) return;
+        fetchEntries();
+        fetchVacations();
+        fetchCorrections();
     }, [userProfile]);
 
     async function fetchEntries() {
@@ -247,7 +272,6 @@ const UserDashboard = () => {
         }
     }
 
-    // Neue Funktion zum Laden der Korrekturanträge des Users
     async function fetchCorrections() {
         try {
             const res = await api.get(`/api/correction/my?username=${userProfile.username}`);
@@ -257,7 +281,9 @@ const UserDashboard = () => {
         }
     }
 
-    /* ===== NFC-Polling ===== */
+    // ----------------------------
+    // 3) NFC-Abfrage (alle 2 Sek.)
+    // ----------------------------
     useEffect(() => {
         const interval = setInterval(() => {
             doNfcCheck();
@@ -270,9 +296,8 @@ const UserDashboard = () => {
             const response = await fetch('http://localhost:8080/api/nfc/read/1');
             if (!response.ok) return;
             const json = await response.json();
-            if (json.status === 'no-card') return;
-            else if (json.status === 'error') return;
-            else if (json.status === 'success') {
+            if (json.status === 'no-card' || json.status === 'error') return;
+            if (json.status === 'success') {
                 const cardUser = parseHex16(json.data);
                 if (cardUser) {
                     const now = Date.now();
@@ -311,23 +336,10 @@ const UserDashboard = () => {
         }
     }
 
-    async function handleVacationSubmit(e) {
-        e.preventDefault();
-        try {
-            await api.post('/api/vacation/create', null, {
-                params: {
-                    username: userProfile.username,
-                    startDate: vacationForm.startDate,
-                    endDate: vacationForm.endDate
-                }
-            });
-            notify(t("vacationSubmitSuccess"));
-        } catch (err) {
-            console.error('Error submitting vacation request:', err);
-            notify(t("vacationSubmitError"));
-        }
-    }
-
+    // ----------------------------
+    // 4) Berechnungen: Weekly, Monthly, Overall
+    //    => In MINUTEN!
+    // ----------------------------
     useEffect(() => {
         if (!userProfile || userProfile.isHourly) {
             setWeeklyDiff(0);
@@ -339,22 +351,24 @@ const UserDashboard = () => {
             const ds = new Date(e.startTime).toLocaleDateString();
             return dateStrings.includes(ds);
         });
+
         const grouped = {};
         weeklyEntries.forEach(entry => {
             const ds = new Date(entry.startTime).toLocaleDateString('de-DE');
             if (!grouped[ds]) grouped[ds] = [];
             grouped[ds].push(entry);
         });
-        let sum = 0;
+
+        let sumMins = 0;
         for (const ds in grouped) {
             const dayEntries = grouped[ds];
             if (dayEntries.length > 0) {
                 const dateObj = new Date(dayEntries[0].startTime);
                 const expected = getExpectedHoursForDay(dateObj, userProfile, defaultExpectedHours);
-                sum += computeDailyDiffValue(dayEntries, expected);
+                sumMins += computeDailyDiffValue(dayEntries, expected);
             }
         }
-        setWeeklyDiff(sum);
+        setWeeklyDiff(sumMins);
     }, [allEntries, userProfile, selectedMonday]);
 
     useEffect(() => {
@@ -369,22 +383,24 @@ const UserDashboard = () => {
                 d.getMonth() === selectedMonday.getMonth()
             );
         });
+
         const grouped = {};
         monthlyEntries.forEach(entry => {
             const ds = new Date(entry.startTime).toLocaleDateString('de-DE');
             if (!grouped[ds]) grouped[ds] = [];
             grouped[ds].push(entry);
         });
-        let sum = 0;
+
+        let sumMins = 0;
         for (const ds in grouped) {
             const dayEntries = grouped[ds];
             if (dayEntries.length > 0) {
                 const dateObj = new Date(dayEntries[0].startTime);
                 const expected = getExpectedHoursForDay(dateObj, userProfile, defaultExpectedHours);
-                sum += computeDailyDiffValue(dayEntries, expected);
+                sumMins += computeDailyDiffValue(dayEntries, expected);
             }
         }
-        setMonthlyDiff(sum);
+        setMonthlyDiff(sumMins);
     }, [allEntries, userProfile, selectedMonday]);
 
     useEffect(() => {
@@ -393,16 +409,16 @@ const UserDashboard = () => {
             return;
         }
         const grouped = groupEntriesByDay(allEntries);
-        let sum = 0;
+        let sumMins = 0;
         for (const ds in grouped) {
             const dayEntries = grouped[ds];
             if (dayEntries.length > 0) {
                 const dateObj = new Date(dayEntries[0].startTime);
                 const expected = getExpectedHoursForDay(dateObj, userProfile, defaultExpectedHours);
-                sum += computeDailyDiffValue(dayEntries, expected);
+                sumMins += computeDailyDiffValue(dayEntries, expected);
             }
         }
-        setOverallDiff(sum);
+        setOverallDiff(sumMins);
     }, [allEntries, userProfile]);
 
     useEffect(() => {
@@ -419,6 +435,7 @@ const UserDashboard = () => {
             if (!monthlyGroups[monthKey][ds]) monthlyGroups[monthKey][ds] = [];
             monthlyGroups[monthKey][ds].push(entry);
         });
+
         const diffs = {};
         for (const monthKey in monthlyGroups) {
             let sumMonth = 0;
@@ -431,11 +448,14 @@ const UserDashboard = () => {
                     sumMonth += computeDailyDiffValue(dayEntries, expected);
                 }
             }
-            diffs[monthKey] = sumMonth;
+            diffs[monthKey] = sumMonth; // in Minuten
         }
         setMonthlyDiffAll(diffs);
     }, [allEntries, userProfile]);
 
+    // ----------------------------
+    // 5) Anzeige in der Wochenübersicht
+    // ----------------------------
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
     const dayMapWeek = {};
     weekDates.forEach(d => {
@@ -448,6 +468,9 @@ const UserDashboard = () => {
         }
     });
 
+    // ----------------------------
+    // 6) Tägliche Differenz "heute"
+    // ----------------------------
     let dailyDiffDisplay = null;
     if (userProfile && !userProfile.isHourly) {
         const todayStr = new Date().toLocaleDateString('de-DE');
@@ -455,24 +478,31 @@ const UserDashboard = () => {
         const entriesToday = groupedToday[todayStr] || [];
         if (entriesToday.length > 0) {
             const expectedForToday = getExpectedHoursForDay(new Date(), userProfile, defaultExpectedHours);
-            dailyDiffDisplay = computeDailyDiff(entriesToday, expectedForToday);
-            dailyDiffDisplay = `${dailyDiffDisplay} (${t("expectedWorkHours")}: ${expectedForToday} ${t("hours")})`;
+            const diffMins = computeDailyDiffValue(entriesToday, expectedForToday);
+            // z.B. +0.50h, -1.25h
+            dailyDiffDisplay = `${formatDiffDecimal(diffMins)} (Expected: ${expectedForToday.toFixed(2)}h)`;
         }
     }
 
+    // ----------------------------
+    // 7) isHourly
+    // ----------------------------
     if (userProfile?.isHourly) {
         return <HourlyDashboard />;
     }
 
+    // ----------------------------
+    // 8) Korrekturanträge
+    // ----------------------------
     const correctionsForWeek = correctionRequests.filter(req => {
         const reqDate = new Date(req.desiredStart);
         return reqDate >= selectedCorrectionMonday && reqDate < addDays(selectedCorrectionMonday, 7);
     });
+    const correctionWeekLabel = `${formatDate(selectedMonday)} - ${formatDate(addDays(selectedMonday, 6))}`;
 
-
-    // Formatierung der Wochenanzeige (z. B. "01.03.2025 - 07.03.2025")
-    const correctionWeekLabel = `${formatDate(selectedCorrectionMonday)} - ${formatDate(addDays(selectedCorrectionMonday, 6))}`;
-
+    // ----------------------------
+    // 9) PDF-Export
+    // ----------------------------
     async function handlePrintReport() {
         if (!printStartDate || !printEndDate) {
             notify(t("printReportError"));
@@ -515,7 +545,7 @@ const UserDashboard = () => {
                     : "-";
                 const expected = getExpectedHoursForDay(new Date(dayEntries[0].startTime), userProfile, defaultExpectedHours);
                 const diffValue = computeDailyDiffValue(dayEntries, expected);
-                const diffText = `${diffValue >= 0 ? '+' : '-'}${Math.abs(diffValue)} min`;
+                const diffText = formatDiffDecimal(diffValue); // z.B. +1.50h
                 return [dateStr, workStart, breakStart, breakEnd, workEnd, diffText];
             });
 
@@ -546,17 +576,48 @@ const UserDashboard = () => {
         setPrintModalVisible(false);
     }
 
+    // ----------------------------
+    // 10) Korrektur-Funktionen
+    // ----------------------------
     const openCorrectionModal = (dateObj) => {
+        const localDate = dateObj.toLocaleDateString();
+        const dayEntries = allEntries.filter(e => {
+            const entryDate = new Date(e.startTime).toLocaleDateString();
+            return entryDate === localDate;
+        });
+
+        const entryStart = dayEntries.find(e => e.punchOrder === 1);
+        const entryBreakStart = dayEntries.find(e => e.punchOrder === 2);
+        const entryBreakEnd = dayEntries.find(e => e.punchOrder === 3);
+        const entryEnd = dayEntries.find(e => e.punchOrder === 4);
+
+        const formatToInputTime = (dateStr) => {
+            if (!dateStr) return '';
+            const d = new Date(dateStr);
+            return isNaN(d.getTime()) ? '' : d.toISOString().slice(11, 16);
+        };
+
+        const formatToInputManualTime = (timeStr) => {
+            return timeStr && typeof timeStr === 'string' && timeStr.length >= 5
+                ? timeStr.slice(0, 5)
+                : '';
+        };
+
         setCorrectionDate(formatLocalDate(dateObj));
         setCorrectionData({
-            workStart: "",
-            breakStart: "",
-            breakEnd: "",
-            workEnd: "",
+            workStart: formatToInputTime(entryStart?.startTime),
+            breakStart: entryBreakStart?.breakStart
+                ? formatToInputManualTime(entryBreakStart.breakStart)
+                : formatToInputTime(entryBreakStart?.startTime),
+            breakEnd: entryBreakEnd?.breakEnd
+                ? formatToInputManualTime(entryBreakEnd.breakEnd)
+                : formatToInputTime(entryBreakEnd?.startTime),
+            workEnd: formatToInputTime(entryEnd?.endTime),
             reason: ""
         });
         setShowCorrectionModal(true);
     };
+
 
     const handleCorrectionInputChange = (e) => {
         const { name, value } = e.target;
@@ -586,7 +647,7 @@ const UserDashboard = () => {
                 }
             });
             notify("Korrekturantrag erfolgreich gestellt.");
-            fetchCorrections();  // Aktualisiere die Liste der Korrekturanträge
+            fetchCorrections();
             setShowCorrectionModal(false);
         } catch (err) {
             console.error("Fehler beim Absenden des Korrekturantrags:", err);
@@ -594,22 +655,28 @@ const UserDashboard = () => {
         }
     };
 
-    {/* Hilfsfunktion zum Formatieren von "HH:mm:ss" zu "HH:mm" */}
     function formatLocalTime(hmsString) {
         if (!hmsString) return '-';
-        // "HH:mm:ss" -> "HH:mm"
         return hmsString.slice(0, 5);
     }
     const sortedCorrections = (showAllCorrections ? correctionRequests : correctionsForWeek)
-        .slice() // Kopie erstellen, damit das Original nicht verändert wird
+        .slice()
         .sort((a, b) => {
-            // Falls deine Daten in "desiredStart" liegen:
             const dateA = new Date(a.desiredStart);
             const dateB = new Date(b.desiredStart);
-            // Absteigend sortieren
             return dateB - dateA;
         });
 
+    // ----------------------------
+    // 11) Refresh-Funktion (für VacationCalendar)
+    // ----------------------------
+    const refreshVacations = () => {
+        fetchVacations();
+    };
+
+    // ----------------------------
+    // 12) Render
+    // ----------------------------
     return (
         <div className="user-dashboard">
             <Navbar />
@@ -617,14 +684,21 @@ const UserDashboard = () => {
                 <h2>{t("title")}</h2>
                 <div className="personal-info">
                     <p>
-                        <strong>{t("usernameLabel")}:</strong> {userProfile?.username || t("notLoggedIn")}
+                        <strong>{t("usernameLabel")}:</strong>{" "}
+                        {userProfile?.username || t("notLoggedIn")}
                     </p>
                     {!userProfile?.isHourly && (
                         <>
+                            {/* Erwartete Arbeitsstunden heute in Dezimal, falls userProfile z.B. 8.5 hat */}
                             <p>
                                 <strong>{t("expectedWorkHours")}:</strong>{" "}
-                                {userProfile ? getExpectedHoursForDay(new Date(), userProfile, defaultExpectedHours) : 8} {t("hours")}
+                                {userProfile
+                                    ? getExpectedHoursForDay(new Date(), userProfile, defaultExpectedHours).toFixed(2)
+                                    : 8
+                                } {t("hours")}
                             </p>
+
+                            {/* Tages-Differenz in Dezimalstunden */}
                             {dailyDiffDisplay && (
                                 <p>
                                     <strong>{t("diffToday")}:</strong> {dailyDiffDisplay}
@@ -635,17 +709,24 @@ const UserDashboard = () => {
                 </div>
             </header>
 
-            {punchMessage && <div className="punch-message">{punchMessage}</div>}
+            {/* Punch-Meldung */}
+            {punchMessage && (
+                <div className="punch-message">{punchMessage}</div>
+            )}
 
+            {/* Manueller Punch */}
             <section className="punch-section">
                 <h3>{t("manualPunchTitle")}</h3>
                 <button onClick={handleManualPunch}>{t("manualPunchButton")}</button>
             </section>
 
+            {/* Wochen-Übersicht */}
             <section className="time-tracking-section">
                 <h3>{t("weeklyOverview")}</h3>
                 <div className="week-navigation">
-                    <button onClick={() => setSelectedMonday(prev => addDays(prev, -7))}>← {t("prevWeek")}</button>
+                    <button onClick={() => setSelectedMonday(prev => addDays(prev, -7))}>
+                        ← {t("prevWeek")}
+                    </button>
                     <input
                         type="date"
                         onChange={(e) => {
@@ -656,30 +737,43 @@ const UserDashboard = () => {
                         }}
                         value={selectedMonday.toISOString().slice(0, 10)}
                     />
-                    <button onClick={() => setSelectedMonday(prev => addDays(prev, 7))}>{t("nextWeek")} →</button>
+                    <button onClick={() => setSelectedMonday(prev => addDays(prev, 7))}>
+                        {t("nextWeek")} →
+                    </button>
                 </div>
+
+                {/* Weekly-Diff in Dezimalstunden */}
                 {!userProfile?.isHourly && (
                     <div className="week-diff">
-                        {t("weekDiff")}: <strong>{formatDiff(weeklyDiff, t)}</strong>
+                        {t("weekDiff")}: <strong>{formatDiffDecimal(weeklyDiff)}</strong>
                     </div>
                 )}
+
+                {/* Tages-Karten */}
                 <div className="week-display">
                     {weekDates.map((dayObj, idx) => {
                         const ds = dayObj.toLocaleDateString();
                         const dayEntries = dayMapWeek[ds] || [];
                         const expectedForDay = getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours);
-                        const dailyDiff = dayEntries.length >= 4 ? computeDailyDiff(dayEntries, expectedForDay) : '';
+                        const diffMins = dayEntries.length >= 4
+                            ? computeDailyDiffValue(dayEntries, expectedForDay)
+                            : 0;
+                        const dailyDiffStr = dayEntries.length >= 4
+                            ? formatDiffDecimal(diffMins)
+                            : '';
+
                         return (
                             <div key={idx} className="day-card">
                                 <div className="day-card-header">
                                     <h4>
-                                        {dayObj.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}{' '}
+                                        {dayObj.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}
                                         <span className="expected-hours">
-                                            ({t("expectedWorkHours")}: {expectedForDay} {t("hours")})
+                                            {` ( ${t("expectedWorkHours")}: ${expectedForDay.toFixed(2)}h )`}
                                         </span>
                                     </h4>
-                                    {dailyDiff && <span className="daily-diff">({dailyDiff})</span>}
+                                    {dailyDiffStr && <span className="daily-diff">({dailyDiffStr})</span>}
                                 </div>
+
                                 {dayEntries.length === 0 ? (
                                     <p className="no-entries">{t("noEntries")}</p>
                                 ) : (
@@ -687,19 +781,30 @@ const UserDashboard = () => {
                                         {dayEntries.sort((a, b) => a.punchOrder - b.punchOrder).map(e => {
                                             let displayTime = '-';
                                             if (userProfile.isHourly) {
-                                                displayTime = e.endTime ? formatTime(e.endTime) : formatTime(e.startTime);
+                                                displayTime = e.endTime
+                                                    ? formatTime(e.endTime)
+                                                    : formatTime(e.startTime);
                                             } else {
-                                                if (e.punchOrder === 1) displayTime = formatTime(e.startTime);
-                                                else if (e.punchOrder === 2)
-                                                    displayTime = e.breakStart ? formatTime(e.breakStart) : formatTime(e.startTime);
-                                                else if (e.punchOrder === 3)
-                                                    displayTime = e.breakEnd ? formatTime(e.breakEnd) : formatTime(e.startTime);
-                                                else if (e.punchOrder === 4) displayTime = formatTime(e.endTime);
+                                                if (e.punchOrder === 1) {
+                                                    displayTime = formatTime(e.startTime);
+                                                } else if (e.punchOrder === 2) {
+                                                    displayTime = e.breakStart
+                                                        ? formatTime(e.breakStart)
+                                                        : formatTime(e.startTime);
+                                                } else if (e.punchOrder === 3) {
+                                                    displayTime = e.breakEnd
+                                                        ? formatTime(e.breakEnd)
+                                                        : formatTime(e.startTime);
+                                                } else if (e.punchOrder === 4) {
+                                                    displayTime = formatTime(e.endTime);
+                                                }
                                             }
                                             return (
                                                 <li key={e.id}>
                                                     {!userProfile.isHourly && (
-                                                        <span className="entry-label">{getStatusLabel(e.punchOrder)}:</span>
+                                                        <span className="entry-label">
+                                                            {getStatusLabel(e.punchOrder)}:
+                                                        </span>
                                                     )}{' '}
                                                     {displayTime}
                                                 </li>
@@ -707,7 +812,12 @@ const UserDashboard = () => {
                                         })}
                                     </ul>
                                 )}
-                                <button className="correction-button" onClick={() => openCorrectionModal(dayObj)}>
+
+                                {/* Korrekturantrag */}
+                                <button
+                                    className="correction-button"
+                                    onClick={() => openCorrectionModal(dayObj)}
+                                >
                                     Korrekturantrag stellen
                                 </button>
                             </div>
@@ -716,8 +826,17 @@ const UserDashboard = () => {
                 </div>
             </section>
 
-            {/* Neuer, einklappbarer Bereich für Korrekturanträge */}
-            {/* Neuer, einklappbarer Bereich für Korrekturanträge */}
+            {/* Neuer VacationCalendar */}
+            <section className="vacation-calendar-section">
+                <h3>{t("vacationTitle")}</h3>
+                <VacationCalendar
+                    vacationRequests={vacationRequests}
+                    userProfile={userProfile}
+                    onRefreshVacations={refreshVacations}
+                />
+            </section>
+
+            {/* Korrekturen */}
             <section className="correction-panel">
                 <div className="corrections-header" onClick={() => setShowCorrectionsPanel(prev => !prev)}>
                     <h3>{t("correctionRequests") || "Korrekturanträge"}</h3>
@@ -725,22 +844,20 @@ const UserDashboard = () => {
                 </div>
                 {showCorrectionsPanel && (
                     <div className="corrections-content">
-                        {/* Nur anzeigen, wenn wir in der Wochenansicht sind */}
-                        {!showAllCorrections && (
-                            <div className="week-navigation corrections-nav">
-                                <button onClick={() => setSelectedCorrectionMonday(prev => addDays(prev, -7))}>
-                                    ← {t("prevWeek")}
-                                </button>
-                                <span className="week-label">{correctionWeekLabel}</span>
-                                <button onClick={() => setSelectedCorrectionMonday(prev => addDays(prev, 7))}>
-                                    {t("nextWeek")} →
-                                </button>
-                            </div>
-                        )}
-                        {/* Umschaltbutton */}
+                        <div className="week-navigation corrections-nav">
+                            <button onClick={() => setSelectedCorrectionMonday(prev => addDays(prev, -7))}>
+                                ← {t("prevWeek")}
+                            </button>
+                            <span className="week-label">{correctionWeekLabel}</span>
+                            <button onClick={() => setSelectedCorrectionMonday(prev => addDays(prev, 7))}>
+                                {t("nextWeek")} →
+                            </button>
+                        </div>
                         <div className="toggle-all-button">
                             <button onClick={() => setShowAllCorrections(prev => !prev)}>
-                                {showAllCorrections ? (t("showWeeklyOnly") || "Nur aktuelle Woche") : (t("showAll") || "Alle anzeigen")}
+                                {showAllCorrections
+                                    ? t("showWeeklyOnly") || "Nur aktuelle Woche"
+                                    : t("showAll") || "Alle anzeigen"}
                             </button>
                         </div>
                         {(showAllCorrections ? correctionRequests : correctionsForWeek).length === 0 ? (
@@ -762,9 +879,12 @@ const UserDashboard = () => {
                                             <br />
                                             {req.reason}
                                             <br />
-                                            <strong>Work Start:</strong> {formatLocalTime(req.workStart)}<br/>
-                                            <strong>Break Start:</strong> {formatLocalTime(req.breakStart)}<br/>
-                                            <strong>Break End:</strong> {formatLocalTime(req.breakEnd)}<br/>
+                                            <strong>Work Start:</strong> {formatLocalTime(req.workStart)}
+                                            <br />
+                                            <strong>Break Start:</strong> {formatLocalTime(req.breakStart)}
+                                            <br />
+                                            <strong>Break End:</strong> {formatLocalTime(req.breakEnd)}
+                                            <br />
                                             <strong>Work End:</strong> {formatLocalTime(req.workEnd)}
                                         </li>
                                     );
@@ -775,6 +895,7 @@ const UserDashboard = () => {
                 )}
             </section>
 
+            {/* Zusammenfassung aller Monate (monthlyDiffAll) */}
             {!userProfile?.isHourly && (
                 <section className="monthly-all">
                     <h3>{t("allMonths")}</h3>
@@ -794,7 +915,8 @@ const UserDashboard = () => {
                                 .map(([monthKey, diffVal]) => (
                                     <tr key={monthKey}>
                                         <td>{monthKey}</td>
-                                        <td>{formatDiff(diffVal, t)}</td>
+                                        {/* diffVal ist in Minuten => formatDiffDecimal */}
+                                        <td>{formatDiffDecimal(diffVal)}</td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -803,9 +925,11 @@ const UserDashboard = () => {
                 </section>
             )}
 
+            {/* PDF-Report */}
             <div className="print-report-container">
                 <button onClick={() => setPrintModalVisible(true)}>{t("printReportButton")}</button>
             </div>
+
             {printModalVisible && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -828,65 +952,14 @@ const UserDashboard = () => {
                         </div>
                         <div className="modal-buttons">
                             <button onClick={handlePrintReport}>{t("printReportButton")}</button>
-                            <button onClick={() => setPrintModalVisible(false)}>{t("cancel")}</button>
+                            <button onClick={() => setPrintModalVisible(false)}>
+                                {t("cancel")}
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            <section className="vacation-section">
-                <h3>{t("vacationTitle")}</h3>
-                <form onSubmit={handleVacationSubmit} className="form-vacation">
-                    <div className="form-group">
-                        <label>{t("startDate")}:</label>
-                        <input
-                            type="date"
-                            name="startDate"
-                            value={vacationForm.startDate}
-                            onChange={(e) => setVacationForm({ ...vacationForm, startDate: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <div className="form-group">
-                        <label>{t("endDate")}:</label>
-                        <input
-                            type="date"
-                            name="endDate"
-                            value={vacationForm.endDate}
-                            onChange={(e) => setVacationForm({ ...vacationForm, endDate: e.target.value })}
-                            required
-                        />
-                    </div>
-                    <button type="submit">{t("vacationSubmitButton")}</button>
-                </form>
-                <div className="vacation-history">
-                    <h4>{t("myVacations")}</h4>
-                    {vacationRequests.length === 0 ? (
-                        <p>{t("noVacations")}</p>
-                    ) : (
-                        <ul>
-                            {vacationRequests.map((v) => (
-                                <li key={v.id}>
-                                    {formatDate(v.startDate)} {t("to")} {formatDate(v.endDate)}{' '}
-                                    {v.approved ? (
-                                        <span className="approved">{t("approved")}</span>
-                                    ) : v.denied ? (
-                                        <span className="denied">{t("denied")}</span>
-                                    ) : (
-                                        <span className="pending">{t("pending")}</span>
-                                    )}
-                                </li>
-                            ))}
-                        </ul>
-                    )}
-                </div>
-                <div className="calendar-section">
-                    <h4>{t("vacationCalendarTitle")}</h4>
-                    <VacationCalendar vacationRequests={vacationRequests.filter(v => v.approved)} />
-                </div>
-            </section>
-
-            {/* Korrekturantrag Modal */}
             {showCorrectionModal && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -937,7 +1010,7 @@ const UserDashboard = () => {
                                     value={correctionData.reason}
                                     onChange={handleCorrectionInputChange}
                                     required
-                                ></textarea>
+                                />
                             </div>
                             <div className="modal-buttons">
                                 <button type="submit">Antrag senden</button>

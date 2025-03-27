@@ -2,6 +2,7 @@ package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.services.CorrectionRequestService;
+import com.chrono.chrono.services.TimeTrackingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +17,9 @@ public class CorrectionRequestController {
 
     @Autowired
     private CorrectionRequestService correctionRequestService;
+
+    @Autowired
+    private TimeTrackingService timeTrackingService;
 
     @PostMapping("/create-full")
     public CorrectionRequest createRequest(
@@ -65,18 +69,35 @@ public class CorrectionRequestController {
         return correctionRequestService.getRequestsForUser(username);
     }
 
+    /**
+     * Beim Approve eines Korrekturantrags wird der Antrag als approved markiert
+     * und anschließend werden die neuen Zeiten in der Zeiterfassung (TimeTracking) übernommen.
+     * Da kein Admin-Passwort mehr benötigt wird, erfolgt der Aufruf ohne Passwort.
+     */
     @PostMapping("/approve/{id}")
-    public CorrectionRequest approveRequest(
-            @PathVariable Long id,
-            @RequestParam String adminPassword
-    ) {
-        return correctionRequestService.approveRequest(id, adminPassword);
+    public CorrectionRequest approveRequest(@PathVariable Long id) {
+        CorrectionRequest corr = correctionRequestService.approveRequest(id);
+        try {
+            timeTrackingService.updateDayTimeEntries(
+                    corr.getUsername(),
+                    corr.getDate().toString(),
+                    corr.getWorkStartFormatted(),
+                    corr.getBreakStartFormatted(),
+                    corr.getBreakEndFormatted(),
+                    corr.getWorkEndFormatted(),
+                    null, // Kein Admin-Username
+                    null, // Kein Admin-Passwort
+                    corr.getUserPassword() // Falls vorhanden; sonst kann auch null übergeben werden
+            );
+        } catch (Exception e) {
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Fehler beim Aktualisieren der Zeitstempel: " + e.getMessage());
+        }
+        return corr;
     }
 
     @PostMapping("/deny/{id}")
-    public CorrectionRequest denyRequest(
-            @PathVariable Long id
-    ) {
+    public CorrectionRequest denyRequest(@PathVariable Long id) {
         return correctionRequestService.denyRequest(id);
     }
 }

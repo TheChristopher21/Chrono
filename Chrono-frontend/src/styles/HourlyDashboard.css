@@ -1,104 +1,8 @@
-:root {
-    --primary-color: #5A67D8;
-    --primary-hover: #434190;
-    --secondary-color: #48BB78;
-    --secondary-hover: #38A169;
-    --success-color: #48BB78;
-    --danger-color: #E53E3E;
-    --warning-color: #F6AD55;
-    --light-bg: #F7FAFC;
-    --card-bg: #FFFFFF;
-    --text-color: #2D3748;
-    --subtext-color: #718096;
-    --border-color: #E2E8F0;
-    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --radius: 12px;
-    --transition: 0.3s ease;
-    --font-family: 'Poppins', sans-serif;
-}
+/* =============================
+   WEEKLY OVERVIEW / DAY CARDS
+============================= */
 
-* {
-    box-sizing: border-box;
-}
-
-body {
-    font-family: var(--font-family);
-    background-color: var(--light-bg);
-    margin: 0;
-    padding: 0;
-    color: var(--text-color);
-}
-
-.user-dashboard {
-    width: 100%;
-    padding: 2rem;
-    background-color: var(--light-bg);
-}
-
-.dashboard-header {
-    background-color: var(--card-bg);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    text-align: center;
-}
-
-.dashboard-header h2 {
-    margin: 0 0 1rem;
-    font-size: 2rem;
-    font-weight: 600;
-    color: var(--text-color);
-}
-
-.personal-info p {
-    margin: 0.5rem 0;
-    font-size: 1rem;
-    color: var(--subtext-color);
-}
-
-.punch-message {
-    background-color: #e0ffe0;
-    color: #006400;
-    padding: 1rem 2rem;
-    margin: 1rem 0;
-    border: 1px solid #90ee90;
-    border-radius: var(--radius);
-    text-align: center;
-    font-weight: 500;
-}
-
-.punch-section {
-    background-color: var(--card-bg);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    text-align: center;
-}
-
-.punch-section h3 {
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
-    color: var(--text-color);
-}
-
-.punch-section button {
-    padding: 0.75rem 1.5rem;
-    background-color: var(--primary-color);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color var(--transition);
-}
-
-.punch-section button:hover {
-    background-color: var(--primary-hover);
-}
-
-.monthly-overview {
+.weekly-overview {
     background-color: var(--card-bg);
     padding: 2rem;
     margin-bottom: 2rem;
@@ -106,15 +10,16 @@ body {
     box-shadow: var(--shadow);
 }
 
-.monthly-overview h3 {
+.weekly-overview h3 {
     margin-bottom: 1.5rem;
     font-size: 1.75rem;
     color: var(--text-color);
     border-bottom: 2px solid var(--border-color);
     padding-bottom: 1rem;
+    text-align: center;
 }
 
-.month-navigation {
+.week-navigation {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -122,7 +27,7 @@ body {
     margin-bottom: 1.5rem;
 }
 
-.month-navigation button {
+.week-navigation button {
     padding: 0.75rem 1.5rem;
     background-color: var(--secondary-color);
     color: #fff;
@@ -133,263 +38,254 @@ body {
     transition: background-color var(--transition);
 }
 
-.month-navigation button:hover {
+.week-navigation button:hover {
     background-color: var(--secondary-hover);
 }
 
-.month-navigation span {
-    font-size: 1.2rem;
-    font-weight: 500;
-    color: var(--text-color);
-}
-
-.month-total {
-    text-align: center;
-    margin: 1rem 0;
-    font-size: 1.1rem;
-    color: var(--text-color);
-}
-
-.daily-summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 1rem;
-    font-size: 0.95rem;
-    text-align: left;
-}
-
-.daily-summary-table th,
-.daily-summary-table td {
-    border: 1px solid var(--border-color);
-    padding: 1rem;
-}
-
-.daily-summary-table th {
-    background-color: var(--light-bg);
-    font-weight: 600;
-}
-
-.daily-summary-table tr:nth-child(even) {
-    background-color: #fdfdfd;
-}
-
-.daily-summary-table input[type="text"],
-.daily-summary-table textarea {
-    width: 100%;
+.week-navigation input[type="date"] {
     padding: 0.5rem;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
-    box-sizing: border-box;
+    font-size: 0.95rem;
 }
 
-.print-report-container {
+.weekly-monthly-totals {
     text-align: center;
-    margin: 2rem 0;
+    margin-bottom: 2rem;
+    font-size: 1rem;
+    color: var(--subtext-color);
 }
 
-.print-report-container button {
-    padding: 0.75rem 1.5rem;
-    background-color: var(--success-color);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
+.weekly-monthly-totals p {
+    margin: 0.25rem 0;
+    color: var(--text-color);
     font-weight: 500;
-    transition: background-color var(--transition);
 }
 
-.print-report-container button:hover {
-    background-color: var(--secondary-hover);
-}
-
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+.week-display {
     display: flex;
-    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
     justify-content: center;
-    z-index: 1000;
 }
 
-.modal-content {
-    background-color: var(--card-bg);
-    padding: 2rem;
-    border-radius: var(--radius);
-    width: 90%;
-    max-width: 500px;
-    box-shadow: var(--shadow);
-}
-
-.modal-content h3 {
-    margin-top: 0;
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
-    text-align: center;
-}
-
-.form-group {
-    margin-bottom: 1.5rem;
-}
-
-.form-group label {
-    display: block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.form-group input,
-.form-group select {
-    width: 100%;
-    padding: 0.75rem;
+.week-day-card {
+    background-color: var(--light-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
-    box-sizing: border-box;
-}
-
-.modal-buttons {
-    display: flex;
-    justify-content: flex-end;
-    gap: 1rem;
-}
-
-.modal-buttons button {
-    padding: 0.75rem 1.5rem;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-weight: 500;
-    transition: background-color var(--transition);
-}
-
-.modal-buttons button:first-child {
-    background-color: var(--primary-color);
-    color: #fff;
-}
-
-.modal-buttons button:first-child:hover {
-    background-color: var(--primary-hover);
-}
-
-.modal-buttons button:last-child {
-    background-color: #6c757d;
-    color: #fff;
-}
-
-.modal-buttons button:last-child:hover {
-    background-color: #5a6268;
-}
-
-.vacation-section {
-    background-color: var(--card-bg);
-    padding: 2rem;
-    margin-bottom: 2rem;
-    border-radius: var(--radius);
     box-shadow: var(--shadow);
-}
-
-.vacation-section h3 {
-    margin-bottom: 1.5rem;
-    font-size: 1.75rem;
-    color: var(--text-color);
-    border-bottom: 2px solid var(--border-color);
-    padding-bottom: 1rem;
-}
-
-.form-vacation {
-    display: flex;
-    gap: 1.5rem;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 2rem;
-}
-
-.form-vacation .form-group {
+    width: 300px;
+    margin-bottom: 1rem;
     display: flex;
     flex-direction: column;
-    min-width: 200px;
+    overflow: hidden;
 }
 
-.form-vacation label {
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-}
-
-.form-vacation input[type="date"] {
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-}
-
-.vacation-history {
-    margin-top: 2rem;
-}
-
-.vacation-history h4 {
-    margin-bottom: 1rem;
-    font-size: 1.25rem;
-    color: var(--text-color);
+.week-day-header {
+    background-color: var(--card-bg);
     border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
+    padding: 1rem;
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 1.1rem;
 }
 
-.vacation-history ul {
+.week-day-content {
+    padding: 1rem;
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+.week-day-content ul {
     list-style: none;
     padding: 0;
     margin: 0;
 }
 
-.vacation-history li {
-    padding: 0.75rem;
-    border-bottom: 1px solid var(--border-color);
-    font-size: 0.95rem;
-    color: var(--text-color);
+.week-day-content li {
+    margin-bottom: 0.25rem;
 }
 
-.approved {
-    color: var(--success-color);
-    font-weight: 600;
+.correction-button-row {
+    padding: 0.75rem 1rem 1rem;
+    text-align: center;
 }
 
-.denied {
-    color: var(--danger-color);
-    font-weight: 600;
+.correction-button-row button {
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color var(--transition);
+    font-size: 0.9rem;
 }
 
-.pending {
-    color: var(--warning-color);
-    font-weight: 600;
+.correction-button-row button:hover {
+    background-color: var(--primary-hover);
 }
 
-.calendar-section {
-    margin-top: 2rem;
+/* =============================
+   DAILY NOTE SECTION
+============================= */
+
+.daily-note-section {
+    padding: 1rem;
+    border-top: 1px solid var(--border-color);
+    margin-top: 1rem;
 }
 
-.calendar-section h4 {
+.daily-note-section button {
+    padding: 0.4rem 0.8rem;
+    background-color: var(--secondary-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color var(--transition);
+    font-size: 0.85rem;
+    margin-bottom: 0.5rem;
+}
+
+.daily-note-section button:hover {
+    background-color: var(--secondary-hover);
+}
+
+.daily-note-section textarea {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    box-sizing: border-box;
+    resize: vertical;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+    font-family: var(--font-family);
+}
+
+.note-display {
+    font-size: 0.9rem;
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+/* =============================
+   CORRECTION PANEL
+============================= */
+
+.correction-panel {
+    background-color: var(--card-bg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.correction-panel .corrections-header {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 2px solid var(--border-color);
     margin-bottom: 1rem;
-    font-size: 1.25rem;
-    color: var(--text-color);
-    border-bottom: 1px solid var(--border-color);
     padding-bottom: 0.5rem;
 }
 
+.correction-panel .corrections-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-color);
+}
+
+.correction-panel .toggle-icon {
+    font-size: 1.2rem;
+    color: var(--subtext-color);
+}
+
+.corrections-content {
+    margin-top: 1rem;
+}
+
+.corrections-nav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.corrections-nav button {
+    padding: 0.5rem 1rem;
+    background-color: var(--secondary-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color var(--transition);
+    font-size: 0.9rem;
+}
+
+.corrections-nav button:hover {
+    background-color: var(--secondary-hover);
+}
+
+.week-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+.toggle-all-button {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+
+.toggle-all-button button {
+    padding: 0.5rem 1rem;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 500;
+    transition: background-color var(--transition);
+    font-size: 0.9rem;
+}
+
+.toggle-all-button button:hover {
+    background-color: var(--primary-hover);
+}
+
+.single-correction {
+    background-color: var(--light-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    font-size: 0.9rem;
+    color: var(--text-color);
+}
+
+/* =============================
+   RESPONSIVE
+============================= */
+
 @media (max-width: 768px) {
-    .daily-summary-table,
-    .monthly-overview,
-    .punch-section,
-    .vacation-section {
-        padding: 1.5rem;
+    .week-display {
+        flex-direction: column;
+        align-items: center;
     }
 
-    .month-navigation {
-        flex-direction: column;
-    }
-
-    .form-vacation {
-        flex-direction: column;
+    .week-day-card {
+        width: 90%;
+        max-width: 400px;
     }
 }

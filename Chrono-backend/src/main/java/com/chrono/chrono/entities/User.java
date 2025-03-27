@@ -37,10 +37,10 @@ public class User {
     private Set<TimeTracking> timeTracks = new HashSet<>();
 
     @Column(name = "expected_work_days")
-    private Integer expectedWorkDays;
+    private Double expectedWorkDays; // z. B. 9.5
 
     @Column(name = "daily_work_hours")
-    private Double dailyWorkHours;
+    private Double dailyWorkHours;   // z. B. 8.5
 
     @Column(name = "break_duration")
     private Integer breakDuration;
@@ -48,16 +48,18 @@ public class User {
     @Column(name = "color")
     private String color;
 
-    // Neue Felder für den individuellen Wochenplan:
+    @Column(name = "annual_vacation_days")
+    private Integer annualVacationDays;
+
     @Column(name = "schedule_cycle")
     private Integer scheduleCycle;
 
+    // Achte darauf: <String, Double> => Kommazahlen pro Tag
     @Lob
     @Convert(converter = WeeklyScheduleConverter.class)
     @Column(name = "weekly_schedule")
-    private List<Map<String, Integer>> weeklySchedule;
+    private List<Map<String, Double>> weeklySchedule;
 
-    // Feld, ab wann die aktuelle Konfiguration gilt (zukunftsorientiert)
     @Column(name = "schedule_effective_date")
     private LocalDate scheduleEffectiveDate;
 
@@ -66,16 +68,12 @@ public class User {
 
     public User() {}
 
-    // Angepasster Getter für isHourly: Falls null, wird false zurückgegeben.
     public Boolean getIsHourly() {
         return isHourly != null ? isHourly : false;
     }
-
-    // Neuer Getter, der als boolean zurückgibt, ob der Nutzer stundenbasiert ist.
     public boolean isHourly() {
         return getIsHourly();
     }
-
     public void setIsHourly(Boolean isHourly) {
         this.isHourly = isHourly;
     }
@@ -107,8 +105,8 @@ public class User {
     public Set<TimeTracking> getTimeTracks() { return timeTracks; }
     public void setTimeTracks(Set<TimeTracking> timeTracks) { this.timeTracks = timeTracks; }
 
-    public Integer getExpectedWorkDays() { return expectedWorkDays; }
-    public void setExpectedWorkDays(Integer expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }
+    public Double getExpectedWorkDays() { return expectedWorkDays; }
+    public void setExpectedWorkDays(Double expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }
 
     public Double getDailyWorkHours() { return dailyWorkHours; }
     public void setDailyWorkHours(Double dailyWorkHours) { this.dailyWorkHours = dailyWorkHours; }
@@ -119,11 +117,15 @@ public class User {
     public String getColor() { return color; }
     public void setColor(String color) { this.color = color; }
 
+    public Integer getAnnualVacationDays() { return annualVacationDays; }
+    public void setAnnualVacationDays(Integer annualVacationDays) { this.annualVacationDays = annualVacationDays; }
+
     public Integer getScheduleCycle() { return scheduleCycle; }
     public void setScheduleCycle(Integer scheduleCycle) { this.scheduleCycle = scheduleCycle; }
 
-    public List<Map<String, Integer>> getWeeklySchedule() { return weeklySchedule; }
-    public void setWeeklySchedule(List<Map<String, Integer>> weeklySchedule) { this.weeklySchedule = weeklySchedule; }
+    // Hier <String, Double>
+    public List<Map<String, Double>> getWeeklySchedule() { return weeklySchedule; }
+    public void setWeeklySchedule(List<Map<String, Double>> weeklySchedule) { this.weeklySchedule = weeklySchedule; }
 
     public LocalDate getScheduleEffectiveDate() { return scheduleEffectiveDate; }
     public void setScheduleEffectiveDate(LocalDate scheduleEffectiveDate) { this.scheduleEffectiveDate = scheduleEffectiveDate; }

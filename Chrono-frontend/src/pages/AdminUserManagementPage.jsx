@@ -1,3 +1,4 @@
+// src/pages/AdminUserManagementPage.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
@@ -13,21 +14,24 @@ const STANDARD_COLORS = [
 ];
 
 const defaultWeeklySchedule = {
-    monday: 8,
-    tuesday: 8,
-    wednesday: 8,
-    thursday: 8,
-    friday: 8,
-    saturday: 0,
-    sunday: 0
+    monday: 8.0,
+    tuesday: 8.0,
+    wednesday: 8.0,
+    thursday: 8.0,
+    friday: 8.0,
+    saturday: 0.0,
+    sunday: 0.0
 };
 
 const AdminUserManagementPage = () => {
     const { notify } = useNotification();
     const { t } = useTranslation();
-    const { language, setLanguage } = useContext(LanguageContext);
+    const { language } = useContext(LanguageContext);
 
     const [users, setUsers] = useState([]);
+    const [editingUser, setEditingUser] = useState(null);
+    const [deleteConfirm, setDeleteConfirm] = useState({ show: false, userId: null });
+
     const [newUser, setNewUser] = useState({
         username: '',
         firstName: '',
@@ -37,13 +41,12 @@ const AdminUserManagementPage = () => {
         role: 'ROLE_USER',
         expectedWorkDays: '',
         breakDuration: '',
+        annualVacationDays: '',
         color: STANDARD_COLORS[0],
         scheduleCycle: 1,
         weeklySchedule: [{ ...defaultWeeklySchedule }],
         isHourly: false
     });
-    const [editingUser, setEditingUser] = useState(null);
-    const [showColorPicker, setShowColorPicker] = useState(false);
 
     async function fetchUsers() {
         try {
@@ -61,20 +64,30 @@ const AdminUserManagementPage = () => {
     const handleAddUser = async (e) => {
         e.preventDefault();
         try {
-            await api.post('/api/admin/users', {
+            const payload = {
                 username: newUser.username,
                 firstName: newUser.firstName,
                 lastName: newUser.lastName,
                 email: newUser.email,
                 password: newUser.password,
                 roles: [{ roleName: newUser.role }],
-                expectedWorkDays: newUser.isHourly ? null : (newUser.expectedWorkDays ? Number(newUser.expectedWorkDays) : null),
-                breakDuration: newUser.isHourly ? null : (newUser.breakDuration ? Number(newUser.breakDuration) : null),
+                expectedWorkDays: newUser.isHourly
+                    ? null
+                    : (newUser.expectedWorkDays ? Number(newUser.expectedWorkDays) : null),
+                breakDuration: newUser.isHourly
+                    ? null
+                    : (newUser.breakDuration ? Number(newUser.breakDuration) : null),
+                annualVacationDays: newUser.isHourly
+                    ? null
+                    : (newUser.annualVacationDays ? Number(newUser.annualVacationDays) : null),
                 color: newUser.color,
                 scheduleCycle: newUser.isHourly ? null : newUser.scheduleCycle,
                 weeklySchedule: newUser.isHourly ? null : newUser.weeklySchedule,
                 isHourly: newUser.isHourly
-            });
+            };
+
+            await api.post('/api/admin/users', payload);
+
             setNewUser({
                 username: '',
                 firstName: '',
@@ -84,6 +97,7 @@ const AdminUserManagementPage = () => {
                 role: 'ROLE_USER',
                 expectedWorkDays: '',
                 breakDuration: '',
+                annualVacationDays: '',
                 color: STANDARD_COLORS[0],
                 scheduleCycle: 1,
                 weeklySchedule: [{ ...defaultWeeklySchedule }],
@@ -92,23 +106,24 @@ const AdminUserManagementPage = () => {
             fetchUsers();
         } catch (err) {
             console.error(t("userManagement.errorAddingUser"), err);
+            notify("Fehler beim Hinzufügen des Users.");
         }
     };
 
     const handleEditUser = (user) => {
-        // Passwortfeld entfernen, damit es nicht angezeigt wird
         const { password, ...rest } = user;
         setEditingUser({
             ...rest,
-            scheduleCycle: user.scheduleCycle || 1,
-            weeklySchedule: Array.isArray(user.weeklySchedule)
-                ? user.weeklySchedule
+            scheduleCycle: rest.scheduleCycle || 1,
+            weeklySchedule: rest.weeklySchedule
+                ? (Array.isArray(rest.weeklySchedule) ? rest.weeklySchedule : [rest.weeklySchedule])
                 : [{ ...defaultWeeklySchedule }]
         });
     };
 
     const handleUpdateUser = async (e) => {
         e.preventDefault();
+        if (!editingUser) return;
         try {
             const payload = {
                 id: editingUser.id,
@@ -116,10 +131,17 @@ const AdminUserManagementPage = () => {
                 firstName: editingUser.firstName,
                 lastName: editingUser.lastName,
                 email: editingUser.email,
-                expectedWorkDays: editingUser.isHourly ? null : (editingUser.expectedWorkDays ? Number(editingUser.expectedWorkDays) : null),
-                breakDuration: editingUser.isHourly ? null : (editingUser.breakDuration ? Number(editingUser.breakDuration) : null),
-                color: editingUser.color,
                 role: editingUser.role,
+                color: editingUser.color,
+                expectedWorkDays: editingUser.isHourly
+                    ? null
+                    : (editingUser.expectedWorkDays ? Number(editingUser.expectedWorkDays) : null),
+                breakDuration: editingUser.isHourly
+                    ? null
+                    : (editingUser.breakDuration ? Number(editingUser.breakDuration) : null),
+                annualVacationDays: editingUser.isHourly
+                    ? null
+                    : (editingUser.annualVacationDays ? Number(editingUser.annualVacationDays) : null),
                 scheduleCycle: editingUser.isHourly ? null : editingUser.scheduleCycle,
                 weeklySchedule: editingUser.isHourly ? null : editingUser.weeklySchedule,
                 isHourly: editingUser.isHourly
@@ -130,15 +152,33 @@ const AdminUserManagementPage = () => {
             fetchUsers();
         } catch (err) {
             console.error(t("userManagement.errorUpdatingUser"), err);
+            notify("Fehler beim Aktualisieren des Users.");
         }
     };
 
+    // Statt window.confirm verwenden wir ein custom Modal
     const handleDeleteUser = async (id) => {
         try {
             await api.delete(`/api/admin/users/${id}`);
             fetchUsers();
         } catch (err) {
             console.error(t("userManagement.errorDeletingUser"), err);
+            notify("Fehler beim Löschen des Users.");
+        }
+    };
+
+    const requestDeleteUser = (id) => {
+        setDeleteConfirm({ show: true, userId: id });
+    };
+
+    const cancelDelete = () => {
+        setDeleteConfirm({ show: false, userId: null });
+    };
+
+    const confirmDelete = async () => {
+        if (deleteConfirm.userId) {
+            await handleDeleteUser(deleteConfirm.userId);
+            setDeleteConfirm({ show: false, userId: null });
         }
     };
 
@@ -178,6 +218,8 @@ const AdminUserManagementPage = () => {
             <header className="page-header">
                 <h2>{t("userManagement.title")}</h2>
             </header>
+
+            {/* Liste der User */}
             <section className="user-list">
                 {users.length === 0 ? (
                     <p>{t("userManagement.noUsers")}</p>
@@ -191,6 +233,7 @@ const AdminUserManagementPage = () => {
                             <th>{t("userManagement.role")}</th>
                             <th>{t("userManagement.expectedWorkDays")}</th>
                             <th>{t("userManagement.breakDuration")}</th>
+                            <th>{t("userManagement.annualVacationDays")}</th>
                             <th>{t("userManagement.table.actions")}</th>
                         </tr>
                         </thead>
@@ -200,13 +243,20 @@ const AdminUserManagementPage = () => {
                                 <td>{user.username}</td>
                                 <td>{user.firstName} {user.lastName}</td>
                                 <td>{user.email}</td>
-                                <td>{user.roles && user.roles.length > 0 ? user.roles[0] : 'ROLE_USER'}</td>
+                                <td>{user.roles?.length ? user.roles[0] : 'ROLE_USER'}</td>
                                 <td>{user.expectedWorkDays ?? '-'}</td>
                                 <td>{user.breakDuration ?? '-'}</td>
+                                <td>{user.annualVacationDays ?? '-'}</td>
                                 <td>
-                                    <button onClick={() => handleEditUser(user)}>{t("userManagement.table.edit")}</button>
-                                    <button onClick={() => handleDeleteUser(user.id)}>{t("userManagement.table.delete")}</button>
-                                    <button onClick={() => handleProgramCard(user)}>{t("userManagement.table.programCard")}</button>
+                                    <button onClick={() => handleEditUser(user)}>
+                                        {t("userManagement.table.edit")}
+                                    </button>
+                                    <button onClick={() => requestDeleteUser(user.id)}>
+                                        {t("userManagement.table.delete")}
+                                    </button>
+                                    <button onClick={() => handleProgramCard(user)}>
+                                        {t("userManagement.table.programCard")}
+                                    </button>
                                 </td>
                             </tr>
                         ))}
@@ -214,6 +264,8 @@ const AdminUserManagementPage = () => {
                     </table>
                 )}
             </section>
+
+            {/* Formular: Neuer User oder Bearbeitung */}
             <section className="user-form">
                 {editingUser ? (
                     <>
@@ -247,6 +299,7 @@ const AdminUserManagementPage = () => {
                                 onChange={(e) => setEditingUser({ ...editingUser, email: e.target.value })}
                                 required
                             />
+
                             <div className="form-group">
                                 <label>{t("userManagement.role")}:</label>
                                 <select
@@ -257,25 +310,28 @@ const AdminUserManagementPage = () => {
                                     <option value="ROLE_ADMIN">Admin</option>
                                 </select>
                             </div>
+
                             <div className="form-group">
-                                <label>Farbe:</label>
+                                <label>{t("userManagement.color")}</label>
                                 <div className="color-picker">
                                     {STANDARD_COLORS.map((color, index) => (
-                                        <div key={index}
-                                             className={`color-swatch ${editingUser.color === color ? 'selected' : ''}`}
-                                             style={{
-                                                 backgroundColor: color,
-                                                 width: "20px",
-                                                 height: "20px",
-                                                 display: "inline-block",
-                                                 margin: "0 5px",
-                                                 cursor: "pointer"
-                                             }}
-                                             onClick={() => setEditingUser({ ...editingUser, color })}
-                                        ></div>
+                                        <div
+                                            key={index}
+                                            className={`color-swatch ${editingUser.color === color ? 'selected' : ''}`}
+                                            style={{
+                                                backgroundColor: color,
+                                                width: "20px",
+                                                height: "20px",
+                                                display: "inline-block",
+                                                margin: "0 5px",
+                                                cursor: "pointer"
+                                            }}
+                                            onClick={() => setEditingUser({ ...editingUser, color })}
+                                        />
                                     ))}
                                 </div>
                             </div>
+
                             <div className="form-group">
                                 <label>{t("userManagement.isHourly")}</label>
                                 <input
@@ -284,24 +340,43 @@ const AdminUserManagementPage = () => {
                                     onChange={(e) => setEditingUser({ ...editingUser, isHourly: e.target.checked })}
                                 />
                             </div>
+
                             {!editingUser.isHourly && (
                                 <>
                                     <div className="form-group">
                                         <label>{t("userManagement.expectedWorkDays")}:</label>
                                         <input
                                             type="number"
-                                            placeholder="z.B. 5"
+                                            step="any"
+                                            placeholder="z.B. 5 oder 4.5"
                                             value={editingUser.expectedWorkDays || ''}
-                                            onChange={(e) => setEditingUser({ ...editingUser, expectedWorkDays: e.target.value })}
+                                            onChange={(e) =>
+                                                setEditingUser({ ...editingUser, expectedWorkDays: e.target.value })
+                                            }
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label>{t("userManagement.breakDuration")}:</label>
                                         <input
                                             type="number"
-                                            placeholder="z.B. 30"
+                                            step="any"
+                                            placeholder="z.B. 30 oder 30.5"
                                             value={editingUser.breakDuration || ''}
-                                            onChange={(e) => setEditingUser({ ...editingUser, breakDuration: e.target.value })}
+                                            onChange={(e) =>
+                                                setEditingUser({ ...editingUser, breakDuration: e.target.value })
+                                            }
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>{t("userManagement.annualVacationDays")}:</label>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            placeholder="z.B. 25 oder 25.5"
+                                            value={editingUser.annualVacationDays || ''}
+                                            onChange={(e) =>
+                                                setEditingUser({ ...editingUser, annualVacationDays: e.target.value })
+                                            }
                                         />
                                     </div>
                                     <h4>{t("userManagement.scheduleConfig")}</h4>
@@ -310,7 +385,7 @@ const AdminUserManagementPage = () => {
                                         <input
                                             type="number"
                                             min="1"
-                                            value={editingUser.scheduleCycle}
+                                            value={editingUser.scheduleCycle || 1}
                                             onChange={(e) => {
                                                 const newCycle = Number(e.target.value);
                                                 let newSchedule = editingUser.weeklySchedule || [];
@@ -331,23 +406,27 @@ const AdminUserManagementPage = () => {
                                         />
                                     </div>
                                     <div className="weekly-schedule">
-                                        {editingUser.weeklySchedule.map((week, index) => (
-                                            <div key={index} className="schedule-week">
-                                                <h5>{t("userManagement.week")} {index + 1}</h5>
-                                                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(dayKey => (
+                                        {editingUser.weeklySchedule.map((week, idx) => (
+                                            <div key={idx} className="schedule-week">
+                                                <h5>{t("userManagement.week")} {idx + 1}</h5>
+                                                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((dayKey) => (
                                                     <div key={dayKey}>
                                                         <label>{t("days." + dayKey)}:</label>
                                                         <input
                                                             type="number"
                                                             min="0"
                                                             max="24"
-                                                            value={week[dayKey]}
+                                                            step="any"
+                                                            value={week[dayKey] || 0}
                                                             onChange={(e) => {
                                                                 const newVal = Number(e.target.value);
-                                                                const newSchedule = editingUser.weeklySchedule.map((w, i) =>
-                                                                    i === index ? { ...w, [dayKey]: newVal } : w
+                                                                const newSchedule = editingUser.weeklySchedule.map((w, i2) =>
+                                                                    i2 === idx ? { ...w, [dayKey]: newVal } : w
                                                                 );
-                                                                setEditingUser({ ...editingUser, weeklySchedule: newSchedule });
+                                                                setEditingUser({
+                                                                    ...editingUser,
+                                                                    weeklySchedule: newSchedule
+                                                                });
                                                             }}
                                                         />
                                                     </div>
@@ -357,8 +436,11 @@ const AdminUserManagementPage = () => {
                                     </div>
                                 </>
                             )}
+
                             <button type="submit">{t("userManagement.button.save")}</button>
-                            <button type="button" onClick={() => setEditingUser(null)}>{t("userManagement.button.cancel")}</button>
+                            <button type="button" onClick={() => setEditingUser(null)}>
+                                {t("userManagement.button.cancel")}
+                            </button>
                         </form>
                     </>
                 ) : (
@@ -413,19 +495,20 @@ const AdminUserManagementPage = () => {
                             <div className="form-group">
                                 <label>{t("userManagement.color")}</label>
                                 <div className="color-picker">
-                                    {STANDARD_COLORS.map((color, index) => (
-                                        <div key={index}
-                                             className={`color-swatch ${newUser.color === color ? 'selected' : ''}`}
-                                             style={{
-                                                 backgroundColor: color,
-                                                 width: "20px",
-                                                 height: "20px",
-                                                 display: "inline-block",
-                                                 margin: "0 5px",
-                                                 cursor: "pointer"
-                                             }}
-                                             onClick={() => setNewUser({ ...newUser, color })}
-                                        ></div>
+                                    {STANDARD_COLORS.map((c, idx) => (
+                                        <div
+                                            key={idx}
+                                            className={`color-swatch ${newUser.color === c ? 'selected' : ''}`}
+                                            style={{
+                                                backgroundColor: c,
+                                                width: "20px",
+                                                height: "20px",
+                                                display: "inline-block",
+                                                margin: "0 5px",
+                                                cursor: "pointer"
+                                            }}
+                                            onClick={() => setNewUser({ ...newUser, color: c })}
+                                        />
                                     ))}
                                 </div>
                             </div>
@@ -443,18 +526,36 @@ const AdminUserManagementPage = () => {
                                         <label>{t("userManagement.expectedWorkDays")}:</label>
                                         <input
                                             type="number"
-                                            placeholder="z.B. 5"
+                                            step="any"
+                                            placeholder="z.B. 5 oder 4.5"
                                             value={newUser.expectedWorkDays}
-                                            onChange={(e) => setNewUser({ ...newUser, expectedWorkDays: e.target.value })}
+                                            onChange={(e) =>
+                                                setNewUser({ ...newUser, expectedWorkDays: e.target.value })
+                                            }
                                         />
                                     </div>
                                     <div className="form-group">
                                         <label>{t("userManagement.breakDuration")}:</label>
                                         <input
                                             type="number"
-                                            placeholder="z.B. 30"
+                                            step="any"
+                                            placeholder="z.B. 30 oder 30.5"
                                             value={newUser.breakDuration}
-                                            onChange={(e) => setNewUser({ ...newUser, breakDuration: e.target.value })}
+                                            onChange={(e) =>
+                                                setNewUser({ ...newUser, breakDuration: e.target.value })
+                                            }
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label>{t("userManagement.annualVacationDays")}:</label>
+                                        <input
+                                            type="number"
+                                            step="any"
+                                            placeholder="z.B. 25 oder 25.5"
+                                            value={newUser.annualVacationDays}
+                                            onChange={(e) =>
+                                                setNewUser({ ...newUser, annualVacationDays: e.target.value })
+                                            }
                                         />
                                     </div>
                                     <h4>{t("userManagement.scheduleConfig")}</h4>
@@ -475,26 +576,31 @@ const AdminUserManagementPage = () => {
                                                 } else {
                                                     newSchedule = newSchedule.slice(0, newCycle);
                                                 }
-                                                setNewUser({ ...newUser, scheduleCycle: newCycle, weeklySchedule: newSchedule });
+                                                setNewUser({
+                                                    ...newUser,
+                                                    scheduleCycle: newCycle,
+                                                    weeklySchedule: newSchedule
+                                                });
                                             }}
                                         />
                                     </div>
                                     <div className="weekly-schedule">
-                                        {newUser.weeklySchedule.map((week, index) => (
-                                            <div key={index} className="schedule-week">
-                                                <h5>{t("userManagement.week")} {index + 1}</h5>
-                                                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map(dayKey => (
+                                        {newUser.weeklySchedule.map((week, idx) => (
+                                            <div key={idx} className="schedule-week">
+                                                <h5>{t("userManagement.week")} {idx + 1}</h5>
+                                                {['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'].map((dayKey) => (
                                                     <div key={dayKey}>
                                                         <label>{t("days." + dayKey)}:</label>
                                                         <input
                                                             type="number"
                                                             min="0"
                                                             max="24"
-                                                            value={week[dayKey]}
+                                                            step="any"
+                                                            value={week[dayKey] || 0}
                                                             onChange={(e) => {
                                                                 const newVal = Number(e.target.value);
-                                                                const newSchedule = newUser.weeklySchedule.map((w, i) =>
-                                                                    i === index ? { ...w, [dayKey]: newVal } : w
+                                                                const newSchedule = newUser.weeklySchedule.map((w, i2) =>
+                                                                    i2 === idx ? { ...w, [dayKey]: newVal } : w
                                                                 );
                                                                 setNewUser({ ...newUser, weeklySchedule: newSchedule });
                                                             }}
@@ -511,6 +617,20 @@ const AdminUserManagementPage = () => {
                     </>
                 )}
             </section>
+
+            {/* Custom Delete Confirmation Modal */}
+            {deleteConfirm.show && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h3>Benutzer löschen</h3>
+                        <p>Soll der Benutzer wirklich gelöscht werden?</p>
+                        <div className="modal-buttons">
+                            <button onClick={confirmDelete}>Ja, löschen</button>
+                            <button onClick={cancelDelete}>Abbrechen</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

@@ -31,14 +31,14 @@ public class WorkScheduleService {
         if (user.getScheduleEffectiveDate() != null && date.isBefore(user.getScheduleEffectiveDate())) {
             return (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.0;
         }
-        List<Map<String, Integer>> schedule = user.getWeeklySchedule();
+        List<Map<String, Double>> schedule = user.getWeeklySchedule();
         if (schedule != null && user.getScheduleCycle() != null) {
             try {
                 int cycleLength = user.getScheduleCycle();
                 LocalDate epoch = LocalDate.of(2020, 1, 1);
                 long diffWeeks = ChronoUnit.WEEKS.between(epoch, date);
                 int index = (int)(diffWeeks % cycleLength);
-                Map<String, Integer> weekSchedule = schedule.get(index);
+                Map<String, Double> weekSchedule = schedule.get(index);
                 String dayOfWeek = date.getDayOfWeek().toString().toLowerCase();
                 if (weekSchedule.containsKey(dayOfWeek)) {
                     return weekSchedule.get(dayOfWeek);

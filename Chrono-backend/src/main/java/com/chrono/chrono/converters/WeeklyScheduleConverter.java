@@ -5,38 +5,32 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.AttributeConverter;
 import jakarta.persistence.Converter;
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
 @Converter
-public class WeeklyScheduleConverter implements AttributeConverter<List<Map<String, Integer>>, String> {
+public class WeeklyScheduleConverter implements AttributeConverter<List<Map<String, Double>>, String> {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public String convertToDatabaseColumn(List<Map<String, Integer>> attribute) {
-        if (attribute == null) {
-            return null;
-        }
+    public String convertToDatabaseColumn(List<Map<String, Double>> attribute) {
+        if (attribute == null) return null;
         try {
-            // Wandelt die Liste in einen JSON-String um
             return objectMapper.writeValueAsString(attribute);
         } catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("Error converting weeklySchedule to JSON string", e);
+            throw new RuntimeException("Could not convert weekly schedule to JSON", e);
         }
     }
 
     @Override
-    public List<Map<String, Integer>> convertToEntityAttribute(String dbData) {
-        if (dbData == null || dbData.isEmpty()) {
-            return null;
-        }
+    public List<Map<String, Double>> convertToEntityAttribute(String dbData) {
+        if (dbData == null || dbData.trim().isEmpty()) return null;
         try {
-            // Hier wird dbData (ein String) in ein List<Map<String, Integer>> umgewandelt.
-            return objectMapper.readValue(dbData, new TypeReference<List<Map<String, Integer>>>() {});
-        } catch (IOException e) {
-            throw new IllegalArgumentException("Error converting JSON string to weeklySchedule", e);
+            TypeReference<List<Map<String, Double>>> typeRef = new TypeReference<>() {};
+            return objectMapper.readValue(dbData, typeRef);
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Could not convert JSON to weekly schedule", e);
         }
     }
 }

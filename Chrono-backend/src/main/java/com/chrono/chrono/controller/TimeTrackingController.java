@@ -11,11 +11,16 @@ import com.chrono.chrono.services.WorkScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
+/**
+ * Hier ruft dein Frontend die Endpunkte auf.
+ * Die eigentliche Logik (Korrekturen, autoPunchOut usw.) ist in TimeTrackingService.
+ */
 @RestController
 @RequestMapping("/api/timetracking")
 public class TimeTrackingController {
@@ -59,6 +64,11 @@ public class TimeTrackingController {
         return timeTrackingService.getUserHistory(username);
     }
 
+    /**
+     * Endpunkt für Korrekturanträge: Aktualisiert die Zeitstempel für einen Tag.
+     * Es werden alle alten Einträge des Tages gelöscht und durch die neuen ersetzt.
+     * Es wird erwartet, dass alle vier Zeitwerte (Work Start, Break Start, Break End, Work End) übermittelt werden.
+     */
     @PutMapping("/editDay")
     public String editDayTimeEntries(
             @RequestParam String targetUsername,
@@ -112,8 +122,8 @@ public class TimeTrackingController {
     }
 
     /**
-     * Neuer Endpunkt: Aktualisiert die tägliche Notiz (dailyNote) für einen stundenbasierten Nutzer an einem bestimmten Datum.
-     * Hier wird zusätzlich das Feld dailyDate genutzt, um Zeitzonen-Probleme zu vermeiden.
+     * Neuer Endpunkt: Aktualisiert die tägliche Notiz (dailyNote)
+     * für einen stundenbasierten Nutzer an einem bestimmten Datum.
      */
     @PostMapping("/daily-note")
     public TimeTrackingResponse updateDailyNote(@RequestParam String username,

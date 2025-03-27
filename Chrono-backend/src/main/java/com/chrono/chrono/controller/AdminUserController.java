@@ -1,3 +1,4 @@
+// src/main/java/com/chrono/chrono/controller/AdminUserController.java
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.UserDTO;
@@ -46,7 +47,8 @@ public class AdminUserController {
                         user.getScheduleCycle(),
                         user.getWeeklySchedule(),
                         user.getScheduleEffectiveDate(),
-                        user.getIsHourly()   // NEU: isHourly-Feld übernehmen
+                        user.getIsHourly(),
+                        user.getAnnualVacationDays()
                 ))
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
@@ -67,21 +69,19 @@ public class AdminUserController {
             return ResponseEntity.badRequest().body("Password is required");
         }
         if (userBody.getRoles() == null || userBody.getRoles().isEmpty()) {
-            Role defaultRole = roleRepository.findByRoleName("ROLE_USER")
+            var defaultRole = roleRepository.findByRoleName("ROLE_USER")
                     .orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
             userBody.getRoles().add(defaultRole);
         } else {
-            Role inputRole = userBody.getRoles().iterator().next();
-            Role dbRole = roleRepository.findByRoleName(inputRole.getRoleName())
+            var inputRole = userBody.getRoles().iterator().next();
+            var dbRole = roleRepository.findByRoleName(inputRole.getRoleName())
                     .orElseGet(() -> roleRepository.save(new Role(inputRole.getRoleName())));
             userBody.getRoles().clear();
             userBody.getRoles().add(dbRole);
         }
-        // Setze die Konfiguration ab heute:
         userBody.setScheduleEffectiveDate(LocalDate.now());
         User saved = userRepository.save(userBody);
-        // Erstelle das DTO inklusive des neuen isHourly-Feldes
-        UserDTO dto = new UserDTO(
+        var dto = new UserDTO(
                 saved.getId(),
                 saved.getUsername(),
                 saved.getFirstName(),
@@ -95,23 +95,18 @@ public class AdminUserController {
                 saved.getScheduleCycle(),
                 saved.getWeeklySchedule(),
                 saved.getScheduleEffectiveDate(),
-                saved.getIsHourly()  // NEU: Feld übernehmen
+                saved.getIsHourly(),
+                saved.getAnnualVacationDays()
         );
         return ResponseEntity.ok(dto);
     }
 
-    /**
-     * Update-Endpoint: Aktualisiert einen Benutzer.
-     * Falls ein neues Passwort gesetzt wird, muss currentPassword zwingend korrekt übermittelt werden.
-     * Wenn kein neues Passwort gesetzt wird, kann currentPassword optional übermittelt werden.
-     * Änderungen an anderen Feldern (z. B. E-Mail, Arbeitszeiten-Konfiguration) erfordern keine Passwortbestätigung,
-     * wobei – wenn der Arbeitszeitenplan geändert wird – die neue Konfiguration ab dem aktuellen Datum gilt.
-     */
     @PutMapping
     public ResponseEntity<?> updateUser(
             @RequestBody User userBody,
             @RequestParam(value = "currentPassword", required = false) String currentPassword,
             @RequestParam(value = "newPassword", required = false) String newPassword) {
+
         if (userBody.getId() == null) {
             return ResponseEntity.badRequest().body("User ID is required for update");
         }
@@ -121,10 +116,9 @@ public class AdminUserController {
         }
         User existing = optionalUser.get();
 
-        // Passwortprüfung: Wenn ein neues Passwort gesetzt wird, muss currentPassword korrekt sein.
         if (newPassword != null && !newPassword.isEmpty()) {
-            if (currentPassword == null || currentPassword.trim().isEmpty() ||
-                    !passwordEncoder.matches(currentPassword, existing.getPassword())) {
+            if (currentPassword == null || currentPassword.trim().isEmpty()
+                    || !passwordEncoder.matches(currentPassword, existing.getPassword())) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Incorrect password");
             }
             String hashed = passwordEncoder.encode(newPassword);
@@ -133,7 +127,6 @@ public class AdminUserController {
                 existing.setAdminPassword(hashed);
             }
         } else {
-            // Falls currentPassword übermittelt wird, prüfen wir es (optional).
             if (currentPassword != null && !currentPassword.trim().isEmpty()) {
                 if (!passwordEncoder.matches(currentPassword, existing.getPassword())) {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Incorrect password");
@@ -141,18 +134,19 @@ public class AdminUserController {
             }
         }
 
-        // Aktualisiere die übrigen Felder:
         existing.setUsername(userBody.getUsername());
         existing.setFirstName(userBody.getFirstName());
         existing.setLastName(userBody.getLastName());
         existing.setEmail(userBody.getEmail());
+
         if (userBody.getRoles() != null && !userBody.getRoles().isEmpty()) {
-            Role inputRole = userBody.getRoles().iterator().next();
-            Role dbRole = roleRepository.findByRoleName(inputRole.getRoleName())
+            var inputRole = userBody.getRoles().iterator().next();
+            var dbRole = roleRepository.findByRoleName(inputRole.getRoleName())
                     .orElseGet(() -> roleRepository.save(new Role(inputRole.getRoleName())));
             existing.getRoles().clear();
             existing.getRoles().add(dbRole);
         }
+
         if (userBody.getExpectedWorkDays() != null) {
             existing.setExpectedWorkDays(userBody.getExpectedWorkDays());
         }
@@ -162,22 +156,25 @@ public class AdminUserController {
         if (userBody.getBreakDuration() != null) {
             existing.setBreakDuration(userBody.getBreakDuration());
         }
+        if (userBody.getAnnualVacationDays() != null) {
+            existing.setAnnualVacationDays(userBody.getAnnualVacationDays());
+        }
+
         existing.setColor(userBody.getColor());
+
         if (userBody.getScheduleCycle() != null) {
             existing.setScheduleCycle(userBody.getScheduleCycle());
         }
         if (userBody.getWeeklySchedule() != null) {
             existing.setWeeklySchedule(userBody.getWeeklySchedule());
-            // Setze die neue Konfiguration ab heute:
             existing.setScheduleEffectiveDate(LocalDate.now());
         }
-        // Falls isHourly übermittelt wird, übernehmen wir es
         if (userBody.getIsHourly() != null) {
             existing.setIsHourly(userBody.getIsHourly());
         }
+
         User updated = userRepository.save(existing);
-        // Erstelle ein neues UserDTO inklusive isHourly-Feld
-        UserDTO dto = new UserDTO(
+        var dto = new UserDTO(
                 updated.getId(),
                 updated.getUsername(),
                 updated.getFirstName(),
@@ -191,7 +188,8 @@ public class AdminUserController {
                 updated.getScheduleCycle(),
                 updated.getWeeklySchedule(),
                 updated.getScheduleEffectiveDate(),
-                updated.getIsHourly()  // NEU: isHourly übernehmen
+                updated.getIsHourly(),
+                updated.getAnnualVacationDays()
         );
         return ResponseEntity.ok(dto);
     }
@@ -207,7 +205,7 @@ public class AdminUserController {
 
     @GetMapping("/getWorkConfig/{userId}")
     public ResponseEntity<?> getWorkConfig(@PathVariable Long userId) {
-        Optional<User> opt = userRepository.findById(userId);
+        var opt = userRepository.findById(userId);
         if (opt.isEmpty()) {
             return ResponseEntity.badRequest().body("User not found");
         }
@@ -219,13 +217,14 @@ public class AdminUserController {
                         ", scheduleCycle=" + u.getScheduleCycle() +
                         ", weeklySchedule=" + u.getWeeklySchedule() +
                         ", scheduleEffectiveDate=" + u.getScheduleEffectiveDate() +
-                        ", isHourly=" + u.getIsHourly()
+                        ", isHourly=" + u.getIsHourly() +
+                        ", annualVacationDays=" + u.getAnnualVacationDays()
         );
     }
 
     @PutMapping("/updateWorkConfig/{userId}")
     public ResponseEntity<?> updateWorkConfig(@PathVariable Long userId, @RequestBody UserDTO dto) {
-        Optional<User> opt = userRepository.findById(userId);
+        var opt = userRepository.findById(userId);
         if (opt.isEmpty()) {
             return ResponseEntity.badRequest().body("User not found");
         }
@@ -246,7 +245,6 @@ public class AdminUserController {
             user.setWeeklySchedule(dto.getWeeklySchedule());
             user.setScheduleEffectiveDate(LocalDate.now());
         }
-        // Auch das isHourly-Feld aktualisieren:
         if (dto.getIsHourly() != null) {
             user.setIsHourly(dto.getIsHourly());
         }

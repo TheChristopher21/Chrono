@@ -6,8 +6,10 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 
 @Entity
 @Table(name = "correction_requests")
@@ -75,6 +77,10 @@ public class CorrectionRequest {
     @JsonIgnore
     private TimeTracking originalTimeTracking;
 
+    // Transient: Benutzerpasswort (nicht persistiert)
+    @Transient
+    private String userPassword;
+
     public CorrectionRequest() {}
 
     public CorrectionRequest(User user, TimeTracking originalTimeTracking,
@@ -95,7 +101,6 @@ public class CorrectionRequest {
     }
 
     // --- Getter & Setter ---
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -149,16 +154,34 @@ public class CorrectionRequest {
         return (user != null) ? user.getUsername() : "Unknown";
     }
 
-    @JsonProperty("originalStart")
-    public LocalDateTime getOriginalStartTime() {
-        if (originalTimeTracking != null) {
-            return originalTimeTracking.getStartTime();
-        }
-        return desiredStartTime;
+    // Hilfsmethoden zur Formatierung (HH:mm)
+    public String getWorkStartFormatted() {
+        return workStart != null ? workStart.format(DateTimeFormatter.ofPattern("HH:mm")) : "00:00";
     }
 
-    @JsonProperty("originalEnd")
-    public LocalDateTime getOriginalEndTime() {
-        return (originalTimeTracking != null) ? originalTimeTracking.getEndTime() : null;
+    public String getBreakStartFormatted() {
+        return breakStart != null ? breakStart.format(DateTimeFormatter.ofPattern("HH:mm")) : "00:00";
+    }
+
+    public String getBreakEndFormatted() {
+        return breakEnd != null ? breakEnd.format(DateTimeFormatter.ofPattern("HH:mm")) : "00:00";
+    }
+
+    public String getWorkEndFormatted() {
+        return workEnd != null ? workEnd.format(DateTimeFormatter.ofPattern("HH:mm")) : "00:00";
+    }
+
+    // Getter & Setter für userPassword
+    public String getUserPassword() {
+        return userPassword;
+    }
+
+    public void setUserPassword(String userPassword) {
+        this.userPassword = userPassword;
+    }
+
+    // Optional: Falls du das Datum des Korrektur-Tages separat brauchst
+    public LocalDate getDate() {
+        return desiredStartTime != null ? desiredStartTime.toLocalDate() : null;
     }
 }

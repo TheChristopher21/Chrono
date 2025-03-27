@@ -21,10 +21,24 @@ public class VacationController {
     @PostMapping("/create")
     public VacationRequest createVacation(@RequestParam String username,
                                           @RequestParam String startDate,
-                                          @RequestParam String endDate) {
+                                          @RequestParam String endDate,
+                                          @RequestParam(required = false, defaultValue = "false") boolean halfDay) {
         LocalDate start = LocalDate.parse(startDate);
         LocalDate end = LocalDate.parse(endDate);
-        return vacationService.createVacationRequest(username, start, end);
+        return vacationService.createVacationRequest(username, start, end, halfDay);
+    }
+
+    // Admin erstellt Urlaub – über einen Kalender wird ein Zeitraum ausgewählt
+    @PostMapping("/adminCreate")
+    public VacationRequest adminCreateVacation(@RequestParam String adminUsername,
+                                               @RequestParam String adminPassword,
+                                               @RequestParam String username,
+                                               @RequestParam String startDate,
+                                               @RequestParam String endDate,
+                                               @RequestParam(required = false, defaultValue = "false") boolean halfDay) {
+        LocalDate start = LocalDate.parse(startDate);
+        LocalDate end = LocalDate.parse(endDate);
+        return vacationService.adminCreateVacation(adminUsername, adminPassword, username, start, end, halfDay);
     }
 
     // User ruft eigene Urlaubsanträge ab
@@ -49,5 +63,19 @@ public class VacationController {
     @PostMapping("/deny/{id}")
     public VacationRequest deny(@PathVariable Long id) {
         return vacationService.denyVacation(id);
+    }
+
+    // Admin: Urlaubsantrag löschen
+    @DeleteMapping("/{id}")
+    public VacationRequest deleteVacation(@PathVariable Long id,
+                                          @RequestParam String adminUsername,
+                                          @RequestParam String adminPassword) {
+        return vacationService.deleteVacation(id, adminUsername, adminPassword);
+    }
+
+    // Abfrage des verbleibenden Urlaubsanspruchs
+    @GetMapping("/remaining")
+    public double getRemainingVacation(@RequestParam String username, @RequestParam int year) {
+        return vacationService.calculateRemainingVacationDays(username, year);
     }
 }

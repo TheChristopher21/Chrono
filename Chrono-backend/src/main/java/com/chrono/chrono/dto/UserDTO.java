@@ -1,3 +1,4 @@
+// src/main/java/com/chrono/chrono/dto/UserDTO.java
 package com.chrono.chrono.dto;
 
 import com.chrono.chrono.entities.Role;
@@ -14,14 +15,16 @@ public class UserDTO {
     private String lastName;
     private String email;
     private List<String> roles;
-    private Integer expectedWorkDays;
+    private Double expectedWorkDays;        // z. B. 9.5
     private Double dailyWorkHours;
     private Integer breakDuration;
     private String color;
     private Integer scheduleCycle;
-    private List<Map<String, Integer>> weeklySchedule;
-    private LocalDate scheduleEffectiveDate; // Neu
-    private Boolean isHourly;  // NEU: Feld für stundenbasierte Beschäftigung
+    // Hier <String, Double> => Kommazahlen pro Tag
+    private List<Map<String, Double>> weeklySchedule;
+    private LocalDate scheduleEffectiveDate;
+    private Boolean isHourly;
+    private Integer annualVacationDays;
 
     public UserDTO() {}
 
@@ -37,16 +40,27 @@ public class UserDTO {
         this.breakDuration = user.getBreakDuration();
         this.color = user.getColor();
         this.scheduleCycle = user.getScheduleCycle();
-        this.weeklySchedule = user.getWeeklySchedule();
+        this.weeklySchedule = user.getWeeklySchedule(); // <String,Double>
         this.scheduleEffectiveDate = user.getScheduleEffectiveDate();
-        this.isHourly = user.getIsHourly();  // NEU übernehmen
+        this.isHourly = user.getIsHourly();
+        this.annualVacationDays = user.getAnnualVacationDays();
     }
 
-    public UserDTO(Long id, String username, String firstName, String lastName,
-                   String email, List<String> roles, Integer expectedWorkDays,
-                   Double dailyWorkHours, Integer breakDuration, String color,
-                   Integer scheduleCycle, List<Map<String, Integer>> weeklySchedule,
-                   LocalDate scheduleEffectiveDate, Boolean isHourly) {
+    public UserDTO(Long id,
+                   String username,
+                   String firstName,
+                   String lastName,
+                   String email,
+                   List<String> roles,
+                   Double expectedWorkDays,
+                   Double dailyWorkHours,
+                   Integer breakDuration,
+                   String color,
+                   Integer scheduleCycle,
+                   List<Map<String, Double>> weeklySchedule,
+                   LocalDate scheduleEffectiveDate,
+                   Boolean isHourly,
+                   Integer annualVacationDays) {
         this.id = id;
         this.username = username;
         this.firstName = firstName;
@@ -58,10 +72,12 @@ public class UserDTO {
         this.breakDuration = breakDuration;
         this.color = color;
         this.scheduleCycle = scheduleCycle;
-        this.weeklySchedule = weeklySchedule;
+        this.weeklySchedule = weeklySchedule; // <String,Double>
         this.scheduleEffectiveDate = scheduleEffectiveDate;
         this.isHourly = isHourly;
+        this.annualVacationDays = annualVacationDays;
     }
+
 
     // Getter & Setter
 
@@ -83,8 +99,8 @@ public class UserDTO {
     public List<String> getRoles() { return roles; }
     public void setRoles(List<String> roles) { this.roles = roles; }
 
-    public Integer getExpectedWorkDays() { return expectedWorkDays; }
-    public void setExpectedWorkDays(Integer expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }
+    public Double getExpectedWorkDays() { return expectedWorkDays; }
+    public void setExpectedWorkDays(Double expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }
 
     public Double getDailyWorkHours() { return dailyWorkHours; }
     public void setDailyWorkHours(Double dailyWorkHours) { this.dailyWorkHours = dailyWorkHours; }
@@ -98,12 +114,15 @@ public class UserDTO {
     public Integer getScheduleCycle() { return scheduleCycle; }
     public void setScheduleCycle(Integer scheduleCycle) { this.scheduleCycle = scheduleCycle; }
 
-    public List<Map<String, Integer>> getWeeklySchedule() { return weeklySchedule; }
-    public void setWeeklySchedule(List<Map<String, Integer>> weeklySchedule) { this.weeklySchedule = weeklySchedule; }
+    public List<Map<String, Double>> getWeeklySchedule() { return weeklySchedule; }
+    public void setWeeklySchedule(List<Map<String, Double>> weeklySchedule) { this.weeklySchedule = weeklySchedule; }
 
     public LocalDate getScheduleEffectiveDate() { return scheduleEffectiveDate; }
     public void setScheduleEffectiveDate(LocalDate scheduleEffectiveDate) { this.scheduleEffectiveDate = scheduleEffectiveDate; }
 
     public Boolean getIsHourly() { return isHourly; }
     public void setIsHourly(Boolean isHourly) { this.isHourly = isHourly; }
+
+    public Integer getAnnualVacationDays() { return annualVacationDays; }
+    public void setAnnualVacationDays(Integer annualVacationDays) { this.annualVacationDays = annualVacationDays; }
 }

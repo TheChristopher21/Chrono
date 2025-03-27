@@ -169,6 +169,11 @@ const translations = {
         hours: "Std",
         minutes: "Min",
         expected: "Soll",
+        remainingVacation: "Verbleibender Urlaub",
+        daysLabel: "Tage",
+        vacationType: "Urlaubsart",
+        fullDay: "Ganztags",
+        halfDay: "Halbtags",
         // Wochentage
         days: {
             monday: "Montag",
@@ -355,6 +360,11 @@ const translations = {
         hours: "hrs",
         minutes: "min",
         expected: "Expected",
+        remainingVacation: "Remaining Vacation",
+        daysLabel: "days",
+        vacationType: "Vacation Type",
+        fullDay: "Full Day",
+        halfDay: "Half Day",
         // Wochentage
         days: {
             monday: "Monday",
@@ -385,11 +395,15 @@ export const LanguageProvider = ({ children }) => {
         const keys = key.split(".");
         let translation = translations[language];
         for (const k of keys) {
-            if (translation[k]) {
+            if (translation[k] !== undefined) {
                 translation = translation[k];
             } else {
                 return key;
             }
+        }
+        if (typeof translation === "object") {
+            console.warn(`Translation for key "${key}" is an object. Expected a string.`);
+            return JSON.stringify(translation);
         }
         return translation;
     };

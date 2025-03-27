@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useNotification } from './NotificationContext';
 
 const AuthContext = createContext();
 
@@ -7,6 +8,7 @@ const SESSION_DURATION = 300000; // 5 Minuten
 export const AuthProvider = ({ children }) => {
     const [authToken, setAuthToken] = useState(localStorage.getItem('token'));
     const [currentUser, setCurrentUser] = useState(null);
+    const { notify } = useNotification(); // Nutzung des Notification-Contexts
 
     const startSessionTimer = useCallback(() => {
         localStorage.setItem('loginTime', Date.now().toString());
@@ -14,10 +16,11 @@ export const AuthProvider = ({ children }) => {
             const loginTime = parseInt(localStorage.getItem('loginTime'), 10);
             if (Date.now() - loginTime >= SESSION_DURATION) {
                 logout();
-                alert("Session expired. Please log in again.");
+                // Statt alert wird notify verwendet, sodass kein blockierender Dialog entsteht.
+                notify("Session expired. Please log in again.");
             }
         }, SESSION_DURATION);
-    }, []);
+    }, [notify]);
 
     useEffect(() => {
         if (authToken) {

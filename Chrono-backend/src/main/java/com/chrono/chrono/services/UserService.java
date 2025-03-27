@@ -1,4 +1,4 @@
-// UserService.java
+// src/main/java/com/chrono/chrono/services/UserService.java
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.entities.User;
@@ -24,6 +24,10 @@ public class UserService {
         user.setFirstName(updatedUser.getFirstName());
         user.setLastName(updatedUser.getLastName());
         user.setEmail(updatedUser.getEmail());
+        // Aktualisiere auch den jährlichen Urlaubsanspruch, falls gesetzt
+        if (updatedUser.getAnnualVacationDays() != null) {
+            user.setAnnualVacationDays(updatedUser.getAnnualVacationDays());
+        }
         return userRepository.save(user);
     }
 }

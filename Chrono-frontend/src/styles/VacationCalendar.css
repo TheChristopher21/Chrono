@@ -13,19 +13,33 @@
     --font-family: 'Poppins', sans-serif;
 }
 
+/* Container der VacationCalendar-Komponente */
 .vacation-calendar {
     width: 100%;
-    margin: 0;
-    padding: 0;
+    margin: 0 auto;
+    padding: 1rem;
+    font-family: var(--font-family);
+    color: var(--text-color);
 }
 
+/* Header für Urlaubskontingent-Angaben */
+.vacation-calendar h4 {
+    margin: 0.5rem 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+/* ----------------------------------
+   REACT CALENDAR
+---------------------------------- */
 .vacation-calendar .react-calendar {
     width: 100% !important;
     border: none;
-    font-family: var(--font-family);
     line-height: 1.125em;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
+    background-color: var(--card-bg);
+    padding: 1rem;
 }
 
 .vacation-calendar .react-calendar__navigation {
@@ -44,16 +58,22 @@
     cursor: pointer;
 }
 
+.vacation-calendar .react-calendar__navigation button:hover {
+    color: var(--primary-hover);
+}
+
 .vacation-calendar .react-calendar__month-view__weekdays {
     display: flex;
     justify-content: space-around;
     text-align: center;
-    font-weight: bold;
+    font-weight: 600;
     margin-bottom: 0.3125rem;
 }
 
 .vacation-calendar .react-calendar__month-view__weekdays div {
     flex: 1;
+    text-transform: uppercase;
+    font-size: 0.8rem;
 }
 
 .vacation-calendar .react-calendar__month-view__days {
@@ -62,6 +82,7 @@
 }
 
 .vacation-calendar .react-calendar__month-view__days__day {
+    position: relative;
     flex: 1 0 14.28%;
     display: flex;
     flex-direction: column;
@@ -81,7 +102,107 @@
 .vacation-calendar .react-calendar__month-view__days__day abbr {
     display: block;
     text-decoration: none;
-    font-weight: bold;
+    font-weight: 600;
     font-size: 1rem;
     color: var(--text-color);
+}
+
+.holiday-label {
+    /* Positionierung aufheben */
+    position: static;      /* oder einfach entfernen */
+    bottom: auto;
+    right: auto;
+
+    /* Größe/Styling anpassen, damit es unter der Zahl erscheint */
+    margin-top: 3px;
+    background-color: #ff0000;
+    color: #fff;
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    text-align: center;
+    display: inline-block;  /* oder block */
+    white-space: nowrap;
+}
+/* ----------------------------------
+   MODAL-OVERLAY & INHALT
+---------------------------------- */
+.vacation-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.vacation-modal-content {
+    background: var(--card-bg);
+    padding: 2rem;
+    border-radius: var(--radius);
+    width: 400px;
+    max-width: 90%;
+    box-shadow: var(--shadow);
+    position: relative;
+}
+
+.vacation-modal-content h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+    font-size: 1.2rem;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 0.5rem;
+}
+
+.vacation-modal-content p {
+    margin: 0.5rem 0 1rem;
+    font-size: 0.95rem;
+}
+
+.vacation-modal-content label {
+    display: inline-block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.vacation-modal-content select {
+    width: 100%;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.vacation-modal-content button {
+    padding: 0.5rem 1rem;
+    border: none;
+    border-radius: var(--radius);
+    background-color: var(--primary-color);
+    color: #fff;
+    cursor: pointer;
+    transition: background-color var(--transition);
+    font-size: 0.9rem;
+}
+
+.vacation-modal-content button:hover {
+    background-color: var(--primary-hover);
+}
+
+@media (max-width: 768px) {
+    .vacation-modal-content {
+        width: 90%;
+        padding: 1rem;
+    }
 }

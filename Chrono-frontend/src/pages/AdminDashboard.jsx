@@ -13,6 +13,9 @@ import autoTable from "jspdf-autotable";
    HELPER FUNCTIONS
 ============================= */
 
+/**
+ * Berechnet den Montag der Woche (lokal), um Zeitzonen-Verschiebungen zu vermeiden.
+ */
 function getMondayOfWeek(date) {
     const copy = new Date(date);
     const day = copy.getDay();
@@ -22,8 +25,9 @@ function getMondayOfWeek(date) {
     return copy;
 }
 
-function formatDate(dateStrOrObj) {
-    const date = new Date(dateStrOrObj);
+function formatDate(dateInput) {
+    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+    if (isNaN(date.getTime())) return "-";
     const day = String(date.getDate()).padStart(2, '0');
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
@@ -68,33 +72,67 @@ function parseTimeToMinutes(timeStr) {
     return hours * 60 + minutes;
 }
 
+/**
+ * Berechnet die Abweichung (IST - SOLL) in Minuten.
+ * dayEntries = Array mit Punches (1..4). Falls isHourly, wird Pause abgezogen.
+ */
 function computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly) {
     if (isHourly) {
+        // Spezialfall stundenbasiert:
+        // Versucht 1=WorkStart und 4=WorkEnd zu finden, zieht Pause (2,3) ab.
         const entryStart = dayEntries.find(e => e.punchOrder === 1);
-        let entryEnd = dayEntries.find(e => e.punchOrder === 4);
-        if (!entryEnd) {
-            entryEnd = dayEntries.find(e => e.punchOrder === 2);
-        }
-        if (entryStart && entryEnd) {
-            const startTime = new Date(entryStart.startTime);
-            const endTime = new Date(entryEnd.endTime ? entryEnd.endTime : entryEnd.startTime);
-            if (endTime.toDateString() !== startTime.toDateString()) {
-                const midnight = new Date(startTime);
-                midnight.setHours(24, 0, 0, 0);
-                const minutesWorked = (midnight - startTime) / 60000;
-                const expectedMinutes = expectedWorkHours * 60;
-                return minutesWorked - expectedMinutes;
-            } else {
-                const workStartMins = getMinutesSinceMidnight(entryStart.startTime);
-                const workEndMins = getMinutesSinceMidnight(entryEnd.endTime ? entryEnd.endTime : entryEnd.startTime);
-                const minutesWorked = workEndMins - workStartMins;
-                const expectedMinutes = expectedWorkHours * 60;
-                return minutesWorked - expectedMinutes;
+        const entryBreakStart = dayEntries.find(e => e.punchOrder === 2);
+        const entryBreakEnd = dayEntries.find(e => e.punchOrder === 3);
+        const entryEnd = dayEntries.find(e => e.punchOrder === 4);
+
+        if (entryStart && entryBreakStart && entryBreakEnd && entryEnd) {
+            const workStartMins = getMinutesSinceMidnight(entryStart.startTime);
+            const workEndMins = getMinutesSinceMidnight(entryEnd.endTime || entryEnd.startTime);
+            let minutesWorked = workEndMins - workStartMins;
+
+            let breakStartMins = entryBreakStart.breakStart
+                ? parseTimeToMinutes(entryBreakStart.breakStart)
+                : getMinutesSinceMidnight(entryBreakStart.startTime);
+            let breakEndMins = entryBreakEnd.breakEnd
+                ? parseTimeToMinutes(entryBreakEnd.breakEnd)
+                : getMinutesSinceMidnight(entryBreakEnd.startTime);
+            if (breakEndMins < breakStartMins) {
+                breakEndMins += 24 * 60;
             }
+            const breakDuration = breakEndMins - breakStartMins;
+            const actualWorked = minutesWorked - breakDuration;
+            const expectedMinutes = expectedWorkHours * 60;
+            return actualWorked - expectedMinutes;
+        } else {
+            // Falls z.B. nicht alle Stempel existieren
+            const entryStartFallback = dayEntries.find(e => e.punchOrder === 1);
+            let entryEndFallback = dayEntries.find(e => e.punchOrder === 4);
+            if (!entryEndFallback) {
+                // Falls 4 nicht existiert, nimm 2
+                entryEndFallback = dayEntries.find(e => e.punchOrder === 2);
+            }
+            if (entryStartFallback && entryEndFallback) {
+                const startTime = new Date(entryStartFallback.startTime);
+                const endTime = new Date(entryEndFallback.endTime || entryEndFallback.startTime);
+                if (endTime.toDateString() !== startTime.toDateString()) {
+                    const midnight = new Date(startTime);
+                    midnight.setHours(24, 0, 0, 0);
+                    const minutesWorked = (midnight - startTime) / 60000;
+                    const expectedMinutes = expectedWorkHours * 60;
+                    return minutesWorked - expectedMinutes;
+                } else {
+                    const workStartMins = getMinutesSinceMidnight(entryStartFallback.startTime);
+                    const workEndMins = getMinutesSinceMidnight(endTime.toISOString());
+                    const minutesWorked = workEndMins - workStartMins;
+                    const expectedMinutes = expectedWorkHours * 60;
+                    return minutesWorked - expectedMinutes;
+                }
+            }
+            return 0;
         }
-        return 0;
     }
 
+    // Normalfall Festangestellte (4 Stempel)
     const entryStart = dayEntries.find(e => e.punchOrder === 1);
     const entryBreakStart = dayEntries.find(e => e.punchOrder === 2);
     const entryBreakEnd = dayEntries.find(e => e.punchOrder === 3);
@@ -106,6 +144,7 @@ function computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly) {
             workEndMins += 24 * 60;
         }
         const workDuration = workEndMins - workStartMins;
+
         let breakStartMins = entryBreakStart.breakStart
             ? parseTimeToMinutes(entryBreakStart.breakStart)
             : getMinutesSinceMidnight(entryBreakStart.startTime);
@@ -121,6 +160,36 @@ function computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly) {
         return actualWorked - expectedMinutes;
     }
     return 0;
+}
+
+/**
+ * Summiert die gesamte (IST - SOLL)-Differenz für einen User über alle Tage.
+ * Falls du nur ab 1.1.2023 rechnen willst, könntest du userEntries vorher filtern.
+ */
+function computeOverallDiffForUser(allTracks, username, userConfig, defaultExpectedHours) {
+    const userEntries = allTracks.filter(e => e.username === username);
+
+    // Nach Datum gruppieren
+    const dayMap = {};
+    userEntries.forEach(entry => {
+        const isoDay = entry.startTime.slice(0, 10);
+        if (!dayMap[isoDay]) {
+            dayMap[isoDay] = [];
+        }
+        dayMap[isoDay].push(entry);
+    });
+
+    let totalDiffMinutes = 0;
+    for (const isoDay in dayMap) {
+        const dayEntries = dayMap[isoDay];
+        if (dayEntries.length > 0) {
+            const someDate = new Date(dayEntries[0].startTime);
+            const expected = getExpectedHoursForDay(someDate, userConfig, defaultExpectedHours);
+            const diffMins = computeDailyDiffValue(dayEntries, expected, userConfig.isHourly);
+            totalDiffMinutes += diffMins;
+        }
+    }
+    return totalDiffMinutes;
 }
 
 function computeDailyDiff(dayEntries, expectedWorkHours, isHourly) {
@@ -163,8 +232,6 @@ function getStatusLabel(punchOrder) {
 }
 
 
-
-
 const AdminDashboard = () => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -177,6 +244,7 @@ const AdminDashboard = () => {
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
     const [expandedUsers, setExpandedUsers] = useState({});
     const [users, setUsers] = useState([]);
+    const [dailyNotes, setDailyNotes] = useState({});
 
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [editDate, setEditDate] = useState(null);
@@ -218,6 +286,19 @@ const AdminDashboard = () => {
             const res = await api.get('/api/admin/timetracking/all');
             const validEntries = (res.data || []).filter(e => [1, 2, 3, 4].includes(e.punchOrder));
             setAllTracks(validEntries);
+
+            // Notizen
+            const noteEntries = (res.data || []).filter(e => e.punchOrder === 0 && e.dailyNote && e.dailyNote.trim().length > 0);
+            if (noteEntries.length > 0) {
+                setDailyNotes(prev => {
+                    const merged = { ...prev };
+                    noteEntries.forEach(noteEntry => {
+                        const isoDate = noteEntry.startTime.slice(0, 10);
+                        merged[isoDate] = noteEntry.dailyNote;
+                    });
+                    return merged;
+                });
+            }
         } catch (err) {
             console.error('Error loading time entries', err);
         }
@@ -241,6 +322,46 @@ const AdminDashboard = () => {
         }
     }
 
+    function computeDayTotalMinutes(dayEntries) {
+        // (Nicht identisch mit computeDailyDiffValue, wir holen hier reine IST-Zeit)
+        const entryStart = dayEntries.find(e => e.punchOrder === 1);
+        let entryEnd = dayEntries.find(e => e.punchOrder === 4);
+        if (!entryEnd) {
+            entryEnd = dayEntries.find(e => e.punchOrder === 2 || e.punchOrder === 3);
+        }
+        if (!entryStart || !entryEnd) return 0;
+
+        const start = new Date(entryStart.startTime);
+        const end = new Date(entryEnd.endTime || entryEnd.startTime);
+        let totalMins = 0;
+
+        if (end.toDateString() !== start.toDateString()) {
+            const midnight = new Date(start);
+            midnight.setHours(24, 0, 0, 0);
+            totalMins = (midnight - start) / 60000;
+        } else {
+            const startM = getMinutesSinceMidnight(start.toISOString());
+            const endM = getMinutesSinceMidnight(end.toISOString());
+            totalMins = endM - startM;
+        }
+
+        const breakStart = dayEntries.find(e => e.punchOrder === 2);
+        const breakEnd = dayEntries.find(e => e.punchOrder === 3);
+        if (breakStart && breakEnd) {
+            let breakStartMins = breakStart.breakStart
+                ? parseTimeToMinutes(breakStart.breakStart)
+                : getMinutesSinceMidnight(breakStart.startTime);
+            let breakEndMins = breakEnd.breakEnd
+                ? parseTimeToMinutes(breakEnd.breakEnd)
+                : getMinutesSinceMidnight(breakEnd.startTime);
+            if (breakEndMins < breakStartMins) {
+                breakEndMins += 24 * 60;
+            }
+            totalMins -= (breakEndMins - breakStartMins);
+        }
+        return Math.max(0, totalMins);
+    }
+
     function handlePrevWeek() {
         setSelectedMonday(prev => addDays(prev, -7));
     }
@@ -254,35 +375,17 @@ const AdminDashboard = () => {
         }
     }
 
-    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
-    const weekStrs = weekDates.map(d => formatLocalDateYMD(d));
-
-    const filteredTracks = allTracks.filter(track => {
-        const localDate = formatLocalDateYMD(new Date(track.startTime));
-        return weekStrs.includes(localDate);
-    });
-
-    const userGroups = filteredTracks.reduce((acc, track) => {
-        const uname = track.username;
-        if (!acc[uname]) acc[uname] = [];
-        acc[uname].push(track);
-        return acc;
-    }, {});
-
     function toggleUserExpand(username) {
         setExpandedUsers(prev => ({ ...prev, [username]: !prev[username] }));
     }
 
     async function handleApproveVacation(id) {
-        if (!adminPassword) {
-            notify(t('adminDashboard.adminPassword') + ' ' + t('adminDashboard.pleaseEnter'));
-            return;
-        }
         try {
-            await api.post(`/api/correction/approve/${id}`, null, { params: { adminPassword } });
+            await api.post(`/api/vacation/approve/${id}`);
             fetchAllVacations();
         } catch (err) {
             console.error('Error approving vacation', err);
+            notify('Error approving vacation: ' + err.message);
         }
     }
 
@@ -296,25 +399,14 @@ const AdminDashboard = () => {
     }
 
     async function handleApproveCorrection(id) {
-        if (!adminPassword) {
-            notify(t('adminDashboard.adminPassword') + ' ' + t('adminDashboard.pleaseEnter'));
-            return;
-        }
         try {
-            await api.post(`/api/correction/approve/${id}`, null, { params: { adminPassword } });
+            await api.post(`/api/correction/approve/${id}`);
             fetchAllCorrections();
         } catch (err) {
             console.error('Error approving correction', err);
-            if (err.response && err.response.status === 403) {
-                // Zeige deine gewünschte Fehlermeldung
-                notify("Falsches Admin Passwort");
-            } else {
-                // Falls ein anderer Fehler auftritt, kannst du den Standardtext ausgeben
-                notify('Error approving correction: ' + err.message);
-            }
+            notify('Error approving correction: ' + err.message);
         }
     }
-
 
     async function handleDenyCorrection(id) {
         try {
@@ -364,13 +456,9 @@ const AdminDashboard = () => {
             breakEnd: editData.breakEnd,
             workEnd: editData.workEnd,
             adminUsername: currentUser.username,
+            adminPassword: currentUser.username !== editTargetUsername ? editData.adminPassword : editData.userPassword,
             userPassword: editData.userPassword
         };
-        if (editTargetUsername !== currentUser.username) {
-            params.adminPassword = editData.adminPassword;
-        } else {
-            params.adminPassword = editData.userPassword;
-        }
         try {
             await api.put('/api/timetracking/editDay', null, { params });
             setEditModalVisible(false);
@@ -403,6 +491,7 @@ const AdminDashboard = () => {
             );
         });
 
+        // Gruppieren
         const grouped = {};
         userEntries.forEach(entry => {
             const entryDate = new Date(entry.startTime);
@@ -411,41 +500,38 @@ const AdminDashboard = () => {
             grouped[ds].push(entry);
         });
 
-        const sortedDates = Object.keys(grouped).sort((a, b) => {
-            return new Date(a) - new Date(b);
-        });
+        const sortedDates = Object.keys(grouped).sort((a, b) => new Date(a) - new Date(b));
+
         const tableBody = sortedDates.map(dateStr => {
             const dayEntries = grouped[dateStr].sort((a, b) => a.punchOrder - b.punchOrder);
-            const workStart = dayEntries.find(e => e.punchOrder === 1)
-                ? formatTime(dayEntries.find(e => e.punchOrder === 1).startTime)
-                : "-";
-            const breakStart = dayEntries.find(e => e.punchOrder === 2)
-                ? (dayEntries.find(e => e.punchOrder === 2).breakStart
-                    ? formatTime(dayEntries.find(e => e.punchOrder === 2).breakStart)
-                    : formatTime(dayEntries.find(e => e.punchOrder === 2).startTime))
-                : "-";
-            const breakEnd = dayEntries.find(e => e.punchOrder === 3)
-                ? (dayEntries.find(e => e.punchOrder === 3).breakEnd
-                    ? formatTime(dayEntries.find(e => e.punchOrder === 3).breakEnd)
-                    : formatTime(dayEntries.find(e => e.punchOrder === 3).startTime))
-                : "-";
-            const workEnd = dayEntries.find(e => e.punchOrder === 4)
-                ? formatTime(dayEntries.find(e => e.punchOrder === 4).endTime)
-                : "-";
+            const eStart = dayEntries.find(e => e.punchOrder === 1);
+            const eBreakS = dayEntries.find(e => e.punchOrder === 2);
+            const eBreakE = dayEntries.find(e => e.punchOrder === 3);
+            const eEnd = dayEntries.find(e => e.punchOrder === 4);
 
-            const userConfig = users.find(u => u.username === printUser) || {};
-            const expected = getExpectedHoursForDay(new Date(dayEntries[0].startTime), userConfig, defaultExpectedHours);
-            const diffValue = computeDailyDiffValue(dayEntries, expected, userConfig.isHourly);
-            const diffText = `${diffValue >= 0 ? '+' : '-'}${Math.abs(diffValue)} min`;
+            const workStart = eStart ? formatTime(eStart.startTime) : "-";
+            const breakStart = eBreakS
+                ? (eBreakS.breakStart ? formatTime(eBreakS.breakStart) : formatTime(eBreakS.startTime))
+                : "-";
+            const breakEnd = eBreakE
+                ? (eBreakE.breakEnd ? formatTime(eBreakE.breakEnd) : formatTime(eBreakE.startTime))
+                : "-";
+            const workEnd = eEnd ? formatTime(eEnd.endTime) : "-";
+
+            let dayMinutes = computeDayTotalMinutes(dayEntries);
+            const sign = dayMinutes >= 0 ? "+" : "-";
+            const diffText = `${sign}${Math.abs(dayMinutes)} min`;
 
             return [dateStr, workStart, breakStart, breakEnd, workEnd, diffText];
         });
+
+        const head = [["Datum", "Work Start", "Break Start", "Break End", "Work End", "Diff"]];
 
         const doc = new jsPDF("p", "mm", "a4");
         doc.setFontSize(12);
         doc.text(`Zeiten für ${printUser}`, 14, 15);
         autoTable(doc, {
-            head: [["Datum", "Work Start", "Break Start", "Break End", "Work End", "Diff"]],
+            head,
             body: tableBody,
             startY: 25,
             styles: {
@@ -472,25 +558,36 @@ const AdminDashboard = () => {
         setPrintUserModalVisible(false);
     }
 
+    // *** UI ***
+
+    // Bestimme die 7 Tage ab selectedMonday
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
+    const weekStrs = weekDates.map(d => formatLocalDateYMD(d));
+
+    // Filter Einträge der aktuellen Woche
+    const filteredTracks = allTracks.filter(track => {
+        const localDate = track.startTime.slice(0, 10);
+        return weekStrs.includes(localDate);
+    });
+
+    // Gruppiere Einträge nach Username
+    const userGroups = filteredTracks.reduce((acc, track) => {
+        const uname = track.username;
+        if (!acc[uname]) acc[uname] = [];
+        acc[uname].push(track);
+        return acc;
+    }, {});
+
     return (
         <div className="admin-dashboard">
             <Navbar />
             <header className="dashboard-header">
                 <h2>{t('adminDashboard.titleWeekly')}</h2>
-                <p>
-                    {t('adminDashboard.loggedInAs')}: {currentUser?.username}
-                </p>
-                <div className="admin-password">
-                    <label>{t('adminDashboard.adminPassword')}: </label>
-                    <input
-                        type="password"
-                        value={adminPassword}
-                        onChange={e => setAdminPassword(e.target.value)}
-                    />
-                </div>
+                <p>{t('adminDashboard.loggedInAs')}: {currentUser?.username}</p>
             </header>
+
             <div className="dashboard-content">
-                {/* Linke Spalte: Time Tracking & Vacation */}
+                {/* Linke Spalte: Zeit/Urlaub */}
                 <div className="left-column">
                     <section className="week-section">
                         <h3>{t('adminDashboard.timeTrackingCurrentWeek')}</h3>
@@ -503,6 +600,7 @@ const AdminDashboard = () => {
                             />
                             <button onClick={handleNextWeek}>{t('adminDashboard.nextWeek')} →</button>
                         </div>
+
                         {Object.keys(userGroups).length === 0 ? (
                             <p>{t('adminDashboard.noEntriesThisWeek')}</p>
                         ) : (
@@ -515,6 +613,8 @@ const AdminDashboard = () => {
                                         if (!dayMap[ds]) dayMap[ds] = [];
                                         dayMap[ds].push(entry);
                                     });
+
+                                    // Wochen-Diff
                                     let userTotalDiff = 0;
                                     weekDates.forEach(wd => {
                                         const isoDay = formatLocalDateYMD(wd);
@@ -524,11 +624,19 @@ const AdminDashboard = () => {
                                             userTotalDiff += computeDailyDiffValue(dayEntries, expectedForDay, userConfig.isHourly);
                                         }
                                     });
+
                                     const absTotal = Math.abs(userTotalDiff);
                                     const totalHours = Math.floor(absTotal / 60);
                                     const totalMinutes = absTotal % 60;
                                     const totalSign = userTotalDiff >= 0 ? '+' : '-';
-                                    const isExpanded = !!expandedUsers[username];
+
+                                    // *** NEU: Gesamt-Saldo ***
+                                    const overallDiffMins = computeOverallDiffForUser(allTracks, username, userConfig, defaultExpectedHours);
+                                    const absOverall = Math.abs(overallDiffMins);
+                                    const overallHours = Math.floor(absOverall / 60);
+                                    const overallMinutes = absOverall % 60;
+                                    const signOverall = overallDiffMins >= 0 ? "+" : "-";
+
                                     let userColor = '#007BFF';
                                     if (userGroups[username].length > 0 && userGroups[username][0].color) {
                                         const c = userGroups[username][0].color;
@@ -536,6 +644,8 @@ const AdminDashboard = () => {
                                             userColor = c;
                                         }
                                     }
+                                    const isExpanded = !!expandedUsers[username];
+
                                     return (
                                         <div key={username} className="admin-user-block">
                                             <div
@@ -544,88 +654,90 @@ const AdminDashboard = () => {
                                                 style={{ backgroundColor: userColor }}
                                             >
                                                 <h4 style={{ color: '#fff' }}>{username}</h4>
-                                                <button className="edit-button">{isExpanded ? '–' : '+'}</button>
+                                                <button className="edit-button">
+                                                    {isExpanded ? '–' : '+'}
+                                                </button>
                                             </div>
                                             {isExpanded && (
                                                 <div className="admin-week-display">
                                                     <div className="user-total-diff">
-                                                        {t('adminDashboard.total')}: {totalSign}
+                                                        {/* Wochensaldo */}
+                                                        <strong>{t('adminDashboard.total')} (Woche):</strong> {totalSign}
                                                         {totalHours} {t('adminDashboard.hours')} {totalMinutes} {t('adminDashboard.minutes')}
                                                     </div>
+                                                    <div className="user-overall-diff">
+                                                        {/* Gesamt-Saldo */}
+                                                        <strong>Gesamt-Saldo:</strong> {signOverall}
+                                                        {overallHours}h {overallMinutes}min
+                                                    </div>
+                                                    {/* Pro-Tag-Anzeige */}
                                                     {weekDates.map((wd, i) => {
                                                         const isoDay = formatLocalDateYMD(wd);
                                                         const dayEntries = dayMap[isoDay] || [];
                                                         const expectedForDay = getExpectedHoursForDay(wd, userConfig, defaultExpectedHours);
+                                                        if (dayEntries.length === 0) {
+                                                            return (
+                                                                <div key={i} className="admin-day-card">
+                                                                    <div className="admin-day-card-header">
+                                                                        <strong>
+                                                                            {wd.toLocaleDateString('de-DE', { weekday: 'long' })},{' '}
+                                                                            {formatDate(wd)}
+                                                                        </strong>
+                                                                    </div>
+                                                                    <div className="admin-day-content">
+                                                                        <p className="no-entries">Keine Einträge</p>
+                                                                    </div>
+                                                                </div>
+                                                            );
+                                                        }
+
                                                         if (userConfig.isHourly) {
-                                                            const workStartEntry = dayEntries.find(e => e.punchOrder === 1);
-                                                            let workEndEntry = dayEntries.find(e => e.punchOrder === 4);
-                                                            if (!workEndEntry) {
-                                                                workEndEntry = dayEntries.find(e => e.punchOrder === 2);
-                                                            }
-                                                            if (dayEntries.length === 0) {
-                                                                return (
-                                                                    <div key={i} className="admin-day-card">
-                                                                        <div className="admin-day-card-header">
-                                                                            <strong>
-                                                                                {wd.toLocaleDateString('de-DE', { weekday: 'long' })},{' '}
-                                                                                {formatDate(wd)}
-                                                                            </strong>
-                                                                        </div>
-                                                                        <div className="admin-day-content">
-                                                                            <p className="no-entries">Keine Einträge</p>
-                                                                        </div>
+                                                            // Nur als Info: Reine IST-Zeit
+                                                            return (
+                                                                <div key={i} className="admin-day-card">
+                                                                    <div className="admin-day-card-header">
+                                                                        <strong>
+                                                                            {wd.toLocaleDateString('de-DE', { weekday: 'long' })},{' '}
+                                                                            {formatDate(wd)}
+                                                                        </strong>
                                                                     </div>
-                                                                );
-                                                            } else {
-                                                                const startTime = workStartEntry ? formatTime(workStartEntry.startTime) : '-';
-                                                                const endTime = workEndEntry ? formatTime(workEndEntry.endTime || workEndEntry.startTime) : '-';
-                                                                let totalH = 0;
-                                                                let totalM = 0;
-                                                                if (workStartEntry && workEndEntry) {
-                                                                    const start = new Date(workStartEntry.startTime);
-                                                                    const end = new Date(workEndEntry.endTime || workEndEntry.startTime);
-                                                                    let minutesWorked;
-                                                                    if (end.toDateString() !== start.toDateString()) {
-                                                                        const midnight = new Date(start);
-                                                                        midnight.setHours(24, 0, 0, 0);
-                                                                        minutesWorked = (midnight - start) / 60000;
-                                                                    } else {
-                                                                        minutesWorked =
-                                                                            getMinutesSinceMidnight(workEndEntry.endTime || workEndEntry.startTime) -
-                                                                            getMinutesSinceMidnight(workStartEntry.startTime);
-                                                                    }
-                                                                    totalH = Math.floor(minutesWorked / 60);
-                                                                    totalM = minutesWorked % 60;
-                                                                }
-                                                                return (
-                                                                    <div key={i} className="admin-day-card">
-                                                                        <div className="admin-day-card-header">
-                                                                            <strong>
-                                                                                {wd.toLocaleDateString('de-DE', { weekday: 'long' })},{' '}
-                                                                                {formatDate(wd)}
-                                                                            </strong>
-                                                                        </div>
-                                                                        <div className="admin-day-content">
-                                                                            <ul className="time-entry-list">
-                                                                                <li>
-                                                                                    <span className="entry-label">Work Start:</span> {startTime}
-                                                                                </li>
-                                                                                <li>
-                                                                                    <span className="entry-label">Work End:</span> {endTime}
-                                                                                </li>
-                                                                                <li>
-                                                                                    <span className="entry-label">Total:</span> {totalH} Std {totalM} min
-                                                                                </li>
-                                                                            </ul>
-                                                                        </div>
+                                                                    <div className="admin-day-content">
+                                                                        <ul className="time-entry-list">
+                                                                            {dayEntries
+                                                                                .sort((a, b) => a.punchOrder - b.punchOrder)
+                                                                                .map(e => {
+                                                                                    let displayTime = "-";
+                                                                                    if (e.punchOrder === 1) {
+                                                                                        displayTime = formatTime(e.startTime);
+                                                                                    } else if (e.punchOrder === 2) {
+                                                                                        displayTime = e.breakStart
+                                                                                            ? formatTime(e.breakStart)
+                                                                                            : formatTime(e.startTime);
+                                                                                    } else if (e.punchOrder === 3) {
+                                                                                        displayTime = e.breakEnd
+                                                                                            ? formatTime(e.breakEnd)
+                                                                                            : formatTime(e.startTime);
+                                                                                    } else if (e.punchOrder === 4) {
+                                                                                        displayTime = formatTime(e.endTime);
+                                                                                    }
+                                                                                    return (
+                                                                                        <li key={e.id}>
+                                                                                            <span className="entry-label">
+                                                                                                {getStatusLabel(e.punchOrder)}:
+                                                                                            </span>{" "}
+                                                                                            {displayTime}
+                                                                                        </li>
+                                                                                    );
+                                                                                })}
+                                                                        </ul>
                                                                     </div>
-                                                                );
-                                                            }
+                                                                </div>
+                                                            );
                                                         } else {
-                                                            const dailyDiff =
-                                                                dayEntries.length >= 4
-                                                                    ? computeDailyDiff(dayEntries, expectedForDay, false)
-                                                                    : '';
+                                                            // Festangestellte
+                                                            const dailyDiff = dayEntries.length >= 4
+                                                                ? computeDailyDiff(dayEntries, expectedForDay, false)
+                                                                : '';
                                                             return (
                                                                 <div key={i} className="admin-day-card">
                                                                     <div className="admin-day-card-header">
@@ -633,8 +745,7 @@ const AdminDashboard = () => {
                                                                             {wd.toLocaleDateString('de-DE', { weekday: 'long' })},{' '}
                                                                             {formatDate(wd)}
                                                                             <span className="expected-hours">
-                                                                                ({t('adminDashboard.expected')}: {expectedForDay}{' '}
-                                                                                {t('adminDashboard.hours')})
+                                                                                ({t('adminDashboard.expected')}: {expectedForDay}h)
                                                                             </span>
                                                                         </strong>
                                                                         {dailyDiff && (
@@ -650,40 +761,32 @@ const AdminDashboard = () => {
                                                                         )}
                                                                     </div>
                                                                     <div className="admin-day-content">
-                                                                        {dayEntries.length === 0 ? (
-                                                                            <p className="no-entries">
-                                                                                {t('adminDashboard.noEntriesThisWeek')}
-                                                                            </p>
-                                                                        ) : (
-                                                                            <ul className="time-entry-list">
-                                                                                {dayEntries
-                                                                                    .sort((a, b) => a.punchOrder - b.punchOrder)
-                                                                                    .map(e => {
-                                                                                        let displayTime = '-';
-                                                                                        if (e.punchOrder === 1) {
-                                                                                            displayTime = formatTime(e.startTime);
-                                                                                        } else if (e.punchOrder === 2) {
-                                                                                            displayTime = e.breakStart
-                                                                                                ? formatTime(e.breakStart)
-                                                                                                : formatTime(e.startTime);
-                                                                                        } else if (e.punchOrder === 3) {
-                                                                                            displayTime = e.breakEnd
-                                                                                                ? formatTime(e.breakEnd)
-                                                                                                : formatTime(e.startTime);
-                                                                                        } else if (e.punchOrder === 4) {
-                                                                                            displayTime = formatTime(e.endTime);
-                                                                                        }
-                                                                                        return (
-                                                                                            <li key={e.id}>
-                                                                                                <span className="entry-label">
-                                                                                                    {getStatusLabel(e.punchOrder)}:
-                                                                                                </span>{' '}
-                                                                                                {displayTime}
-                                                                                            </li>
-                                                                                        );
-                                                                                    })}
-                                                                            </ul>
-                                                                        )}
+                                                                        <ul className="time-entry-list">
+                                                                            {dayEntries
+                                                                                .sort((a, b) => a.punchOrder - b.punchOrder)
+                                                                                .map(e => {
+                                                                                    let displayTime = '-';
+                                                                                    if (e.punchOrder === 1) {
+                                                                                        displayTime = formatTime(e.startTime);
+                                                                                    } else if (e.punchOrder === 2) {
+                                                                                        displayTime = e.breakStart
+                                                                                            ? formatTime(e.breakStart)
+                                                                                            : formatTime(e.startTime);
+                                                                                    } else if (e.punchOrder === 3) {
+                                                                                        displayTime = e.breakEnd
+                                                                                            ? formatTime(e.breakEnd)
+                                                                                            : formatTime(e.startTime);
+                                                                                    } else if (e.punchOrder === 4) {
+                                                                                        displayTime = formatTime(e.endTime);
+                                                                                    }
+                                                                                    return (
+                                                                                        <li key={e.id}>
+                                                                                            <span className="entry-label">{getStatusLabel(e.punchOrder)}:</span>{" "}
+                                                                                            {displayTime}
+                                                                                        </li>
+                                                                                    );
+                                                                                })}
+                                                                        </ul>
                                                                     </div>
                                                                 </div>
                                                             );
@@ -693,7 +796,7 @@ const AdminDashboard = () => {
                                                         className="print-times-button"
                                                         onClick={() => openPrintUserModal(username)}
                                                     >
-                                                        {t('Zeiten Drucken')}
+                                                        Zeiten Drucken
                                                     </button>
                                                 </div>
                                             )}
@@ -745,23 +848,26 @@ const AdminDashboard = () => {
                     </section>
                 </div>
 
-                {/* Rechte Spalte: Correction Requests */}
+                {/* Rechte Spalte: Korrekturen */}
                 <div className="right-column">
                     <section className="correction-section">
-                        <h3>
-                            {t('adminDashboard.correctionRequestsTitle')} {t('')}{' '}
-                        </h3>
+                        <h3>{t('adminDashboard.correctionRequestsTitle')}</h3>
                         {allCorrections.length === 0 ? (
-                            <p>
-                                {t('adminDashboard.noEntriesThisWeek')}{' '}
-                            </p>
+                            <p>{t('adminDashboard.noEntriesThisWeek')}</p>
                         ) : (
                             <ul className="correction-list">
                                 {allCorrections.map(corr => {
-                                    const dateStr = new Date(corr.desiredStartTime).toLocaleDateString();
+                                    const dateStrRaw = corr.desiredStartTime || corr.desiredStart;
+                                    let correctionDate = "-";
+                                    if (dateStrRaw) {
+                                        const parsed = new Date(dateStrRaw);
+                                        if (!isNaN(parsed.getTime())) {
+                                            correctionDate = formatDate(parsed);
+                                        }
+                                    }
                                     return (
                                         <li key={corr.id} className="correction-item">
-                                            <h4>Korrektur vom {dateStr}</h4>
+                                            <h4>Korrektur vom {correctionDate}</h4>
                                             <div className="correction-info">
                                                 <p><strong>User:</strong> {corr.username}</p>
                                                 <p><strong>Work Start:</strong> {corr.workStart || "-"}</p>
@@ -794,7 +900,6 @@ const AdminDashboard = () => {
                                     );
                                 })}
                             </ul>
-
                         )}
                     </section>
                 </div>
@@ -805,7 +910,7 @@ const AdminDashboard = () => {
                 <VacationCalendarAdmin vacationRequests={allVacations.filter(v => v.approved)} />
             </div>
 
-            {/* Edit Modal */}
+            {/* Edit-Modal (Zeiten anpassen) */}
             {editModalVisible && (
                 <div className="modal-overlay">
                     <div className="modal-content">
@@ -813,19 +918,41 @@ const AdminDashboard = () => {
                         <form onSubmit={handleEditSubmit}>
                             <div className="form-group">
                                 <label>Work Start:</label>
-                                <input type="time" name="workStart" value={editData.workStart} onChange={handleEditInputChange} required />
+                                <input
+                                    type="time"
+                                    name="workStart"
+                                    value={editData.workStart}
+                                    onChange={handleEditInputChange}
+                                    required
+                                />
                             </div>
                             <div className="form-group">
                                 <label>Break Start:</label>
-                                <input type="time" name="breakStart" value={editData.breakStart} onChange={handleEditInputChange} />
+                                <input
+                                    type="time"
+                                    name="breakStart"
+                                    value={editData.breakStart}
+                                    onChange={handleEditInputChange}
+                                />
                             </div>
                             <div className="form-group">
                                 <label>Break End:</label>
-                                <input type="time" name="breakEnd" value={editData.breakEnd} onChange={handleEditInputChange} />
+                                <input
+                                    type="time"
+                                    name="breakEnd"
+                                    value={editData.breakEnd}
+                                    onChange={handleEditInputChange}
+                                />
                             </div>
                             <div className="form-group">
                                 <label>Work End:</label>
-                                <input type="time" name="workEnd" value={editData.workEnd} onChange={handleEditInputChange} required />
+                                <input
+                                    type="time"
+                                    name="workEnd"
+                                    value={editData.workEnd}
+                                    onChange={handleEditInputChange}
+                                    required
+                                />
                             </div>
                             <div className="form-group">
                                 <label>{t('adminPassword')}:</label>
@@ -856,6 +983,7 @@ const AdminDashboard = () => {
                 </div>
             )}
 
+            {/* PrintUser-Modal */}
             {printUserModalVisible && (
                 <div className="modal-overlay">
                     <div className="modal-content">

@@ -1,3 +1,4 @@
+// src/main/java/com/chrono/chrono/config/SecurityConfig.java
 package com.chrono.chrono.config;
 
 import com.chrono.chrono.services.CustomUserDetailsService;
@@ -6,6 +7,7 @@ import com.chrono.chrono.utils.PasswordEncoderConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
@@ -36,14 +38,12 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Erlaube beide Origins
         configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Origin"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Gilt für alle Endpunkte:
         source.registerCorsConfiguration("/**", configuration);
         return source;
     }
@@ -63,12 +63,19 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/api/nfc/**", "/api/timetracking/**", "/api/correction/**").permitAll();
-                    auth.requestMatchers("/api/admin/**").permitAll();
-                    auth.requestMatchers("/api/vacation/**").hasAnyRole("USER", "ADMIN");
-                    auth.requestMatchers("/api/auth/**").permitAll();
-                    auth.requestMatchers("/api/timetracking/editDay").permitAll();
+                    // Alle relevanten Endpunkte werden freigegeben:
+                    auth.requestMatchers(HttpMethod.DELETE, "/api/admin/users/**").permitAll();
 
+                    auth.requestMatchers(
+                            "/api/nfc/**",
+                            "/api/timetracking/**",
+                            "/api/correction/**",
+                            "/api/admin/**",
+                            "/api/vacation/**",
+                            "/api/auth/**",
+                            "/api/timetracking/editDay"
+                    ).permitAll();
+                    // Alle anderen Endpunkte erfordern Authentifizierung:
                     auth.anyRequest().authenticated();
                 })
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
