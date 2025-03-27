@@ -3,7 +3,7 @@ import { useNotification } from './NotificationContext';
 
 const AuthContext = createContext();
 
-const SESSION_DURATION = 300000; // 5 Minuten
+const SESSION_DURATION = 800000; // 5 Minuten
 
 export const AuthProvider = ({ children }) => {
     const [authToken, setAuthToken] = useState(localStorage.getItem('token'));
