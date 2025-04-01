@@ -1,6 +1,8 @@
+// src/pages/Login.jsx
 import React, { useState, useEffect, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Navbar from '../components/Navbar';
 import '../styles/Login.css';
 import api from "../utils/api.js";
 import { LanguageContext, useTranslation } from '../context/LanguageContext';
@@ -33,6 +35,9 @@ const Login = () => {
     const [form, setForm] = useState({ username: '', password: '' });
     const [error, setError] = useState('');
     const [punchMessage, setPunchMessage] = useState('');
+
+    const { language, setLanguage } = useContext(LanguageContext);
+    const { t } = useTranslation();
 
     useEffect(() => {
         if (process.env.NODE_ENV === 'test') {
@@ -109,46 +114,45 @@ const Login = () => {
         }
     };
 
-    const { language, setLanguage } = useContext(LanguageContext);
-    const { t } = useTranslation();
-
     return (
-        <div className="login-container card">
-            <h2>{t("login.title")}</h2>
-            {error && <p className="error-message">{error}</p>}
-            {punchMessage && (
-                <div className="punch-message">{punchMessage}</div>
-            )}
-            {/* Sprachwahl-Dropdown: Nur auf der Login-Seite */}
-            <div className="language-switch">
-                <label>{t("login.languageLabel")}</label>
-                <select value={language} onChange={(e) => setLanguage(e.target.value)}>
-                    <option value="de">DE</option>
-                    <option value="en">EN</option>
-                </select>
+        <>
+            {/* Navbar wird oben eingebunden */}
+            <Navbar />
+            <div className="login-container card">
+                <h2>{t("login.title")}</h2>
+                {error && <p className="error-message">{error}</p>}
+                {punchMessage && (
+                    <div className="punch-message">{punchMessage}</div>
+                )}
+                {/* Sprachwahl-Dropdown: Nur auf der Login-Seite */}
+                <div className="language-switch">
+                    <label>{t("login.languageLabel")}</label>
+                    <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                        <option value="de">DE</option>
+                        <option value="en">EN</option>
+                    </select>
+                </div>
+                <form onSubmit={handleSubmit}>
+                    <input
+                        type="text"
+                        name="username"
+                        value={form.username}
+                        onChange={handleChange}
+                        placeholder={t("login.username")}
+                        required
+                    />
+                    <input
+                        type="password"
+                        name="password"
+                        value={form.password}
+                        onChange={handleChange}
+                        placeholder={t("login.password")}
+                        required
+                    />
+                    <button type="submit">{t("login.button")}</button>
+                </form>
             </div>
-            <button onClick={() => showPunchMessage("Test-Stempel ausgeführt.")}>
-            </button>
-            <form onSubmit={handleSubmit}>
-                <input
-                    type="text"
-                    name="username"
-                    value={form.username}
-                    onChange={handleChange}
-                    placeholder={t("login.username")}
-                    required
-                />
-                <input
-                    type="password"
-                    name="password"
-                    value={form.password}
-                    onChange={handleChange}
-                    placeholder={t("login.password")}
-                    required
-                />
-                <button type="submit">{t("login.button")}</button>
-            </form>
-        </div>
+        </>
     );
 };
 

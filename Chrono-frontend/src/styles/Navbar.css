@@ -89,3 +89,42 @@
 .refresh-button:active {
     transform: translateY(0);
 }
+/* Zusätzliche CSS-Regeln für den Helligkeitsregler in der Navbar */
+.brightness-control {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #fff;
+    font-size: 0.9rem;
+}
+
+.brightness-control label {
+    font-size: 0.9rem;
+}
+
+.brightness-control input[type="range"] {
+    -webkit-appearance: none;
+    width: 100px;
+    height: 4px;
+    background: #fff;
+    border-radius: 2px;
+    outline: none;
+}
+
+.brightness-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.brightness-control input[type="range"]::-moz-range-thumb {
+    width: 12px;
+    height: 12px;
+    background: var(--primary-color);
+    border-radius: 50%;
+    cursor: pointer;
+}

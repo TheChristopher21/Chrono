@@ -293,70 +293,65 @@ function HourlyDashboard() {
             console.error('Error loading correction requests', err);
         }
     }
-
-    // NFC-Polling
-    const doNfcCheck = useCallback(async () => {
-        if (!userProfile?.isHourly) return;
-        const todayISO = new Date().toISOString().slice(0, 10);
-        const todayEntries = allEntries.filter(e => e.startTime.slice(0, 10) === todayISO);
-        if (todayEntries.length >= 4) return;
-
+// Am besten in handleManualPunch oder einem ähnlichen onClick-Handler:
+    async function handleManualPunch() {
         try {
-            const response = await fetch('http://localhost:8080/api/nfc/read/4');
+            await api.post('/api/timetracking/punch', null, {
+                params: { username: userProfile.username } // Nur username!
+            });
+            setPunchMessage(`Eingestempelt: ${userProfile.username}`);
+            setTimeout(() => setPunchMessage(''), 3000);
+            // Anschließend aktuelle Einträge neu laden
+            fetchEntries();
+        } catch (err) {
+            console.error('Punch-Fehler:', err);
+            notify("Fehler beim Stempeln.");
+        }
+    }
+
+    // HourlyDashboard.jsx (NFC-Check)
+    async function doNfcCheck() {
+        try {
+            const response = await fetch('http://localhost:8080/api/nfc/read/1');
             if (!response.ok) return;
             const json = await response.json();
             if (json.status === 'no-card' || json.status === 'error') return;
-            if (json.status === 'success' && json.data) {
+            if (json.status === 'success') {
                 const cardUser = parseHex16(json.data);
                 if (cardUser) {
-                    const now = Date.now();
-                    if (now - lastPunchTime < 5000) return;
-                    setLastPunchTime(now);
-
-                    if (todayEntries.length >= 4) {
-                        notify(t("maxStampsReached"));
-                        return;
-                    }
-
-                    try {
-                        await api.post('/api/timetracking/punch', null, {
-                            params: { username: cardUser, isHourly: true, currentDate: formatLocalDate(new Date()) }
-                        });
-                        setPunchMessage(`${t("punchMessage")}: ${cardUser}`);
-                        setTimeout(() => setPunchMessage(''), 3000);
-
-                        if (userProfile.username.toLowerCase() === cardUser.toLowerCase()) {
-                            fetchEntries();
-                        }
-                    } catch (err) {
-                        console.error("Punch error:", err);
-                    }
+                    // ...
+                    await api.post('/api/timetracking/punch', null, {
+                        params: { username: cardUser } // Nur username
+                    });
+                    // ...
                 }
             }
         } catch (err) {
-            console.error("NFC fetch error:", err);
+            console.error("Punch error:", err);
         }
-    }, [allEntries, fetchEntries, lastPunchTime, notify, t, userProfile]);
+    }
+
 
     useEffect(() => {
         const interval = setInterval(() => doNfcCheck(), 2000);
         return () => clearInterval(interval);
     }, [doNfcCheck]);
 
-    // Manuelles Stempeln
+// HourlyDashboard.jsx
     async function handleManualPunch() {
         try {
             await api.post('/api/timetracking/punch', null, {
-                params: { username: userProfile.username, isHourly: true, currentDate: formatLocalDate(new Date()) }
+                params: { username: userProfile.username } // Nur username
             });
-            setPunchMessage(`${t("manualPunchMessage")} ${userProfile.username}`);
+            setPunchMessage(`Eingestempelt: ${userProfile.username}`);
             setTimeout(() => setPunchMessage(''), 3000);
-            fetchEntries();
+            fetchEntries(); // aktualisiere die Liste
         } catch (err) {
             console.error('Punch-Fehler:', err);
-            notify(t("manualPunchError"));
+            notify('Fehler beim Stempeln'); // oder t("manualPunchError")
         }
     }
+
 
     // Gesamtsumme (aktuelle Woche)
     const endOfWeek = addDays(selectedMonday, 6);

@@ -82,15 +82,18 @@ input, button, select, textarea {
     line-height: 1.4;
 }
 
-.notification-modal button {
-    background-color: var(--primary-color);
-    color: #fff;
-    padding: 0.5rem 1rem;
-    font-size: 0.95rem;
-    border-radius: 4px;
-    transition: background-color 0.2s ease;
+/* global.css oder Navbar.css */
+:root {
+    --app-brightness: 1; /* Standardwert */
 }
 
-.notification-modal button:hover {
-    background-color: var(--primary-hover);
+body {
+    font-family: var(--font-family);
+    background-color: var(--light-bg);
+    color: var(--text-color);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+
+    /* Nutze die Variable mit Fallback */
+    filter: brightness(var(--app-brightness, 1));
 }
