@@ -580,6 +580,18 @@ const UserDashboard = () => {
     // 10) Korrektur-Funktionen
     // ----------------------------
     const openCorrectionModal = (dateObj) => {
+        // 1) Prüfen, ob dateObj == heute:
+        const today = new Date();
+        const isSameDay =
+            today.getFullYear() === dateObj.getFullYear() &&
+            today.getMonth() === dateObj.getMonth() &&
+            today.getDate() === dateObj.getDate();
+        if (isSameDay) {
+            notify("Korrekturanträge sind erst ab dem nächsten Tag möglich.");
+            return;
+        }
+
+        // 2) restliche Logik wie gehabt
         const localDate = dateObj.toLocaleDateString();
         const dayEntries = allEntries.filter(e => {
             const entryDate = new Date(e.startTime).toLocaleDateString();
@@ -596,7 +608,6 @@ const UserDashboard = () => {
             const d = new Date(dateStr);
             return isNaN(d.getTime()) ? '' : d.toISOString().slice(11, 16);
         };
-
         const formatToInputManualTime = (timeStr) => {
             return timeStr && typeof timeStr === 'string' && timeStr.length >= 5
                 ? timeStr.slice(0, 5)

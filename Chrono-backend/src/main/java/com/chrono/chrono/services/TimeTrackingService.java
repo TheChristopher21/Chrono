@@ -129,7 +129,7 @@ public class TimeTrackingService {
      * Diese Methode läuft täglich um 23:15 Uhr und schließt alle offenen Zeiteinträge
      * des aktuellen Tages automatisch, falls der Benutzer vergessen hat, auszustempeln.
      */
-    @Scheduled(cron = "0 35 23 * * *") // -> täglich um 23:15 Uhr
+    @Scheduled(cron = "0 0 23 * * *") // -> täglich um 23:15 Uhr
     @Transactional
     public void autoPunchOut() {
         LocalDate today = LocalDate.now();

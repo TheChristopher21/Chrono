@@ -55,7 +55,7 @@ const Navbar = () => {
                         {/* Helligkeitsregler in der Navbar */}
                         <li>
                             <div className="brightness-control">
-                                <label htmlFor="brightness-slider">{t("navbar.brightness")}</label>
+                                <label htmlFor="brightness-slider">{t("Helligkeit")}</label>
                                 <input
                                     id="brightness-slider"
                                     type="range"
