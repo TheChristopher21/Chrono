@@ -24,7 +24,7 @@ public class BackupService {
 
         // Absolute Pfade laut deiner Angabe:
         String desktopPath = "C:\\Users\\siefe\\Desktop";
-        String mysqlpumpPath = "C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqlpump.exe";
+        String mysqlpumpPath = "C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump.exe";
 
         // Dateiname mit aktuellem Datum, z.B. backup_2025-03-30.sql
         String dateString = LocalDate.now().format(DateTimeFormatter.ISO_DATE);
