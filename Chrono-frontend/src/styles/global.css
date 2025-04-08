@@ -1,34 +1,63 @@
+/****************************************
+ * global.css
+ ****************************************/
 :root {
-    --primary-color: #5A67D8;
+    --app-brightness: 1;
+
+    /* Falls du Light/Dark-Hintergründe verwenden willst */
+    --light-bg-image: url("/img/light-bg.jpg"); /* Pfad anpassen */
+    --dark-bg-image: url("/img/dark-bg.jpg");   /* Pfad anpassen */
+
+    --background-color: #f0f2f5;
+    --card-bg: #ffffff;
+    --text-color: #2d3748;
+    --primary-color: #5a67d8;
     --primary-hover: #434190;
-    --secondary-color: #48BB78;
-    --secondary-hover: #38A169;
-    --success-color: #48BB78;
+    --secondary-color: #48bb78;
+    --secondary-hover: #38a169;
     --danger-color: #E53E3E;
-    --warning-color: #F6AD55;
-    --light-bg: #F7FAFC;
-    --card-bg: #FFFFFF;
-    --text-color: #2D3748;
+    --border-color: #e2e8f0;
     --subtext-color: #718096;
-    --border-color: #E2E8F0;
-    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --shadow-light: 0 4px 6px rgba(0,0,0,0.1);
     --radius: 12px;
-    --transition: 0.3s ease;
     --font-family: 'Poppins', sans-serif;
+
+    --body-bg: var(--light-bg-image);
 }
 
+[data-theme="dark"] {
+    --background-color: #18191A;
+    --card-bg: rgba(36, 37, 38, 0.8);
+    --text-color: #e4e6eb;
+    --primary-color: #667eea;
+    --primary-hover: #5a67d8;
+    --secondary-color: #48bb78;
+    --secondary-hover: #38a169;
+    --danger-color: #E53E3E;
+    --border-color: #3A3B3C;
+    --subtext-color: #a0a3ab;
+    --shadow-light: 0 4px 10px rgba(0, 0, 0, 0.6);
+
+    --body-bg: var(--dark-bg-image);
+}
+
+html, body {
+    /* Falls du ein globales Hintergrundbild willst */
+    background: var(--background-color) var(--body-bg)
+    no-repeat center center fixed;
+    background-size: cover;
+
+    color: var(--text-color);
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family), serif;
+}
+
+/* Basis-Resets */
 * {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
-}
-
-body {
-    font-family: var(--font-family);
-    background-color: var(--light-bg);
-    color: var(--text-color);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
 }
 
 a {
@@ -41,16 +70,7 @@ img {
     height: auto;
 }
 
-button {
-    cursor: pointer;
-    border: none;
-    outline: none;
-}
-
-input, button, select, textarea {
-    font-family: inherit;
-}
-
+/* Optional: Notification Styling */
 .notification-overlay {
     position: fixed;
     top: 0;
@@ -80,20 +100,4 @@ input, button, select, textarea {
     color: var(--text-color);
     font-size: 1rem;
     line-height: 1.4;
-}
-
-/* global.css oder Navbar.css */
-:root {
-    --app-brightness: 1; /* Standardwert */
-}
-
-body {
-    font-family: var(--font-family);
-    background-color: var(--light-bg);
-    color: var(--text-color);
-    line-height: 1.6;
-    -webkit-font-smoothing: antialiased;
-
-    /* Nutze die Variable mit Fallback */
-    filter: brightness(var(--app-brightness, 1));
 }

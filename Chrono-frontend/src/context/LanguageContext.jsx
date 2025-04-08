@@ -13,6 +13,10 @@ const translations = {
             testStampMessage: "Test-Stempel ausgeführt",
             testStampButton: "Test-Stempel"
         },
+            admin: {
+            changePasswordTitle: "Passwort ändern",
+            changePasswordButton: "Passwort ändern"
+        },
         register: {
             title: "Registrieren",
             username: "Benutzername",
@@ -126,10 +130,12 @@ const translations = {
             adminStart: "Admin Start",
             userManagement: "Benutzerverwaltung",
             myDashboard: "Mein Dashboard",
-            profile: "Profil"
+            profile: "Profil",
+            brightness: "brightness",
         },
         // Top-Level Schlüssel für den UserDashboard-Bereich
         title: "Mein Dashboard",
+        correctionRequests: "Korrektur Anträge",
         usernameLabel: "Benutzer",
         notLoggedIn: "Nicht eingeloggt",
         expectedWorkHours: "Erwartete Arbeitszeit/Tag",
@@ -203,6 +209,10 @@ const translations = {
             error: "Login failed. Please check your credentials.",
             testStampMessage: "Test stamp executed",
             testStampButton: "Test Stamp"
+        },
+        admin: {
+            changePasswordTitle: "Change Password",
+            changePasswordButton: "Change Password"
         },
         register: {
             title: "Register",
@@ -317,10 +327,13 @@ const translations = {
             adminStart: "Admin Start",
             userManagement: "User Management",
             myDashboard: "My Dashboard",
-            profile: "Profile"
+            profile: "Profile",
+            brightness: "brightness",
+
         },
         // Top-Level keys for the User Dashboard
         title: "My Dashboard",
+        correctionRequests: "Correction Requests",
         usernameLabel: "User",
         notLoggedIn: "Not logged in",
         expectedWorkHours: "Expected Work Hours per Day",

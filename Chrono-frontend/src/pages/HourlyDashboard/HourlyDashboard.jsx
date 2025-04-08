@@ -149,7 +149,7 @@ const HourlyDashboard = () => {
 
     async function doNfcCheck() {
         try {
-            const response = await fetch('http://localhost:8080/api/nfc/read/1');
+            const response = await fetch(process.env.APIURL+'/api/nfc/read/1');
             if (!response.ok) return;
             const json = await response.json();
             if (json.status === 'no-card' || json.status === 'error') return;

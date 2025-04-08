@@ -1,4 +1,3 @@
-// src/main/java/com/chrono/chrono/config/DataInitializer.java
 package com.chrono.chrono.config;
 
 import com.chrono.chrono.entities.Role;
@@ -6,6 +5,7 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -24,31 +24,49 @@ public class DataInitializer implements CommandLineRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    // Default auf true, falls keine Umgebungsvariable gesetzt ist
+    @Value("${app.initialize.admin:true}")
+    private boolean initializeAdmin;
+
+    // Default-Werte: "admin" für Username und Passwort
+    @Value("${app.admin.username:admin}")
+    private String adminUsername;
+
+    @Value("${app.admin.password:admin}")
+    private String adminPassword;
+
     @Override
-    public void run(String... args) throws Exception {
-        // Prüfe, ob ein Benutzer mit dem Benutzernamen "admin" existiert
-        Optional<User> adminUserOptional = userRepository.findByUsername("admin");
+    public void run(String... args) {
+        if (!initializeAdmin) {
+            System.out.println("[DataInitializer] Admin-Initialisierung ist deaktiviert (app.initialize.admin=false).");
+            return;
+        }
+
+        if (adminUsername.trim().isEmpty() || adminPassword.trim().isEmpty()) {
+            System.out.println("[DataInitializer] Admin-Zugangsdaten sind leer, Admin-Konto wird nicht erstellt.");
+            return;
+        }
+
+        Optional<User> adminUserOptional = userRepository.findByUsername(adminUsername);
         if (adminUserOptional.isEmpty()) {
-            // Erstelle neuen Admin-Benutzer
+            // Admin-Konto anlegen
             User adminUser = new User();
-            adminUser.setUsername("admin");
-            // Setze sowohl das Login-Passwort als auch das separate Admin-Passwort (falls verwendet)
-            String encodedPassword = passwordEncoder.encode("admin");
+            adminUser.setUsername(adminUsername);
+            String encodedPassword = passwordEncoder.encode(adminPassword);
             adminUser.setPassword(encodedPassword);
             adminUser.setAdminPassword(encodedPassword);
             adminUser.setFirstName("Default");
             adminUser.setLastName("Admin");
             adminUser.setEmail("admin@example.com");
 
-            // Setze die Admin-Rolle
             Role adminRole = roleRepository.findByRoleName("ROLE_ADMIN")
                     .orElseGet(() -> roleRepository.save(new Role("ROLE_ADMIN")));
             adminUser.getRoles().add(adminRole);
 
             userRepository.save(adminUser);
-            System.out.println("[DataInitializer] Default admin user created.");
+            System.out.println("[DataInitializer] Admin-Konto ('" + adminUsername + "') wurde erstellt.");
         } else {
-            System.out.println("[DataInitializer] Admin user already exists.");
+            System.out.println("[DataInitializer] Admin-Konto existiert bereits (Benutzername: '" + adminUsername + "').");
         }
     }
 }

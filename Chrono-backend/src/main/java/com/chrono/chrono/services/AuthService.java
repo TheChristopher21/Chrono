@@ -1,4 +1,3 @@
-// src/main/java/com/chrono/chrono/services/AuthService.java
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.AuthRequest;
@@ -44,7 +43,7 @@ public class AuthService {
 
         User user = new User();
         user.setUsername(request.getUsername());
-        // Passwort wird gehasht
+        // Passwort wird gehasht, bevor es gespeichert wird
         user.setPassword(passwordEncoder.encode(request.getPassword()));
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
@@ -67,6 +66,7 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new RuntimeException("User not found!"));
 
+        // Vergleicht das eingegebene Passwort mit dem gespeicherten BCrypt-Hash
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new RuntimeException("Invalid credentials");
         }

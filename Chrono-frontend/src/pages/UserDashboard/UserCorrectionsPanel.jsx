@@ -1,5 +1,5 @@
 // UserCorrectionsPanel.jsx
-import React from 'react';
+import 'react';
 import PropTypes from 'prop-types';
 import { addDays, formatDate } from './userDashUtils';
 
@@ -9,7 +9,6 @@ const UserCorrectionsPanel = ({
                                   setShowCorrectionsPanel,
                                   selectedCorrectionMonday,
                                   setSelectedCorrectionMonday,
-                                  correctionRequests,
                                   showAllCorrections,
                                   setShowAllCorrections,
                                   sortedCorrections
@@ -27,9 +26,10 @@ const UserCorrectionsPanel = ({
     return (
         <section className="correction-panel">
             <div className="corrections-header" onClick={() => setShowCorrectionsPanel(prev => !prev)}>
-                <h3>{t("correctionRequests") || "Korrekturanträge"}</h3>
+                <h3>{t("correctionRequests")}</h3>
                 <span className="toggle-icon">{showCorrectionsPanel ? "▲" : "▼"}</span>
             </div>
+
             {showCorrectionsPanel && (
                 <div className="corrections-content">
                     <div className="week-navigation corrections-nav">

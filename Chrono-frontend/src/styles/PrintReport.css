@@ -1,10 +1,10 @@
 .print-report {
-    background: #fff;
+    background: var(--card-bg);
     padding: 20px;
     margin: 20px auto;
     max-width: 800px;
-    color: #333;
-    border: 1px solid #ddd;
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
     border-radius: 8px;
 }
 
@@ -28,7 +28,7 @@
 }
 
 .report-day {
-    border-bottom: 1px solid #ddd;
+    border-bottom: 1px solid var(--border-color);
     padding: 10px 0;
 }
 
@@ -49,7 +49,7 @@
 
 .print-buttons button {
     padding: 10px 20px;
-    background-color: #007BFF;
+    background-color: var(--primary-color);
     color: #fff;
     border: none;
     margin: 0 10px;
@@ -59,7 +59,7 @@
 }
 
 .print-buttons button:hover {
-    background-color: #0056b3;
+    background-color: var(--primary-hover);
 }
 
 @media print {

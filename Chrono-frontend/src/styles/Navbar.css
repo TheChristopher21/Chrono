@@ -1,29 +1,42 @@
-:root {
-    --primary-color: #5A67D8;
-    --primary-hover: #434190;
-    --light-bg: #F7FAFC;
-    --card-bg: #FFFFFF;
-    --text-color: #2D3748;
-    --border-color: #E2E8F0;
-    --radius: 12px;
-    --transition: 0.3s ease;
-    --font-family: 'Poppins', sans-serif;
-}
-
+/****************************************
+ * Navbar.css
+ ****************************************/
 .navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: var(--primary-color);
+    /* Leicht transparente Hintergrundfarbe (Light Mode) */
+    background-color: rgba(255, 255, 255, 0.8);
     padding: 0.625rem 1.25rem;
     font-family: var(--font-family);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
 }
 
-.navbar-brand .navbar-logo {
+.navbar:hover {
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Logo-Text oder Logo-Icon in der Navbar */
+.navbar-brand {
+    display: flex;
+    align-items: center;
+}
+
+/* Wenn du Text als Logo verwendest */
+.navbar-logo {
+    display: inline-block;
     font-size: 1.5rem;
-    color: #fff;
+    color: var(--text-color);
     font-weight: 600;
-    text-decoration: none;
+    transition: color 0.3s;
+}
+
+/* Wenn du ein Logo-Bild hast: .navbar-logo-img { max-height: 40px; } */
+.navbar-logo-img {
+    max-height: 40px;
+    width: auto;
+    display: inline-block;
 }
 
 .navbar-links {
@@ -35,27 +48,30 @@
 }
 
 .navbar-links li {
-    margin-left: 0.9375rem;
+    margin-left: 1rem;
 }
 
+/* Allgemeine Link-Stile (Light Mode) */
 .navbar-links a {
-    color: #fff;
+    color: var(--text-color);
     padding: 0.5rem 0.75rem;
     border-radius: var(--radius);
-    text-decoration: none;
-    transition: background-color var(--transition);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+/* Hover-Effekt */
 .navbar-links a:hover {
     background-color: var(--primary-hover);
+    color: #fff;
 }
 
 .navbar-username {
-    color: #fff;
+    color: var(--text-color);
     font-weight: 600;
-    margin-left: 0.625rem;
+    margin-left: 0.5rem;
 }
 
+/* Logout-Button */
 .navbar-logout {
     background-color: var(--danger-color);
     color: #fff;
@@ -63,38 +79,19 @@
     border: none;
     border-radius: var(--radius);
     cursor: pointer;
-    transition: background-color var(--transition);
+    transition: background-color 0.3s ease, transform 0.2s;
 }
-
 .navbar-logout:hover {
-    background-color: #c82333;
-}
-.refresh-button {
-    padding: 0.75rem 1.5rem;
-    background-color: var(--primary-color);
-    color: #fff;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    font-weight: 600;
-    transition: background-color var(--transition), transform var(--transition);
-    box-shadow: var(--shadow);
-}
-
-.refresh-button:hover {
-    background-color: var(--primary-hover);
+    background-color: #c82333; /* etwas dunkleres Rot */
     transform: translateY(-2px);
 }
 
-.refresh-button:active {
-    transform: translateY(0);
-}
-/* Zusätzliche CSS-Regeln für den Helligkeitsregler in der Navbar */
+/* Brightness-Control */
 .brightness-control {
     display: flex;
     align-items: center;
     gap: 5px;
-    color: #fff;
+    color: var(--text-color);
     font-size: 0.9rem;
 }
 
@@ -106,14 +103,14 @@
     -webkit-appearance: none;
     width: 100px;
     height: 4px;
-    background: #fff;
+    background: #ccc;
     border-radius: 2px;
     outline: none;
+    cursor: pointer;
 }
 
 .brightness-control input[type="range"]::-webkit-slider-thumb {
     -webkit-appearance: none;
-    appearance: none;
     width: 12px;
     height: 12px;
     background: var(--primary-color);
@@ -127,4 +124,52 @@
     background: var(--primary-color);
     border-radius: 50%;
     cursor: pointer;
+}
+
+/* Theme-Toggle-Button */
+.navbar-links button {
+    background-color: var(--primary-color);
+    color: #fff;
+    padding: 0.5rem 0.75rem;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s;
+}
+
+.navbar-links button:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+/* --------------------- */
+/* Dark Mode Overrides   */
+/* --------------------- */
+[data-theme="dark"] .navbar {
+    /* Leicht transparent, aber dunkler */
+    background-color: rgba(24, 25, 26, 0.8);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
+/* Hellerer Text im Dark Mode */
+[data-theme="dark"] .navbar-logo,
+[data-theme="dark"] .navbar-links a,
+[data-theme="dark"] .brightness-control,
+[data-theme="dark"] .navbar-username {
+    color: #f0f0f0; /* statt var(--text-color) */
+}
+
+/* Bei Hover im Dark Mode */
+[data-theme="dark"] .navbar-links a:hover {
+    background-color: var(--primary-hover);
+    color: #fff;
+}
+
+/* Brightness-Slider im Dark Mode */
+[data-theme="dark"] .brightness-control input[type="range"] {
+    background: #555;
+}
+
+[data-theme="dark"] .navbar-logout:hover {
+    background-color: #aa1f2a;
 }

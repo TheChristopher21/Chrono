@@ -8,6 +8,8 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.TimeTrackingRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -23,6 +25,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class TimeTrackingService {
+
+    private static final Logger logger = LoggerFactory.getLogger(TimeTrackingService.class);
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -67,10 +71,12 @@ public class TimeTrackingService {
         if (activePunch != null) {
             activePunch.setEndTime(LocalDateTime.now());
             timeTrackingRepository.saveAndFlush(activePunch);
+            logger.info("handlePunch: Abgeschlossenes aktives Punch für User {}.", username);
         }
 
         int nextOrder = mapStatusToPunchOrder(newStatus);
         TimeTracking newEntry = createNewPunch(user, nextOrder);
+        logger.info("handlePunch: Neuer Punch mit Order {} für User {} erstellt.", nextOrder, username);
         return convertToResponse(newEntry);
     }
 
@@ -99,6 +105,7 @@ public class TimeTrackingService {
             TimeTracking activePunch = activePunchOpt.get();
             activePunch.setEndTime(LocalDateTime.now());
             timeTrackingRepository.saveAndFlush(activePunch);
+            logger.info("handleSmartPunch: Aktiver Punch für User {} abgeschlossen.", username);
         }
 
         Optional<TimeTracking> lastCompleteOpt = timeTrackingRepository
@@ -126,111 +133,120 @@ public class TimeTrackingService {
     }
 
     /**
-     * Diese Methode läuft täglich um 23:15 Uhr und schließt alle offenen Zeiteinträge
+     * Diese Methode läuft täglich um 23:10 Uhr und schließt alle offenen Zeiteinträge
      * des aktuellen Tages automatisch, falls der Benutzer vergessen hat, auszustempeln.
      */
-    @Scheduled(cron = "0 0 23 * * *") // -> täglich um 23:15 Uhr
+    @Scheduled(cron = "0 0 23 * * *") // Täglich um 23:00 Uhr
     @Transactional
     public void autoPunchOut() {
         LocalDate today = LocalDate.now();
         LocalDateTime startOfDay = today.atStartOfDay();
-        // Beispiel: wir verwenden 23:00 als Basis-Endzeit
-        LocalDateTime autoEndTime = today.atTime(23, 0, 0);
+        LocalDateTime autoEndTime = today.atTime(23, 59, 59);
 
+        // Hole alle TimeTracking-Einträge, die heute irgendwann begonnen wurden
+        // und bei denen endTime noch null ist.
+        // => So finden wir nur Nutzer, die IRGENDWAS gestempelt, aber nicht abgeschlossen haben.
         List<TimeTracking> openPunches = timeTrackingRepository
                 .findByEndTimeIsNullAndStartTimeBetween(startOfDay, autoEndTime);
-        System.out.println("AutoPunchOut: Gefundene offene Einträge: " + openPunches.size());
+        logger.info("AutoPunchOut: Offen gefundene Einträge: {}", openPunches);
 
-        // Falls mehrere offene Einträge für denselben User existieren, verarbeiten wir
-        // sie dennoch pro Eintrag. (Oder man fasst es pro User zusammen.)
-        for (TimeTracking tt : openPunches) {
-            User user = tt.getUser();
+        // Gruppieren nach User
+        Map<User, List<TimeTracking>> userMap = openPunches.stream()
+                .collect(Collectors.groupingBy(TimeTracking::getUser));
 
-            // Alle heutigen Einträge dieses Users
-            List<TimeTracking> userEntriesToday = timeTrackingRepository
-                    .findByUserAndStartTimeBetween(user, startOfDay, autoEndTime);
+        for (Map.Entry<User, List<TimeTracking>> entry : userMap.entrySet()) {
+            User user = entry.getKey();
 
-            Set<Integer> existingPunchOrders = userEntriesToday.stream()
-                    .map(TimeTracking::getPunchOrder)
+            // Alle heutigen Einträge – egal ob offen oder geschlossen,
+            // damit wir sehen, was er bereits gestempelt hat.
+            List<TimeTracking> entriesToday =
+                    timeTrackingRepository.findByUserAndStartTimeBetween(user, startOfDay, autoEndTime);
+
+            if (entriesToday.isEmpty()) {
+                // => Der User hat heute gar nichts gestempelt.
+                // => Nichts tun, weil du gesagt hast "nur eingreifen, wenn mind. einmal gestempelt wurde."
+                logger.info("AutoPunchOut: {} hat GAR NICHT gestempelt. Mache nichts.", user.getUsername());
+                continue;
+            }
+
+            // PunchOrders extrahieren
+            Set<Integer> orders = entriesToday.stream()
+                    .map(tt -> tt.getPunchOrder() != null ? tt.getPunchOrder() : 0)
                     .collect(Collectors.toSet());
 
-            System.out.println("AutoPunchOut: User " + user.getUsername()
-                    + " hat folgende Punches: " + existingPunchOrders);
+            logger.info("AutoPunchOut: {} hat heutige PunchOrders: {}", user.getUsername(), orders);
 
-            boolean hasWorkStart = existingPunchOrders.contains(1);
-            boolean hasWorkEnd   = existingPunchOrders.contains(4);
-
-            // Wenn es gar keinen WORK_START gibt, machen wir nichts.
-            if (!hasWorkStart) {
-                System.out.println("AutoPunchOut: Kein WORK_START vorhanden -> Abbruch.");
+            // Falls er schon 1..4 hat, also Set enthält [1,2,3,4], ist es "vollständig".
+            if (orders.contains(1) && orders.contains(2) && orders.contains(3) && orders.contains(4)) {
+                logger.info("AutoPunchOut: {} hat bereits vollen Zyklus (1..4). Nichts ergänzen.", user.getUsername());
                 continue;
             }
 
-            // Wenn WORK_END schon existiert, brauchen wir auch nichts mehr zu tun.
-            if (hasWorkEnd) {
-                System.out.println("AutoPunchOut: WORK_END existiert schon -> nichts zu tun.");
-                continue;
+            // => TEILWEISE gestempelt. Wir füllen fehlende Punches auf.
+            for (int i = 1; i <= 4; i++) {
+                final int punch = i; // <-- fix: "effektive" final-Variable
+                if (!orders.contains(punch)) {
+                    // Fehlender Punch => neu anlegen
+                    TimeTracking created = new TimeTracking();
+                    created.setUser(user);
+                    created.setPunchOrder(punch);
+                    // StartTime und ggf. EndTime auf autoEndTime plus offset
+                    created.setStartTime(autoEndTime.plusSeconds(punch * 10));
+                    if (punch == 3 || punch == 4) {
+                        created.setEndTime(autoEndTime.plusSeconds(punch * 10));
+                    }
+                    created.setCorrected(true);
+                    timeTrackingRepository.save(created);
+                    logger.info("AutoPunchOut: {} => PunchOrder {} fehlte, neu erstellt.", user.getUsername(), punch);
+                } else {
+                    Optional<TimeTracking> openOpt = entriesToday.stream()
+                            .filter(tt -> tt.getPunchOrder() == punch && tt.getEndTime() == null)
+                            .findFirst();
+                    if (openOpt.isPresent()) {
+                        TimeTracking open = openOpt.get();
+                        open.setEndTime(autoEndTime.plusSeconds(punch * 10));
+                        open.setCorrected(true);
+                        timeTrackingRepository.save(open);
+                        logger.info("AutoPunchOut: {} => PunchOrder {} war offen, endTime gesetzt.", user.getUsername(), punch);
+                    }
+                }
             }
-
-            // Falls Break Start (2) fehlt, ergänzen wir ihn
-            if (!existingPunchOrders.contains(2)) {
-                addOrUpdatePunch(user, 2, autoEndTime.plusSeconds(10));
-            }
-
-            // Falls Break End (3) fehlt, ergänzen wir ihn
-            if (!existingPunchOrders.contains(3)) {
-                addOrUpdatePunch(user, 3, autoEndTime.plusSeconds(20));
-            }
-
-            // Abschließend immer Work End (4) ergänzen, wenn er noch fehlt
-            addOrUpdatePunch(user, 4, autoEndTime.plusSeconds(30));
         }
     }
 
     /**
-     * Neue Hilfsmethode: Prüft, ob es bereits einen Punch dieser punchOrder für den User gibt.
-     * - Wenn ja und endTime ist noch null, wird endTime gesetzt und (bei Punch 3 oder 4) damit geschlossen.
-     * - Wenn nein, wird ein neuer Eintrag angelegt (punchOrder, startTime, endTime).
+     * Hilfsmethode, die entweder einen neuen Punch anlegt oder – falls ein Eintrag mit der angegebenen punchOrder existiert,
+     * dessen EndTime noch fehlt – diesen aktualisiert.
      */
     private void addOrUpdatePunch(User user, int punchOrder, LocalDateTime time) {
-        Optional<TimeTracking> existingOpt =
-                timeTrackingRepository.findTopByUserAndPunchOrder(user, punchOrder);
+        Optional<TimeTracking> existingOpt = timeTrackingRepository.findTopByUserAndPunchOrder(user, punchOrder);
         if (existingOpt.isPresent()) {
             TimeTracking existing = existingOpt.get();
-            // Falls er noch nicht beendet ist, setzen wir endTime
             if (existing.getEndTime() == null) {
                 existing.setEndTime(time);
                 existing.setCorrected(true);
                 timeTrackingRepository.save(existing);
-                System.out.println("AutoPunchOut: Punch " + punchOrder
-                        + " bei User " + user.getUsername()
-                        + " abgeschlossen (endTime gesetzt).");
+                logger.info("AutoPunchOut: Punch {} für User {} aktualisiert (EndTime gesetzt).", punchOrder, user.getUsername());
             } else {
-                System.out.println("AutoPunchOut: Punch " + punchOrder
-                        + " existiert bereits und ist geschlossen.");
+                logger.info("AutoPunchOut: Punch {} für User {} existiert bereits und ist abgeschlossen.", punchOrder, user.getUsername());
             }
         } else {
-            // Neuen Punch anlegen
             TimeTracking entry = new TimeTracking();
             entry.setUser(user);
             entry.setPunchOrder(punchOrder);
             entry.setStartTime(time);
-            // Für Break End (3) und Work End (4) setzen wir endTime meist direkt,
-            // damit es "abgeschlossen" ist. Je nach Bedarf kann man das auch bei Punch 2 tun.
+            // Für Punch 3 und 4 setzen wir direkt auch EndTime, damit der Eintrag als abgeschlossen gilt.
             if (punchOrder == 3 || punchOrder == 4) {
                 entry.setEndTime(time);
             }
             entry.setCorrected(true);
             timeTrackingRepository.save(entry);
-            System.out.println("AutoPunchOut: Neuer Punch " + punchOrder
-                    + " für User " + user.getUsername()
-                    + " angelegt. (startTime/endTime = " + time + ")");
+            logger.info("AutoPunchOut: Neuer Punch {} für User {} angelegt (Time: {}).", punchOrder, user.getUsername(), time);
         }
     }
 
-    /**
-     * Aktualisiert die tägliche Notiz (nur für Hourly-User).
-     */
+
+
     @Transactional
     public TimeTrackingResponse updateDailyNote(String username, String date, String note) {
         User user = userRepository.findByUsername(username)
@@ -255,12 +271,10 @@ public class TimeTrackingService {
         }
         noteEntry.setDailyDate(localDate);
         timeTrackingRepository.save(noteEntry);
+        logger.info("updateDailyNote: Daily note für User {} für den Tag {} aktualisiert.", username, date);
         return convertToResponse(noteEntry);
     }
 
-    /**
-     * Korrektur ganzer Tages-Einträge (WORK_START, BREAK_START, BREAK_END, WORK_END).
-     */
     @Transactional
     public String updateDayTimeEntries(
             String targetUsername,
@@ -276,7 +290,6 @@ public class TimeTrackingService {
         User targetUser = userRepository.findByUsername(targetUsername)
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        // Wenn adminUsername nicht angegeben wurde, überspringen wir die Prüfung
         if (adminUsername != null && !adminUsername.trim().isEmpty()) {
             User adminUser = userRepository.findByUsername(adminUsername)
                     .orElseThrow(() -> new RuntimeException("Admin user not found"));
@@ -284,20 +297,24 @@ public class TimeTrackingService {
             String storedAdminPwd = adminUser.getAdminPassword();
             if (storedAdminPwd == null || storedAdminPwd.trim().isEmpty()) {
                 storedAdminPwd = adminUser.getPassword();
+                logger.info("updateDayTimeEntries: Kein separates Admin-Passwort vorhanden, verwende Login-Passwort.");
             }
 
             if (targetUsername.equals(adminUsername)) {
-                // Self-edit
+                logger.info("updateDayTimeEntries: Self-edit detected for user {}.", targetUsername);
                 if (!adminPassword.equals(userPassword)) {
                     throw new RuntimeException("For self-edit, admin and user passwords must match");
                 }
                 boolean adminPwdMatch = passwordEncoder.matches(adminPassword, storedAdminPwd);
                 boolean userPwdMatch  = passwordEncoder.matches(userPassword, targetUser.getPassword());
+                logger.info("updateDayTimeEntries: Self-edit password match: adminPwdMatch = {}, userPwdMatch = {}", adminPwdMatch, userPwdMatch);
                 if (!adminPwdMatch) throw new RuntimeException("Invalid admin password");
                 if (!userPwdMatch)  throw new RuntimeException("Invalid user password");
             } else {
+                logger.info("updateDayTimeEntries: Editing entry of another user: {}", targetUsername);
                 boolean adminPwdMatch = passwordEncoder.matches(adminPassword, storedAdminPwd);
                 boolean userPwdMatch  = passwordEncoder.matches(userPassword, targetUser.getPassword());
+                logger.info("updateDayTimeEntries: Other edit password match: adminPwdMatch = {}, userPwdMatch = {}", adminPwdMatch, userPwdMatch);
                 if (!adminPwdMatch) throw new RuntimeException("Invalid admin password");
                 if (!userPwdMatch)  throw new RuntimeException("Invalid user password");
             }
@@ -318,13 +335,11 @@ public class TimeTrackingService {
         LocalDateTime dayStart = parsedDate.atStartOfDay();
         LocalDateTime dayEnd   = parsedDate.plusDays(1).atStartOfDay();
 
-        // Alte Einträge für diesen Tag komplett entfernen
         List<TimeTracking> oldEntries =
                 timeTrackingRepository.findByUserAndStartTimeBetween(targetUser, dayStart, dayEnd);
         timeTrackingRepository.deleteAll(oldEntries);
-        System.out.println("DEBUG: Deleted " + oldEntries.size() + " old entries for " + date);
+        logger.info("updateDayTimeEntries: Deleted {} old entries for date {}", oldEntries.size(), date);
 
-        // Neu anlegen
         TimeTracking ts1 = new TimeTracking();
         ts1.setUser(targetUser);
         ts1.setPunchOrder(1);
@@ -332,7 +347,7 @@ public class TimeTrackingService {
         ts1.setWorkStart(newWorkStart);
         ts1.setCorrected(true);
         timeTrackingRepository.save(ts1);
-        System.out.println("DEBUG: Created Work Start: " + ts1);
+        logger.info("updateDayTimeEntries: Created Work Start entry: {}", ts1);
 
         if (hasBreak) {
             TimeTracking ts2 = new TimeTracking();
@@ -342,7 +357,7 @@ public class TimeTrackingService {
             ts2.setBreakStart(newBreakStart);
             ts2.setCorrected(true);
             timeTrackingRepository.save(ts2);
-            System.out.println("DEBUG: Created Break Start: " + ts2);
+            logger.info("updateDayTimeEntries: Created Break Start entry: {}", ts2);
 
             TimeTracking ts3 = new TimeTracking();
             ts3.setUser(targetUser);
@@ -351,7 +366,7 @@ public class TimeTrackingService {
             ts3.setBreakEnd(newBreakEnd);
             ts3.setCorrected(true);
             timeTrackingRepository.save(ts3);
-            System.out.println("DEBUG: Created Break End: " + ts3);
+            logger.info("updateDayTimeEntries: Created Break End entry: {}", ts3);
         }
 
         TimeTracking ts4 = new TimeTracking();
@@ -362,11 +377,10 @@ public class TimeTrackingService {
         ts4.setWorkEnd(newWorkEnd);
         ts4.setCorrected(true);
         timeTrackingRepository.save(ts4);
-        System.out.println("DEBUG: Created Work End: " + ts4);
+        logger.info("updateDayTimeEntries: Created Work End entry: {}", ts4);
 
         return "Day entries updated successfully (old entries removed, new entries created)";
     }
-
 
     public List<TimeTrackingResponse> getUserHistory(String username) {
         User user = userRepository.findByUsername(username)
@@ -398,7 +412,7 @@ public class TimeTrackingService {
             String adminUsername,
             String adminPassword
     ) {
-        System.out.println("DEBUG: updateTimeTrackEntry called with id: " + id);
+        logger.info("updateTimeTrackEntry: Called with id: {}", id);
         TimeTracking tt = timeTrackingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Time tracking entry not found"));
         User targetUser = tt.getUser();
@@ -408,44 +422,32 @@ public class TimeTrackingService {
         String storedAdminPwd = adminUser.getAdminPassword();
         if (storedAdminPwd == null || storedAdminPwd.trim().isEmpty()) {
             storedAdminPwd = adminUser.getPassword();
-            System.out.println("DEBUG: No separate admin password found for admin user, using login password");
+            logger.info("updateTimeTrackEntry: No separate admin password found; using login password.");
         }
 
         if (adminUsername.equals(targetUser.getUsername())) {
-            // Self-edit
-            System.out.println("DEBUG: Self-edit in updateTimeTrackEntry");
+            logger.info("updateTimeTrackEntry: Self-edit detected for user {}", targetUser.getUsername());
             if (!adminPassword.equals(userPassword)) {
                 throw new RuntimeException("For self-edit, admin and user passwords must be the same");
             }
             boolean adminPwdMatch = passwordEncoder.matches(adminPassword, storedAdminPwd);
             boolean userPwdMatch  = passwordEncoder.matches(userPassword, targetUser.getPassword());
-            System.out.println("DEBUG: Self-edit password match: adminPwdMatch = " + adminPwdMatch
-                    + ", userPwdMatch = " + userPwdMatch);
-            if (!adminPwdMatch) {
-                throw new RuntimeException("Invalid admin password");
-            }
-            if (!userPwdMatch) {
-                throw new RuntimeException("Invalid user password");
-            }
+            logger.info("updateTimeTrackEntry: Self-edit password match: adminPwdMatch = {}, userPwdMatch = {}", adminPwdMatch, userPwdMatch);
+            if (!adminPwdMatch) throw new RuntimeException("Invalid admin password");
+            if (!userPwdMatch)  throw new RuntimeException("Invalid user password");
         } else {
-            // Admin bearbeitet Eintrag eines anderen Users
-            System.out.println("DEBUG: Editing entry of another user");
+            logger.info("updateTimeTrackEntry: Editing entry of another user: {}", targetUser.getUsername());
             boolean adminPwdMatch = passwordEncoder.matches(adminPassword, storedAdminPwd);
             boolean userPwdMatch  = passwordEncoder.matches(userPassword, targetUser.getPassword());
-            System.out.println("DEBUG: Other edit password match: adminPwdMatch = " + adminPwdMatch
-                    + ", userPwdMatch = " + userPwdMatch);
-            if (!adminPwdMatch) {
-                throw new RuntimeException("Invalid admin password");
-            }
-            if (!userPwdMatch) {
-                throw new RuntimeException("Invalid user password");
-            }
+            logger.info("updateTimeTrackEntry: Other edit password match: adminPwdMatch = {}, userPwdMatch = {}", adminPwdMatch, userPwdMatch);
+            if (!adminPwdMatch) throw new RuntimeException("Invalid admin password");
+            if (!userPwdMatch)  throw new RuntimeException("Invalid user password");
         }
 
         tt.setStartTime(newStart);
         tt.setEndTime(newEnd);
         TimeTracking updated = timeTrackingRepository.save(tt);
-        System.out.println("DEBUG: TimeTracking entry updated: " + updated);
+        logger.info("updateTimeTrackEntry: Updated TimeTracking entry: {}", updated);
 
         return new AdminTimeTrackDTO(
                 updated.getId(),
@@ -458,9 +460,6 @@ public class TimeTrackingService {
         );
     }
 
-    /**
-     * Prüft, ob von einem bestimmten Punch-Order zum anderen gewechselt werden darf.
-     */
     private boolean isTransitionAllowed(Integer lastPunchOrder, String newStatus) {
         if (lastPunchOrder == 0) {
             lastPunchOrder = null;
@@ -500,17 +499,15 @@ public class TimeTrackingService {
         tt.setPunchOrder(punchOrder);
         LocalDateTime now = LocalDateTime.now();
         tt.setStartTime(now);
-        // Bei WORK_END (4) das EndTime direkt auf "jetzt" setzen
         if (punchOrder == 4) {
             tt.setEndTime(now);
         }
         tt.setCorrected(false);
-        return timeTrackingRepository.save(tt);
+        TimeTracking saved = timeTrackingRepository.save(tt);
+        logger.info("createNewPunch: Created new punch with order {} for user {} at {}.", punchOrder, user.getUsername(), now);
+        return saved;
     }
 
-    /**
-     * Konvertierung in eine leichte DTO-Ansicht.
-     */
     private TimeTrackingResponse convertToResponse(TimeTracking tt) {
         Integer pOrder = (tt.getPunchOrder() != null) ? tt.getPunchOrder() : 0;
         String label;
@@ -544,9 +541,6 @@ public class TimeTrackingService {
         );
     }
 
-    /**
-     * Report-Funktion (z.B. für PDF oder Frontend).
-     */
     public List<TimeReportDTO> getReport(String username, String startDateStr, String endDateStr) {
         LocalDate startDate = LocalDate.parse(startDateStr);
         LocalDate endDate   = LocalDate.parse(endDateStr);
@@ -571,7 +565,6 @@ public class TimeTrackingService {
 
         for (LocalDate date : sortedDates) {
             List<TimeTracking> dayEntries = grouped.get(date);
-            // Sortierung nach punchOrder
             dayEntries.sort(Comparator.comparingInt(
                     e -> e.getPunchOrder() != null ? e.getPunchOrder() : 0
             ));
@@ -603,7 +596,6 @@ public class TimeTrackingService {
                         workEnd = e.getEndTime().format(timeFormatter);
                     }
                 }
-                // Daily Note (falls punchOrder=0)
                 if (e.getDailyNote() != null && !e.getDailyNote().isEmpty() && dailyNote.isEmpty()) {
                     dailyNote = e.getDailyNote();
                 }

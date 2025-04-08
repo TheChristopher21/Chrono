@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:8080/api/nfc";
+const API_BASE_URL = process.env.APIURL+"/api/nfc";
 
 export const readNfcBlock = async (block) => {
     try {

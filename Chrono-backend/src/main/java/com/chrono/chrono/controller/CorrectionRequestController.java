@@ -5,8 +5,10 @@ import com.chrono.chrono.services.CorrectionRequestService;
 import com.chrono.chrono.services.TimeTrackingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
@@ -21,7 +23,9 @@ public class CorrectionRequestController {
     @Autowired
     private TimeTrackingService timeTrackingService;
 
+    // Erlaube allen authentifizierten Nutzern, eigene Korrekturanträge zu erstellen
     @PostMapping("/create-full")
+    @PreAuthorize("isAuthenticated()")
     public CorrectionRequest createRequest(
             @RequestParam String username,
             @RequestParam String date,
@@ -53,28 +57,23 @@ public class CorrectionRequestController {
         }
     }
 
-    @GetMapping("/open")
-    public List<CorrectionRequest> getAllOpenRequests() {
-        return correctionRequestService.getOpenRequests();
-    }
-
+    // Nur Admins dürfen alle Korrekturanträge abrufen
     @GetMapping("/all")
+    @PreAuthorize("hasRole('ADMIN')")
     public List<CorrectionRequest> getAllRequests() {
         return correctionRequestService.getAllRequests();
     }
 
-    // Neuer Endpunkt: Alle Korrekturanträge des angemeldeten Users abrufen
+    // Authentifizierte Nutzer können eigene Anträge abrufen
     @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
     public List<CorrectionRequest> getMyRequests(@RequestParam String username) {
         return correctionRequestService.getRequestsForUser(username);
     }
 
-    /**
-     * Beim Approve eines Korrekturantrags wird der Antrag als approved markiert
-     * und anschließend werden die neuen Zeiten in der Zeiterfassung (TimeTracking) übernommen.
-     * Da kein Admin-Passwort mehr benötigt wird, erfolgt der Aufruf ohne Passwort.
-     */
+    // Admin-Endpunkt zum Genehmigen eines Korrekturantrags
     @PostMapping("/approve/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public CorrectionRequest approveRequest(@PathVariable Long id) {
         CorrectionRequest corr = correctionRequestService.approveRequest(id);
         try {
@@ -87,7 +86,7 @@ public class CorrectionRequestController {
                     corr.getWorkEndFormatted(),
                     null, // Kein Admin-Username
                     null, // Kein Admin-Passwort
-                    corr.getUserPassword() // Falls vorhanden; sonst kann auch null übergeben werden
+                    corr.getUserPassword() // Falls vorhanden
             );
         } catch (Exception e) {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
@@ -97,6 +96,7 @@ public class CorrectionRequestController {
     }
 
     @PostMapping("/deny/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public CorrectionRequest denyRequest(@PathVariable Long id) {
         return correctionRequestService.denyRequest(id);
     }

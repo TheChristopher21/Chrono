@@ -1,0 +1,242 @@
+:root {
+    --primary-color: #5A67D8;
+    --primary-hover: #434190;
+    --danger-color: #E53E3E;
+    --light-bg: #F7FAFC;
+    --card-bg: #FFFFFF;
+    --text-color: #2D3748;
+    --border-color: #E2E8F0;
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --radius: 12px;
+    --transition: 0.3s ease;
+    --font-family: 'Poppins', sans-serif;
+}
+
+body {
+    font-family: var(--font-family);
+    background-color: var(--background-color);
+    margin: 0;
+    padding: 0;
+    color: var(--text-color);
+}
+
+/* Haupt-Container der Registrierung */
+.registration-page {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 2rem;
+    background-color: var(--background-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.registration-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    width: 100%;
+    max-width: 1000px;
+}
+
+/* Pricing-Bereich */
+.pricing-section {
+    text-align: center;
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    border: 2px solid var(--border-color);
+    margin-bottom: 2rem;
+    transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.pricing-section h2 {
+    font-size: 2rem;
+    margin-bottom: 1rem;
+    color: var(--text-color);
+}
+
+.pricing-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.pricing-card {
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    flex: 1 1 250px;
+    max-width: 300px;
+    border: 1px solid var(--border-color);
+    transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.pricing-card h3 {
+    margin-top: 0;
+    font-size: 1.5rem;
+    color: var(--text-color);
+}
+
+.pricing-card p {
+    font-size: 1.25rem;
+    margin: 0.5rem 0;
+    color: var(--text-color);
+}
+
+.pricing-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: var(--text-color);
+}
+.pricing-card ul li {
+    margin: 0.25rem 0;
+}
+
+/* Bewerbungs-Bereich */
+.application-section {
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    border: 2px solid var(--border-color);
+    transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+}
+
+.application-section h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    color: var(--text-color);
+}
+
+.error-message {
+    color: var(--danger-color);
+    text-align: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.success-message {
+    color: var(--secondary-color);
+    text-align: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+form input,
+form textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background-color: #fff;
+    color: var(--text-color);
+    transition: background-color var(--transition), color var(--transition), border-color var(--transition);
+}
+
+form button {
+    padding: 0.75rem;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    transition: background-color var(--transition), transform 0.2s;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+form button:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+/****************************************
+ * RESPONSIVE
+ ****************************************/
+@media (max-width: 768px) {
+    .pricing-cards {
+        flex-direction: column;
+        align-items: center;
+    }
+    .application-section {
+        margin-top: 1rem;
+    }
+}
+
+/****************************************
+ * DARK MODE OVERRIDES
+ ****************************************/
+[data-theme="dark"] body {
+    background-color: #18191A;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .pricing-section,
+[data-theme="dark"] .application-section {
+    background-color: rgba(36,37,38,0.8);
+    border: 2px solid #484A4D;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .pricing-card {
+    background-color: #2f2f2f;
+    border: 1px solid #484A4D;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .pricing-card h3,
+[data-theme="dark"] .pricing-card p,
+[data-theme="dark"] .pricing-card ul,
+[data-theme="dark"] .pricing-card ul li {
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] form input,
+[data-theme="dark"] form textarea {
+    background-color: #3A3B3C;
+    border: 1px solid #484A4D;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] form button {
+    color: #fff;
+}
+
+[data-theme="dark"] .error-message {
+    color: #ff6b6b; /* etwas helleres Rot */
+}
+[data-theme="dark"] .success-message {
+    color: #48BB78; /* oder ein helleres Grün */
+}
+.pricing-card {
+    /* Vorher: war's vielleicht so ... wir ergänzen: */
+    cursor: pointer;             /* Hand-Cursor bei Hover */
+    transition: transform 0.2s, background-color 0.3s;
+}
+
+/* Hover-Effekt */
+.pricing-card:hover {
+    transform: scale(1.03);
+    /* Optional:
+    background-color: #f7f7ff;
+    */
+}
+
+/* Selected-Karte (wenn man geklickt hat) */
+.pricing-card.selected {
+    border: 2px solid var(--primary-color);
+    /* Hebt die Karte stärker hervor */
+    box-shadow: 0 0 10px rgba(90, 103, 216, 0.4);
+}

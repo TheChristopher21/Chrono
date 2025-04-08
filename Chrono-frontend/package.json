@@ -11,6 +11,7 @@
     "cypress:open": "cypress open",
     "dev": "vite",
     "build": "vite build",
+    "build:prod": "vite build --config vite.config.prod.js",
     "electron": "electron .",
     "dist:win": "npm run build && electron-builder --win",
     "dist:linux": "npm run build && electron-builder --linux",

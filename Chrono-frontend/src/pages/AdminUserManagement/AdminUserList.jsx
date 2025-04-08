@@ -27,7 +27,12 @@ const AdminUserList = ({ users, t, handleEditUser, requestDeleteUser, handleProg
                             <td>{user.username}</td>
                             <td>{user.firstName} {user.lastName}</td>
                             <td>{user.email}</td>
-                            <td>{user.roles?.length ? user.roles[0] : 'ROLE_USER'}</td>
+                            <td>
+                                {user.roles?.length
+                                    ? user.roles[0].replace('ROLE_', '') // "ROLE_USER" => "USER"
+                                    : 'USER'
+                                }
+                            </td>
                             <td>{user.expectedWorkDays ?? '-'}</td>
                             <td>{user.breakDuration ?? '-'}</td>
                             <td>{user.annualVacationDays ?? '-'}</td>

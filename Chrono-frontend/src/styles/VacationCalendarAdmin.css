@@ -13,7 +13,9 @@
     --font-family: 'Poppins', sans-serif;
 }
 
-/* Container-Stil des gesamten Admin-Kalenders */
+/* =============================
+ * Container: VacationCalendarAdmin
+ * ============================= */
 .vacation-calendar-admin {
     width: 100%;
     margin: 0 auto;
@@ -27,6 +29,12 @@
     margin-bottom: 1rem;
     font-size: 1.5rem;
     text-align: center;
+    color: var(--text-color);
+    border: 2px solid var(--border-color); /* Deutliche Umrandung */
+    padding: 1rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    background-color: var(--card-bg);
 }
 
 /* Admin-Passwort-Feld */
@@ -36,12 +44,11 @@
     align-items: center;
     gap: 1rem;
 }
-
 .admin-password-input label {
     font-weight: 600;
     font-size: 0.9rem;
+    color: var(--text-color);
 }
-
 .admin-password-input input[type="password"] {
     padding: 0.5rem;
     border: 1px solid var(--border-color);
@@ -49,10 +56,12 @@
     max-width: 300px;
 }
 
-/* React-Calendar Grundlayout */
+/* =============================
+ * React-Calendar Styles
+ * ============================= */
 .vacation-calendar-admin .react-calendar {
     width: 100% !important;
-    border: none;
+    border: 2px solid var(--border-color); /* Deutliche Umrandung */
     line-height: 1.125em;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
@@ -63,8 +72,9 @@
 /* Navigation (Monat/Jahr) */
 .vacation-calendar-admin .react-calendar__navigation {
     margin-bottom: 0.5rem;
+    display: flex;
+    justify-content: center;
 }
-
 .vacation-calendar-admin .react-calendar__navigation button {
     color: var(--primary-color);
     min-width: 44px;
@@ -75,7 +85,6 @@
     cursor: pointer;
     transition: color var(--transition);
 }
-
 .vacation-calendar-admin .react-calendar__navigation button:hover {
     color: var(--primary-hover);
 }
@@ -87,21 +96,19 @@
     transition: background-color var(--transition);
     text-align: center;
     border: none;
+    color: var(--text-color);
 }
-
 .vacation-calendar-admin .react-calendar__tile:enabled:hover {
     background-color: #e6f7ff;
 }
 
-/* Tage-Kürzel (Mo, Di, usw.) */
+/* Wochentage (Mo, Di ...) */
 .vacation-calendar-admin .react-calendar__month-view__weekdays {
     text-transform: uppercase;
     font-size: 0.8rem;
     font-weight: 600;
     color: var(--text-color);
 }
-
-/* Abkürzungen in den Feldern */
 .vacation-calendar-admin .react-calendar__tile abbr {
     text-decoration: none;
     font-weight: 600;
@@ -118,7 +125,6 @@
     align-items: center;
     margin-top: 0.3125rem;
 }
-
 .vacation-marker {
     background-color: #ccc;
     color: #fff;
@@ -128,7 +134,24 @@
     white-space: nowrap;
 }
 
-/* Modal-Overlay & -Content */
+/* =============================
+ * Range Selection (Light Mode)
+ * ============================= */
+.vacation-calendar-admin .react-calendar--selectRange .react-calendar__tile--hover,
+.vacation-calendar-admin .react-calendar__tile--range {
+    background-color: rgba(90,103,216,0.2) !important; /* Dezenter Blau-Hintergrund */
+    color: var(--text-color) !important;
+}
+.vacation-calendar-admin .react-calendar__tile--rangeStart,
+.vacation-calendar-admin .react-calendar__tile--rangeEnd,
+.vacation-calendar-admin .react-calendar__tile--rangeBothEnds {
+    background-color: rgba(90,103,216,0.4) !important; /* etwas intensiveres Blau */
+    color: var(--text-color) !important;
+}
+
+/* =============================
+ * Modal-Overlay & Inhalt
+ * ============================= */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -140,8 +163,8 @@
     justify-content: center;
     align-items: center;
     z-index: 9999;
+    transition: opacity 0.3s ease;
 }
-
 .modal-content {
     background: var(--card-bg);
     padding: 2rem;
@@ -150,67 +173,74 @@
     max-width: 90%;
     box-shadow: var(--shadow);
     position: relative;
+    color: var(--text-color);
+    /* Deutlichere Umrandung auch fürs Modal */
+    border: 2px solid var(--border-color);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .modal-content h3 {
     margin-top: 0;
     margin-bottom: 1.5rem;
     font-weight: 600;
-    font-size: 1.2rem;
+    font-size: 1.3rem;
     border-bottom: 1px solid var(--border-color);
     padding-bottom: 0.5rem;
+    color: var(--text-color);
 }
-
 .modal-content h4 {
     margin: 1rem 0 0.5rem;
+    font-size: 1rem;
+    color: var(--text-color);
 }
-
 .modal-content .form-group {
     margin-bottom: 1rem;
 }
-
 .modal-content label {
-    display: inline-block;
+    display: block;
     margin-bottom: 0.5rem;
     font-weight: 600;
+    color: var(--text-color);
 }
-
 .modal-content input[type="text"],
 .modal-content input[type="password"],
 .modal-content select {
     width: 100%;
-    padding: 0.5rem;
+    padding: 0.75rem;
     margin-bottom: 0.5rem;
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
+    background-color: #fff;
+    color: var(--text-color);
+    font-size: 0.95rem;
+    transition: background-color var(--transition), color var(--transition), border-color var(--transition);
 }
-
 .modal-content button {
     margin-right: 1rem;
-    padding: 0.5rem 1rem;
+    padding: 0.6rem 1.2rem;
     border: none;
     border-radius: var(--radius);
     background-color: var(--primary-color);
     color: #fff;
     cursor: pointer;
-    transition: background-color var(--transition);
+    transition: background-color var(--transition), transform 0.2s;
     font-size: 0.9rem;
+    font-weight: 500;
 }
-
 .modal-content button:hover {
     background-color: var(--primary-hover);
+    transform: translateY(-2px);
 }
-
 .modal-content ul {
     list-style: none;
     padding: 0;
     margin: 0.5rem 0;
 }
-
 .modal-content ul li {
     margin-bottom: 0.5rem;
+    color: var(--text-color);
+    font-size: 0.9rem;
 }
-
 .modal-content hr {
     margin: 1rem 0;
     border: none;
@@ -223,4 +253,68 @@
         width: 90%;
         padding: 1rem;
     }
+}
+
+/****************************************
+ * Dark Mode Overrides
+ ****************************************/
+[data-theme="dark"] .vacation-calendar-admin {
+    background-color: #18191A;
+    color: #f0f0f0;
+}
+[data-theme="dark"] .vacation-calendar-admin h2 {
+    color: #f0f0f0;
+    border: 2px solid #484A4D;
+    background-color: rgba(36,37,38,0.8);
+}
+
+/* Dark Mode: Calendar */
+[data-theme="dark"] .vacation-calendar-admin .react-calendar {
+    background-color: #242526;
+    border: 2px solid #484A4D;
+    color: #f0f0f0;
+}
+[data-theme="dark"] .vacation-calendar-admin .react-calendar__month-view__weekdays,
+[data-theme="dark"] .vacation-calendar-admin .react-calendar__tile abbr {
+    color: #f0f0f0;
+}
+[data-theme="dark"] .vacation-calendar-admin .react-calendar__tile {
+    color: #f0f0f0;
+}
+[data-theme="dark"] .vacation-calendar-admin .react-calendar__tile:enabled:hover {
+    background-color: rgba(255,255,255,0.2);
+}
+[data-theme="dark"] .vacation-marker {
+    background-color: #666;
+    color: #fff;
+}
+
+/* Range Selection in Dark Mode */
+[data-theme="dark"] .vacation-calendar-admin .react-calendar--selectRange .react-calendar__tile--hover,
+[data-theme="dark"] .vacation-calendar-admin .react-calendar__tile--range {
+    background-color: rgba(255,255,255,0.2) !important;
+    color: #f0f0f0 !important;
+}
+[data-theme="dark"] .vacation-calendar-admin .react-calendar__tile--rangeStart,
+[data-theme="dark"] .vacation-calendar-admin .react-calendar__tile--rangeEnd,
+[data-theme="dark"] .vacation-calendar-admin .react-calendar__tile--rangeBothEnds {
+    background-color: rgba(255,255,255,0.3) !important;
+    color: #f0f0f0 !important;
+}
+
+/* Dark Mode: Modal */
+[data-theme="dark"] .modal-content {
+    background-color: rgba(36, 37, 38, 0.9);
+    border: 2px solid #484A4D; /* noch etwas kräftigerer Rand im Dark Mode */
+    color: #f0f0f0;
+}
+[data-theme="dark"] .modal-content input[type="text"],
+[data-theme="dark"] .modal-content input[type="password"],
+[data-theme="dark"] .modal-content select {
+    background-color: #3A3B3C;
+    border: 1px solid #484A4D;
+    color: #f0f0f0;
+}
+[data-theme="dark"] .modal-content ul li {
+    color: #f0f0f0;
 }

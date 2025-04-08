@@ -153,10 +153,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
         return `${year}-${month}-${day}`;
     }
 
-    /**
-     * Löscht einen existierenden Urlaub per DELETE
-     * => param adminUsername, adminPassword
-     */
+
     async function handleDeleteVacation(vacationId) {
         if (!adminPassword) {
             notify('Bitte Admin-Passwort eingeben');
@@ -222,6 +219,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
                 <label>Admin Passwort: </label>
                 <input
                     type="password"
+                    placeholder={"password"}
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                 />

@@ -184,7 +184,7 @@ const AdminUserManagementPage = () => {
     const handleProgramCard = async (user) => {
         try {
             const hexData = stringToHex16(user.username);
-            const response = await fetch('http://localhost:8080/api/nfc/write-sector0', {
+            const response = await fetch(process.env.APIURL+'/api/nfc/write-sector0', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ data: hexData })

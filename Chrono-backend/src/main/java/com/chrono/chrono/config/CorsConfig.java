@@ -8,21 +8,22 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class CorsConfig {
 
-    /**
-     * Definiert globale CORS-Regeln für deine Spring-Anwendung.
-     */
+    // Erlaube Anfragen von der Domain, der IP und localhost
+    public static final String[] ALLOWED_ORIGINS = {
+            "https://chrono-logisch.ch",
+            "http://localhost:5173"
+    };
+
     @Bean
     public WebMvcConfigurer corsConfigurer() {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-                // Erlaube Anfragen von http://localhost:5173 und http://localhost:3000
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:5173", "http://localhost:3000")
+                        // Verwende allowedOriginPatterns für flexiblere Übereinstimmung
+                        .allowedOriginPatterns(ALLOWED_ORIGINS)
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
-                        .allowedOriginPatterns("*")
-                        .exposedHeaders("Authorization")
                         .allowCredentials(true);
             }
         };

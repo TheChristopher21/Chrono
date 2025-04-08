@@ -145,7 +145,7 @@ function UserDashboard() {
 
     async function doNfcCheck() {
         try {
-            const response = await fetch('http://localhost:8080/api/nfc/read/1');
+            const response = await fetch(process.env.APIURL+'/api/nfc/read/1');
             if (!response.ok) return;
             const json = await response.json();
             if (json.status === 'no-card' || json.status === 'error') return;
@@ -521,9 +521,7 @@ function UserDashboard() {
             <header className="dashboard-header">
                 <h2>{t("title")}</h2>
                 <div className="personal-info">
-                    <p>
-                        <strong>{t("usernameLabel")}:</strong> {userProfile?.username || t("notLoggedIn")}
-                    </p>
+                    <p><strong>{t("usernameLabel")}:</strong> {userProfile?.username || t("notLoggedIn")}</p>
                     {/* Falls du Summen global anzeigen willst: */}
                     <p><strong>Wochensaldo:</strong> {weeklyDiffStr}</p>
                     <p><strong>Monatssaldo:</strong> {monthlyDiffStr}</p>
@@ -685,9 +683,7 @@ function UserDashboard() {
 
             {/* Print-Button */}
             <div className="print-report-container">
-                <button onClick={() => setPrintModalVisible(true)}>
-                    {t("printReportButton")}
-                </button>
+                <button onClick={() => setPrintModalVisible(true)}>{t("printReportButton")}</button>
             </div>
 
             {/* Print Modal */}

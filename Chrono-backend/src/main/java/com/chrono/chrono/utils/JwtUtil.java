@@ -15,14 +15,15 @@ import java.util.stream.Collectors;
 @Component
 public class JwtUtil {
 
+    // Diese Werte kommen aus den Properties und sollten über sichere Umgebungsvariablen gesetzt werden
     @Value("${jwt.secret}")
     private String SECRET_KEY;
 
-    // Falls Du die Expiration nutzen möchtest:
     @Value("${jwt.expiration}")
     private long expirationMillis;
 
     private SecretKey getSigningKey() {
+        // Erzeuge einen SecretKey basierend auf dem geheimen Schlüssel
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
 
@@ -61,8 +62,6 @@ public class JwtUtil {
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.toList());
         claims.put("roles", roles);
-        System.out.println("🔹 Generating Token for: " + userDetails.getUsername());
-        System.out.println("🔹 Roles added to token: " + roles);
         return createToken(claims, userDetails.getUsername());
     }
 
@@ -71,7 +70,7 @@ public class JwtUtil {
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                // Verwende hier expirationMillis statt der fest kodierten Zeit:
+                // Setzt die Ablaufzeit basierend auf expirationMillis
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();

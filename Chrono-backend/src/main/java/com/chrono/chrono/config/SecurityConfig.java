@@ -1,4 +1,3 @@
-// src/main/java/com/chrono/chrono/config/SecurityConfig.java
 package com.chrono.chrono.config;
 
 import com.chrono.chrono.services.CustomUserDetailsService;
@@ -20,7 +19,9 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
 
-import java.util.List;
+import java.util.Arrays;
+
+import static com.chrono.chrono.config.CorsConfig.ALLOWED_ORIGINS;
 
 @Configuration
 @EnableWebSecurity
@@ -38,11 +39,11 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173", "http://localhost:3000"));
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Origin"));
+        // Nutze allowedOriginPatterns für flexible Übereinstimmung
+        configuration.setAllowedOriginPatterns(Arrays.stream(ALLOWED_ORIGINS).toList());
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Origin"));
         configuration.setAllowCredentials(true);
-
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
@@ -63,22 +64,18 @@ public class SecurityConfig {
                 .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
-                    // Alle relevanten Endpunkte werden freigegeben:
-                    auth.requestMatchers(HttpMethod.DELETE, "/api/admin/users/**").permitAll();
-
-                    auth.requestMatchers(
-                            "/api/nfc/**",
-                            "/api/timetracking/**",
-                            "/api/correction/**",
-                            "/api/admin/**",
-                            "/api/vacation/**",
-                            "/api/auth/**",
-                            "/api/timetracking/editDay"
-                    ).permitAll();
-                    // Alle anderen Endpunkte erfordern Authentifizierung:
+                    // Öffentliche Endpunkte für Authentifizierung (Login, Registrierung)
+                    auth.requestMatchers("/api/auth/**").permitAll();
+                    // Den Mail-Endpunkt öffentlich freigeben
+                    auth.requestMatchers(HttpMethod.POST, "/api/apply").permitAll();
+                    // Schütze Admin-Endpunkte – nur Nutzer mit ROLE_ADMIN dürfen zugreifen
+                    auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
+                    // Alle anderen Endpunkte erfordern eine gültige Authentifizierung
                     auth.anyRequest().authenticated();
                 })
+                .authenticationProvider(authenticationProvider())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+
         return http.build();
     }
 }

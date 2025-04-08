@@ -2,8 +2,6 @@
     --primary-color: #5A67D8;
     --primary-hover: #434190;
     --secondary-color: #48BB78;
-    --secondary-hover: #38A169;
-    --light-bg: #F7FAFC;
     --card-bg: #FFFFFF;
     --text-color: #2D3748;
     --border-color: #E2E8F0;
@@ -13,7 +11,7 @@
     --font-family: 'Poppins', sans-serif;
 }
 
-/* Container der VacationCalendar-Komponente */
+/* Container */
 .vacation-calendar {
     width: 100%;
     margin: 0 auto;
@@ -22,16 +20,14 @@
     color: var(--text-color);
 }
 
-/* Header für Urlaubskontingent-Angaben */
+/* Header */
 .vacation-calendar h4 {
     margin: 0.5rem 0;
     font-size: 1rem;
     font-weight: 600;
 }
 
-/* ----------------------------------
-   REACT CALENDAR
----------------------------------- */
+/* React Calendar */
 .vacation-calendar .react-calendar {
     width: 100% !important;
     border: none;
@@ -107,26 +103,28 @@
     color: var(--text-color);
 }
 
+/* Holiday Label */
 .holiday-label {
-    /* Positionierung aufheben */
-    position: static;      /* oder einfach entfernen */
-    bottom: auto;
-    right: auto;
-
-    /* Größe/Styling anpassen, damit es unter der Zahl erscheint */
+    position: static;
     margin-top: 3px;
-    background-color: #ff0000;
+    background: linear-gradient(45deg, #ff4d4d, #ff1a1a);
     color: #fff;
     font-size: 10px;
-    padding: 2px 4px;
-    border-radius: 4px;
+    padding: 2px 6px;
+    border-radius: 6px;
     text-align: center;
-    display: inline-block;  /* oder block */
+    display: inline-block;
     white-space: nowrap;
+    box-shadow: 0 0 5px rgba(255, 26, 26, 0.7);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
-/* ----------------------------------
-   MODAL-OVERLAY & INHALT
----------------------------------- */
+
+.holiday-label:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(255, 26, 26, 0.9);
+}
+
+/* Modal Overlay & Content */
 .vacation-modal-overlay {
     position: fixed;
     top: 0;
@@ -205,4 +203,38 @@
         width: 90%;
         padding: 1rem;
     }
+}
+
+/****************************************
+ * Dark Mode Overrides
+ ****************************************/
+[data-theme="dark"] .vacation-calendar {
+    background-color: #18191A;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .vacation-calendar .react-calendar {
+    background-color: #242526;
+    border: 1px solid #484A4D;
+}
+
+/* Wochentage & Kacheln heller */
+[data-theme="dark"] .vacation-calendar .react-calendar__month-view__weekdays,
+[data-theme="dark"] .vacation-calendar .react-calendar__tile abbr {
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .vacation-calendar .react-calendar__month-view__days__day {
+    color: #f0f0f0;
+}
+
+/* Hover-Effekt dunkler */
+[data-theme="dark"] .vacation-calendar .react-calendar__tile:enabled:hover {
+    background-color: rgba(255,255,255,0.15);
+}
+
+/* Holiday-Label im Dark Mode */
+[data-theme="dark"] .holiday-label {
+    background: linear-gradient(45deg, #ff4d4d, #ff1a1a);
+    color: #fff;
 }

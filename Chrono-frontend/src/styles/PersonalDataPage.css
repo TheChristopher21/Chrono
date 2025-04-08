@@ -17,10 +17,13 @@
     --font-family: 'Poppins', sans-serif;
 }
 
+/* Haupt-Container */
 .personal-data-page {
     width: 100%;
     padding: 2rem;
-    background-color: var(--light-bg);
+    background-color: var(--background-color);
+    color: var(--text-color);
+    transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .page-header {
@@ -30,6 +33,16 @@
     border-radius: var(--radius);
     text-align: center;
     box-shadow: var(--shadow);
+    border: 2px solid var(--border-color);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+.page-header h2 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-color);
+    transition: color 0.3s ease;
 }
 
 .personal-data-section,
@@ -39,8 +52,11 @@
     margin-bottom: 2rem;
     border-radius: var(--radius);
     box-shadow: var(--shadow);
+    border: 2px solid var(--border-color);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
+/* Formulare */
 .form-personal,
 .form-password {
     display: flex;
@@ -67,6 +83,9 @@
     border: 1px solid var(--border-color);
     border-radius: var(--radius);
     font-size: 1rem;
+    background-color: #fff;
+    color: var(--text-color);
+    transition: background-color var(--transition), color var(--transition), border-color var(--transition);
 }
 
 .form-personal button,
@@ -76,14 +95,16 @@
     color: #fff;
     border: none;
     border-radius: var(--radius);
-    transition: background-color var(--transition);
+    transition: background-color var(--transition), transform 0.2s;
     font-size: 1rem;
     cursor: pointer;
+    font-weight: 500;
 }
 
 .form-personal button:hover,
 .form-password button:hover {
     background-color: var(--primary-hover);
+    transform: translateY(-2px);
 }
 
 .message {
@@ -91,4 +112,47 @@
     font-weight: 600;
     margin-top: 1rem;
     color: var(--text-color);
+    font-size: 1rem;
+}
+
+/****************************************
+ * DARK MODE OVERRIDES
+ ****************************************/
+[data-theme="dark"] .personal-data-page {
+    background-color: #18191A;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .page-header {
+    background-color: rgba(36,37,38,0.8);
+    border: 2px solid #484A4D;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .page-header h2 {
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .personal-data-section,
+[data-theme="dark"] .password-change-section {
+    background-color: rgba(36,37,38,0.8);
+    border: 2px solid #484A4D;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .form-personal label,
+[data-theme="dark"] .form-password label {
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .form-personal input,
+[data-theme="dark"] .form-password input {
+    background-color: #3A3B3C;
+    border: 1px solid #484A4D;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .form-personal button,
+[data-theme="dark"] .form-password button {
+    color: #fff;
 }
