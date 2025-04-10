@@ -183,21 +183,21 @@ const AdminUserManagementPage = () => {
     // 6) Karte programmieren
     const handleProgramCard = async (user) => {
         try {
+            // Wandle den Benutzernamen (oder einen anderen zu programmierenden Text) in einen 16-Byte-Hex-String um
             const hexData = stringToHex16(user.username);
-            const response = await fetch(process.env.APIURL+'/api/nfc/write-sector0', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ data: hexData })
+            // Sende einen POST-Request an den neuen Endpunkt, der einen NFC-Befehl erstellt
+            const response = await api.post('/api/nfc/command', {
+                type: 'PROGRAM',
+                data: hexData
             });
-            const result = await response.json();
-            if (result.status === 'success') {
-                notify(`Karte erfolgreich beschrieben mit: ${user.username}`);
+            if (response.data && response.data.status === 'pending') {
+                notify(`Programm-Befehl erstellt für ${user.username}. Bitte legen Sie die NFC-Karte auf.`);
             } else {
-                notify(`Fehler beim Kartenbeschreiben: ${result.message}`);
+                notify('Fehler beim Erstellen des Befehls.');
             }
         } catch (err) {
-            console.error("Fehler beim Kartenbeschreiben:", err);
-            notify("Fehler beim Kartenbeschreiben: " + err.message);
+            console.error("Fehler beim Kartenprogrammieren:", err);
+            notify("Fehler beim Kartenprogrammieren: " + err.message);
         }
     };
 
