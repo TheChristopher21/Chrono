@@ -5,10 +5,14 @@ import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.repositories.VacationRequestRepository;
+import com.chrono.chrono.repositories.CorrectionRequestRepository; // importieren
+import com.chrono.chrono.services.VacationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -26,6 +30,16 @@ public class AdminUserController {
 
     @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private VacationRequestRepository vacationRequestRepository;
+
+    // Injektion des CorrectionRequestRepository
+    @Autowired
+    private CorrectionRequestRepository correctionRequestRepository;
+
+    @Autowired
+    private VacationService vacationService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -63,7 +77,8 @@ public class AdminUserController {
         if (userBody.getPassword() != null && !userBody.getPassword().isEmpty()) {
             String hashed = passwordEncoder.encode(userBody.getPassword());
             userBody.setPassword(hashed);
-            if (userBody.getRoles() != null && userBody.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN"))) {
+            if (userBody.getRoles() != null &&
+                    userBody.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN"))) {
                 userBody.setAdminPassword(hashed);
             }
         } else {
@@ -124,7 +139,8 @@ public class AdminUserController {
             }
             String hashed = passwordEncoder.encode(newPassword);
             existing.setPassword(hashed);
-            if (existing.getRoles() != null && existing.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN"))) {
+            if (existing.getRoles() != null &&
+                    existing.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN"))) {
                 existing.setAdminPassword(hashed);
             }
         } else {
@@ -193,12 +209,38 @@ public class AdminUserController {
         return ResponseEntity.ok(dto);
     }
 
+    /**
+     * Angepasster Delete-Endpoint, der zuerst alle zugehörigen Vacation-Requests und Correction-Requests entfernt.
+     */
     @DeleteMapping("/{id}")
+    @Transactional
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {
-        if (!userRepository.existsById(id)) {
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) {
             return ResponseEntity.badRequest().body("User not found");
         }
-        userRepository.deleteById(id);
+        User user = userOpt.get();
+
+        // Zunächst alle Vacation-Requests des Benutzers löschen
+        try {
+            vacationService.deleteVacationsByUser(user);
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body("Fehler beim Löschen der Urlaubseinträge: " + ex.getMessage());
+        }
+
+        // Anschließend alle Correction-Requests (Korrekturanträge) löschen
+        try {
+            correctionRequestRepository.deleteByUser(user);
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body("Fehler beim Löschen der Korrekturanträge: " + ex.getMessage());
+        }
+
+        // Jetzt den Benutzer löschen
+        try {
+            userRepository.delete(user);
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).body("Fehler beim Löschen des Benutzers: " + ex.getMessage());
+        }
         return ResponseEntity.ok("User deleted successfully");
     }
 }

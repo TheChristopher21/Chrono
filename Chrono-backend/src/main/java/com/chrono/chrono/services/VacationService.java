@@ -1,4 +1,3 @@
-// src/main/java/com/chrono/chrono/services/VacationService.java
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.entities.User;
@@ -6,9 +5,12 @@ import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.VacationRequestRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -18,10 +20,16 @@ import java.util.HashSet;
 @Service
 public class VacationService {
 
+    private static final Logger logger = LoggerFactory.getLogger(VacationService.class);
+
+
+
     @Autowired
     private VacationRequestRepository vacationRepo;
+
     @Autowired
     private UserRepository userRepo;
+
     @Autowired
     private PasswordEncoder passwordEncoder;
 
@@ -35,7 +43,9 @@ public class VacationService {
         vr.setApproved(false);
         vr.setDenied(false);
         vr.setHalfDay(halfDay);
-        return vacationRepo.save(vr);
+        VacationRequest saved = vacationRepo.save(vr);
+        logger.info("VacationService: VacationRequest für User '{}' von {} bis {} erstellt.", username, start, end);
+        return saved;
     }
 
     // Admin erstellt Urlaub – sofort genehmigt
@@ -44,7 +54,9 @@ public class VacationService {
         VacationRequest vr = createVacationRequest(username, start, end, halfDay);
         vr.setApproved(true);
         vr.setDenied(false);
-        return vacationRepo.save(vr);
+        VacationRequest updated = vacationRepo.save(vr);
+        logger.info("VacationService: Admin '{0}' hat VacationRequest für User '{1}' genehmigt.", adminUsername, username);
+        return updated;
     }
 
     public List<VacationRequest> getUserVacations(String username) {
@@ -58,7 +70,9 @@ public class VacationService {
                 .orElseThrow(() -> new RuntimeException("Vacation request not found"));
         vr.setApproved(true);
         vr.setDenied(false);
-        return vacationRepo.save(vr);
+        VacationRequest updated = vacationRepo.save(vr);
+        logger.info("VacationService: VacationRequest ID {} genehmigt.", vacationId);
+        return updated;
     }
 
     public VacationRequest denyVacation(Long vacationId) {
@@ -66,15 +80,31 @@ public class VacationService {
                 .orElseThrow(() -> new RuntimeException("Vacation request not found"));
         vr.setApproved(false);
         vr.setDenied(true);
-        return vacationRepo.save(vr);
+        VacationRequest updated = vacationRepo.save(vr);
+        logger.info("VacationService: VacationRequest ID {} abgelehnt.", vacationId);
+        return updated;
     }
 
+    /**
+     * Löscht einen VacationRequest (für einen einzelnen Eintrag).
+     */
     public VacationRequest deleteVacation(Long vacationId, String adminUsername, String adminPassword) {
         checkAdminCredentials(adminUsername, adminPassword);
         VacationRequest vr = vacationRepo.findById(vacationId)
                 .orElseThrow(() -> new RuntimeException("Vacation request not found"));
         vacationRepo.delete(vr);
+        logger.info("VacationService: VacationRequest ID {} wurde gelöscht.", vacationId);
         return vr;
+    }
+
+    /**
+     * Neue Methode: Löscht alle VacationRequests für einen gegebenen Benutzer.
+     * Dies ist nützlich, bevor ein Benutzer gelöscht wird.
+     */
+    @Transactional
+    public void deleteVacationsByUser(User user) {
+        logger.info("VacationService: Lösche alle VacationRequests für Benutzer '{}'.", user.getUsername());
+        vacationRepo.deleteByUser(user);
     }
 
     // Überprüfung der Admin-Zugangsdaten
@@ -117,13 +147,12 @@ public class VacationService {
                 }
             }
         }
+        logger.info("VacationService: Benutzer '{}' hat {}/{} Urlaubstage genutzt.", username, usedDays, annualVacationDays);
         return annualVacationDays - usedDays;
     }
 
     /**
      * Liefert ein Set aller offiziellen Feiertage für das angegebene Jahr.
-     * Enthalten sind Neujahr, Karfreitag, Ostermontag, 1. Mai, Auffahrt, Pfingstmontag,
-     * Nationalfeiertag, optional Gallustag (z. B. 16.10.), Weihnachten und Stephanstag.
      */
     private Set<LocalDate> getHolidays(int year) {
         Set<LocalDate> holidays = new HashSet<>();
@@ -138,9 +167,7 @@ public class VacationService {
         holidays.add(easterSunday.plusDays(50)); // Pfingstmontag
         holidays.add(LocalDate.of(year, 8, 1));  // Nationalfeiertag
 
-        // Optional: Gallustag (z.B. 16.10.) – passe dies an, wenn für deinen Betrieb relevant
-        holidays.add(LocalDate.of(year, 10, 16));
-
+        holidays.add(LocalDate.of(year, 10, 16)); // Optional: Gallustag
         holidays.add(LocalDate.of(year, 12, 25)); // Weihnachten
         holidays.add(LocalDate.of(year, 12, 26)); // Stephanstag
 
