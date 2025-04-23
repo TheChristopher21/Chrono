@@ -1,9 +1,8 @@
-// src/components/VacationCalendarAdmin.jsx
 import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
-import '../styles/VacationCalendarAdmin.css';
+import '../styles/VacationCalendarAdminScoped.css';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
@@ -23,14 +22,8 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
 
-    // Kalenderwert kann ein Date oder [startDate, endDate] sein (wegen selectRange)
-    const [rangeValue, setRangeValue] = useState(new Date());
-    const [selectingRange, setSelectingRange] = useState(false);
-
     // Modal & Formular-States
     const [showModal, setShowModal] = useState(false);
-    const [vacationsOnSelectedRange, setVacationsOnSelectedRange] = useState([]);
-
     const [newVacationUser, setNewVacationUser] = useState('');
     const [newVacationHalfDay, setNewVacationHalfDay] = useState(false);
 
@@ -38,6 +31,8 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
     const [adminPassword, setAdminPassword] = useState('');
 
     const [users, setUsers] = useState([]);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
 
     useEffect(() => {
         fetchAllUsers();
@@ -51,7 +46,6 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
             console.error('Error fetching users:', err);
         }
     }
-
     /**
      * Gibt zurück, ob ein Urlaubseintrag (vac) innerhalb der gewählten Range liegt
      */
@@ -69,38 +63,6 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
     }
 
     /**
-     * Callback, wenn man im Kalender eine neue Range auswählt
-     */
-    function handleCalendarChange(nextValue) {
-        setRangeValue(nextValue);
-
-        if (Array.isArray(nextValue) && nextValue.length === 2) {
-            setSelectingRange(false);
-            setShowModal(true);
-
-            const [start, end] = nextValue;
-            // Normiere auf 0 Uhr
-            const normStart = new Date(start);
-            const normEnd = new Date(end);
-            normStart.setHours(0, 0, 0, 0);
-            normEnd.setHours(0, 0, 0, 0);
-
-            // Finde alle Urlaubseinträge, die in diesen Bereich fallen
-            const vacsInRange = vacationRequests.filter(vac =>
-                vacationInRange(vac, normStart, normEnd)
-            );
-            setVacationsOnSelectedRange(vacsInRange);
-
-            // Reset der Form-Felder
-            setNewVacationUser('');
-            setNewVacationHalfDay(false);
-        } else {
-            // Solange der User noch am Ziehen ist, kann man "ausblenden" oder "ausgrauen"
-            setSelectingRange(true);
-        }
-    }
-
-    /**
      * Erstellt einen neuen Urlaubseintrag (adminCreate) zwischen [start, end]
      */
     async function handleCreateVacation() {
@@ -108,8 +70,8 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
             notify('Bitte einen Benutzer auswählen');
             return;
         }
-        if (!Array.isArray(rangeValue) || rangeValue.length !== 2) {
-            notify('Bitte zuerst einen Datumsbereich auswählen');
+        if (!startDate || !endDate) {
+            notify('Bitte Start- und Enddatum angeben');
             return;
         }
         if (!adminPassword) {
@@ -117,9 +79,8 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
             return;
         }
 
-        const [start, end] = rangeValue;
-        const startStr = formatYMD(start);
-        const endStr = formatYMD(end);
+        const startStr = formatYMD(new Date(startDate));
+        const endStr = formatYMD(new Date(endDate));
 
         try {
             await api.post('/api/vacation/adminCreate', null, {
@@ -151,31 +112,6 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
-    }
-
-
-    async function handleDeleteVacation(vacationId) {
-        if (!adminPassword) {
-            notify('Bitte Admin-Passwort eingeben');
-            return;
-        }
-        try {
-            await api.delete(`/api/vacation/${vacationId}`, {
-                params: {
-                    adminUsername: currentUser.username,
-                    adminPassword
-                }
-            });
-            notify('Urlaub erfolgreich gelöscht');
-            setVacationsOnSelectedRange(prev => prev.filter(v => v.id !== vacationId));
-            // Optional reload
-            if (onReloadVacations) {
-                onReloadVacations();
-            }
-        } catch (err) {
-            console.error('Error deleting vacation', err);
-            notify(`Fehler beim Löschen des Urlaubs (id=${vacationId})`);
-        }
     }
 
     // Kalenderkacheln: Marker für vorhandene Urlaube
@@ -213,103 +149,96 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
     }
 
     return (
-        <div className="vacation-calendar-admin">
-            <h2>Admin-Kalender (Bereich auswählen)</h2>
+        <div className="vacation-calendar-admin scoped-vacation">
+            <h2>{t('Admin Urlaubs Kalendar')}</h2>
             <div className="admin-password-input">
-                <label>Admin Passwort: </label>
+                <label>{t('AdminPasswort')}: </label>
                 <input
                     type="password"
-                    placeholder={"password"}
+                    placeholder={t('AdminPasswort')}
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
                 />
             </div>
 
+            {/* Kalender zur Anzeige des Monats ohne Bereichsauswahl */}
             <Calendar
-                onChange={handleCalendarChange}
-                value={rangeValue}
-                tileContent={tileContent}
-                selectRange={true} // <-- Wichtig: Bereichsauswahl aktivieren
+                value={new Date()} // Zeigt den aktuellen Monat an
+                tileContent={tileContent} // Zeigt Marker für Urlaubsanträge an
             />
-            {selectingRange && (
-                <p style={{ color: 'gray' }}>
-                    Du bist dabei, einen Datumsbereich auszuwählen...
-                </p>
-            )}
 
-            {/* Modal */}
-            {showModal && Array.isArray(rangeValue) && rangeValue.length === 2 && (
+            {/* Button zum Erstellen eines Urlaubsantrags */}
+            <button onClick={() => setShowModal(true)} style={{ marginTop: '1rem' }}>
+                {t('Urlaub erstellen')}
+            </button>
+
+            {/* Modal zur Urlaubsantragserstellung */}
+            {showModal && (
                 <div className="modal-overlay">
                     <div className="modal-content">
-                        <h3>
-                            Urlaub im Bereich:{" "}
-                            {rangeValue[0].toLocaleDateString("de-DE")} -{" "}
-                            {rangeValue[1].toLocaleDateString("de-DE")}
-                        </h3>
+                        <h3>{t('Urlaub')}</h3>
 
-                        {vacationsOnSelectedRange.length > 0 ? (
-                            <div>
-                                <h4>Existierende Urlaube in diesem Bereich</h4>
-                                <ul>
-                                    {vacationsOnSelectedRange.map(vac => (
-                                        <li key={vac.id}>
-                                            <strong>{vac.username}</strong>{" "}
-                                            {vac.halfDay ? "(Halber Tag)" : "(Ganzer Tag)"}
-                                            {" - "}
-                                            {vac.approved ? (
-                                                <span style={{ color: "green" }}>Genehmigt</span>
-                                            ) : vac.denied ? (
-                                                <span style={{ color: "red" }}>Abgelehnt</span>
-                                            ) : (
-                                                <span style={{ color: "orange" }}>Offen</span>
-                                            )}
-                                            <button
-                                                style={{ marginLeft: "10px" }}
-                                                onClick={() => handleDeleteVacation(vac.id)}
-                                            >
-                                                Urlaub löschen
-                                            </button>
-                                        </li>
+                        {/* Formular für den Urlaubsantrag */}
+                        <form>
+                            <label>{t('Benutzer Auswahl')}:
+                                <select
+                                    value={newVacationUser}
+                                    onChange={e => setNewVacationUser(e.target.value)}
+                                >
+                                    <option value="">{t('selectUserPlaceholder')}</option>
+                                    {users.map((u) => (
+                                        <option key={u.id} value={u.username}>
+                                            {u.username}
+                                        </option>
                                     ))}
-                                </ul>
-                            </div>
-                        ) : (
-                            <p>Keine Urlaubseinträge für diesen Zeitraum</p>
-                        )}
+                                </select>
+                            </label>
 
-                        <hr />
-                        <h4>Neuen Urlaub anlegen (adminCreate)</h4>
-                        <div className="form-group">
-                            <label>Benutzer:</label>
-                            <select
-                                value={newVacationUser}
-                                onChange={(e) => setNewVacationUser(e.target.value)}
-                            >
-                                <option value="">-- Nutzer wählen --</option>
-                                {users.map((u) => (
-                                    <option key={u.id} value={u.username}>
-                                        {u.username}
-                                    </option>
-                                ))}
-                            </select>
-                        </div>
-                        <div className="form-group">
+                            <label>{t('StartZeit')}:
+                                <input
+                                    type="date"
+                                    value={startDate}
+                                    onChange={e => setStartDate(e.target.value)}
+                                    required
+                                />
+                            </label>
+
+                            <label>{t('EndZeit')}:
+                                <input
+                                    type="date"
+                                    value={endDate}
+                                    onChange={e => setEndDate(e.target.value)}
+                                    required
+                                />
+                            </label>
+
                             <label>
+                                {t('Halbtags Urlaub')}:
                                 <input
                                     type="checkbox"
                                     checked={newVacationHalfDay}
-                                    onChange={(e) => setNewVacationHalfDay(e.target.checked)}
+                                    onChange={e => setNewVacationHalfDay(e.target.checked)}
                                 />
-                                Halber Tag
                             </label>
-                        </div>
-                        <button onClick={handleCreateVacation}>
-                            Urlaub erstellen (direkt genehmigt)
-                        </button>
 
-                        <div style={{ marginTop: "20px" }}>
-                            <button onClick={() => setShowModal(false)}>Schließen</button>
-                        </div>
+                            <label>{t('AdminPasswort')}:
+                                <input
+                                    type="password"
+                                    value={adminPassword}
+                                    onChange={e => setAdminPassword(e.target.value)}
+                                    required
+                                />
+                            </label>
+
+                            <div className="modal-buttons">
+                                <button type="button" onClick={handleCreateVacation}>
+                                    {t('Bestätigen')}
+                                </button>
+                                <button type="button" onClick={() => setShowModal(false)}>
+                                    {t('Abbrechen')}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
@@ -318,19 +247,8 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
 };
 
 VacationCalendarAdmin.propTypes = {
-    vacationRequests: PropTypes.arrayOf(
-        PropTypes.shape({
-            id: PropTypes.number,
-            startDate: PropTypes.string.isRequired,
-            endDate: PropTypes.string.isRequired,
-            approved: PropTypes.bool,
-            denied: PropTypes.bool,
-            color: PropTypes.string,
-            username: PropTypes.string.isRequired,
-            halfDay: PropTypes.bool,
-        })
-    ).isRequired,
-    onReloadVacations: PropTypes.func,
+    vacationRequests: PropTypes.array.isRequired,
+    onReloadVacations: PropTypes.func
 };
 
 export default VacationCalendarAdmin;

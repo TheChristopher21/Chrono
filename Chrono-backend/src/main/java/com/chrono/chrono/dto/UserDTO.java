@@ -25,9 +25,15 @@ public class UserDTO {
     private LocalDate scheduleEffectiveDate;
     private Boolean isHourly;
     private Integer annualVacationDays;
+    private Integer trackingBalanceInMinutes;
+
+    // NEU: Felder für Prozent-basierte User
+    private Boolean isPercentage;
+    private Integer workPercentage;
 
     public UserDTO() {}
 
+    // Wichtig: im Konstruktor die neuen Felder übernehmen.
     public UserDTO(User user) {
         this.id = user.getId();
         this.username = user.getUsername();
@@ -40,10 +46,15 @@ public class UserDTO {
         this.breakDuration = user.getBreakDuration();
         this.color = user.getColor();
         this.scheduleCycle = user.getScheduleCycle();
-        this.weeklySchedule = user.getWeeklySchedule(); // <String,Double>
+        this.weeklySchedule = user.getWeeklySchedule();
         this.scheduleEffectiveDate = user.getScheduleEffectiveDate();
         this.isHourly = user.getIsHourly();
         this.annualVacationDays = user.getAnnualVacationDays();
+        this.trackingBalanceInMinutes = user.getTrackingBalanceInMinutes();
+
+        // NEU hinzugefügt:
+        this.isPercentage = user.getIsPercentage();
+        this.workPercentage = user.getWorkPercentage();
     }
 
     public UserDTO(Long id,
@@ -60,7 +71,9 @@ public class UserDTO {
                    List<Map<String, Double>> weeklySchedule,
                    LocalDate scheduleEffectiveDate,
                    Boolean isHourly,
-                   Integer annualVacationDays) {
+                   Integer annualVacationDays,
+                   Boolean isPercentage,
+                   Integer workPercentage) {
         this.id = id;
         this.username = username;
         this.firstName = firstName;
@@ -72,15 +85,15 @@ public class UserDTO {
         this.breakDuration = breakDuration;
         this.color = color;
         this.scheduleCycle = scheduleCycle;
-        this.weeklySchedule = weeklySchedule; // <String,Double>
+        this.weeklySchedule = weeklySchedule;
         this.scheduleEffectiveDate = scheduleEffectiveDate;
         this.isHourly = isHourly;
         this.annualVacationDays = annualVacationDays;
+        this.isPercentage = isPercentage;
+        this.workPercentage = workPercentage;
     }
 
-
-    // Getter & Setter
-
+    // ---------------------- Getter & Setter ----------------------
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -125,4 +138,19 @@ public class UserDTO {
 
     public Integer getAnnualVacationDays() { return annualVacationDays; }
     public void setAnnualVacationDays(Integer annualVacationDays) { this.annualVacationDays = annualVacationDays; }
+
+    // NEU: isPercentage & workPercentage
+    public Boolean getIsPercentage() { return isPercentage; }
+    public void setIsPercentage(Boolean isPercentage) { this.isPercentage = isPercentage; }
+
+    public Integer getWorkPercentage() { return workPercentage; }
+    public void setWorkPercentage(Integer workPercentage) { this.workPercentage = workPercentage; }
+    public Integer getTrackingBalanceInMinutes() {
+        return trackingBalanceInMinutes;
+    }
+
+    public void setTrackingBalanceInMinutes(Integer trackingBalanceInMinutes) {
+        this.trackingBalanceInMinutes = trackingBalanceInMinutes;
+    }
+
 }

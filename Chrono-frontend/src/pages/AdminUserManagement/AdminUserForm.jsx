@@ -1,7 +1,5 @@
-// AdminUserForm.jsx
 import 'react';
 import PropTypes from 'prop-types';
-
 import { STANDARD_COLORS, defaultWeeklySchedule } from './adminUserManagementUtils';
 
 const AdminUserForm = ({
@@ -12,15 +10,10 @@ const AdminUserForm = ({
                            onSubmit,
                            onCancel
                        }) => {
-    // userData enthält z. B. { username, firstName, lastName, ... }
-    // isEditing = true => "Bearbeiten"
-    // isEditing = false => "Neuen User erstellen"
-
     const handleChange = (field, value) => {
         setUserData(prev => ({ ...prev, [field]: value }));
     };
 
-    // Handler für scheduleCycle-Änderung
     const handleScheduleCycleChange = (newCycle) => {
         let newSchedule = userData.weeklySchedule || [];
         if (newCycle > newSchedule.length) {
@@ -41,7 +34,6 @@ const AdminUserForm = ({
             </h3>
 
             <form onSubmit={onSubmit}>
-                {/* Username */}
                 <input
                     type="text"
                     placeholder={t("userManagement.username")}
@@ -49,7 +41,6 @@ const AdminUserForm = ({
                     onChange={(e) => handleChange('username', e.target.value)}
                     required
                 />
-                {/* First Name */}
                 <input
                     type="text"
                     placeholder={t("userManagement.firstName")}
@@ -57,7 +48,6 @@ const AdminUserForm = ({
                     onChange={(e) => handleChange('firstName', e.target.value)}
                     required
                 />
-                {/* Last Name */}
                 <input
                     type="text"
                     placeholder={t("userManagement.lastName")}
@@ -65,7 +55,6 @@ const AdminUserForm = ({
                     onChange={(e) => handleChange('lastName', e.target.value)}
                     required
                 />
-                {/* E-Mail */}
                 <input
                     type="email"
                     placeholder={t("userManagement.email")}
@@ -74,8 +63,6 @@ const AdminUserForm = ({
                     required
                 />
 
-                {/* Passwort nur anzeigen, wenn wir NICHT im Editing-Modus sind, 
-            oder wenn du es beim Editieren erlaubst */}
                 {!isEditing && (
                     <input
                         type="password"
@@ -104,14 +91,7 @@ const AdminUserForm = ({
                             <div
                                 key={idx}
                                 className={`color-swatch ${userData.color === c ? 'selected' : ''}`}
-                                style={{
-                                    backgroundColor: c,
-                                    width: "20px",
-                                    height: "20px",
-                                    display: "inline-block",
-                                    margin: "0 5px",
-                                    cursor: "pointer"
-                                }}
+                                style={{ backgroundColor: c }}
                                 onClick={() => handleChange('color', c)}
                             />
                         ))}
@@ -127,7 +107,50 @@ const AdminUserForm = ({
                     />
                 </div>
 
-                {!userData.isHourly && (
+                <div className="form-group">
+                    <label>
+                        <input
+                            type="checkbox"
+                            checked={!!userData.isPercentage}
+                            onChange={(e) => handleChange('isPercentage', e.target.checked)}
+                        />
+                        {t("Prozentbasierte Zeiterfassung")}
+                    </label>
+                </div>
+
+                {userData.isPercentage && (
+                    <div className="form-group">
+                        <label>{t("userManagement.workPercentage") || "Work Percentage"}:</label>
+                        <input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="any"
+                            placeholder="z.B. 10"
+                            value={userData.workPercentage ?? ""}
+                            onChange={(e) => {
+                                const valStr = e.target.value;
+                                const numeric = parseFloat(valStr.replace(",", ".")) || 0;
+                                handleChange('workPercentage', numeric);
+                            }}
+                        />
+                    </div>
+                )}
+
+                {/* Urlaubstage – immer anzeigen */}
+                <div className="form-group">
+                    <label>{t("Urlaubstage")}:</label>
+                    <input
+                        type="number"
+                        step="any"
+                        placeholder="z.B. 25 oder 25.5"
+                        value={userData.annualVacationDays || ''}
+                        onChange={(e) => handleChange('annualVacationDays', e.target.value)}
+                    />
+                </div>
+
+                {/* Nur bei klassischer Zeiterfassung sichtbar */}
+                {!userData.isPercentage && !userData.isHourly && (
                     <>
                         <div className="form-group">
                             <label>{t("userManagement.expectedWorkDays")}:</label>
@@ -149,16 +172,7 @@ const AdminUserForm = ({
                                 onChange={(e) => handleChange('breakDuration', e.target.value)}
                             />
                         </div>
-                        <div className="form-group">
-                            <label>{t("userManagement.annualVacationDays")}:</label>
-                            <input
-                                type="number"
-                                step="any"
-                                placeholder="z.B. 25 oder 25.5"
-                                value={userData.annualVacationDays || ''}
-                                onChange={(e) => handleChange('annualVacationDays', e.target.value)}
-                            />
-                        </div>
+
                         <h4>{t("userManagement.scheduleConfig")}</h4>
                         <div className="form-group">
                             <label>{t("userManagement.cycleLength")}</label>
@@ -169,6 +183,7 @@ const AdminUserForm = ({
                                 onChange={(e) => handleScheduleCycleChange(Number(e.target.value))}
                             />
                         </div>
+
                         <div className="weekly-schedule">
                             {userData.weeklySchedule?.map((week, idx) => (
                                 <div key={idx} className="schedule-week">
@@ -185,10 +200,7 @@ const AdminUserForm = ({
                                                 onChange={(e) => {
                                                     const newVal = Number(e.target.value);
                                                     const newSchedule = [...userData.weeklySchedule];
-                                                    newSchedule[idx] = {
-                                                        ...newSchedule[idx],
-                                                        [dayKey]: newVal
-                                                    };
+                                                    newSchedule[idx] = { ...newSchedule[idx], [dayKey]: newVal };
                                                     setUserData({ ...userData, weeklySchedule: newSchedule });
                                                 }}
                                             />

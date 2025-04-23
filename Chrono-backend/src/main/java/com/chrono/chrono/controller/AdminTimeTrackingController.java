@@ -1,15 +1,25 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.AdminTimeTrackDTO;
+import com.chrono.chrono.entities.User;
+import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.TimeTrackingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+
 @RestController
 @RequestMapping("/api/admin/timetracking")
 public class AdminTimeTrackingController {
-
+    @Autowired
+    private UserRepository userRepository;
     @Autowired
     private TimeTrackingService timeTrackingService;
 
@@ -20,6 +30,37 @@ public class AdminTimeTrackingController {
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
+    }
+    @GetMapping("/admin/weekly-balance")
+    public ResponseEntity<?> getAdminWeeklyBalances(@RequestParam String monday) {
+        LocalDate mondayDate = LocalDate.parse(monday);
+        List<User> allUsers = userRepository.findAll();
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (User u : allUsers) {
+            int weekly = timeTrackingService.getWeeklyBalance(u, mondayDate);
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("username", u.getUsername());
+            entry.put("weeklyBalance", weekly);
+            entry.put("color", u.getColor());
+            result.add(entry);
+        }
+
+        return ResponseEntity.ok(result);
+    }
+    @GetMapping("/admin/tracking-balances")
+    public ResponseEntity<?> getAllCurrentTrackingBalances() {
+        List<User> users = userRepository.findAll();
+
+        List<Map<String, Object>> result = users.stream().map(u -> {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("username", u.getUsername());
+            entry.put("trackingBalance", u.getTrackingBalanceInMinutes());
+            entry.put("color", u.getColor());
+            return entry;
+        }).toList();
+
+        return ResponseEntity.ok(result);
     }
 
     @PutMapping("/editDay")

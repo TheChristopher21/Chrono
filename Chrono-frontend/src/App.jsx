@@ -1,29 +1,36 @@
 // src/App.jsx
-import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
-import './styles/global.css';
-import './styles/Login.css';
-import './styles/Navbar.css';
-import Login from './pages/Login.jsx';
-import Registration from './pages/Registration.jsx';
-import UserDashboard from './pages/UserDashboard/UserDashboard.jsx';
-import AdminDashboard from './pages/AdminDashboard/AdminDashboard.jsx';
-import AdminUserManagementPage from './pages/AdminUserManagement/AdminUserManagementPage.jsx';
-import PersonalDataPage from './pages/PersonalDataPage.jsx';
-import PrivateRoute from './components/PrivateRoute.jsx';
-import PrintReport from './components/PrintReport.jsx';
-import AdminChangePassword from './pages/AdminChangePassword.jsx';
+import React from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
+
+import "./styles/global.css";
+import "./styles/Login.css";
+import "./styles/Navbar.css";
+import "./styles/PercentageDashboardScoped.css";
+
+import Login                         from "./pages/Login.jsx";
+import Registration                  from "./pages/Registration.jsx";
+import UserDashboard                 from "./pages/UserDashboard/UserDashboard.jsx";
+import AdminDashboard                from "./pages/AdminDashboard/AdminDashboard.jsx";
+import AdminUserManagementPage       from "./pages/AdminUserManagement/AdminUserManagementPage.jsx";
+import PersonalDataPage              from "./pages/PersonalDataPage.jsx";
+import AdminChangePassword           from "./pages/AdminChangePassword.jsx";
+import PercentagePunch               from "./pages/PercentageDashboard/PercentageDashboard.jsx";
+import PrintReport                   from "./pages/PrintReport.jsx";
+
+import PrivateRoute                  from "./components/PrivateRoute.jsx";
 
 function App() {
     return (
         <div>
             <Routes>
+                {/* Root-Weiterleitung */}
                 <Route path="/" element={<Navigate to="/login" replace />} />
-                <Route path="*" element={<Navigate to="/login" replace />} />
 
-                <Route path="/login" element={<Login />} />
+                {/* Öffentliche Seiten */}
+                <Route path="/login"    element={<Login />} />
                 <Route path="/register" element={<Registration />} />
 
+                {/* Geschützte User-Bereiche */}
                 <Route
                     path="/user"
                     element={
@@ -32,7 +39,14 @@ function App() {
                         </PrivateRoute>
                     }
                 />
-                <Route path="/print-report" element={<PrintReport />} />
+                <Route
+                    path="/percentage-punch"
+                    element={
+                        <PrivateRoute requiredRole="ROLE_USER">
+                            <PercentagePunch />
+                        </PrivateRoute>
+                    }
+                />
                 <Route
                     path="/profile"
                     element={
@@ -42,6 +56,7 @@ function App() {
                     }
                 />
 
+                {/* Geschützte Admin-Bereiche */}
                 <Route
                     path="/admin"
                     element={
@@ -66,6 +81,12 @@ function App() {
                         </PrivateRoute>
                     }
                 />
+
+                {/* PDF-/Druck-Seite – MUSS vor dem Catch-All stehen */}
+                <Route path="/print-report" element={<PrintReport />} />
+
+                {/* Catch-All (Not-Found / Redirect) **ganz zum Schluss** */}
+                <Route path="*" element={<Navigate to="/login" replace />} />
             </Routes>
         </div>
     );

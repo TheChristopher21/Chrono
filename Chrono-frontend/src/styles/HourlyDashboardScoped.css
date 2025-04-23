@@ -1,0 +1,336 @@
+/* =========================================================================
+   HourlyDashboardScoped.css · v1.1  · 22‑Apr‑2025
+   ========================================================================= */
+
+/* ---------- 0)  Tokens ------------------------------------------------- */
+.hourly-dashboard.scoped-dashboard{
+    /* Farben (Light) */
+    --c-pri:#475bff;--c-pri-dim:#6b7cff;
+    --c-sec:#20c997;--c-sec-dim:#3ad8a7;
+    --c-text:#1f2024;--c-muted:#5d626e;
+    --c-bg:#f5f7ff;--c-card:#ffffff;
+    --c-surface:#f0f2fe;                 /* helle Panel‑Fläche */
+    --c-border:#d5d8e5;--c-line:#e7e8f1;
+    --c-warn:#ffc741;--c-danger:#ed5757;
+
+    /* Radius, Shadow, Motion */
+    --u-radius:14px;
+    --u-shadow-sm:0 2px 6px rgba(0,0,0,.06);
+    --u-shadow-lg:0 20px 34px rgba(0,0,0,.14);
+    --u-dur:.25s;--u-ease:cubic-bezier(.4,.2,.2,1);
+
+    font-size:16px;line-height:1.55;
+}
+/* Dark ----------------------------------------------------------- */
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard{
+    --c-text:#e6e8ee;--c-muted:#a1a5b4;
+    --c-bg:#16181d;--c-card:#1f2229;
+    --c-surface:#242731;                /* Header‑Panel inside card */
+    --c-border:#3a3e4b;
+    --c-line:#2d3039;
+    --u-shadow-sm:0 2px 6px rgba(0,0,0,.45);
+    --u-shadow-lg:0 20px 34px rgba(0,0,0,.75);
+}
+
+/* ---------- 1)  Grundlayout ------------------------------------------- */
+.hourly-dashboard.scoped-dashboard{
+    font-family:'Poppins',system-ui,sans-serif;background:var(--c-bg);color:var(--c-text);
+}
+.hourly-dashboard.scoped-dashboard .content-wrapper{
+    width:100%;max-width:1440px;margin-inline:auto;
+    padding-inline:clamp(1rem,4vw,3rem);
+}
+
+/* ---------- 2)  Header ------------------------------------------------- */
+.hourly-dashboard.scoped-dashboard .dashboard-header{
+    background:var(--c-card);padding:2.2rem 1.8rem;
+    border:1px solid var(--c-border);border-radius:var(--u-radius);
+    box-shadow:var(--u-shadow-sm);margin-bottom:clamp(1.7rem,4vw,2.4rem);
+    text-align:center;
+}
+.hourly-dashboard.scoped-dashboard .dashboard-header h2{
+    margin:0;font-size:clamp(1.9rem,3vw,2.4rem);font-weight:700;
+}
+
+/* ---------- 3)  Punch‑Section ----------------------------------------- */
+.hourly-dashboard.scoped-dashboard .punch-section{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:2rem 1.6rem;text-align:center;
+    box-shadow:var(--u-shadow-sm);margin-bottom:clamp(1.6rem,3vw,2rem);
+}
+.hourly-dashboard.scoped-dashboard .punch-message{
+    margin-bottom:1.2rem;padding:.8rem;border-radius:var(--u-radius);
+    background:rgba(32,201,151,.14);color:var(--c-sec);border:1px solid var(--c-sec);
+    font-weight:600;
+}
+
+/* ---------- 4)  Buttons  (global) ------------------------------------- */
+.hourly-dashboard.scoped-dashboard button{
+    font-size:.93rem;font-weight:600;border:none;border-radius:var(--u-radius);
+    cursor:pointer;transition:background var(--u-dur)var(--u-ease),transform var(--u-dur)var(--u-ease);
+}
+.hourly-dashboard.scoped-dashboard button:focus-visible{
+    outline:3px solid var(--c-pri);outline-offset:2px;
+}
+.hourly-dashboard.scoped-dashboard .btn--pri{
+    background:var(--c-pri);color:#fff;
+}
+.hourly-dashboard.scoped-dashboard .btn--pri:hover{
+    background:var(--c-pri-dim);transform:translateY(-2px);
+}
+.hourly-dashboard.scoped-dashboard .btn--sec{
+    background:var(--c-sec);color:#fff;
+}
+.hourly-dashboard.scoped-dashboard .btn--sec:hover{
+    background:var(--c-sec-dim);transform:translateY(-2px);
+}
+
+/* ---------- 5)  Week‑Overview ---------------------------------------- */
+.hourly-dashboard.scoped-dashboard .weekly-overview{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:2.2rem;box-shadow:var(--u-shadow-sm);
+    margin-bottom:clamp(1.7rem,4vw,2.4rem);
+}
+.hourly-dashboard.scoped-dashboard .weekly-overview h3{
+    margin:0 0 1.8rem;text-align:center;font-size:clamp(1.5rem,2.5vw,1.8rem);
+    border-bottom:1px solid var(--c-border);padding-bottom:1.1rem;
+}
+
+/* Navigation */
+.hourly-dashboard.scoped-dashboard .week-navigation{
+    display:flex;justify-content:center;align-items:center;gap:1rem;flex-wrap:wrap;
+    margin-bottom:1.9rem;
+}
+.hourly-dashboard.scoped-dashboard .week-navigation button{comp:btn--sec;}
+.hourly-dashboard.scoped-dashboard .week-navigation input[type="date"]{
+    padding:.55rem .8rem;border:1px solid var(--c-border);border-radius:var(--u-radius);
+    background:var(--c-card);color:inherit;font-size:1rem;
+}
+
+/* Summen */
+.hourly-dashboard.scoped-dashboard .weekly-monthly-totals{
+    text-align:center;margin-bottom:2.1rem;font-size:1.05rem;font-weight:600;
+}
+
+/* ---------- 6)  Week‑Display Grid ------------------------------------ */
+.hourly-dashboard.scoped-dashboard .week-display{
+    display:grid;gap:1.9rem;
+    grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+}
+.hourly-dashboard.scoped-dashboard .week-day-card{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);display:flex;flex-direction:column;
+    box-shadow:var(--u-shadow-sm);
+}
+.hourly-dashboard.scoped-dashboard .week-day-header{
+    background:var(--c-surface);padding:1rem;text-align:center;
+    font-weight:700;font-size:1rem;border-bottom:1px solid var(--c-border);
+}
+.hourly-dashboard.scoped-dashboard .week-day-content{
+    padding:1rem 1.2rem;font-size:1rem;line-height:1.45;
+}
+.hourly-dashboard.scoped-dashboard .week-day-content ul{margin:0;padding:0;list-style:none;}
+.hourly-dashboard.scoped-dashboard .week-day-content li{margin-bottom:.45rem;}
+.hourly-dashboard.scoped-dashboard .week-day-content li strong{font-weight:700;}
+
+/* Notizen */
+.hourly-dashboard.scoped-dashboard .daily-note-section{
+    margin-top:auto;padding:1.1rem 1.2rem;border-top:1px solid var(--c-border);
+}
+.hourly-dashboard.scoped-dashboard .daily-note-section button{comp:btn--sec;font-size:.86rem;padding:.45rem 1rem;}
+.hourly-dashboard.scoped-dashboard textarea{
+    width:100%;padding:.6rem;border:1px solid var(--c-border);border-radius:var(--u-radius);
+    background:inherit;color:inherit;font-size:.9rem;margin-block:.7rem;resize:vertical;
+}
+.hourly-dashboard.scoped-dashboard .note-display{
+    background:var(--c-surface);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:.7rem;font-size:.9rem;
+}
+
+/* Correction‑Button */
+.hourly-dashboard.scoped-dashboard .correction-button-row{
+    padding:1.1rem;border-top:1px solid var(--c-border);text-align:center;
+}
+.hourly-dashboard.scoped-dashboard .correction-button-row button{comp:btn--pri;font-size:.88rem;padding:.55rem 1.25rem;}
+
+/* ---------- 7)  Vacation‑Section ------------------------------------ */
+.hourly-dashboard.scoped-dashboard .vacation-section{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:2.2rem;box-shadow:var(--u-shadow-sm);
+    margin-bottom:clamp(1.7rem,4vw,2.4rem);
+}
+.hourly-dashboard.scoped-dashboard .vacation-section h3{
+    margin:0 0 1.6rem;font-size:clamp(1.45rem,2.4vw,1.65rem);
+    border-bottom:1px solid var(--c-border);padding-bottom:1rem;text-align:left;
+}
+
+/* ---------- 8)  Correction‑Panel ------------------------------------ */
+.hourly-dashboard.scoped-dashboard .correction-panel{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:2.2rem;box-shadow:var(--u-shadow-sm);
+    margin-bottom:clamp(1.7rem,4vw,2.4rem);
+}
+.hourly-dashboard.scoped-dashboard .corrections-header{
+    display:flex;justify-content:space-between;cursor:pointer;border-bottom:1px solid var(--c-border);
+    padding-bottom:.7rem;margin-bottom:1.2rem;
+}
+.hourly-dashboard.scoped-dashboard .single-correction{
+    background:var(--c-surface);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:1rem .9rem;margin-bottom:.85rem;font-size:.93rem;
+}
+
+/* ---------- 9)  Modal refinements ----------------------------------- */
+.hourly-dashboard.scoped-dashboard .modal-content{
+    background:var(--c-card);border:1px solid var(--c-border);
+}
+.hourly-dashboard.scoped-dashboard .modal-content h3{
+    font-size:1.25rem;margin-top:0;margin-bottom:1.3rem;font-weight:700;
+}
+.hourly-dashboard.scoped-dashboard .modal-content input,
+.hourly-dashboard.scoped-dashboard .modal-content textarea{
+    padding:.65rem;border:1px solid var(--c-border);border-radius:var(--u-radius);
+    background:inherit;color:inherit;font-size:.93rem;margin-bottom:.65rem;width:100%;
+}
+
+/* ---------- 10) Responsive tweaks ----------------------------------- */
+@media(max-width:640px){
+    .hourly-dashboard.scoped-dashboard .week-display{grid-template-columns:1fr;}
+    .hourly-dashboard.scoped-dashboard .dashboard-header{padding:1.6rem;}
+}
+
+/* ---------- 11) Reduced Motion -------------------------------------- */
+@media(prefers-reduced-motion:reduce){
+    .hourly-dashboard.scoped-dashboard *,
+    .hourly-dashboard.scoped-dashboard *::before,
+    .hourly-dashboard.scoped-dashboard *::after{transition:none!important;}
+}
+/* =========================================================================
+   Dark‑Mode Lesbarkeit: Kontraste gezielt erhöhen
+   ========================================================================= */
+
+/* Überschriften dunkler + klarer */
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard h2,
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard h3,
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard h4 {
+    color: #f2f4fa;
+}
+
+/* Labels, kleine Texte */
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .expected-hours,
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .weekly-monthly-totals,
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .week-day-content li {
+    color: #d4d7e0;
+}
+
+/* Kalender-Tage ohne Einträge */
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .no-entries {
+    color: #a8acbb;
+}
+
+/* Sekundäre Flächen (z. B. week-day-header) kräftiger */
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .week-day-header {
+    background-color: #2a2d36;
+    color: #f0f1f5;
+}
+/* =========================================================================
+   Dark-Mode Fix – “Keine Einträge” besser lesbar
+   ========================================================================= */
+[data-theme="dark"] .scoped-dashboard .week-day-content p {
+    color: #c5c9d5;
+}/* =========================================================================
+   Monatsübersicht unten
+   ========================================================================= */
+.scoped-dashboard .monthly-summary {
+    margin-top: var(--u-gap);
+    text-align: center;
+}
+.scoped-dashboard .monthly-summary h3 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
+.scoped-dashboard .monthly-table {
+    display: flex;
+    justify-content: center;
+}
+.scoped-dashboard .monthly-table table {
+    width: auto;
+    border-collapse: collapse;
+    font-size: .95rem;
+}
+.scoped-dashboard .monthly-table th,
+.scoped-dashboard .monthly-table td {
+    padding: .4rem .8rem;
+    text-align: center;
+}
+.scoped-dashboard .monthly-table th {
+    color: var(--c-muted);
+    font-weight: 600;
+    font-size: .9rem;
+    border-bottom: 1px solid var(--c-border);
+}
+.scoped-dashboard .monthly-table td {
+    color: var(--c-text);
+}
+.scoped-dashboard .print-button {
+    margin-top: 1.2rem;
+}
+.scoped-dashboard .print-button button {
+    padding: .5rem 1.2rem;
+    font-size: .85rem;
+    background: var(--c-pri);
+    color: #fff;
+    border: none;
+    border-radius: var(--u-radius);
+    cursor: pointer;
+    transition: background var(--u-dur) var(--u-ease);
+}
+.scoped-dashboard .print-button button:hover {
+    background: var(--c-pri-dim);
+}
+/* =====================================================================
+   Rote Hervorhebung für späte Zeiten (22:30–23:30) · in allen Themes
+   ===================================================================== */
+.scoped-dashboard .late-time {
+    color: #e53939;
+    font-weight: 600;
+}
+
+/* Optional: etwas kräftiger im Dark‑Mode */
+[data-theme="dark"] .scoped-dashboard .late-time {
+    color: #ff6b6b;
+}
+/* Standardmäßige Popup-Stil-Definition */
+.punch-message {
+    position: fixed;
+    top: 20px;  /* Sicherstellen, dass es oben erscheint */
+    left: 50%;
+    transform: translateX(-50%); /* Horizontale Zentrierung */
+    background-color: #2ecc71;  /* Grüner Hintergrund für Bestätigungen */
+    color: white;  /* Weiße Schriftfarbe */
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 9999; /* Höchster z-index, damit es immer oben ist */
+    opacity: 0; /* Anfangs unsichtbar */
+    animation: fadeInOut 4s ease-in-out forwards; /* Animation für das Ein- und Ausblenden */
+}
+
+/* Animation für das Ein- und Ausblenden der Nachricht */
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px); /* Startposition */
+    }
+    10% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0); /* Endposition (sichtbar und in Position) */
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px); /* Ende der Animation (unsichtbar) */
+    }
+}

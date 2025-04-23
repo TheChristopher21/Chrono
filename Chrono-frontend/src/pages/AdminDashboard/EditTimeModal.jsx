@@ -14,6 +14,7 @@ const EditTimeModal = ({
     if (!editModalVisible) return null;
 
     return (
+        <div className="admin-dashboard scoped-dashboard">
         <div className="modal-overlay">
             <div className="modal-content">
                 <h3>
@@ -85,6 +86,7 @@ const EditTimeModal = ({
                     </button>
                 </form>
             </div>
+        </div>
         </div>
     );
 };

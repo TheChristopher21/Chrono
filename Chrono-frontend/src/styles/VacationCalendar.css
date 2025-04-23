@@ -1,240 +1,111 @@
-:root {
-    --primary-color: #5A67D8;
-    --primary-hover: #434190;
-    --secondary-color: #48BB78;
-    --card-bg: #FFFFFF;
-    --text-color: #2D3748;
-    --border-color: #E2E8F0;
-    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --radius: 12px;
-    --transition: 0.3s ease;
-    --font-family: 'Poppins', sans-serif;
+/* =========================================================================
+   VacationCalendar.css · final‑centered · 21‑Apr‑2025
+   ========================================================================= */
+.scoped-vacation{
+    /* TOKENS (wie gehabt) */
+    --c-pri:#475bff;--c-pri-dim:#6b7cff;--c-text:#1e1f22;--c-muted:#575c6a;
+    --c-bg:#fff;--c-surface:#f3f5fd;--c-card:#fff;--c-border:#d1d4e2;
+    --u-radius:12px;--u-shadow-sm:0 2px 6px rgba(0,0,0,.06);
+    --u-shadow-lg:0 10px 26px rgba(0,0,0,.12);--u-dur:.22s;
+    --u-ease:cubic-bezier(.4,.2,.2,1);
+}
+[data-theme="dark"] .scoped-vacation{
+    --c-text:#e6e8ee;--c-muted:#9fa4b4;--c-bg:#121315;--c-surface:#1d1f25;
+    --c-card:#1d1f25;--c-border:#363a46;--u-shadow-sm:0 2px 6px rgba(0,0,0,.45);
+    --u-shadow-lg:0 18px 36px rgba(0,0,0,.65);
 }
 
-/* Container */
-.vacation-calendar {
-    width: 100%;
-    margin: 0 auto;
-    padding: 1rem;
-    font-family: var(--font-family);
-    color: var(--text-color);
+/* ---------- Container & Header --------------------------------------- */
+.scoped-vacation .vacation-calendar{font-family:'Poppins',system-ui,sans-serif;color:var(--c-text);}
+.scoped-vacation .vacation-calendar h4{margin:.28rem 0;font-size:.95rem;font-weight:600;}
+
+/* ---------- Calendar Shell ------------------------------------------- */
+.scoped-vacation .react-calendar{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:.8rem .6rem 1rem;width:100%!important;
+    box-shadow:var(--u-shadow-sm);
+    display:grid;grid-template-rows:auto auto 1fr;   /* nav, weekdays, grid */
+}
+.scoped-vacation .react-calendar__navigation{margin-bottom:.4rem;}
+.scoped-vacation .react-calendar__navigation button{
+    background:none;border:none;font-weight:600;cursor:pointer;
+    color:var(--c-text);padding:.35rem .65rem;border-radius:8px;
+    transition:background var(--u-dur)var(--u-ease),color var(--u-dur)var(--u-ease);
+}
+.scoped-vacation .react-calendar__navigation button:hover{
+    background:rgba(var(--c-pri-rgb,71,91,255),.14);color:var(--c-pri);
 }
 
-/* Header */
-.vacation-calendar h4 {
-    margin: 0.5rem 0;
-    font-size: 1rem;
-    font-weight: 600;
+/* ---------- Weekday Header ------------------------------------------- */
+.scoped-vacation .react-calendar__month-view__weekdays{
+    text-transform:uppercase;font-size:.72rem;font-weight:700;color:var(--c-muted);
+}
+.scoped-vacation .react-calendar__month-view__weekdays abbr{text-decoration:none;}
+
+/* ---------- Day‑Tiles ------------------------------------------------- */
+.scoped-vacation .react-calendar__tile{
+    /* Layout: volle Zentrierung */
+    height:86px;display:flex;flex-direction:column;
+    justify-content:center;align-items:center;
+    padding:0;border-radius:10px;background:var(--c-surface);
+    transition:background var(--u-dur)var(--u-ease),box-shadow var(--u-dur)var(--u-ease);
+}
+[data-theme="dark"] .scoped-vacation .react-calendar__tile{background:#202328;}
+
+.scoped-vacation .react-calendar__tile abbr{
+    font-weight:600;font-size:.80rem;color:var(--c-text);line-height:1;margin:0;
 }
 
-/* React Calendar */
-.vacation-calendar .react-calendar {
-    width: 100% !important;
-    border: none;
-    line-height: 1.125em;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    background-color: var(--card-bg);
-    padding: 1rem;
+/* Hover & Active */
+.scoped-vacation .react-calendar__tile:enabled:hover{
+    background:rgba(var(--c-pri-rgb,71,91,255),.08);
+}
+.scoped-vacation .react-calendar__tile--active{
+    background:var(--c-pri);
+}
+.scoped-vacation .react-calendar__tile--active abbr{color:#fff;}
+
+/* Today marker ohne abgeschnittene Ecken */
+.scoped-vacation .react-calendar__tile--now{
+    box-shadow:0 0 0 2px var(--c-pri) inset;
 }
 
-.vacation-calendar .react-calendar__navigation {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    margin-bottom: 0.625rem;
+/* Urlaub‑Dot mittig unter Zahl ---------------------------------------- */
+.scoped-vacation .holiday-dot{
+    margin-top:.45rem;
+    width:9px;height:9px;border-radius:50%;
+    box-shadow:0 0 0 2px var(--c-surface);
+}
+[data-theme="dark"] .scoped-vacation .holiday-dot{box-shadow:0 0 0 2px #202328;}
+
+/* ---------- Modal & Misc bleiben unverändert ------------------------- */
+.scoped-vacation .vacation-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);
+    display:flex;align-items:center;justify-content:center;z-index:2000;}
+.scoped-vacation .vacation-modal-content{
+    width:90%;max-width:420px;background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:2rem;box-shadow:var(--u-shadow-lg);
+}
+.scoped-vacation .vacation-modal-content h3{margin:0 0 1.3rem;}
+.scoped-vacation .vacation-modal-content label{display:block;font-weight:600;margin:.9rem 0 .3rem;}
+.scoped-vacation .vacation-modal-content input,
+.scoped-vacation .vacation-modal-content select{
+    width:100%;padding:.6rem .8rem;border:1px solid var(--c-border);
+    border-radius:10px;background:inherit;color:inherit;
+}
+.scoped-vacation .modal-buttons{display:flex;gap:1rem;margin-top:1.4rem;justify-content:flex-end;}
+.scoped-vacation .vacation-modal-content button{
+    padding:.55rem 1.4rem;border:none;border-radius:10px;font-weight:600;
+    background:var(--c-pri);color:#fff;cursor:pointer;
+    transition:background .2s ease,transform .2s ease;
+}
+.scoped-vacation .vacation-modal-content button:hover{background:var(--c-pri-dim);transform:translateY(-2px);}
+
+/* ---------- Responsive ------------------------------------------------ */
+@media(max-width:520px){
+    .scoped-vacation .react-calendar__tile{height:72px;}
 }
 
-.vacation-calendar .react-calendar__navigation button {
-    background: none;
-    border: none;
-    font-size: 1rem;
-    margin: 0.125rem;
-    color: var(--primary-color);
-    cursor: pointer;
-}
-
-.vacation-calendar .react-calendar__navigation button:hover {
-    color: var(--primary-hover);
-}
-
-.vacation-calendar .react-calendar__month-view__weekdays {
-    display: flex;
-    justify-content: space-around;
-    text-align: center;
-    font-weight: 600;
-    margin-bottom: 0.3125rem;
-}
-
-.vacation-calendar .react-calendar__month-view__weekdays div {
-    flex: 1;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-}
-
-.vacation-calendar .react-calendar__month-view__days {
-    display: flex;
-    flex-wrap: wrap;
-}
-
-.vacation-calendar .react-calendar__month-view__days__day {
-    position: relative;
-    flex: 1 0 14.28%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 60px;
-    margin: 0.125rem 0;
-    border-radius: var(--radius);
-    transition: background-color var(--transition);
-    text-align: center;
-}
-
-.vacation-calendar .react-calendar__month-view__days__day:hover {
-    background-color: #e6f7ff;
-}
-
-.vacation-calendar .react-calendar__month-view__days__day abbr {
-    display: block;
-    text-decoration: none;
-    font-weight: 600;
-    font-size: 1rem;
-    color: var(--text-color);
-}
-
-/* Holiday Label */
-.holiday-label {
-    position: static;
-    margin-top: 3px;
-    background: linear-gradient(45deg, #ff4d4d, #ff1a1a);
-    color: #fff;
-    font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 6px;
-    text-align: center;
-    display: inline-block;
-    white-space: nowrap;
-    box-shadow: 0 0 5px rgba(255, 26, 26, 0.7);
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.holiday-label:hover {
-    transform: scale(1.1);
-    box-shadow: 0 0 10px rgba(255, 26, 26, 0.9);
-}
-
-/* Modal Overlay & Content */
-.vacation-modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-}
-
-.vacation-modal-content {
-    background: var(--card-bg);
-    padding: 2rem;
-    border-radius: var(--radius);
-    width: 400px;
-    max-width: 90%;
-    box-shadow: var(--shadow);
-    position: relative;
-}
-
-.vacation-modal-content h3 {
-    margin-top: 0;
-    margin-bottom: 1.5rem;
-    font-weight: 600;
-    font-size: 1.2rem;
-    border-bottom: 1px solid var(--border-color);
-    padding-bottom: 0.5rem;
-}
-
-.vacation-modal-content p {
-    margin: 0.5rem 0 1rem;
-    font-size: 0.95rem;
-}
-
-.vacation-modal-content label {
-    display: inline-block;
-    margin-bottom: 0.5rem;
-    font-weight: 600;
-    font-size: 0.9rem;
-}
-
-.vacation-modal-content select {
-    width: 100%;
-    padding: 0.5rem;
-    margin-bottom: 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius);
-}
-
-.modal-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1rem;
-}
-
-.vacation-modal-content button {
-    padding: 0.5rem 1rem;
-    border: none;
-    border-radius: var(--radius);
-    background-color: var(--primary-color);
-    color: #fff;
-    cursor: pointer;
-    transition: background-color var(--transition);
-    font-size: 0.9rem;
-}
-
-.vacation-modal-content button:hover {
-    background-color: var(--primary-hover);
-}
-
-@media (max-width: 768px) {
-    .vacation-modal-content {
-        width: 90%;
-        padding: 1rem;
-    }
-}
-
-/****************************************
- * Dark Mode Overrides
- ****************************************/
-[data-theme="dark"] .vacation-calendar {
-    background-color: #18191A;
-    color: #f0f0f0;
-}
-
-[data-theme="dark"] .vacation-calendar .react-calendar {
-    background-color: #242526;
-    border: 1px solid #484A4D;
-}
-
-/* Wochentage & Kacheln heller */
-[data-theme="dark"] .vacation-calendar .react-calendar__month-view__weekdays,
-[data-theme="dark"] .vacation-calendar .react-calendar__tile abbr {
-    color: #f0f0f0;
-}
-
-[data-theme="dark"] .vacation-calendar .react-calendar__month-view__days__day {
-    color: #f0f0f0;
-}
-
-/* Hover-Effekt dunkler */
-[data-theme="dark"] .vacation-calendar .react-calendar__tile:enabled:hover {
-    background-color: rgba(255,255,255,0.15);
-}
-
-/* Holiday-Label im Dark Mode */
-[data-theme="dark"] .holiday-label {
-    background: linear-gradient(45deg, #ff4d4d, #ff1a1a);
-    color: #fff;
+/* Reduced motion */
+@media(prefers-reduced-motion:reduce){
+    .scoped-vacation *, .scoped-vacation *::before,.scoped-vacation *::after{transition:none!important;}
 }

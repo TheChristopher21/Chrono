@@ -3,19 +3,17 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
-import '../styles/Login.css'; // Beachte: Hier liegt deine 2-Spalten-CSS
+import '../styles/Login.css';
 import api from "../utils/api.js";
 import { LanguageContext, useTranslation } from '../context/LanguageContext';
 import { Howl } from 'howler';
 import stampMp3 from '/sounds/stamp.mp3';
 
-// Sound-Objekt für NFC-Punch
 const stampSound = new Howl({
     src: [stampMp3],
     volume: 0.5
 });
 
-// Hex-Parsing für NFC
 function parseHex16(hexString) {
     if (!hexString) return null;
     const clean = hexString.replace(/\s+/g, '');
@@ -41,18 +39,16 @@ const Login = () => {
     const { t } = useTranslation();
     const lastPunchRef = useRef(0);
 
-    // NFC-Abfrage in Intervallen
     useEffect(() => {
         const interval = setInterval(() => {
             doNfcCheck();
         }, 1000);
         return () => clearInterval(interval);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     async function doNfcCheck() {
         try {
-            const response = await fetch(process.env.APIURL + '/api/nfc/read/1');
+            const response = await fetch(import.meta.env.VITE_APIURL + '/api/nfc/read/1');
             if (!response.ok) return;
             const json = await response.json();
             if (json.status === 'no-card') return;
@@ -64,7 +60,6 @@ const Login = () => {
                 const cardUser = parseHex16(json.data);
                 if (cardUser) {
                     const now = Date.now();
-                    // Verhindern, dass innerhalb von 60 Sekunden mehrfach "gestempelt" wird
                     if (now - lastPunchRef.current < 60000) {
                         setPunchMessage("Bitte 1 Minute warten, bevor erneut gestempelt wird.");
                         setTimeout(() => setPunchMessage(''), 3000);
@@ -93,20 +88,19 @@ const Login = () => {
         setTimeout(() => setPunchMessage(''), 3000);
     }
 
-    // Eingabe-Handler
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    // Login-Submit
     const handleSubmit = async (e) => {
         e.preventDefault();
         const trimmedUsername = form.username.trim();
         const res = await login(trimmedUsername, form.password);
         if (res.success) {
-            // Wenn Admin => Admin-Panel, sonst User-Dashboard
             if (res.user.roles && res.user.roles.includes('ROLE_ADMIN')) {
                 navigate('/admin', { replace: true });
+            } else if (res.user.isPercentage) {
+                navigate('/percentage-punch', { replace: true });
             } else {
                 navigate('/user', { replace: true });
             }
@@ -115,23 +109,17 @@ const Login = () => {
         }
     };
 
+
     return (
         <>
-            {/* Navbar bleibt oben erhalten; togglet Dark/Light Mode usw. */}
             <Navbar />
-
-            {/* Haupt-Container: 2-spaltiges Layout */}
             <div className="login-page-2col">
-                {/* Linke Spalte */}
                 <div className="login-left">
                     <div className="login-left-content">
                         <h1>{t("login.title", "Willkommen zurück!")}</h1>
-                        <p>{t( "Melde dich an, um fortzufahren.")}</p>
-
+                        <p>{t("Melde dich an, um fortzufahren.")}</p>
                         {error && <p className="error-message">{error}</p>}
                         {punchMessage && <div className="punch-message">{punchMessage}</div>}
-
-                        {/* Sprachumschaltung */}
                         <div className="language-switch">
                             <label>{t("login.languageLabel", "Sprache")}</label>
                             <select
@@ -142,8 +130,6 @@ const Login = () => {
                                 <option value="en">EN</option>
                             </select>
                         </div>
-
-                        {/* Formular */}
                         <form onSubmit={handleSubmit}>
                             <label htmlFor="username">{t("login.username", "Benutzername")}</label>
                             <input
@@ -155,7 +141,6 @@ const Login = () => {
                                 placeholder={t("login.username", "Benutzername")}
                                 required
                             />
-
                             <label htmlFor="password">{t("login.password", "Passwort")}</label>
                             <input
                                 type="password"
@@ -166,13 +151,10 @@ const Login = () => {
                                 placeholder={t("login.password", "Passwort")}
                                 required
                             />
-
                             <button type="submit">
                                 {t("login.button", "Login")}
                             </button>
                         </form>
-
-                        {/* Registrieren-Link, falls erwünscht */}
                         <div className="register-cta">
                             <span>{t("No account", "Noch kein Account?")}</span>
                             <a href="/Registration.jsx">
@@ -181,11 +163,8 @@ const Login = () => {
                         </div>
                     </div>
                 </div>
-
-                {/* Rechte Spalte */}
                 <div className="login-right">
-                    <div className="colorful-area">
-                    </div>
+                    <div className="colorful-area"></div>
                 </div>
             </div>
         </>

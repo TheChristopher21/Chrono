@@ -1,0 +1,402 @@
+/* =========================================================================
+   AdminDashboardScoped.css · 20-Apr-2025
+   Design wie beim UserDashboard (Dark Mode ready)
+   ========================================================================= */
+
+.admin-dashboard.scoped-dashboard {
+    --c-pri: #475bff;
+    --c-pri-dim: #6b7cff;
+    --c-warn: #ffc741;
+
+    --c-text: #1e1f22;
+    --c-muted: #595e6b;
+    --c-bg: #f4f6ff;
+    --c-card: #fff;
+    --c-border: #d5d8e5;
+    --c-line: #e7e8f1;
+
+    --u-radius: 14px;
+    --u-gap: clamp(1.5rem, 3vw, 2.2rem);
+    --u-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.06);
+    --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.14);
+    --u-dur: 0.26s;
+    --u-ease: cubic-bezier(0.4, 0.2, 0.2, 1);
+}
+
+[data-theme="dark"] .admin-dashboard.scoped-dashboard {
+    --c-text: #e5e7ec;
+    --c-muted: #a0a4b4;
+    --c-bg: #15171c;
+    --c-card: #1f2127;
+    --c-border: #373b46;
+    --c-line: #2c2f37;
+
+    --u-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.45);
+    --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.75);
+}
+
+/* ---------- Grundstruktur -------------------------------------------- */
+.admin-dashboard.scoped-dashboard {
+    background: var(--c-bg);
+    color: var(--c-text);
+    padding: 2rem;
+    font-family: 'Poppins', system-ui, sans-serif;
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-header {
+    background: var(--c-card);
+    padding: 2rem;
+    border-radius: var(--u-radius);
+    border: 1px solid var(--c-border);
+    box-shadow: var(--u-shadow-sm);
+    text-align: center;
+    margin-bottom: var(--u-gap);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-header h2 {
+    margin: 0;
+    font-size: 2.2rem;
+    font-weight: 700;
+}
+
+/* ---------- Layout: Spalten ----------------------------------------- */
+.admin-dashboard.scoped-dashboard .dashboard-content {
+    display: grid;
+    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+.admin-dashboard.scoped-dashboard .left-column,
+.admin-dashboard.scoped-dashboard .right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* ---------- Sektionen: Wochenansicht, Urlaub, Korrekturen ----------- */
+.admin-dashboard.scoped-dashboard section {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    padding: 2rem;
+    box-shadow: var(--u-shadow-sm);
+    transition: background var(--u-dur) var(--u-ease),
+    box-shadow var(--u-dur) var(--u-ease);
+}
+.admin-dashboard.scoped-dashboard section:hover {
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+}
+.admin-dashboard.scoped-dashboard section h3 {
+    margin-top: 0;
+    margin-bottom: 1.2rem;
+    font-size: 1.4rem;
+    font-weight: 600;
+    border-bottom: 2px solid var(--c-border);
+    padding-bottom: 0.6rem;
+}
+
+/* ---------- Week Navigation ----------------------------------------- */
+.admin-dashboard.scoped-dashboard .week-navigation {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.5rem;
+}
+.admin-dashboard.scoped-dashboard .week-navigation button {
+    background: var(--c-pri);
+    color: #fff;
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: var(--u-radius);
+    cursor: pointer;
+    font-weight: 600;
+    transition: background var(--u-dur), transform var(--u-dur);
+}
+.admin-dashboard.scoped-dashboard .week-navigation button:hover {
+    background: var(--c-pri-dim);
+    transform: translateY(-2px);
+}
+.admin-dashboard.scoped-dashboard .week-navigation input[type="date"] {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.95rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    background: var(--c-card);
+    color: var(--c-text);
+}
+
+/* Dark Fix für Date Picker */
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .week-navigation input[type="date"] {
+    background: #2c2f37;
+    color: #e5e7ec;
+    border-color: #484a4d;
+}
+
+/* ---------- Urlaubsliste & Korrekturliste --------------------------- */
+.admin-dashboard.scoped-dashboard .vacation-item,
+.admin-dashboard.scoped-dashboard .correction-item {
+    border-bottom: 1px solid var(--c-line);
+    padding: 0.8rem 0;
+    font-size: 0.95rem;
+}
+.admin-dashboard.scoped-dashboard .vacation-text,
+.admin-dashboard.scoped-dashboard .correction-info {
+    margin-bottom: 0.8rem;
+}
+.admin-dashboard.scoped-dashboard .vacation-buttons button,
+.admin-dashboard.scoped-dashboard .correction-buttons button {
+    background: var(--c-pri);
+    color: #fff;
+    border: none;
+    border-radius: var(--u-radius);
+    padding: 0.5rem 1.1rem;
+    margin-right: 0.5rem;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background var(--u-dur), transform var(--u-dur);
+}
+.admin-dashboard.scoped-dashboard .vacation-buttons button:hover,
+.admin-dashboard.scoped-dashboard .correction-buttons button:hover {
+    background: var(--c-pri-dim);
+    transform: translateY(-2px);
+}
+
+/* ---------- Korrekturliste Extra-Styling ---------------------------- */
+.admin-dashboard.scoped-dashboard .correction-section li {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+/* ---------- Kalender unten ------------------------------------------ */
+.admin-dashboard.scoped-dashboard .full-width-calendar {
+    margin-top: var(--u-gap);
+}
+.admin-dashboard.scoped-dashboard .full-width-calendar h4 {
+    margin-bottom: 1.2rem;
+}
+
+/* ---------- Modal Styling (global übernommen) ----------------------- */
+.admin-dashboard.scoped-dashboard .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+.admin-dashboard.scoped-dashboard .modal-content {
+    width: 90%;
+    max-width: 520px;
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    padding: 2.4rem;
+    box-shadow: var(--u-shadow-lg);
+    color: var(--c-text);
+}
+.admin-dashboard.scoped-dashboard .modal-content input {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    background: inherit;
+    color: inherit;
+}
+
+/* ---------- Responsive ---------------------------------------------- */
+@media (max-width: 768px) {
+    .admin-dashboard.scoped-dashboard .dashboard-content {
+        grid-template-columns: 1fr;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .admin-dashboard.scoped-dashboard * {
+        transition: none !important;
+    }
+}
+/* =========================================================================
+   AdminDashboardScoped.css – Erweiterung für AdminWeekSection
+   ========================================================================= */
+
+/* ---------- User-Gruppe (Username + Block) ---------------------------- */
+.admin-dashboard.scoped-dashboard .admin-user-block {
+    margin-bottom: 2rem;
+    border-radius: var(--u-radius);
+    overflow: hidden;
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    box-shadow: var(--u-shadow-sm);
+}
+
+/* ---------- Header pro User (Name + +/– Button) ----------------------- */
+.admin-dashboard.scoped-dashboard .admin-user-header {
+    padding: 1rem 1.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--c-pri); /* fallback, wird überschrieben durch inline-style */
+}
+.admin-dashboard.scoped-dashboard .admin-user-header h4 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #fff;
+}
+.admin-dashboard.scoped-dashboard .admin-user-header .edit-button {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+    border: none;
+    border-radius: var(--u-radius);
+    padding: 0.4rem 0.9rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+}
+.admin-dashboard.scoped-dashboard .admin-user-header .edit-button:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+/* ---------- Einzelne Woche pro User ---------------------------------- */
+.admin-dashboard.scoped-dashboard .admin-week-display {
+    padding: 1.5rem;
+}
+.admin-dashboard.scoped-dashboard .user-total-diff,
+.admin-dashboard.scoped-dashboard .user-weekly-balance {
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+}
+
+/* ---------- Tageskarten (pro Wochentag) ------------------------------ */
+.admin-dashboard.scoped-dashboard .admin-day-card {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1.2rem;
+    box-shadow: var(--u-shadow-sm);
+}
+.admin-dashboard.scoped-dashboard .admin-day-card-header {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+.admin-dashboard.scoped-dashboard .admin-day-card-header strong {
+    font-size: 1.05rem;
+}
+.admin-dashboard.scoped-dashboard .expected-hours {
+    font-size: 0.85rem;
+    color: var(--c-muted);
+    margin-left: 0.5rem;
+}
+.admin-dashboard.scoped-dashboard .daily-diff {
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-left: 0.8rem;
+}
+.admin-dashboard.scoped-dashboard .edit-day-button {
+    background: var(--c-pri);
+    color: #fff;
+    border: none;
+    border-radius: var(--u-radius);
+    padding: 0.5rem 1rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+.admin-dashboard.scoped-dashboard .edit-day-button:hover {
+    background: var(--c-pri-dim);
+}
+
+/* ---------- Time Entries --------------------------------------------- */
+.admin-dashboard.scoped-dashboard .time-entry-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.admin-dashboard.scoped-dashboard .time-entry-list li {
+    padding: 0.4rem 0;
+    font-size: 0.9rem;
+}
+
+/* ---------- Kein Eintrag --------------------------------------------- */
+.admin-dashboard.scoped-dashboard .no-entries {
+    color: var(--c-muted);
+    font-size: 0.9rem;
+    margin: 0.4rem 0;
+}
+
+/* ---------- Print Button --------------------------------------------- */
+.admin-dashboard.scoped-dashboard .print-times-button {
+    background: var(--c-pri);
+    color: #fff;
+    border: none;
+    border-radius: var(--u-radius);
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    margin-top: 1rem;
+    cursor: pointer;
+}
+.admin-dashboard.scoped-dashboard .print-times-button:hover {
+    background: var(--c-pri-dim);
+}
+
+/* ---------- Dark Mode ----------------------------------------------- */
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .no-entries {
+    color: var(--c-muted);
+}
+/* =====================================================================
+   Rote Hervorhebung für späte Zeiten (22:30–23:30) · in allen Themes
+   ===================================================================== */
+.scoped-dashboard .late-time {
+    color: #e53939;
+    font-weight: 600;
+}
+
+/* Optional: etwas kräftiger im Dark‑Mode */
+[data-theme="dark"] .scoped-dashboard .late-time {
+    color: #ff6b6b;
+}
+.late-time {
+    color: red;
+    font-weight: bold;
+}
+
+.punch-message {
+    position: fixed;
+    top: 20px;  /* Sicherstellen, dass es oben erscheint */
+    left: 50%;
+    transform: translateX(-50%); /* Horizontale Zentrierung */
+    background-color: #2ecc71;  /* Grüner Hintergrund für Bestätigungen */
+    color: white;  /* Weiße Schriftfarbe */
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 9999; /* Höchster z-index, damit es immer oben ist */
+    opacity: 0; /* Anfangs unsichtbar */
+    animation: fadeInOut 4s ease-in-out forwards; /* Animation für das Ein- und Ausblenden */
+}
+
+/* Animation für das Ein- und Ausblenden der Nachricht */
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px); /* Startposition */
+    }
+    10% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0); /* Endposition (sichtbar und in Position) */
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px); /* Ende der Animation (unsichtbar) */
+    }
+}

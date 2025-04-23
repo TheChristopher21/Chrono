@@ -33,6 +33,10 @@ public interface TimeTrackingRepository extends JpaRepository<TimeTracking, Long
     Optional<TimeTracking> findTopByUserAndPunchOrder(@Param("user") User user, @Param("punchOrder") Integer punchOrder);
 
     List<TimeTracking> findByUserAndDailyDateAndPunchOrder(User user, LocalDate dailyDate, Integer punchOrder);
+    @Query(value = "SELECT DISTINCT DATE(start_time) FROM time_tracking WHERE user_id = :userId", nativeQuery = true)
+    List<String> findAllTrackedDateStringsByUser(@Param("userId") Long userId);
+
+
 
     default List<TimeTracking> findDailyNoteByUserAndDate(User user, LocalDate dailyDate) {
         return findByUserAndDailyDateAndPunchOrder(user, dailyDate, 0);

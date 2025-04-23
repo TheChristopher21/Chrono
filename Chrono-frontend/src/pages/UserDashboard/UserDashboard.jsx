@@ -7,6 +7,9 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
+import '../../styles/global.css';
+import "jspdf-autotable";
+import fileDownload from "js-file-download";   // ganz oben – einmalig installieren:  npm i js-file-download
 
 // Falls du dein HourlyDashboard so liegen hast:
 import HourlyDashboard from '../../pages/HourlyDashboard/HourlyDashboard.jsx';
@@ -22,16 +25,16 @@ import {
     formatDiffDecimal,
     getExpectedHoursForDay,
     getStatusLabel,
-    groupEntriesByDay
+    groupEntriesByDay, isLateTime
 } from './userDashUtils';
 
-import UserPrintModal from './UserPrintModal';
 import UserCorrectionModal from './UserCorrectionModal';
 import UserCorrectionsPanel from './UserCorrectionsPanel';
+import '../../styles/UserDashboardScoped.css';
+import PrintReportModal from "../../components/PrintReportModal.jsx";
+import jsPDF from "jspdf";
 
 // Dein CSS
-import '../../styles/UserDashboard.css';
-
 function UserDashboard() {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -58,7 +61,7 @@ function UserDashboard() {
     // PDF-Druck (Zeitraum)
     const [printModalVisible, setPrintModalVisible] = useState(false);
     const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date()));
-    const [printEndDate, setPrintEndDate] = useState(formatLocalDate(new Date()));
+    const [printEndDate,   setPrintEndDate]   = useState(formatLocalDate(new Date()));
 
     // Korrektur-Modal
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
@@ -145,7 +148,7 @@ function UserDashboard() {
 
     async function doNfcCheck() {
         try {
-            const response = await fetch(process.env.APIURL+'/api/nfc/read/1');
+            const response = await fetch(process.env.APIURL + '/api/nfc/read/1');
             if (!response.ok) return;
             const json = await response.json();
             if (json.status === 'no-card' || json.status === 'error') return;
@@ -337,79 +340,52 @@ function UserDashboard() {
     // ---------------------------------------
     // 7) Druck-Funktion
     // ---------------------------------------
-    function handlePrintReport() {
-        if (!printStartDate || !printEndDate) {
-            notify(t("printReportError"));
-            return;
-        }
-        import('jspdf').then(({ default: jsPDF }) => {
-            import('jspdf-autotable').then(({ default: autoTable }) => {
-                const doc = new jsPDF("p", "mm", "a4");
-                doc.setFontSize(12);
-                doc.text(`${t("printReportTitle")} - ${userProfile?.username}`, 10, 15);
+    async function handlePrintReport() {
+        if (!printStartDate || !printEndDate) return notify("Zeitraum fehlt");
 
-                const filteredEntries = allEntries.filter(e => {
-                    const entryDate = new Date(e.startTime);
-                    return entryDate >= new Date(printStartDate) && entryDate <= new Date(printEndDate);
-                });
+        setPrintModalVisible(false);
 
-                const grouped = {};
-                filteredEntries.forEach(entry => {
-                    const ds = new Date(entry.startTime).toLocaleDateString("de-DE");
-                    if (!grouped[ds]) grouped[ds] = [];
-                    grouped[ds].push(entry);
-                });
-
-                const tableBody = Object.keys(grouped)
-                    .sort((a, b) => new Date(a) - new Date(b))
-                    .map(dateStr => {
-                        const dayEntries = grouped[dateStr].sort((x, y) => x.punchOrder - y.punchOrder);
-                        const wStart = dayEntries.find(e => e.punchOrder === 1);
-                        const bStart = dayEntries.find(e => e.punchOrder === 2);
-                        const bEnd = dayEntries.find(e => e.punchOrder === 3);
-                        const wEnd = dayEntries.find(e => e.punchOrder === 4);
-
-                        const ws = wStart ? formatTime(wStart.startTime) : "-";
-                        const bs = bStart
-                            ? (bStart.breakStart ? formatTime(bStart.breakStart) : formatTime(bStart.startTime))
-                            : "-";
-                        const be = bEnd
-                            ? (bEnd.breakEnd ? formatTime(bEnd.breakEnd) : formatTime(bEnd.startTime))
-                            : "-";
-                        const we = wEnd ? formatTime(wEnd.endTime) : "-";
-
-                        const expected = getExpectedHoursForDay(new Date(dayEntries[0].startTime), userProfile, defaultExpectedHours);
-                        const diffVal = computeDailyDiffValue(dayEntries, expected);
-                        const diffText = formatDiffDecimal(diffVal);
-
-                        return [dateStr, ws, bs, be, we, diffText];
-                    });
-
-                autoTable(doc, {
-                    head: [["Datum", "Work Start", "Break Start", "Break End", "Work End", "Diff"]],
-                    body: tableBody,
-                    startY: 25,
-                    styles: {
-                        fontSize: 9,
-                        cellPadding: 3
-                    },
-                    headStyles: {
-                        fillColor: [0, 123, 255],
-                        textColor: 255,
-                        fontStyle: "bold"
-                    },
-                    theme: "grid"
-                });
-
-                const dataUri = doc.output("datauristring");
-                const pdfBase64 = dataUri.split(",")[1];
-                window.electron?.ipcRenderer.invoke("saveAndOpenPDF", pdfBase64).catch(err => {
-                    console.error("Fehler beim PDF:", err);
-                    notify("Fehler beim Öffnen des Berichts.");
-                });
-                setPrintModalVisible(false);
+        try {
+            const { data } = await api.get("/api/timetracking/report", {
+                params: {
+                    username: userProfile.username,
+                    startDate: printStartDate,
+                    endDate: printEndDate,
+                },
             });
-        });
+
+            const doc = new jsPDF("p", "mm", "a4");
+            doc.setFontSize(14);
+            doc.text(`Zeitenbericht für ${userProfile.firstName} ${userProfile.lastName}`, 14, 15);
+            doc.setFontSize(11);
+            doc.text(`Zeitraum: ${printStartDate} – ${printEndDate}`, 14, 22);
+
+            const rows = (data || []).map((e) => [
+                e.date,
+                e.workStart || "-",
+                e.breakStart || "-",
+                e.breakEnd || "-",
+                e.workEnd || "-",
+            ]);
+
+            doc.autoTable({
+                head: [["Datum", "Work-Start", "Break-Start", "Break-End", "Work-End"]],
+                body: rows,
+                startY: 30,
+                margin: { left: 14, right: 14 },
+                styles: { fontSize: 9, cellPadding: 2 },
+                headStyles: { fillColor: [0, 123, 255], halign: "center" },
+                didDrawPage: (data) => {
+                    const page = `${doc.internal.getNumberOfPages()}`;
+                    doc.text(`Seite ${data.pageNumber}`, doc.internal.pageSize.getWidth() - 14, 10, { align: "right" });
+                },
+            });
+
+            doc.save(`timesheet_${userProfile.username}_${printStartDate}_${printEndDate}.pdf`);
+        } catch (err) {
+            console.error("Fehler beim Generieren", err);
+            notify("PDF-Fehler");
+        }
     }
 
     // ---------------------------------------
@@ -508,6 +484,15 @@ function UserDashboard() {
     const sortedCorrections = (showAllCorrections ? correctionRequests : correctionsForWeek)
         .slice()
         .sort((a, b) => new Date(b.desiredStart) - new Date(a.desiredStart));
+    async function fetchVacations() {
+        try {
+            const resVacation = await api.get('/api/vacation/my');
+            setVacationRequests(resVacation.data || []);
+        } catch (err) {
+            console.error("Fehler beim Nachladen der Urlaube:", err);
+            notify("Fehler beim Laden der Urlaube.");
+        }
+    }
 
     // VacationCalendar -> Reload
     function refreshVacations() {
@@ -515,12 +500,12 @@ function UserDashboard() {
     }
 
     return (
-        <div className="user-dashboard">
+         <div className="user-dashboard scoped-dashboard">
             <Navbar />
 
-            <header className="dashboard-header">
+            <header className='dashboard-header'>
                 <h2>{t("title")}</h2>
-                <div className="personal-info">
+                <div className='personal-info'>
                     <p><strong>{t("usernameLabel")}:</strong> {userProfile?.username || t("notLoggedIn")}</p>
                     {/* Falls du Summen global anzeigen willst: */}
                     <p><strong>Wochensaldo:</strong> {weeklyDiffStr}</p>
@@ -530,19 +515,19 @@ function UserDashboard() {
             </header>
 
             {punchMessage && (
-                <div className="punch-message">{punchMessage}</div>
+                <div className='punch-message'>{punchMessage}</div>
             )}
 
             {/* Manuelles Stempeln */}
-            <section className="punch-section">
+            <section className='punch-section'>
                 <h3>{t("manualPunchTitle")}</h3>
                 <button onClick={handleManualPunch}>{t("manualPunchButton")}</button>
             </section>
 
             {/* Wochenübersicht */}
-            <section className="time-tracking-section">
+            <section className='time-tracking-section'>
                 <h3>{t("weeklyOverview")}</h3>
-                <div className="week-navigation">
+                <div className='week-navigation'>
                     <button onClick={() => setSelectedMonday(prev => addDays(prev, -7))}>
                         ← {t("prevWeek")}
                     </button>
@@ -560,9 +545,22 @@ function UserDashboard() {
                         {t("nextWeek")} →
                     </button>
                 </div>
+                <ul className="time-entry-list">
+                    {allEntries
+                        .filter(e => new Date(e.startTime).toLocaleDateString() === selectedMonday.toLocaleDateString())
+                        .map((e, idx) => (
+                            <li
+                                key={idx}
+                                className={`time-entry ${isLateTime(e.time) ? 'late-time' : ''}`}
+                            >
+                                <span className="entry-label">{e.label}</span>: {e.time}
+                            </li>
+                        ))}
+                </ul>
+
 
                 {/* Hier Tag-Cards */}
-                <div className="week-display">
+                <div className='week-display'>
                     {weekDates.map((dayObj, idx) => {
                         const ds = dayObj.toLocaleDateString();
                         const dayEntries = allEntries.filter(e =>
@@ -577,20 +575,20 @@ function UserDashboard() {
                         const dailyDiffStr = dayEntries.length >= 4 ? formatDiffDecimal(diffVal) : '';
 
                         return (
-                            <div key={idx} className="day-card">
-                                <div className="day-card-header">
+                            <div key={idx} className='day-card'>
+                                <div className='day-card-header'>
                                     <h4>
                                         {dayObj.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}
-                                        <span className="expected-hours">
+                                        <span className='expected-hours'>
                       {` (${t("expectedWorkHours")}: ${expectedForDay.toFixed(2)}h)`}
                     </span>
                                     </h4>
-                                    {dailyDiffStr && <span className="daily-diff">({dailyDiffStr})</span>}
+                                    {dailyDiffStr && <span className='daily-diff'>({dailyDiffStr})</span>}
                                 </div>
                                 {dayEntries.length === 0 ? (
-                                    <p className="no-entries">{t("noEntries")}</p>
+                                    <p className='no-entries'>{t("noEntries")}</p>
                                 ) : (
-                                    <ul className="time-entry-list">
+                                    <ul className='time-entry-list'>
                                         {dayEntries.sort((a, b) => a.punchOrder - b.punchOrder).map(e => {
                                             let displayTime = '-';
                                             if (e.punchOrder === 1) {
@@ -608,11 +606,15 @@ function UserDashboard() {
                                             }
                                             return (
                                                 <li key={e.id}>
-                          <span className="entry-label">
-                            {getStatusLabel(e.punchOrder)}:
-                          </span>{" "}
-                                                    {displayTime}
+    <span className='entry-label'>
+      {getStatusLabel(e.punchOrder)}:
+    </span>{" "}
+                                                    <span className={isLateTime(displayTime) ? 'late-time' : ''}>
+      {displayTime}
+    </span>
                                                 </li>
+
+
                                             );
                                         })}
                                     </ul>
@@ -620,7 +622,7 @@ function UserDashboard() {
 
                                 {/* Korrektur-Button */}
                                 <button
-                                    className="correction-button"
+                                    className='correction-button'
                                     onClick={() => openCorrectionModal(dayObj)}
                                 >
                                     Korrekturantrag stellen
@@ -632,7 +634,7 @@ function UserDashboard() {
             </section>
 
             {/* VacationCalendar */}
-            <section className="vacation-calendar-section">
+            <section className='vacation-calendar-section'>
                 <h3>{t("vacationTitle")}</h3>
                 <VacationCalendar
                     vacationRequests={vacationRequests}
@@ -655,12 +657,12 @@ function UserDashboard() {
             />
 
             {/* Übersicht monthlyDiffAll */}
-            <section className="monthly-all">
+            <section className='monthly-all'>
                 <h3>{t("allMonths")}</h3>
                 {Object.keys(monthlyDiffAll).length === 0 ? (
                     <p>{t("noEntries")}</p>
                 ) : (
-                    <table className="daily-summary-table">
+                    <table className='daily-summary-table'>
                         <thead>
                         <tr>
                             <th>{t("month")}</th>
@@ -681,22 +683,23 @@ function UserDashboard() {
                 )}
             </section>
 
-            {/* Print-Button */}
-            <div className="print-report-container">
-                <button onClick={() => setPrintModalVisible(true)}>{t("printReportButton")}</button>
-            </div>
-
+             <div className="print-report-container">
+                 <button onClick={() => setPrintModalVisible(true)}>
+                     {t("printReportButton")}
+                 </button>
+             </div>
             {/* Print Modal */}
-            <UserPrintModal
-                t={t}
-                visible={printModalVisible}
-                printStartDate={printStartDate}
-                setPrintStartDate={setPrintStartDate}
-                printEndDate={printEndDate}
-                setPrintEndDate={setPrintEndDate}
-                handlePrintReport={handlePrintReport}
-                onClose={() => setPrintModalVisible(false)}
-            />
+             <PrintReportModal
+                 t={t}
+                 visible={printModalVisible}
+                 startDate={printStartDate}
+                 setStartDate={setPrintStartDate}
+                 endDate={printEndDate}
+                 setEndDate={setPrintEndDate}
+                 onConfirm={handlePrintReport}
+                 onClose={() => setPrintModalVisible(false)}
+                 cssScope="user"
+             />
 
             {/* Correction Modal */}
             <UserCorrectionModal

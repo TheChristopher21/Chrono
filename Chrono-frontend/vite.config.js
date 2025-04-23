@@ -9,18 +9,12 @@ export default defineConfig({
     },
     server: {
         proxy: {
-            '/api': 'http://localhost:8080'
+            '/api': 'https://api.chrono-logisch.ch'
         }
     },
-    test: {
-        reporter: 'dot',
-        globals: true,
-        environment: 'jsdom',
-        setupFiles: './src/setupTests.js'
-    },
-    define:{
-        "process.env": {
-            "APIURL": "http://localhost:8080"
-        },
+    define: {
+        'process.env': {
+            APIURL: JSON.stringify(process.env.VITE_API_URL)
+        }
     }
 })

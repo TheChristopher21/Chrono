@@ -66,6 +66,14 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> {
                     // Öffentliche Endpunkte für Authentifizierung (Login, Registrierung)
                     auth.requestMatchers("/api/auth/**").permitAll();
+                    // GET-Anfragen an den NFC-Kommando-Endpunkt erlauben
+                    auth.requestMatchers(HttpMethod.GET, "/api/nfc/command").permitAll();
+                    // PUT-Anfragen für den NFC-Kommando-Endpunkt erlauben
+                    auth.requestMatchers(HttpMethod.PUT, "/api/nfc/command/**").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/timetracking/punch").permitAll();
+                    auth.requestMatchers("/api/nfc/read/1").permitAll();
+                    // Der Endpoint zum Schreiben von Sektor 0 bleibt öffentlich
+                    auth.requestMatchers("/api/nfc/write-sector0").permitAll();
                     // Den Mail-Endpunkt öffentlich freigeben
                     auth.requestMatchers(HttpMethod.POST, "/api/apply").permitAll();
                     // Schütze Admin-Endpunkte – nur Nutzer mit ROLE_ADMIN dürfen zugreifen

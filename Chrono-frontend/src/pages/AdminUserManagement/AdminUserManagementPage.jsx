@@ -1,11 +1,11 @@
-// AdminUserManagementPage.jsx
-import  { useState, useEffect, useContext } from 'react';
+// src/pages/AdminUserManagement/AdminUserManagementPage.jsx
+import { useState, useEffect, useContext } from 'react';
 import Navbar from '../../components/Navbar';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation, LanguageContext } from '../../context/LanguageContext';
 
 import api from '../../utils/api';
-import '../../styles/AdminUserManagementPage.css'; // Dein CSS
+import '../../styles/AdminUserManagementPageScoped.css'; // CSS
 
 // Eigene Sub-Komponenten
 import AdminUserList from './AdminUserList';
@@ -13,7 +13,7 @@ import AdminUserForm from './AdminUserForm';
 import DeleteConfirmModal from './DeleteConfirmModal';
 
 // Utils / Konstante
-import { STANDARD_COLORS, defaultWeeklySchedule, stringToHex16 } from './adminUserManagementUtils';
+import { STANDARD_COLORS, defaultWeeklySchedule } from './adminUserManagementUtils';
 
 const AdminUserManagementPage = () => {
     const { notify } = useNotification();
@@ -23,8 +23,9 @@ const AdminUserManagementPage = () => {
     const [users, setUsers] = useState([]);
     const [editingUser, setEditingUser] = useState(null);
     const [deleteConfirm, setDeleteConfirm] = useState({ show: false, userId: null });
+    const [programStatus, setProgramStatus] = useState("");
 
-    // "newUser" wird nur gebraucht, wenn wir WIRKLICH Neuanlegen wollen
+    // Neuer Benutzer (mit Feldern für percentage-basierte Erfassung)
     const [newUser, setNewUser] = useState({
         username: '',
         firstName: '',
@@ -38,10 +39,11 @@ const AdminUserManagementPage = () => {
         color: STANDARD_COLORS[0],
         scheduleCycle: 1,
         weeklySchedule: [{ ...defaultWeeklySchedule }],
-        isHourly: false
+        isHourly: false,
+        isPercentage: false,
+        workPercentage: 100
     });
 
-    // 1) Daten laden
     useEffect(() => {
         fetchUsers();
     }, []);
@@ -49,13 +51,13 @@ const AdminUserManagementPage = () => {
     async function fetchUsers() {
         try {
             const res = await api.get('/api/admin/users');
-            setUsers(Array.isArray(res.data) ? res.data : []);
+            const userList = Array.isArray(res.data) ? res.data : [];
+            setUsers(userList);
         } catch (err) {
             console.error(t("userManagement.errorLoadingUsers"), err);
         }
     }
 
-    // 2) Neuer User => POST
     const handleAddUser = async (e) => {
         e.preventDefault();
         try {
@@ -66,24 +68,21 @@ const AdminUserManagementPage = () => {
                 email: newUser.email,
                 password: newUser.password,
                 roles: [{ roleName: newUser.role }],
-                expectedWorkDays: newUser.isHourly
+                expectedWorkDays: newUser.isPercentage || newUser.isHourly
                     ? null
                     : (newUser.expectedWorkDays ? Number(newUser.expectedWorkDays) : null),
-                breakDuration: newUser.isHourly
-                    ? null
-                    : (newUser.breakDuration ? Number(newUser.breakDuration) : null),
-                annualVacationDays: newUser.isHourly
-                    ? null
-                    : (newUser.annualVacationDays ? Number(newUser.annualVacationDays) : null),
+                breakDuration: newUser.breakDuration ? Number(newUser.breakDuration) : null,
+                annualVacationDays: newUser.annualVacationDays ? Number(newUser.annualVacationDays) : null,
                 color: newUser.color,
-                scheduleCycle: newUser.isHourly ? null : newUser.scheduleCycle,
-                weeklySchedule: newUser.isHourly ? null : newUser.weeklySchedule,
-                isHourly: newUser.isHourly
+                scheduleCycle: newUser.isPercentage || newUser.isHourly ? null : newUser.scheduleCycle,
+                weeklySchedule: newUser.isPercentage || newUser.isHourly ? null : newUser.weeklySchedule,
+                isHourly: newUser.isHourly,
+                isPercentage: newUser.isPercentage,
+                workPercentage: newUser.isPercentage
+                    ? Number(newUser.workPercentage)
+                    : 100,
             };
-
             await api.post('/api/admin/users', payload);
-
-            // Reset newUser
             setNewUser({
                 username: '',
                 firstName: '',
@@ -97,20 +96,22 @@ const AdminUserManagementPage = () => {
                 color: STANDARD_COLORS[0],
                 scheduleCycle: 1,
                 weeklySchedule: [{ ...defaultWeeklySchedule }],
-                isHourly: false
+                isHourly: false,
+                isPercentage: false,
+                workPercentage: 100
             });
             fetchUsers();
         } catch (err) {
             console.error(t("userManagement.errorAddingUser"), err);
-            notify("Fehler beim Hinzufügen des Users.");
+            notify("Fehler beim Hinzufügen des Benutzers.");
         }
     };
 
-    // 3) Editieren (Daten in editingUser laden)
     const handleEditUser = (user) => {
         const { password, ...rest } = user;
         setEditingUser({
             ...rest,
+            role: user.roles?.[0]?.roleName || "ROLE_USER",
             scheduleCycle: rest.scheduleCycle || 1,
             weeklySchedule: rest.weeklySchedule
                 ? (Array.isArray(rest.weeklySchedule) ? rest.weeklySchedule : [rest.weeklySchedule])
@@ -118,7 +119,6 @@ const AdminUserManagementPage = () => {
         });
     };
 
-    // 4) Update => PUT
     const handleUpdateUser = async (e) => {
         e.preventDefault();
         if (!editingUser) return;
@@ -129,20 +129,20 @@ const AdminUserManagementPage = () => {
                 firstName: editingUser.firstName,
                 lastName: editingUser.lastName,
                 email: editingUser.email,
-                role: editingUser.role,
+                roles: editingUser.roles || [{ roleName: editingUser.role || "ROLE_USER" }],
                 color: editingUser.color,
-                expectedWorkDays: editingUser.isHourly
+                expectedWorkDays: editingUser.isPercentage || editingUser.isHourly
                     ? null
                     : (editingUser.expectedWorkDays ? Number(editingUser.expectedWorkDays) : null),
-                breakDuration: editingUser.isHourly
-                    ? null
-                    : (editingUser.breakDuration ? Number(editingUser.breakDuration) : null),
-                annualVacationDays: editingUser.isHourly
-                    ? null
-                    : (editingUser.annualVacationDays ? Number(editingUser.annualVacationDays) : null),
-                scheduleCycle: editingUser.isHourly ? null : editingUser.scheduleCycle,
-                weeklySchedule: editingUser.isHourly ? null : editingUser.weeklySchedule,
-                isHourly: editingUser.isHourly
+                breakDuration: editingUser.breakDuration ? Number(editingUser.breakDuration) : null,
+                annualVacationDays: editingUser.annualVacationDays ? Number(editingUser.annualVacationDays) : null,
+                scheduleCycle: editingUser.isPercentage || editingUser.isHourly ? null : editingUser.scheduleCycle,
+                weeklySchedule: editingUser.isPercentage || editingUser.isHourly ? null : editingUser.weeklySchedule,
+                isHourly: editingUser.isHourly,
+                isPercentage: editingUser.isPercentage,
+                workPercentage: editingUser.isPercentage
+                    ? Number(editingUser.workPercentage)
+                    : 100
             };
 
             await api.put('/api/admin/users', payload);
@@ -150,61 +150,83 @@ const AdminUserManagementPage = () => {
             fetchUsers();
         } catch (err) {
             console.error(t("userManagement.errorUpdatingUser"), err);
-            notify("Fehler beim Aktualisieren des Users.");
+            notify("Fehler beim Aktualisieren des Benutzers.");
         }
     };
 
-    // 5) Löschen
     const requestDeleteUser = (id) => {
         setDeleteConfirm({ show: true, userId: id });
     };
-
     const cancelDelete = () => {
         setDeleteConfirm({ show: false, userId: null });
     };
-
     const confirmDelete = async () => {
         if (deleteConfirm.userId) {
             await handleDeleteUser(deleteConfirm.userId);
             setDeleteConfirm({ show: false, userId: null });
         }
     };
-
     const handleDeleteUser = async (id) => {
         try {
             await api.delete(`/api/admin/users/${id}`);
             fetchUsers();
         } catch (err) {
             console.error(t("userManagement.errorDeletingUser"), err);
-            notify("Fehler beim Löschen des Users.");
+            notify("Fehler beim Löschen des Benutzers.");
         }
     };
 
-    // 6) Karte programmieren
-    const handleProgramCard = async (user) => {
+    async function handleProgramCard(user) {
         try {
-            // Wandle den Benutzernamen (oder einen anderen zu programmierenden Text) in einen 16-Byte-Hex-String um
-            const hexData = stringToHex16(user.username);
-            // Sende einen POST-Request an den neuen Endpunkt, der einen NFC-Befehl erstellt
-            const response = await api.post('/api/nfc/command', {
-                type: 'PROGRAM',
-                data: hexData
-            });
-            if (response.data && response.data.status === 'pending') {
-                notify(`Programm-Befehl erstellt für ${user.username}. Bitte legen Sie die NFC-Karte auf.`);
+
+            const payload = {
+                type: "PROGRAM",
+                data: user.username
+            };
+
+            const response = await api.post('/api/nfc/command', payload);
+
+            if (response.data && response.data.id) {
+                setProgramStatus("Programmierung gestartet. Bitte legen Sie die Karte auf den Leser.");
+
+                // Warte, bis der Status des Befehls auf "done" ist
+                const commandId = response.data.id;
+                let maxTries = 10;
+                let delay = 1500;
+
+                const pollStatus = async () => {
+                    const res = await api.get(`/api/nfc/command/status/${commandId}`);
+                    if (res.data.status === "done") {
+                        setProgramStatus("✅ Karte erfolgreich programmiert.");
+                        setTimeout(() => setProgramStatus(""), 10000);
+                    } else if (maxTries-- > 0) {
+                        setTimeout(pollStatus, delay);
+                    } else {
+                        setProgramStatus("⚠️ Zeitüberschreitung beim Kartenprogrammieren.");
+                        setTimeout(() => setProgramStatus(""), 10000); // ← NEU
+                    }
+                };
+
+                pollStatus();
             } else {
-                notify('Fehler beim Erstellen des Befehls.');
+                notify("Fehler beim Kartenbeschreiben: Keine ID erhalten.");
             }
         } catch (err) {
             console.error("Fehler beim Kartenprogrammieren:", err);
-            notify("Fehler beim Kartenprogrammieren: " + err.message);
+            notify("Fehler beim Senden des Programmierbefehls.");
         }
-    };
+    }
 
-    // 7) Render
+
     return (
-        <div className="admin-user-management">
+        <div className="admin-user-management scoped-dashboard">
             <Navbar />
+            {programStatus && (
+                <div className="nfc-status-message">
+                    {programStatus}
+                </div>
+            )}
+
             <header className="page-header">
                 <h2>{t("userManagement.title")}</h2>
             </header>
@@ -217,7 +239,6 @@ const AdminUserManagementPage = () => {
                 handleProgramCard={handleProgramCard}
             />
 
-            {/* Formular (Unterschied: editingUser=null => Neuanlage, ansonsten Bearbeitung) */}
             {editingUser ? (
                 <AdminUserForm
                     t={t}
@@ -237,7 +258,6 @@ const AdminUserManagementPage = () => {
                 />
             )}
 
-            {/* Custom Delete Confirmation Modal */}
             <DeleteConfirmModal
                 visible={deleteConfirm.show}
                 onConfirm={confirmDelete}

@@ -1,4 +1,4 @@
-// AdminUserList.jsx
+// src/pages/AdminUserManagement/AdminUserList.jsx
 import 'react';
 import PropTypes from 'prop-types';
 
@@ -17,7 +17,7 @@ const AdminUserList = ({ users, t, handleEditUser, requestDeleteUser, handleProg
                         <th>{t("userManagement.role")}</th>
                         <th>{t("userManagement.expectedWorkDays")}</th>
                         <th>{t("userManagement.breakDuration")}</th>
-                        <th>{t("userManagement.annualVacationDays")}</th>
+                        <th>{t("Urlaubstage")}</th>
                         <th>{t("userManagement.table.actions")}</th>
                     </tr>
                     </thead>
@@ -27,15 +27,18 @@ const AdminUserList = ({ users, t, handleEditUser, requestDeleteUser, handleProg
                             <td>{user.username}</td>
                             <td>{user.firstName} {user.lastName}</td>
                             <td>{user.email}</td>
+
+                            {/* Robuste Rollenanalyse */}
                             <td>
-                                {user.roles?.length
-                                    ? user.roles[0].replace('ROLE_', '') // "ROLE_USER" => "USER"
-                                    : 'USER'
-                                }
+                                {user?.roles?.[0]?.roleName
+                                    ? user.roles[0].roleName.replace('ROLE_', '')
+                                    : 'USER'}
                             </td>
+
                             <td>{user.expectedWorkDays ?? '-'}</td>
                             <td>{user.breakDuration ?? '-'}</td>
                             <td>{user.annualVacationDays ?? '-'}</td>
+
                             <td>
                                 <button onClick={() => handleEditUser(user)}>
                                     {t("userManagement.table.edit")}

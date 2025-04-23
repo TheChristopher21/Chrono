@@ -1,103 +1,93 @@
-/****************************************
- * global.css
- ****************************************/
-:root {
-    --app-brightness: 1;
+/* =========================================================================
+   global.css  ·  Basis‑Reset & Token‑Layer  (20‑Apr‑2025)
+   ========================================================================= */
 
-    /* Falls du Light/Dark-Hintergründe verwenden willst */
-    --light-bg-image: url("/img/light-bg.jpg"); /* Pfad anpassen */
-    --dark-bg-image: url("/img/dark-bg.jpg");   /* Pfad anpassen */
+/* ---------- 0)  CSS‑Reset / Normalisieren ------------------------------ */
+*, *::before, *::after{ box-sizing:border-box; }
+html, body{ margin:0; padding:0; }
+img, picture, video, canvas, svg{ display:block; max-width:100%; }
+button, input, select, textarea{ font:inherit; color:inherit; }
 
-    --background-color: #f0f2f5;
-    --card-bg: #ffffff;
-    --text-color: #2d3748;
-    --primary-color: #5a67d8;
-    --primary-hover: #434190;
-    --secondary-color: #48bb78;
-    --secondary-hover: #38a169;
-    --danger-color: #E53E3E;
-    --border-color: #e2e8f0;
-    --subtext-color: #718096;
-    --shadow-light: 0 4px 6px rgba(0,0,0,0.1);
-    --radius: 12px;
-    --font-family: 'Poppins', sans-serif;
+:root{
+    /* ⚠️  Nur TOKENS – keine Komponenten‑Klassen!
+       Primärfarben + abgeleitete RGB‑Variante (für Transparenz‑Einsätze) */
+    --c-pri:     #475bff;
+    --c-pri-dim: #6b7cff;
+    --c-pri-rgb: 71,91,255;      /* ohne rgb()‑Wrapper → in CSS var() nutzbar */
 
-    --body-bg: var(--light-bg-image);
+    --c-danger:  #ed5757;
+
+    /* Grundfarben (Light‑Default) */
+    --c-text:    #1f1f1f;
+    --c-muted:   #60646c;
+    --c-bg:      #ffffff;
+    --c-surface: #f4f6ff;
+    --c-card:    #ffffff;
+    --c-border:  #d0d3e2;
+
+    /* Radius + Shadows */
+    --u-radius:      12px;
+    --u-shadow-sm:   0 2px 6px rgba(0,0,0,.05);
+    --u-shadow-lg:   0 20px 34px rgba(0,0,0,.12);
+
+    /* Motion */
+    --u-dur:  .25s;
+    --u-ease: cubic-bezier(.4,.2,.2,1);
+
+    /* Optionale globale Brightness (Navbar‑Slider) */
+    --app-brightness:1;
 }
 
-[data-theme="dark"] {
-    --background-color: #18191A;
-    --card-bg: rgba(36, 37, 38, 0.8);
-    --text-color: #e4e6eb;
-    --primary-color: #667eea;
-    --primary-hover: #5a67d8;
-    --secondary-color: #48bb78;
-    --secondary-hover: #38a169;
-    --danger-color: #E53E3E;
-    --border-color: #3A3B3C;
-    --subtext-color: #a0a3ab;
-    --shadow-light: 0 4px 10px rgba(0, 0, 0, 0.6);
-
-    --body-bg: var(--dark-bg-image);
+/* ---------- 1)  Grundtypografie --------------------------------------- */
+html{ font-family:'Poppins',system-ui,sans-serif; font-size:16px; line-height:1.45; }
+body{
+    background:var(--c-bg);
+    color:var(--c-text);
+    -webkit-font-smoothing:antialiased;
+    filter:brightness(var(--app-brightness));
+    transition:background var(--u-dur) var(--u-ease),
+    color      var(--u-dur) var(--u-ease);
 }
 
-html, body {
-    /* Falls du ein globales Hintergrundbild willst */
-    background: var(--background-color) var(--body-bg)
-    no-repeat center center fixed;
-    background-size: cover;
+/* Links */
+a{ color:var(--c-pri); text-decoration:none; }
+a:hover{ text-decoration:underline; }
 
-    color: var(--text-color);
-    margin: 0;
-    padding: 0;
-    font-family: var(--font-family), serif;
+/* ---------- 2)  Dark‑Mode‑Overrides ----------------------------------- */
+[data-theme="dark"]{
+    --c-text:   #e4e6eb;
+    --c-muted:  #9ea3b0;
+    --c-bg:     #18191a;
+    --c-surface:#202328;
+    --c-card:   #1e1f23;
+    --c-border: #3d4048;
+
+    --u-shadow-sm: 0 2px 6px rgba(0,0,0,.40);
+    --u-shadow-lg: 0 18px 36px rgba(0,0,0,.65);
 }
 
-/* Basis-Resets */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
+@media (prefers-color-scheme:dark){
+    /* Fallback, falls User noch nicht geklickt hat */
+    :root:not([data-theme="light"]){
+        --c-text:   #e4e6eb;
+        --c-muted:  #9ea3b0;
+        --c-bg:     #18191a;
+        --c-surface:#202328;
+        --c-card:   #1e1f23;
+        --c-border: #3d4048;
+
+        --u-shadow-sm: 0 2px 6px rgba(0,0,0,.40);
+        --u-shadow-lg: 0 18px 36px rgba(0,0,0,.65);
+    }
 }
 
-a {
-    text-decoration: none;
-    color: inherit;
+/* ---------- 3)  Accessiblity‑Utilities ------------------------------- */
+.visually-hidden{
+    position:absolute!important; width:1px; height:1px; padding:0; margin:-1px;
+    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
 }
 
-img {
-    max-width: 100%;
-    height: auto;
-}
-
-/* Optional: Notification Styling */
-.notification-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0,0,0,0.4);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
-
-.notification-modal {
-    background: var(--card-bg);
-    padding: 1.25rem 1.875rem;
-    border-radius: 6px;
-    min-width: 280px;
-    max-width: 400px;
-    box-shadow: 0 8px 16px rgba(0,0,0,0.2);
-    border-top: 4px solid var(--primary-color);
-    text-align: center;
-}
-
-.notification-modal p {
-    margin: 0 0 1.25rem;
-    color: var(--text-color);
-    font-size: 1rem;
-    line-height: 1.4;
+/* ---------- 4)  Reduced‑Motion --------------------------------------- */
+@media (prefers-reduced-motion:reduce){
+    *{ animation:none!important; transition:none!important; }
 }

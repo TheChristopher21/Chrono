@@ -28,9 +28,9 @@ const HourlyWeekOverview = ({
                                 handleManualPunch,
                                 punchMessage
                             }) => {
+    // Sicherstellen, dass selectedMonday korrekt gesetzt ist
+    const weekDates = selectedMonday ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i)) : [];
 
-    // Helper
-    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
     const weekStrs = weekDates.map(d => formatLocalDate(d));
     const weeklyEntries = allEntries.filter(track => {
         const localDate = track.startTime.slice(0, 10);
@@ -96,10 +96,10 @@ const HourlyWeekOverview = ({
 
             {/* Tages-Übersicht */}
             <div className="week-display">
-                {weekDates.map((dayDate, index) => {
-                    const isoDay = formatLocalDate(dayDate);
+                {weekDates?.map((dayObj, index) => {
+                    const isoDay = formatLocalDate(dayObj);
                     const dayEntries = weeklyDayMap[isoDay] || [];
-                    const dayName = dayDate.toLocaleDateString('de-DE', { weekday: 'long' });
+                    const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
                     const formattedDay = formatDate(isoDay);
 
                     dayEntries.sort((a, b) => a.punchOrder - b.punchOrder);
@@ -114,6 +114,7 @@ const HourlyWeekOverview = ({
                             <div className="week-day-header">
                                 <strong>{dayName}, {formattedDay}</strong>
                             </div>
+
                             <div className="week-day-content">
                                 {dayEntries.length === 0 ? (
                                     <p>Keine Einträge</p>
@@ -141,9 +142,7 @@ const HourlyWeekOverview = ({
                                         </li>
                                         <li>
                                             <strong>Work End:</strong>{" "}
-                                            {workEnd
-                                                ? formatTime(workEnd.endTime || workEnd.startTime)
-                                                : "-"}
+                                            {workEnd ? formatTime(workEnd.endTime || workEnd.startTime) : "-"}
                                         </li>
                                     </ul>
                                 )}
@@ -153,17 +152,18 @@ const HourlyWeekOverview = ({
                             <div className="daily-note-section">
                                 {noteEditVisibility[isoDay] ? (
                                     <>
-                    <textarea
-                        value={dailyNotes[isoDay] || ''}
-                        onChange={(e) =>
-                            setDailyNotes({ ...dailyNotes, [isoDay]: e.target.value })
-                        }
-                    />
-                                        <button onClick={() => {
-                                            handleSaveNote(isoDay);
-                                            // Schließen
-                                            setNoteEditVisibility({ ...noteEditVisibility, [isoDay]: false });
-                                        }}>
+                                        <textarea
+                                            value={dailyNotes[isoDay] || ''}
+                                            onChange={(e) =>
+                                                setDailyNotes({ ...dailyNotes, [isoDay]: e.target.value })
+                                            }
+                                        />
+                                        <button
+                                            onClick={() => {
+                                                handleSaveNote(isoDay);
+                                                setNoteEditVisibility({ ...noteEditVisibility, [isoDay]: false });
+                                            }}
+                                        >
                                             Speichern
                                         </button>
                                     </>
@@ -177,9 +177,7 @@ const HourlyWeekOverview = ({
                                             {dailyNotes[isoDay] ? "Notizen bearbeiten" : "Notizen hinzufügen"}
                                         </button>
                                         {dailyNotes[isoDay] && (
-                                            <div className="note-display">
-                                                {dailyNotes[isoDay]}
-                                            </div>
+                                            <div className="note-display">{dailyNotes[isoDay]}</div>
                                         )}
                                     </>
                                 )}
@@ -187,7 +185,7 @@ const HourlyWeekOverview = ({
 
                             {/* Korrektur-Button */}
                             <div className="correction-button-row">
-                                <button onClick={() => openCorrectionModal(dayDate)}>
+                                <button onClick={() => openCorrectionModal(dayObj)}>
                                     Korrektur anfragen
                                 </button>
                             </div>
@@ -198,6 +196,7 @@ const HourlyWeekOverview = ({
         </section>
     );
 };
+
 
 HourlyWeekOverview.propTypes = {
     t: PropTypes.func.isRequired,

@@ -5,7 +5,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
-import '../../styles/AdminDashboard.css'; // ggf. Pfad anpassen
+import '../../styles/AdminDashboardScoped.css'; // ggf. Pfad anpassen
 
 // Importiere unsere eigenen Sub-Komponenten
 import AdminWeekSection from './AdminWeekSection';
@@ -22,7 +22,7 @@ import {
     getMondayOfWeek,
     formatLocalDateYMD,
     addDays,
-    computeDayTotalMinutes, formatTime
+    computeDayTotalMinutes, formatTime, isLateTime
 } from './adminDashboardUtils';
 
 const AdminDashboard = () => {
@@ -49,6 +49,7 @@ const AdminDashboard = () => {
         adminPassword: '',
         userPassword: ''
     });
+    const [weeklyBalances, setWeeklyBalances] = useState([]);
 
     const [printUserModalVisible, setPrintUserModalVisible] = useState(false);
     const [printUser, setPrintUser] = useState('');
@@ -65,6 +66,18 @@ const AdminDashboard = () => {
         fetchAllTracks();
         fetchAllVacations();
         fetchAllCorrections();
+    }, []);
+    useEffect(() => {
+        async function fetchTrackingBalances() {
+            try {
+                const res = await api.get(`/api/admin/timetracking/admin/tracking-balances`);
+                setWeeklyBalances(res.data || []);
+            } catch (err) {
+                console.error("Fehler beim Laden der Tracking-Bilanzen:", err);
+            }
+        }
+
+        fetchTrackingBalances();
     }, []);
 
     async function fetchUsers() {
@@ -342,13 +355,40 @@ const AdminDashboard = () => {
             });
         });
     }
+    const allEntries = allTracks
+        .filter(e => e.username === currentUser?.username)
+        .filter(e => {
+            const entryDate = new Date(e.startTime).toLocaleDateString("de-DE");
+            const selectedDate = selectedMonday.toLocaleDateString("de-DE");
+            return entryDate === selectedDate;
+        })
+        .map(e => ({
+            label: e.label || `Eintrag ${e.punchOrder}`,
+            time: e.endTime
+                ? `${formatTime(e.startTime)}–${formatTime(e.endTime)}`
+                : formatTime(e.startTime)
+        }));
 
     return (
-        <div className="admin-dashboard">
+        <div className="admin-dashboard scoped-dashboard">
             <Navbar />
             <header className="dashboard-header">
                 <h2>{t('adminDashboard.titleWeekly')}</h2>
                 <p>{t('adminDashboard.loggedInAs')}: {currentUser?.username}</p>
+                <ul className="time-entry-list">
+                    {allEntries
+                        .filter(e => new Date(e.startTime).toLocaleDateString() === selectedMonday.toLocaleDateString())
+                        .map((e, idx) => (
+                            <li
+                                key={idx}
+                                className={`time-entry ${isLateTime(e.time) ? 'late-time' : ''}`}
+                            >
+                                <span className="entry-label">{e.label}</span>: {e.time}
+                            </li>
+                        ))}
+                </ul>
+
+
             </header>
 
             <div className="dashboard-content">
@@ -369,7 +409,9 @@ const AdminDashboard = () => {
                         defaultExpectedHours={defaultExpectedHours}
                         openEditModal={openEditModal}
                         openPrintUserModal={openPrintUserModal}
+                        weeklyBalances={weeklyBalances}  // ✅ DAS HAT DIR GEFELHT
                     />
+
 
                     <AdminVacationRequests
                         t={t}

@@ -108,21 +108,24 @@ export function formatDiffDecimal(diffInMinutes) {
  */
 export function getExpectedHoursForDay(dayObj, userConfig, defaultExpectedHours) {
     if (userConfig?.isHourly) return 0;
+
+    // 🛑 NEU: Prozentnutzer → KEIN Tages-Soll
+    if (userConfig?.isPercentage) return null;
+
     let expectedForDay = defaultExpectedHours;
-    if (userConfig && userConfig.weeklySchedule && userConfig.scheduleCycle) {
+
+    if (userConfig?.weeklySchedule && userConfig?.scheduleCycle) {
         const epoch = new Date(2020, 0, 1);
         const diffWeeks = Math.floor((dayObj - epoch) / (7 * 24 * 60 * 60 * 1000));
         const cycleIndex = diffWeeks % userConfig.scheduleCycle;
         const dayOfWeek = dayObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-        if (Array.isArray(userConfig.weeklySchedule) && userConfig.weeklySchedule[cycleIndex]) {
-            const scheduleValue = Number(userConfig.weeklySchedule[cycleIndex][dayOfWeek]);
-            if (!isNaN(scheduleValue)) {
-                expectedForDay = scheduleValue;
-            }
-        }
+        const value = userConfig.weeklySchedule[cycleIndex]?.[dayOfWeek];
+        if (!isNaN(value)) expectedForDay = Number(value);
     }
+
     return expectedForDay;
 }
+
 
 export function getStatusLabel(punchOrder) {
     switch (punchOrder) {
@@ -144,4 +147,11 @@ export function groupEntriesByDay(entries) {
         dayMap[ds].push(entry);
     });
     return dayMap;
+}
+// /utils/timeUtils.js
+export function isLateTime(timeString) {
+    const time = new Date(`1970-01-01T${timeString}`);
+    const lateStart = new Date('1970-01-01T22:20:00');
+    const lateEnd = new Date('1970-01-01T23:40:00');
+    return time >= lateStart && time <= lateEnd;
 }

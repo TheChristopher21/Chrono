@@ -147,3 +147,10 @@ export function computeTotalMinutesInRange(allEntries, startDate, endDate) {
     });
     return total;
 }
+// /utils/timeUtils.js
+export function isLateTime(timeString) {
+    const time = new Date(`1970-01-01T${timeString}`);
+    const lateStart = new Date('1970-01-01T22:30:00');
+    const lateEnd = new Date('1970-01-01T23:40:00');
+    return time >= lateStart && time <= lateEnd;
+}

@@ -1,0 +1,199 @@
+/* =========================================================================
+   UserDashboardScoped.css · final · 20‑Apr‑2025
+   ========================================================================= */
+.scoped-dashboard{
+    --c-pri:#475bff;--c-pri-dim:#6b7cff;--c-warn:#ffc741;
+    --c-text:#1e1f22;--c-muted:#595e6b;--c-bg:#f4f6ff;--c-card:#fff;
+    --c-border:#d5d8e5;--c-line:#e7e8f1;
+    --u-radius:14px;--u-gap:clamp(1.5rem,3vw,2.2rem);
+    --u-shadow-sm:0 1px 4px rgba(0,0,0,.06);
+    --u-shadow-lg:0 20px 34px rgba(0,0,0,.14);
+    --u-dur:.26s;--u-ease:cubic-bezier(.4,.2,.2,1);
+}
+[data-theme="dark"] .scoped-dashboard{
+    --c-text:#e5e7ec;--c-muted:#a0a4b4;--c-bg:#15171c;--c-card:#1f2127;
+    --c-border:#373b46;--c-line:#2c2f37;
+    --u-shadow-sm:0 1px 4px rgba(0,0,0,.45);
+    --u-shadow-lg:0 20px 34px rgba(0,0,0,.75);
+}
+
+/* ---------------- Container / Typo ------------------------------------ */
+.scoped-dashboard{
+    font-family:'Poppins',system-ui,sans-serif;
+    background:var(--c-bg);color:var(--c-text);
+}
+.scoped-dashboard .content-wrapper{
+    width:100%;max-width:1440px;margin-inline:auto;
+    padding-inline:clamp(1rem,4vw,3rem);
+}
+.scoped-dashboard h1{font-size:clamp(2rem,3.5vw,2.6rem);}
+.scoped-dashboard h2{font-size:clamp(1.5rem,3vw,2rem);}
+.scoped-dashboard h3{font-size:clamp(1.18rem,2.2vw,1.35rem);}
+.scoped-dashboard h4{font-size:clamp(1.05rem,1.6vw,1.15rem);}
+
+/* ---------------- Punch‑Box ------------------------------------------ */
+.scoped-dashboard .punch-section{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:2rem 1.6rem;
+    margin-block:var(--u-gap);text-align:center;box-shadow:var(--u-shadow-sm);
+}
+.scoped-dashboard .punch-box{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:2rem 1.6rem;text-align:center;
+    box-shadow:var(--u-shadow-sm);
+}
+.scoped-dashboard .punch-section h3{margin:0 0 1rem;font-size:1.05rem;font-weight:700;}
+
+/* ---------------- Week‑Overview Grid --------------------------------- */
+.scoped-dashboard .week-display{
+    display:grid;gap:1.8rem;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+}
+.scoped-dashboard .day-card{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:1.4rem 1.2rem 1.7rem;
+    box-shadow:var(--u-shadow-sm);display:flex;flex-direction:column;
+}
+.scoped-dashboard .day-card-header{
+    display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;
+}
+.scoped-dashboard .expected-hours{color:var(--c-muted);font-size:.82rem;}
+.scoped-dashboard .time-entry-list{list-style:none;padding:0;margin:0 0 1.2rem;}
+.scoped-dashboard .entry-label{font-weight:600;font-size:.88rem;}
+.scoped-dashboard .daily-diff{font-weight:700;margin-top:.25rem;}
+
+/* ---------------- Buttons (global) ----------------------------------- */
+.scoped-dashboard button{
+    border:none;border-radius:var(--u-radius);cursor:pointer;
+    font-weight:600;background:var(--c-pri);color:#fff;
+    transition:background var(--u-dur)var(--u-ease),transform var(--u-dur)var(--u-ease);
+}
+.scoped-dashboard button:hover{background:var(--c-pri-dim);transform:translateY(-3px);}
+.scoped-dashboard button:focus-visible{outline:3px solid var(--c-pri);outline-offset:2px;}
+.scoped-dashboard .correction-button{padding:.55rem 1.25rem;font-size:.84rem;margin-top:auto;}
+
+/* ---------------- Vacation‑Section Stretch --------------------------- */
+.scoped-dashboard .vacation-calendar-section{margin-top:var(--u-gap);}
+.scoped-dashboard .vacation-calendar-section,
+.scoped-dashboard .vacation-calendar-section .scoped-vacation,
+.scoped-dashboard .vacation-calendar-section .vacation-calendar,
+.scoped-dashboard .vacation-calendar-section .react-calendar{
+    width:100%;max-width:none;
+}
+
+/* ---------------- Correction‑Panel ----------------------------------- */
+.scoped-dashboard .correction-panel{margin-top:var(--u-gap);}
+.scoped-dashboard .corrections-header{
+    background:var(--c-warn);                 /* light mode = gelb */
+    color:#1f1f1f;font-weight:700;
+    padding:1rem 1.6rem;border-radius:var(--u-radius) var(--u-radius) 0 0;
+    display:flex;justify-content:space-between;cursor:pointer;
+}
+.scoped-dashboard .corrections-content{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-top:none;border-radius:0 0 var(--u-radius) var(--u-radius);
+    padding:1.6rem;box-shadow:var(--u-shadow-sm);
+}
+
+/* ---------------- Modal (unchanged) ---------------------------------- */
+.scoped-dashboard .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);
+    display:flex;align-items:center;justify-content:center;z-index:3000;
+}
+.scoped-dashboard .modal-content{
+    width:90%;max-width:520px;background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:2.4rem;box-shadow:var(--u-shadow-lg);color:inherit;
+}
+.scoped-dashboard input,.scoped-dashboard textarea{
+    width:100%;padding:.7rem .9rem;border:1px solid var(--c-border);
+    border-radius:10px;background:inherit;color:inherit;
+}
+
+/* ----------  Date‑Picker (Week & Corrections)  ------------------------ */
+.scoped-dashboard .week-navigation input[type="date"],
+.scoped-dashboard .corrections-nav input[type="date"]{
+    width:auto;min-width:150px;
+    padding:.55rem .8rem;font-size:.92rem;cursor:pointer;
+    border:1px solid var(--c-border);border-radius:var(--u-radius);
+    background:var(--c-card);color:var(--c-text);
+    transition:background var(--u-dur)var(--u-ease),color var(--u-dur)var(--u-ease),
+    border-color var(--u-dur)var(--u-ease);
+}
+[data-theme="dark"] .scoped-dashboard .week-navigation input[type="date"],
+[data-theme="dark"] .scoped-dashboard .corrections-nav input[type="date"]{
+    background:#2c2f37;border-color:#484A4D;color:#e5e7ec;
+}
+.scoped-dashboard .corrections-list li{
+    background:var(--c-card);
+    padding:.7rem 0;border-bottom:1px solid var(--c-line);
+    font-size:.9rem;color:inherit;
+}
+
+
+/* ---------------- Correction Modals ---------------------------- */
+.scoped-dashboard .correction-modal{
+    position:fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    background:var(--c-card);
+    color: var(--c-text);
+    padding: 20px;
+    z-index: 10000;
+    box-shadow: var(--u-shadow-lg);
+    border-radius: var(--u-radius);
+    width: 90%;
+    max-width: 600px;
+}
+
+.scoped-dashboard .correction-modal .modal-header{
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+}
+.scoped-dashboard .correction-modal .form-group{
+    margin-bottom: 1rem;
+}
+.scoped-dashboard .correction-modal input, .scoped-dashboard .correction-modal textarea{
+    width: 100%;
+    padding: 8px;
+    font-size: 1rem;
+}
+.scoped-dashboard .correction-modal .modal-buttons button{
+    margin-top: 1rem;
+}
+/* Standardmäßige Popup-Stil-Definition */
+.punch-message {
+    position: fixed;
+    top: 20px;  /* Sicherstellen, dass es oben erscheint */
+    left: 50%;
+    transform: translateX(-50%); /* Horizontale Zentrierung */
+    background-color: #2ecc71;  /* Grüner Hintergrund für Bestätigungen */
+    color: white;  /* Weiße Schriftfarbe */
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    z-index: 9999; /* Höchster z-index, damit es immer oben ist */
+    opacity: 0; /* Anfangs unsichtbar */
+    animation: fadeInOut 4s ease-in-out forwards; /* Animation für das Ein- und Ausblenden */
+}
+
+/* Animation für das Ein- und Ausblenden der Nachricht */
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px); /* Startposition */
+    }
+    10% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0); /* Endposition (sichtbar und in Position) */
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px); /* Ende der Animation (unsichtbar) */
+    }
+}

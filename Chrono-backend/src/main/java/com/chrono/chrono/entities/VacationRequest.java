@@ -1,9 +1,9 @@
-// src/main/java/com/chrono/chrono/entities/VacationRequest.java
 package com.chrono.chrono.entities;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
+
 import java.time.LocalDate;
 
 @Entity
@@ -17,9 +17,10 @@ public class VacationRequest {
     private LocalDate endDate;
     private boolean approved;
     private boolean denied;
-
-    // Neues Feld für halbtägigen Urlaub
     private boolean halfDay;
+
+    // ✅ NEU: Urlaub über Überstunden
+    private boolean usesOvertime;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -33,16 +34,18 @@ public class VacationRequest {
     public LocalDate getEndDate() { return endDate; }
     public boolean isApproved() { return approved; }
     public boolean isDenied() { return denied; }
-    public User getUser() { return user; }
     public boolean isHalfDay() { return halfDay; }
+    public boolean isUsesOvertime() { return usesOvertime; }
+    public User getUser() { return user; }
 
     public void setId(Long id) { this.id = id; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
     public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
     public void setApproved(boolean approved) { this.approved = approved; }
     public void setDenied(boolean denied) { this.denied = denied; }
-    public void setUser(User user) { this.user = user; }
     public void setHalfDay(boolean halfDay) { this.halfDay = halfDay; }
+    public void setUsesOvertime(boolean usesOvertime) { this.usesOvertime = usesOvertime; }
+    public void setUser(User user) { this.user = user; }
 
     @JsonProperty("username")
     public String getUsername() {

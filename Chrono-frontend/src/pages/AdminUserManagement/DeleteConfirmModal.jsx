@@ -1,4 +1,4 @@
-// DeleteConfirmModal.jsx
+// src/pages/AdminUserManagement/DeleteConfirmModal.jsx
 import 'react';
 import PropTypes from 'prop-types';
 
@@ -35,7 +35,7 @@ DeleteConfirmModal.propTypes = {
 
 DeleteConfirmModal.defaultProps = {
     title: 'Benutzer löschen',
-    message: 'Soll der Benutzer wirklich gelöscht werden?'
+    message: 'Soll der Benutzer wirklich gelöscht werden? (Alle Daten werden gelöscht inkl. Zeiten!)'
 };
 
 export default DeleteConfirmModal;

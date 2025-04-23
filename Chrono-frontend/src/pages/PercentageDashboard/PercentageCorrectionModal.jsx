@@ -1,16 +1,16 @@
-// UserCorrectionModal.jsx
+// PercentageCorrectionModal.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
-import '../../styles/UserDashboardScoped.css';
+import '../../styles/PercentageDashboardScoped.css';
 
-const UserCorrectionModal = ({
-                                 visible,
-                                 correctionDate,
-                                 correctionData,
-                                 handleCorrectionInputChange,
-                                 handleCorrectionSubmit,
-                                 onClose
-                             }) => {
+const PercentageCorrectionModal = ({
+                                       visible,
+                                       correctionDate,
+                                       correctionData,
+                                       handleCorrectionInputChange,
+                                       handleCorrectionSubmit,
+                                       onClose
+                                   }) => {
     if (!visible) return null;
 
     return (
@@ -63,7 +63,7 @@ const UserCorrectionModal = ({
                             value={correctionData.reason}
                             onChange={handleCorrectionInputChange}
                             required
-                        />
+                        ></textarea>
                     </div>
                     <div className="modal-buttons">
                         <button type="submit">Antrag senden</button>
@@ -75,7 +75,7 @@ const UserCorrectionModal = ({
     );
 };
 
-UserCorrectionModal.propTypes = {
+PercentageCorrectionModal.propTypes = {
     visible: PropTypes.bool.isRequired,
     correctionDate: PropTypes.string.isRequired,
     correctionData: PropTypes.shape({
@@ -90,4 +90,4 @@ UserCorrectionModal.propTypes = {
     onClose: PropTypes.func.isRequired
 };
 
-export default UserCorrectionModal;
+export default PercentageCorrectionModal;

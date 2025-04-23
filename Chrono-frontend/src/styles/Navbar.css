@@ -1,175 +1,61 @@
-/****************************************
- * Navbar.css
- ****************************************/
-.navbar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    /* Leicht transparente Hintergrundfarbe (Light Mode) */
-    background-color: rgba(255, 255, 255, 0.8);
-    padding: 0.625rem 1.25rem;
-    font-family: var(--font-family);
-    transition: background-color 0.3s ease, box-shadow 0.3s ease;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+/* =========================================================================
+   Navbar.css · scoped final · 20‑Apr‑2025
+   ========================================================================= */
+.scoped-navbar{
+    /* TOKENS — Light Default */
+    --c-pri:#475bff;--c-pri-dim:#6b7cff;--c-text:#1f1f1f;--c-muted:#545863;
+    --c-bg:#fff;--c-surface:#f8f9ff;--c-border:#d1d4e2;--c-danger:#ed5757;
+    --u-radius:12px;--u-shadow-sm:0 2px 6px rgba(0,0,0,.05);
+    --u-shadow-lg:0 10px 26px rgba(0,0,0,.10);--u-dur:.25s;
+    --u-ease:cubic-bezier(.4,.2,.2,1);
 }
-
-.navbar:hover {
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+[data-theme="dark"] .scoped-navbar{
+    --c-text:#e4e6eb;--c-muted:#9da1b2;--c-bg:#121315;--c-surface:#202328;
+    --c-border:#363a46;--u-shadow-sm:0 2px 6px rgba(0,0,0,.45);
+    --u-shadow-lg:0 18px 36px rgba(0,0,0,.65);
 }
-
-/* Logo-Text oder Logo-Icon in der Navbar */
-.navbar-brand {
-    display: flex;
-    align-items: center;
+/* ----------------------------------------------------------------------- */
+.scoped-navbar .navbar{
+    position:sticky;top:0;z-index:1000;
+    display:flex;justify-content:space-between;align-items:center;
+    padding:.7rem 1.6rem;backdrop-filter:saturate(180%) blur(14px);
+    background:rgba(var(--c-bg-rgb,255,255,255),.74);box-shadow:var(--u-shadow-sm);
+    transition:background var(--u-dur)var(--u-ease),box-shadow var(--u-dur)var(--u-ease);
 }
-
-/* Wenn du Text als Logo verwendest */
-.navbar-logo {
-    display: inline-block;
-    font-size: 1.5rem;
-    color: var(--text-color);
-    font-weight: 600;
-    transition: color 0.3s;
+[data-theme="dark"] .scoped-navbar .navbar{background:rgba(18,19,21,.74);}
+.scoped-navbar .navbar-logo{
+    font-weight:700;font-size:clamp(1.25rem,3vw,1.55rem);color:var(--c-pri);
+    text-decoration:none;letter-spacing:-.25px;
 }
-
-/* Wenn du ein Logo-Bild hast: .navbar-logo-img { max-height: 40px; } */
-.navbar-logo-img {
-    max-height: 40px;
-    width: auto;
-    display: inline-block;
+.scoped-navbar .navbar-links{list-style:none;display:flex;gap:1rem;margin:0;padding:0;}
+.scoped-navbar .navbar-links a{
+    padding:.55rem .9rem;border-radius:var(--u-radius);
+    color:var(--c-text);font-weight:500;text-decoration:none;
+    transition:background var(--u-dur)var(--u-ease),color var(--u-dur)var(--u-ease);
 }
-
-.navbar-links {
-    display: flex;
-    align-items: center;
-    list-style: none;
-    margin: 0;
-    padding: 0;
+.scoped-navbar .navbar-links a:hover,
+.scoped-navbar .navbar-links a:focus-visible{background:var(--c-pri);color:#fff;}
+/* Buttons */
+.scoped-navbar .navbar-links button,
+.scoped-navbar .navbar-logout{
+    border:none;border-radius:var(--u-radius);cursor:pointer;
+    font-size:.9rem;font-weight:600;padding:.55rem 1rem;
+    transition:background var(--u-dur)var(--u-ease),transform var(--u-dur)var(--u-ease);
 }
-
-.navbar-links li {
-    margin-left: 1rem;
+.scoped-navbar .navbar-links button{background:var(--c-pri);color:#fff;}
+.scoped-navbar .navbar-links button:hover{background:var(--c-pri-dim);transform:translateY(-2px);}
+.scoped-navbar .navbar-logout{background:var(--c-danger);color:#fff;}
+.scoped-navbar .navbar-logout:hover{background:#d94b4b;transform:translateY(-2px);}
+.scoped-navbar .brightness-control{display:flex;align-items:center;gap:.45rem;}
+.scoped-navbar .brightness-control input[type="range"]{
+    -webkit-appearance:none;width:90px;height:4px;border-radius:2px;
+    background:var(--c-border);cursor:pointer;
 }
-
-/* Allgemeine Link-Stile (Light Mode) */
-.navbar-links a {
-    color: var(--text-color);
-    padding: 0.5rem 0.75rem;
-    border-radius: var(--radius);
-    transition: background-color 0.3s ease, color 0.3s ease;
+.scoped-navbar .brightness-control input[type="range"]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--c-pri);
 }
-
-/* Hover-Effekt */
-.navbar-links a:hover {
-    background-color: var(--primary-hover);
-    color: #fff;
-}
-
-.navbar-username {
-    color: var(--text-color);
-    font-weight: 600;
-    margin-left: 0.5rem;
-}
-
-/* Logout-Button */
-.navbar-logout {
-    background-color: var(--danger-color);
-    color: #fff;
-    padding: 0.5rem 0.75rem;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s;
-}
-.navbar-logout:hover {
-    background-color: #c82333; /* etwas dunkleres Rot */
-    transform: translateY(-2px);
-}
-
-/* Brightness-Control */
-.brightness-control {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-    color: var(--text-color);
-    font-size: 0.9rem;
-}
-
-.brightness-control label {
-    font-size: 0.9rem;
-}
-
-.brightness-control input[type="range"] {
-    -webkit-appearance: none;
-    width: 100px;
-    height: 4px;
-    background: #ccc;
-    border-radius: 2px;
-    outline: none;
-    cursor: pointer;
-}
-
-.brightness-control input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 12px;
-    height: 12px;
-    background: var(--primary-color);
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-.brightness-control input[type="range"]::-moz-range-thumb {
-    width: 12px;
-    height: 12px;
-    background: var(--primary-color);
-    border-radius: 50%;
-    cursor: pointer;
-}
-
-/* Theme-Toggle-Button */
-.navbar-links button {
-    background-color: var(--primary-color);
-    color: #fff;
-    padding: 0.5rem 0.75rem;
-    border: none;
-    border-radius: var(--radius);
-    cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.2s;
-}
-
-.navbar-links button:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-2px);
-}
-
-/* --------------------- */
-/* Dark Mode Overrides   */
-/* --------------------- */
-[data-theme="dark"] .navbar {
-    /* Leicht transparent, aber dunkler */
-    background-color: rgba(24, 25, 26, 0.8);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.4);
-}
-
-/* Hellerer Text im Dark Mode */
-[data-theme="dark"] .navbar-logo,
-[data-theme="dark"] .navbar-links a,
-[data-theme="dark"] .brightness-control,
-[data-theme="dark"] .navbar-username {
-    color: #f0f0f0; /* statt var(--text-color) */
-}
-
-/* Bei Hover im Dark Mode */
-[data-theme="dark"] .navbar-links a:hover {
-    background-color: var(--primary-hover);
-    color: #fff;
-}
-
-/* Brightness-Slider im Dark Mode */
-[data-theme="dark"] .brightness-control input[type="range"] {
-    background: #555;
-}
-
-[data-theme="dark"] .navbar-logout:hover {
-    background-color: #aa1f2a;
+.scoped-navbar .navbar-username{color:var(--c-muted);font-weight:600;}
+/* Reduced motion */
+@media (prefers-reduced-motion:reduce){
+    .scoped-navbar *,.scoped-navbar *::before,.scoped-navbar *::after{transition:none!important;}
 }

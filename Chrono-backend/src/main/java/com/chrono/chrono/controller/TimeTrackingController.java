@@ -1,20 +1,18 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.dto.PercentagePunchResponse;
 import com.chrono.chrono.dto.TimeReportDTO;
 import com.chrono.chrono.dto.TimeTrackingResponse;
 import com.chrono.chrono.dto.AdminTimeTrackDTO;
-import com.chrono.chrono.entities.TimeTracking;
-import com.chrono.chrono.entities.User;
-import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.services.WorkScheduleService;
+import com.chrono.chrono.entities.User;
+import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 /**
@@ -34,6 +32,10 @@ public class TimeTrackingController {
     @Autowired
     private UserRepository userRepository;
 
+    /**
+     * Smart-Punch (autodetektiert WORK_START, BREAK_START, BREAK_END, WORK_END),
+     * prüft u.a. ob bei isPercentage=false schon WORK_END am heutigen Tag existiert.
+     */
     @PostMapping("/punch")
     public TimeTrackingResponse punch(@RequestParam String username) {
         return timeTrackingService.handleSmartPunch(username);
@@ -59,15 +61,30 @@ public class TimeTrackingController {
         return timeTrackingService.handlePunch(username, "WORK_END");
     }
 
+    /**
+     * Liefert die komplette Stempelhistorie (Liste der TimeTrackingResponse)
+     * nach absteigendem StartTime sortiert.
+     */
     @GetMapping("/history")
     public List<TimeTrackingResponse> getUserHistory(@RequestParam String username) {
         return timeTrackingService.getUserHistory(username);
     }
 
     /**
-     * Endpunkt für Korrekturanträge: Aktualisiert die Zeitstempel für einen Tag.
-     * Es werden alle alten Einträge des Tages gelöscht und durch die neuen ersetzt.
-     * Es wird erwartet, dass alle vier Zeitwerte (Work Start, Break Start, Break End, Work End) übermittelt werden.
+     * Reine Tagesberechnung: ermittelt, wie viele Minuten der User heute
+     * gearbeitet hat und wie viele er laut 'percentage' haben sollte.
+     */
+    @GetMapping("/percentage-punch")
+    public PercentagePunchResponse percentagePunch(
+            @RequestParam String username,
+            @RequestParam double percentage
+    ) {
+        return timeTrackingService.handlePercentagePunch(username, percentage);
+    }
+
+    /**
+     * Korrigiert den gesamten Tag (alle Einträge) auf workStart, breakStart, breakEnd, workEnd.
+     * Alte Einträge für diesen Tag werden gelöscht und neu angelegt.
      */
     @PutMapping("/editDay")
     public String editDayTimeEntries(
@@ -94,6 +111,10 @@ public class TimeTrackingController {
         );
     }
 
+    /**
+     * Korrigiert einen einzelnen TimeTracking-Datensatz (per ID),
+     * indem Start-/EndTime gesetzt werden (z.B. aus dem Admin-Panel).
+     */
     @PutMapping("/edit")
     public AdminTimeTrackDTO editTimeTrackEntry(
             @RequestParam Long id,
@@ -110,20 +131,26 @@ public class TimeTrackingController {
         LocalDate parsedDate = LocalDate.parse(date);
         LocalDateTime newStart = parsedDate.atTime(java.time.LocalTime.parse(workStart));
         LocalDateTime newEnd = parsedDate.atTime(java.time.LocalTime.parse(workEnd));
-        return timeTrackingService.updateTimeTrackEntry(id, newStart, newEnd, userPassword, adminUsername, adminPassword);
+        return timeTrackingService.updateTimeTrackEntry(
+                id, newStart, newEnd, userPassword, adminUsername, adminPassword
+        );
     }
 
+    /**
+     * Erstellt einen Bericht über Start-/Endzeiten, Pausen und DailyNotes
+     * in dem angegebenen Datumsbereich (z.B. für PDF-Ausdruck).
+     */
     @GetMapping("/report")
     public List<TimeReportDTO> getReport(
             @RequestParam String username,
             @RequestParam String startDate,
-            @RequestParam String endDate) {
+            @RequestParam String endDate
+    ) {
         return timeTrackingService.getReport(username, startDate, endDate);
     }
 
     /**
-     * Neuer Endpunkt: Aktualisiert die tägliche Notiz (dailyNote)
-     * für einen stundenbasierten Nutzer an einem bestimmten Datum.
+     * Fügt oder aktualisiert für stundenbasierte Mitarbeiter eine Tages-Notiz.
      */
     @PostMapping("/daily-note")
     public TimeTrackingResponse updateDailyNote(@RequestParam String username,
@@ -132,42 +159,14 @@ public class TimeTrackingController {
         return timeTrackingService.updateDailyNote(username, date, note);
     }
 
+    /**
+     * Beispiel: Berechnet die Differenz zwischen Ist- und Soll-Zeit an einem Tag
+     * (wird je nach isPercentage, isHourly etc. anders berechnet).
+     */
     @GetMapping("/work-difference")
     public int getWorkDifference(@RequestParam String username, @RequestParam String date) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        LocalDate parsedDate = LocalDate.parse(date);
-
-        int expectedMinutes = user.isHourly() ? 0 : workScheduleService.computeExpectedWorkMinutes(user, parsedDate);
-
-        LocalDateTime dayStart = parsedDate.atStartOfDay();
-        LocalDateTime dayEnd = parsedDate.plusDays(1).atStartOfDay();
-        List<TimeTracking> entries = timeTrackingService.getTimeTrackingEntriesForUserAndDate(user, dayStart, dayEnd);
-
-        TimeTracking workStartEntry = entries.stream()
-                .filter(e -> e.getPunchOrder() == 1)
-                .findFirst()
-                .orElse(null);
-        TimeTracking workEndEntry = entries.stream()
-                .filter(e -> e.getPunchOrder() == 4)
-                .findFirst()
-                .orElse(null);
-
-        int actualMinutes = 0;
-        if (workStartEntry != null && workEndEntry != null) {
-            LocalDateTime start = workStartEntry.getStartTime();
-            LocalDateTime end = workEndEntry.getEndTime();
-            if (user.isHourly()) {
-                if (start.toLocalDate().equals(end.toLocalDate())) {
-                    actualMinutes = (int) ChronoUnit.MINUTES.between(start, end);
-                } else {
-                    LocalDateTime midnight = start.toLocalDate().plusDays(1).atStartOfDay();
-                    actualMinutes = (int) ChronoUnit.MINUTES.between(start, midnight);
-                }
-            } else {
-                actualMinutes = (int) ChronoUnit.MINUTES.between(start, end);
-            }
-        }
-        return actualMinutes - expectedMinutes;
+        return timeTrackingService.computeDailyWorkDifference(user, date);
     }
 }

@@ -15,7 +15,6 @@ import java.util.stream.Collectors;
 @Component
 public class JwtUtil {
 
-    // Diese Werte kommen aus den Properties und sollten über sichere Umgebungsvariablen gesetzt werden
     @Value("${jwt.secret}")
     private String SECRET_KEY;
 
@@ -23,7 +22,6 @@ public class JwtUtil {
     private long expirationMillis;
 
     private SecretKey getSigningKey() {
-        // Erzeuge einen SecretKey basierend auf dem geheimen Schlüssel
         return Keys.hmacShaKeyFor(SECRET_KEY.getBytes());
     }
 
@@ -56,6 +54,7 @@ public class JwtUtil {
         return createToken(new HashMap<>(), userDetails.getUsername());
     }
 
+    // Bestehende Methode für UserDetails – unverändert.
     public String generateTokenWithRoles(UserDetails userDetails) {
         Map<String, Object> claims = new HashMap<>();
         List<String> roles = userDetails.getAuthorities().stream()
@@ -65,12 +64,22 @@ public class JwtUtil {
         return createToken(claims, userDetails.getUsername());
     }
 
+    // NEUE Methode: Erzeugt ein Token anhand der User-Entität inkl. isPercentage
+    public String generateTokenWithUser(com.chrono.chrono.entities.User user) {
+        Map<String, Object> claims = new HashMap<>();
+        List<String> roles = user.getRoles().stream()
+                .map(role -> role.getRoleName())
+                .collect(Collectors.toList());
+        claims.put("roles", roles);
+        claims.put("isPercentage", user.getIsPercentage());
+        return createToken(claims, user.getUsername());
+    }
+
     private String createToken(Map<String, Object> claims, String subject) {
         return Jwts.builder()
                 .setClaims(claims)
                 .setSubject(subject)
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                // Setzt die Ablaufzeit basierend auf expirationMillis
                 .setExpiration(new Date(System.currentTimeMillis() + expirationMillis))
                 .signWith(getSigningKey(), SignatureAlgorithm.HS256)
                 .compact();

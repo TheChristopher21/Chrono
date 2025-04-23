@@ -15,6 +15,8 @@ const PrintUserTimesModal = ({
     if (!printUserModalVisible) return null;
 
     return (
+        <div className="admin-dashboard scoped-dashboard">
+
         <div className="modal-overlay">
             <div className="modal-content">
                 <h3>Zeiten für {printUser} drucken</h3>
@@ -40,6 +42,8 @@ const PrintUserTimesModal = ({
                 </div>
             </div>
         </div>
+        </div>
+
     );
 };
 PrintUserTimesModal.propTypes = {

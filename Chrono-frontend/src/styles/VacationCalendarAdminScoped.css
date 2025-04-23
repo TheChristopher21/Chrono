@@ -1,0 +1,161 @@
+/* =========================================================================
+   VacationCalendarAdminScoped.css · v2 · 22‑Apr‑2025
+   =========================================================================
+   Greift nur in .vacation-calendar-admin.scoped-vacation
+   (User‑ & Admin‑Kalender teilen sich damit denselben Look & Feel)
+   ========================================================================= */
+
+/* ---------- 0)  Tokens ------------------------------------------------- */
+.vacation-calendar-admin.scoped-vacation{
+    --c-pri:#475bff;       --c-pri-dim:#6b7cff;
+    --c-text:#1e1f22;      --c-muted:#5a5e6d;
+    --c-bg:#f4f6ff;        --c-card:#ffffff;   --c-surface:#f0f2fe;
+    --c-border:#d5d8e5;    --c-line:#e7e8f1;
+    --u-radius:12px;       --u-shadow-sm:0 2px 6px rgba(0,0,0,.06);
+    --u-shadow-lg:0 16px 28px rgba(0,0,0,.14);
+    --u-dur:.24s;          --u-ease:cubic-bezier(.4,.2,.2,1);
+}
+[data-theme="dark"] .vacation-calendar-admin.scoped-vacation{
+    --c-text:#e6e8ee;      --c-muted:#a1a5b4;
+    --c-bg:#15171d;        --c-card:#1f2127;   --c-surface:#242731;
+    --c-border:#3a3e4b;    --c-line:#2d3039;
+    --u-shadow-sm:0 2px 6px rgba(0,0,0,.45);
+    --u-shadow-lg:0 16px 28px rgba(0,0,0,.75);
+}
+
+/* ---------- 1)  Container --------------------------------------------- */
+.vacation-calendar-admin.scoped-vacation{
+    font-family:'Poppins',system-ui,sans-serif;
+    background:var(--c-bg);color:var(--c-text);
+    width:100%;padding:1.4rem;margin-inline:auto;
+}
+
+/* Kopfzeile + Admin‑Passwort ------------------------------------------- */
+.vacation-calendar-admin.scoped-vacation h2{
+    margin:0 0 1.4rem;text-align:center;
+    font-size:clamp(1.3rem,2.5vw,1.6rem);font-weight:700;
+}
+.vacation-calendar-admin.scoped-vacation .admin-password-input{
+    display:flex;align-items:center;gap:.8rem;
+    margin-bottom:1.6rem;flex-wrap:wrap;justify-content:center;
+}
+.admin-password-input input{
+    padding:.55rem .75rem;border:1px solid var(--c-border);border-radius:var(--u-radius);
+    background:var(--c-card);color:inherit;font-size:.95rem;width:200px;
+}
+
+/* ---------- 2)  Calendar Shell ---------------------------------------- */
+.vacation-calendar-admin.scoped-vacation .react-calendar{
+    background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);box-shadow:var(--u-shadow-sm);
+    padding:1rem;width:100%!important;
+}
+
+/* Navigation */
+.vacation-calendar-admin.scoped-vacation .react-calendar__navigation{
+    margin-bottom:.6rem;display:flex;justify-content:center;
+}
+.vacation-calendar-admin.scoped-vacation .react-calendar__navigation button{
+    background:none;border:none;font-weight:600;cursor:pointer;
+    color:var(--c-pri);padding:.35rem .7rem;min-width:40px;
+    transition:color var(--u-dur)var(--u-ease);
+}
+.vacation-calendar-admin.scoped-vacation .react-calendar__navigation button:hover{
+    color:var(--c-pri-dim);
+}
+
+/* Weekday Header */
+.vacation-calendar-admin.scoped-vacation .react-calendar__month-view__weekdays{
+    text-transform:uppercase;font-size:.74rem;font-weight:700;color:var(--c-muted);
+}
+.vacation-calendar-admin.scoped-vacation .react-calendar__month-view__weekdays abbr{
+    text-decoration:none;
+}
+
+/* Day‑Tiles (zentrierte Zahl + Dot‑Area) */
+.vacation-calendar-admin.scoped-vacation .react-calendar__tile{
+    height:86px;display:flex;flex-direction:column;align-items:center;justify-content:center;
+    border-radius:10px;background:var(--c-surface);transition:background var(--u-dur)var(--u-ease);
+}
+[data-theme="dark"] .vacation-calendar-admin.scoped-vacation .react-calendar__tile{background:#202328;}
+.vacation-calendar-admin.scoped-vacation .react-calendar__tile abbr{
+    font-weight:600;font-size:.80rem;color:var(--c-text);line-height:1;
+}
+.vacation-calendar-admin.scoped-vacation .react-calendar__tile:enabled:hover{
+    background:rgba(var(--c-pri-rgb,71,91,255),.08);
+}
+.vacation-calendar-admin.scoped-vacation .react-calendar__tile--active{
+    background:var(--c-pri);
+}
+.vacation-calendar-admin.scoped-vacation .react-calendar__tile--active abbr{color:#fff;}
+/* Heute‑Markierung via inset Shadow */
+.vacation-calendar-admin.scoped-vacation .react-calendar__tile--now{
+    box-shadow:0 0 0 2px var(--c-pri) inset;
+}
+
+/* Urlaub‑Marker */
+.vacation-calendar-admin.scoped-vacation .vacation-markers{
+    margin-top:.45rem;display:flex;flex-wrap:wrap;gap:.15rem;justify-content:center;
+}
+.vacation-calendar-admin.scoped-vacation .vacation-marker{
+    font-size:.68rem;padding:.12rem .28rem;border-radius:4px;color:#fff;
+    white-space:nowrap;font-weight:600;
+}
+
+/* ---------- 3)  Range‑Selection Colours ------------------------------ */
+.vacation-calendar-admin.scoped-vacation
+.react-calendar--selectRange .react-calendar__tile--hover,
+.vacation-calendar-admin.scoped-vacation .react-calendar__tile--range{
+    background:rgba(71,91,255,.14)!important;color:var(--c-text)!important;
+}
+.vacation-calendar-admin.scoped-vacation
+.react-calendar__tile--rangeStart,
+.vacation-calendar-admin.scoped-vacation
+.react-calendar__tile--rangeEnd,
+.vacation-calendar-admin.scoped-vacation
+.react-calendar__tile--rangeBothEnds{
+    background:rgba(71,91,255,.28)!important;color:var(--c-text)!important;
+}
+
+/* ---------- 4)  Modal ------------------------------------------------- */
+.vacation-calendar-admin.scoped-vacation .modal-overlay{
+    position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;
+    justify-content:center;align-items:center;z-index:4000;
+}
+.vacation-calendar-admin.scoped-vacation .modal-content{
+    width:90%;max-width:540px;background:var(--c-card);border:1px solid var(--c-border);
+    border-radius:var(--u-radius);padding:2.2rem;box-shadow:var(--u-shadow-lg);
+}
+.vacation-calendar-admin.scoped-vacation .modal-content h3{
+    margin:0 0 1.6rem;font-size:1.25rem;font-weight:700;text-align:center;
+}
+.vacation-calendar-admin.scoped-vacation .modal-content h4{
+    margin:1.3rem 0 .6rem;font-size:1rem;font-weight:700;
+}
+.vacation-calendar-admin.scoped-vacation .modal-content input,
+.vacation-calendar-admin.scoped-vacation .modal-content select{
+    width:100%;padding:.65rem;border:1px solid var(--c-border);border-radius:var(--u-radius);
+    background:inherit;color:inherit;font-size:.95rem;margin-bottom:.7rem;
+}
+.vacation-calendar-admin.scoped-vacation .modal-content button{
+    padding:.55rem 1.3rem;border:none;border-radius:var(--u-radius);font-weight:600;
+    background:var(--c-pri);color:#fff;cursor:pointer;font-size:.9rem;
+    transition:background var(--u-dur)var(--u-ease),transform var(--u-dur)var(--u-ease);
+}
+.vacation-calendar-admin.scoped-vacation .modal-content button:hover{
+    background:var(--c-pri-dim);transform:translateY(-2px);
+}
+.vacation-calendar-admin.scoped-vacation .modal-content ul{margin:.6rem 0;padding:0;list-style:none;}
+.vacation-calendar-admin.scoped-vacation .modal-content ul li{margin-bottom:.45rem;font-size:.9rem;}
+
+/* Responsive */
+@media(max-width:540px){
+    .vacation-calendar-admin.scoped-vacation .react-calendar__tile{height:74px;}
+}
+
+/* Reduced Motion */
+@media(prefers-reduced-motion:reduce){
+    .vacation-calendar-admin.scoped-vacation *,
+    .vacation-calendar-admin.scoped-vacation *::before,
+    .vacation-calendar-admin.scoped-vacation *::after{transition:none!important;}
+}

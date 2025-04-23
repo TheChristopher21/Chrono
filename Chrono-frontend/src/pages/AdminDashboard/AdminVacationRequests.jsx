@@ -1,6 +1,8 @@
 // AdminVacationRequests.jsx
 import 'react';
 import { formatDate } from './adminDashboardUtils';
+import PropTypes from 'prop-types';
+import '../../styles/AdminDashboardScoped.css';
 
 const AdminVacationRequests = ({
                                    t,
@@ -9,6 +11,7 @@ const AdminVacationRequests = ({
                                    handleDenyVacation
                                }) => {
     return (
+        <div className="admin-dashboard scoped-dashboard">
         <section className="vacation-section">
             <h3>{t('adminDashboard.vacationRequestsTitle')}</h3>
             {allVacations.length === 0 ? (
@@ -18,8 +21,8 @@ const AdminVacationRequests = ({
                     {allVacations.map(v => (
                         <li key={v.id} className="vacation-item">
               <span className="vacation-text">
-                <strong>{v.username}</strong>:
-                  {' '}{formatDate(v.startDate)} - {formatDate(v.endDate)}{' '}
+                <strong>{v.username}</strong>: {formatDate(v.startDate)} – {formatDate(v.endDate)}{' '}
+                  {v.usesOvertime && <em style={{ color: '#007BFF' }}>🌙 Überstundenfrei</em>}{' '}
                   {v.approved ? (
                       <span className="approved">{t('adminDashboard.approved')}</span>
                   ) : v.denied ? (
@@ -50,9 +53,9 @@ const AdminVacationRequests = ({
                 </ul>
             )}
         </section>
+        </div>
     );
 };
-import PropTypes from 'prop-types';
 
 AdminVacationRequests.propTypes = {
     t: PropTypes.func.isRequired,
@@ -62,8 +65,8 @@ AdminVacationRequests.propTypes = {
         startDate: PropTypes.string,
         endDate: PropTypes.string,
         approved: PropTypes.bool,
-        denied: PropTypes.bool
-        // ... weitere Felder, falls nötig
+        denied: PropTypes.bool,
+        usesOvertime: PropTypes.bool
     })).isRequired,
     handleApproveVacation: PropTypes.func.isRequired,
     handleDenyVacation: PropTypes.func.isRequired

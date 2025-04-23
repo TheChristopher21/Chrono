@@ -1,5 +1,7 @@
 // AdminWeekSection.jsx
 import 'react';
+import '../../styles/AdminDashboardScoped.css';
+
 import {
     formatLocalDateYMD,
     formatDate,
@@ -7,8 +9,7 @@ import {
     getStatusLabel,
     getExpectedHoursForDay,
     computeDailyDiffValue,
-    computeDailyDiff,
-    computeOverallDiffForUser
+    computeDailyDiff, isLateTime,
 } from './adminDashboardUtils';
 import PropTypes from "prop-types";
 
@@ -25,10 +26,12 @@ const AdminWeekSection = ({
                               setExpandedUsers,
                               defaultExpectedHours,
                               openEditModal,
-                              openPrintUserModal
+                              openPrintUserModal,
+                              weeklyBalances = []
+
                           }) => {
 
-    // Erzeuge ein Array aus ISO-Strings (yyyy-mm-dd)
+
     const weekStrs = weekDates.map(d => formatLocalDateYMD(d));
 
     // Filter Einträge der aktuellen Woche
@@ -50,6 +53,8 @@ const AdminWeekSection = ({
     }
 
     return (
+        <div className="admin-dashboard scoped-dashboard">
+
         <section className="week-section">
             <h3>{t('adminDashboard.timeTrackingCurrentWeek')}</h3>
             <div className="week-navigation">
@@ -89,13 +94,15 @@ const AdminWeekSection = ({
                         const totalHours = Math.floor(absTotal / 60);
                         const totalMinutes = absTotal % 60;
                         const totalSign = userTotalDiff >= 0 ? '+' : '-';
+                        const trackingEntry = weeklyBalances.find(wb => wb.username === username);
+                        const trackingBalance = trackingEntry?.trackingBalance ?? 0;
+                        const trackingSign = trackingBalance >= 0 ? "+" : "-";
+                        const absTrack = Math.abs(trackingBalance);
+                        const trackingHours = Math.floor(absTrack / 60);
+                        const trackingMins = absTrack % 60;
 
                         // Gesamt-Saldo
-                        const overallDiffMins = computeOverallDiffForUser(allTracks, username, userConfig, defaultExpectedHours);
-                        const absOverall = Math.abs(overallDiffMins);
-                        const overallHours = Math.floor(absOverall / 60);
-                        const overallMinutes = absOverall % 60;
-                        const signOverall = overallDiffMins >= 0 ? "+" : "-";
+
 
                         let userColor = '#007BFF';
                         const isExpanded = !!expandedUsers[username];
@@ -103,6 +110,7 @@ const AdminWeekSection = ({
                         if (userConfig.color && /^#[0-9A-Fa-f]{6}$/.test(userConfig.color)) {
                             userColor = userConfig.color;
                         }
+
 
                         return (
                             <div key={username} className="admin-user-block">
@@ -123,10 +131,12 @@ const AdminWeekSection = ({
                                             <strong>{t('adminDashboard.total')} (Woche):</strong>{' '}
                                             {totalSign}{totalHours} {t('adminDashboard.hours')} {totalMinutes} {t('adminDashboard.minutes')}
                                         </div>
-                                        <div className="user-overall-diff">
-                                            <strong>Gesamt-Saldo:</strong>{' '}
-                                            {signOverall}{overallHours}h {overallMinutes}min
+                                        <div className="user-weekly-balance">
+                                            <strong>Tracking-Bilanz (inkl. Urlaub/Überstunden):</strong>{' '}
+                                            {trackingSign}{trackingHours}h {trackingMins}min
                                         </div>
+
+
 
                                         {weekDates.map((wd, i) => {
                                             const isoDay = formatLocalDateYMD(wd);
@@ -178,12 +188,10 @@ const AdminWeekSection = ({
                                                                             displayTime = formatTime(e.endTime);
                                                                         }
                                                                         return (
-                                                                            <li key={e.id}>
-                                        <span className="entry-label">
-                                          {getStatusLabel(e.punchOrder)}:
-                                        </span>{" "}
-                                                                                {displayTime}
+                                                                            <li key={e.id} className={isLateTime(displayTime) ? 'late-time' : ''}>
+                                                                                <span className="entry-label">{getStatusLabel(e.punchOrder)}:</span> {displayTime}
                                                                             </li>
+
                                                                         );
                                                                     })}
                                                             </ul>
@@ -238,12 +246,10 @@ const AdminWeekSection = ({
                                                                             displayTime = formatTime(e.endTime);
                                                                         }
                                                                         return (
-                                                                            <li key={e.id}>
-                                        <span className="entry-label">
-                                          {getStatusLabel(e.punchOrder)}:
-                                        </span>{" "}
-                                                                                {displayTime}
+                                                                            <li key={e.id} className={isLateTime(displayTime) ? 'late-time' : ''}>
+                                                                                <span className="entry-label">{getStatusLabel(e.punchOrder)}:</span> {displayTime}
                                                                             </li>
+
                                                                         );
                                                                     })}
                                                             </ul>
@@ -267,6 +273,7 @@ const AdminWeekSection = ({
                 </div>
             )}
         </section>
+        </div>
     );
 };
 AdminWeekSection.propTypes = {
@@ -276,6 +283,7 @@ AdminWeekSection.propTypes = {
         // ... weitere Felder, falls nötig
     }),
     weekDates: PropTypes.arrayOf(PropTypes.instanceOf(Date)).isRequired,
+    weeklyBalances: PropTypes.array.isRequired,
     selectedMonday: PropTypes.instanceOf(Date).isRequired,
     handlePrevWeek: PropTypes.func.isRequired,
     handleNextWeek: PropTypes.func.isRequired,

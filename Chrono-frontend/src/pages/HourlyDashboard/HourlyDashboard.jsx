@@ -1,27 +1,30 @@
-// HourlyDashboard.jsx
-import  { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
+import "jspdf-autotable";
+import fileDownload from "js-file-download";   // ganz oben – einmalig installieren:  npm i js-file-download
 
 import {
     parseHex16,
     getMondayOfWeek,
     addDays,
     formatLocalDate,
-    computeTotalMinutesInRange, formatTime
+    computeTotalMinutesInRange
 } from './hourDashUtils';
 
 import HourlyWeekOverview from './HourlyWeekOverview';
 import HourlyVacationSection from './HourlyVacationSection';
 import HourlyCorrectionsPanel from './HourlyCorrectionsPanel';
 import HourlyCorrectionModal from './HourlyCorrectionModal';
-import HourlyPrintModal from './HourlyPrintModal';
 
-import '../../styles/HourlyDashboard.css'; // Dein Style, falls du hast
+import '../../styles/HourlyDashboardScoped.css';
+import PrintReportModal from "../../components/PrintReportModal.jsx";
+import jsPDF from "jspdf";
 
 const HourlyDashboard = () => {
+    const [dayObj] = useState({ allEntries: [] });
     const { t } = useTranslation();
     const { notify } = useNotification();
 
@@ -35,11 +38,10 @@ const HourlyDashboard = () => {
     // Drucken
     const [printModalVisible, setPrintModalVisible] = useState(false);
     const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date()));
-    const [printEndDate, setPrintEndDate] = useState(formatLocalDate(new Date()));
+    const [printEndDate,   setPrintEndDate]   = useState(formatLocalDate(new Date()));
 
     // Urlaub
     const [vacationRequests, setVacationRequests] = useState([]);
-    const [vacationForm, setVacationForm] = useState({ startDate: '', endDate: '' });
 
     // Korrekturanträge
     const [correctionRequests, setCorrectionRequests] = useState([]);
@@ -49,13 +51,13 @@ const HourlyDashboard = () => {
 
     // Correction Modal
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
-    const [correctionDate, setCorrectionDate] = useState("");
+    const [correctionDate, setCorrectionDate] = useState('');
     const [correctionData, setCorrectionData] = useState({
-        workStart: "",
-        breakStart: "",
-        breakEnd: "",
-        workEnd: "",
-        reason: ""
+        workStart: '',
+        breakStart: '',
+        breakEnd: '',
+        workEnd: '',
+        reason: ''
     });
 
     // Notizen
@@ -99,13 +101,13 @@ const HourlyDashboard = () => {
         if (!userProfile) return;
         try {
             const res = await api.get(`/api/timetracking/history?username=${userProfile.username}`);
-            const entries = res.data || [];
+            const allEntries = res.data || [];
             // Reguläre Stempel (1..4)
-            const validEntries = entries.filter(e => [1, 2, 3, 4].includes(e.punchOrder));
+            const validEntries = allEntries.filter(e => [1, 2, 3, 4].includes(e.punchOrder));
             setAllEntries(validEntries);
 
             // Notiz-Einträge (punchOrder=0 => dailyNote)
-            const noteEntries = entries.filter(e => e.punchOrder === 0 && e.dailyNote && e.dailyNote.trim().length > 0);
+            const noteEntries = allEntries.filter(e => e.punchOrder === 0 && e.dailyNote && e.dailyNote.trim().length > 0);
             if (noteEntries.length > 0) {
                 setDailyNotes(prev => {
                     const merged = { ...prev };
@@ -117,7 +119,7 @@ const HourlyDashboard = () => {
                 });
             }
         } catch (err) {
-            console.error("Error loading time entries", err);
+            console.error('Error loading time entries', err);
         }
     }, [userProfile]);
 
@@ -126,7 +128,7 @@ const HourlyDashboard = () => {
             const res = await api.get('/api/vacation/my');
             setVacationRequests(res.data || []);
         } catch (err) {
-            console.error("Error loading vacation requests", err);
+            console.error('Error loading vacation requests', err);
         }
     }
 
@@ -149,7 +151,7 @@ const HourlyDashboard = () => {
 
     async function doNfcCheck() {
         try {
-            const response = await fetch(process.env.APIURL+'/api/nfc/read/1');
+            const response = await fetch(process.env.APIURL + '/api/nfc/read/1');
             if (!response.ok) return;
             const json = await response.json();
             if (json.status === 'no-card' || json.status === 'error') return;
@@ -163,7 +165,7 @@ const HourlyDashboard = () => {
                 }
             }
         } catch (err) {
-            console.error("Punch error:", err);
+            console.error('Punch error:', err);
         }
     }
 
@@ -180,7 +182,7 @@ const HourlyDashboard = () => {
             fetchEntries();
         } catch (err) {
             console.error('Punch-Fehler:', err);
-            notify(t("manualPunchError") || "Fehler beim Stempeln");
+            notify(t('manualPunchError') || 'Fehler beim Stempeln');
         }
     }
 
@@ -199,89 +201,52 @@ const HourlyDashboard = () => {
     // ---------------------------
     // 6) Druck-Funktion
     // ---------------------------
-    function handlePrintReport() {
-        if (!printStartDate || !printEndDate) {
-            notify(t("printReportError"));
-            return;
-        }
-        // PDF-Generierung
-        import('jspdf').then(({ default: jsPDF }) => {
-            import('jspdf-autotable').then(({ default: autoTable }) => {
-                const doc = new jsPDF("p", "mm", "a4");
-                doc.setFontSize(12);
-                doc.text(`${t("printReportTitle")} - ${userProfile?.username}`, 10, 15);
+    async function handlePrintReport() {
+        if (!printStartDate || !printEndDate) return notify("Zeitraum fehlt");
 
-                const filteredEntries = allEntries.filter(e => {
-                    const entryDate = new Date(e.startTime);
-                    return entryDate >= new Date(printStartDate) && entryDate <= new Date(printEndDate);
-                });
+        setPrintModalVisible(false);
 
-                // Gruppieren
-                const grouped = {};
-                filteredEntries.forEach(entry => {
-                    const ds = new Date(entry.startTime).toLocaleDateString("de-DE");
-                    if (!grouped[ds]) grouped[ds] = [];
-                    grouped[ds].push(entry);
-                });
-
-                const tableBody = Object.keys(grouped)
-                    .sort((a, b) => new Date(a) - new Date(b))
-                    .map(dateStr => {
-                        const dayEntries = grouped[dateStr].sort((x, y) => x.punchOrder - y.punchOrder);
-
-                        const eStart = dayEntries.find(e => e.punchOrder === 1);
-                        const eBreakS = dayEntries.find(e => e.punchOrder === 2);
-                        const eBreakE = dayEntries.find(e => e.punchOrder === 3);
-                        const eEnd = dayEntries.find(e => e.punchOrder === 4);
-
-                        function safeFormatTime(entry, which = 'start') {
-                            if (!entry) return '-';
-                            if (which === 'end' && entry.endTime) return formatTime(entry.endTime);
-                            if (which === 'start' && entry.startTime) return formatTime(entry.startTime);
-                            return '-';
-                        }
-                        const workStart = safeFormatTime(eStart, 'start');
-                        const breakStart = eBreakS
-                            ? (eBreakS.breakStart ? formatTime(eBreakS.breakStart) : formatTime(eBreakS.startTime))
-                            : '-';
-                        const breakEnd = eBreakE
-                            ? (eBreakE.breakEnd ? formatTime(eBreakE.breakEnd) : formatTime(eBreakE.startTime))
-                            : '-';
-                        const workEnd = safeFormatTime(eEnd, 'end');
-
-                        const dayMinutes = computeTotalMinutesInRange(dayEntries, new Date(dateStr), new Date(dateStr));
-                        const sign = dayMinutes >= 0 ? "+" : "-";
-                        const diffText = `${sign}${Math.abs(dayMinutes)} min`;
-
-                        return [dateStr, workStart, breakStart, breakEnd, workEnd, diffText];
-                    });
-
-                autoTable(doc, {
-                    head: [["Datum", "Work Start", "Break Start", "Break End", "Work End", "Diff"]],
-                    body: tableBody,
-                    startY: 25,
-                    styles: {
-                        fontSize: 9,
-                        cellPadding: 3
-                    },
-                    headStyles: {
-                        fillColor: [0, 123, 255],
-                        textColor: 255,
-                        fontStyle: "bold"
-                    },
-                    theme: "grid"
-                });
-
-                const dataUri = doc.output("datauristring");
-                const pdfBase64 = dataUri.split(",")[1];
-
-                window.electron?.ipcRenderer.invoke("saveAndOpenPDF", pdfBase64).catch(err => {
-                    console.error("Fehler beim Drucken:", err);
-                    notify("Fehler beim Öffnen des Berichts.");
-                });
-                setPrintModalVisible(false);
+        try {
+            const { data } = await api.get("/api/timetracking/report", {
+                params: {
+                    username: userProfile.username,
+                    startDate: printStartDate,
+                    endDate: printEndDate,
+                },
             });
-        });
+
+            const doc = new jsPDF("p", "mm", "a4");
+            doc.setFontSize(14);
+            doc.text(`Zeitenbericht für ${userProfile.firstName} ${userProfile.lastName}`, 14, 15);
+            doc.setFontSize(11);
+            doc.text(`Zeitraum: ${printStartDate} – ${printEndDate}`, 14, 22);
+
+            const rows = (data || []).map((e) => [
+                e.date,
+                e.workStart || "-",
+                e.breakStart || "-",
+                e.breakEnd || "-",
+                e.workEnd || "-",
+            ]);
+
+            doc.autoTable({
+                head: [["Datum", "Work-Start", "Break-Start", "Break-End", "Work-End"]],
+                body: rows,
+                startY: 30,
+                margin: { left: 14, right: 14 },
+                styles: { fontSize: 9, cellPadding: 2 },
+                headStyles: { fillColor: [0, 123, 255], halign: "center" },
+                didDrawPage: (data) => {
+                    const page = `${doc.internal.getNumberOfPages()}`;
+                    doc.text(`Seite ${data.pageNumber}`, doc.internal.pageSize.getWidth() - 14, 10, { align: "right" });
+                },
+            });
+
+            doc.save(`timesheet_${userProfile.username}_${printStartDate}_${printEndDate}.pdf`);
+        } catch (err) {
+            console.error("Fehler beim Generieren", err);
+            notify("PDF-Fehler");
+        }
     }
 
     // ---------------------------
@@ -297,11 +262,11 @@ const HourlyDashboard = () => {
                     endDate: vacationForm.endDate
                 }
             });
-            notify(t("vacationSubmitSuccess"));
+            notify(t('vacationSubmitSuccess'));
             fetchVacations();
         } catch (err) {
             console.error('Error submitting vacation request:', err);
-            notify(t("vacationSubmitError"));
+            notify(t('vacationSubmitError'));
         }
     }
 
@@ -312,10 +277,10 @@ const HourlyDashboard = () => {
         const isoStr = formatLocalDate(dateObj);
         const dayEntries = allEntries.filter(e => e.startTime.slice(0, 10) === isoStr);
 
-        let workStartVal = "";
-        let breakStartVal = "";
-        let breakEndVal = "";
-        let workEndVal = "";
+        let workStartVal = '';
+        let breakStartVal = '';
+        let breakEndVal = '';
+        let workEndVal = '';
 
         const ws = dayEntries.find(e => e.punchOrder === 1);
         if (ws) workStartVal = ws.startTime.slice(11, 16); // "HH:MM"
@@ -338,7 +303,7 @@ const HourlyDashboard = () => {
             breakStart: breakStartVal,
             breakEnd: breakEndVal,
             workEnd: workEndVal,
-            reason: ""
+            reason: ''
         });
         setShowCorrectionModal(true);
     }
@@ -351,7 +316,7 @@ const HourlyDashboard = () => {
     async function handleCorrectionSubmit(e) {
         e.preventDefault();
         if (!correctionData.workStart || !correctionData.workEnd) {
-            notify("Bitte füllen Sie Work Start und Work End aus.");
+            notify('Bitte füllen Sie Work Start und Work End aus.');
             return;
         }
         const desiredStart = `${correctionDate}T${correctionData.workStart}`;
@@ -370,35 +335,41 @@ const HourlyDashboard = () => {
                     desiredEnd
                 }
             });
-            notify("Korrekturantrag erfolgreich gestellt.");
+            notify('Korrekturantrag erfolgreich gestellt.');
             fetchCorrections();
             setShowCorrectionModal(false);
         } catch (err) {
-            console.error("Fehler beim Absenden des Korrekturantrags:", err);
-            notify("Fehler beim Absenden des Korrekturantrags.");
+            console.error('Fehler beim Absenden des Korrekturantrags:', err);
+            notify('Fehler beim Absenden des Korrekturantrags.');
         }
     }
 
     if (!userProfile) {
         return (
-            <div className="user-dashboard">
-                <Navbar />
-                <p>Loading...</p>
+            <div className="hourly-dashboard scoped-dashboard">
+                <h1>Hourly Dashboard</h1>
+                {!dayObj.allEntries ? (
+                    <p>Loading...</p>
+                ) : (
+                    dayObj.allEntries.map((e, idx) => (
+                        <div key={idx}>{e}</div>
+                    ))
+                )}
             </div>
         );
     }
 
     return (
-        <div className="user-dashboard">
+        <div className="hourly-dashboard scoped-dashboard">
             <Navbar />
-
             <header className="dashboard-header">
-                <h2>{t("title")} (Stundenbasiert)</h2>
+                <h2>{t('title')} (Stundenbasiert)</h2>
                 <div className="personal-info">
                     <p>
-                        <strong>{t("usernameLabel")}:</strong> {userProfile.username}
+                        <strong>{t('usernameLabel')}:</strong> {userProfile.username}
                     </p>
                 </div>
+
             </header>
 
             {/* Wochendarstellung */}
@@ -416,14 +387,14 @@ const HourlyDashboard = () => {
                             params: {
                                 username: userProfile.username,
                                 date: isoDate,
-                                note: dailyNotes[isoDate] || ""
+                                note: dailyNotes[isoDate] || ''
                             }
                         });
-                        notify("Tagesnotiz gespeichert.");
+                        notify('Tagesnotiz gespeichert.');
                         fetchEntries();
                     } catch (err) {
-                        console.error("Fehler beim Speichern der Tagesnotiz:", err);
-                        notify("Fehler beim Speichern der Tagesnotiz.");
+                        console.error('Fehler beim Speichern der Tagesnotiz:', err);
+                        notify('Fehler beim Speichern der Tagesnotiz.');
                     }
                 }}
                 openCorrectionModal={openCorrectionModal}
@@ -441,25 +412,24 @@ const HourlyDashboard = () => {
                     {t("printReportButton")}
                 </button>
             </div>
-            <HourlyPrintModal
+            <PrintReportModal
                 t={t}
                 visible={printModalVisible}
-                printStartDate={printStartDate}
-                setPrintStartDate={setPrintStartDate}
-                printEndDate={printEndDate}
-                setPrintEndDate={setPrintEndDate}
-                handlePrintReport={handlePrintReport}
+                startDate={printStartDate}
+                setStartDate={setPrintStartDate}
+                endDate={printEndDate}
+                setEndDate={setPrintEndDate}
+                onConfirm={handlePrintReport}
                 onClose={() => setPrintModalVisible(false)}
+                cssScope="hourly"
             />
 
-            {/* Urlaub */}
             <HourlyVacationSection
                 t={t}
                 userProfile={userProfile}
                 vacationRequests={vacationRequests}
-                vacationForm={vacationForm}
-                setVacationForm={setVacationForm}
                 handleVacationSubmit={handleVacationSubmit}
+                onRefreshVacations={fetchVacations}
             />
 
             {/* Korrekturanträge */}

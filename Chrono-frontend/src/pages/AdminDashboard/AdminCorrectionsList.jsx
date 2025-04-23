@@ -10,6 +10,8 @@ const AdminCorrectionsList = ({
                                   handleDenyCorrection
                               }) => {
     return (
+        <div className="admin-dashboard scoped-dashboard">
+
         <section className="correction-section">
             <h3>{t('adminDashboard.correctionRequestsTitle')}</h3>
             {allCorrections.length === 0 ? (
@@ -62,6 +64,7 @@ const AdminCorrectionsList = ({
                 </ul>
             )}
         </section>
+            </div>
     );
 };
 AdminCorrectionsList.propTypes = {

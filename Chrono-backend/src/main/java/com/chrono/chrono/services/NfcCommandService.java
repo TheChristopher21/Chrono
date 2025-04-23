@@ -2,13 +2,22 @@ package com.chrono.chrono.services;
 
 import com.chrono.chrono.entities.NfcCommand;
 import com.chrono.chrono.repositories.NfcCommandRepository;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import org.slf4j.Logger;
+
 
 @Service
 public class NfcCommandService {
+
+    public Optional<NfcCommand> getCommandById(Long id) {
+        return nfcCommandRepository.findById(id);
+    }
+
+    private static final Logger logger = LoggerFactory.getLogger(NfcCommandService.class);
 
     @Autowired
     private NfcCommandRepository nfcCommandRepository;
@@ -25,8 +34,11 @@ public class NfcCommandService {
 
     // Hole den ältesten (nächsten) pending Befehl
     public Optional<NfcCommand> getPendingCommand() {
-        return nfcCommandRepository.findFirstByStatusOrderByCreatedAtAsc("pending");
+        Optional<NfcCommand> cmd = nfcCommandRepository.findFirstByStatusOrderByCreatedAtAsc("pending");
+
+        return cmd;
     }
+
 
     // Aktualisiere den Befehl, z. B. setze den Status auf "done"
     public NfcCommand markCommandDone(Long id) {

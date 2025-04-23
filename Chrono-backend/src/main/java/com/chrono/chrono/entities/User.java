@@ -11,6 +11,7 @@ import com.chrono.chrono.converters.WeeklyScheduleConverter;
 @Entity
 @Table(name = "users")
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -24,6 +25,10 @@ public class User {
     private String firstName;
     private String lastName;
     private String email;
+    // ganz oben bei den anderen Feldern
+    private Integer trackingBalanceInMinutes = 0;
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    private Set<VacationRequest> vacationRequests = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -37,10 +42,10 @@ public class User {
     private Set<TimeTracking> timeTracks = new HashSet<>();
 
     @Column(name = "expected_work_days")
-    private Double expectedWorkDays; // z. B. 9.5
+    private Double expectedWorkDays;
 
     @Column(name = "daily_work_hours")
-    private Double dailyWorkHours;   // z. B. 8.5
+    private Double dailyWorkHours;
 
     @Column(name = "break_duration")
     private Integer breakDuration;
@@ -54,7 +59,6 @@ public class User {
     @Column(name = "schedule_cycle")
     private Integer scheduleCycle;
 
-    // Achte darauf: <String, Double> => Kommazahlen pro Tag
     @Lob
     @Convert(converter = WeeklyScheduleConverter.class)
     @Column(name = "weekly_schedule")
@@ -66,17 +70,17 @@ public class User {
     @Column(name = "is_hourly")
     private Boolean isHourly;
 
+    // Neues Feld: ob der User percentage-basiert arbeitet
+    @Column(name = "is_percentage")
+    private Boolean isPercentage = false;
+
+    // Neues Feld: Der Prozentwert 0..100
+    @Column(name = "work_percentage")
+    private Integer workPercentage = 100;
+
     public User() {}
 
-    public Boolean getIsHourly() {
-        return isHourly != null ? isHourly : false;
-    }
-    public boolean isHourly() {
-        return getIsHourly();
-    }
-    public void setIsHourly(Boolean isHourly) {
-        this.isHourly = isHourly;
-    }
+    // ------------------- Getter/Setter -------------------
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -123,10 +127,40 @@ public class User {
     public Integer getScheduleCycle() { return scheduleCycle; }
     public void setScheduleCycle(Integer scheduleCycle) { this.scheduleCycle = scheduleCycle; }
 
-    // Hier <String, Double>
     public List<Map<String, Double>> getWeeklySchedule() { return weeklySchedule; }
     public void setWeeklySchedule(List<Map<String, Double>> weeklySchedule) { this.weeklySchedule = weeklySchedule; }
 
     public LocalDate getScheduleEffectiveDate() { return scheduleEffectiveDate; }
     public void setScheduleEffectiveDate(LocalDate scheduleEffectiveDate) { this.scheduleEffectiveDate = scheduleEffectiveDate; }
+
+    public Boolean getIsHourly() { return isHourly != null ? isHourly : false; }
+    public boolean isHourly()   { return getIsHourly(); }
+    public void setIsHourly(Boolean isHourly) { this.isHourly = isHourly; }
+
+    public Boolean getIsPercentage() { return isPercentage != null ? isPercentage : false; }
+    public void setIsPercentage(Boolean isPercentage) { this.isPercentage = isPercentage; }
+    public Integer getTrackingBalanceInMinutes() {
+        return trackingBalanceInMinutes;
+    }
+
+    public void setTrackingBalanceInMinutes(Integer trackingBalanceInMinutes) {
+        this.trackingBalanceInMinutes = trackingBalanceInMinutes;
+    }
+    public Set<VacationRequest> getVacationRequests() {
+        return vacationRequests;
+    }
+    public void setVacationRequests(Set<VacationRequest> vacationRequests) {
+        this.vacationRequests = vacationRequests;
+    }
+
+    public Integer getWorkPercentage() {
+        return workPercentage != null ? workPercentage : 100;
+    }
+    public void setWorkPercentage(Integer workPercentage) {
+        if (workPercentage == null) {
+            this.workPercentage = 100;
+        } else {
+            this.workPercentage = workPercentage;
+        }
+    }
 }

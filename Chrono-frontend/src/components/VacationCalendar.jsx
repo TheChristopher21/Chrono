@@ -1,5 +1,4 @@
-// src/components/VacationCalendar.jsx
-import { useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -8,203 +7,141 @@ import api from '../utils/api';
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
 
-// Gauss-Algorithmus für Ostersonntag
-function calculateEasterSunday(year) {
-    const a = year % 19;
-    const b = Math.floor(year / 100);
-    const c = year % 100;
-    const d = Math.floor(b / 4);
-    const e = b % 4;
-    const f = Math.floor((b + 8) / 25);
-    const g = Math.floor((b - f + 1) / 3);
-    const h = (19 * a + b - d - g + 15) % 30;
-    const i = Math.floor(c / 4);
-    const k = c % 4;
-    const l = (32 + 2 * e + 2 * i - h - k) % 7;
-    const m = Math.floor((a + 11 * h + 22 * l) / 451);
-    const month = Math.floor((h + l - 7 * m + 114) / 31);
-    const day = ((h + l - 7 * m + 114) % 31) + 1;
-    return new Date(year, month - 1, day);
-}
-
-function formatDate(d) {
-    const year = d.getFullYear();
-    const month = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-function getHolidayLabels(year) {
-    const holidays = {};
-    holidays[`${year}-01-01`] = "Neujahr";
-    const easterSunday = calculateEasterSunday(year);
-    const karfreitag = new Date(easterSunday);
-    karfreitag.setDate(easterSunday.getDate() - 2);
-    holidays[formatDate(karfreitag)] = "Karfreitag";
-    const ostermontag = new Date(easterSunday);
-    ostermontag.setDate(easterSunday.getDate() + 1);
-    holidays[formatDate(ostermontag)] = "Ostermontag";
-    holidays[`${year}-05-01`] = "1. Mai";
-    const auffahrt = new Date(easterSunday);
-    auffahrt.setDate(easterSunday.getDate() + 39);
-    holidays[formatDate(auffahrt)] = "Auffahrt";
-    const pfingstmontag = new Date(easterSunday);
-    pfingstmontag.setDate(easterSunday.getDate() + 50);
-    holidays[formatDate(pfingstmontag)] = "Pfingstmontag";
-    holidays[`${year}-08-01`] = "Nationalfeiertag";
-    holidays[`${year}-10-16`] = "Gallustag";
-    holidays[`${year}-12-25`] = "Weihnachten";
-    holidays[`${year}-12-26`] = "Stephanstag";
-    return holidays;
+function formatDateISO(d) {
+    return d.toISOString().split('T')[0];
 }
 
 const VacationCalendar = ({ vacationRequests, userProfile, onRefreshVacations }) => {
     const { notify } = useNotification();
     const { t } = useTranslation();
 
-    const [selectedRange, setSelectedRange] = useState(null);
+    /* ---------------------------- State ---------------------------- */
     const [showModal, setShowModal] = useState(false);
+    const [startDate, setStartDate] = useState('');
+    const [endDate, setEndDate] = useState('');
     const [vacationType, setVacationType] = useState('full');
+    const [useOvertime, setUseOvertime] = useState(false);
 
-    const currentYear = new Date().getFullYear();
-    const holidayLabels = useMemo(() => getHolidayLabels(currentYear), [currentYear]);
+    const approvedVacations = useMemo(
+        () => vacationRequests.filter(v => v.approved),
+        [vacationRequests]
+    );
 
-    const approvedVacations = useMemo(() => {
-        return vacationRequests.filter(v => v.approved);
-    }, [vacationRequests]);
-
-    function computeUsedVacationDays(vacations) {
-        let used = 0;
-        vacations.forEach((vac) => {
+    function computeUsedVacationDays(vacs) {
+        return vacs.reduce((sum, vac) => {
+            if (vac.usesOvertime) return sum;
             const start = new Date(vac.startDate);
             const end = new Date(vac.endDate);
-            const diffTime = end.getTime() - start.getTime();
-            const dayCount = Math.floor(diffTime / (1000 * 3600 * 24)) + 1;
-            if (vac.halfDay) {
-                used += 0.5;
-            } else {
-                used += dayCount;
-            }
-        });
-        return used;
+            const days = Math.floor((end - start) / 86400000) + 1;
+            return sum + (vac.halfDay ? 0.5 : days);
+        }, 0);
     }
-    const totalVacationDays = Number(userProfile?.annualVacationDays) || 0;
+
+    const totalVacation = Number(userProfile?.annualVacationDays) || 0;
     const usedDays = computeUsedVacationDays(approvedVacations);
-    const remainingDays = totalVacationDays - usedDays;
+    const remainingDays = totalVacation - usedDays;
 
+    /* ---------------------------- Calendar tile -------------------- */
     const tileContent = ({ date, view }) => {
-        if (view === 'month') {
-            const dateStr = formatDate(date);
-            if (holidayLabels[dateStr]) {
-                return (
-                    <div className="holiday-label">
-                        {holidayLabels[dateStr]}
-                    </div>
-                );
-            }
-            const matched = approvedVacations.filter((vac) => {
-                const start = new Date(vac.startDate);
-                const end = new Date(vac.endDate);
-                start.setHours(0, 0, 0, 0);
-                end.setHours(0, 0, 0, 0);
-                const current = new Date(date);
-                current.setHours(0, 0, 0, 0);
-                return current >= start && current <= end;
-            });
-            if (matched.length > 0) {
-                return (
-                    <div style={{
-                        backgroundColor: '#2ecc71',
-                        borderRadius: '50%',
-                        width: '10px',
-                        height: '10px',
-                        margin: '0 auto'
-                    }}/>
-                );
-            }
-        }
-        return null;
+        if (view !== 'month') return null;
+        const hasVac = approvedVacations.some(v =>
+            new Date(v.startDate) <= date && date <= new Date(v.endDate)
+        );
+        if (!hasVac) return null;
+
+        const first = approvedVacations.find(v =>
+            new Date(v.startDate) <= date && date <= new Date(v.endDate)
+        );
+        const color = first.usesOvertime ? '#3498db' : '#2ecc71';
+        const tooltip = approvedVacations
+            .filter(v => new Date(v.startDate) <= date && date <= new Date(v.endDate))
+            .map(v => `${v.halfDay ? '½ Tag' : 'Ganztag'} (${v.usesOvertime ? 'Überstunden' : 'Urlaub'})`)
+            .join(', ');
+        return (
+            <div
+                className="holiday-dot"
+                title={tooltip}
+                style={{ backgroundColor: color }}
+            />
+        );
     };
 
-    const handleDateChange = (value) => {
-        setSelectedRange(value);
-        if (Array.isArray(value) && value.length === 2) {
-            setShowModal(true);
-        }
-    };
-
-    async function handleVacationSubmit(e) {
+    /* ---------------------------- Submit --------------------------- */
+    const handleSubmit = async e => {
         e.preventDefault();
-        if (!Array.isArray(selectedRange) || selectedRange.length < 2) {
-            notify('Bitte einen gültigen Zeitraum auswählen.');
-            setShowModal(false);
-            return;
-        }
-        const [rawStart, rawEnd] = selectedRange;
-        const startDate = formatDate(rawStart);
-        const endDate = formatDate(rawEnd);
+        if (!startDate || !endDate) return notify('Bitte Start- und Enddatum angeben.');
 
-        if (vacationType === 'half' && startDate !== endDate) {
-            notify('Halbtags-Urlaub gilt nur für einen Tag.');
-            return;
-        }
+        const s = new Date(`${startDate}T00:00`);
+        const eDate = new Date(`${endDate}T00:00`);
+        if (s > eDate) return notify('Enddatum darf nicht vor Startdatum liegen.');
+        if (vacationType === 'half' && startDate !== endDate)
+            return notify('Halbtags gilt nur für einen Tag.');
+
         try {
             await api.post('/api/vacation/create', null, {
                 params: {
                     username: userProfile.username,
                     startDate,
                     endDate,
-                    halfDay: vacationType === 'half'
+                    halfDay: vacationType === 'half',
+                    usesOvertime
                 }
             });
-            notify('Urlaubsantrag eingereicht (wartet auf Freigabe).');
+            notify('Urlaubsantrag eingereicht.');
             setShowModal(false);
-            if (onRefreshVacations) {
-                onRefreshVacations();
-            }
+            setStartDate(''); setEndDate(''); setUseOvertime(false);
+            onRefreshVacations?.();
         } catch (err) {
-            console.error('Fehler beim Urlaubsantrag:', err);
+            console.error(err);
             notify('Fehler beim Urlaubsantrag.');
         }
-    }
+    };
 
+    /* ---------------------------- UI ------------------------------- */
     return (
-        <div className="vacation-calendar">
-            <h4>{t("vacationCalendarTitle")}: {totalVacationDays.toFixed(1)} {t("daysLabel")}</h4>
-            <h4>{t("myVacations")}: {usedDays.toFixed(1)} {t("daysLabel")}</h4>
-            <h4>{t("remainingVacation")}: {remainingDays.toFixed(1)} {t("daysLabel")}</h4>
-            <Calendar
-                onChange={handleDateChange}
-                value={selectedRange}
-                tileContent={tileContent}
-                selectRange={true}
-            />
+        <div className="scoped-vacation">
+            <div className="vacation-calendar">
+                <h4>{t('vacationCalendarTitle')}: {totalVacation.toFixed(1)} {t('daysLabel')}</h4>
+                <h4>{t('myVacations')}: {usedDays.toFixed(1)} {t('daysLabel')}</h4>
+                <h4>{t('remainingVacation')}: {remainingDays.toFixed(1)} {t('daysLabel')}</h4>
+
+                <Calendar locale="de-DE" tileContent={tileContent} />
+
+                <button style={{ marginTop: '1rem' }} onClick={() => setShowModal(true)}>
+                    Urlaub beantragen
+                </button>
+            </div>
+
             {showModal && (
                 <div className="vacation-modal-overlay">
                     <div className="vacation-modal-content">
                         <h3>Urlaubsantrag</h3>
-                        <p>
-                            Gewählter Zeitraum:{' '}
-                            <strong>
-                                {Array.isArray(selectedRange) && selectedRange.length === 2
-                                    ? `${formatDate(selectedRange[0])} bis ${formatDate(selectedRange[1])}`
-                                    : '–'}
-                            </strong>
-                        </p>
-                        <form onSubmit={handleVacationSubmit}>
-                            <label>
-                                {t("vacationType")}:
-                                <select
-                                    value={vacationType}
-                                    onChange={(e) => setVacationType(e.target.value)}
-                                >
-                                    <option value="full">{t("fullDay")}</option>
-                                    <option value="half">{t("halfDay")}</option>
+                        <form onSubmit={handleSubmit}>
+                            <label>Von:
+                                <input type="date" value={startDate}
+                                       onChange={e => setStartDate(e.target.value)} required />
+                            </label>
+                            <label>Bis:
+                                <input type="date" value={endDate}
+                                       onChange={e => setEndDate(e.target.value)} required />
+                            </label>
+                            <label>Zeitraum:
+                                <select value={vacationType}
+                                        onChange={e => setVacationType(e.target.value)}>
+                                    <option value="full">Ganztags</option>
+                                    <option value="half">Halbtags</option>
+                                </select>
+                            </label>
+                            <label>Urlaubsart:
+                                <select value={useOvertime ? 'overtime' : 'normal'}
+                                        onChange={e => setUseOvertime(e.target.value === 'overtime')}>
+                                    <option value="normal">Normaler Urlaub</option>
+                                    <option value="overtime">Überstundenfrei</option>
                                 </select>
                             </label>
                             <div className="modal-buttons">
-                                <button type="submit">{t("vacationSubmitButton")}</button>
-                                <button type="button" onClick={() => setShowModal(false)}>{t("cancel")}</button>
+                                <button type="submit">Absenden</button>
+                                <button type="button" onClick={() => setShowModal(false)}>Abbrechen</button>
                             </div>
                         </form>
                     </div>
@@ -215,20 +152,8 @@ const VacationCalendar = ({ vacationRequests, userProfile, onRefreshVacations })
 };
 
 VacationCalendar.propTypes = {
-    vacationRequests: PropTypes.arrayOf(
-        PropTypes.shape({
-            startDate: PropTypes.string.isRequired,
-            endDate: PropTypes.string.isRequired,
-            approved: PropTypes.bool,
-            denied: PropTypes.bool,
-            color: PropTypes.string,
-            halfDay: PropTypes.bool
-        })
-    ).isRequired,
-    userProfile: PropTypes.shape({
-        username: PropTypes.string.isRequired,
-        annualVacationDays: PropTypes.oneOfType([PropTypes.number, PropTypes.string])
-    }).isRequired,
+    vacationRequests: PropTypes.array.isRequired,
+    userProfile: PropTypes.object.isRequired,
     onRefreshVacations: PropTypes.func
 };
 

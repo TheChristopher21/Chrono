@@ -1,4 +1,3 @@
-// src/main/java/com/chrono/chrono/services/UserService.java
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.entities.User;
@@ -14,20 +13,46 @@ public class UserService {
     private UserRepository userRepository;
 
     public User getUserByUsername(String username) {
-        return userRepository.findByUsername(username)
+        User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+
+        // 🛡️ TrackingBalance sicherstellen (niemals null)
+        if (user.getTrackingBalanceInMinutes() == null) {
+            user.setTrackingBalanceInMinutes(0);
+        }
+
+        return user;
     }
 
     public User updateUser(User updatedUser) {
         User user = userRepository.findByUsername(updatedUser.getUsername())
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + updatedUser.getUsername()));
+
         user.setFirstName(updatedUser.getFirstName());
         user.setLastName(updatedUser.getLastName());
         user.setEmail(updatedUser.getEmail());
-        // Aktualisiere auch den jährlichen Urlaubsanspruch, falls gesetzt
+
         if (updatedUser.getAnnualVacationDays() != null) {
             user.setAnnualVacationDays(updatedUser.getAnnualVacationDays());
         }
+
+        if (updatedUser.getIsHourly() != null) {
+            user.setIsHourly(updatedUser.getIsHourly());
+        }
+        if (updatedUser.getIsPercentage() != null) {
+            user.setIsPercentage(updatedUser.getIsPercentage());
+        }
+        if (updatedUser.getWorkPercentage() != null) {
+            user.setWorkPercentage(updatedUser.getWorkPercentage());
+        }
+
+        // ✅ Überstunden absichern
+        if (updatedUser.getTrackingBalanceInMinutes() == null) {
+            user.setTrackingBalanceInMinutes(0);
+        } else {
+            user.setTrackingBalanceInMinutes(updatedUser.getTrackingBalanceInMinutes());
+        }
+
         return userRepository.save(user);
     }
 }
