@@ -48,159 +48,131 @@ public class TimeTrackingService {
      */
     @Transactional
     public TimeTrackingResponse handlePunch(String username, String newStatus) {
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found for time tracking"));
 
-        // Letzten Eintrag (egal ob offen/geschlossen)
-        Optional<TimeTracking> lastEntryOpt = timeTrackingRepository
-                .findTopByUserOrderByIdDesc(user);
+        LocalDate   today = LocalDate.now();
+        LocalDateTime now = LocalDateTime.now();
 
-        // Standard: Wir tun so, als ob der Tag beendet war => lastPunchOrder=4
-        Integer lastPunchOrder = 4;
+    /* -------------------------------------------------------------
+       a)  Letzten Punch VON HEUTE ermitteln (–> Übergangskontrolle)
+       ------------------------------------------------------------- */
+        Integer lastPunchOrder = timeTrackingRepository
+                .findTopByUserAndDailyDateOrderByPunchOrderDesc(user, today)
+                .map(TimeTracking::getPunchOrder)
+                .orElse(4);                     // noch nichts → so tun als ob 4 (WORK_END) liegt
 
-        if (lastEntryOpt.isPresent()) {
-            TimeTracking lastEntry = lastEntryOpt.get();
-            LocalDate lastDate = lastEntry.getStartTime().toLocalDate();
-            LocalDate today = LocalDate.now();
+        logger.info("handlePunch: Für '{}' letzter Punch heute = {}", username, lastPunchOrder);
+        logger.info("handlePunch: Gewünschter neuer Status    = {}", newStatus);
 
-            // Prüfen, ob das Datum des letzten Eintrags = heute ist
-            if (lastDate.equals(today)) {
-                // Dann übernehmen wir den PunchOrder
-                if (lastEntry.getEndTime() == null) {
-                    // Offener letzter Eintrag
-                    lastPunchOrder = lastEntry.getPunchOrder();
-                } else {
-                    // Geschlossener letzter Eintrag
-                    lastPunchOrder = lastEntry.getPunchOrder();
-                }
-            }
-        }
-
-        logger.info("handlePunch: Für User '{}' letzter PunchOrder (heute) = {}", username, lastPunchOrder);
-        logger.info("handlePunch: Angeforderter neuer Status = {}", newStatus);
-
-        // Prüfen, ob der Übergang zulässig
         if (!isTransitionAllowed(lastPunchOrder, newStatus)) {
-            String errorMsg = "Transition not allowed from punchOrder=" + lastPunchOrder + " to " + newStatus;
-            logger.error("handlePunch: " + errorMsg);
-            throw new RuntimeException(errorMsg);
+            throw new RuntimeException("Transition not allowed from " + lastPunchOrder + " to " + newStatus);
         }
 
-        // Falls es noch einen offenen Punch vom HEUTIGEN Tag gab, beenden wir ihn
-        Optional<TimeTracking> activePunchOpt = timeTrackingRepository
-                .findFirstByUserAndEndTimeIsNullOrderByStartTimeDesc(user);
-        if (activePunchOpt.isPresent()) {
-            TimeTracking activePunch = activePunchOpt.get();
-            // Nur schließen, wenn auch dieser Punch vom selben Tag ist:
-            if (activePunch.getStartTime().toLocalDate().equals(LocalDate.now())) {
-                activePunch.setEndTime(LocalDateTime.now());
-                timeTrackingRepository.saveAndFlush(activePunch);
-                logger.info("handlePunch: Offener Punch (Order {}) für '{}' wurde beendet.",
-                        activePunch.getPunchOrder(), username);
-            }
-        }
+    /* -------------------------------------------------------------
+       b)  Offenen Punch von HEUTE beenden (falls vorhanden)
+       ------------------------------------------------------------- */
+        timeTrackingRepository.findFirstByUserAndEndTimeIsNullOrderByStartTimeDesc(user)
+                .filter(tt -> tt.getDailyDate().equals(today))
+                .ifPresent(tt -> {
+                    tt.setEndTime(now);
+                    timeTrackingRepository.saveAndFlush(tt);
+                    logger.info("handlePunch: Offener Punch (Order {}) für '{}' geschlossen.", tt.getPunchOrder(), username);
+                });
 
-        // Jetzt erzeugen wir den neuen Punch
+    /* -------------------------------------------------------------
+       c)  Neuen Punch anlegen  – inkl.  DUPLICATE-Key Safety-Net
+       ------------------------------------------------------------- */
         int nextOrder = mapStatusToPunchOrder(newStatus);
-        TimeTracking newEntry = createNewPunch(user, nextOrder);
-        logger.info("handlePunch: Neuer Punch mit Order {} für '{}' erstellt.", nextOrder, username);
 
-        return convertToResponse(newEntry);
+        try {
+            TimeTracking created = createNewPunch(user, nextOrder);
+            return convertToResponse(created);
+
+        } catch (org.springframework.dao.DataIntegrityViolationException dup) {
+            // Parallel-Request war schneller → bestehenden Datensatz zurückgeben
+            return timeTrackingRepository
+                    .findByUserAndDailyDateAndPunchOrder(user, today, nextOrder) // List<TimeTracking>
+                    .stream()                                                   // → Stream<…>
+                    .findFirst()                                                // → Optional<…>
+                    .map(this::convertToResponse)                               // unser DTO
+                    .orElseThrow(() -> new IllegalStateException(
+                            "Duplicate-Key-Eintrag nicht auffindbar"));
+        }
     }
-
 
     /**
      * "Smart Punch" – erkennt automatisch, welcher Stempel (1..4) als Nächstes dran ist.
      */
     @Transactional
     public TimeTrackingResponse handleSmartPunch(String username) {
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found for time tracking"));
 
-        LocalDate today = LocalDate.now();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay   = today.atTime(23, 59, 59);
+        LocalDate   today      = LocalDate.now();
+        LocalDateTime startDay = today.atStartOfDay();
+        LocalDateTime endDay   = today.atTime(23, 59, 59);
 
-        // (Optional) Falls „nicht prozentbasiert“ und wir schon WORK_END an *heute* haben, blocken
+    /* -------------------------------------------------------------
+       a)  Bei Vollzeit-User: einmaliger Tageszyklus erzwungen
+       ------------------------------------------------------------- */
         if (!user.getIsPercentage()) {
-            Optional<TimeTracking> lastCompleteTodayOpt = timeTrackingRepository
-                    .findTopByUserAndEndTimeIsNotNullAndStartTimeBetweenOrderByStartTimeDesc(
-                            user, startOfDay, endOfDay
-                    );
-            if (lastCompleteTodayOpt.isPresent()
-                    && lastCompleteTodayOpt.get().getPunchOrder() == 4
-                    && lastCompleteTodayOpt.get().getStartTime().toLocalDate().equals(today)) {
-                throw new RuntimeException("Für heute wurde bereits ein kompletter Arbeitszyklus abgeschlossen.");
+            boolean alreadyFinished = timeTrackingRepository
+                    .findTopByUserAndEndTimeIsNotNullAndStartTimeBetweenOrderByStartTimeDesc(user, startDay, endDay)
+                    .filter(tt -> tt.getPunchOrder() == 4)
+                    .isPresent();
+            if (alreadyFinished) {
+                throw new RuntimeException("Für heute ist bereits ein kompletter Zyklus abgeschlossen.");
             }
         }
 
-        // Letzten Eintrag checken
-        Optional<TimeTracking> lastEntryOpt = timeTrackingRepository
-                .findTopByUserOrderByIdDesc(user);
+    /* -------------------------------------------------------------
+       b)  Letzten Punch von HEUTE holen
+       ------------------------------------------------------------- */
+        Integer lastPunchOrder = timeTrackingRepository
+                .findTopByUserAndDailyDateOrderByPunchOrderDesc(user, today)
+                .map(TimeTracking::getPunchOrder)
+                .orElse(4);                        // noch nichts → so tun als ob 4
 
-        Integer lastPunchOrder = 4;  // Standard: so tun als ob Tag beendet
-        if (lastEntryOpt.isPresent()) {
-            TimeTracking lastEntry = lastEntryOpt.get();
-            if (lastEntry.getStartTime().toLocalDate().equals(today)) {
-                // Dann übernehmen wir seinen PunchOrder
-                if (lastEntry.getEndTime() == null) {
-                    lastPunchOrder = lastEntry.getPunchOrder();
-                } else {
-                    lastPunchOrder = lastEntry.getPunchOrder();
-                }
-            }
-        }
-        logger.info("handleSmartPunch: Letzter PunchOrder HEUTE = {}", lastPunchOrder);
+    /* -------------------------------------------------------------
+       c)  Offenen Punch von heute schließen
+       ------------------------------------------------------------- */
+        timeTrackingRepository.findFirstByUserAndEndTimeIsNullOrderByStartTimeDesc(user)
+                .filter(tt -> tt.getDailyDate().equals(today))
+                .ifPresent(tt -> {
+                    tt.setEndTime(LocalDateTime.now());
+                    timeTrackingRepository.saveAndFlush(tt);
+                    logger.info("handleSmartPunch: Offener Punch (Order {}) für '{}' geschlossen.", tt.getPunchOrder(), username);
+                });
 
-        // Falls ein offener Punch vom heutigen Tag besteht, beenden wir ihn
-        Optional<TimeTracking> activePunchOpt = timeTrackingRepository
-                .findFirstByUserAndEndTimeIsNullOrderByStartTimeDesc(user);
-        if (activePunchOpt.isPresent()) {
-            TimeTracking activePunch = activePunchOpt.get();
-            if (activePunch.getStartTime().toLocalDate().equals(today)) {
-                activePunch.setEndTime(LocalDateTime.now());
-                timeTrackingRepository.saveAndFlush(activePunch);
-                logger.info("handleSmartPunch: Offener Punch (Order {}) für '{}' wurde beendet.",
-                        activePunch.getPunchOrder(), username);
-            }
-        }
-
-        // Nächsten Status ermitteln
-        String nextStatus;
-        if (lastPunchOrder == 4) {
-            nextStatus = "WORK_START";
-        } else if (lastPunchOrder == 1) {
-            nextStatus = "BREAK_START";
-        } else if (lastPunchOrder == 2) {
-            nextStatus = "BREAK_END";
-        } else if (lastPunchOrder == 3) {
-            nextStatus = "WORK_END";
-        } else {
-            nextStatus = "WORK_START";
-        }
+    /* -------------------------------------------------------------
+       d)  Nächsten Status bestimmen
+       ------------------------------------------------------------- */
+        String nextStatus = switch (lastPunchOrder) {
+            case 4  -> "WORK_START";
+            case 1  -> "BREAK_START";
+            case 2  -> "BREAK_END";
+            case 3  -> "WORK_END";
+            default -> "WORK_START";
+        };
         logger.info("handleSmartPunch: Nächster Status = {}", nextStatus);
 
-        // Wiederverwendung von handlePunch
-        TimeTrackingResponse response = handlePunch(username, nextStatus);
+    /* -------------------------------------------------------------
+       e)  Delegieren an handlePunch   (+ evtl. Überstundenupdate)
+       ------------------------------------------------------------- */
+        TimeTrackingResponse resp = handlePunch(username, nextStatus);
 
-        // Nur bei WORK_END => Überstundenberechnung
         if ("WORK_END".equals(nextStatus)) {
-            try {
-                int delta = computeDailyWorkDifference(user, today.toString());
-                if (user.getTrackingBalanceInMinutes() == null) {
-                    user.setTrackingBalanceInMinutes(0);
-                }
-                int newBalance = user.getTrackingBalanceInMinutes() + delta;
-                user.setTrackingBalanceInMinutes(newBalance);
-                userRepository.save(user);
-
-                logger.info("Überstunden aktualisiert für '{}': Delta={}, Neuer Stand: {} min",
-                        username, delta, newBalance);
-            } catch (Exception ex) {
-                logger.warn("Fehler beim Aktualisieren der Tracking-Balance für '{}': {}", username, ex.getMessage());
-            }
+            int delta = computeDailyWorkDifference(user, today.toString());
+            user.setTrackingBalanceInMinutes(
+                    Optional.ofNullable(user.getTrackingBalanceInMinutes()).orElse(0) + delta);
+            userRepository.save(user);
+            logger.info("Überstunden aktualisiert für '{}': Δ={} min, neuer Stand={} min",
+                    username, delta, user.getTrackingBalanceInMinutes());
         }
-        return response;
+        return resp;
     }
 
 
