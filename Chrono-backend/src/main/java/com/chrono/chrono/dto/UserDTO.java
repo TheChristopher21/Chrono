@@ -1,4 +1,3 @@
-// src/main/java/com/chrono/chrono/dto/UserDTO.java
 package com.chrono.chrono.dto;
 
 import com.chrono.chrono.entities.Role;
@@ -14,33 +13,35 @@ public class UserDTO {
     private String firstName;
     private String lastName;
     private String email;
-    private List<String> roles;
-    private Double expectedWorkDays;        // z. B. 9.5
+    private List<String> roles; // Nur Strings ("ROLE_ADMIN", ...)
+    private Double expectedWorkDays;
     private Double dailyWorkHours;
     private Integer breakDuration;
     private String color;
     private Integer scheduleCycle;
-    // Hier <String, Double> => Kommazahlen pro Tag
     private List<Map<String, Double>> weeklySchedule;
     private LocalDate scheduleEffectiveDate;
     private Boolean isHourly;
     private Integer annualVacationDays;
     private Integer trackingBalanceInMinutes;
-
-    // NEU: Felder für Prozent-basierte User
     private Boolean isPercentage;
     private Integer workPercentage;
 
+    // NEU: Die ID der Firma
+    private Long companyId;
+
     public UserDTO() {}
 
-    // Wichtig: im Konstruktor die neuen Felder übernehmen.
     public UserDTO(User user) {
         this.id = user.getId();
         this.username = user.getUsername();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.email = user.getEmail();
-        this.roles = user.getRoles().stream().map(Role::getRoleName).collect(Collectors.toList());
+        // Hier bilden wir die Rolle-Entities in reine Strings ab:
+        this.roles = user.getRoles().stream()
+                .map(Role::getRoleName)
+                .collect(Collectors.toList());
         this.expectedWorkDays = user.getExpectedWorkDays();
         this.dailyWorkHours = user.getDailyWorkHours();
         this.breakDuration = user.getBreakDuration();
@@ -51,12 +52,14 @@ public class UserDTO {
         this.isHourly = user.getIsHourly();
         this.annualVacationDays = user.getAnnualVacationDays();
         this.trackingBalanceInMinutes = user.getTrackingBalanceInMinutes();
-
-        // NEU hinzugefügt:
         this.isPercentage = user.getIsPercentage();
         this.workPercentage = user.getWorkPercentage();
+
+        // NEU: Wenn user.getCompany() != null => companyId = user.getCompany().getId()
+        this.companyId = (user.getCompany() != null) ? user.getCompany().getId() : null;
     }
 
+    // Für den Fall, dass du einen kompletten All-Args-Konstruktor brauchst:
     public UserDTO(Long id,
                    String username,
                    String firstName,
@@ -73,7 +76,9 @@ public class UserDTO {
                    Boolean isHourly,
                    Integer annualVacationDays,
                    Boolean isPercentage,
-                   Integer workPercentage) {
+                   Integer workPercentage,
+                   Integer trackingBalanceInMinutes,
+                   Long companyId) {
         this.id = id;
         this.username = username;
         this.firstName = firstName;
@@ -91,9 +96,12 @@ public class UserDTO {
         this.annualVacationDays = annualVacationDays;
         this.isPercentage = isPercentage;
         this.workPercentage = workPercentage;
+        this.trackingBalanceInMinutes = trackingBalanceInMinutes;
+        this.companyId = companyId;
     }
 
-    // ---------------------- Getter & Setter ----------------------
+    // ----- Getter/Setter -----
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -139,18 +147,23 @@ public class UserDTO {
     public Integer getAnnualVacationDays() { return annualVacationDays; }
     public void setAnnualVacationDays(Integer annualVacationDays) { this.annualVacationDays = annualVacationDays; }
 
-    // NEU: isPercentage & workPercentage
     public Boolean getIsPercentage() { return isPercentage; }
     public void setIsPercentage(Boolean isPercentage) { this.isPercentage = isPercentage; }
 
     public Integer getWorkPercentage() { return workPercentage; }
     public void setWorkPercentage(Integer workPercentage) { this.workPercentage = workPercentage; }
+
     public Integer getTrackingBalanceInMinutes() {
         return trackingBalanceInMinutes;
     }
-
     public void setTrackingBalanceInMinutes(Integer trackingBalanceInMinutes) {
         this.trackingBalanceInMinutes = trackingBalanceInMinutes;
     }
 
+    public Long getCompanyId() {
+        return companyId;
+    }
+    public void setCompanyId(Long companyId) {
+        this.companyId = companyId;
+    }
 }

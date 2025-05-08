@@ -1,4 +1,3 @@
-// HourlyCorrectionModal.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
 
@@ -8,17 +7,20 @@ const HourlyCorrectionModal = ({
                                    correctionData,
                                    handleCorrectionInputChange,
                                    handleCorrectionSubmit,
-                                   onClose
+                                   onClose,
+                                   t, // <-- wichtig
                                }) => {
     if (!visible) return null;
 
     return (
         <div className="modal-overlay">
             <div className="modal-content">
-                <h3>Korrekturantrag für {correctionDate}</h3>
+                <h3>
+                    {t("submitCorrectionFor") || "Korrekturantrag für"} {correctionDate}
+                </h3>
                 <form onSubmit={handleCorrectionSubmit}>
                     <div className="form-group">
-                        <label>Work Start:</label>
+                        <label>{t("workStart")}</label>
                         <input
                             type="time"
                             name="workStart"
@@ -28,7 +30,7 @@ const HourlyCorrectionModal = ({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Break Start:</label>
+                        <label>{t("breakStart")}</label>
                         <input
                             type="time"
                             name="breakStart"
@@ -37,7 +39,7 @@ const HourlyCorrectionModal = ({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Break End:</label>
+                        <label>{t("breakEnd")}</label>
                         <input
                             type="time"
                             name="breakEnd"
@@ -46,7 +48,7 @@ const HourlyCorrectionModal = ({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Work End:</label>
+                        <label>{t("workEnd")}</label>
                         <input
                             type="time"
                             name="workEnd"
@@ -56,18 +58,18 @@ const HourlyCorrectionModal = ({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Grund (Reason):</label>
+                        <label>{t("reason")}:</label>
                         <textarea
                             name="reason"
                             value={correctionData.reason}
                             onChange={handleCorrectionInputChange}
                             required
-                        ></textarea>
+                        />
                     </div>
                     <div className="modal-buttons">
-                        <button type="submit">Antrag senden</button>
+                        <button type="submit">{t("submitCorrection")}</button>
                         <button type="button" onClick={onClose}>
-                            Abbrechen
+                            {t("cancel")}
                         </button>
                     </div>
                 </form>
@@ -84,11 +86,12 @@ HourlyCorrectionModal.propTypes = {
         breakStart: PropTypes.string,
         breakEnd: PropTypes.string,
         workEnd: PropTypes.string,
-        reason: PropTypes.string
+        reason: PropTypes.string,
     }).isRequired,
     handleCorrectionInputChange: PropTypes.func.isRequired,
     handleCorrectionSubmit: PropTypes.func.isRequired,
-    onClose: PropTypes.func.isRequired
+    onClose: PropTypes.func.isRequired,
+    t: PropTypes.func,
 };
 
 export default HourlyCorrectionModal;

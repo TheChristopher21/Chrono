@@ -78,6 +78,8 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.POST, "/api/apply").permitAll();
                     // Schütze Admin-Endpunkte – nur Nutzer mit ROLE_ADMIN dürfen zugreifen
                     auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
+                    auth.requestMatchers("/api/superadmin/**").hasRole("SUPERADMIN");
+
                     // Alle anderen Endpunkte erfordern eine gültige Authentifizierung
                     auth.anyRequest().authenticated();
                 })

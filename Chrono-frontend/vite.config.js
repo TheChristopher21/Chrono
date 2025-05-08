@@ -1,3 +1,4 @@
+// vite.config.js
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
@@ -7,14 +8,22 @@ export default defineConfig({
     build: {
         chunkSizeWarningLimit: 10000
     },
+    // Hier der Proxy-Eintrag für lokale Entwicklung
     server: {
         proxy: {
-            '/api': 'https://api.chrono-logisch.ch'
+            // Wenn dein Backend unter http://localhost:8080/api/... läuft
+            '/api': {
+                target: 'http://localhost:8080',
+                changeOrigin: true,
+                // optional, je nach Bedarf:
+                // rewrite: (path) => path.replace(/^\/api/, '')
+            }
         }
     },
     define: {
+        // Option A: Du kannst in dev-Mode einfach die process.env.APIURL überschreiben
         'process.env': {
-            APIURL: JSON.stringify(process.env.VITE_API_URL)
+            APIURL: 'http://localhost:8080'
         }
     }
 })

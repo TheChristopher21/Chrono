@@ -1,0 +1,335 @@
+/* =========================================================================
+   RegistrationScoped.css
+   Scope: .registration-page.scoped-registration
+   Light- & Dark-Mode Variablen + Layout
+   ========================================================================= */
+
+/* --------------------------- 1) Variablen LIGHT --------------------------- */
+.registration-page.scoped-registration {
+    --primary-color:   #5A67D8; /* Hauptfarbe (Violett/Blau) */
+    --primary-hover:   #434190; /* Für Hover-Effekte */
+    --danger-color:    #E53E3E; /* Rot für Fehlermeldungen */
+
+    --background-color: #F7FAFC;
+    --card-bg:         #FFFFFF;
+    --text-color:      #2D3748;
+    --border-color:    #E2E8F0;
+
+    --shadow:          0 4px 6px rgba(0, 0, 0, 0.1);
+    --radius:          12px;
+    --transition:      0.3s ease;
+    --font-family:     'Poppins', sans-serif;
+
+    background-color: var(--background-color);
+    color: var(--text-color);
+    min-height: 100vh;
+    margin: 0;
+    padding: 2rem;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --------------------------- 2) Variablen DARK ---------------------------- */
+[data-theme="dark"] .registration-page.scoped-registration {
+    --background-color: #18191A;
+    --text-color:       #f0f0f0;
+    --border-color:     #484A4D;
+    --card-bg:          rgba(36, 37, 38, 0.8); /* leicht transparente dunkle Karten */
+}
+
+/* =========================================================================
+   3) Grundlayout & Container
+   ========================================================================= */
+.registration-page.scoped-registration {
+    font-family: var(--font-family);
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.registration-page.scoped-registration .registration-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    width: 100%;
+    max-width: 1000px;
+}
+
+/* =========================================================================
+   4) Pricing-Bereich
+   ========================================================================= */
+.registration-page.scoped-registration .pricing-section {
+    text-align: center;
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2.2rem;
+    border: 2px solid var(--border-color);
+    margin-bottom: 2rem;
+    transition:
+            background-color var(--transition),
+            color var(--transition),
+            border-color var(--transition),
+            box-shadow var(--transition);
+}
+
+.registration-page.scoped-registration .pricing-section h2 {
+    font-size: 2rem;
+    margin-bottom: 1.2rem;
+    color: var(--text-color);
+}
+
+/* Einleitungstext */
+.registration-page.scoped-registration .pricing-intro {
+    max-width: 650px;
+    margin: 0.5rem auto 2rem auto;
+    line-height: 1.4;
+    font-size: 0.95rem;
+    color: var(--text-color);
+}
+
+/* Pricing-Cards Container */
+.registration-page.scoped-registration .pricing-cards {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.25rem;
+}
+
+/* Einzelne Card */
+.registration-page.scoped-registration .pricing-card {
+    cursor: pointer;
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    flex: 1 1 220px;
+    max-width: 280px;
+    border: 1px solid var(--border-color);
+    transition:
+            transform 0.2s,
+            background-color 0.3s,
+            border-color var(--transition),
+            box-shadow var(--transition);
+}
+
+.registration-page.scoped-registration .pricing-card:hover {
+    transform: scale(1.03);
+}
+
+.registration-page.scoped-registration .pricing-card h3 {
+    margin-top: 0;
+    font-size: 1.4rem;
+    margin-bottom: 0.4rem;
+    color: var(--text-color);
+}
+
+.registration-page.scoped-registration .price-line {
+    font-size: 1.25rem;
+    margin: 0.5rem 0;
+    line-height: 1.3;
+    color: var(--text-color);
+}
+
+.registration-page.scoped-registration .yearly-hint {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.registration-page.scoped-registration .pricing-card ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    color: var(--text-color);
+}
+
+.registration-page.scoped-registration .pricing-card ul li {
+    margin: 0.3rem 0;
+}
+
+/* Ausgewählte Karte */
+.registration-page.scoped-registration .pricing-card.selected {
+    border: 2px solid var(--primary-color);
+    box-shadow: 0 0 10px rgba(90, 103, 216, 0.4);
+}
+
+/* Fußnote */
+.registration-page.scoped-registration .pricing-footnote {
+    text-align: center;
+    margin-top: 2rem;
+    font-size: 0.8rem;
+    color: #777;
+}
+
+/* =========================================================================
+   5) Bewerbungs-Bereich (Formular)
+   ========================================================================= */
+.registration-page.scoped-registration .application-section {
+    background-color: var(--card-bg);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 2rem;
+    border: 2px solid var(--border-color);
+    transition:
+            background-color var(--transition),
+            color var(--transition),
+            border-color var(--transition);
+}
+
+.registration-page.scoped-registration .application-section h2 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    font-size: 2rem;
+    color: var(--text-color);
+}
+
+/* Messages */
+.registration-page.scoped-registration .error-message {
+    color: var(--danger-color);
+    text-align: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+.registration-page.scoped-registration .success-message {
+    color: #48BB78; /* Hellgrün */
+    text-align: center;
+    margin-bottom: 1rem;
+    font-weight: 600;
+}
+
+/* Formular-Stile */
+.registration-page.scoped-registration form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.registration-page.scoped-registration form input,
+.registration-page.scoped-registration form textarea {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background-color: #fff;
+    color: var(--text-color);
+    transition:
+            background-color var(--transition),
+            color var(--transition),
+            border-color var(--transition);
+}
+
+.registration-page.scoped-registration form button {
+    padding: 0.75rem;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 1rem;
+    transition: background-color var(--transition), transform 0.2s;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.registration-page.scoped-registration form button:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+/* =========================================================================
+   6) Responsive
+   ========================================================================= */
+@media (max-width: 768px) {
+    .registration-page.scoped-registration .pricing-cards {
+        flex-direction: column;
+        align-items: center;
+    }
+    .registration-page.scoped-registration .application-section {
+        margin-top: 1rem;
+    }
+}
+
+/* =========================================================================
+   7) Dark Mode Overrides
+   ========================================================================= */
+[data-theme="dark"] .registration-page.scoped-registration {
+    background-color: #18191A;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .registration-page.scoped-registration .pricing-section,
+[data-theme="dark"] .registration-page.scoped-registration .application-section {
+    background-color: rgba(36, 37, 38, 0.8);
+    border: 2px solid #484A4D;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .registration-page.scoped-registration .pricing-card {
+    background-color: #2f2f2f;
+    border: 1px solid #484A4D;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .registration-page.scoped-registration .pricing-card h3,
+[data-theme="dark"] .registration-page.scoped-registration .pricing-card p,
+[data-theme="dark"] .registration-page.scoped-registration .pricing-card ul,
+[data-theme="dark"] .registration-page.scoped-registration .pricing-card ul li {
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .registration-page.scoped-registration form input,
+[data-theme="dark"] .registration-page.scoped-registration form textarea {
+    background-color: #3A3B3C;
+    border: 1px solid #484A4D;
+    color: #f0f0f0;
+}
+
+[data-theme="dark"] .registration-page.scoped-registration form button {
+    color: #fff;
+}
+
+[data-theme="dark"] .registration-page.scoped-registration .error-message {
+    color: #ff6b6b;
+}
+
+[data-theme="dark"] .registration-page.scoped-registration .success-message {
+    color: #48BB78;
+}
+.registration-page.scoped-registration .billing-toggle {
+    display: flex;
+    justify-content: center;
+    gap: 1.5rem;
+    margin: 1rem 0 1.5rem;
+}
+.registration-page.scoped-registration .billing-toggle label {
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.registration-page.scoped-registration .emp-count-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 1rem;
+}
+.registration-page.scoped-registration .emp-count-wrapper input[type="number"] {
+    max-width: 100px;
+}
+
+/* Preis-Vorschau (Unter dem Textarea z. B.) */
+.registration-page.scoped-registration .price-preview {
+    background: #EDF2F7; /* ein helles Grau/Blau */
+    padding: 0.6rem 1rem;
+    margin: 0.7rem 0 1.2rem;
+    border-radius: 0.4rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #2D3748;
+}
+[data-theme="dark"] .registration-page.scoped-registration .price-preview {
+    background: #2f2f2f;
+    color: #f0f0f0;
+}

@@ -1,5 +1,4 @@
-// src/App.jsx
-import React from "react";
+import "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 import "./styles/global.css";
@@ -7,24 +6,30 @@ import "./styles/Login.css";
 import "./styles/Navbar.css";
 import "./styles/PercentageDashboardScoped.css";
 
-import Login                         from "./pages/Login.jsx";
-import Registration                  from "./pages/Registration.jsx";
-import UserDashboard                 from "./pages/UserDashboard/UserDashboard.jsx";
-import AdminDashboard                from "./pages/AdminDashboard/AdminDashboard.jsx";
-import AdminUserManagementPage       from "./pages/AdminUserManagement/AdminUserManagementPage.jsx";
-import PersonalDataPage              from "./pages/PersonalDataPage.jsx";
-import AdminChangePassword           from "./pages/AdminChangePassword.jsx";
-import PercentagePunch               from "./pages/PercentageDashboard/PercentageDashboard.jsx";
-import PrintReport                   from "./pages/PrintReport.jsx";
+// Importiere deine Seiten
+import LandingPage                  from "./pages/LandingPage.jsx";
+import Login                        from "./pages/Login.jsx";
+import Registration                 from "./pages/Registration.jsx";
+import UserDashboard                from "./pages/UserDashboard/UserDashboard.jsx";
+import AdminDashboard               from "./pages/AdminDashboard/AdminDashboard.jsx";
+import AdminUserManagementPage      from "./pages/AdminUserManagement/AdminUserManagementPage.jsx";
+import PersonalDataPage             from "./pages/PersonalDataPage.jsx";
+import AdminChangePassword          from "./pages/AdminChangePassword.jsx";
+import PercentagePunch              from "./pages/PercentageDashboard/PercentageDashboard.jsx";
+import PrintReport                  from "./pages/PrintReport.jsx";
+import CompanyManagementPage        from "./pages/CompanyManagementPage.jsx";
 
-import PrivateRoute                  from "./components/PrivateRoute.jsx";
+import PrivateRoute                 from "./components/PrivateRoute.jsx";
 
 function App() {
     return (
         <div>
             <Routes>
-                {/* Root-Weiterleitung */}
-                <Route path="/" element={<Navigate to="/login" replace />} />
+                {/*
+                  Root-Pfad zeigt jetzt die neue LandingPage.
+                  Entferne die alte Weiterleitung zu /login.
+                */}
+                <Route path="/" element={<LandingPage />} />
 
                 {/* Öffentliche Seiten */}
                 <Route path="/login"    element={<Login />} />
@@ -52,6 +57,16 @@ function App() {
                     element={
                         <PrivateRoute requiredRole="ROLE_USER">
                             <PersonalDataPage />
+                        </PrivateRoute>
+                    }
+                />
+
+                {/* Geschützter SuperAdmin-Bereich */}
+                <Route
+                    path="/superadmin/companies"
+                    element={
+                        <PrivateRoute requiredRole="ROLE_SUPERADMIN">
+                            <CompanyManagementPage />
                         </PrivateRoute>
                     }
                 />
@@ -85,8 +100,8 @@ function App() {
                 {/* PDF-/Druck-Seite – MUSS vor dem Catch-All stehen */}
                 <Route path="/print-report" element={<PrintReport />} />
 
-                {/* Catch-All (Not-Found / Redirect) **ganz zum Schluss** */}
-                <Route path="*" element={<Navigate to="/login" replace />} />
+                {/* Catch-All (Not-Found / Redirect) */}
+                <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
         </div>
     );

@@ -1,6 +1,7 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.AdminTimeTrackDTO;
+import com.chrono.chrono.entities.TimeTracking;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.TimeTrackingService;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,13 +26,32 @@ public class AdminTimeTrackingController {
     private TimeTrackingService timeTrackingService;
 
     @GetMapping("/all")
-    public ResponseEntity<?> getAllTimeTracks() {
+    public ResponseEntity<?> getAllTimeTracks(Principal principal) {
         try {
-            return ResponseEntity.ok(timeTrackingService.getAllTimeTracksWithUser());
+            Long adminCompanyId = userRepository
+                    .findByUsername(principal.getName())
+                    .orElseThrow(() -> new RuntimeException("Admin not found"))
+                    .getCompany()
+                    .getId();
+
+            // Hier: 'dtos' ist eine List<AdminTimeTrackDTO>
+            List<AdminTimeTrackDTO> dtos = timeTrackingService.getAllTimeTracksWithUser();
+
+            // Filtern nach der Company des Admins
+            List<AdminTimeTrackDTO> filtered = dtos.stream()
+                    .filter(dto -> dto.getCompanyId() != null
+                            && dto.getCompanyId().equals(adminCompanyId))
+                    .toList();
+
+            return ResponseEntity.ok(filtered);
+
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
+
+
+
     @GetMapping("/admin/weekly-balance")
     public ResponseEntity<?> getAdminWeeklyBalances(@RequestParam String monday) {
         LocalDate mondayDate = LocalDate.parse(monday);

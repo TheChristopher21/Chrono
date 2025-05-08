@@ -74,9 +74,21 @@ public class CorrectionRequestController {
     // Admin-Endpunkt zum Genehmigen eines Korrekturantrags
     @PostMapping("/approve/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public CorrectionRequest approveRequest(@PathVariable Long id) {
-        CorrectionRequest corr = correctionRequestService.approveRequest(id);
+    public CorrectionRequest approveRequest(
+            @PathVariable Long id,
+            @RequestParam(required = false) String comment
+    ) {
+        // (a) Markiere den CorrectionRequest als genehmigt (ohne Änderungen an den Stempeln)
+        CorrectionRequest corr = correctionRequestService.approveRequest(id, comment);
+
+        // (b) Jetzt EINMALIG die Tages-Änderungen anlegen (PunchOrder=1..4) via TimeTrackingService.
         try {
+            // Aus dem Correction-Objekt z.B.:
+            // - corr.getDate() -> Tag
+            // - corr.getUsername() -> targetUser
+            // - corr.getWorkStartFormatted() / getBreakStartFormatted() / ...
+            // - Falls passwort nötig, userPassword => optional
+
             timeTrackingService.updateDayTimeEntries(
                     corr.getUsername(),
                     corr.getDate().toString(),
@@ -84,20 +96,26 @@ public class CorrectionRequestController {
                     corr.getBreakStartFormatted(),
                     corr.getBreakEndFormatted(),
                     corr.getWorkEndFormatted(),
-                    null, // Kein Admin-Username
-                    null, // Kein Admin-Passwort
-                    corr.getUserPassword() // Falls vorhanden
+                    null,   // Admin-Username
+                    null,   // Admin-Passwort
+                    ""      // userPassword oder leer, je nach eurer PW-Logik
             );
         } catch (Exception e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Fehler beim Aktualisieren der Zeitstempel: " + e.getMessage());
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Fehler beim Aktualisieren der Zeitstempel: " + e.getMessage()
+            );
         }
+
         return corr;
     }
 
+
     @PostMapping("/deny/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public CorrectionRequest denyRequest(@PathVariable Long id) {
-        return correctionRequestService.denyRequest(id);
+    public CorrectionRequest denyRequest(
+            @PathVariable Long id,
+            @RequestParam(required = false) String comment) {
+        return correctionRequestService.denyRequest(id, comment);
     }
 }

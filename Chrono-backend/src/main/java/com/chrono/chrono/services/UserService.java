@@ -4,6 +4,7 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -23,6 +24,16 @@ public class UserService {
 
         return user;
     }
+
+
+    public void assertSameCompany(String requestingUsername, String targetUsername) {
+        User req = getUserByUsername(requestingUsername);
+        User tgt = getUserByUsername(targetUsername);
+        if(!req.getCompany().getId().equals(tgt.getCompany().getId())) {
+            throw new AccessDeniedException("Unterschiedliche Firmen!");
+        }
+    }
+
 
     public User updateUser(User updatedUser) {
         User user = userRepository.findByUsername(updatedUser.getUsername())

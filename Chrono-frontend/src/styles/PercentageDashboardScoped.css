@@ -1,47 +1,140 @@
 /* =========================================================================
-   PercentageDashboardScoped.css · final · 21‑Apr‑2025
+   PercentageDashboardScoped.css
+   Scope: .percentage-dashboard.scoped-dashboard
    ========================================================================= */
+
+/* --------------------------- 1) Variablen (Light) --------------------------- */
 .percentage-dashboard.scoped-dashboard {
-    --c-pri:#475bff; --c-pri-dim:#6b7cff; --c-warn:#ffc741;
-    --c-text:#1e1f22; --c-muted:#5c606e; --c-bg:#f4f6ff; --c-card:#ffffff;
-    --c-border:#d5d8e5; --c-line:#e7e8f1;
-    --u-radius:14px; --u-gap:clamp(1.4rem,3vw,2rem);
-    --u-shadow-sm:0 1px 4px rgba(0,0,0,.06);
-    --u-shadow-lg:0 20px 34px rgba(0,0,0,.14);
-    --u-dur:.25s; --u-ease:cubic-bezier(.4,.2,.2,1);
+    --c-pri:   #475bff;
+    --c-pri-dim:#6b7cff;
+    --c-warn:  #ffc741;
+
+    --c-text:  #1e1f22;
+    --c-muted: #5c606e;
+    --c-bg:    #f4f6ff;
+    --c-card:  #ffffff;
+    --c-border:#d5d8e5;
+    --c-line:  #e7e8f1;
+
+    --u-radius:14px;
+    --u-gap:   clamp(1.4rem, 3vw, 2rem);
+    --u-shadow-sm:0 1px 4px rgba(0, 0, 0, 0.06);
+    --u-shadow-lg:0 20px 34px rgba(0, 0, 0, 0.14);
+
+    --u-dur:   0.25s;
+    --u-ease:  cubic-bezier(0.4, 0.2, 0.2, 1);
+
+    /* Basis-Font & Hintergrund */
+    font-family: 'Poppins', system-ui, sans-serif;
+    background: var(--c-bg);
+    color: var(--c-text);
 }
 
+/* --------------------------- 2) Variablen (Dark) ---------------------------- */
 [data-theme="dark"] .percentage-dashboard.scoped-dashboard {
-    --c-text:#e5e7ec; --c-muted:#a1a4b2; --c-bg:#15171c; --c-card:#1f2127;
-    --c-border:#383b46; --c-line:#2c2f37;
-    --u-shadow-sm:0 1px 4px rgba(0,0,0,.45);
-    --u-shadow-lg:0 20px 34px rgba(0,0,0,.75);
+    --c-text:   #e5e7ec;
+    --c-muted:  #a1a4b2;
+    --c-bg:     #15171c;
+    --c-card:   #1f2127;
+    --c-border: #383b46;
+    --c-line:   #2c2f37;
+
+    --u-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.45);
+    --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.75);
 }
 
-/* ---------- Grundlayout --------------------------------------------- */
-.percentage-dashboard.scoped-dashboard {
-    font-family:'Poppins',system-ui,sans-serif;
-    background:var(--c-bg); color:var(--c-text);
-}
-.percentage-dashboard.scoped-dashboard .content-wrapper {
-    width:100%; max-width:1440px; margin:auto;
-    padding-inline:clamp(1rem,4vw,3rem);
-}
-
-/* ---------- Typo --------------------------------------------------- */
+/* --------------------------- 3) Header & Typografie ------------------------ */
 .percentage-dashboard.scoped-dashboard h1 {
-    font-size:clamp(2rem,3.5vw,2.6rem);
+    font-size: clamp(2rem, 3.5vw, 2.6rem);
 }
 .percentage-dashboard.scoped-dashboard h2 {
-    font-size:clamp(1.6rem,3vw,2rem);
+    font-size: clamp(1.6rem, 3vw, 2rem);
 }
 .percentage-dashboard.scoped-dashboard h3 {
-    font-size:clamp(1.2rem,2vw,1.4rem);
+    font-size: clamp(1.2rem, 2vw, 1.4rem);
 }
 
-/* =========================================================================
-   1) Wochentage / Tageskarten
-   ========================================================================= */
+.percentage-dashboard.scoped-dashboard h1,
+.percentage-dashboard.scoped-dashboard h2,
+.percentage-dashboard.scoped-dashboard h3,
+.percentage-dashboard.scoped-dashboard h4,
+.percentage-dashboard.scoped-dashboard p,
+.percentage-dashboard.scoped-dashboard span,
+.percentage-dashboard.scoped-dashboard li,
+.percentage-dashboard.scoped-dashboard label,
+.percentage-dashboard.scoped-dashboard strong {
+    color: var(--c-text);
+}
+
+/* Haupt-Dashboard-Header */
+.percentage-dashboard.scoped-dashboard .dashboard-header {
+    text-align: center;
+    margin-bottom: 1.8rem;
+}
+
+/* Kleine Infotexte z. B. "User: test, Arbeits-%" etc. */
+.percentage-dashboard.scoped-dashboard .dashboard-header .dashboard-meta {
+    margin-top: 0.4rem;
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: var(--c-muted);
+}
+
+/* --------------------------- 4) Week Navigation / Manuell stempeln -------- */
+.percentage-dashboard.scoped-dashboard .week-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center; /* Zentriert: Vorige Woche, Datepicker, Nächste Woche */
+    gap: 1rem;
+    margin-bottom: 1.6rem;
+}
+.percentage-dashboard.scoped-dashboard .week-navigation button {
+    padding: 0.4rem 0.9rem;
+    font-size: 0.85rem;
+    border-radius: var(--u-radius);
+    border: none;
+    background: var(--c-pri);
+    color: #fff;
+    font-weight: 600;
+    transition: background var(--u-dur) var(--u-ease), transform var(--u-dur) var(--u-ease);
+}
+.percentage-dashboard.scoped-dashboard .week-navigation button:hover {
+    background: var(--c-pri-dim);
+    transform: translateY(-3px);
+}
+.percentage-dashboard.scoped-dashboard .week-navigation input[type="date"] {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    background: var(--c-card);
+    color: var(--c-text);
+    font-size: 0.9rem;
+    transition: background var(--u-dur) var(--u-ease), color var(--u-dur) var(--u-ease), border-color var(--u-dur) var(--u-ease);
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .week-navigation input[type="date"] {
+    background: #2c2f37;
+    color: #e5e7ec;
+    border-color: #484A4D;
+}
+
+/* Button z. B. "Manuell stempeln" */
+.percentage-dashboard.scoped-dashboard .manual-punch-btn {
+    background: var(--c-pri);
+    color: #fff;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--u-radius);
+    padding: 0.55rem 1.25rem;
+    cursor: pointer;
+    transition: background var(--u-dur) var(--u-ease), transform var(--u-dur) var(--u-ease);
+    margin-bottom: 1rem; /* if needed */
+}
+.percentage-dashboard.scoped-dashboard .manual-punch-btn:hover {
+    background: var(--c-pri-dim);
+    transform: translateY(-2px);
+}
+
+/* --------------------------- 5) Week Display (Tageskarten) --------------- */
 .percentage-dashboard.scoped-dashboard .week-display {
     display: grid;
     gap: 1.8rem;
@@ -53,6 +146,9 @@
     border-radius: var(--u-radius);
     padding: 1.5rem;
     box-shadow: var(--u-shadow-sm);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start; /* oder center, wenn du die Buttons mittig willst */
 }
 .percentage-dashboard.scoped-dashboard .week-day-header {
     font-weight: 600;
@@ -73,18 +169,32 @@
     margin-top: 1rem;
 }
 
-/* =========================================================================
-   2) Urlaub / Kalender
-   ========================================================================= */
+/* Korrektur-Button im Day-Card */
+.percentage-dashboard.scoped-dashboard .correction-button {
+    border-radius: var(--u-radius);
+    background: var(--c-pri);
+    color: #fff;
+    padding: 0.55rem 1.25rem;
+    margin-top: auto; /* schiebt ihn nach unten */
+    font-size: 0.84rem;
+}
+.percentage-dashboard.scoped-dashboard .correction-button:hover {
+    background: var(--c-pri-dim);
+    transform: translateY(-2px);
+}
+
+/* --------------------------- 6) Urlaub / Kalender Section --------------- */
 .percentage-dashboard.scoped-dashboard .calendar-section {
     width: 100%;
     max-width: none;
 }
+
+/* Datum + Select Felder im Urlaubspanel */
 .percentage-dashboard.scoped-dashboard input[type="date"],
 .percentage-dashboard.scoped-dashboard select {
     width: 100%;
-    padding: .6rem .9rem;
-    font-size: .95rem;
+    padding: 0.6rem 0.9rem;
+    font-size: 0.95rem;
     border: 1px solid var(--c-border);
     border-radius: var(--u-radius);
     background: var(--c-card);
@@ -97,9 +207,7 @@
     border-color: #484A4D;
 }
 
-/* =========================================================================
-   3) Korrekturen
-   ========================================================================= */
+/* --------------------------- 7) Corrections Panel ------------------------ */
 .percentage-dashboard.scoped-dashboard .correction-panel {
     margin-top: var(--u-gap);
 }
@@ -114,7 +222,7 @@
     cursor: pointer;
 }
 [data-theme="dark"] .percentage-dashboard.scoped-dashboard .corrections-header {
-    background: #363a45;
+    background: #363a45; /* dunkles Grau */
     color: var(--c-text);
 }
 .percentage-dashboard.scoped-dashboard .corrections-content {
@@ -134,22 +242,8 @@
     box-shadow: var(--u-shadow-sm);
     color: var(--c-text);
 }
-.percentage-dashboard.scoped-dashboard .single-correction .approved {
-    color: green;
-    font-weight: 600;
-}
-.percentage-dashboard.scoped-dashboard .single-correction .denied {
-    color: crimson;
-    font-weight: 600;
-}
-.percentage-dashboard.scoped-dashboard .single-correction .pending {
-    color: var(--c-muted);
-    font-weight: 600;
-}
 
-/* =========================================================================
-   4) Buttons
-   ========================================================================= */
+/* --------------------------- 8) Buttons (Global in scope) ----------------- */
 .percentage-dashboard.scoped-dashboard button {
     border: none;
     border-radius: var(--u-radius);
@@ -158,24 +252,19 @@
     background: var(--c-pri);
     color: #fff;
     transition: background var(--u-dur) var(--u-ease), transform var(--u-dur) var(--u-ease);
+    font-size: 0.88rem;
+    padding: 0.55rem 1.25rem;
 }
 .percentage-dashboard.scoped-dashboard button:hover {
     background: var(--c-pri-dim);
     transform: translateY(-3px);
 }
-.percentage-dashboard.scoped-dashboard .correction-button {
-    padding: .55rem 1.25rem;
-    font-size: .84rem;
-    margin-top: auto;
-}
 
-/* =========================================================================
-   5) Modal
-   ========================================================================= */
+/* --------------------------- 9) Modal Overlay & Content -------------------- */
 .percentage-dashboard.scoped-dashboard .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, .55);
+    background: rgba(0, 0, 0, 0.55);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -189,180 +278,92 @@
     border-radius: var(--u-radius);
     padding: 2.4rem;
     box-shadow: var(--u-shadow-lg);
+    color: inherit;
 }
-.percentage-dashboard.scoped-dashboard input,
-.percentage-dashboard.scoped-dashboard textarea {
+.percentage-dashboard.scoped-dashboard .modal-content .form-group {
+    margin-bottom: 1rem;
+}
+.percentage-dashboard.scoped-dashboard .modal-content .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+}
+.percentage-dashboard.scoped-dashboard .modal-content .form-group input,
+.percentage-dashboard.scoped-dashboard .modal-content .form-group textarea {
     width: 100%;
-    padding: .7rem .9rem;
+    padding: 0.7rem 0.9rem;
     border: 1px solid var(--c-border);
     border-radius: 10px;
     background: inherit;
     color: inherit;
+    font: inherit;
 }
-
-/* =========================================================================
-   6) Tooltips / Hinweise
-   ========================================================================= */
-.percentage-dashboard.scoped-dashboard .tooltip {
-    background: #222;
-    color: #fff;
-    padding: .3rem .6rem;
-    font-size: .75rem;
-    border-radius: 6px;
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .tooltip {
-    background: #444;
-    color: #fff;
-}
-
-/* =========================================================================
-   7) Responsive & Motion
-   ========================================================================= */
-@media(max-width:640px) {
-    .percentage-dashboard.scoped-dashboard .week-display {
-        grid-template-columns: 1fr;
-    }
-}
-@media(prefers-reduced-motion:reduce) {
-    .percentage-dashboard.scoped-dashboard *,
-    .percentage-dashboard.scoped-dashboard *::before,
-    .percentage-dashboard.scoped-dashboard *::after {
-        transition: none!important;
-    }
-}
-/* =========================================================================
-   FINAL TEXT + DARKMODE FIX (Stand 21-Apr-2025)
-   ========================================================================= */
-
-/* 1. Alle Text-Elemente im Scope: */
-.percentage-dashboard.scoped-dashboard h1,
-.percentage-dashboard.scoped-dashboard h2,
-.percentage-dashboard.scoped-dashboard h3,
-.percentage-dashboard.scoped-dashboard h4,
-.percentage-dashboard.scoped-dashboard p,
-.percentage-dashboard.scoped-dashboard span,
-.percentage-dashboard.scoped-dashboard li,
-.percentage-dashboard.scoped-dashboard label,
-.percentage-dashboard.scoped-dashboard strong {
-    color: var(--c-text);
-}
-
-/* 2. Modal & Tooltip innerhalb von Overlay – Farbe explizit */
-.percentage-dashboard.scoped-dashboard .modal-content,
-.percentage-dashboard.scoped-dashboard .modal-content label,
-.percentage-dashboard.scoped-dashboard .modal-content h3,
-.percentage-dashboard.scoped-dashboard .modal-content p,
-.percentage-dashboard.scoped-dashboard .modal-content textarea,
-.percentage-dashboard.scoped-dashboard .modal-content input {
-    color: var(--c-text);
-    background: var(--c-card);
-}
-
-/* 3. Buttons/Toggle: Nur Icons oder Pfeile sichtbar machen */
-.percentage-dashboard.scoped-dashboard .toggle-icon,
-.percentage-dashboard.scoped-dashboard .week-label {
-    color: var(--c-text);
-}
-
-/* 4. Fallback für <body> (falls DarkMode außerhalb scope aktiviert wird) */
-[data-theme="dark"] body {
-    background-color: #15171c;
-    color: #e5e7ec;
-}
-/* =========================================================================
-   Dashboard-Zentrierung Header & Navigation
-   ========================================================================= */
-.scoped-dashboard .dashboard-header {
-    text-align: center;
-    margin-bottom: 1.8rem;
-}
-.scoped-dashboard .dashboard-header h1 {
-    margin-bottom: .5rem;
-}
-.scoped-dashboard .dashboard-meta {
-    display: inline-block;
-    text-align: left;
-    margin-top: .4rem;
-    font-size: .95rem;
-    line-height: 1.4;
-    color: var(--c-muted);
-}
-
-.scoped-dashboard .week-navigation {
+.percentage-dashboard.scoped-dashboard .modal-buttons {
     display: flex;
-    align-items: center;
-    justify-content: center;
     gap: 1rem;
-    margin-bottom: 1.6rem;
+    margin-top: 1.4rem;
 }
-.scoped-dashboard .week-navigation button {
-    padding: .4rem .9rem;
-    font-size: .85rem;
+.percentage-dashboard.scoped-dashboard .modal-buttons button {
+    font-size: 0.88rem;
+    padding: 0.55rem 1.25rem;
+    /* Primärdesign, s. global button style oben */
 }
-.scoped-dashboard .week-navigation span {
-    font-weight: 600;
-    font-size: .95rem;
+.percentage-dashboard.scoped-dashboard .modal-buttons button[type="button"] {
+    background: #888; /* Sekundärer Button */
 }
-/* =====================================================================
-   Rote Hervorhebung für späte Zeiten (22:30–23:30) · in allen Themes
-   ===================================================================== */
-.scoped-dashboard .late-time {
+.percentage-dashboard.scoped-dashboard .modal-buttons button[type="button"]:hover {
+    background: #666;
+}
+
+/* --------------------------- 10) Late Time / Punch Message ----------------- */
+.percentage-dashboard.scoped-dashboard .late-time {
     color: #e53939;
     font-weight: 600;
 }
-
-/* Optional: etwas kräftiger im Dark‑Mode */
-[data-theme="dark"] .scoped-dashboard .late-time {
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .late-time {
     color: #ff6b6b;
 }
-.late-time {
-    color: red;
-    font-weight: bold;
-}
-/* Standardmäßige Popup-Stil-Definition */
-.punch-message {
+
+.percentage-dashboard.scoped-dashboard .punch-message {
     position: fixed;
-    top: 20px;  /* Sicherstellen, dass es oben erscheint */
+    top: 20px;
     left: 50%;
-    transform: translateX(-50%); /* Horizontale Zentrierung */
-    background-color: #2ecc71;  /* Grüner Hintergrund für Bestätigungen */
-    color: white;  /* Weiße Schriftfarbe */
+    transform: translateX(-50%);
+    background-color: #2ecc71;
+    color: white;
     padding: 12px 24px;
     border-radius: 8px;
     font-weight: bold;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 9999; /* Höchster z-index, damit es immer oben ist */
-    opacity: 0; /* Anfangs unsichtbar */
-    animation: fadeInOut 4s ease-in-out forwards; /* Animation für das Ein- und Ausblenden */
+    z-index: 9999;
+    opacity: 0;
+    animation: fadeInOut 4s ease-in-out forwards;
 }
-
-/* Animation für das Ein- und Ausblenden der Nachricht */
 @keyframes fadeInOut {
     0% {
         opacity: 0;
-        transform: translateX(-50%) translateY(-10px); /* Startposition */
+        transform: translateX(-50%) translateY(-10px);
     }
     10% {
         opacity: 1;
-        transform: translateX(-50%) translateY(0); /* Endposition (sichtbar und in Position) */
+        transform: translateX(-50%) translateY(0);
     }
     90% {
         opacity: 1;
     }
     100% {
         opacity: 0;
-        transform: translateX(-50%) translateY(-10px); /* Ende der Animation (unsichtbar) */
+        transform: translateX(-50%) translateY(-10px);
     }
 }
-/* =========================================================================
-   Druck-Button sichtbar & gut platziert
-   ========================================================================= */
-.scoped-dashboard .print-report-container {
+
+/* --------------------------- 11) Print-Report Button ----------------------- */
+.percentage-dashboard.scoped-dashboard .print-report-container {
     margin-top: 1.2rem;
     text-align: center;
 }
-
-.scoped-dashboard .print-report-container button {
+.percentage-dashboard.scoped-dashboard .print-report-container button {
     padding: 0.7rem 1.4rem;
     font-size: 0.95rem;
     border-radius: var(--u-radius);
@@ -373,6 +374,34 @@
     cursor: pointer;
     transition: background 0.2s ease;
 }
-.scoped-dashboard .print-report-container button:hover {
+.percentage-dashboard.scoped-dashboard .print-report-container button:hover {
     background: var(--c-pri-dim);
+}
+
+/* --------------------------- 12) Responsive & Reduced Motion ------------- */
+@media (max-width: 640px) {
+    .percentage-dashboard.scoped-dashboard .week-display {
+        grid-template-columns: 1fr;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .percentage-dashboard.scoped-dashboard *,
+    .percentage-dashboard.scoped-dashboard *::before,
+    .percentage-dashboard.scoped-dashboard *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* --------------------------- 13) Dark-Mode Lesbarkeits-Anpassungen -------- */
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard h2,
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard h3,
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard h4 {
+    color: #f2f4fa;
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .week-day-content p {
+    color: #c8cbd5;
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .no-entries {
+    color: #a8acbb;
 }

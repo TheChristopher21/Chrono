@@ -3,21 +3,33 @@
    ========================================================================= */
 
 /* ---------- 0)  CSS‑Reset / Normalisieren ------------------------------ */
-*, *::before, *::after{ box-sizing:border-box; }
-html, body{ margin:0; padding:0; }
-img, picture, video, canvas, svg{ display:block; max-width:100%; }
-button, input, select, textarea{ font:inherit; color:inherit; }
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+html, body {
+    margin: 0;
+    padding: 0;
+}
+img, picture, video, canvas, svg {
+    display: block;
+    max-width: 100%;
+}
+button, input, select, textarea {
+    font: inherit;
+    color: inherit;
+}
 
-:root{
-    /* ⚠️  Nur TOKENS – keine Komponenten‑Klassen!
-       Primärfarben + abgeleitete RGB‑Variante (für Transparenz‑Einsätze) */
+/* ---------- 1)  Grundtokens (Light-Default) --------------------------- */
+:root {
+    /* ⚠️  Nur TOKENS – keine Komponenten-Klassen!
+       Primärfarben + abgeleitete RGB-Variante (für Transparenz-Einsätze) */
     --c-pri:     #475bff;
     --c-pri-dim: #6b7cff;
-    --c-pri-rgb: 71,91,255;      /* ohne rgb()‑Wrapper → in CSS var() nutzbar */
+    --c-pri-rgb: 71,91,255;  /* ohne rgb()‑Wrapper → in CSS var() nutzbar */
 
     --c-danger:  #ed5757;
 
-    /* Grundfarben (Light‑Default) */
+    /* Grundfarben (Light-Default) */
     --c-text:    #1f1f1f;
     --c-muted:   #60646c;
     --c-bg:      #ffffff;
@@ -30,31 +42,41 @@ button, input, select, textarea{ font:inherit; color:inherit; }
     --u-shadow-sm:   0 2px 6px rgba(0,0,0,.05);
     --u-shadow-lg:   0 20px 34px rgba(0,0,0,.12);
 
-    /* Motion */
+    /* Motion-Dauer + Kurve */
     --u-dur:  .25s;
     --u-ease: cubic-bezier(.4,.2,.2,1);
 
-    /* Optionale globale Brightness (Navbar‑Slider) */
-    --app-brightness:1;
+    /* Optionale globale Brightness (z. B. Navbar-Slider) */
+    --app-brightness: 1;
 }
 
-/* ---------- 1)  Grundtypografie --------------------------------------- */
-html{ font-family:'Poppins',system-ui,sans-serif; font-size:16px; line-height:1.45; }
-body{
-    background:var(--c-bg);
-    color:var(--c-text);
-    -webkit-font-smoothing:antialiased;
-    filter:brightness(var(--app-brightness));
-    transition:background var(--u-dur) var(--u-ease),
-    color      var(--u-dur) var(--u-ease);
+/* ---------- 2)  Basis‑Typografie -------------------------------------- */
+html {
+    font-family: 'Poppins', system-ui, sans-serif;
+    font-size: 16px;
+    line-height: 1.45;
+}
+body {
+    background: var(--c-bg);
+    color: var(--c-text);
+    -webkit-font-smoothing: antialiased;
+    filter: brightness(var(--app-brightness));
+    transition:
+            background var(--u-dur) var(--u-ease),
+            color      var(--u-dur) var(--u-ease);
 }
 
 /* Links */
-a{ color:var(--c-pri); text-decoration:none; }
-a:hover{ text-decoration:underline; }
+a {
+    color: var(--c-pri);
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
 
-/* ---------- 2)  Dark‑Mode‑Overrides ----------------------------------- */
-[data-theme="dark"]{
+/* ---------- 3)  Dark‑Mode‑Overrides ----------------------------------- */
+[data-theme="dark"] {
     --c-text:   #e4e6eb;
     --c-muted:  #9ea3b0;
     --c-bg:     #18191a;
@@ -66,9 +88,9 @@ a:hover{ text-decoration:underline; }
     --u-shadow-lg: 0 18px 36px rgba(0,0,0,.65);
 }
 
-@media (prefers-color-scheme:dark){
-    /* Fallback, falls User noch nicht geklickt hat */
-    :root:not([data-theme="light"]){
+/* Fallback, falls User noch nicht geklickt hat */
+@media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
         --c-text:   #e4e6eb;
         --c-muted:  #9ea3b0;
         --c-bg:     #18191a;
@@ -81,13 +103,23 @@ a:hover{ text-decoration:underline; }
     }
 }
 
-/* ---------- 3)  Accessiblity‑Utilities ------------------------------- */
-.visually-hidden{
-    position:absolute!important; width:1px; height:1px; padding:0; margin:-1px;
-    overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+/* ---------- 4)  Accessiblity‑Utilities ------------------------------- */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
 }
 
-/* ---------- 4)  Reduced‑Motion --------------------------------------- */
-@media (prefers-reduced-motion:reduce){
-    *{ animation:none!important; transition:none!important; }
+/* ---------- 5)  Reduced‑Motion --------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        animation: none !important;
+        transition: none !important;
+    }
 }

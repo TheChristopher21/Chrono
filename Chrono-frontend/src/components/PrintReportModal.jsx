@@ -1,7 +1,7 @@
 // src/components/PrintReportModal.jsx
 import "react";
 import PropTypes from "prop-types";
-import "../styles/PrintReport.css";          // optional – Styles für alle Dashboards
+import "../styles/PrintReportScoped.css";          // optional – Styles für alle Dashboards
 
 const PrintReportModal = ({
                               t,

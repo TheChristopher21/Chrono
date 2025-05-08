@@ -1,7 +1,6 @@
 // PercentageCorrectionModal.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
-import '../../styles/PercentageDashboardScoped.css';
 
 const PercentageCorrectionModal = ({
                                        visible,

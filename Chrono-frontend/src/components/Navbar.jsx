@@ -12,11 +12,15 @@ const Navbar = () => {
     const { t } = useTranslation();
     const location = useLocation();
 
-    // Öffentliche Routen
-    const publicRoutes = ['/login', '/register'];
+    // 1) Je nach Login‐Status: definieren, ob Pfad public ist:
+    // Falls kein Token => /, /login, /register als public
+    // Falls Token => nur /login, /register (ggf. /) NICHT
+    let publicRoutes = ['/login', '/register'];
+    if (!authToken) {
+        publicRoutes.push('/');
+    }
     const isPublicPage = publicRoutes.includes(location.pathname);
 
-    /* ----------------------------  App‑State  --------------------------- */
     const [brightness, setBrightness] = useState(1);
     useEffect(() => {
         const saved = localStorage.getItem('appBrightness');
@@ -32,33 +36,41 @@ const Navbar = () => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
     }, [theme]);
-    const toggleTheme = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
-    /* ----------------------------  Render  ------------------------------ */
-    const NavContent = ({ children }) => (
-        <nav className="navbar">
-            {children}
-        </nav>
-    );
+    const NavContent = ({ children }) => <nav className="navbar">{children}</nav>;
 
+    // 2) Falls “public” => Zeige Landing‐Nav (Login+Register).
+    //    Falls “private” => Zeige User– oder Admin–Links + Logout
     return (
         <div className="scoped-navbar">
-            {(!authToken || isPublicPage) ? (
+            {!authToken || isPublicPage ? (
                 <NavContent>
                     <div className="navbar-brand">
-                        <Link to="/" className="navbar-logo">Chrono</Link>
+                        <Link to="/" className="navbar-logo">
+                            Chrono
+                        </Link>
                     </div>
                     <ul className="navbar-links">
-                        <li><Link to="/login">{t('navbar.login', 'Login')}</Link></li>
-                        <li><Link to="/register">{t('navbar.register', 'Register')}</Link></li>
+                        <li>
+                            <Link to="/login">{t('navbar.login')}</Link>
+                        </li>
+                        <li>
+                            <Link to="/register">{t('navbar.register')}</Link>
+                        </li>
                         <li>
                             <div className="brightness-control">
-                                <label htmlFor="brightness-slider">{t('Helligkeit', 'Helligkeit')}</label>
+                                <label htmlFor="brightness-slider">
+                                    {t('navbar.brightness', 'Helligkeit')}
+                                </label>
                                 <input
                                     id="brightness-slider"
-                                    type="range" min="0.5" max="1.5" step="0.01"
+                                    type="range"
+                                    min="0.5"
+                                    max="1.5"
+                                    step="0.01"
                                     value={brightness}
-                                    onChange={e => setBrightness(Number(e.target.value))}
+                                    onChange={(e) => setBrightness(Number(e.target.value))}
                                 />
                                 <span>{Math.round(brightness * 100)}%</span>
                             </div>
@@ -75,21 +87,41 @@ const Navbar = () => {
             ) : (
                 <NavContent>
                     <div className="navbar-brand">
-                        <Link to="/" className="navbar-logo">Chrono</Link>
+                        <Link to="/" className="navbar-logo">
+                            Chrono
+                        </Link>
                     </div>
                     <ul className="navbar-links">
                         {currentUser?.roles?.includes('ROLE_ADMIN') ? (
                             <>
-                                <li><Link to="/admin">{t('navbar.adminStart', 'Admin‑Start')}</Link></li>
-                                <li><Link to="/admin/users">{t('navbar.userManagement', 'Benutzerverwaltung')}</Link></li>
-                                <li><Link to="/admin/change-password">
-                                    {t('admin.changePasswordTitle', 'Passwort ändern')}
-                                </Link></li>
+                                <li>
+                                    <Link to="/admin">
+                                        {t('navbar.adminStart', 'Admin‑Start')}
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/admin/users">
+                                        {t('navbar.userManagement', 'Benutzerverwaltung')}
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/admin/change-password">
+                                        {t('admin.changePasswordTitle', 'Passwort ändern')}
+                                    </Link>
+                                </li>
                             </>
                         ) : (
                             <>
-                                <li><Link to="/user">{t('navbar.myDashboard', 'Mein Dashboard')}</Link></li>
-                                <li><Link to="/profile">{t('navbar.profile', 'Mein Profil')}</Link></li>
+                                <li>
+                                    <Link to="/user">
+                                        {t('navbar.myDashboard', 'Mein Dashboard')}
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link to="/profile">
+                                        {t('navbar.profile', 'Mein Profil')}
+                                    </Link>
+                                </li>
                             </>
                         )}
                         <li className="navbar-username">
@@ -102,12 +134,17 @@ const Navbar = () => {
                         </li>
                         <li>
                             <div className="brightness-control">
-                                <label htmlFor="brightness-slider">{t('navbar.brightness', 'Helligkeit')}</label>
+                                <label htmlFor="brightness-slider">
+                                    {t('navbar.brightness', 'Helligkeit')}
+                                </label>
                                 <input
                                     id="brightness-slider"
-                                    type="range" min="0.5" max="1.5" step="0.01"
+                                    type="range"
+                                    min="0.5"
+                                    max="1.5"
+                                    step="0.01"
                                     value={brightness}
-                                    onChange={e => setBrightness(Number(e.target.value))}
+                                    onChange={(e) => setBrightness(Number(e.target.value))}
                                 />
                                 <span>{Math.round(brightness * 100)}%</span>
                             </div>

@@ -1,6 +1,7 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.UserDTO;
+import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.RoleRepository;
@@ -15,6 +16,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.util.Optional;
 import java.util.List;
@@ -44,26 +46,44 @@ public class AdminUserController {
     private PasswordEncoder passwordEncoder;
 
     @GetMapping
-    public ResponseEntity<List<UserDTO>> getAllUsers() {
-        List<User> users = userRepository.findAll();
+    public ResponseEntity<List<UserDTO>> getAllUsers(Principal principal) {
+        // 1) Hole den eingeloggten Admin
+        User admin = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new RuntimeException("Logged in admin not found"));
+        if (admin.getCompany() == null) {
+            return ResponseEntity.badRequest().build(); // oder Meldung "Admin hat keine Firma"
+        }
 
-        // Anstatt die Felder von Hand zu mappen, verwenden wir den UserDTO(User)‐Konstruktor,
-        // der isPercentage + workPercentage bereits enthält.
+        // 2) Hol die Benutzer seiner Firma
+        Long companyId = admin.getCompany().getId();
+        List<User> users = userRepository.findByCompany_Id(companyId);
+
+        // 3) Mappen in DTO
         List<UserDTO> dtos = users.stream()
                 .map(UserDTO::new)
                 .collect(Collectors.toList());
-
         return ResponseEntity.ok(dtos);
     }
 
     @PostMapping
-    public ResponseEntity<?> addUser(@RequestBody User userBody) {
-        // Username-Check
+    public ResponseEntity<?> addUser(@RequestBody User userBody, Principal principal) {
+        // 1) Über principal.getName() den eingeloggten Admin holen
+        User admin = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new RuntimeException("Logged-in admin not found"));
+
+        // 2) Falls der Admin überhaupt eine Firma hat:
+        if (admin.getCompany() == null) {
+            return ResponseEntity.badRequest().body("Admin has no company assigned");
+        }
+        // Die Company holen
+        Company adminCompany = admin.getCompany();
+
+        // 3) Username-Check
         if (userRepository.existsByUsername(userBody.getUsername())) {
             return ResponseEntity.badRequest().body("Username already exists");
         }
 
-        // Passwort muss vorhanden sein
+        // 4) Passwort muss vorhanden sein
         if (userBody.getPassword() == null || userBody.getPassword().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Password is required");
         }
@@ -99,13 +119,17 @@ public class AdminUserController {
         // scheduleEffectiveDate
         userBody.setScheduleEffectiveDate(LocalDate.now());
 
+        // 5) Hier wird die Company des Admins gesetzt:
+        userBody.setCompany(admin.getCompany());
+
         // Speichern
         User saved = userRepository.save(userBody);
 
-        // Ausgabe mit dem umfangreichen DTO:
+        // Ausgabe (UserDTO)
         UserDTO dto = new UserDTO(saved);
         return ResponseEntity.ok(dto);
     }
+
 
     @PutMapping
     public ResponseEntity<?> updateUser(
@@ -208,9 +232,7 @@ public class AdminUserController {
         return ResponseEntity.ok(dto);
     }
 
-    /**
-     * Löscht den Benutzer inkl. Urlaubsanträgen und Korrekturanträgen
-     */
+
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity<?> deleteUser(@PathVariable Long id) {

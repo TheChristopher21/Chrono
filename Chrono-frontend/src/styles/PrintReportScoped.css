@@ -1,0 +1,97 @@
+/* =========================================================================
+   PrintReportScoped.css
+   Scope: .print-report-page.scoped-print
+   ========================================================================= */
+
+/* --------------------------- Variablen LIGHT --------------------------- */
+.print-report-page.scoped-print {
+    --primary:       #007bff;
+    --primary-dark:  #0061c0;
+    --border:        #d0d0d0;
+    --text:          #222;
+    --bg:            #fff;
+
+    font-family:     system-ui, sans-serif;
+    background:      var(--bg);
+    color:           var(--text);
+    padding:         20px;
+    max-width:       1000px;
+    margin:          0 auto;
+}
+
+/* --------------------------- Variablen DARK ---------------------------- */
+[data-theme="dark"] .print-report-page.scoped-print {
+    --bg:     #1f2127;
+    --text:   #e3e5eb;
+    --border: #4a4a4a;
+}
+
+/* --------------------------- Grundlayout ------------------------------- */
+.print-report-page.scoped-print .title {
+    margin: 0 0 6px;
+    text-align: center;
+}
+.print-report-page.scoped-print .sub {
+    margin: 0 0 20px;
+    text-align: center;
+}
+
+/* --------------------------- Tabelle ----------------------------------- */
+.print-report-page.scoped-print table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+.print-report-page.scoped-print thead th {
+    background: var(--primary);
+    color: #fff;
+    padding: 8px;
+    border: 1px solid var(--border);
+}
+.print-report-page.scoped-print tbody td {
+    padding: 6px;
+    border: 1px solid var(--border);
+    text-align: center;
+}
+.print-report-page.scoped-print tbody tr:nth-child(even) {
+    background: #f9f9f9;
+}
+.print-report-page.scoped-print .noRows {
+    text-align: center;
+    padding: 20px;
+}
+
+/* --------------------------- Buttons (Drucken/PDF) --------------------- */
+.print-report-page.scoped-print .btnRow {
+    margin-top: 20px;
+    text-align: center;
+}
+.print-report-page.scoped-print .btnRow button {
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    padding: 10px 18px;
+    margin: 0 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.print-report-page.scoped-print .btnRow button:hover {
+    background: var(--primary-dark);
+}
+
+/* --------------------------- Druckansicht ------------------------------ */
+@media print {
+    .print-report-page.scoped-print .btnRow {
+        display: none;
+    }
+    body {
+        margin: 0; /* entlastet den Druck */
+    }
+    .print-report-page.scoped-print {
+        box-shadow: none;
+        padding: 0;
+        max-width: 100%;
+        width: 100%;
+    }
+}

@@ -1,45 +1,50 @@
-// AdminDashboard.jsx
 import  { useState, useEffect } from 'react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
-import '../../styles/AdminDashboardScoped.css'; // ggf. Pfad anpassen
 
-// Importiere unsere eigenen Sub-Komponenten
+import '../../styles/AdminDashboardScoped.css';
+import jsPDF from "jspdf";
+import "jspdf-autotable";
+
 import AdminWeekSection from './AdminWeekSection';
 import AdminVacationRequests from './AdminVacationRequests';
 import AdminCorrectionsList from './AdminCorrectionsList';
 import EditTimeModal from './EditTimeModal';
 import PrintUserTimesModal from './PrintUserTimesModal';
 
-// Importiere VacationCalendarAdmin, falls die in /components liegt
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 
-// Importiere alle benötigten Funktionen aus unserem Utils-File
 import {
     getMondayOfWeek,
     formatLocalDateYMD,
     addDays,
-    computeDayTotalMinutes, formatTime, isLateTime
+    computeDayTotalMinutes,
+    formatTime
 } from './adminDashboardUtils';
 
 const AdminDashboard = () => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
     const { t } = useTranslation();
-// Falls du das irgendwo brauchst
-    const [allTracks, setAllTracks] = useState([]);
-    const [allVacations, setAllVacations] = useState([]);
-    const [allCorrections, setAllCorrections] = useState([]);
-    const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
-    const [expandedUsers, setExpandedUsers] = useState({});
-    const [users, setUsers] = useState([]);
-    const [, setDailyNotes] = useState({});
 
+    // State: Zeiterfassungen, Urlaube, Korrekturen, Nutzerliste
+    const [allTracks, setAllTracks]           = useState([]);
+    const [allVacations, setAllVacations]     = useState([]);
+    const [allCorrections, setAllCorrections] = useState([]);
+    const [users, setUsers]                   = useState([]);
+
+    // State: Wochen-Navigation
+    const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
+
+    // State: erweiterte Userblöcke
+    const [expandedUsers, setExpandedUsers] = useState({});
+
+    // State: EditTimeModal
     const [editModalVisible, setEditModalVisible] = useState(false);
-    const [editDate, setEditDate] = useState(null);
+    const [editDate, setEditDate]                 = useState(null);
     const [editTargetUsername, setEditTargetUsername] = useState('');
     const [editData, setEditData] = useState({
         workStart: '',
@@ -49,34 +54,28 @@ const AdminDashboard = () => {
         adminPassword: '',
         userPassword: ''
     });
-    const [weeklyBalances, setWeeklyBalances] = useState([]);
 
+    // State: PrintUserTimesModal
     const [printUserModalVisible, setPrintUserModalVisible] = useState(false);
-    const [printUser, setPrintUser] = useState('');
-    const [printUserStartDate, setPrintUserStartDate] = useState(formatLocalDateYMD(new Date()));
-    const [printUserEndDate, setPrintUserEndDate] = useState(formatLocalDateYMD(new Date()));
+    const [printUser, setPrintUser]                         = useState('');
+    const [printUserStartDate, setPrintUserStartDate]       = useState(formatLocalDateYMD(new Date()));
+    const [printUserEndDate,   setPrintUserEndDate]         = useState(formatLocalDateYMD(new Date()));
 
-    const defaultExpectedHours = 8;
+    // Sonstige
+    const [weeklyBalances, setWeeklyBalances] = useState([]);
+    const defaultExpectedHours                = 8;
 
-    // ---------------------------
-    // Daten laden (Users, Tracks, Vacations, Corrections)
-    // ---------------------------
+    //
+    // 1) Data Loading
+    //
     useEffect(() => {
         fetchUsers();
         fetchAllTracks();
         fetchAllVacations();
         fetchAllCorrections();
     }, []);
-    useEffect(() => {
-        async function fetchTrackingBalances() {
-            try {
-                const res = await api.get(`/api/admin/timetracking/admin/tracking-balances`);
-                setWeeklyBalances(res.data || []);
-            } catch (err) {
-                console.error("Fehler beim Laden der Tracking-Bilanzen:", err);
-            }
-        }
 
+    useEffect(() => {
         fetchTrackingBalances();
     }, []);
 
@@ -88,32 +87,15 @@ const AdminDashboard = () => {
             console.error('Error loading users', err);
         }
     }
-
     async function fetchAllTracks() {
         try {
             const res = await api.get('/api/admin/timetracking/all');
-            const validEntries = (res.data || []).filter(e => [1, 2, 3, 4].includes(e.punchOrder));
+            const validEntries = (res.data || []).filter(e => [1,2,3,4].includes(e.punchOrder));
             setAllTracks(validEntries);
-
-            // Notizen
-            const noteEntries = (res.data || []).filter(
-                e => e.punchOrder === 0 && e.dailyNote && e.dailyNote.trim().length > 0
-            );
-            if (noteEntries.length > 0) {
-                setDailyNotes(prev => {
-                    const merged = { ...prev };
-                    noteEntries.forEach(noteEntry => {
-                        const isoDate = noteEntry.startTime.slice(0, 10);
-                        merged[isoDate] = noteEntry.dailyNote;
-                    });
-                    return merged;
-                });
-            }
         } catch (err) {
             console.error('Error loading time entries', err);
         }
     }
-
     async function fetchAllVacations() {
         try {
             const res = await api.get('/api/vacation/all');
@@ -122,7 +104,6 @@ const AdminDashboard = () => {
             console.error('Error loading vacation requests', err);
         }
     }
-
     async function fetchAllCorrections() {
         try {
             const res = await api.get('/api/correction/all');
@@ -131,10 +112,18 @@ const AdminDashboard = () => {
             console.error('Error loading correction requests', err);
         }
     }
+    async function fetchTrackingBalances() {
+        try {
+            const res = await api.get('/api/admin/timetracking/admin/tracking-balances');
+            setWeeklyBalances(res.data || []);
+        } catch (err) {
+            console.error("Fehler beim Laden der Tracking-Bilanzen:", err);
+        }
+    }
 
-    // ---------------------------
-    // Navigation für Kalenderwoche
-    // ---------------------------
+    //
+    // 2) Week Navigation
+    //
     function handlePrevWeek() {
         setSelectedMonday(prev => addDays(prev, -7));
     }
@@ -148,9 +137,9 @@ const AdminDashboard = () => {
         }
     }
 
-    // ---------------------------
-    // Vacation-Handler
-    // ---------------------------
+    //
+    // 3) Vacation Handlers
+    //
     async function handleApproveVacation(id) {
         try {
             await api.post(`/api/vacation/approve/${id}`);
@@ -160,7 +149,6 @@ const AdminDashboard = () => {
             notify('Error approving vacation: ' + err.message);
         }
     }
-
     async function handleDenyVacation(id) {
         try {
             await api.post(`/api/vacation/deny/${id}`);
@@ -170,22 +158,21 @@ const AdminDashboard = () => {
         }
     }
 
-    // ---------------------------
-    // Corrections-Handler
-    // ---------------------------
-    async function handleApproveCorrection(id) {
+    //
+    // 4) Corrections Handlers
+    //
+    async function handleApproveCorrection(id, comment) {
         try {
-            await api.post(`/api/correction/approve/${id}`);
+            await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
             fetchAllCorrections();
         } catch (err) {
             console.error('Error approving correction', err);
             notify('Error approving correction: ' + err.message);
         }
     }
-
-    async function handleDenyCorrection(id) {
+    async function handleDenyCorrection(id, comment) {
         try {
-            await api.post(`/api/correction/deny/${id}`);
+            await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
             fetchAllCorrections();
         } catch (err) {
             console.error('Error denying correction', err);
@@ -193,28 +180,47 @@ const AdminDashboard = () => {
         }
     }
 
-    // ---------------------------
-    // Edit-Time-Modal
-    // ---------------------------
+    //
+    // 5) EditTimeModal (Bearbeiten / Neuen Tag anlegen)
+    //
     function openEditModal(targetUsername, dateObj, entries) {
+        // Minimales Default
         const defaultTime = '00:00';
-        const workStartEntry = entries.find(e => e.punchOrder === 1);
-        let workEndEntry = entries.find(e => e.punchOrder === 4);
-        if (!workEndEntry) {
-            workEndEntry = entries.find(e => e.punchOrder === 2);
+
+        // Versuche existierende Punches zu finden
+        const eStart = entries.find(e => e.punchOrder === 1);
+        let eEnd     = entries.find(e => e.punchOrder === 4);
+        if (!eEnd) {
+            // Fallback: falls 4 fehlt, nimm evtl punchOrder=2
+            eEnd = entries.find(e => e.punchOrder === 2);
         }
-        const workStartVal = workStartEntry ? formatTime(workStartEntry.startTime) : defaultTime;
-        const workEndVal = workEndEntry
-            ? formatTime(workEndEntry.endTime || workEndEntry.startTime)
+        const workStartVal = eStart ? formatTime(eStart.startTime) : defaultTime;
+        const workEndVal   = eEnd
+            ? formatTime(eEnd.endTime || eEnd.startTime)
             : defaultTime;
 
         setEditTargetUsername(targetUsername);
         setEditDate(dateObj);
         setEditData({
-            workStart: workStartVal,
-            breakStart: defaultTime,
-            breakEnd: defaultTime,
-            workEnd: workEndVal,
+            workStart:   workStartVal,
+            breakStart:  defaultTime,
+            breakEnd:    defaultTime,
+            workEnd:     workEndVal,
+            adminPassword: '',
+            userPassword: ''
+        });
+        setEditModalVisible(true);
+    }
+
+    /** NEU: "Zeiten Eintragen" - Modal öffnen, aber ohne vorhandene Einträge */
+    function openNewEntryModal(targetUsername, dateObj) {
+        setEditTargetUsername(targetUsername);
+        setEditDate(dateObj);
+        setEditData({
+            workStart:   '',
+            breakStart:  '',
+            breakEnd:    '',
+            workEnd:     '',
             adminPassword: '',
             userPassword: ''
         });
@@ -228,42 +234,46 @@ const AdminDashboard = () => {
             return;
         }
         const formattedDate = formatLocalDateYMD(editDate);
+
+        // Falls der Admin sein eigener Eintrag => AdminPasswort = userPassword
+        const finalAdminPassword =
+            (currentUser.username === editTargetUsername)
+                ? editData.userPassword
+                : editData.adminPassword;
+
         const params = {
             targetUsername: editTargetUsername,
-            date: formattedDate,
-            workStart: editData.workStart,
-            breakStart: editData.breakStart,
-            breakEnd: editData.breakEnd,
-            workEnd: editData.workEnd,
-            adminUsername: currentUser.username,
-            adminPassword:
-                currentUser.username !== editTargetUsername
-                    ? editData.adminPassword
-                    : editData.userPassword,
-            userPassword: editData.userPassword
+            date:           formattedDate,
+            workStart:      editData.workStart,
+            breakStart:     editData.breakStart,
+            breakEnd:       editData.breakEnd,
+            workEnd:        editData.workEnd,
+            adminUsername:  currentUser.username,
+            adminPassword:  finalAdminPassword,
+            userPassword:   editData.userPassword
         };
         try {
             await api.put('/api/timetracking/editDay', null, { params });
             setEditModalVisible(false);
-            fetchAllTracks();
+            fetchAllTracks(); // Daten neu laden
         } catch (err) {
             console.error('Edit failed', err);
             notify(t('adminDashboard.editFailed') + ': ' + err.message);
         }
     }
-
     function handleEditInputChange(e) {
         const { name, value } = e.target;
         setEditData(prev => ({ ...prev, [name]: value }));
     }
 
-    // ---------------------------
-    // Print-Modal
-    // ---------------------------
+    //
+    // 6) PrintUserTimesModal
+    //
     function openPrintUserModal(username) {
         setPrintUser(username);
-        setPrintUserStartDate(formatLocalDateYMD(new Date()));
-        setPrintUserEndDate(formatLocalDateYMD(new Date()));
+        const nowStr = formatLocalDateYMD(new Date());
+        setPrintUserStartDate(nowStr);
+        setPrintUserEndDate(nowStr);
         setPrintUserModalVisible(true);
     }
 
@@ -276,127 +286,93 @@ const AdminDashboard = () => {
                 entryDate <= new Date(printUserEndDate)
             );
         });
-
-        // Gruppieren
         const grouped = {};
         userEntries.forEach(entry => {
-            const entryDate = new Date(entry.startTime);
-            const ds = entryDate.toLocaleDateString("de-DE");
+            const ds = new Date(entry.startTime).toLocaleDateString("de-DE");
             if (!grouped[ds]) grouped[ds] = [];
             grouped[ds].push(entry);
         });
+        const sortedDates = Object.keys(grouped).sort(
+            (a,b) => new Date(a.split(".").reverse()) - new Date(b.split(".").reverse())
+        );
 
-        const sortedDates = Object.keys(grouped).sort((a, b) => new Date(a) - new Date(b));
+        // PDF
+        const doc = new jsPDF("p", "mm", "a4");
+        doc.setFontSize(14);
+        doc.text(`Zeitenbericht für ${printUser}`, 14, 15);
+        doc.setFontSize(11);
+        doc.text(`Zeitraum: ${printUserStartDate} – ${printUserEndDate}`, 14, 22);
 
-        // PDF erstellen
-        // (Genau wie in deinem Code)
-        import('jspdf').then(({ default: jsPDF }) => {
-            import('jspdf-autotable').then(({ default: autoTable }) => {
-                const doc = new jsPDF("p", "mm", "a4");
-                doc.setFontSize(12);
-                doc.text(`Zeiten für ${printUser}`, 14, 15);
+        const tableBody = sortedDates.map(dateStr => {
+            const dayEntries = grouped[dateStr].sort((a, b) => a.punchOrder - b.punchOrder);
+            const eStart  = dayEntries.find(e => e.punchOrder === 1);
+            const eBreakS = dayEntries.find(e => e.punchOrder === 2);
+            const eBreakE = dayEntries.find(e => e.punchOrder === 3);
+            const eEnd    = dayEntries.find(e => e.punchOrder === 4);
 
-                const tableBody = sortedDates.map(dateStr => {
-                    const dayEntries = grouped[dateStr].sort((a, b) => a.punchOrder - b.punchOrder);
-                    const eStart = dayEntries.find(e => e.punchOrder === 1);
-                    const eBreakS = dayEntries.find(e => e.punchOrder === 2);
-                    const eBreakE = dayEntries.find(e => e.punchOrder === 3);
-                    const eEnd = dayEntries.find(e => e.punchOrder === 4);
+            const safeTime = (entry, type = "start") => {
+                if (!entry) return "-";
+                if (type === "end" && entry.endTime) {
+                    return formatTime(entry.endTime);
+                }
+                return formatTime(entry.startTime);
+            };
+            const workStart  = safeTime(eStart, "start");
+            const breakStart = eBreakS ? safeTime(eBreakS) : "-";
+            const breakEnd   = eBreakE ? safeTime(eBreakE, "end") : "-";
+            const workEnd    = safeTime(eEnd, "end");
 
-                    function safeFormatTime(entry, which = 'start') {
-                        if (!entry) return '-';
-                        if (which === 'end' && entry.endTime) return formatTime(entry.endTime);
-                        if (which === 'start' && entry.startTime) return formatTime(entry.startTime);
-                        return '-';
-                    }
+            // Kannst hier noch dailyDiff oder Zeit-Spannen berechnen
+            const totalMins = computeDayTotalMinutes(dayEntries);
+            const totalStr  = `${totalMins} min`;
 
-                    const workStart = safeFormatTime(eStart, 'start');
-                    const breakStart = eBreakS
-                        ? (eBreakS.breakStart ? formatTime(eBreakS.breakStart) : formatTime(eBreakS.startTime))
-                        : '-';
-                    const breakEnd = eBreakE
-                        ? (eBreakE.breakEnd ? formatTime(eBreakE.breakEnd) : formatTime(eBreakE.startTime))
-                        : '-';
-                    const workEnd = safeFormatTime(eEnd, 'end');
-
-                    const dayMinutes = computeDayTotalMinutes(dayEntries);
-                    const sign = dayMinutes >= 0 ? "+" : "-";
-                    const diffText = `${sign}${Math.abs(dayMinutes)} min`;
-
-                    return [dateStr, workStart, breakStart, breakEnd, workEnd, diffText];
-                });
-
-                const head = [["Datum", "Work Start", "Break Start", "Break End", "Work End", "Diff"]];
-                autoTable(doc, {
-                    head,
-                    body: tableBody,
-                    startY: 25,
-                    styles: {
-                        fontSize: 9,
-                        cellPadding: 3
-                    },
-                    headStyles: {
-                        fillColor: [0, 123, 255],
-                        textColor: 255,
-                        fontStyle: "bold"
-                    },
-                    theme: "grid"
-                });
-
-                const dataUri = doc.output("datauristring");
-                const pdfBase64 = dataUri.split(",")[1];
-
-                // Versuche, PDF abzuspeichern (ElektroMain)
-                window.electron?.ipcRenderer.invoke("saveAndOpenPDF", pdfBase64).catch(err => {
-                    console.error("Fehler beim Drucken der Zeiten für", printUser, ":", err);
-                    notify("Fehler beim Drucken der Zeiten für " + printUser);
-                });
-                setPrintUserModalVisible(false);
-            });
+            return [dateStr, workStart, breakStart, breakEnd, workEnd, totalStr];
         });
-    }
-    const allEntries = allTracks
-        .filter(e => e.username === currentUser?.username)
-        .filter(e => {
-            const entryDate = new Date(e.startTime).toLocaleDateString("de-DE");
-            const selectedDate = selectedMonday.toLocaleDateString("de-DE");
-            return entryDate === selectedDate;
-        })
-        .map(e => ({
-            label: e.label || `Eintrag ${e.punchOrder}`,
-            time: e.endTime
-                ? `${formatTime(e.startTime)}–${formatTime(e.endTime)}`
-                : formatTime(e.startTime)
-        }));
 
+        doc.autoTable({
+            head: [["Datum", "Work-Start", "Break-Start", "Break-End", "Work-End", "Minuten"]],
+            body: tableBody,
+            startY: 30,
+            margin: { left: 14, right: 14 },
+            styles: { fontSize: 9, cellPadding: 3 },
+            headStyles: {
+                fillColor: [0, 123, 255],
+                textColor: 255,
+                halign: "center",
+                fontStyle: "bold"
+            },
+            bodyStyles: {
+                halign: "center"
+            },
+            didDrawPage: (data) => {
+                doc.text(`Seite ${data.pageNumber}`, doc.internal.pageSize.getWidth() - 14, 10, {
+                    align: "right"
+                });
+            }
+        });
+        doc.save(`zeiten_${printUser}_${printUserStartDate}_${printUserEndDate}.pdf`);
+        setPrintUserModalVisible(false);
+    }
+
+    //
+    // 7) Template
+    //
     return (
         <div className="admin-dashboard scoped-dashboard">
             <Navbar />
             <header className="dashboard-header">
                 <h2>{t('adminDashboard.titleWeekly')}</h2>
-                <p>{t('adminDashboard.loggedInAs')}: {currentUser?.username}</p>
-                <ul className="time-entry-list">
-                    {allEntries
-                        .filter(e => new Date(e.startTime).toLocaleDateString() === selectedMonday.toLocaleDateString())
-                        .map((e, idx) => (
-                            <li
-                                key={idx}
-                                className={`time-entry ${isLateTime(e.time) ? 'late-time' : ''}`}
-                            >
-                                <span className="entry-label">{e.label}</span>: {e.time}
-                            </li>
-                        ))}
-                </ul>
-
-
+                {currentUser && (
+                    <p>{t('adminDashboard.loggedInAs')} {currentUser.username}</p>
+                )}
             </header>
 
             <div className="dashboard-content">
-                {/* Linke Spalte: Wochen-Ansicht + Urlaubsanträge */}
+                {/* Linke Spalte */}
                 <div className="left-column">
+                    {/* Wochenübersicht */}
                     <AdminWeekSection
                         t={t}
-                        currentUser={currentUser}
                         weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
                         selectedMonday={selectedMonday}
                         handlePrevWeek={handlePrevWeek}
@@ -409,10 +385,12 @@ const AdminDashboard = () => {
                         defaultExpectedHours={defaultExpectedHours}
                         openEditModal={openEditModal}
                         openPrintUserModal={openPrintUserModal}
-                        weeklyBalances={weeklyBalances}  // ✅ DAS HAT DIR GEFELHT
+                        weeklyBalances={weeklyBalances}
+                        // NEU: die Funktion zum "Zeiten Eintragen" bei leeren Tagen:
+                        openNewEntryModal={openNewEntryModal}
                     />
 
-
+                    {/* VacationRequests */}
                     <AdminVacationRequests
                         t={t}
                         allVacations={allVacations}
@@ -421,8 +399,9 @@ const AdminDashboard = () => {
                     />
                 </div>
 
-                {/* Rechte Spalte: Korrekturanträge */}
+                {/* Rechte Spalte */}
                 <div className="right-column">
+                    {/* Korrekturanträge */}
                     <AdminCorrectionsList
                         t={t}
                         allCorrections={allCorrections}
@@ -432,15 +411,15 @@ const AdminDashboard = () => {
                 </div>
             </div>
 
-            {/* Kalender am Seitenende */}
-            <div className="full-width-calendar">
+            {/* Urlaubskalender */}
+            <div style={{ marginTop: '2rem' }}>
                 <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
                 <VacationCalendarAdmin
                     vacationRequests={allVacations.filter(v => v.approved)}
                 />
             </div>
 
-            {/* Edit-Modal (Zeiten anpassen) */}
+            {/* Modal: Zeiten bearbeiten/eintragen */}
             <EditTimeModal
                 t={t}
                 editModalVisible={editModalVisible}
@@ -451,7 +430,7 @@ const AdminDashboard = () => {
                 setEditModalVisible={setEditModalVisible}
             />
 
-            {/* PrintUser-Modal */}
+            {/* Modal: User-Zeiten drucken */}
             <PrintUserTimesModal
                 printUserModalVisible={printUserModalVisible}
                 printUser={printUser}

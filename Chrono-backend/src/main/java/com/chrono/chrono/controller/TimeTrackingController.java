@@ -5,12 +5,14 @@ import com.chrono.chrono.dto.TimeReportDTO;
 import com.chrono.chrono.dto.TimeTrackingResponse;
 import com.chrono.chrono.dto.AdminTimeTrackDTO;
 import com.chrono.chrono.services.TimeTrackingService;
+import com.chrono.chrono.services.UserService;
 import com.chrono.chrono.services.WorkScheduleService;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,6 +24,9 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/timetracking")
 public class TimeTrackingController {
+
+    @Autowired
+    private UserService userService; // NEU
 
     @Autowired
     private TimeTrackingService timeTrackingService;
@@ -37,9 +42,16 @@ public class TimeTrackingController {
      * prüft u.a. ob bei isPercentage=false schon WORK_END am heutigen Tag existiert.
      */
     @PostMapping("/punch")
-    public TimeTrackingResponse punch(@RequestParam String username) {
+    public TimeTrackingResponse punch(@RequestParam String username, Principal principal) {
+
+        // Nur prüfen, wenn wirklich jemand eingeloggtes stempelt
+        if (principal != null) {
+            userService.assertSameCompany(principal.getName(), username);
+        }
+
         return timeTrackingService.handleSmartPunch(username);
     }
+
 
     @PostMapping("/work-start")
     public TimeTrackingResponse workStart(@RequestParam String username) {
@@ -66,10 +78,19 @@ public class TimeTrackingController {
      * nach absteigendem StartTime sortiert.
      */
     @GetMapping("/history")
-    public List<TimeTrackingResponse> getUserHistory(@RequestParam String username) {
+    public List<TimeTrackingResponse> getUserHistory(
+            @RequestParam String username,
+            Principal principal
+    ) {
+        // 1) Hole den anfragenden User => check Firma
+        User requestingUser = userService.getUserByUsername(principal.getName());
+        // 2) Hole den targetUser => check, ob company übereinstimmt
+        User targetUser = userService.getUserByUsername(username);
+        if (!requestingUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
+            throw new RuntimeException("Keine Berechtigung auf fremde Firma");
+        }
         return timeTrackingService.getUserHistory(username);
     }
-
     /**
      * Reine Tagesberechnung: ermittelt, wie viele Minuten der User heute
      * gearbeitet hat und wie viele er laut 'percentage' haben sollte.

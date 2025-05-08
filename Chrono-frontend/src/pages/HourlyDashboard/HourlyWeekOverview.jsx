@@ -1,4 +1,3 @@
-// HourlyWeekOverview.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
 
@@ -7,13 +6,11 @@ import {
     formatLocalDate,
     formatDate,
     formatTime,
-    computeDayTotalMinutes,
     getMondayOfWeek
 } from './hourDashUtils';
 
 const HourlyWeekOverview = ({
                                 t,
-                                userProfile,
                                 allEntries,
                                 dailyNotes,
                                 noteEditVisibility,
@@ -28,36 +25,33 @@ const HourlyWeekOverview = ({
                                 handleManualPunch,
                                 punchMessage
                             }) => {
-    // Sicherstellen, dass selectedMonday korrekt gesetzt ist
-    const weekDates = selectedMonday ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i)) : [];
+    const weekDates = selectedMonday
+        ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
+        : [];
 
-    const weekStrs = weekDates.map(d => formatLocalDate(d));
-    const weeklyEntries = allEntries.filter(track => {
+    const weekStrs = weekDates.map((d) => formatLocalDate(d));
+    const weeklyEntries = allEntries.filter((track) => {
         const localDate = track.startTime.slice(0, 10);
         return weekStrs.includes(localDate);
     });
 
-    // dayMap => pro Tag Einträge
     const weeklyDayMap = {};
-    weeklyEntries.forEach(entry => {
+    weeklyEntries.forEach((entry) => {
         const ds = entry.startTime.slice(0, 10);
         if (!weeklyDayMap[ds]) weeklyDayMap[ds] = [];
         weeklyDayMap[ds].push(entry);
     });
 
-    // Gesamtsumme (aktuelle Woche)
     const weeklyHrs = Math.floor(weeklyTotalMins / 60);
     const weeklyRemMins = weeklyTotalMins % 60;
-
-    // Gesamtsumme (Monat)
     const monthlyHrs = Math.floor(monthlyTotalMins / 60);
     const monthlyRemMins = monthlyTotalMins % 60;
 
     function handlePrevWeek() {
-        setSelectedMonday(prev => addDays(prev, -7));
+        setSelectedMonday((prev) => addDays(prev, -7));
     }
     function handleNextWeek() {
-        setSelectedMonday(prev => addDays(prev, 7));
+        setSelectedMonday((prev) => addDays(prev, 7));
     }
     function handleWeekJump(e) {
         const picked = new Date(e.target.value);
@@ -68,33 +62,34 @@ const HourlyWeekOverview = ({
 
     return (
         <section className="weekly-overview">
-            <h3>Wochenübersicht</h3>
+            <h3>{t("weeklyOverview")}</h3>
 
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
 
-            {/* Manuelles Stempeln */}
             <div className="punch-section">
                 <h4>{t("manualPunchTitle")}</h4>
                 <button onClick={handleManualPunch}>{t("manualPunchButton")}</button>
             </div>
 
-            {/* Wochen-Navigation */}
             <div className="week-navigation">
-                <button onClick={handlePrevWeek}>← Vorige Woche</button>
+                <button onClick={handlePrevWeek}>← {t("prevWeek")}</button>
                 <input
                     type="date"
                     onChange={handleWeekJump}
                     value={formatLocalDate(selectedMonday)}
                 />
-                <button onClick={handleNextWeek}>Nächste Woche →</button>
+                <button onClick={handleNextWeek}>{t("nextWeek")} →</button>
             </div>
 
             <div className="weekly-monthly-totals">
-                <p>Gesamtstunden (aktuelle Woche): {weeklyHrs}h {weeklyRemMins}min</p>
-                <p>Gesamtstunden (Monat): {monthlyHrs}h {monthlyRemMins}min</p>
+                <p>
+                    {t("weeklyHours")}: {weeklyHrs}h {weeklyRemMins}min
+                </p>
+                <p>
+                    {t("monthlyHours")}: {monthlyHrs}h {monthlyRemMins}min
+                </p>
             </div>
 
-            {/* Tages-Übersicht */}
             <div className="week-display">
                 {weekDates?.map((dayObj, index) => {
                     const isoDay = formatLocalDate(dayObj);
@@ -104,77 +99,88 @@ const HourlyWeekOverview = ({
 
                     dayEntries.sort((a, b) => a.punchOrder - b.punchOrder);
 
-                    const workStart = dayEntries.find(e => e.punchOrder === 1);
-                    const breakStart = dayEntries.find(e => e.punchOrder === 2);
-                    const breakEnd = dayEntries.find(e => e.punchOrder === 3);
-                    const workEnd = dayEntries.find(e => e.punchOrder === 4);
+                    const workStart = dayEntries.find((e) => e.punchOrder === 1);
+                    const breakStart = dayEntries.find((e) => e.punchOrder === 2);
+                    const breakEnd = dayEntries.find((e) => e.punchOrder === 3);
+                    const workEnd = dayEntries.find((e) => e.punchOrder === 4);
 
                     return (
                         <div key={index} className="week-day-card">
                             <div className="week-day-header">
-                                <strong>{dayName}, {formattedDay}</strong>
+                                <strong>
+                                    {dayName}, {formattedDay}
+                                </strong>
                             </div>
 
                             <div className="week-day-content">
                                 {dayEntries.length === 0 ? (
-                                    <p>Keine Einträge</p>
+                                    <p>{t("noEntries")}</p>
                                 ) : (
                                     <ul>
                                         <li>
-                                            <strong>Work Start:</strong>{" "}
+                                            <strong>{t("workStart")}:</strong>{" "}
                                             {workStart ? formatTime(workStart.startTime) : "-"}
                                         </li>
                                         <li>
-                                            <strong>Break Start:</strong>{" "}
+                                            <strong>{t("breakStart")}:</strong>{" "}
                                             {breakStart
-                                                ? (breakStart.breakStart
+                                                ? breakStart.breakStart
                                                     ? formatTime(breakStart.breakStart)
-                                                    : formatTime(breakStart.startTime))
+                                                    : formatTime(breakStart.startTime)
                                                 : "-"}
                                         </li>
                                         <li>
-                                            <strong>Break End:</strong>{" "}
+                                            <strong>{t("breakEnd")}:</strong>{" "}
                                             {breakEnd
-                                                ? (breakEnd.breakEnd
+                                                ? breakEnd.breakEnd
                                                     ? formatTime(breakEnd.breakEnd)
-                                                    : formatTime(breakEnd.startTime))
+                                                    : formatTime(breakEnd.startTime)
                                                 : "-"}
                                         </li>
                                         <li>
-                                            <strong>Work End:</strong>{" "}
-                                            {workEnd ? formatTime(workEnd.endTime || workEnd.startTime) : "-"}
+                                            <strong>{t("workEnd")}:</strong>{" "}
+                                            {workEnd
+                                                ? formatTime(workEnd.endTime || workEnd.startTime)
+                                                : "-"}
                                         </li>
                                     </ul>
                                 )}
                             </div>
 
-                            {/* Notizen-Bereich */}
                             <div className="daily-note-section">
                                 {noteEditVisibility[isoDay] ? (
                                     <>
-                                        <textarea
-                                            value={dailyNotes[isoDay] || ''}
-                                            onChange={(e) =>
-                                                setDailyNotes({ ...dailyNotes, [isoDay]: e.target.value })
-                                            }
-                                        />
+                    <textarea
+                        value={dailyNotes[isoDay] || ""}
+                        onChange={(e) =>
+                            setDailyNotes({ ...dailyNotes, [isoDay]: e.target.value })
+                        }
+                    />
                                         <button
                                             onClick={() => {
                                                 handleSaveNote(isoDay);
-                                                setNoteEditVisibility({ ...noteEditVisibility, [isoDay]: false });
+                                                setNoteEditVisibility({
+                                                    ...noteEditVisibility,
+                                                    [isoDay]: false
+                                                });
                                             }}
                                         >
-                                            Speichern
+                                            {t("userManagement.button.save")}
                                         </button>
                                     </>
                                 ) : (
                                     <>
                                         <button
                                             onClick={() =>
-                                                setNoteEditVisibility({ ...noteEditVisibility, [isoDay]: true })
+                                                setNoteEditVisibility({
+                                                    ...noteEditVisibility,
+                                                    [isoDay]: true
+                                                })
                                             }
                                         >
-                                            {dailyNotes[isoDay] ? "Notizen bearbeiten" : "Notizen hinzufügen"}
+                                            {dailyNotes[isoDay]
+                                                ? t("editNotes")
+                                                : t("addNotes")}
                                         </button>
                                         {dailyNotes[isoDay] && (
                                             <div className="note-display">{dailyNotes[isoDay]}</div>
@@ -183,10 +189,9 @@ const HourlyWeekOverview = ({
                                 )}
                             </div>
 
-                            {/* Korrektur-Button */}
                             <div className="correction-button-row">
                                 <button onClick={() => openCorrectionModal(dayObj)}>
-                                    Korrektur anfragen
+                                    {t("submitCorrectionRequest")}
                                 </button>
                             </div>
                         </div>
@@ -196,7 +201,6 @@ const HourlyWeekOverview = ({
         </section>
     );
 };
-
 
 HourlyWeekOverview.propTypes = {
     t: PropTypes.func.isRequired,

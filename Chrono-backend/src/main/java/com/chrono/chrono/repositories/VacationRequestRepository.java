@@ -17,5 +17,6 @@ public interface VacationRequestRepository extends JpaRepository<VacationRequest
     @Transactional
     @Query("DELETE FROM VacationRequest vr WHERE vr.user = :user")
     void deleteByUser(@Param("user") User user);
+    List<VacationRequest> findByUser_Company_Id(Long companyId);
 
 }

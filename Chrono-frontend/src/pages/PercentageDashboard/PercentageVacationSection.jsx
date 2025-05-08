@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import VacationCalendar from '../../components/VacationCalendar';
-import '../../styles/PercentageDashboardScoped.css';
 
 const PercentageVacationSection = ({
                                        t,

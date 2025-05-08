@@ -1,199 +1,463 @@
 /* =========================================================================
-   UserDashboardScoped.css · final · 20‑Apr‑2025
+   UserDashboardScoped.css
+   Scope: .user-dashboard.scoped-dashboard
    ========================================================================= */
-.scoped-dashboard{
-    --c-pri:#475bff;--c-pri-dim:#6b7cff;--c-warn:#ffc741;
-    --c-text:#1e1f22;--c-muted:#595e6b;--c-bg:#f4f6ff;--c-card:#fff;
-    --c-border:#d5d8e5;--c-line:#e7e8f1;
-    --u-radius:14px;--u-gap:clamp(1.5rem,3vw,2.2rem);
-    --u-shadow-sm:0 1px 4px rgba(0,0,0,.06);
-    --u-shadow-lg:0 20px 34px rgba(0,0,0,.14);
-    --u-dur:.26s;--u-ease:cubic-bezier(.4,.2,.2,1);
-}
-[data-theme="dark"] .scoped-dashboard{
-    --c-text:#e5e7ec;--c-muted:#a0a4b4;--c-bg:#15171c;--c-card:#1f2127;
-    --c-border:#373b46;--c-line:#2c2f37;
-    --u-shadow-sm:0 1px 4px rgba(0,0,0,.45);
-    --u-shadow-lg:0 20px 34px rgba(0,0,0,.75);
+
+/* --------------------------- Variablen LIGHT --------------------------- */
+.user-dashboard.scoped-dashboard {
+    --c-pri:        #475bff;
+    --c-pri-dim:    #6b7cff;
+    --c-warn:       #ffc741;
+
+    --c-text:       #1e1f22;
+    --c-muted:      #595e6b;
+    --c-bg:         #15171c;    /* Nur wenn du den ganzen Body dunkler willst,
+                                kannst du's hier auf #15171c anheben.
+                                Falls du Light Mode by default willst,
+                                nimm #f4f6ff oder #fff. */
+    --c-card:       #ffffff;
+    --c-border:     #d5d8e5;
+    --c-line:       #e7e8f1;
+
+    --u-radius:     14px;
+    --u-gap:        clamp(1.5rem, 3vw, 2.2rem);
+    --u-shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.06);
+    --u-shadow-lg:  0 20px 34px rgba(0, 0, 0, 0.14);
+
+    --u-dur:        0.26s;
+    --u-ease:       cubic-bezier(0.4, 0.2, 0.2, 1);
+
+    min-height:     100vh;
+    font-family:    'Poppins', system-ui, sans-serif;
+    background:     var(--c-bg);
+    color:          var(--c-text);
+    transition:
+            background var(--u-dur) var(--u-ease),
+            color      var(--u-dur) var(--u-ease);
 }
 
-/* ---------------- Container / Typo ------------------------------------ */
-.scoped-dashboard{
-    font-family:'Poppins',system-ui,sans-serif;
-    background:var(--c-bg);color:var(--c-text);
-}
-.scoped-dashboard .content-wrapper{
-    width:100%;max-width:1440px;margin-inline:auto;
-    padding-inline:clamp(1rem,4vw,3rem);
-}
-.scoped-dashboard h1{font-size:clamp(2rem,3.5vw,2.6rem);}
-.scoped-dashboard h2{font-size:clamp(1.5rem,3vw,2rem);}
-.scoped-dashboard h3{font-size:clamp(1.18rem,2.2vw,1.35rem);}
-.scoped-dashboard h4{font-size:clamp(1.05rem,1.6vw,1.15rem);}
+/* --------------------------- Variablen DARK ----------------------------
+   Falls du Dark Mode / Light Mode über [data-theme="dark"] togglest:
+*/
+[data-theme="dark"] .user-dashboard.scoped-dashboard {
+    --c-text:   #e5e7ec;
+    --c-muted:  #a0a4b4;
+    --c-bg:     #15171c;
+    --c-card:   #1f2127;
+    --c-border: #373b46;
+    --c-line:   #2c2f37;
 
-/* ---------------- Punch‑Box ------------------------------------------ */
-.scoped-dashboard .punch-section{
-    background:var(--c-card);border:1px solid var(--c-border);
-    border-radius:var(--u-radius);padding:2rem 1.6rem;
-    margin-block:var(--u-gap);text-align:center;box-shadow:var(--u-shadow-sm);
-}
-.scoped-dashboard .punch-box{
-    background:var(--c-card);border:1px solid var(--c-border);
-    border-radius:var(--u-radius);padding:2rem 1.6rem;text-align:center;
-    box-shadow:var(--u-shadow-sm);
-}
-.scoped-dashboard .punch-section h3{margin:0 0 1rem;font-size:1.05rem;font-weight:700;}
-
-/* ---------------- Week‑Overview Grid --------------------------------- */
-.scoped-dashboard .week-display{
-    display:grid;gap:1.8rem;
-    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
-}
-.scoped-dashboard .day-card{
-    background:var(--c-card);border:1px solid var(--c-border);
-    border-radius:var(--u-radius);padding:1.4rem 1.2rem 1.7rem;
-    box-shadow:var(--u-shadow-sm);display:flex;flex-direction:column;
-}
-.scoped-dashboard .day-card-header{
-    display:flex;justify-content:space-between;align-items:center;margin-bottom:.8rem;
-}
-.scoped-dashboard .expected-hours{color:var(--c-muted);font-size:.82rem;}
-.scoped-dashboard .time-entry-list{list-style:none;padding:0;margin:0 0 1.2rem;}
-.scoped-dashboard .entry-label{font-weight:600;font-size:.88rem;}
-.scoped-dashboard .daily-diff{font-weight:700;margin-top:.25rem;}
-
-/* ---------------- Buttons (global) ----------------------------------- */
-.scoped-dashboard button{
-    border:none;border-radius:var(--u-radius);cursor:pointer;
-    font-weight:600;background:var(--c-pri);color:#fff;
-    transition:background var(--u-dur)var(--u-ease),transform var(--u-dur)var(--u-ease);
-}
-.scoped-dashboard button:hover{background:var(--c-pri-dim);transform:translateY(-3px);}
-.scoped-dashboard button:focus-visible{outline:3px solid var(--c-pri);outline-offset:2px;}
-.scoped-dashboard .correction-button{padding:.55rem 1.25rem;font-size:.84rem;margin-top:auto;}
-
-/* ---------------- Vacation‑Section Stretch --------------------------- */
-.scoped-dashboard .vacation-calendar-section{margin-top:var(--u-gap);}
-.scoped-dashboard .vacation-calendar-section,
-.scoped-dashboard .vacation-calendar-section .scoped-vacation,
-.scoped-dashboard .vacation-calendar-section .vacation-calendar,
-.scoped-dashboard .vacation-calendar-section .react-calendar{
-    width:100%;max-width:none;
+    --u-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.45);
+    --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.75);
 }
 
-/* ---------------- Correction‑Panel ----------------------------------- */
-.scoped-dashboard .correction-panel{margin-top:var(--u-gap);}
-.scoped-dashboard .corrections-header{
-    background:var(--c-warn);                 /* light mode = gelb */
-    color:#1f1f1f;font-weight:700;
-    padding:1rem 1.6rem;border-radius:var(--u-radius) var(--u-radius) 0 0;
-    display:flex;justify-content:space-between;cursor:pointer;
+/* =========================================================================
+   1) Dashboard Header + Info
+   ========================================================================= */
+.user-dashboard.scoped-dashboard .dashboard-header {
+    display: flex;
+    flex-direction: column; /* Damit alles untereinander steht */
+    align-items: center;    /* Zentrieren horizontal */
+    gap: 0.5rem;
+    margin-bottom: var(--u-gap);
+    padding-block: 0.5rem;
+    text-align: center; /* Damit auch der Text selbst zentriert ist */
 }
-.scoped-dashboard .corrections-content{
-    background:var(--c-card);border:1px solid var(--c-border);
-    border-top:none;border-radius:0 0 var(--u-radius) var(--u-radius);
-    padding:1.6rem;box-shadow:var(--u-shadow-sm);
+.user-dashboard.scoped-dashboard .dashboard-header h2 {
+    font-size: clamp(1.5rem, 3vw, 2rem);
+    margin: 0;
+}
+.user-dashboard.scoped-dashboard .personal-info {
+    display: flex;
+    gap: 1.6rem;
+    flex-wrap: wrap;
+}
+.user-dashboard.scoped-dashboard .personal-info {
+    display: flex;
+    gap: 1.6rem;
+    flex-wrap: wrap;
+    justify-content: center; /* Ebenfalls zentrieren */
+    margin-top: 0.5rem;
+}
+.user-dashboard.scoped-dashboard .personal-info p {
+    margin: 0;
+    font-size: 0.9rem;
+    color: var(--c-muted);
+    /* Falls du sie in einer Zeile haben willst: kein block-Break */
+}
+/* =========================================================================
+   2) Global Button Styles
+   ========================================================================= */
+.user-dashboard.scoped-dashboard button {
+    border: none;
+    border-radius: var(--u-radius);
+    cursor: pointer;
+    font-weight: 600;
+    transition:
+            background var(--u-dur) var(--u-ease),
+            transform var(--u-dur) var(--u-ease);
+    font-size: 0.88rem;
+    padding: 0.6rem 1rem;
+    background: var(--c-pri);
+    color: #fff;
+}
+.user-dashboard.scoped-dashboard button:hover {
+    background: var(--c-pri-dim);
+    transform: translateY(-2px);
 }
 
-/* ---------------- Modal (unchanged) ---------------------------------- */
-.scoped-dashboard .modal-overlay{
-    position:fixed;inset:0;background:rgba(0,0,0,.55);
-    display:flex;align-items:center;justify-content:center;z-index:3000;
+/* Falls du separate Stile für "secondary" Buttons willst: */
+.user-dashboard.scoped-dashboard button.secondary {
+    background: #666;
 }
-.scoped-dashboard .modal-content{
-    width:90%;max-width:520px;background:var(--c-card);border:1px solid var(--c-border);
-    border-radius:var(--u-radius);padding:2.4rem;box-shadow:var(--u-shadow-lg);color:inherit;
-}
-.scoped-dashboard input,.scoped-dashboard textarea{
-    width:100%;padding:.7rem .9rem;border:1px solid var(--c-border);
-    border-radius:10px;background:inherit;color:inherit;
+.user-dashboard.scoped-dashboard button.secondary:hover {
+    background: #555;
 }
 
-/* ----------  Date‑Picker (Week & Corrections)  ------------------------ */
-.scoped-dashboard .week-navigation input[type="date"],
-.scoped-dashboard .corrections-nav input[type="date"]{
-    width:auto;min-width:150px;
-    padding:.55rem .8rem;font-size:.92rem;cursor:pointer;
-    border:1px solid var(--c-border);border-radius:var(--u-radius);
-    background:var(--c-card);color:var(--c-text);
-    transition:background var(--u-dur)var(--u-ease),color var(--u-dur)var(--u-ease),
-    border-color var(--u-dur)var(--u-ease);
-}
-[data-theme="dark"] .scoped-dashboard .week-navigation input[type="date"],
-[data-theme="dark"] .scoped-dashboard .corrections-nav input[type="date"]{
-    background:#2c2f37;border-color:#484A4D;color:#e5e7ec;
-}
-.scoped-dashboard .corrections-list li{
-    background:var(--c-card);
-    padding:.7rem 0;border-bottom:1px solid var(--c-line);
-    font-size:.9rem;color:inherit;
-}
-
-
-/* ---------------- Correction Modals ---------------------------- */
-.scoped-dashboard .correction-modal{
-    position:fixed;
-    top: 10%;
+/* =========================================================================
+   3) Punch-Message (Popup)
+   ========================================================================= */
+.user-dashboard.scoped-dashboard .punch-message {
+    position: fixed;
+    top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background:var(--c-card);
-    color: var(--c-text);
-    padding: 20px;
-    z-index: 10000;
-    box-shadow: var(--u-shadow-lg);
-    border-radius: var(--u-radius);
-    width: 90%;
-    max-width: 600px;
-}
-
-.scoped-dashboard .correction-modal .modal-header{
-    font-weight: 600;
-    font-size: 1.1rem;
-    margin-bottom: 1rem;
-}
-.scoped-dashboard .correction-modal .form-group{
-    margin-bottom: 1rem;
-}
-.scoped-dashboard .correction-modal input, .scoped-dashboard .correction-modal textarea{
-    width: 100%;
-    padding: 8px;
-    font-size: 1rem;
-}
-.scoped-dashboard .correction-modal .modal-buttons button{
-    margin-top: 1rem;
-}
-/* Standardmäßige Popup-Stil-Definition */
-.punch-message {
-    position: fixed;
-    top: 20px;  /* Sicherstellen, dass es oben erscheint */
-    left: 50%;
-    transform: translateX(-50%); /* Horizontale Zentrierung */
-    background-color: #2ecc71;  /* Grüner Hintergrund für Bestätigungen */
-    color: white;  /* Weiße Schriftfarbe */
+    background-color: #2ecc71;
+    color: #fff;
     padding: 12px 24px;
     border-radius: 8px;
     font-weight: bold;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 9999; /* Höchster z-index, damit es immer oben ist */
-    opacity: 0; /* Anfangs unsichtbar */
-    animation: fadeInOut 4s ease-in-out forwards; /* Animation für das Ein- und Ausblenden */
+    z-index: 9999;
+    opacity: 0;
+    animation: fadeInOut 4s ease-in-out forwards;
 }
-
-/* Animation für das Ein- und Ausblenden der Nachricht */
 @keyframes fadeInOut {
     0% {
         opacity: 0;
-        transform: translateX(-50%) translateY(-10px); /* Startposition */
+        transform: translateX(-50%) translateY(-10px);
     }
     10% {
         opacity: 1;
-        transform: translateX(-50%) translateY(0); /* Endposition (sichtbar und in Position) */
+        transform: translateX(-50%) translateY(0);
     }
     90% {
         opacity: 1;
     }
     100% {
         opacity: 0;
-        transform: translateX(-50%) translateY(-10px); /* Ende der Animation (unsichtbar) */
+        transform: translateX(-50%) translateY(-10px);
+    }
+}
+
+/* =========================================================================
+   4) Punch-Section (Manuelles Einstempeln)
+   ========================================================================= */
+.user-dashboard.scoped-dashboard .punch-section {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    padding: 1.6rem;
+    box-shadow: var(--u-shadow-sm);
+    margin-bottom: var(--u-gap);
+    text-align: center;
+}
+.user-dashboard.scoped-dashboard .punch-section h3 {
+    margin: 0 0 1rem;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+/* =========================================================================
+   5) Wochenübersicht, Zeitcards
+   ========================================================================= */
+.user-dashboard.scoped-dashboard .time-tracking-section {
+    margin-bottom: var(--u-gap);
+}
+.user-dashboard.scoped-dashboard .time-tracking-section h3 {
+    text-align: center;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+.user-dashboard.scoped-dashboard .week-navigation {
+    display: flex;
+    justify-content: center;  /* Zentriert Links und Datum und RechtsButton */
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1.2rem;
+}
+.user-dashboard.scoped-dashboard .week-navigation button {
+    /* inherits from global button style, can override if needed */
+}
+.user-dashboard.scoped-dashboard .week-navigation input[type="date"] {
+    text-align: center; /* Inhalt (Datum) zentrieren */
+    width: auto;
+    min-width: 120px;
+    padding: 0.5rem 0.8rem;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    background: var(--c-card);
+    color: var(--c-text);
+    transition:
+            background var(--u-dur) var(--u-ease),
+            color      var(--u-dur) var(--u-ease),
+            border-color var(--u-dur) var(--u-ease);
+}
+.user-dashboard.scoped-dashboard .time-entry-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.2rem;
+}
+.user-dashboard.scoped-dashboard .week-display {
+    display: grid;
+    gap: 1.8rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.user-dashboard.scoped-dashboard .day-card {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    padding: 1.4rem 1.2rem 1.7rem;
+    box-shadow: var(--u-shadow-sm);
+    display: flex;
+    flex-direction: column;
+}
+.user-dashboard.scoped-dashboard .day-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.8rem;
+}
+.user-dashboard.scoped-dashboard .day-card-header h4 {
+    font-size: 0.92rem;
+    margin: 0;
+    font-weight: 600;
+}
+.user-dashboard.scoped-dashboard .expected-hours {
+    color: var(--c-muted);
+    font-size: 0.82rem;
+    margin-left: 0.4rem;
+}
+.user-dashboard.scoped-dashboard .daily-diff {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--c-pri);
+}
+.user-dashboard.scoped-dashboard .no-entries {
+    font-size: 0.88rem;
+    color: var(--c-muted);
+    margin-bottom: 1.2rem;
+}
+
+/* Correction-Button */
+.user-dashboard.scoped-dashboard .correction-button {
+    margin-top: auto;
+    background: var(--c-warn);
+    color: #1f1f1f;
+    box-shadow: var(--u-shadow-sm);
+    font-size: 0.84rem;
+}
+.user-dashboard.scoped-dashboard .correction-button:hover {
+    background: #ffd966;
+}
+
+/* Späte Zeit */
+.user-dashboard.scoped-dashboard .late-time {
+    color: #e74c3c;
+    font-weight: 600;
+}
+
+/* =========================================================================
+   6) VacationCalendar Section
+   ========================================================================= */
+.user-dashboard.scoped-dashboard .vacation-calendar-section {
+    margin-bottom: var(--u-gap);
+}
+.user-dashboard.scoped-dashboard .vacation-calendar-section,
+.user-dashboard.scoped-dashboard .vacation-calendar-section .scoped-vacation,
+.user-dashboard.scoped-dashboard .vacation-calendar-section .vacation-calendar,
+.user-dashboard.scoped-dashboard .vacation-calendar-section .react-calendar {
+    width: 100%;
+    max-width: none;
+}
+
+/* =========================================================================
+   7) Corrections Panel
+   ========================================================================= */
+.user-dashboard.scoped-dashboard .correction-panel {
+    margin-top: var(--u-gap);
+}
+.user-dashboard.scoped-dashboard .corrections-header {
+    background: var(--c-warn);
+    color: #1f1f1f;
+    font-weight: 700;
+    padding: 1rem 1.6rem;
+    border-radius: var(--u-radius) var(--u-radius) 0 0;
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+}
+.user-dashboard.scoped-dashboard .corrections-content {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-top: none;
+    border-radius: 0 0 var(--u-radius) var(--u-radius);
+    padding: 1.6rem;
+    box-shadow: var(--u-shadow-sm);
+}
+.user-dashboard.scoped-dashboard .corrections-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+}
+.user-dashboard.scoped-dashboard .week-label {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--c-text);
+}
+.user-dashboard.scoped-dashboard .toggle-all-button {
+    margin-bottom: 1rem;
+}
+.user-dashboard.scoped-dashboard .corrections-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+.user-dashboard.scoped-dashboard .corrections-list li {
+    padding: 0.7rem 0;
+    border-bottom: 1px solid var(--c-line);
+    font-size: 0.9rem;
+    color: inherit;
+}
+.user-dashboard.scoped-dashboard .approved {
+    background-color: #2ecc71;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    margin-left: 0.3rem;
+    font-size: 0.8rem;
+}
+.user-dashboard.scoped-dashboard .denied {
+    background-color: #e74c3c;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    margin-left: 0.3rem;
+    font-size: 0.8rem;
+}
+.user-dashboard.scoped-dashboard .pending {
+    background-color: #f39c12;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    margin-left: 0.3rem;
+    font-size: 0.8rem;
+}
+.user-dashboard.scoped-dashboard .admin-comment {
+    color: var(--c-muted);
+    font-style: italic;
+}
+
+/* =========================================================================
+   8) Monthly Summary Table
+   ========================================================================= */
+.user-dashboard.scoped-dashboard .monthly-all {
+    margin-bottom: var(--u-gap);
+}
+.user-dashboard.scoped-dashboard .daily-summary-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+.user-dashboard.scoped-dashboard .daily-summary-table th,
+.user-dashboard.scoped-dashboard .daily-summary-table td {
+    border: 1px solid var(--c-line);
+    padding: 0.5rem 0.7rem;
+}
+.user-dashboard.scoped-dashboard .daily-summary-table th {
+    background: var(--c-surface);
+    font-weight: 600;
+}
+
+/* =========================================================================
+   9) Print-Report
+   ========================================================================= */
+.user-dashboard.scoped-dashboard .print-report-container {
+    margin-bottom: var(--u-gap);
+}
+.user-dashboard.scoped-dashboard .print-report-container button {
+    /* inherits from global .user-dashboard.scoped-dashboard button style */
+}
+
+/* =========================================================================
+   10) Modal Overlay & Content
+   ========================================================================= */
+.user-dashboard.scoped-dashboard .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+}
+.user-dashboard.scoped-dashboard .modal-content {
+    width: 90%;
+    max-width: 520px;
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    padding: 2.4rem;
+    box-shadow: var(--u-shadow-lg);
+    color: inherit;
+}
+.user-dashboard.scoped-dashboard .modal-content .form-group {
+    margin-bottom: 1rem;
+}
+.user-dashboard.scoped-dashboard .modal-content .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+}
+.user-dashboard.scoped-dashboard .modal-content .form-group input,
+.user-dashboard.scoped-dashboard .modal-content .form-group textarea {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    background: inherit;
+    color: inherit;
+    font: inherit;
+}
+.user-dashboard.scoped-dashboard .modal-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.4rem;
+}
+.user-dashboard.scoped-dashboard .modal-buttons button {
+    /* inherits from global button style, but we can override for secondary: */
+}
+.user-dashboard.scoped-dashboard .modal-buttons button[type="button"] {
+    background: #666;
+    color: #fff;
+}
+.user-dashboard.scoped-dashboard .modal-buttons button[type="button"]:hover {
+    background: #555;
+}
+
+/* =========================================================================
+   11) Reduced Motion
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+    .user-dashboard.scoped-dashboard *,
+    .user-dashboard.scoped-dashboard *::before,
+    .user-dashboard.scoped-dashboard *::after {
+        transition: none !important;
+        animation: none !important;
     }
 }

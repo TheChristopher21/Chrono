@@ -2,6 +2,8 @@ package com.chrono.chrono.controller;
 
 import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.services.VacationService;
+import com.chrono.chrono.services.UserService; // NEU import, um userService zu nutzen
+import com.chrono.chrono.entities.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +17,9 @@ public class VacationController {
 
     @Autowired
     private VacationService vacationService;
+
+    @Autowired
+    private UserService userService; // NEU
 
     @PostMapping("/create")
     public VacationRequest createVacation(@RequestParam String username,
@@ -40,25 +45,28 @@ public class VacationController {
         return vacationService.adminCreateVacation(adminUsername, adminPassword, username, start, end, halfDay, usesOvertime);
     }
 
-
     @GetMapping("/my")
     public List<VacationRequest> getMyVacations(Principal principal) {
+        // principal.getName() => logged in user
+        // Hole user + company => filter in Service
         return vacationService.getUserVacations(principal.getName());
     }
 
     @GetMapping("/all")
-    public List<VacationRequest> getAllVacations() {
-        return vacationService.getAllVacations();
+    public List<VacationRequest> getAllVacations(Principal principal) {
+        User adminUser = userService.getUserByUsername(principal.getName());
+        return vacationService.getAllVacationsInCompany(adminUser.getCompany().getId());
     }
 
     @PostMapping("/approve/{id}")
-    public VacationRequest approve(@PathVariable Long id) {
-        return vacationService.approveVacation(id);
+    public VacationRequest approve(@PathVariable Long id, Principal principal) {
+        // vacationService prüft, ob der Request in adminUser.getCompany() liegt
+        return vacationService.approveVacation(id, principal.getName());
     }
 
     @PostMapping("/deny/{id}")
-    public VacationRequest deny(@PathVariable Long id) {
-        return vacationService.denyVacation(id);
+    public VacationRequest deny(@PathVariable Long id, Principal principal) {
+        return vacationService.denyVacation(id, principal.getName());
     }
 
     @DeleteMapping("/{id}")

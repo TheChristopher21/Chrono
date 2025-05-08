@@ -1,0 +1,405 @@
+/* =========================================================================
+   LandingPageScoped.css
+   scope: .landing-page.scoped-landing
+   ========================================================================= */
+
+/* --------------------------- LIGHT MODE Vars ----------------------------- */
+.landing-page.scoped-landing {
+    --c-bg:     #f0f2f5;
+    --c-card:   #ffffff;
+    --c-text:   #2e2e2e;
+    --c-border: #d1d5db;
+
+    --c-primary: #5a67d8;
+    --c-primary-hover: #434190;
+
+    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --radius: 10px;
+    --transition: 0.3s;
+    --font: 'Poppins', system-ui, sans-serif;
+
+    background: var(--c-bg);
+    color: var(--c-text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    font-family: var(--font);
+}
+
+/* --------------------------- DARK MODE Vars ------------------------------ */
+[data-theme="dark"] .landing-page.scoped-landing {
+    --c-bg:     #18191a;
+    --c-card:   #252627;
+    --c-text:   #e5e7ec;
+    --c-border: #474a4f;
+    --c-primary: #5a67d8;
+    --c-primary-hover: #434190;
+}
+
+/* =========================================================================
+   Layout
+   ========================================================================= */
+.landing-page.scoped-landing header.landing-hero {
+    display: flex;
+    padding: 2rem;
+    gap: 2rem;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+}
+
+.landing-page.scoped-landing .hero-text {
+    max-width: 500px;
+}
+
+.landing-page.scoped-landing .hero-text h1 {
+    font-size: 2.4rem;
+    margin: 0 0 1rem;
+}
+
+.landing-page.scoped-landing .hero-text p {
+    font-size: 1.2rem;
+    margin-bottom: 1.5rem;
+}
+
+.landing-page.scoped-landing .cta-buttons {
+    display: flex;
+    gap: 1rem;
+}
+
+.landing-page.scoped-landing .cta-buttons .btn {
+    text-decoration: none;
+    padding: 0.8rem 1.2rem;
+    border-radius: var(--radius);
+    transition: background var(--transition), transform 0.2s;
+    font-weight: 600;
+}
+
+.landing-page.scoped-landing .btn.primary {
+    background: var(--c-primary);
+    color: #fff;
+}
+
+.landing-page.scoped-landing .btn.primary:hover {
+    background: var(--c-primary-hover);
+    transform: translateY(-2px);
+}
+
+.landing-page.scoped-landing .btn.secondary {
+    background: #4a5568; /* dunkles Grau als Bsp. */
+    color: #fff;
+}
+
+.landing-page.scoped-landing .btn.secondary:hover {
+    background: #2d3748;
+    transform: translateY(-2px);
+}
+
+.landing-page.scoped-landing .hero-media img {
+    max-width: 300px;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+/* Features */
+.landing-page.scoped-landing .features-section {
+    padding: 2rem;
+    text-align: center;
+}
+
+.landing-page.scoped-landing .features-section h2 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+}
+
+.landing-page.scoped-landing .feature-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.landing-page.scoped-landing .feature-item {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    width: 220px;
+    transition: transform 0.2s;
+}
+
+.landing-page.scoped-landing .feature-item:hover {
+    transform: translateY(-2px);
+}
+
+.landing-page.scoped-landing .feature-item img {
+    max-width: 50px;
+    margin-bottom: 1rem;
+}
+
+.landing-page.scoped-landing .feature-item h3 {
+    margin: 0 0 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* Video */
+.landing-page.scoped-landing .video-section {
+    padding: 2rem;
+    text-align: center;
+}
+
+.landing-page.scoped-landing .video-section h2 {
+    font-size: 2rem;
+    margin-bottom: 1.5rem;
+}
+
+.landing-page.scoped-landing .video-container {
+    max-width: 760px;
+    margin: 0 auto;
+    border: 2px solid var(--c-border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+/* Footer */
+.landing-page.scoped-landing .landing-footer {
+    margin-top: auto;
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.85rem;
+    color: #888;
+}
+
+/* =========================================================================
+   Responsive
+   ========================================================================= */
+@media (max-width: 768px) {
+    .landing-page.scoped-landing header.landing-hero {
+        flex-direction: column;
+        text-align: center;
+    }
+    .landing-page.scoped-landing .hero-media img {
+        max-width: 80%;
+    }
+    .landing-page.scoped-landing .feature-list {
+        flex-direction: column;
+        align-items: center;
+    }
+    .landing-page.scoped-landing .video-container {
+        width: 90%;
+    }
+}
+/* =========================================================================
+   LandingPageScoped.css – Zusätzliche Styles
+   ========================================================================= */
+
+/* Mit .flow-section kannst du optisch Abstände zwischen den Sektionen steuern */
+.flow-section {
+    padding: 2rem;
+    text-align: center;
+}
+
+/* --------------------- Steps / 3-Steps-Grid --------------------- */
+.steps-section .steps-grid {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.step-item {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 1.5rem;
+    width: 220px;
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.step-item:hover {
+    transform: translateY(-2px);
+}
+
+.step-number {
+    background: var(--c-primary);
+    color: #fff;
+    width: 2rem;
+    height: 2rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+
+/* --------------------- Testimonials --------------------- */
+.testimonials-section .testimonials-grid {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+}
+
+.testimonial-item {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    width: 280px;
+    padding: 1.5rem;
+    text-align: left;
+    transition: transform 0.2s;
+}
+
+.testimonial-item:hover {
+    transform: translateY(-2px);
+}
+
+.testimonial-item blockquote {
+    font-style: italic;
+    margin: 0 0 0.5rem;
+    line-height: 1.4;
+}
+
+.testimonial-author {
+    font-size: 0.9rem;
+    color: var(--c-text);
+    opacity: 0.8;
+}
+
+/* --------------------- Pricing --------------------- */
+.pricing-section .pricing-grid {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 2rem;
+}
+
+.pricing-item {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    width: 240px;
+    padding: 1.5rem;
+    text-align: center;
+    position: relative;
+}
+
+.pricing-item h3 {
+    margin-top: 0;
+    font-size: 1.2rem;
+}
+
+.pricing-item .price {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0.5rem 0 1rem;
+}
+
+.pricing-item ul {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 1.5rem;
+    text-align: left;
+}
+
+.pricing-item ul li {
+    margin-bottom: 0.5rem;
+}
+
+.pricing-item .btn {
+    display: inline-block;
+}
+
+.pricing-item.recommended {
+    border: 2px solid var(--c-primary);
+    transform: scale(1.02);
+}
+
+/* --------------------- Newsletter --------------------- */
+.newsletter-section p {
+    margin: 0 auto 1.5rem;
+    max-width: 600px;
+}
+
+.newsletter-form {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    margin-top: 1rem;
+}
+
+.newsletter-form input[type="email"] {
+    padding: 0.8rem 1rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius);
+    width: 250px;
+}
+
+.newsletter-form button {
+    padding: 0.8rem 1.2rem;
+}
+
+/* --------------------- Footer --------------------- */
+.landing-footer .footer-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.landing-footer .social-icons {
+    display: flex;
+    gap: 1rem;
+}
+
+.landing-footer .social-icons img {
+    width: 24px;
+    height: 24px;
+}
+
+/* Responsive improvements */
+@media (max-width: 768px) {
+    .landing-footer .footer-content {
+        flex-direction: column;
+    }
+}
+
+/* =========================================================================
+   LandingPageScoped.css – Zusätzliche Styles
+   ========================================================================= */
+
+/* Abschnitt für .firma-register-callout */
+.firma-register-callout {
+    margin-top: 2rem;
+    text-align: center;
+}
+
+.firma-register-callout h3 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+}
+
+.firma-register-callout .btn {
+    padding: 0.8rem 1.2rem;
+    font-weight: 600;
+    border-radius: var(--radius);
+    text-decoration: none;
+    color: #fff;
+    background: var(--c-primary);
+    transition: background var(--transition), transform 0.2s;
+}
+
+.firma-register-callout .btn:hover {
+    background: var(--c-primary-hover);
+    transform: translateY(-2px);
+}

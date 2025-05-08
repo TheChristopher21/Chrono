@@ -1,0 +1,149 @@
+/* =========================================================================
+   PersonalDataPageScoped.css
+   Scope: .personal-data-page.scoped-personal-data
+   Light- & Dark-Mode + Layout
+   ========================================================================= */
+
+/* --------------------------- Variablen (Light) --------------------------- */
+.personal-data-page.scoped-personal-data {
+    --primary-color:    #5A67D8;
+    --primary-hover:    #434190;
+
+    --success-color:    #48BB78;
+    --danger-color:     #E53E3E;
+    --warning-color:    #F6AD55;
+
+    --background-color: #F7FAFC;
+    --card-bg:          #FFFFFF;
+    --text-color:       #2D3748;
+    --border-color:     #E2E8F0;
+
+    --shadow:           0 4px 6px rgba(0, 0, 0, 0.1);
+    --radius:           12px;
+    --transition:       0.3s ease;
+    --font-family:      'Poppins', sans-serif;
+
+    width: 100%;
+    padding: 2rem;
+    background-color: var(--background-color);
+    color: var(--text-color);
+    transition:
+            background-color 0.3s ease,
+            color 0.3s ease;
+}
+
+/* --------------------------- Variablen (Dark) ---------------------------- */
+[data-theme="dark"] .personal-data-page.scoped-personal-data {
+    --background-color: #18191A;
+    --text-color:       #f0f0f0;
+    --card-bg:          rgba(36,37,38,0.8);
+    --border-color:     #484A4D;
+}
+
+/* --------------------------- Header -------------------------------------- */
+.personal-data-page.scoped-personal-data .page-header {
+    background-color: var(--card-bg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    text-align: center;
+    box-shadow: var(--shadow);
+    border: 2px solid var(--border-color);
+    transition:
+            background-color 0.3s ease,
+            color 0.3s ease,
+            border-color 0.3s ease;
+}
+.personal-data-page.scoped-personal-data .page-header h2 {
+    margin: 0;
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-color);
+    transition: color 0.3s ease;
+}
+
+/* --------------------------- Sections (Personal + Password) ------------- */
+.personal-data-page.scoped-personal-data .personal-data-section,
+.personal-data-page.scoped-personal-data .password-change-section {
+    background-color: var(--card-bg);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    border: 2px solid var(--border-color);
+    transition:
+            background-color 0.3s ease,
+            color 0.3s ease,
+            border-color 0.3s ease;
+}
+
+.personal-data-page.scoped-personal-data .password-change-section h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+}
+
+/* --------------------------- Formulare ---------------------------------- */
+.personal-data-page.scoped-personal-data .form-personal,
+.personal-data-page.scoped-personal-data .form-password {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+.personal-data-page.scoped-personal-data .form-group {
+    display: flex;
+    flex-direction: column;
+}
+.personal-data-page.scoped-personal-data .form-group label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--text-color);
+}
+.personal-data-page.scoped-personal-data .form-group input {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    font-size: 1rem;
+    background-color: #fff;
+    color: var(--text-color);
+    transition:
+            background-color var(--transition),
+            color var(--transition),
+            border-color var(--transition);
+}
+
+/* Buttons */
+.personal-data-page.scoped-personal-data .form-personal button,
+.personal-data-page.scoped-personal-data .form-password button {
+    padding: 0.75rem 1.5rem;
+    background-color: var(--primary-color);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    transition: background-color var(--transition), transform 0.2s;
+    font-size: 1rem;
+    cursor: pointer;
+    font-weight: 500;
+}
+.personal-data-page.scoped-personal-data .form-personal button:hover,
+.personal-data-page.scoped-personal-data .form-password button:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-2px);
+}
+
+/* --------------------------- Meldung / Status --------------------------- */
+.personal-data-page.scoped-personal-data .password-change-section p {
+    margin-top: 0.75rem;
+    font-weight: 600;
+    color: var(--text-color);
+    font-size: 1rem;
+}
+
+/* (Optional) Dark-Mode extra, falls du einzelne Felder farblich anpassen willst */
+[data-theme="dark"] .personal-data-page.scoped-personal-data .form-group input {
+    background-color: #3A3B3C;
+    border: 1px solid #484A4D;
+    color: #f0f0f0;
+}
+[data-theme="dark"] .personal-data-page.scoped-personal-data .form-group label {
+    color: #f0f0f0;
+}

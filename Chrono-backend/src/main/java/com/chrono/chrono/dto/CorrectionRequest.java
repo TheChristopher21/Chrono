@@ -32,6 +32,9 @@ public class CorrectionRequest {
     private boolean approved;
     private boolean denied;
 
+    @Column(name = "admin_comment", length = 1000)
+    private String adminComment;
+
     // Neue (korrigierte) Zeiten (nur Uhrzeit)
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "HH:mm:ss")
     @Column(name = "work_start")
@@ -148,6 +151,9 @@ public class CorrectionRequest {
 
     public TimeTracking getOriginalTimeTracking() { return originalTimeTracking; }
     public void setOriginalTimeTracking(TimeTracking originalTimeTracking) { this.originalTimeTracking = originalTimeTracking; }
+
+    public String getAdminComment() { return adminComment; }
+    public void setAdminComment(String adminComment) { this.adminComment = adminComment; }
 
     @JsonProperty("username")
     public String getUsername() {

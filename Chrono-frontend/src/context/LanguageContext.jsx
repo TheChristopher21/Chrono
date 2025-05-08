@@ -3,20 +3,34 @@ import React, { createContext, useState } from 'react';
 
 const translations = {
     de: {
+        // ----------------------------------------------------------------------
+        // Login-Bereich
+        // ----------------------------------------------------------------------
         login: {
-            title: "Login",
+            title: "Willkommen zurück!",
             username: "Benutzername",
             password: "Passwort",
-            button: "Einloggen",
-            languageLabel: "Sprache:",
+            button: "Login",
+            languageLabel: "Sprache",
             error: "Login fehlgeschlagen. Bitte Zugangsdaten prüfen.",
             testStampMessage: "Test-Stempel ausgeführt",
-            testStampButton: "Test-Stempel"
+            testStampButton: "Test-Stempel",
+            intro: "Melde dich an, um fortzufahren.",
+            noAccount: "Noch kein Account?",
+            registerHere: "Hier registrieren",
+            waitMessage: "Bitte 1 Minute warten, bevor erneut gestempelt wird.",
+            stamped: "Eingestempelt",
         },
-            admin: {
+        // ----------------------------------------------------------------------
+        // Admin
+        // ----------------------------------------------------------------------
+        admin: {
             changePasswordTitle: "Passwort ändern",
-            changePasswordButton: "Passwort ändern"
+            changePasswordButton: "Passwort ändern",
         },
+        // ----------------------------------------------------------------------
+        // Register
+        // ----------------------------------------------------------------------
         register: {
             title: "Registrieren",
             username: "Benutzername",
@@ -24,26 +38,34 @@ const translations = {
             firstName: "Vorname",
             lastName: "Nachname",
             email: "E-Mail",
-            button: "Registrieren"
+            button: "Registrieren",
         },
+        // ----------------------------------------------------------------------
+        // Personal Data
+        // ----------------------------------------------------------------------
         personalData: {
             title: "Mein Profil",
             firstName: "Vorname",
             lastName: "Nachname",
             email: "E-Mail",
             saveButton: "Speichern",
+            saved: "Daten erfolgreich gespeichert.",
             changePassword: "Passwort ändern",
             currentPassword: "Aktuelles Passwort",
             newPassword: "Neues Passwort",
             errorLoading: "Fehler beim Laden der Profildaten",
             errorUpdating: "Fehler beim Aktualisieren des Profils",
             passwordChanged: "Passwort erfolgreich geändert",
-            errorChangingPassword: "Fehler beim Ändern des Passworts"
+            errorChangingPassword: "Fehler beim Ändern des Passworts",
         },
+        // ----------------------------------------------------------------------
+        // Admin Dashboard
+        // ----------------------------------------------------------------------
         adminDashboard: {
             titleWeekly: "Admin-Dashboard (Wochen Ansicht)",
             loggedInAs: "Eingeloggt als",
             adminPassword: "Admin Passwort",
+            userPassword: "Benutzerpasswort",
             pleaseEnter: "bitte eingeben",
             timeTrackingCurrentWeek: "Zeiterfassung - Aktuelle Woche",
             prevWeek: "Vorherige Woche",
@@ -62,24 +84,31 @@ const translations = {
             pending: "Offen",
             editButton: "Bearbeiten",
             editTrackingTitle: "Zeiterfassung bearbeiten",
+            statusLabel: "Status",
             button: {
                 save: "Speichern",
                 cancel: "Abbrechen",
-                print: "Bericht drucken"
+                print: "Bericht drucken",
             },
             vacationRequestsTitle: "Urlaubsanträge (Alle Benutzer)",
             noVacations: "Keine Urlaubsanträge gefunden",
             correctionRequestsTitle: "Korrekturanträge (Alle Benutzer)",
-            acceptButton: "Accept",
-            rejectButton: "Reject",
+            acceptButton: "Genehmigen",
+            rejectButton: "Ablehnen",
             vacationCalendarTitle: "Urlaubskalender",
             forDate: "",
             monthlyOverview: "Monatsübersicht",
             noEntriesThisMonth: "Keine Einträge in diesem Monat",
             startDate: "Startdatum",
             endDate: "Enddatum",
-            printReportTitle: "Bericht erstellen"
+            printReportTitle: "Bericht erstellen",
+            searchUser: "Benutzer suchen...",
+            noMatch: "Keine passenden Benutzer gefunden.",
+            correctionItemLabel: "Korrektur vom",
         },
+        // ----------------------------------------------------------------------
+        // User Management
+        // ----------------------------------------------------------------------
         userManagement: {
             title: "Benutzerverwaltung",
             newUser: "Neuen Benutzer anlegen",
@@ -91,15 +120,17 @@ const translations = {
             role: "Rolle",
             expectedWorkDays: "Erwartete Arbeitstage",
             breakDuration: "Pausendauer (Min)",
+            workPercentage: "Work Percentage",
+            annualVacationDays: "Urlaubstage",
             button: {
                 save: "Speichern",
-                cancel: "Abbrechen"
+                cancel: "Abbrechen",
             },
             table: {
                 actions: "Aktionen",
                 edit: "Bearbeiten",
                 delete: "Löschen",
-                programCard: "Karte programmieren"
+                programCard: "Karte programmieren",
             },
             scheduleConfig: "Arbeitszeiten Konfiguration",
             cycleLength: "Cycle Length (Wochen):",
@@ -115,13 +146,23 @@ const translations = {
             errorAddingUser: "Fehler beim Anlegen des Benutzers",
             errorUpdatingUser: "Fehler beim Updaten des Benutzers",
             errorDeletingUser: "Fehler beim Löschen des Benutzers",
-            programCardSuccess: "Karte erfolgreich beschrieben",
-            programCardError: "Fehler beim Kartenbeschreiben",
+            programCardSuccess: "Karte erfolgreich programmiert",
+            programCardError: "Fehler beim Kartenprogrammieren",
             noUsers: "Keine Benutzer gefunden.",
             errorLoadingTracks: "Fehler beim Laden der Zeiterfassungen",
             errorLoadingVacations: "Fehler beim Laden der Urlaubsanträge",
-            errorLoadingCorrections: "Fehler beim Laden der Korrekturanträge"
+            errorLoadingCorrections: "Fehler beim Laden der Korrekturanträge",
+
+            // Neue Keys
+            percentageTracking: "Prozentbasierte Zeiterfassung",
+            deleteConfirmTitle: "Benutzer löschen",
+            deleteConfirmMessage: "Soll der Benutzer wirklich gelöscht werden? (Alle Daten werden gelöscht inkl. Zeiten!)",
+            nfcProgramStart: "Programmierung gestartet. Bitte Karte auflegen...",
+            programCardErrorTimeout: "Zeitüberschreitung beim Kartenprogrammieren.",
         },
+        // ----------------------------------------------------------------------
+        // Navbar
+        // ----------------------------------------------------------------------
         navbar: {
             login: "Login",
             register: "Registrieren",
@@ -131,11 +172,13 @@ const translations = {
             userManagement: "Benutzerverwaltung",
             myDashboard: "Mein Dashboard",
             profile: "Profil",
-            brightness: "brightness",
+            brightness: "Helligkeit",
         },
-        // Top-Level Schlüssel für den UserDashboard-Bereich
+        // ----------------------------------------------------------------------
+        // Dashboard title / corrections
+        // ----------------------------------------------------------------------
         title: "Mein Dashboard",
-        correctionRequests: "Korrektur Anträge",
+        correctionRequests: "Korrekturanträge",
         usernameLabel: "Benutzer",
         notLoggedIn: "Nicht eingeloggt",
         expectedWorkHours: "Erwartete Arbeitszeit/Tag",
@@ -180,7 +223,6 @@ const translations = {
         vacationType: "Urlaubsart",
         fullDay: "Ganztags",
         halfDay: "Halbtags",
-        // Wochentage
         days: {
             monday: "Montag",
             tuesday: "Dienstag",
@@ -188,32 +230,148 @@ const translations = {
             thursday: "Donnerstag",
             friday: "Freitag",
             saturday: "Samstag",
-            sunday: "Sonntag"
+            sunday: "Sonntag",
         },
-        // Zusätzliche Keys für die Stundenansicht und Notizen
         hourlyDashboard: {
             title: "Stundenbasierte Ansicht",
-            mode: "Stundenbasiert"
+            mode: "Stundenbasiert",
         },
         dailyNotePlaceholder: "Tagesnotiz",
         printReportError: "Fehler beim Erstellen des Berichts",
-        loading: "Lade..."
+        loading: "Lade...",
+
+        showWeeklyOnly: "Nur aktuelle Woche",
+        showAll: "Alle anzeigen",
+        workStart: "Work Start",
+        breakStart: "Break Start",
+        breakEnd: "Break End",
+        workEnd: "Work End",
+        reason: "Grund",
+        submitCorrectionRequest: "Korrektur anfragen",
+        submitCorrectionFor: "Korrekturantrag für",
+        submitCorrection: "Antrag senden",
+        correctionSubmitSuccess: "Korrekturantrag erfolgreich gestellt.",
+        correctionSubmitError: "Fehler beim Absenden des Korrekturantrags.",
+        errorLoadingProfile: "Fehler beim Laden des Nutzerprofils",
+        missingDateRange: "Zeitraum fehlt",
+        weekBalance: "Wochensaldo",
+        monthBalance: "Monatssaldo",
+        overallBalance: "Gesamtsaldo",
+        noCorrections: "Keine Korrekturanträge vorhanden",
+        dailyNoteSaved: "Tagesnotiz gespeichert.",
+        dailyNoteError: "Fehler beim Speichern der Tagesnotiz.",
+        weeklyHours: "Gesamtstunden (aktuelle Woche)",
+        monthlyHours: "Gesamtstunden (Monat)",
+        editNotes: "Notizen bearbeiten",
+        addNotes: "Notizen hinzufügen",
+        fillWorkTimesError: "Bitte Work Start und Work End ausfüllen",
+
+        // ----------------------------------------------------------------------
+        // AdminVacation (admin kalendar)
+        // ----------------------------------------------------------------------
+        adminVacation: {
+            title: "Admin Urlaubs Kalender",
+            adminPasswordLabel: "Admin-Passwort",
+            createVacationButton: "Urlaub erstellen",
+            modalTitle: "Urlaub",
+            userSelection: "Benutzer Auswahl",
+            selectUserPlaceholder: "Bitte Benutzer auswählen",
+            startDateLabel: "Startdatum",
+            endDateLabel: "Enddatum",
+            halfDayLabel: "Halbtags Urlaub",
+            confirmButton: "Bestätigen",
+            cancelButton: "Abbrechen",
+            noUserSelected: "Bitte einen Benutzer auswählen",
+            datesMissing: "Bitte Start- und Enddatum angeben",
+            adminPassMissing: "Bitte Admin-Passwort eingeben",
+            createdSuccess: "Urlaub erfolgreich (admin) erstellt und direkt genehmigt",
+            createError: "Fehler beim Anlegen des Admin-Urlaubs",
+        },
+        // ----------------------------------------------------------------------
+        // vacation (normaler urlaubsflow)
+        // ----------------------------------------------------------------------
+        vacation: {
+            missingDates: "Bitte Start- und Enddatum angeben.",
+            invalidDates: "Enddatum darf nicht vor Startdatum liegen.",
+            halfDayOneDay: "Halbtags gilt nur für einen einzigen Tag.",
+            requestSuccess: "Urlaubsantrag eingereicht.",
+            requestError: "Fehler beim Urlaubsantrag.",
+            fullDay: "Ganztags",
+            halfDay: "Halbtags",
+            normalVacation: "Normaler Urlaub",
+            overtimeVacation: "Überstundenfrei",
+        },
+        // ----------------------------------------------------------------------
+        // PrintReport
+        // ----------------------------------------------------------------------
+        printReport: {
+            title: "Zeitenbericht",
+            userLabel: "User",
+            periodLabel: "Zeitraum",
+            date: "Datum",
+            workStart: "Work-Start",
+            breakStart: "Break-Start",
+            breakEnd: "Break-End",
+            workEnd: "Work-End",
+            noEntries: "Keine Einträge",
+            printButton: "Drucken",
+            pdfButton: "PDF speichern",
+        },
+        // ----------------------------------------------------------------------
+        // Landing Page
+        // ----------------------------------------------------------------------
+        landingPage: {
+            headline: "Chrono-Logic",
+            subHeadline: "Zeiterfassung und NFC-Stempeln – ganz einfach.",
+            loginButton: "Anmelden",
+            registerButton: "Registrieren",
+            whyTitle: "Warum Chrono-Logic?",
+            howItWorks: "So funktioniert's",
+            featureNfcTitle: "NFC-Stempeln",
+            featureNfcText: "Einfaches Ein- und Ausstempeln per NFC-Karte.",
+            featureReportsTitle: "Automatische Berichte",
+            featureReportsText: "Übersichtliche Auswertungen und PDF-Exports.",
+            featureVacationTitle: "Urlaubsverwaltung",
+            featureVacationText: "Urlaubstage im Blick, inkl. Genehmigungsprozess.",
+            allRights: "Alle Rechte vorbehalten.",
+        },
+
+        // Falls du "search", "darkMode", "lightMode" usw. nutzt
+        search: "Suchen",
+        darkMode: "Dark Mode",
+        lightMode: "Light Mode",
     },
+
+    // =============== ENGLISCH ===============
     en: {
+        // ----------------------------------------------------------------------
+        // Login
+        // ----------------------------------------------------------------------
         login: {
-            title: "Login",
+            title: "Welcome Back!",
             username: "Username",
             password: "Password",
             button: "Log in",
-            languageLabel: "Language:",
+            languageLabel: "Language",
             error: "Login failed. Please check your credentials.",
             testStampMessage: "Test stamp executed",
-            testStampButton: "Test Stamp"
+            testStampButton: "Test Stamp",
+            intro: "Sign in to continue.",
+            noAccount: "No account yet?",
+            registerHere: "Register here",
+            waitMessage: "Please wait 1 minute before stamping again.",
+            stamped: "Stamped",
         },
+        // ----------------------------------------------------------------------
+        // Admin
+        // ----------------------------------------------------------------------
         admin: {
             changePasswordTitle: "Change Password",
-            changePasswordButton: "Change Password"
+            changePasswordButton: "Change Password",
         },
+        // ----------------------------------------------------------------------
+        // Register
+        // ----------------------------------------------------------------------
         register: {
             title: "Register",
             username: "Username",
@@ -221,26 +379,34 @@ const translations = {
             firstName: "First Name",
             lastName: "Last Name",
             email: "Email",
-            button: "Register"
+            button: "Register",
         },
+        // ----------------------------------------------------------------------
+        // Personal Data
+        // ----------------------------------------------------------------------
         personalData: {
             title: "My Profile",
             firstName: "First Name",
             lastName: "Last Name",
             email: "Email",
             saveButton: "Save",
+            saved: "Data saved successfully.",
             changePassword: "Change Password",
             currentPassword: "Current Password",
             newPassword: "New Password",
             errorLoading: "Error loading profile data",
             errorUpdating: "Error updating profile",
             passwordChanged: "Password changed successfully",
-            errorChangingPassword: "Error changing password"
+            errorChangingPassword: "Error changing password",
         },
+        // ----------------------------------------------------------------------
+        // Admin Dashboard
+        // ----------------------------------------------------------------------
         adminDashboard: {
             titleWeekly: "Admin Dashboard (Weekly View)",
             loggedInAs: "Logged in as",
             adminPassword: "Admin Password",
+            userPassword: "User Password",
             pleaseEnter: "please enter",
             timeTrackingCurrentWeek: "Time Tracking - Current Week",
             prevWeek: "Previous Week",
@@ -259,15 +425,16 @@ const translations = {
             pending: "Pending",
             editButton: "Edit",
             editTrackingTitle: "Edit Time Tracking",
+            statusLabel: "Status",
             button: {
                 save: "Save",
                 cancel: "Cancel",
-                print: "Print Report"
+                print: "Print Report",
             },
             vacationRequestsTitle: "Vacation Requests (All Users)",
             noVacations: "No vacation requests found",
             correctionRequestsTitle: "Correction Requests (All Users)",
-            acceptButton: "Accept",
+            acceptButton: "Approve",
             rejectButton: "Reject",
             vacationCalendarTitle: "Vacation Calendar",
             forDate: "",
@@ -275,8 +442,14 @@ const translations = {
             noEntriesThisMonth: "No entries for this month",
             startDate: "Start Date",
             endDate: "End Date",
-            printReportTitle: "Generate Report"
+            printReportTitle: "Generate Report",
+            searchUser: "Search user...",
+            noMatch: "No matching users found.",
+            correctionItemLabel: "Correction for",
         },
+        // ----------------------------------------------------------------------
+        // User Management
+        // ----------------------------------------------------------------------
         userManagement: {
             title: "User Management",
             newUser: "Create New User",
@@ -288,15 +461,17 @@ const translations = {
             role: "Role",
             expectedWorkDays: "Expected Work Days",
             breakDuration: "Break Duration (min)",
+            workPercentage: "Work Percentage",
+            annualVacationDays: "Vacation Days",
             button: {
                 save: "Save",
-                cancel: "Cancel"
+                cancel: "Cancel",
             },
             table: {
                 actions: "Actions",
                 edit: "Edit",
                 delete: "Delete",
-                programCard: "Program Card"
+                programCard: "Program Card",
             },
             scheduleConfig: "Work Hours Configuration",
             cycleLength: "Cycle Length (Weeks):",
@@ -317,8 +492,17 @@ const translations = {
             noUsers: "No users found.",
             errorLoadingTracks: "Error loading time entries",
             errorLoadingVacations: "Error loading vacation requests",
-            errorLoadingCorrections: "Error loading correction requests"
+            errorLoadingCorrections: "Error loading correction requests",
+
+            percentageTracking: "Percentage-based tracking",
+            deleteConfirmTitle: "Delete User",
+            deleteConfirmMessage: "Do you really want to delete this user? (All data including times will be removed!)",
+            nfcProgramStart: "Programming started. Please place the card...",
+            programCardErrorTimeout: "Timeout while programming the card.",
         },
+        // ----------------------------------------------------------------------
+        // Navbar
+        // ----------------------------------------------------------------------
         navbar: {
             login: "Login",
             register: "Register",
@@ -329,9 +513,10 @@ const translations = {
             myDashboard: "My Dashboard",
             profile: "Profile",
             brightness: "brightness",
-
         },
-        // Top-Level keys for the User Dashboard
+        // ----------------------------------------------------------------------
+        // Dashboard / corrections
+        // ----------------------------------------------------------------------
         title: "My Dashboard",
         correctionRequests: "Correction Requests",
         usernameLabel: "User",
@@ -378,7 +563,6 @@ const translations = {
         vacationType: "Vacation Type",
         fullDay: "Full Day",
         halfDay: "Half Day",
-        // Wochentage
         days: {
             monday: "Monday",
             tuesday: "Tuesday",
@@ -386,36 +570,143 @@ const translations = {
             thursday: "Thursday",
             friday: "Friday",
             saturday: "Saturday",
-            sunday: "Sunday"
+            sunday: "Sunday",
         },
-        // Zusätzliche Keys für die Stundenansicht und Notizen
         hourlyDashboard: {
             title: "Hourly Dashboard",
-            mode: "Hourly"
+            mode: "Hourly",
         },
         dailyNotePlaceholder: "Daily note",
         printReportError: "Error generating report",
-        loading: "Loading..."
-    }
+        loading: "Loading...",
+
+        showWeeklyOnly: "Show current week only",
+        showAll: "Show all",
+        workStart: "Work Start",
+        breakStart: "Break Start",
+        breakEnd: "Break End",
+        workEnd: "Work End",
+        reason: "Reason",
+        submitCorrectionRequest: "Request Correction",
+        submitCorrectionFor: "Correction request for",
+        submitCorrection: "Submit request",
+        correctionSubmitSuccess: "Correction request submitted successfully.",
+        correctionSubmitError: "Error submitting correction request.",
+        errorLoadingProfile: "Error loading user profile",
+        missingDateRange: "Date range missing",
+        weekBalance: "Weekly Balance",
+        monthBalance: "Monthly Balance",
+        overallBalance: "Total Balance",
+        noCorrections: "No correction requests found",
+        dailyNoteSaved: "Daily note saved.",
+        dailyNoteError: "Error saving daily note.",
+        weeklyHours: "Total hours (current week)",
+        monthlyHours: "Total hours (month)",
+        editNotes: "Edit notes",
+        addNotes: "Add notes",
+        fillWorkTimesError: "Please fill in Work Start and Work End",
+
+        // ----------------------------------------------------------------------
+        // AdminVacation
+        // ----------------------------------------------------------------------
+        adminVacation: {
+            title: "Admin Vacation Calendar",
+            adminPasswordLabel: "Admin Password",
+            createVacationButton: "Create Vacation",
+            modalTitle: "Vacation",
+            userSelection: "Select User",
+            selectUserPlaceholder: "Please select user",
+            startDateLabel: "Start Date",
+            endDateLabel: "End Date",
+            halfDayLabel: "Half-day Vacation",
+            confirmButton: "Confirm",
+            cancelButton: "Cancel",
+            noUserSelected: "Please select a user",
+            datesMissing: "Please provide start and end dates",
+            adminPassMissing: "Please enter admin password",
+            createdSuccess: "Vacation created (admin) and approved",
+            createError: "Error creating admin vacation",
+        },
+        // ----------------------------------------------------------------------
+        // Vacation
+        // ----------------------------------------------------------------------
+        vacation: {
+            missingDates: "Please provide start and end date.",
+            invalidDates: "End date cannot be before start date.",
+            halfDayOneDay: "Half-day only valid for a single day.",
+            requestSuccess: "Vacation request submitted.",
+            requestError: "Error submitting vacation request.",
+            fullDay: "Full day",
+            halfDay: "Half day",
+            normalVacation: "Normal vacation",
+            overtimeVacation: "Overtime-based",
+        },
+        // ----------------------------------------------------------------------
+        // PrintReport
+        // ----------------------------------------------------------------------
+        printReport: {
+            title: "Time Report",
+            userLabel: "User",
+            periodLabel: "Period",
+            date: "Date",
+            workStart: "Work Start",
+            breakStart: "Break Start",
+            breakEnd: "Break End",
+            workEnd: "Work End",
+            noEntries: "No entries",
+            printButton: "Print",
+            pdfButton: "Save PDF",
+        },
+        // ----------------------------------------------------------------------
+        // Landing Page
+        // ----------------------------------------------------------------------
+        landingPage: {
+            headline: "Chrono-Logic",
+            subHeadline: "Time tracking and NFC stamping made easy.",
+            loginButton: "Login",
+            registerButton: "Register",
+            whyTitle: "Why Chrono-Logic?",
+            howItWorks: "How it Works",
+            featureNfcTitle: "NFC Stamping",
+            featureNfcText: "Simply clock in and out with an NFC card.",
+            featureReportsTitle: "Automatic Reports",
+            featureReportsText: "Clear evaluations and PDF exports.",
+            featureVacationTitle: "Vacation Management",
+            featureVacationText: "Keep track of vacation days, including approval workflow.",
+            allRights: "All rights reserved.",
+        },
+
+        // Falls du "search", "darkMode", "lightMode" etc. nutzt
+        search: "Search",
+        darkMode: "Dark Mode",
+        lightMode: "Light Mode",
+    },
 };
 
 export const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
+    // Standard: "de" oder "en" je nach Vorliebe
     const [language, setLanguage] = useState("de");
 
-    const t = (key) => {
+    /**
+     * @param {string} key     z.B. "login.title"
+     * @param {string} fallback (optional) Fallback-Text, wenn Key fehlt
+     */
+    const t = (key, fallback) => {
         const keys = key.split(".");
         let translation = translations[language];
         for (const k of keys) {
             if (translation[k] !== undefined) {
                 translation = translation[k];
             } else {
-                return key;
+                return fallback || key; // Falls gewünscht
             }
         }
         if (typeof translation === "object") {
-            console.warn(`Translation for key "${key}" is an object. Expected a string.`);
+            console.warn(
+                `Translation for key "${key}" is an object. Expected a string.`
+            );
             return JSON.stringify(translation);
         }
         return translation;

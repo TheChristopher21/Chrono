@@ -1,5 +1,4 @@
-// src/pages/AdminUserManagement/AdminUserList.jsx
-import 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 
 const AdminUserList = ({ users, t, handleEditUser, requestDeleteUser, handleProgramCard }) => {
@@ -12,32 +11,39 @@ const AdminUserList = ({ users, t, handleEditUser, requestDeleteUser, handleProg
                     <thead>
                     <tr>
                         <th>{t("userManagement.username")}</th>
-                        <th>{t("userManagement.firstName")} {t("userManagement.lastName")}</th>
+                        <th>
+                            {t("userManagement.firstName")} {t("userManagement.lastName")}
+                        </th>
                         <th>{t("userManagement.email")}</th>
                         <th>{t("userManagement.role")}</th>
                         <th>{t("userManagement.expectedWorkDays")}</th>
                         <th>{t("userManagement.breakDuration")}</th>
-                        <th>{t("Urlaubstage")}</th>
+                        <th>{t("userManagement.annualVacationDays")}</th>
                         <th>{t("userManagement.table.actions")}</th>
                     </tr>
                     </thead>
                     <tbody>
-                    {users.map(user => (
-                        <tr key={user.id} style={{ backgroundColor: user.color || 'transparent' }}>
+                    {users.map((user) => (
+                        <tr
+                            key={user.id}
+                            style={{ backgroundColor: user.color || "transparent" }}
+                        >
                             <td>{user.username}</td>
-                            <td>{user.firstName} {user.lastName}</td>
+                            <td>
+                                {user.firstName} {user.lastName}
+                            </td>
                             <td>{user.email}</td>
 
                             {/* Robuste Rollenanalyse */}
                             <td>
                                 {user?.roles?.[0]?.roleName
-                                    ? user.roles[0].roleName.replace('ROLE_', '')
-                                    : 'USER'}
+                                    ? user.roles[0].roleName.replace("ROLE_", "")
+                                    : "USER"}
                             </td>
 
-                            <td>{user.expectedWorkDays ?? '-'}</td>
-                            <td>{user.breakDuration ?? '-'}</td>
-                            <td>{user.annualVacationDays ?? '-'}</td>
+                            <td>{user.expectedWorkDays ?? "-"}</td>
+                            <td>{user.breakDuration ?? "-"}</td>
+                            <td>{user.annualVacationDays ?? "-"}</td>
 
                             <td>
                                 <button onClick={() => handleEditUser(user)}>

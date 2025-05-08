@@ -1,7 +1,5 @@
-// UserCorrectionModal.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
-import '../../styles/UserDashboardScoped.css';
 
 const UserCorrectionModal = ({
                                  visible,
@@ -9,17 +7,20 @@ const UserCorrectionModal = ({
                                  correctionData,
                                  handleCorrectionInputChange,
                                  handleCorrectionSubmit,
-                                 onClose
+                                 onClose,
+                                 t, // <-- neu hinzugefügt
                              }) => {
     if (!visible) return null;
 
     return (
         <div className="modal-overlay">
             <div className="modal-content">
-                <h3>Korrekturantrag für {correctionDate}</h3>
+                <h3>
+                    {t("submitCorrectionFor") || "Korrekturantrag für"} {correctionDate}
+                </h3>
                 <form onSubmit={handleCorrectionSubmit}>
                     <div className="form-group">
-                        <label>Work Start:</label>
+                        <label>{t("workStart") || "Work Start"}:</label>
                         <input
                             type="time"
                             name="workStart"
@@ -29,7 +30,7 @@ const UserCorrectionModal = ({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Break Start:</label>
+                        <label>{t("breakStart") || "Break Start"}:</label>
                         <input
                             type="time"
                             name="breakStart"
@@ -38,7 +39,7 @@ const UserCorrectionModal = ({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Break End:</label>
+                        <label>{t("breakEnd") || "Break End"}:</label>
                         <input
                             type="time"
                             name="breakEnd"
@@ -47,7 +48,7 @@ const UserCorrectionModal = ({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Work End:</label>
+                        <label>{t("workEnd") || "Work End"}:</label>
                         <input
                             type="time"
                             name="workEnd"
@@ -57,7 +58,7 @@ const UserCorrectionModal = ({
                         />
                     </div>
                     <div className="form-group">
-                        <label>Grund (Reason):</label>
+                        <label>{t("reason") || "Reason"}:</label>
                         <textarea
                             name="reason"
                             value={correctionData.reason}
@@ -66,8 +67,12 @@ const UserCorrectionModal = ({
                         />
                     </div>
                     <div className="modal-buttons">
-                        <button type="submit">Antrag senden</button>
-                        <button type="button" onClick={onClose}>Abbrechen</button>
+                        <button type="submit">
+                            {t("submitCorrection") || "Antrag senden"}
+                        </button>
+                        <button type="button" onClick={onClose}>
+                            {t("cancel") || "Abbrechen"}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -83,11 +88,12 @@ UserCorrectionModal.propTypes = {
         breakStart: PropTypes.string,
         breakEnd: PropTypes.string,
         workEnd: PropTypes.string,
-        reason: PropTypes.string
+        reason: PropTypes.string,
     }).isRequired,
     handleCorrectionInputChange: PropTypes.func.isRequired,
     handleCorrectionSubmit: PropTypes.func.isRequired,
-    onClose: PropTypes.func.isRequired
+    onClose: PropTypes.func.isRequired,
+    t: PropTypes.func,
 };
 
 export default UserCorrectionModal;

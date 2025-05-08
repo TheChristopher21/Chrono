@@ -1,61 +1,186 @@
 /* =========================================================================
-   Navbar.css · scoped final · 20‑Apr‑2025
+   Navbar.css · optimierte, scoped Fassung
    ========================================================================= */
-.scoped-navbar{
-    /* TOKENS — Light Default */
-    --c-pri:#475bff;--c-pri-dim:#6b7cff;--c-text:#1f1f1f;--c-muted:#545863;
-    --c-bg:#fff;--c-surface:#f8f9ff;--c-border:#d1d4e2;--c-danger:#ed5757;
-    --u-radius:12px;--u-shadow-sm:0 2px 6px rgba(0,0,0,.05);
-    --u-shadow-lg:0 10px 26px rgba(0,0,0,.10);--u-dur:.25s;
-    --u-ease:cubic-bezier(.4,.2,.2,1);
+
+/*
+   Scope: .scoped-navbar
+   - Alle Styles sind innerhalb dieses Scopes, damit sie nur die Navbar
+     betreffen und keine anderen Seiten überschreiben.
+*/
+
+/* ----------------------------- Variablen für LIGHT ----------------------------- */
+.scoped-navbar {
+    --c-pri:        #475bff;
+    --c-pri-dim:    #6b7cff;
+    --c-danger:     #ed5757;
+
+    --c-text:       #1f1f1f;
+    --c-muted:      #545863;
+    --c-bg:         #ffffff;
+    --c-bg-rgb:     255,255,255;   /* für rgba() im Light Mode */
+    --c-surface:    #f8f9ff;
+    --c-border:     #d1d4e2;
+
+    --u-radius:     12px;
+    --u-shadow-sm:  0 2px 6px rgba(0, 0, 0, 0.05);
+    --u-shadow-lg:  0 10px 26px rgba(0, 0, 0, 0.10);
+
+    --u-dur:        0.25s;
+    --u-ease:       cubic-bezier(0.4, 0.2, 0.2, 1);
 }
-[data-theme="dark"] .scoped-navbar{
-    --c-text:#e4e6eb;--c-muted:#9da1b2;--c-bg:#121315;--c-surface:#202328;
-    --c-border:#363a46;--u-shadow-sm:0 2px 6px rgba(0,0,0,.45);
-    --u-shadow-lg:0 18px 36px rgba(0,0,0,.65);
+
+/* ----------------------------- Variablen für DARK ----------------------------- */
+[data-theme="dark"] .scoped-navbar {
+    --c-text:       #e4e6eb;
+    --c-muted:      #9da1b2;
+    --c-bg:         #121315;
+    --c-bg-rgb:     18,19,21;      /* für rgba() im Dark Mode */
+    --c-surface:    #202328;
+    --c-border:     #363a46;
+
+    --u-shadow-sm:  0 2px 6px rgba(0, 0, 0, 0.45);
+    --u-shadow-lg:  0 18px 36px rgba(0, 0, 0, 0.65);
 }
-/* ----------------------------------------------------------------------- */
-.scoped-navbar .navbar{
-    position:sticky;top:0;z-index:1000;
-    display:flex;justify-content:space-between;align-items:center;
-    padding:.7rem 1.6rem;backdrop-filter:saturate(180%) blur(14px);
-    background:rgba(var(--c-bg-rgb,255,255,255),.74);box-shadow:var(--u-shadow-sm);
-    transition:background var(--u-dur)var(--u-ease),box-shadow var(--u-dur)var(--u-ease);
+
+/* ----------------------------- Navbar-Grundlayout ----------------------------- */
+.scoped-navbar .navbar {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 0.7rem 1.6rem;
+
+    /* Halbtransparenter BG dank --c-bg-rgb */
+    background: rgba(var(--c-bg-rgb), 0.74);
+    backdrop-filter: saturate(180%) blur(14px);
+
+    box-shadow: var(--u-shadow-sm);
+    transition:
+            background var(--u-dur) var(--u-ease),
+            box-shadow var(--u-dur) var(--u-ease);
 }
-[data-theme="dark"] .scoped-navbar .navbar{background:rgba(18,19,21,.74);}
-.scoped-navbar .navbar-logo{
-    font-weight:700;font-size:clamp(1.25rem,3vw,1.55rem);color:var(--c-pri);
-    text-decoration:none;letter-spacing:-.25px;
+
+/* Im Dark Mode soll der Hintergrund auch halbtransparent sein */
+[data-theme="dark"] .scoped-navbar .navbar {
+    background: rgba(var(--c-bg-rgb), 0.74);
 }
-.scoped-navbar .navbar-links{list-style:none;display:flex;gap:1rem;margin:0;padding:0;}
-.scoped-navbar .navbar-links a{
-    padding:.55rem .9rem;border-radius:var(--u-radius);
-    color:var(--c-text);font-weight:500;text-decoration:none;
-    transition:background var(--u-dur)var(--u-ease),color var(--u-dur)var(--u-ease);
+
+/* ----------------------------- Logo ----------------------------- */
+.scoped-navbar .navbar-logo {
+    font-weight: 700;
+    font-size: clamp(1.25rem, 3vw, 1.55rem);
+    color: var(--c-pri);
+    text-decoration: none;
+    letter-spacing: -0.25px;
+}
+
+/* ----------------------------- Navbar-Links / -Buttons ----------------------------- */
+.scoped-navbar .navbar-links {
+    list-style: none;
+    display: flex;
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+}
+
+/* Links */
+.scoped-navbar .navbar-links a {
+    padding: 0.55rem 0.9rem;
+    border-radius: var(--u-radius);
+
+    color: var(--c-text);
+    font-weight: 500;
+    text-decoration: none;
+
+    transition:
+            background var(--u-dur) var(--u-ease),
+            color      var(--u-dur) var(--u-ease);
 }
 .scoped-navbar .navbar-links a:hover,
-.scoped-navbar .navbar-links a:focus-visible{background:var(--c-pri);color:#fff;}
-/* Buttons */
+.scoped-navbar .navbar-links a:focus-visible {
+    background: var(--c-pri);
+    color: #fff;
+}
+
+/* Buttons (inkl. Logout) */
 .scoped-navbar .navbar-links button,
-.scoped-navbar .navbar-logout{
-    border:none;border-radius:var(--u-radius);cursor:pointer;
-    font-size:.9rem;font-weight:600;padding:.55rem 1rem;
-    transition:background var(--u-dur)var(--u-ease),transform var(--u-dur)var(--u-ease);
+.scoped-navbar .navbar-logout {
+    border: none;
+    border-radius: var(--u-radius);
+    cursor: pointer;
+
+    font-size: 0.9rem;
+    font-weight: 600;
+    padding: 0.55rem 1rem;
+
+    transition:
+            background var(--u-dur) var(--u-ease),
+            transform var(--u-dur) var(--u-ease);
 }
-.scoped-navbar .navbar-links button{background:var(--c-pri);color:#fff;}
-.scoped-navbar .navbar-links button:hover{background:var(--c-pri-dim);transform:translateY(-2px);}
-.scoped-navbar .navbar-logout{background:var(--c-danger);color:#fff;}
-.scoped-navbar .navbar-logout:hover{background:#d94b4b;transform:translateY(-2px);}
-.scoped-navbar .brightness-control{display:flex;align-items:center;gap:.45rem;}
-.scoped-navbar .brightness-control input[type="range"]{
-    -webkit-appearance:none;width:90px;height:4px;border-radius:2px;
-    background:var(--c-border);cursor:pointer;
+
+.scoped-navbar .navbar-links button {
+    background: var(--c-pri);
+    color: #fff;
 }
-.scoped-navbar .brightness-control input[type="range"]::-webkit-slider-thumb{
-    -webkit-appearance:none;width:13px;height:13px;border-radius:50%;background:var(--c-pri);
+.scoped-navbar .navbar-links button:hover {
+    background: var(--c-pri-dim);
+    transform: translateY(-2px);
 }
-.scoped-navbar .navbar-username{color:var(--c-muted);font-weight:600;}
-/* Reduced motion */
-@media (prefers-reduced-motion:reduce){
-    .scoped-navbar *,.scoped-navbar *::before,.scoped-navbar *::after{transition:none!important;}
+
+/* Logout-Button */
+.scoped-navbar .navbar-logout {
+    background: var(--c-danger);
+    color: #fff;
+}
+.scoped-navbar .navbar-logout:hover {
+    background: #d94b4b;
+    transform: translateY(-2px);
+}
+
+/* ----------------------------- Helligkeitskontrolle ----------------------------- */
+.scoped-navbar .brightness-control {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+
+.scoped-navbar .brightness-control label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--c-muted);
+}
+
+.scoped-navbar .brightness-control input[type="range"] {
+    -webkit-appearance: none;
+    width: 90px;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--c-border);
+    cursor: pointer;
+}
+.scoped-navbar .brightness-control input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: var(--c-pri);
+}
+
+/* ----------------------------- Username-Anzeige ----------------------------- */
+.scoped-navbar .navbar-username {
+    color: var(--c-muted);
+    font-weight: 600;
+}
+
+/* ----------------------------- Reduced Motion ----------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .scoped-navbar *,
+    .scoped-navbar *::before,
+    .scoped-navbar *::after {
+        transition: none !important;
+    }
 }

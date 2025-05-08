@@ -16,14 +16,8 @@ public class ApplicationController {
     @PostMapping
     public ResponseEntity<?> apply(@RequestBody ApplicationData data) {
 
-        emailService.sendRegistrationNotification(
-                data.getCompanyName(),
-                data.getContactName(),
-                data.getEmail(),
-                data.getPhone(),
-                data.getAdditionalInfo(),
-                data.getChosenPackage() // <<-------------
-        );
+        // Hier nur 1 Übergabe an EmailService:
+        emailService.sendRegistrationMail(data);
 
         return ResponseEntity.ok().body("{\"success\": true}");
     }

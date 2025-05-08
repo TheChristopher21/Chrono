@@ -1,18 +1,14 @@
-// src/pages/AdminUserManagement/AdminUserManagementPage.jsx
-import { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Navbar from '../../components/Navbar';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation, LanguageContext } from '../../context/LanguageContext';
 
 import api from '../../utils/api';
-import '../../styles/AdminUserManagementPageScoped.css'; // CSS
+import '../../styles/AdminUserManagementPageScoped.css';
 
-// Eigene Sub-Komponenten
 import AdminUserList from './AdminUserList';
 import AdminUserForm from './AdminUserForm';
 import DeleteConfirmModal from './DeleteConfirmModal';
-
-// Utils / Konstante
 import { STANDARD_COLORS, defaultWeeklySchedule } from './adminUserManagementUtils';
 
 const AdminUserManagementPage = () => {
@@ -25,7 +21,6 @@ const AdminUserManagementPage = () => {
     const [deleteConfirm, setDeleteConfirm] = useState({ show: false, userId: null });
     const [programStatus, setProgramStatus] = useState("");
 
-    // Neuer Benutzer (mit Feldern für percentage-basierte Erfassung)
     const [newUser, setNewUser] = useState({
         username: '',
         firstName: '',
@@ -68,19 +63,32 @@ const AdminUserManagementPage = () => {
                 email: newUser.email,
                 password: newUser.password,
                 roles: [{ roleName: newUser.role }],
-                expectedWorkDays: newUser.isPercentage || newUser.isHourly
-                    ? null
-                    : (newUser.expectedWorkDays ? Number(newUser.expectedWorkDays) : null),
-                breakDuration: newUser.breakDuration ? Number(newUser.breakDuration) : null,
-                annualVacationDays: newUser.annualVacationDays ? Number(newUser.annualVacationDays) : null,
+                expectedWorkDays:
+                    newUser.isPercentage || newUser.isHourly
+                        ? null
+                        : newUser.expectedWorkDays
+                            ? Number(newUser.expectedWorkDays)
+                            : null,
+                breakDuration: newUser.breakDuration
+                    ? Number(newUser.breakDuration)
+                    : null,
+                annualVacationDays: newUser.annualVacationDays
+                    ? Number(newUser.annualVacationDays)
+                    : null,
                 color: newUser.color,
-                scheduleCycle: newUser.isPercentage || newUser.isHourly ? null : newUser.scheduleCycle,
-                weeklySchedule: newUser.isPercentage || newUser.isHourly ? null : newUser.weeklySchedule,
+                scheduleCycle:
+                    newUser.isPercentage || newUser.isHourly
+                        ? null
+                        : newUser.scheduleCycle,
+                weeklySchedule:
+                    newUser.isPercentage || newUser.isHourly
+                        ? null
+                        : newUser.weeklySchedule,
                 isHourly: newUser.isHourly,
                 isPercentage: newUser.isPercentage,
                 workPercentage: newUser.isPercentage
                     ? Number(newUser.workPercentage)
-                    : 100,
+                    : 100
             };
             await api.post('/api/admin/users', payload);
             setNewUser({
@@ -103,7 +111,7 @@ const AdminUserManagementPage = () => {
             fetchUsers();
         } catch (err) {
             console.error(t("userManagement.errorAddingUser"), err);
-            notify("Fehler beim Hinzufügen des Benutzers.");
+            notify(t("userManagement.errorAddingUser"));
         }
     };
 
@@ -114,7 +122,9 @@ const AdminUserManagementPage = () => {
             role: user.roles?.[0]?.roleName || "ROLE_USER",
             scheduleCycle: rest.scheduleCycle || 1,
             weeklySchedule: rest.weeklySchedule
-                ? (Array.isArray(rest.weeklySchedule) ? rest.weeklySchedule : [rest.weeklySchedule])
+                ? Array.isArray(rest.weeklySchedule)
+                    ? rest.weeklySchedule
+                    : [rest.weeklySchedule]
                 : [{ ...defaultWeeklySchedule }]
         });
     };
@@ -129,15 +139,30 @@ const AdminUserManagementPage = () => {
                 firstName: editingUser.firstName,
                 lastName: editingUser.lastName,
                 email: editingUser.email,
-                roles: editingUser.roles || [{ roleName: editingUser.role || "ROLE_USER" }],
+                roles:
+                    editingUser.roles ||
+                    [{ roleName: editingUser.role || "ROLE_USER" }],
                 color: editingUser.color,
-                expectedWorkDays: editingUser.isPercentage || editingUser.isHourly
-                    ? null
-                    : (editingUser.expectedWorkDays ? Number(editingUser.expectedWorkDays) : null),
-                breakDuration: editingUser.breakDuration ? Number(editingUser.breakDuration) : null,
-                annualVacationDays: editingUser.annualVacationDays ? Number(editingUser.annualVacationDays) : null,
-                scheduleCycle: editingUser.isPercentage || editingUser.isHourly ? null : editingUser.scheduleCycle,
-                weeklySchedule: editingUser.isPercentage || editingUser.isHourly ? null : editingUser.weeklySchedule,
+                expectedWorkDays:
+                    editingUser.isPercentage || editingUser.isHourly
+                        ? null
+                        : editingUser.expectedWorkDays
+                            ? Number(editingUser.expectedWorkDays)
+                            : null,
+                breakDuration: editingUser.breakDuration
+                    ? Number(editingUser.breakDuration)
+                    : null,
+                annualVacationDays: editingUser.annualVacationDays
+                    ? Number(editingUser.annualVacationDays)
+                    : null,
+                scheduleCycle:
+                    editingUser.isPercentage || editingUser.isHourly
+                        ? null
+                        : editingUser.scheduleCycle,
+                weeklySchedule:
+                    editingUser.isPercentage || editingUser.isHourly
+                        ? null
+                        : editingUser.weeklySchedule,
                 isHourly: editingUser.isHourly,
                 isPercentage: editingUser.isPercentage,
                 workPercentage: editingUser.isPercentage
@@ -150,7 +175,7 @@ const AdminUserManagementPage = () => {
             fetchUsers();
         } catch (err) {
             console.error(t("userManagement.errorUpdatingUser"), err);
-            notify("Fehler beim Aktualisieren des Benutzers.");
+            notify(t("userManagement.errorUpdatingUser"));
         }
     };
 
@@ -172,13 +197,12 @@ const AdminUserManagementPage = () => {
             fetchUsers();
         } catch (err) {
             console.error(t("userManagement.errorDeletingUser"), err);
-            notify("Fehler beim Löschen des Benutzers.");
+            notify(t("userManagement.errorDeletingUser"));
         }
     };
 
     async function handleProgramCard(user) {
         try {
-
             const payload = {
                 type: "PROGRAM",
                 data: user.username
@@ -187,9 +211,7 @@ const AdminUserManagementPage = () => {
             const response = await api.post('/api/nfc/command', payload);
 
             if (response.data && response.data.id) {
-                setProgramStatus("Programmierung gestartet. Bitte legen Sie die Karte auf den Leser.");
-
-                // Warte, bis der Status des Befehls auf "done" ist
+                setProgramStatus(t("userManagement.nfcProgramStart"));
                 const commandId = response.data.id;
                 let maxTries = 10;
                 let delay = 1500;
@@ -197,34 +219,31 @@ const AdminUserManagementPage = () => {
                 const pollStatus = async () => {
                     const res = await api.get(`/api/nfc/command/status/${commandId}`);
                     if (res.data.status === "done") {
-                        setProgramStatus("✅ Karte erfolgreich programmiert.");
+                        setProgramStatus(t("userManagement.programCardSuccess"));
                         setTimeout(() => setProgramStatus(""), 10000);
                     } else if (maxTries-- > 0) {
                         setTimeout(pollStatus, delay);
                     } else {
-                        setProgramStatus("⚠️ Zeitüberschreitung beim Kartenprogrammieren.");
-                        setTimeout(() => setProgramStatus(""), 10000); // ← NEU
+                        setProgramStatus(t("userManagement.programCardErrorTimeout"));
+                        setTimeout(() => setProgramStatus(""), 10000);
                     }
                 };
 
                 pollStatus();
             } else {
-                notify("Fehler beim Kartenbeschreiben: Keine ID erhalten.");
+                notify(t("userManagement.programCardError"));
             }
         } catch (err) {
             console.error("Fehler beim Kartenprogrammieren:", err);
-            notify("Fehler beim Senden des Programmierbefehls.");
+            notify(t("userManagement.programCardError"));
         }
     }
-
 
     return (
         <div className="admin-user-management scoped-dashboard">
             <Navbar />
             {programStatus && (
-                <div className="nfc-status-message">
-                    {programStatus}
-                </div>
+                <div className="nfc-status-message">{programStatus}</div>
             )}
 
             <header className="page-header">
@@ -260,6 +279,8 @@ const AdminUserManagementPage = () => {
 
             <DeleteConfirmModal
                 visible={deleteConfirm.show}
+                title={t("userManagement.deleteConfirmTitle")}
+                message={t("userManagement.deleteConfirmMessage")}
                 onConfirm={confirmDelete}
                 onCancel={cancelDelete}
             />

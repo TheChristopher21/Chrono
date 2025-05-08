@@ -1,5 +1,6 @@
 package com.chrono.chrono.entities;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.HashSet;
@@ -29,7 +30,10 @@ public class User {
     private Integer trackingBalanceInMinutes = 0;
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private Set<VacationRequest> vacationRequests = new HashSet<>();
-
+    @ManyToOne
+    @JoinColumn(name = "company_id")
+    @JsonBackReference
+    private Company company;
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -152,7 +156,12 @@ public class User {
     public void setVacationRequests(Set<VacationRequest> vacationRequests) {
         this.vacationRequests = vacationRequests;
     }
-
+    public Company getCompany() {
+        return company;
+    }
+    public void setCompany(Company company) {
+        this.company = company;
+    }
     public Integer getWorkPercentage() {
         return workPercentage != null ? workPercentage : 100;
     }

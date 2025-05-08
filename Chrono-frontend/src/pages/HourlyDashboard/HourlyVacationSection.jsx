@@ -1,4 +1,3 @@
-// HourlyVacationSection.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
 import VacationCalendar from '../../components/VacationCalendar';
@@ -13,13 +12,11 @@ const HourlyVacationSection = ({
         <section className="vacation-section">
             <h3>{t('vacationTitle')}</h3>
 
-            {/* Urlaubstage‑Statistik */}
             <p>
-                <strong>{t('vacationCalendarTitle')}:</strong>{' '}
-                {userProfile?.annualVacationDays ?? 0} {t('daysLabel')}
+                <strong>{t('vacationCalendarTitle')}:</strong>{" "}
+                {userProfile?.annualVacationDays ?? 0} {t('daysLabel')}
             </p>
 
-            {/* Kalender mit Modal‑Button zum Beantragen */}
             <VacationCalendar
                 vacationRequests={vacationRequests}
                 userProfile={userProfile}

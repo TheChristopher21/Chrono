@@ -1,195 +1,218 @@
-/****************************************
- * Login.css – 2-Spalten-Layout
- * Hintergrundbild in rechter Spalte
- * Mit abgedunkeltem Dark Mode links & rechts
- ****************************************/
-.login-page-2col {
+/* =========================================================================
+   Login.css · Optimiert + Scoped für Light & Dark
+   ========================================================================= */
+
+/*
+   Scope: .scoped-login
+   - Hier definieren wir eigene CSS-Variablen für die Login-Seite
+   - So wird nur innerhalb dieses Containers gestylt
+*/
+
+/* --------------------------- Variablen für LIGHT --------------------------- */
+.scoped-login {
+    --c-text:           #1f1f1f;
+    --c-bg:             #f7f8fa;
+    --c-card:           #ffffff;
+    --c-border:         #d1d4e2;
+    --c-muted:          #545863;
+
+    --c-primary:        #475bff;
+    --c-primary-hover:  #6b7cff;
+    --c-danger:         #ed5757;
+    --c-secondary:      #48bb78; /* z.B. für Punch-Messages */
+
+    --radius:           8px;
+    --transition:       0.3s;
+    --font-family:      'Poppins', system-ui, sans-serif;
+
+    /* Du kannst hier für Light Mode ein "transparentes" Overlay definieren,
+       wenn du z.B. "rgba(255,255,255,0.7)" brauchst, dann setze --c-bg-rgb etc. */
+}
+
+/* --------------------------- Variablen für DARK --------------------------- */
+[data-theme="dark"] .scoped-login {
+    --c-text:          #e4e6eb;
+    --c-bg:            #18191a;
+    --c-card:          #242526;
+    --c-border:        #484A4D;
+    --c-muted:         #9da1b2;
+
+    --c-primary:       #475bff;
+    --c-primary-hover: #6b7cff;
+    --c-danger:        #ed5757;
+    --c-secondary:     #48bb78;
+
+    --radius:          8px;
+    --transition:      0.3s;
+    /* Font-Family bleibt gleich */
+}
+
+/* --------------------------- Grund-Layout --------------------------- */
+.scoped-login .login-page-2col {
     display: flex;
     min-height: 100vh;
-    background-color: var(--background-color);
+    background-color: var(--c-bg);
     font-family: var(--font-family);
-    transition: background-color 0.3s ease;
+    transition: background-color var(--transition) ease;
 }
 
 /* -------------------------------- */
 /* Linke Spalte: Login-Formular     */
 /* -------------------------------- */
-.login-left {
+.scoped-login .login-left {
     flex: 1 1 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 2rem;
-    background-color: var(--card-bg); /* Light Mode: z.B. Weiß */
-    transition: background-color 0.3s ease;
-
+    background-color: var(--c-card);
+    transition: background-color var(--transition) ease;
 }
 
-.login-left-content {
+.scoped-login .login-left-content {
     width: 100%;
     max-width: 350px;
 }
 
-.brand-logo {
-    /* Breite/Höhe, damit der Hintergrund sichtbar ist */
-    width: 60px;
-    height: 60px;
-
-    /* Dein Logo als Hintergrundbild */
-    background: url("/public/img/chronoNurSchrift.png");
-    background-size: contain;
-
-    /* Optional, um es nicht zu verschieben */
-    display: inline-block;
-    margin-bottom: 1rem;
-}
-
-
-.login-left-content h1 {
-    color: var(--text-color);
+.scoped-login .login-left-content h1 {
+    color: var(--c-text);
     margin-bottom: 0.75rem;
     font-size: 1.8rem;
 }
 
-.login-left-content p {
-    color: var(--text-color);
+.scoped-login .login-left-content p {
+    color: var(--c-text);
     margin-bottom: 1.5rem;
     font-size: 0.95rem;
 }
 
-.login-left-content form {
+/* Formular-Layout */
+.scoped-login .login-left-content form {
     display: flex;
     flex-direction: column;
     gap: 1rem;
 }
 
-.login-left-content form label {
-    color: var(--text-color);
+.scoped-login .login-left-content form label {
+    color: var(--c-text);
     font-weight: 500;
     margin-bottom: 0.2rem;
 }
 
 /* Inputs */
-.login-left-content input {
+.scoped-login .login-left-content input {
     padding: 0.75rem;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--c-border);
     border-radius: var(--radius);
     font-size: 1rem;
     outline: none;
-    transition:
-            border-color var(--transition),
-            box-shadow var(--transition),
-            background-color 0.3s,
-            color 0.3s;
+    color: var(--c-text);
+    background-color: #fff; /* im Dark Mode überschreiben wir das */
+    transition: border-color var(--transition), box-shadow var(--transition);
 }
-
-.login-left-content input:focus {
-    border-color: var(--primary-color);
+.scoped-login .login-left-content input:focus {
+    border-color: var(--c-primary);
     box-shadow: 0 0 4px rgba(90, 103, 216, 0.3);
 }
 
 /* Button */
-.login-left-content button {
+.scoped-login .login-left-content button {
     padding: 0.75rem;
     border: none;
     border-radius: var(--radius);
-    background-color: var(--primary-color);
+    background-color: var(--c-primary);
     color: #fff;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
     transition: background-color var(--transition), transform 0.2s;
 }
-.login-left-content button:hover {
-    background-color: var(--primary-hover);
+.scoped-login .login-left-content button:hover {
+    background-color: var(--c-primary-hover);
     transform: translateY(-2px);
 }
 
 /* Sprache-Selector */
-.language-switch {
+.scoped-login .language-switch {
     display: flex;
     align-items: center;
     justify-content: flex-end;
     margin-bottom: 1rem;
 }
 
-.language-switch label {
+.scoped-login .language-switch label {
     margin-right: 0.75rem;
     font-weight: bold;
-    color: var(--text-color);
+    color: var(--c-text);
 }
 
-.language-switch select {
+.scoped-login .language-switch select {
     padding: 0.5rem 0.75rem;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--c-border);
     border-radius: var(--radius);
     font-size: 1rem;
-    color: var(--text-color);
-    background-color: #fff;
+    color: var(--c-text);
+    background-color: #fff; /* wird im Dark Mode überschrieben */
     transition: border-color 0.2s, box-shadow 0.2s;
 }
-.language-switch select:focus {
-    border-color: var(--primary-color);
+.scoped-login .language-switch select:focus {
+    border-color: var(--c-primary);
     box-shadow: 0 0 5px rgba(90, 103, 216, 0.5);
 }
 
 /* Meldungen (Fehler/Punch) */
-.error-message {
-    color: var(--danger-color);
+.scoped-login .error-message {
+    color: var(--c-danger);
     text-align: center;
     margin-bottom: 1rem;
 }
 
-.punch-message {
+.scoped-login .punch-message {
     background-color: rgba(72, 187, 120, 0.1);
-    border: 1px solid var(--secondary-color);
+    border: 1px solid var(--c-secondary);
     padding: 1rem;
     margin-bottom: 1rem;
     text-align: center;
     border-radius: var(--radius);
-    color: var(--secondary-color);
+    color: var(--c-secondary);
 }
 
 /* Registrieren-CTA */
-.register-cta {
+.scoped-login .register-cta {
     margin-top: 1.5rem;
     font-size: 0.9rem;
-    color: var(--text-color);
+    color: var(--c-text);
     text-align: center;
 }
 
-.register-cta a {
-    color: var(--primary-color);
+.scoped-login .register-cta a {
+    color: var(--c-primary);
     text-decoration: none;
     font-weight: 500;
     margin-left: 0.25rem;
 }
-
-.register-cta a:hover {
+.scoped-login .register-cta a:hover {
     text-decoration: underline;
 }
 
 /* -------------------------------- */
-/* Rechte Spalte: Bild-Hintergrund  */
+/* Rechte Spalte: Hintergrundbild   */
 /* -------------------------------- */
-.login-right {
+.scoped-login .login-right {
     flex: 1 1 50%;
     position: relative;
     padding: 2rem;
-
-    /* Light Mode Bild + Hintergrundfarbe */
-    background: #152037 url("/public/img/komplettesLogo.png")
+    background: #152037 url('/public/img/komplettesLogo.png')
     no-repeat center center;
     background-size: cover;
-
     display: flex;
     align-items: center;
     justify-content: center;
+    transition: background-color var(--transition) ease;
     color: #fff;
-    transition: background-color 0.3s ease;
 }
 
-.colorful-area {
+.scoped-login .colorful-area {
     text-align: center;
     max-width: 80%;
     margin: 0 auto;
@@ -198,74 +221,57 @@
 /* -------------------------------- */
 /* Dark Mode Overrides              */
 /* -------------------------------- */
-[data-theme="dark"] .login-page-2col {
-    background-color: var(--background-color);
+[data-theme="dark"] .scoped-login .login-left {
+    background-color: var(--c-card);
 }
 
-/* Linke Spalte dunkler + hellere Schrift */
-[data-theme="dark"] .login-left {
-    background-color: #242526;
+[data-theme="dark"] .scoped-login .login-left-content h1,
+[data-theme="dark"] .scoped-login .login-left-content p,
+[data-theme="dark"] .scoped-login .login-left-content form label,
+[data-theme="dark"] .scoped-login .language-switch label,
+[data-theme="dark"] .scoped-login .register-cta,
+[data-theme="dark"] .scoped-login .error-message,
+[data-theme="dark"] .scoped-login .punch-message {
+    color: var(--c-text);
 }
 
-[data-theme="dark"] .login-left-content h1,
-[data-theme="dark"] .login-left-content p,
-[data-theme="dark"] .login-left-content form label,
-[data-theme="dark"] .language-switch label,
-[data-theme="dark"] .register-cta,
-[data-theme="dark"] .error-message,
-[data-theme="dark"] .punch-message {
-    /* Hellere Farbe für klareren Kontrast */
+[data-theme="dark"] .scoped-login .login-left-content input {
+    background-color: #3A3B3C;
+    border: 1px solid var(--c-border);
+    color: #f0f0f0;
+}
+[data-theme="dark"] .scoped-login .login-left-content input::placeholder {
+    color: #bcbcbc;
+}
+
+[data-theme="dark"] .scoped-login .language-switch select {
+    background-color: #3A3B3C;
+    border: 1px solid var(--c-border);
     color: #f0f0f0;
 }
 
-/* Inputs im Dark Mode */
-[data-theme="dark"] .login-left-content input {
-    background-color: #3A3B3C;
-    border: 1px solid #484A4D;
-    color: #f0f0f0; /* Heller als #e4e6eb */
-}
-[data-theme="dark"] .login-left-content input::placeholder {
-    color: #bcbcbc; /* Noch heller, damit sichtbar */
-}
-
-/* Sprache-Select im Dark Mode */
-[data-theme="dark"] .language-switch select {
-    background-color: #3A3B3C;
-    border: 1px solid #484A4D;
-    color: #f0f0f0;
-}
-
-/* Button im Dark Mode */
-[data-theme="dark"] .login-left-content button {
-    background-color: var(--primary-color);
-}
-[data-theme="dark"] .login-left-content button:hover {
-    background-color: var(--primary-hover);
-}
-
-/* Rechte Spalte -> Overlays das Bild stark + hellere Schrift */
-[data-theme="dark"] .login-right {
+/* Rechte Spalte im Dark Mode -> dunklere Overlay */
+[data-theme="dark"] .scoped-login .login-right {
     background:
-            linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)),
-            url("/public/img/komplettesLogo.png")
-            no-repeat center center;
+            linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+            url('/public/img/komplettesLogo.png') no-repeat center center;
     background-size: cover;
-    color: #f0f0f0; /* Heller Text */
+    color: #f0f0f0;
 }
 
 /* -------------------------------- */
 /* Responsive Breakpoint            */
 /* -------------------------------- */
 @media (max-width: 768px) {
-    .login-page-2col {
+    .scoped-login .login-page-2col {
         flex-direction: column;
     }
-    .login-left,
-    .login-right {
+    .scoped-login .login-left,
+    .scoped-login .login-right {
         width: 100%;
         flex: 1 1 auto;
     }
-    .login-right {
+    .scoped-login .login-right {
         min-height: 250px;
     }
 }

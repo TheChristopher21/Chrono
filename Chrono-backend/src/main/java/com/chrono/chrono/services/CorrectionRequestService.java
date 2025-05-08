@@ -88,7 +88,7 @@ public class CorrectionRequestService {
      * Anschließend werden die Zeiteinträge für den entsprechenden Tag überschrieben.
      */
     @Transactional
-    public CorrectionRequest approveRequest(Long requestId) {
+    public CorrectionRequest approveRequest(Long requestId, String comment) {
         CorrectionRequest req = correctionRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found"));
 
@@ -96,122 +96,30 @@ public class CorrectionRequestService {
             throw new RuntimeException("Request with ID " + requestId + " has already been processed.");
         }
 
-        // Markiere den Request als genehmigt
+        // 1) Nur den Antrag als akzeptiert markieren + Admin-Kommentar setzen
         req.setApproved(true);
         req.setDenied(false);
-        CorrectionRequest saved = correctionRepo.save(req);
+        req.setAdminComment(comment);
 
-        // Aktualisiere die TimeTracking-Einträge
-        LocalDate correctionDay = req.getDesiredStartTime().toLocalDate();
-        LocalDateTime dayStart = correctionDay.atStartOfDay();
-        LocalDateTime dayEnd = dayStart.plusDays(1);
+        // 2) NICHT mehr selbst WorkStart/BreakStart/... anlegen!
+        //    Wir lassen das 'updateDayTimeEntries' aus dem TimeTrackingService machen.
 
-        List<TimeTracking> entries = timeRepo.findByUserAndStartTimeBetween(req.getUser(), dayStart, dayEnd);
-        System.out.println("DEBUG: Found " + entries.size() + " time tracking entries for user "
-                + req.getUser().getUsername() + " on " + correctionDay);
-
-        // Falls Originalzeiten nicht gesetzt sind, fülle sie ggf. aus bestehenden Einträgen
-        if (req.getOriginalWorkStart() == null || req.getOriginalBreakStart() == null ||
-                req.getOriginalBreakEnd() == null || req.getOriginalWorkEnd() == null) {
-            for (TimeTracking tt : entries) {
-                int order = (tt.getPunchOrder() != null) ? tt.getPunchOrder() : 0;
-                switch (order) {
-                    case 1:
-                        if (req.getOriginalWorkStart() == null) req.setOriginalWorkStart(tt.getWorkStart());
-                        break;
-                    case 2:
-                        if (req.getOriginalBreakStart() == null) req.setOriginalBreakStart(tt.getBreakStart());
-                        break;
-                    case 3:
-                        if (req.getOriginalBreakEnd() == null) req.setOriginalBreakEnd(tt.getBreakEnd());
-                        break;
-                    case 4:
-                        if (req.getOriginalWorkEnd() == null) req.setOriginalWorkEnd(tt.getWorkEnd());
-                        break;
-                    default:
-                        System.out.println("DEBUG: Unexpected punchOrder: " + order);
-                }
-            }
-            correctionRepo.save(req);
-        }
-
-        if (!entries.isEmpty()) {
-            for (TimeTracking tt : entries) {
-                int order = (tt.getPunchOrder() != null) ? tt.getPunchOrder() : 0;
-                switch (order) {
-                    case 1:
-                        tt.setStartTime(req.getDesiredStartTime());
-                        tt.setWorkStart(req.getWorkStart());
-                        break;
-                    case 2:
-                        LocalTime breakStart = req.getBreakStart() != null ? req.getBreakStart() : req.getDesiredStartTime().toLocalTime();
-                        tt.setBreakStart(breakStart);
-                        tt.setStartTime(LocalDateTime.of(req.getDesiredStartTime().toLocalDate(), breakStart));
-                        break;
-                    case 3:
-                        LocalTime breakEnd = req.getBreakEnd() != null ? req.getBreakEnd() : req.getDesiredStartTime().toLocalTime();
-                        tt.setBreakEnd(breakEnd);
-                        tt.setStartTime(LocalDateTime.of(req.getDesiredStartTime().toLocalDate(), breakEnd));
-                        break;
-                    case 4:
-                        tt.setEndTime(req.getDesiredEndTime());
-                        tt.setWorkEnd(req.getWorkEnd());
-                        break;
-                    default:
-                        System.out.println("DEBUG: Unexpected punchOrder: " + order);
-                }
-                tt.setCorrected(true);
-                timeRepo.save(tt);
-            }
-        } else {
-            // Falls keine Einträge vorhanden sind, neue erstellen
-            System.out.println("DEBUG: No existing time tracking entries found for correction, creating new ones.");
-
-            TimeTracking tt1 = new TimeTracking();
-            tt1.setUser(req.getUser());
-            tt1.setPunchOrder(1);
-            tt1.setStartTime(req.getDesiredStartTime());
-            tt1.setWorkStart(req.getWorkStart());
-            tt1.setCorrected(true);
-            timeRepo.save(tt1);
-
-            // PunchOrder 2 – Break Start
-            TimeTracking tt2 = new TimeTracking();
-            tt2.setUser(req.getUser());
-            tt2.setPunchOrder(2);
-            LocalTime breakStart = req.getBreakStart() != null ? req.getBreakStart() : req.getDesiredStartTime().toLocalTime();
-            tt2.setBreakStart(breakStart);
-            tt2.setStartTime(LocalDateTime.of(req.getDesiredStartTime().toLocalDate(), breakStart));
-            tt2.setCorrected(true);
-            timeRepo.save(tt2);
-
-            // PunchOrder 3 – Break End
-            TimeTracking tt3 = new TimeTracking();
-            tt3.setUser(req.getUser());
-            tt3.setPunchOrder(3);
-            LocalTime breakEnd = req.getBreakEnd() != null ? req.getBreakEnd() : req.getDesiredStartTime().toLocalTime();
-            tt3.setBreakEnd(breakEnd);
-            tt3.setStartTime(LocalDateTime.of(req.getDesiredStartTime().toLocalDate(), breakEnd));
-            tt3.setCorrected(true);
-            timeRepo.save(tt3);
-
-            // PunchOrder 4 – Work End
-            TimeTracking tt4 = new TimeTracking();
-            tt4.setUser(req.getUser());
-            tt4.setPunchOrder(4);
-            tt4.setStartTime(req.getDesiredEndTime());
-            tt4.setEndTime(req.getDesiredEndTime());
-            tt4.setWorkEnd(req.getWorkEnd());
-            tt4.setCorrected(true);
-            timeRepo.save(tt4);
-        }
-
-        return saved;
+        // => Speichern, fertig.
+        return correctionRepo.save(req);
     }
 
 
+    private CorrectionRequest loadAndValidate(Long id) {
+        CorrectionRequest req = correctionRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Correction Request with ID " + id + " not found"));
+        if (req.isApproved() || req.isDenied()) {
+            throw new RuntimeException("Request already processed.");
+        }
+        return req;
+    }
+
     @Transactional
-    public CorrectionRequest denyRequest(Long requestId) {
+    public CorrectionRequest denyRequest(Long requestId, String comment) {
         CorrectionRequest req = correctionRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found"));
         if (req.isApproved() || req.isDenied()) {
@@ -219,6 +127,7 @@ public class CorrectionRequestService {
         }
         req.setDenied(true);
         req.setApproved(false);
+        req.setAdminComment(comment);          // ⬅️  speichern
         return correctionRepo.save(req);
     }
 }

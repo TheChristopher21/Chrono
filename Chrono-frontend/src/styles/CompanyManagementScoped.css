@@ -1,0 +1,169 @@
+/* =========================================================================
+   CompanyManagementScoped.css
+   Scope: .company-management-page.scoped-company
+   ========================================================================= */
+
+/* 1) LIGHT Mode Variablen */
+.company-management-page.scoped-company {
+    --c-text:   #1e1f22;
+    --c-bg:     #f4f6ff;
+    --c-card:   #ffffff;
+    --c-border: #d5d8e5;
+
+    --c-primary:   #475bff;
+    --c-primary-dim:#6b7cff;
+    --c-muted:     #60646c;
+    --c-danger:    #e74c3c;
+
+    --u-radius: 14px;
+    --u-shadow: 0 4px 12px rgba(0,0,0,0.08);
+
+    font-family: 'Poppins',sans-serif;
+    background: var(--c-bg);
+    color: var(--c-text);
+    padding: 1.5rem;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* 2) DARK Mode Variablen */
+[data-theme="dark"] .company-management-page.scoped-company {
+    --c-text:   #e5e7ec;
+    --c-bg:     #15171c;
+    --c-card:   #1f2127;
+    --c-border: #373b46;
+    --c-muted:  #a1a4b4;
+    --c-danger: #e74c3c;
+}
+
+/* ----------------------------------------------------
+   3) Allgemeines Layout + Abstände
+   ---------------------------------------------------- */
+.company-management-page.scoped-company .cmp-title {
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 1.8rem;
+}
+
+/* 4) Sektionen + Cards */
+.company-management-page.scoped-company .cmp-section {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    padding: 1.5rem;
+    margin-bottom: 1.2rem;
+    box-shadow: var(--u-shadow);
+}
+
+.company-management-page.scoped-company .cmp-form,
+.company-management-page.scoped-company .cmp-inline-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+}
+
+.company-management-page.scoped-company .cmp-form input,
+.company-management-page.scoped-company .cmp-inline-form input {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    background: var(--c-card);
+    color: var(--c-text);
+}
+.company-management-page.scoped-company .cmp-form button,
+.company-management-page.scoped-company .cmp-inline-form button {
+    background: var(--c-primary);
+    color: #fff;
+    border: none;
+    border-radius: var(--u-radius);
+    padding: 0.5rem 1rem;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+.company-management-page.scoped-company .cmp-form button:hover,
+.company-management-page.scoped-company .cmp-inline-form button:hover {
+    background: var(--c-primary-dim);
+    transform: translateY(-2px);
+}
+
+.company-management-page.scoped-company .cmp-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+/* Einzelnes Firmen-Item */
+.company-management-page.scoped-company .cmp-item {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    margin-bottom: 0.8rem;
+    padding: 1rem;
+    box-shadow: var(--u-shadow);
+}
+.company-management-page.scoped-company .cmp-company-row {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+}
+.company-management-page.scoped-company .cmp-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+.company-management-page.scoped-company .cmp-info strong {
+    font-weight: 700;
+    font-size: 1rem;
+}
+.company-management-page.scoped-company .cmp-active {
+    color: green;
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+.company-management-page.scoped-company .cmp-inactive {
+    color: #bdc3c7;
+    font-size: 0.88rem;
+    font-weight: 500;
+}
+.company-management-page.scoped-company .cmp-users {
+    font-size: 0.85rem;
+    color: var(--c-muted);
+}
+
+/* Button-Gruppe */
+.company-management-page.scoped-company .cmp-btns {
+    display: flex;
+    gap: 0.5rem;
+}
+.company-management-page.scoped-company .cmp-btns button {
+    padding: 0.4rem 0.8rem;
+}
+.company-management-page.scoped-company .cmp-btns .danger {
+    background: var(--c-danger);
+}
+.company-management-page.scoped-company .cmp-btns .danger:hover {
+    background: #ff6b6b;
+}
+
+/* Fehler-Text */
+.company-management-page.scoped-company .cmp-error {
+    color: red;
+    font-weight: 600;
+    text-align: center;
+    margin-top: 1rem;
+}
+
+/* ----------------------------------------------------
+   5) Responsive
+   ---------------------------------------------------- */
+@media(max-width: 600px) {
+    .company-management-page.scoped-company .cmp-company-row {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .company-management-page.scoped-company .cmp-btns {
+        margin-top: 0.5rem;
+    }
+}
