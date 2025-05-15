@@ -1,4 +1,4 @@
-// src/pages/PercentageDashboard/PercentageWeekOverview.jsx
+// PercentageWeekOverview.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
 import { useTranslation } from '../../context/LanguageContext';
@@ -6,10 +6,8 @@ import { useTranslation } from '../../context/LanguageContext';
 import {
     addDays,
     formatISO,
-    formatDate,
     formatTime,
     computeDayTotalMinutes,
-    expectedDayMinutes,
     isLateTime,
     minutesToHours,
 } from './percentageDashUtils';
@@ -18,43 +16,41 @@ const PercentageWeekOverview = ({
                                     entries,
                                     monday,
                                     setMonday,
-                                    weeklyDiff,          // falls du eine Wochensumme anzeigst
+                                    weeklyDiff,
                                     handleManualPunch,
                                     punchMessage,
                                     openCorrectionModal,
                                 }) => {
     const { t } = useTranslation();
 
-    // Die 7 Tage der Woche berechnen:
-    const weekDates  = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
-    // Nur als ISO, damit wir filtern können:
+    // Sieben Tage ab "monday"
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
     const isoStrings = weekDates.map(formatISO);
 
-    // dayMap: isoString => Array von Einträgen
+    // dayMap: isoString -> Array
     const dayMap = {};
     entries.forEach(e => {
-        const iso = e.startTime.slice(0, 10); // "yyyy-MM-dd"
-        if (isoStrings.includes(iso)) {
-            if (!dayMap[iso]) dayMap[iso] = [];
-            dayMap[iso].push(e);
-        }
+        const iso = e.startTime.slice(0, 10);
+        if (!dayMap[iso]) dayMap[iso] = [];
+        dayMap[iso].push(e);
     });
 
-    // Navigation
-    const prevWeek = () => setMonday(prev => addDays(prev, -7));
-    const nextWeek = () => setMonday(prev => addDays(prev, 7));
-    const jumpWeek = (e) => {
+    function prevWeek() {
+        setMonday(prev => addDays(prev, -7));
+    }
+    function nextWeek() {
+        setMonday(prev => addDays(prev, 7));
+    }
+    function jumpWeek(e) {
         const d = new Date(e.target.value);
         if (!isNaN(d)) setMonday(d);
-    };
+    }
 
     return (
         <section className="weekly-overview">
             <h3>{t('weeklyOverview')}</h3>
 
-            {punchMessage && (
-                <div className="punch-message">{punchMessage}</div>
-            )}
+            {punchMessage && <div className="punch-message">{punchMessage}</div>}
 
             {/* Manuelles Stempeln */}
             <div className="punch-section">
@@ -70,7 +66,7 @@ const PercentageWeekOverview = ({
                 </button>
                 <input
                     type="date"
-                    value={formatISO(monday)}  // "yyyy-MM-dd"
+                    value={formatISO(monday)}
                     onChange={jumpWeek}
                 />
                 <button onClick={nextWeek}>
@@ -78,50 +74,41 @@ const PercentageWeekOverview = ({
                 </button>
             </div>
 
-            {/* Tages‐Karten */}
+            {/* Darstellung der Einträge */}
             <div className="week-display">
-                {weekDates.map((d, i) => {
-                    const iso  = formatISO(d); // "yyyy-MM-dd"
-                    const list = (dayMap[iso] || []).sort((a,b) => a.punchOrder - b.punchOrder);
-                    const worked = computeDayTotalMinutes(list);
+                {weekDates.map((dayObj, idx) => {
+                    const iso = isoStrings[idx];
+                    const dayEntries = (dayMap[iso] || []).sort((a,b) => a.punchOrder - b.punchOrder);
+                    const worked = computeDayTotalMinutes(dayEntries);
 
                     return (
-                        <div key={i} className="week-day-card">
+                        <div key={idx} className="week-day-card">
                             <div className="week-day-header">
-                                {/* Direkt d.toLocaleDateString(...) verwenden */}
-                                {d.toLocaleDateString('de-DE', {
+                                {dayObj.toLocaleDateString('de-DE', {
                                     weekday: 'long',
-                                    timeZone: 'Europe/Berlin',
-                                })},{' '}
-                                {d.toLocaleDateString('de-DE', {
                                     day: '2-digit',
                                     month: '2-digit',
-                                    year: 'numeric',
-                                    timeZone: 'Europe/Berlin',
+                                    year: 'numeric'
                                 })}
                             </div>
 
                             <div className="week-day-content">
-                                {list.length === 0 ? (
+                                {dayEntries.length === 0 ? (
                                     <p>{t('noEntries')}</p>
                                 ) : (
                                     <ul>
-                                        {list.map(e => {
-                                            // PunchOrder -> Label
-                                            const label = [
-                                                '–',
-                                                t('workStart'),
-                                                t('breakStart'),
-                                                t('breakEnd'),
-                                                t('workEnd'),
-                                            ][e.punchOrder] || '-';
+                                        {dayEntries.map(e => {
+                                            const labelByOrder = {
+                                                1: t('workStart'),
+                                                2: t('breakStart'),
+                                                3: t('breakEnd'),
+                                                4: t('workEnd'),
+                                            };
+                                            const label = labelByOrder[e.punchOrder] || '-';
 
-                                            // Uhrzeit
                                             let time = '-';
                                             if (e.punchOrder === 4) {
-                                                time = e.endTime
-                                                    ? formatTime(e.endTime)
-                                                    : formatTime(e.startTime);
+                                                time = e.endTime ? formatTime(e.endTime) : formatTime(e.startTime);
                                             } else if (e.punchOrder === 2 && e.breakStart) {
                                                 time = formatTime(e.breakStart);
                                             } else if (e.punchOrder === 3 && e.breakEnd) {
@@ -131,10 +118,7 @@ const PercentageWeekOverview = ({
                                             }
 
                                             return (
-                                                <li
-                                                    key={e.id}
-                                                    className={isLateTime(time) ? 'late-time' : ''}
-                                                >
+                                                <li key={e.id} className={isLateTime(time) ? 'late-time' : ''}>
                                                     <strong>{label}:</strong> {time}
                                                 </li>
                                             );
@@ -143,7 +127,7 @@ const PercentageWeekOverview = ({
                                 )}
                             </div>
 
-                            {list.length > 0 && (
+                            {dayEntries.length > 0 && (
                                 <div className="daily-summary">
                                     ⏱ {minutesToHours(worked)}
                                 </div>

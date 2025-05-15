@@ -1,27 +1,33 @@
+// PercentageDashboard.jsx
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from "react-router-dom";
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
-import { useNavigate } from "react-router-dom";
 import "jspdf-autotable";
+import jsPDF from "jspdf";
 
 import {
-    parseHex16, getMondayOfWeek, addDays, formatISO,
-    computeDayTotalMinutes, expectedDayMinutes
+    parseHex16,
+    getMondayOfWeek,
+    addDays,
+    formatISO,
+    computeDayTotalMinutes,
+    expectedDayMinutes
 } from './percentageDashUtils';
 
 import PercentageWeekOverview from './PercentageWeekOverview';
 import PercentageVacationSection from './PercentageVacationSection';
 import PercentageCorrectionsPanel from './PercentageCorrectionsPanel';
 import PercentageCorrectionModal from './PercentageCorrectionModal';
-import '../../styles/PercentageDashboardScoped.css';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
-import jsPDF from "jspdf";
+
+import '../../styles/PercentageDashboardScoped.css';
 
 const PercentageDashboard = () => {
-    const {t} = useTranslation();
-    const {notify} = useNotification();
+    const { t } = useTranslation();
+    const { notify } = useNotification();
     useNavigate();
 
     const [profile, setProfile] = useState(null);
@@ -30,49 +36,58 @@ const PercentageDashboard = () => {
     const [punchMsg, setPunchMsg] = useState('');
     const lastPunch = useRef(0);
 
+    // Urlaub
     const [vacationRequests, setVacationRequests] = useState([]);
-    const [vacationForm, setVacationForm] = useState({startDate: '', endDate: ''});
 
+    // Korrekturen
     const [correctionRequests, setCorrectionRequests] = useState([]);
     const [showCorrectionsPanel, setShowCorrectionsPanel] = useState(false);
     const [showAllCorrections, setShowAllCorrections] = useState(false);
     const [selectedCorrectionMonday, setSelectedCorrectionMonday] = useState(getMondayOfWeek(new Date()));
 
+    // CorrectionModal
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
     const [correctionDate, setCorrectionDate] = useState("");
     const [correctionData, setCorrectionData] = useState({
-        workStart: "", breakStart: "", breakEnd: "", workEnd: "", reason: ""
+        workStart: "",
+        breakStart: "",
+        breakEnd: "",
+        workEnd: "",
+        reason: ""
     });
 
+    // Print
     const [printModalVisible, setPrintModalVisible] = useState(false);
     const [printStartDate, setPrintStartDate] = useState(formatISO(new Date()));
     const [printEndDate, setPrintEndDate] = useState(formatISO(new Date()));
 
-    // 🛡️ Profil sicher laden & validieren
+    // Profil laden
     useEffect(() => {
         api.get('/api/auth/me')
             .then(res => {
-                const profile = res.data;
-
-                if (profile.isPercentage) {
-                    if (profile.workPercentage == null) profile.workPercentage = 100;
-                    if (profile.annualVacationDays == null) profile.annualVacationDays = 25;
-                    if (profile.trackingBalanceInMinutes == null) profile.trackingBalanceInMinutes = 0; // 🆕
+                const p = res.data;
+                // Absicherung: defaults für isPercentage
+                if (p.isPercentage) {
+                    if (p.workPercentage == null) p.workPercentage = 100;
+                    if (p.annualVacationDays == null) p.annualVacationDays = 25;
+                    if (p.trackingBalanceInMinutes == null) p.trackingBalanceInMinutes = 0;
                 }
-
-                setProfile(profile);
+                setProfile(p);
             })
             .catch(err => {
                 console.error('Profil-Fehler', err);
                 notify("Fehler beim Laden des Nutzerprofils");
             });
-    }, []);
+    }, [notify]);
 
-
+    // Einträge laden
     const loadEntries = useCallback(() => {
         if (!profile) return;
         api.get(`/api/timetracking/history?username=${profile.username}`)
-            .then(r => setEntries((r.data || []).filter(e => [1, 2, 3, 4].includes(e.punchOrder))))
+            .then(r => {
+                const data = (r.data || []).filter(e => [1,2,3,4].includes(e.punchOrder));
+                setEntries(data);
+            })
             .catch(err => console.error('Eintrags‑Fehler', err));
     }, [profile]);
 
@@ -80,6 +95,7 @@ const PercentageDashboard = () => {
         loadEntries();
     }, [loadEntries]);
 
+    // NFC Polling
     useEffect(() => {
         const iv = setInterval(() => doNfcCheck(), 2000);
         return () => clearInterval(iv);
@@ -99,7 +115,7 @@ const PercentageDashboard = () => {
             if (now - lastPunch.current < 60000) return;
             lastPunch.current = now;
 
-            await api.post('/api/timetracking/punch', null, {params: {username: cardUser}});
+            await api.post('/api/timetracking/punch', null, { params: { username: cardUser } });
             setPunchMsg(`Eingestempelt: ${cardUser}`);
             setTimeout(() => setPunchMsg(''), 3000);
             loadEntries();
@@ -108,20 +124,11 @@ const PercentageDashboard = () => {
         }
     }
 
-    const formatBalance = (min) => {
-        if (min == null) return "0h 0min";
-        const sign = min >= 0 ? "+" : "-";
-        const abs = Math.abs(min);
-        const h = Math.floor(abs / 60);
-        const m = abs % 60;
-        return `${sign}${h}h ${m}min`;
-    };
-
-
+    // Manuelles Stempeln
     async function handleManualPunch() {
         if (!profile) return;
         try {
-            await api.post('/api/timetracking/punch', null, {params: {username: profile.username}});
+            await api.post('/api/timetracking/punch', null, { params: { username: profile.username } });
             setPunchMsg(`Manuell gestempelt: ${profile.username}`);
             setTimeout(() => setPunchMsg(''), 3000);
             loadEntries();
@@ -131,34 +138,20 @@ const PercentageDashboard = () => {
         }
     }
 
-    const weeklyWorked = Array.from({length: 7}, (_, i) =>
-        computeDayTotalMinutes(entries.filter(e => e.startTime.slice(0, 10) === formatISO(addDays(monday, i))))
-    ).reduce((a, b) => a + b, 0);
+    // Summen-Logik
+    const weeklyWorked = Array.from({ length: 7 }, (_, i) => {
+        const isoDay = formatISO(addDays(monday, i));
+        const dayEntries = entries.filter(e => e.startTime.slice(0, 10) === isoDay);
+        return computeDayTotalMinutes(dayEntries);
+    }).reduce((a, b) => a + b, 0);
+
     const weeklyExpected = 7 * expectedDayMinutes(profile || {});
     const weeklyDiff = weeklyWorked - weeklyExpected;
 
-
-    async function fetchUserProfile() {
-        try {
-            const res = await api.get('/api/auth/me');
-            const profile = res.data;
-
-            if (profile.isPercentage) {
-                if (profile.workPercentage == null) profile.workPercentage = 100;
-                if (profile.annualVacationDays == null) profile.annualVacationDays = 25;
-                if (profile.trackingBalanceInMinutes == null) profile.trackingBalanceInMinutes = 0; // 🆕
-            }
-
-            setProfile(profile);
-        } catch (err) {
-            console.error('Profil-Fehler', err);
-            notify("Fehler beim Laden des Nutzerprofils");
-        }
-    }
-
-    // Urlaub
+    // Urlaub laden
     useEffect(() => {
-        if (profile) fetchVacations();
+        if (!profile) return;
+        fetchVacations();
     }, [profile]);
 
     async function fetchVacations() {
@@ -170,28 +163,10 @@ const PercentageDashboard = () => {
         }
     }
 
-    async function handleVacationSubmit(e) {
-        e.preventDefault();
-        try {
-            await api.post('/api/vacation/create', null, {
-                params: {
-                    username: profile.username,
-                    startDate: vacationForm.startDate,
-                    endDate: vacationForm.endDate
-                }
-            });
-            notify(t("vacationSubmitSuccess"));
-            fetchVacations();
-            await fetchUserProfile(); // 🆕 Profil neu laden für aktualisierte Überstunden
-        } catch (err) {
-            console.error('Fehler beim Urlaubsantrag:', err);
-            notify(t("vacationSubmitError"));
-        }
-    }
-
-    // Korrekturen
+    // Korrekturen laden
     useEffect(() => {
-        if (profile) fetchCorrections();
+        if (!profile) return;
+        fetchCorrections();
     }, [profile]);
 
     async function fetchCorrections() {
@@ -203,17 +178,25 @@ const PercentageDashboard = () => {
         }
     }
 
+    // Korrektur-Modal öffnen
     function openCorrectionModal(dateStr) {
         setCorrectionDate(dateStr);
-        setCorrectionData({workStart: "", breakStart: "", breakEnd: "", workEnd: "", reason: ""});
+        setCorrectionData({
+            workStart: "",
+            breakStart: "",
+            breakEnd: "",
+            workEnd: "",
+            reason: ""
+        });
         setShowCorrectionModal(true);
     }
 
     async function handleCorrectionSubmit(e) {
         e.preventDefault();
-        const {workStart, breakStart, breakEnd, workEnd, reason} = correctionData;
+        const { workStart, breakStart, breakEnd, workEnd, reason } = correctionData;
         const desiredStart = `${correctionDate}T${workStart}`;
-        const desiredEnd = `${correctionDate}T${workEnd}`;
+        const desiredEnd   = `${correctionDate}T${workEnd}`;
+
         try {
             await api.post('/api/correction/create-full', null, {
                 params: {
@@ -237,9 +220,12 @@ const PercentageDashboard = () => {
         }
     }
 
+    // Druck / PDF
     async function handlePrintReport() {
-        if (!printStartDate || !printEndDate) return notify("Zeitraum fehlt");
-
+        if (!printStartDate || !printEndDate) {
+            notify("Zeitraum fehlt");
+            return;
+        }
         setPrintModalVisible(false);
 
         try {
@@ -257,12 +243,12 @@ const PercentageDashboard = () => {
             doc.setFontSize(11);
             doc.text(`Zeitraum: ${printStartDate} – ${printEndDate}`, 14, 22);
 
-            const rows = (data || []).map((e) => [
+            const rows = (data || []).map(e => [
                 e.date,
                 e.workStart || "-",
                 e.breakStart || "-",
                 e.breakEnd || "-",
-                e.workEnd || "-",
+                e.workEnd || "-"
             ]);
 
             doc.autoTable({
@@ -277,7 +263,6 @@ const PercentageDashboard = () => {
                     doc.text(`Seite ${data.pageNumber}`, doc.internal.pageSize.getWidth() - 14, 10, { align: "right" });
                 },
             });
-
             doc.save(`timesheet_${profile.username}_${printStartDate}_${printEndDate}.pdf`);
         } catch (err) {
             console.error("Fehler beim Generieren", err);
@@ -285,32 +270,44 @@ const PercentageDashboard = () => {
         }
     }
 
+    // Falls Profil noch nicht geladen:
     if (!profile) {
-        return <div className="user-dashboard"><Navbar/><p>Loading…</p></div>;
+        return (
+            <div className="user-dashboard">
+                <Navbar />
+                <p>Loading…</p>
+            </div>
+        );
     }
+
     return (
         <div className="percentage-dashboard scoped-dashboard">
-            <Navbar/>
+            <Navbar />
 
             <header className="dashboard-header">
                 <h2>Percentage‑Dashboard</h2>
                 <div className="personal-info">
-                    <p><strong>User:</strong> {profile.username}</p>
-                    <p><strong>Arbeits‑%:</strong> {profile.workPercentage}%</p>
+                    <p>
+                        <strong>User:</strong> {profile.username}
+                    </p>
+                    <p>
+                        <strong>Arbeits‑%:</strong> {profile.workPercentage}%
+                    </p>
                     {profile.trackingBalanceInMinutes != null && (
                         <p className="overtime-info">
-                            <strong>Überstunden:</strong> {formatBalance(profile.trackingBalanceInMinutes)}
+                            <strong>Überstunden:</strong> {profile.trackingBalanceInMinutes} min
                             <span className="tooltip-wrapper">
-              <span className="tooltip-icon">ℹ️</span>
-              <span className="tooltip-box">
-                Überstunden entstehen, wenn du mehr als dein Tages‑Soll arbeitest.
-                <br/>
-                Du kannst sie später als „Überstundenfrei“ nutzen.
+                <span className="tooltip-icon">ℹ️</span>
+                <span className="tooltip-box">
+                  Überstunden entstehen, wenn du mehr als dein Tages‑Soll arbeitest.
+                  <br/>
+                  Du kannst sie später als „Überstundenfrei“ nutzen.
+                </span>
               </span>
-            </span>
                         </p>
                     )}
                 </div>
+
                 <div className="print-report-container">
                     <button onClick={() => setPrintModalVisible(true)}>
                         {t("printReportButton")}
@@ -318,7 +315,7 @@ const PercentageDashboard = () => {
                 </div>
             </header>
 
-            {/* 🟦 Wochenübersicht direkt unter Header */}
+            {/* Wochenübersicht */}
             <PercentageWeekOverview
                 user={profile}
                 entries={entries}
@@ -332,17 +329,15 @@ const PercentageDashboard = () => {
                 openCorrectionModal={openCorrectionModal}
             />
 
-            {/* 🟩 Urlaub direkt darunter */}
+            {/* Urlaub */}
             <PercentageVacationSection
                 t={t}
                 userProfile={profile}
                 vacationRequests={vacationRequests}
-                vacationForm={vacationForm}
-                setVacationForm={setVacationForm}
-                handleVacationSubmit={handleVacationSubmit}
+                onRefreshVacations={fetchVacations}
             />
 
-            {/* 🟨 Danach: Korrekturanträge */}
+            {/* Korrekturen */}
             <PercentageCorrectionsPanel
                 t={t}
                 correctionRequests={correctionRequests}
@@ -354,6 +349,7 @@ const PercentageDashboard = () => {
                 setShowAllCorrections={setShowAllCorrections}
             />
 
+            {/* Print-Modal */}
             <PrintReportModal
                 t={t}
                 visible={printModalVisible}
@@ -365,18 +361,21 @@ const PercentageDashboard = () => {
                 onClose={() => setPrintModalVisible(false)}
                 cssScope="percentage"
             />
-            {/* 🔒 Modals (unsichtbar bis aktiviert) */}
+
+            {/* Correction-Modal */}
             <PercentageCorrectionModal
                 visible={showCorrectionModal}
                 correctionDate={correctionDate}
                 correctionData={correctionData}
                 handleCorrectionInputChange={(e) =>
-                    setCorrectionData({...correctionData, [e.target.name]: e.target.value})}
+                    setCorrectionData({ ...correctionData, [e.target.name]: e.target.value })
+                }
                 handleCorrectionSubmit={handleCorrectionSubmit}
                 onClose={() => setShowCorrectionModal(false)}
+                t={t} // <-- falls Übersetzung gewünscht
             />
-
         </div>
     );
 };
+
 export default PercentageDashboard;

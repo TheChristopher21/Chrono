@@ -259,19 +259,124 @@
     color: #f0f0f0;
 }
 
-/* -------------------------------- */
-/* Responsive Breakpoint            */
-/* -------------------------------- */
-@media (max-width: 768px) {
+/* =========================================================================
+   Login.css – Mobile Overrides
+   Scope: .scoped-login
+   ========================================================================= */
+
+@media (max-width: 480px) {
+    /* Vertikale Anordnung statt 2 Spalten */
     .scoped-login .login-page-2col {
         flex-direction: column;
     }
+
     .scoped-login .login-left,
     .scoped-login .login-right {
         width: 100%;
-        flex: 1 1 auto;
+        flex: none;
+        min-height: auto;
+        padding: 1rem;
     }
+
+    /* Linke Spalte (Formular) etwas kompakter */
+    .scoped-login .login-left-content {
+        max-width: 300px;
+    }
+    .scoped-login .login-left-content h1 {
+        font-size: 1.4rem;
+        margin-bottom: 0.5rem;
+    }
+    .scoped-login .login-left-content p {
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Inputs & Button enger gesetzt */
+    .scoped-login .login-left-content input {
+        font-size: 0.95rem;
+        padding: 0.6rem;
+    }
+    .scoped-login .login-left-content button {
+        width: 100%;
+        font-size: 0.95rem;
+        padding: 0.7rem;
+    }
+
+    /* Sprache-Switch in eine Zeile, minimal kleiner */
+    .scoped-login .language-switch {
+        justify-content: center;
+        margin-bottom: 1rem;
+    }
+    .scoped-login .language-switch label {
+        font-size: 0.85rem;
+        margin-right: 0.5rem;
+    }
+    .scoped-login .language-switch select {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.7rem;
+    }
+
+    /* Registrierungshinweis + Error kompakter */
+    .scoped-login .register-cta,
+    .scoped-login .error-message,
+    .scoped-login .punch-message {
+        margin-top: 0.8rem;
+        font-size: 0.85rem;
+    }
+
+    /* Rechte Spalte (Bild) wird minimal */
     .scoped-login .login-right {
-        min-height: 250px;
+        min-height: 180px;
+        background-position: center;
+        background-size: cover;
     }
+
+    .scoped-login .colorful-area {
+        max-width: 90%;
+    }
+    /* Umfassender Wrapper in Spaltenrichtung, füllt ganze Höhe */
+    .scoped-login {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;            /* Wichtiger Trick: Seite spannt volle Höhe */
+        background-color: var(--c-bg);
+        font-family: var(--font-family);
+        transition: background-color var(--transition) ease;
+    }
+
+    /* .login-page-2col füllt den Platz aus, den sie bekommt */
+    .scoped-login .login-page-2col {
+        flex: 1;                      /* Nimmt den gesamten verbleibenden Platz */
+        display: flex;
+        /* min-height kann entfernt werden, da wir min-height nun auf .scoped-login haben */
+    }
+
+    /* Footer am Seitenende */
+    .scoped-login .impressum-agb-footer {
+        text-align: center;
+        padding: 10px 0;
+        background-color: #f5f5f5;
+    }
+
+    /* Links styling */
+    .scoped-login .impressum-agb-footer a {
+        display: inline-block;
+        margin: 0 1rem;
+        color: var(--c-text);
+        text-decoration: none;
+        font-weight: 500;
+        transition: color 0.2s;
+    }
+    .scoped-login .impressum-agb-footer a:hover {
+        text-decoration: underline;
+    }
+
+    /* Dark Mode Override */
+    [data-theme="dark"] .scoped-login .impressum-agb-footer {
+        background-color: var(--c-card); /* oder #242526, wenn du magst */
+    }
+    [data-theme="dark"] .scoped-login .impressum-agb-footer a {
+        color: var(--c-text);
+    }
+
 }

@@ -1,405 +1,226 @@
-/* =========================================================================
-   LandingPageScoped.css
-   scope: .landing-page.scoped-landing
-   ========================================================================= */
+/* ========================================================================
+   LandingPageScoped.css · Blue-Edition 2025-07
+   scope selector: .landing-page.scoped-landing
+   ======================================================================== */
 
-/* --------------------------- LIGHT MODE Vars ----------------------------- */
-.landing-page.scoped-landing {
-    --c-bg:     #f0f2f5;
-    --c-card:   #ffffff;
-    --c-text:   #2e2e2e;
-    --c-border: #d1d5db;
+/* ---------- DESIGN TOKENS & SPACING ---------------------------------- */
+:root{
+    --font-main:"Poppins",system-ui,sans-serif;
+    --font-alt:"Inter var",system-ui,sans-serif;
 
-    --c-primary: #5a67d8;
-    --c-primary-hover: #434190;
+    /* Hue auf Blau verschoben 220 ° */
+    --hue:220;
 
-    --shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    --radius: 10px;
-    --transition: 0.3s;
-    --font: 'Poppins', system-ui, sans-serif;
-
-    background: var(--c-bg);
-    color: var(--c-text);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    font-family: var(--font);
+    /* Section-Spacing */
+    --space-section:4rem;
+    --space-section-lg:5.5rem;
+    --space-section-sm:3rem;
 }
 
-/* --------------------------- DARK MODE Vars ------------------------------ */
-[data-theme="dark"] .landing-page.scoped-landing {
-    --c-bg:     #18191a;
-    --c-card:   #252627;
-    --c-text:   #e5e7ec;
-    --c-border: #474a4f;
-    --c-primary: #5a67d8;
-    --c-primary-hover: #434190;
+/* ---------- LIGHT THEME --------------------------------------------- */
+.landing-page.scoped-landing{
+    --c-bg:#f6f9ff;
+    --c-surface-glass:rgba(255,255,255,.82);
+    --c-text-main:#1e2438;
+    --c-text-muted:#506080;
+    --c-border:#d5d8e7;
+
+    --c-primary:hsl(var(--hue) 88% 60%);        /* #4285ff */
+    --c-primary-dark:hsl(var(--hue) 90% 52%);    /* #356dff */
+
+    --radius:16px;
+    --shadow-md:0 12px 30px rgba(0,0,0,.10);
+    font-family:var(--font-main);
 }
 
-/* =========================================================================
-   Layout
-   ========================================================================= */
-.landing-page.scoped-landing header.landing-hero {
-    display: flex;
-    padding: 2rem;
-    gap: 2rem;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: center;
+/* ---------- DARK THEME ---------------------------------------------- */
+[data-theme="dark"] .landing-page.scoped-landing{
+    --c-bg:#0b1020;
+    --c-surface-glass:rgba(25,28,46,.70);
+    --c-text-main:#e6ecff;
+    --c-text-muted:#95a3c6;
+    --c-border:#3b3f54;
+
+    --c-primary:hsl(var(--hue) 100% 70%);        /* #5b8fff */
+    --c-primary-dark:hsl(var(--hue) 100% 60%);   /* #407bff */
 }
 
-.landing-page.scoped-landing .hero-text {
-    max-width: 500px;
+/* ---------- GLOBAL BACKDROP (dezent Blau) --------------------------- */
+.landing-page.scoped-landing::before,
+.landing-page.scoped-landing::after{
+    content:"";position:fixed;inset:0;z-index:-3;pointer-events:none
+}
+.landing-page.scoped-landing::before{
+    background:
+            radial-gradient(at 80% -20%,rgba(66,133,255,.35),transparent 70%),
+            radial-gradient(at 20% 120%,rgba(90,135,255,.25),transparent 68%),
+            var(--c-bg);
+    animation:gradMove 24s ease-in-out infinite alternate
+}
+@keyframes gradMove{50%{transform:scale(1.12) rotate(2deg)}}
+
+/* ---------- GENERIC SECTION SPACING --------------------------------- */
+.site-section{padding-block:var(--space-section);text-align:center}
+.site-section.lg{padding-block:var(--space-section-lg)}
+@media(max-width:480px){
+    .site-section,
+    .site-section.lg{padding-block:var(--space-section-sm)}
 }
 
-.landing-page.scoped-landing .hero-text h1 {
-    font-size: 2.4rem;
-    margin: 0 0 1rem;
+/* ---------------------------------------------------------------------
+   HERO
+--------------------------------------------------------------------- */
+header.landing-hero{
+    padding-top:calc(var(--space-section-lg) + 1.2rem);
+    padding-bottom:var(--space-section-lg);
+    text-align:center;
+    overflow:visible;
+}
+header.landing-hero h1{
+    font-family:var(--font-alt,var(--font-main));
+    font-size:clamp(2.4rem,6.5vw,4.2rem);
+    font-weight:700;
+    line-height:1.25;
+    margin-bottom:1.1rem;
+    padding:.15em 0 .25em;
+    background:linear-gradient(90deg,var(--c-primary) 0%,var(--c-primary-dark) 100%);
+    -webkit-background-clip:text;color:transparent;
+}
+header.landing-hero p{
+    font-size:clamp(.95rem,1.25vw,1.25rem);
+    max-width:640px;
+    margin-inline:auto 2.0rem;
+    color:var(--c-text-muted);
 }
 
-.landing-page.scoped-landing .hero-text p {
-    font-size: 1.2rem;
-    margin-bottom: 1.5rem;
+/* Buttons */
+.cta-buttons{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap}
+.btn{
+    display:inline-block;padding:.9rem 1.6rem;border-radius:var(--radius);
+    font-weight:600;text-decoration:none;transition:.25s transform ease;
+}
+.btn.primary{
+    background:linear-gradient(130deg,var(--c-primary),var(--c-primary-dark));
+    color:#fff;box-shadow:var(--shadow-md)
+}
+.btn.primary:hover{transform:translateY(-4px) scale(1.03)}
+.btn.secondary{
+    background:var(--c-surface-glass);
+    border:1px solid var(--c-border);
+    backdrop-filter:blur(8px);
+    color:inherit
+}
+[data-theme=dark] .btn.secondary{color:#fff}
+
+/* ---------- INFO ----------------------------------------------------- */
+.info-section p{
+    max-width:720px;margin-inline:auto;color:var(--c-text-muted);line-height:1.7
 }
 
-.landing-page.scoped-landing .cta-buttons {
-    display: flex;
-    gap: 1rem;
+/* ---------- FEATURES GRID ------------------------------------------- */
+.features-grid{
+    --cols:3;
+    display:grid;gap:1.6rem;margin-top:2.8rem;
+    grid-template-columns:repeat(var(--cols),1fr);
+}
+@container(max-width:880px){.features-grid{--cols:2}}
+@container(max-width:640px){.features-grid{--cols:1}}
+
+.feature-card{
+    padding:1.8rem 1.5rem;border-radius:var(--radius);
+    background:var(--c-surface-glass);backdrop-filter:blur(12px);
+    border:1px solid var(--c-border);
+    transition:.3s transform ease,border .3s
+}
+.feature-card:hover{
+    border-color:var(--c-primary);transform:translateY(-6px)
+}
+.feature-icon{
+    width:52px;height:52px;margin-bottom:1rem;border-radius:12px;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--c-primary);color:#fff;font-size:1.45rem
 }
 
-.landing-page.scoped-landing .cta-buttons .btn {
-    text-decoration: none;
-    padding: 0.8rem 1.2rem;
-    border-radius: var(--radius);
-    transition: background var(--transition), transform 0.2s;
-    font-weight: 600;
+/* ---------- STEPS ---------------------------------------------------- */
+.steps-grid{
+    display:flex;justify-content:center;flex-wrap:wrap;
+    gap:1.6rem;margin-top:2.0rem
+}
+.step-item{
+    width:240px;padding:1.8rem 1.5rem;border-radius:var(--radius);
+    background:var(--c-surface-glass);backdrop-filter:blur(8px);
+    border:1px solid var(--c-border);
+    transition:.28s transform ease,border .28s
+}
+.step-item:hover{
+    transform:translateY(-5px);
+    border-color:var(--c-primary-dark)
+}
+.step-number{
+    width:2.2rem;height:2.2rem;border-radius:50%;
+    background:var(--c-primary);color:#fff;font-weight:700;
+    display:flex;align-items:center;justify-content:center;margin-bottom:.7rem
 }
 
-.landing-page.scoped-landing .btn.primary {
-    background: var(--c-primary);
-    color: #fff;
+/* ---------- NEWSLETTER ---------------------------------------------- */
+.newsletter-form{
+    display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center
+}
+.newsletter-form input[type=email]{
+    width:260px;padding:.9rem;
+    border-radius:var(--radius);border:1px solid var(--c-border);
+    background:var(--c-surface-glass);backdrop-filter:blur(8px);color:inherit
 }
 
-.landing-page.scoped-landing .btn.primary:hover {
-    background: var(--c-primary-hover);
-    transform: translateY(-2px);
+/* ---------- FOOTER --------------------------------------------------- */
+.landing-footer{
+    margin-top:auto;background:var(--c-surface-glass);
+    backdrop-filter:blur(10px);border-top:1px solid var(--c-border);
+    padding:1.4rem 1.6rem;color:var(--c-text-muted);font-size:.85rem
 }
-
-.landing-page.scoped-landing .btn.secondary {
-    background: #4a5568; /* dunkles Grau als Bsp. */
-    color: #fff;
+.footer-content{
+    max-width:1100px;margin-inline:auto;
+    display:flex;align-items:center;justify-content:space-between;gap:1rem
 }
+.social-icons{display:flex;gap:1rem}
+.social-icons img{width:22px;height:22px;opacity:.8;transition:opacity .25s}
+.social-icons img:hover{opacity:1}
 
-.landing-page.scoped-landing .btn.secondary:hover {
-    background: #2d3748;
-    transform: translateY(-2px);
+/* ===== Accent-Title & Info-Box ====================================== */
+.section-title.accent{
+    position:relative;display:inline-block;padding-bottom:.38rem
 }
-
-.landing-page.scoped-landing .hero-media img {
-    max-width: 300px;
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
+.section-title.accent::after{
+    content:"";position:absolute;left:50%;bottom:0;width:90%;height:3px;
+    background:linear-gradient(90deg,var(--c-primary),var(--c-primary-dark));
+    transform:translateX(-50%);border-radius:2px;
 }
-
-/* Features */
-.landing-page.scoped-landing .features-section {
-    padding: 2rem;
-    text-align: center;
+.info-box{
+    margin:1.6rem auto 0;max-width:680px;padding:1.6rem 1.4rem;
+    background:var(--c-surface-glass);backdrop-filter:blur(10px);
+    border:1px solid var(--c-border);border-radius:var(--radius);
+    box-shadow:0 5px 16px rgba(0,0,0,.07)
 }
+.info-box p{margin:0;color:var(--c-text-muted);line-height:1.65}
 
-.landing-page.scoped-landing .features-section h2 {
-    font-size: 2rem;
-    margin-bottom: 2rem;
-}
-
-.landing-page.scoped-landing .feature-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    justify-content: center;
-}
-
-.landing-page.scoped-landing .feature-item {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 1.5rem;
-    width: 220px;
-    transition: transform 0.2s;
-}
-
-.landing-page.scoped-landing .feature-item:hover {
-    transform: translateY(-2px);
-}
-
-.landing-page.scoped-landing .feature-item img {
-    max-width: 50px;
-    margin-bottom: 1rem;
-}
-
-.landing-page.scoped-landing .feature-item h3 {
-    margin: 0 0 0.5rem;
-    font-size: 1.2rem;
-}
-
-/* Video */
-.landing-page.scoped-landing .video-section {
-    padding: 2rem;
-    text-align: center;
-}
-
-.landing-page.scoped-landing .video-section h2 {
-    font-size: 2rem;
-    margin-bottom: 1.5rem;
-}
-
-.landing-page.scoped-landing .video-container {
-    max-width: 760px;
-    margin: 0 auto;
-    border: 2px solid var(--c-border);
-    border-radius: var(--radius);
-    overflow: hidden;
-}
-
-/* Footer */
-.landing-page.scoped-landing .landing-footer {
-    margin-top: auto;
-    text-align: center;
-    padding: 1rem;
-    font-size: 0.85rem;
-    color: #888;
-}
-
-/* =========================================================================
-   Responsive
-   ========================================================================= */
-@media (max-width: 768px) {
-    .landing-page.scoped-landing header.landing-hero {
-        flex-direction: column;
-        text-align: center;
+/* ---------- MOBILE TWEAKS (≤480 px) --------------------------------- */
+@media(max-width:480px){
+    header.landing-hero{
+        padding-top:calc(var(--space-section-sm) + 1rem);
+        padding-bottom:var(--space-section-sm);
     }
-    .landing-page.scoped-landing .hero-media img {
-        max-width: 80%;
+    header.landing-hero h1{
+        font-size:2rem;              /* handliches Heading */
+        line-height:1.3;
     }
-    .landing-page.scoped-landing .feature-list {
-        flex-direction: column;
-        align-items: center;
-    }
-    .landing-page.scoped-landing .video-container {
-        width: 90%;
-    }
-}
-/* =========================================================================
-   LandingPageScoped.css – Zusätzliche Styles
-   ========================================================================= */
-
-/* Mit .flow-section kannst du optisch Abstände zwischen den Sektionen steuern */
-.flow-section {
-    padding: 2rem;
-    text-align: center;
+    .cta-buttons{flex-direction:column;gap:.7rem}
+    .btn{width:100%;padding:.9rem 0;text-align:center}
+    .step-item{width:100%;max-width:300px}
+    .features-grid{--cols:1}
+    .footer-content{flex-direction:column;gap:.8rem;text-align:center}
 }
 
-/* --------------------- Steps / 3-Steps-Grid --------------------- */
-.steps-section .steps-grid {
-    display: flex;
-    gap: 1.5rem;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.step-item {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 1.5rem;
-    width: 220px;
-    position: relative;
-    transition: transform 0.2s;
-}
-
-.step-item:hover {
-    transform: translateY(-2px);
-}
-
-.step-number {
-    background: var(--c-primary);
-    color: #fff;
-    width: 2rem;
-    height: 2rem;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    margin-bottom: 0.5rem;
-    font-weight: 700;
-}
-
-/* --------------------- Testimonials --------------------- */
-.testimonials-section .testimonials-grid {
-    display: flex;
-    gap: 1.5rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 2rem;
-}
-
-.testimonial-item {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    width: 280px;
-    padding: 1.5rem;
-    text-align: left;
-    transition: transform 0.2s;
-}
-
-.testimonial-item:hover {
-    transform: translateY(-2px);
-}
-
-.testimonial-item blockquote {
-    font-style: italic;
-    margin: 0 0 0.5rem;
-    line-height: 1.4;
-}
-
-.testimonial-author {
-    font-size: 0.9rem;
-    color: var(--c-text);
-    opacity: 0.8;
-}
-
-/* --------------------- Pricing --------------------- */
-.pricing-section .pricing-grid {
-    display: flex;
-    gap: 1.5rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-top: 2rem;
-}
-
-.pricing-item {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    width: 240px;
-    padding: 1.5rem;
-    text-align: center;
-    position: relative;
-}
-
-.pricing-item h3 {
-    margin-top: 0;
-    font-size: 1.2rem;
-}
-
-.pricing-item .price {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin: 0.5rem 0 1rem;
-}
-
-.pricing-item ul {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1.5rem;
-    text-align: left;
-}
-
-.pricing-item ul li {
-    margin-bottom: 0.5rem;
-}
-
-.pricing-item .btn {
-    display: inline-block;
-}
-
-.pricing-item.recommended {
-    border: 2px solid var(--c-primary);
-    transform: scale(1.02);
-}
-
-/* --------------------- Newsletter --------------------- */
-.newsletter-section p {
-    margin: 0 auto 1.5rem;
-    max-width: 600px;
-}
-
-.newsletter-form {
-    display: flex;
-    gap: 0.5rem;
-    justify-content: center;
-    margin-top: 1rem;
-}
-
-.newsletter-form input[type="email"] {
-    padding: 0.8rem 1rem;
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius);
-    width: 250px;
-}
-
-.newsletter-form button {
-    padding: 0.8rem 1.2rem;
-}
-
-/* --------------------- Footer --------------------- */
-.landing-footer .footer-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    max-width: 1200px;
-    margin: 0 auto;
-}
-
-.landing-footer .social-icons {
-    display: flex;
-    gap: 1rem;
-}
-
-.landing-footer .social-icons img {
-    width: 24px;
-    height: 24px;
-}
-
-/* Responsive improvements */
-@media (max-width: 768px) {
-    .landing-footer .footer-content {
-        flex-direction: column;
-    }
-}
-
-/* =========================================================================
-   LandingPageScoped.css – Zusätzliche Styles
-   ========================================================================= */
-
-/* Abschnitt für .firma-register-callout */
-.firma-register-callout {
-    margin-top: 2rem;
-    text-align: center;
-}
-
-.firma-register-callout h3 {
-    font-size: 1.4rem;
-    margin-bottom: 1rem;
-}
-
-.firma-register-callout .btn {
-    padding: 0.8rem 1.2rem;
-    font-weight: 600;
-    border-radius: var(--radius);
-    text-decoration: none;
-    color: #fff;
-    background: var(--c-primary);
-    transition: background var(--transition), transform 0.2s;
-}
-
-.firma-register-callout .btn:hover {
-    background: var(--c-primary-hover);
-    transform: translateY(-2px);
+/* ---------- Reduced Motion ------------------------------------------ */
+@media(prefers-reduced-motion:reduce){
+    *{animation:none!important;transition:none!important}
 }

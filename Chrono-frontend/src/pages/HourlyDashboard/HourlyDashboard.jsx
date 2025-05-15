@@ -5,6 +5,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import 'jspdf-autotable';
 import fileDownload from 'js-file-download';
+import jsPDF from 'jspdf';
 
 import {
     parseHex16,
@@ -18,13 +19,11 @@ import HourlyWeekOverview from './HourlyWeekOverview';
 import HourlyVacationSection from './HourlyVacationSection';
 import HourlyCorrectionsPanel from './HourlyCorrectionsPanel';
 import HourlyCorrectionModal from './HourlyCorrectionModal';
+import PrintReportModal from '../../components/PrintReportModal.jsx';
 
 import '../../styles/HourlyDashboardScoped.css';
-import PrintReportModal from '../../components/PrintReportModal.jsx';
-import jsPDF from 'jspdf';
 
 const HourlyDashboard = () => {
-    const [dayObj] = useState({ allEntries: [] });
     const { t } = useTranslation();
     const { notify } = useNotification();
 
@@ -35,7 +34,7 @@ const HourlyDashboard = () => {
     // Wochenansicht
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
 
-    // Drucken
+    // Print
     const [printModalVisible, setPrintModalVisible] = useState(false);
     const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date()));
     const [printEndDate, setPrintEndDate] = useState(formatLocalDate(new Date()));
@@ -43,7 +42,7 @@ const HourlyDashboard = () => {
     // Urlaub
     const [vacationRequests, setVacationRequests] = useState([]);
 
-    // Korrekturanträge
+    // Korrekturen
     const [correctionRequests, setCorrectionRequests] = useState([]);
     const [showCorrectionsPanel, setShowCorrectionsPanel] = useState(false);
     const [showAllCorrections, setShowAllCorrections] = useState(false);
@@ -106,7 +105,7 @@ const HourlyDashboard = () => {
         try {
             const res = await api.get(`/api/timetracking/history?username=${userProfile.username}`);
             const allData = res.data || [];
-            const validEntries = allData.filter((e) => [1, 2, 3, 4].includes(e.punchOrder));
+            const validEntries = allData.filter(e => [1, 2, 3, 4].includes(e.punchOrder));
             setAllEntries(validEntries);
 
             // Notiz-Einträge
@@ -146,7 +145,7 @@ const HourlyDashboard = () => {
         }
     }
 
-    // 3) NFC-Check
+    // 3) NFC Poll
     useEffect(() => {
         const interval = setInterval(() => doNfcCheck(), 2000);
         return () => clearInterval(interval);
@@ -195,18 +194,13 @@ const HourlyDashboard = () => {
     const month = selectedMonday.getMonth();
     const firstOfMonth = new Date(year, month, 1, 0, 0, 0);
     const lastOfMonth = new Date(year, month + 1, 0, 23, 59, 59);
-    const monthlyTotalMins = computeTotalMinutesInRange(
-        allEntries,
-        firstOfMonth,
-        lastOfMonth
-    );
+    const monthlyTotalMins = computeTotalMinutesInRange(allEntries, firstOfMonth, lastOfMonth);
 
-    // 6) Druck
+    // 6) Drucken
     async function handlePrintReport() {
         if (!printStartDate || !printEndDate) {
             return notify(t("missingDateRange"));
         }
-
         setPrintModalVisible(false);
 
         try {
@@ -220,11 +214,7 @@ const HourlyDashboard = () => {
 
             const doc = new jsPDF('p', 'mm', 'a4');
             doc.setFontSize(14);
-            doc.text(
-                `Zeitenbericht für ${userProfile.firstName} ${userProfile.lastName}`,
-                14,
-                15
-            );
+            doc.text(`Zeitenbericht für ${userProfile.firstName} ${userProfile.lastName}`, 14, 15);
             doc.setFontSize(11);
             doc.text(`Zeitraum: ${printStartDate} – ${printEndDate}`, 14, 22);
 
@@ -253,45 +243,39 @@ const HourlyDashboard = () => {
                 }
             });
 
-            doc.save(
-                `timesheet_${userProfile.username}_${printStartDate}_${printEndDate}.pdf`
-            );
+            doc.save(`timesheet_${userProfile.username}_${printStartDate}_${printEndDate}.pdf`);
         } catch (err) {
             console.error('Fehler beim Generieren', err);
             notify(t("printReportError"));
         }
     }
 
-    // 7) Urlaub (im Code oben war kein form, hier teils placeholders -> ggf. schon in VacationCalendar)
-    //    => Siehe HourlyVacationSection
-
-    // 8) Korrekturantrag
+    // 8) Korrekturantrag (Modal öffnen)
     function openCorrectionModal(dateObj) {
         const isoStr = formatLocalDate(dateObj);
-        const dayEntries = allEntries.filter(
-            (e) => e.startTime.slice(0, 10) === isoStr
-        );
+        const dayEntries = allEntries.filter(e => e.startTime.slice(0, 10) === isoStr);
 
         let workStartVal = '';
         let breakStartVal = '';
-        let breakEndVal = '';
-        let workEndVal = '';
+        let breakEndVal   = '';
+        let workEndVal    = '';
 
-        const ws = dayEntries.find((e) => e.punchOrder === 1);
+        const ws = dayEntries.find(e => e.punchOrder === 1);
         if (ws) workStartVal = ws.startTime.slice(11, 16);
-        const bs = dayEntries.find((e) => e.punchOrder === 2);
+
+        const bs = dayEntries.find(e => e.punchOrder === 2);
         if (bs) {
             breakStartVal = bs.breakStart
                 ? bs.breakStart.slice(0, 5)
                 : bs.startTime.slice(11, 16);
         }
-        const be = dayEntries.find((e) => e.punchOrder === 3);
+        const be = dayEntries.find(e => e.punchOrder === 3);
         if (be) {
             breakEndVal = be.breakEnd
                 ? be.breakEnd.slice(0, 5)
                 : be.startTime.slice(11, 16);
         }
-        const we = dayEntries.find((e) => e.punchOrder === 4);
+        const we = dayEntries.find(e => e.punchOrder === 4);
         if (we) {
             workEndVal = we.endTime
                 ? we.endTime.slice(11, 16)
@@ -300,18 +284,18 @@ const HourlyDashboard = () => {
 
         setCorrectionDate(isoStr);
         setCorrectionData({
-            workStart: workStartVal,
+            workStart:  workStartVal,
             breakStart: breakStartVal,
-            breakEnd: breakEndVal,
-            workEnd: workEndVal,
-            reason: ''
+            breakEnd:   breakEndVal,
+            workEnd:    workEndVal,
+            reason:     ''
         });
         setShowCorrectionModal(true);
     }
 
     function handleCorrectionInputChange(e) {
         const { name, value } = e.target;
-        setCorrectionData((prev) => ({ ...prev, [name]: value }));
+        setCorrectionData(prev => ({ ...prev, [name]: value }));
     }
 
     async function handleCorrectionSubmit(e) {
@@ -321,17 +305,17 @@ const HourlyDashboard = () => {
             return;
         }
         const desiredStart = `${correctionDate}T${correctionData.workStart}`;
-        const desiredEnd = `${correctionDate}T${correctionData.workEnd}`;
+        const desiredEnd   = `${correctionDate}T${correctionData.workEnd}`;
         try {
             await api.post('/api/correction/create-full', null, {
                 params: {
                     username: userProfile.username,
                     date: correctionDate,
-                    workStart: correctionData.workStart,
+                    workStart:  correctionData.workStart,
                     breakStart: correctionData.breakStart,
-                    breakEnd: correctionData.breakEnd,
-                    workEnd: correctionData.workEnd,
-                    reason: correctionData.reason,
+                    breakEnd:   correctionData.breakEnd,
+                    workEnd:    correctionData.workEnd,
+                    reason:     correctionData.reason,
                     desiredStart,
                     desiredEnd
                 }
@@ -349,7 +333,7 @@ const HourlyDashboard = () => {
         return (
             <div className="hourly-dashboard scoped-dashboard">
                 <h1>{t("hourlyDashboard.title")}</h1>
-                {!dayObj.allEntries ? <p>{t("loading")}...</p> : dayObj.allEntries.map((e, idx) => <div key={idx}>{e}</div>)}
+                <p>{t("loading")}...</p>
             </div>
         );
     }
@@ -357,6 +341,7 @@ const HourlyDashboard = () => {
     return (
         <div className="hourly-dashboard scoped-dashboard">
             <Navbar />
+
             <header className="dashboard-header">
                 <h2>
                     {t("title")} ({t("hourlyDashboard.mode")})

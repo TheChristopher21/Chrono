@@ -11,7 +11,6 @@ export default defineConfig({
     // Hier der Proxy-Eintrag für lokale Entwicklung
     server: {
         proxy: {
-            // Wenn dein Backend unter http://localhost:8080/api/... läuft
             '/api': {
                 target: 'http://localhost:8080',
                 changeOrigin: true,

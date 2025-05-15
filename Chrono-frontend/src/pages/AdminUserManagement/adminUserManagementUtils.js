@@ -17,8 +17,7 @@ export const defaultWeeklySchedule = {
     sunday: 0.0
 };
 
-// Hier könntest du weitere Helper-Funktionen unterbringen,
-// z.B. das "stringToHex16" oder eventuelle Formatierungen.
+// Beispiel-Hilfsfunktionen:
 export function stringToHex16(text) {
     let asciiData = text.slice(0, 16);
     asciiData = asciiData.padEnd(16, '\0');

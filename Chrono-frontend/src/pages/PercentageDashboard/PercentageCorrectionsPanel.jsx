@@ -1,3 +1,4 @@
+// PercentageCorrectionsPanel.jsx
 import React from "react";
 import PropTypes from "prop-types";
 import { addDays, formatDate } from "./percentageDashUtils";
@@ -13,18 +14,20 @@ const PercentageCorrectionsPanel = ({
                                         showAllCorrections,
                                         setShowAllCorrections,
                                     }) => {
-    const sortedCorrections = (
-        showAllCorrections
-            ? correctionRequests
-            : correctionRequests.filter((req) => {
-                if (!req.desiredStart) return false;
-                const reqDate = new Date(req.desiredStart);
-                return (
-                    reqDate >= selectedCorrectionMonday &&
-                    reqDate < addDays(selectedCorrectionMonday, 7)
-                );
-            })
-    )
+    // Gefilterte oder alle Korrekturen
+    const filteredCorrections = showAllCorrections
+        ? correctionRequests
+        : correctionRequests.filter((req) => {
+            if (!req.desiredStart) return false;
+            const reqDate = new Date(req.desiredStart);
+            return (
+                reqDate >= selectedCorrectionMonday &&
+                reqDate < addDays(selectedCorrectionMonday, 7)
+            );
+        });
+
+    // Sortierung (neueste zuerst)
+    const sortedCorrections = filteredCorrections
         .slice()
         .sort((a, b) => new Date(b.desiredStart) - new Date(a.desiredStart));
 
@@ -47,6 +50,7 @@ const PercentageCorrectionsPanel = ({
 
             {showCorrectionsPanel && (
                 <div className="corrections-content">
+                    {/* Nur anzeigen, wenn NICHT showAllCorrections */}
                     {!showAllCorrections && (
                         <div className="week-navigation corrections-nav">
                             <button onClick={handlePrevWeek}>
@@ -83,13 +87,14 @@ const PercentageCorrectionsPanel = ({
                       {t("approved") || "Bestätigt"}
                     </span>
                                     ) : req.denied ? (
-                                        <span className="denied">{t("denied") || "Abgelehnt"}</span>
+                                        <span className="denied">
+                      {t("denied") || "Abgelehnt"}
+                    </span>
                                     ) : (
                                         <span className="pending">{t("pending") || "Offen"}</span>
                                     )}
                                     <br />
-                                    {/* Hier könntest du optional noch einen Label davor setzen,
-                      z.B. <strong>{t("reason")}:</strong> {req.reason} */}
+                                    {/* Falls du ein Label davor möchtest: <strong>{t("reason")}:</strong> */}
                                     {req.reason}
                                     <br />
                                     <strong>{t("workStart") || "Work Start"}:</strong>{" "}

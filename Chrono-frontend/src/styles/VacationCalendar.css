@@ -215,18 +215,42 @@
     transform: translateY(-2px);
 }
 
-/* --------------------------- Responsive ---------------------------------- */
-@media (max-width: 520px) {
+/* =========================================================================
+   VacationCalendar.css – Mobile Overrides
+   Scope: .scoped-vacation
+   ========================================================================= */
+@media (max-width: 480px) {
+    /* Kalender-Kacheln niedriger machen */
     .scoped-vacation .react-calendar__tile {
-        height: 72px;
+        height: 70px;
     }
-}
 
-/* --------------------------- Reduced Motion ------------------------------ */
-@media (prefers-reduced-motion: reduce) {
-    .scoped-vacation *,
-    .scoped-vacation *::before,
-    .scoped-vacation *::after {
-        transition: none !important;
+    /* Ggf. weniger Padding in .vacation-calendar */
+    .scoped-vacation .vacation-calendar {
+        padding: 1rem 0.5rem;
+    }
+
+    /* Modal noch schmaler */
+    .scoped-vacation .vacation-modal-content {
+        width: 95%;
+        max-width: 320px;
+        padding: 1.2rem;
+    }
+    .scoped-vacation .vacation-modal-content h3 {
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+    .scoped-vacation .vacation-modal-content label {
+        margin-top: 0.8rem;
+        font-size: 0.9rem;
+    }
+    .scoped-vacation .vacation-modal-content input,
+    .scoped-vacation .vacation-modal-content select {
+        font-size: 0.9rem;
+        padding: 0.5rem 0.7rem;
+    }
+    .scoped-vacation .vacation-modal-content button {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
     }
 }

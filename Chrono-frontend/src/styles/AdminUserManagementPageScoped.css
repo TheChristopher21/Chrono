@@ -3,14 +3,6 @@
    Scope: .admin-user-management.scoped-dashboard
    ========================================================================= */
 
-/*
-   HINWEIS:
-   1) Farb- und Layout-Tokens (z.B. --c-pri, --u-radius) werden normalerweise
-      global (z.B. in global.css) definiert. Hier nutzen wir sie nur.
-   2) Du hast in den Dark-Overrides [data-theme="dark"] .admin-user-management.scoped-dashboard ...
-      Alle Light-Werte kommen aus root oder global.css oder via JavaScript-DOM.
-*/
-
 /* --------------------------- 1) Grundlayout & Container --------------------------- */
 .admin-user-management.scoped-dashboard {
     width: 100%;
@@ -18,8 +10,9 @@
     background: var(--c-bg);
     color: var(--c-text);
     font-family: 'Poppins', system-ui, sans-serif;
-    transition: background var(--u-dur) var(--u-ease),
-    color var(--u-dur) var(--u-ease);
+    transition:
+            background var(--u-dur) var(--u-ease),
+            color      var(--u-dur) var(--u-ease);
 }
 
 /* --------------------------- 2) Header / Page-Header --------------------------- */
@@ -57,8 +50,9 @@
     padding: 1rem;
     border: 1px solid var(--c-border);
     font-size: 0.95rem;
-    transition: background 0.2s var(--u-ease),
-    color      0.2s var(--u-ease);
+    transition:
+            background 0.2s var(--u-ease),
+            color      0.2s var(--u-ease);
 }
 .admin-user-management.scoped-dashboard .user-list tr:hover {
     background: rgba(0, 0, 0, 0.05);
@@ -96,7 +90,7 @@
     border: none;
 }
 
-/* --------------------------- 4) User-Form (Neuen User anlegen oder Bearbeiten) --------------------------- */
+/* --------------------------- 4) User-Form (Neuen User anlegen / Bearbeiten) ------- */
 .admin-user-management.scoped-dashboard .user-form {
     background: var(--c-card);
     padding: 2rem;
@@ -126,8 +120,9 @@
     border-radius: var(--u-radius);
     background: var(--c-bg);
     color: inherit;
-    transition: border-color var(--u-dur) var(--u-ease),
-    background   var(--u-dur) var(--u-ease);
+    transition:
+            border-color var(--u-dur) var(--u-ease),
+            background   var(--u-dur) var(--u-ease);
 }
 
 /* Form-Button */
@@ -171,7 +166,7 @@
     border-color: var(--c-text);
 }
 
-/* --------------------------- 6) Weekly-Schedule Konfiguration --------------------------- */
+/* --------------------------- 6) Weekly-Schedule Konfiguration ---------------------- */
 .admin-user-management.scoped-dashboard .weekly-schedule {
     margin-top: 1.5rem;
     display: flex;
@@ -220,7 +215,7 @@
     font-weight: 700;
 }
 
-/* --------------------------- 8) Checkbox-Re-Design --------------------------- */
+/* --------------------------- 8) Checkbox-Re-Design ---------------------- */
 .admin-user-management.scoped-dashboard .user-form .form-group input[type="checkbox"] {
     appearance: none;
     width: 18px;
@@ -232,8 +227,9 @@
     cursor: pointer;
     vertical-align: middle;
     position: relative;
-    transition: background var(--u-dur) var(--u-ease),
-    border-color var(--u-dur) var(--u-ease);
+    transition:
+            background   var(--u-dur) var(--u-ease),
+            border-color var(--u-dur) var(--u-ease);
 }
 .admin-user-management.scoped-dashboard .user-form .form-group input[type="checkbox"]:hover,
 .admin-user-management.scoped-dashboard .user-form .form-group input[type="checkbox"]:focus-visible {
@@ -252,7 +248,7 @@
     transform: rotate(45deg);
 }
 
-/* --------------------------- 9) Dark-Mode Overrides --------------------------- */
+/* --------------------------- 9) Dark-Mode Overrides --------------------- */
 [data-theme="dark"] .admin-user-management.scoped-dashboard {
     background: #18191A;
     color: #f0f0f0;
@@ -290,14 +286,14 @@
     border-color: #484A4D;
 }
 
-/* --------------------------- 10) Responsiveness --------------------------- */
+/* --------------------------- 10) Responsiveness ------------------------- */
 @media (max-width: 768px) {
     .admin-user-management.scoped-dashboard .weekly-schedule {
         flex-direction: column;
     }
 }
 
-/* --------------------------- 11) NFC-Status / Animations --------------------------- */
+/* --------------------------- 11) NFC-Status / Animations --------------- */
 .admin-user-management.scoped-dashboard .nfc-status-message {
     background: var(--c-pri);
     color: #fff;
@@ -320,52 +316,51 @@
     }
 }
 
-/* "contains()" ist nicht standardisiertes CSS!
-   Für einen robusten Ansatz sollte man den Text-Inhalt
-   in data-Attributen prüfen oder mit JavaScript klassenbasiert togglen.
+/*
+   Achtung: CSS-Selektor "nfc-status-message:contains()" ist kein Standard.
+   Verwende lieber JS, um dynamisch Klassen zu setzen (z. B. .nfc-status--ok, .nfc-status--error etc.).
 */
-.nfc-status-message:contains("Bitte legen Sie die Karte") {
-    background-color: #fff3cd;
-    color: #856404;
-}
-.nfc-status-message:contains("erfolgreich") {
-    background-color: #d4edda;
-    color: #155724;
-}
-.nfc-status-message:contains("Fehler") {
-    background-color: #f8d7da;
-    color: #721c24;
-}
-.nfc-status-message:contains("Zeitüberschreitung") {
-    background-color: #ffeeba;
-    color: #856404;
-}
 
-/* --------------------------- 12) Punch-Message Popup (optional) --------------------------- */
+/* --------------------------- 12) Punch-Message Popup (optional) -------- */
 .punch-message {
     position: fixed;
-    top: 20px; /* Sicherstellen, dass es oben erscheint */
+    top: 20px;
     left: 50%;
-    transform: translateX(-50%); /* Horizontale Zentrierung */
-    background-color: #2ecc71; /* Grüner Hintergrund für Bestätigungen */
-    color: white; /* Weiße Schriftfarbe */
+    transform: translateX(-50%);
+    background-color: #2ecc71;
+    color: white;
     padding: 12px 24px;
     border-radius: 8px;
     font-weight: bold;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 9999; /* Höchster z-index, damit es immer oben ist */
-    opacity: 0; /* Anfangs unsichtbar */
-    animation: fadeInOut 4s ease-in-out forwards; /* Animation für das Ein- und Ausblenden */
+    z-index: 9999;
+    opacity: 0;
+    animation: fadeInOut 4s ease-in-out forwards;
+}
+@keyframes fadeInOut {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
+    10% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0);
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(-10px);
+    }
 }
 
-/* Am Ende deiner Scoped-CSS hinzufügen */
-/* Modal-Buttons für DeleteConfirmModal etc. */
+/* --------------------------- 13) DeleteConfirmModal Buttons ------------ */
 .admin-user-management.scoped-dashboard .delete-confirm-modal .modal-buttons {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
 }
-
 .admin-user-management.scoped-dashboard .delete-confirm-modal .delete-confirm-button {
     padding: 0.6rem 1.2rem;
     border-radius: 6px;
@@ -374,50 +369,53 @@
     font-weight: 600;
     transition: background 0.2s ease, color 0.2s ease;
 }
-
 .admin-user-management.scoped-dashboard .delete-confirm-modal .delete-confirm-button.confirm {
-    background: #e53935; /* roter Button */
+    background: #e53935;
     color: #fff;
     border: none;
 }
-
 .admin-user-management.scoped-dashboard .delete-confirm-modal .delete-confirm-button.cancel {
     background: #aaa;
     color: #fff;
     border: none;
 }
-
 .admin-user-management.scoped-dashboard .delete-confirm-modal .delete-confirm-button:hover {
     opacity: 0.9;
 }
 
-/* DARK MODE Buttons */
+/* Dark Mode Buttons */
 [data-theme="dark"] .admin-user-management.scoped-dashboard .delete-confirm-modal .delete-confirm-button.confirm {
-    background: #d32f2f; /* etwas dunkleres Rot */
+    background: #d32f2f;
     border-color: #d32f2f;
 }
-
 [data-theme="dark"] .admin-user-management.scoped-dashboard .delete-confirm-modal .delete-confirm-button.cancel {
     background: #666;
     border-color: #666;
 }
-
-
-
-@keyframes fadeInOut {
-    0% {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-10px); /* Startposition */
+@media (max-width: 480px) {
+    .admin-user-management.scoped-dashboard {
+        padding: 1rem;
     }
-    10% {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0); /* Endposition (sichtbar und in Position) */
+
+    .admin-user-management.scoped-dashboard .page-header {
+        padding: 1rem;
     }
-    90% {
-        opacity: 1;
+
+    /* Userliste (Tabelle) -> evtl. scrollbare Table */
+    .admin-user-management.scoped-dashboard .user-list table {
+        font-size: 0.85rem;
     }
-    100% {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-10px); /* Ende der Animation (unsichtbar) */
+    .admin-user-management.scoped-dashboard .user-list td,
+    .admin-user-management.scoped-dashboard .user-list th {
+        padding: 0.5rem;
+    }
+
+    /* Form anpassen */
+    .admin-user-management.scoped-dashboard .user-form {
+        padding: 1rem;
+    }
+    .admin-user-management.scoped-dashboard .user-form input,
+    .admin-user-management.scoped-dashboard .user-form select {
+        font-size: 0.9rem;
     }
 }

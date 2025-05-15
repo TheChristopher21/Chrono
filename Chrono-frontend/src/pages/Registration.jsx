@@ -2,17 +2,16 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-
 import "../styles/RegistrationScoped.css";
+import { Link } from "react-router-dom";
 
-import api from "../utils/api.js";
+import api from "../utils/api";
 import { useNotification } from "../context/NotificationContext";
 
 const Registration = () => {
     const navigate = useNavigate();
     const { notify } = useNotification();
 
-    // Zustand für das Formular + gewähltes Paket
     const [form, setForm] = useState({
         companyName: "",
         contactName: "",
@@ -21,101 +20,84 @@ const Registration = () => {
         additionalInfo: "",
     });
 
-    // Paket & Abrechnungsdetails
+    // Nur noch 3 Pakete
     const [selectedPackage, setSelectedPackage] = useState("");
-    const [employeeCount, setEmployeeCount] = useState(5); // Standardwert
+    const [employeeCount, setEmployeeCount] = useState(5);
     const [billingPeriod, setBillingPeriod] = useState("monthly"); // "monthly" oder "yearly"
+    const [calculatedPrice, setCalculatedPrice] = useState(0);
 
-    // UI-States
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // --- Eingaben im Formular (Firma, Kontakt, etc.) ---
+    // Eingaben für das Formular (Firma, Kontakt, etc.)
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    // --- Paket-Auswahl ---
+    // Paket auswählen
     const handlePackageSelect = (pkg) => {
         setSelectedPackage(pkg);
     };
 
-    // --- Mitarbeiteranzahl & Abrechnung ändern ---
+    // Mitarbeiterzahl
     const handleEmployeeCountChange = (e) => {
         const val = parseInt(e.target.value, 10);
-        if (!isNaN(val)) {
-            setEmployeeCount(val);
-        } else {
-            setEmployeeCount(0);
-        }
+        if (!isNaN(val)) setEmployeeCount(val);
     };
 
+    // Abrechnungsmodus (monatlich / jährlich)
     const handleBillingPeriodChange = (e) => {
-        setBillingPeriod(e.target.value); // "monthly" oder "yearly"
+        setBillingPeriod(e.target.value);
     };
 
-    // --- Kostenberechnung ---
-    // Hier Beispielwerte aus deinen Paketen (Monatspreise, enthaltene MA, Zusatzkosten pro MA).
-    const [calculatedPrice, setCalculatedPrice] = useState(0);
-
-    useEffect(() => {
-        setCalculatedPrice(calculatePrice(selectedPackage, employeeCount, billingPeriod));
-    }, [selectedPackage, employeeCount, billingPeriod]);
-
-    /**
-     * Berechnet den Preis basierend auf:
-     *  - ausgewähltem Paket
-     *  - Mitarbeiteranzahl
-     *  - Abrechnungsintervall (monthly / yearly)
-     *
-     * Beispielwerte kannst du anpassen.
-     */
+    // Preisberechnung für 3 Pakete
     function calculatePrice(pkg, empCount, period) {
-        if (!pkg) return 0;
+        let baseMonthly = 0;
+        let includedEmp = 0;
+        let extraPerEmp = 0;
 
-        // Default: 0
-        let baseMonthly = 0;        // In €/Monat
-        let includedEmp = 0;        // Anzahl inkl. Mitarbeiter
-        let extraPerEmp = 0;        // € pro Zusatz-MA
-
+        /*
+         * Alle Pakete enthalten Berichte
+         * Unterschied: Anzahl inkl. Mitarbeiter + Support
+         */
         switch (pkg) {
-            case "Small Team":
-                baseMonthly = 19;
+            case "Small":
+                baseMonthly = 19;   // Inkl. 5 MA
                 includedEmp = 5;
-                extraPerEmp = 2.5;
+                extraPerEmp = 3.0;  // z.B. 3€ / MA
                 break;
             case "Basic":
-                baseMonthly = 49;
+                baseMonthly = 49;   // Inkl. 25 MA
                 includedEmp = 25;
-                extraPerEmp = 2;
+                extraPerEmp = 2.5;  // z.B. 2,50€ / MA
                 break;
             case "Professional":
-                baseMonthly = 99;
+                baseMonthly = 99;   // Inkl. 50 MA
                 includedEmp = 50;
-                extraPerEmp = 1.8;
+                extraPerEmp = 2.0;  // z.B. 2€ / MA
                 break;
-            case "Enterprise":
-                // Enterprise machen wir "Auf Anfrage" => 0, oder fix 0 → du kannst
-                // es so definieren, dass man hier immer 0 anzeigt + "Auf Anfrage"
-                return 0;
             default:
                 return 0;
         }
 
-        // Zusatzgebühr falls man > includedEmp hat
-        const extra = Math.max(0, empCount - includedEmp); // Falls negative -> 0
-        const monthlyCost = baseMonthly + extra * extraPerEmp;
+        const extraMA = Math.max(0, empCount - includedEmp);
+        let monthlyCost = baseMonthly + extraMA * extraPerEmp;
 
-        // Falls yearly => 10x monatl. statt 12
+        // Jährlich: 2 Monate gratis → 10 * monthly
         if (period === "yearly") {
-            return monthlyCost * 10; // 10 Monate zahlen statt 12
+            return monthlyCost * 10;
         } else {
-            return monthlyCost; // normaler Monatspreis
+            return monthlyCost;
         }
     }
 
-    // --- Absenden ---
+    // Re-Berechnung bei Änderungen
+    useEffect(() => {
+        setCalculatedPrice(calculatePrice(selectedPackage, employeeCount, billingPeriod));
+    }, [selectedPackage, employeeCount, billingPeriod]);
+
+    // Absenden
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!selectedPackage) {
@@ -124,22 +106,17 @@ const Registration = () => {
         }
         setIsSubmitting(true);
         try {
-            // Payload vorbereiten: alle Formularfelder + gewählte Infos
             const payload = {
                 ...form,
                 chosenPackage: selectedPackage,
-                employeeCount: employeeCount,
-                billingPeriod: billingPeriod, // monthly oder yearly
-                calculatedPrice: calculatedPrice, // z. B. 49 / 490 ...
+                employeeCount,
+                billingPeriod,
+                calculatedPrice,
             };
-
             const response = await api.post("/api/apply", payload);
             if (response.data.success) {
                 setSuccess(true);
-                notify(
-                    "Ihre Bewerbung wurde erfolgreich gesendet. Wir melden uns per E‑Mail bei Ihnen."
-                );
-                // Weiterleitung nach 3s zur Login-Seite
+                notify("Ihre Bewerbung wurde erfolgreich gesendet. Wir melden uns per E-Mail.");
                 setTimeout(() => {
                     navigate("/login", { replace: true });
                 }, 3000);
@@ -157,23 +134,17 @@ const Registration = () => {
         <>
             <Navbar />
 
-            {/* WICHTIG: Wrapper mit .registration-page.scoped-registration */}
             <div className="registration-page scoped-registration">
                 <div className="registration-content">
-
-                    {/* Paket-Übersicht */}
+                    {/* Pakete + Preise */}
                     <div className="pricing-section">
                         <h2>Unsere Preise &amp; Pakete</h2>
                         <p className="pricing-intro">
-                            Wählen Sie das passende Paket für Ihr Unternehmen.
-                            Alle Pakete bieten NFC-basiertes Stempeln, automatische Zeiterfassung
-                            (WORK_START, BREAK, etc.), Urlaubsverwaltung und eine Admin-Oberfläche.
+                            NFC-Stempeln, automatische Zeiterfassung und Berichte sind in jedem Paket enthalten.
                             <br />
-                            Sie können monatlich oder jährlich zahlen.
-                            Bei jährlicher Zahlung erhalten Sie 2&nbsp;Monate gratis (12 zum Preis von 10).
+                            Der Unterschied liegt vor allem in der Anzahl mitgelieferter Mitarbeiterplätze und Support-Level.
                         </p>
 
-                        {/* Abrechnung (monatlich/jährlich) */}
                         <div className="billing-toggle">
                             <label>
                                 <input
@@ -193,87 +164,80 @@ const Registration = () => {
                                     checked={billingPeriod === "yearly"}
                                     onChange={handleBillingPeriodChange}
                                 />
-                                Jährlich (2 Monate geschenkt)
+                                Jährlich (2 Monate gratis)
                             </label>
                         </div>
 
                         <div className="pricing-cards">
-                            {/* Small-Team-Karte */}
+                            {/* Small */}
                             <div
-                                className={`pricing-card ${selectedPackage === "Small Team" ? "selected" : ""}`}
-                                onClick={() => handlePackageSelect("Small Team")}
+                                className={`pricing-card ${selectedPackage === "Small" ? "selected" : ""}`}
+                                onClick={() => handlePackageSelect("Small")}
                             >
-                                <h3>Small Team</h3>
+                                <h3>Small</h3>
                                 <p className="price-line">
-                                    <strong>19 €/Monat*</strong> <br />
-                                    <span className="yearly-hint">oder 190 €/Jahr</span>
+                                    <strong>19 € / Monat*</strong><br />
+                                    <span className="yearly-hint">oder 190 € / Jahr</span>
                                 </p>
                                 <ul>
-                                    <li>Bis 5 Mitarbeiter inkl.</li>
-                                    <li>+2,50 € je zusätzlichem MA</li>
-                                    <li>NFC-Stempeln &amp; Urlaubsverwaltung</li>
+                                    <li>Bis 5 Mitarbeiter inklusive</li>
+                                    <li>E-Mail-Support (Mo-Fr)</li>
+                                    <li>Alle Berichte & Urlaubsverwaltung</li>
                                 </ul>
                             </div>
 
-                            {/* Basic-Karte */}
+                            {/* Basic */}
                             <div
                                 className={`pricing-card ${selectedPackage === "Basic" ? "selected" : ""}`}
                                 onClick={() => handlePackageSelect("Basic")}
                             >
                                 <h3>Basic</h3>
                                 <p className="price-line">
-                                    <strong>49 €/Monat*</strong> <br />
-                                    <span className="yearly-hint">oder 490 €/Jahr</span>
+                                    <strong>49 € / Monat*</strong><br />
+                                    <span className="yearly-hint">oder 490 € / Jahr</span>
                                 </p>
                                 <ul>
-                                    <li>Bis 25 Mitarbeiter inkl.</li>
-                                    <li>+2 € je zusätzlichem MA</li>
-                                    <li>Auto-Punch-Out &amp; einfache Berichte</li>
+                                    <li>Bis 25 Mitarbeiter inklusive</li>
+                                    <li>E-Mail + Chat-Support (Mo-Fr 8-18 Uhr)</li>
+                                    <li>Alle Berichte & Urlaubsverwaltung</li>
                                 </ul>
                             </div>
 
-                            {/* Professional-Karte */}
+                            {/* Professional */}
                             <div
                                 className={`pricing-card ${selectedPackage === "Professional" ? "selected" : ""}`}
                                 onClick={() => handlePackageSelect("Professional")}
                             >
                                 <h3>Professional</h3>
                                 <p className="price-line">
-                                    <strong>99 €/Monat*</strong> <br />
-                                    <span className="yearly-hint">oder 990 €/Jahr</span>
+                                    <strong>99 € / Monat*</strong><br />
+                                    <span className="yearly-hint">oder 990 € / Jahr</span>
                                 </p>
                                 <ul>
-                                    <li>Bis 50 Mitarbeiter inkl.</li>
-                                    <li>+1,80 € je zusätzlichem MA</li>
-                                    <li>Alle Basic-Features + Premium-Support</li>
-                                    <li>Erweiterte Berichte &amp; Statistik</li>
+                                    <li>Bis 50 Mitarbeiter inklusive</li>
+                                    <li>Premium-Support (E-Mail, Chat & Telefon)</li>
+                                    <li>Alle Berichte & Urlaubsverwaltung</li>
                                 </ul>
                             </div>
-
-                            {/* Enterprise-Karte */}
-
                         </div>
 
                         <p className="pricing-footnote">
-                            * Preisangaben netto, zzgl. MwSt. &nbsp; | &nbsp; Jährliche Zahlung entspricht
-                            10 Monaten zum Monatspreis (2 Monate geschenkt).
+                            * Alle Preise netto zzgl. USt.
+                            &nbsp;|&nbsp; Bei jährlicher Zahlung nur 10 statt 12 Monatsraten.
                         </p>
                     </div>
 
-                    {/* Bewerbungsformular */}
+                    {/* Formular */}
                     <div className="application-section">
-                        <h2>Firmenbewerbung</h2>
+                        <h2>Firmen-Anmeldung</h2>
 
                         {error && <p className="error-message">{error}</p>}
                         {success ? (
                             <p className="success-message">
-                                Ihre Bewerbung wurde erfolgreich gesendet. Wir werden uns in Kürze per E-Mail
-                                bei Ihnen melden.
+                                Ihre Bewerbung wurde erfolgreich gesendet. Wir melden uns in Kürze per E-Mail.
                             </p>
                         ) : (
                             <form onSubmit={handleSubmit}>
-
-                                {/* Eingabe Firma + Kontakt */}
                                 <input
                                     type="text"
                                     name="companyName"
@@ -303,11 +267,11 @@ const Registration = () => {
                                     name="phone"
                                     value={form.phone}
                                     onChange={handleChange}
-                                    placeholder="Telefonnummer (optional)"
+                                    placeholder="Telefon (optional)"
                                 />
 
-                                {/* Mitarbeiteranzahl-Eingabe */}
-                                {selectedPackage !== "Enterprise" && (
+                                {/* Zeige Felder nur, wenn man ein Paket ausgewählt hat */}
+                                {selectedPackage && (
                                     <div className="emp-count-wrapper">
                                         <label htmlFor="employeeCount">Geschätzte Mitarbeiteranzahl:</label>
                                         <input
@@ -325,17 +289,16 @@ const Registration = () => {
                                     name="additionalInfo"
                                     value={form.additionalInfo}
                                     onChange={handleChange}
-                                    placeholder="Weitere Informationen (z. B. Anforderungen, Fragen, etc.)"
-                                    rows="5"
-                                    required
+                                    placeholder="Weitere Informationen oder Fragen..."
+                                    rows="4"
                                 />
 
-                                {/* Preis-Vorschau (sofern kein Enterprise) */}
-                                {selectedPackage && selectedPackage !== "Enterprise" && (
+                                {/* Preisvorschau */}
+                                {selectedPackage && (
                                     <div className="price-preview">
-                                        <strong>Preis:</strong>{" "}
+                                        <strong>Voraussichtlicher Preis:</strong> &nbsp;
                                         {calculatedPrice > 0
-                                            ? `${calculatedPrice.toFixed(2).replace(".", ",")} € ${
+                                            ? `${calculatedPrice.toFixed(2).replace(".", ",")} € ${
                                                 billingPeriod === "monthly" ? "pro Monat" : "pro Jahr"
                                             }`
                                             : "—"}
@@ -347,6 +310,10 @@ const Registration = () => {
                                 </button>
                             </form>
                         )}
+                    </div>
+                    <div style={{ marginTop: "40px", textAlign: "center", fontSize: "0.9rem" }}>
+                        <Link to="/impressum" style={{ marginRight: "1rem" }}>Impressum</Link>
+                        <Link to="/agb">AGB</Link>
                     </div>
                 </div>
             </div>

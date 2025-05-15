@@ -38,32 +38,32 @@ function UserDashboard() {
     const { notify } = useNotification();
     const { t } = useTranslation();
 
-    const [userProfile, setUserProfile]       = useState(null);
-    const [allEntries, setAllEntries]         = useState([]);
+    const [userProfile, setUserProfile] = useState(null);
+    const [allEntries, setAllEntries] = useState([]);
     const [vacationRequests, setVacationRequests] = useState([]);
     const [correctionRequests, setCorrectionRequests] = useState([]);
 
     // Punch
-    const [punchMessage, setPunchMessage]     = useState('');
-    const lastPunchTimeRef                   = useRef(0);
+    const [punchMessage, setPunchMessage] = useState('');
+    const lastPunchTimeRef = useRef(0);
 
     // Weekly
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
 
     // Corrections
     const [showCorrectionsPanel, setShowCorrectionsPanel] = useState(false);
-    const [showAllCorrections, setShowAllCorrections]     = useState(false);
+    const [showAllCorrections, setShowAllCorrections] = useState(false);
     const [selectedCorrectionMonday, setSelectedCorrectionMonday] = useState(getMondayOfWeek(new Date()));
 
     // Print
     const [printModalVisible, setPrintModalVisible] = useState(false);
-    const [printStartDate, setPrintStartDate]       = useState(formatLocalDate(new Date()));
-    const [printEndDate,   setPrintEndDate]         = useState(formatLocalDate(new Date()));
+    const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date()));
+    const [printEndDate, setPrintEndDate] = useState(formatLocalDate(new Date()));
 
     // CorrectionModal
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
-    const [correctionDate, setCorrectionDate]           = useState("");
-    const [correctionData, setCorrectionData]           = useState({
+    const [correctionDate, setCorrectionDate] = useState("");
+    const [correctionData, setCorrectionData] = useState({
         workStart: "",
         breakStart: "",
         breakEnd: "",
@@ -72,9 +72,9 @@ function UserDashboard() {
     });
 
     // Summen
-    const [weeklyDiff, setWeeklyDiff]       = useState(0);
-    const [monthlyDiff, setMonthlyDiff]     = useState(0);
-    const [overallDiff, setOverallDiff]     = useState(0);
+    const [weeklyDiff, setWeeklyDiff] = useState(0);
+    const [monthlyDiff, setMonthlyDiff] = useState(0);
+    const [overallDiff, setOverallDiff] = useState(0);
     const [monthlyDiffAll, setMonthlyDiffAll] = useState({});
 
     const defaultExpectedHours = userProfile
@@ -193,7 +193,7 @@ function UserDashboard() {
             setWeeklyDiff(0);
             return;
         }
-        const weekDates   = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
+        const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
         const dateStrings = weekDates.map(d => d.toLocaleDateString());
 
         const weeklyEntries = allEntries.filter(e =>
@@ -224,7 +224,7 @@ function UserDashboard() {
             setMonthlyDiff(0);
             return;
         }
-        const year  = selectedMonday.getFullYear();
+        const year = selectedMonday.getFullYear();
         const month = selectedMonday.getMonth();
 
         const monthlyEntries = allEntries.filter(e => {
@@ -257,7 +257,7 @@ function UserDashboard() {
             return;
         }
         const dayMap = groupEntriesByDay(allEntries);
-        let sumMins  = 0;
+        let sumMins = 0;
         for (const ds in dayMap) {
             const dayEntries = dayMap[ds];
             if (dayEntries.length > 0) {
@@ -513,8 +513,8 @@ function UserDashboard() {
                     </button>
                 </div>
 
-                {/* Evtl. unnötiger UL - du nutzt day-cards */}
-                <ul className="time-entry-list">
+                {/* (Evtl. Alt-Liste, kann man entfernen, falls nicht benötigt) */}
+                <ul className="time-entry-list" style={{ display: 'none' }}>
                     {allEntries
                         .filter(e =>
                             new Date(e.startTime).toLocaleDateString() === selectedMonday.toLocaleDateString()
@@ -550,8 +550,9 @@ function UserDashboard() {
                                     <h4>
                                         {dayObj.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}
                                         <span className="expected-hours">
-                      {` (${t("expectedWorkHours")}: ${expectedForDay.toFixed(2)}h)`}
-                    </span>
+  {` (${t("expectedWorkHours")}: ${(expectedForDay ?? 0).toFixed(2)}h)`}
+</span>
+
                                     </h4>
                                     {dailyDiffStr && (
                                         <span className="daily-diff">({dailyDiffStr})</span>
@@ -623,7 +624,6 @@ function UserDashboard() {
                 setShowCorrectionsPanel={setShowCorrectionsPanel}
                 selectedCorrectionMonday={selectedCorrectionMonday}
                 setSelectedCorrectionMonday={setSelectedCorrectionMonday}
-                correctionRequests={correctionRequests}
                 showAllCorrections={showAllCorrections}
                 setShowAllCorrections={setShowAllCorrections}
                 sortedCorrections={sortedCorrections}
@@ -685,7 +685,6 @@ function UserDashboard() {
                 onClose={() => setShowCorrectionModal(false)}
                 t={t} // <-- HIER ergänzen!
             />
-
         </div>
     );
 }

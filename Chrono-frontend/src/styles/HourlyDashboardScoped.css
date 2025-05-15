@@ -1,5 +1,5 @@
 /* =========================================================================
-   HourlyDashboardScoped.css · final optimized
+   HourlyDashboardScoped.css
    Scope: .hourly-dashboard.scoped-dashboard
    ========================================================================= */
 
@@ -32,6 +32,7 @@
     background: var(--c-bg);
     color: var(--c-text);
     min-height: 100vh;
+
     transition:
             background var(--u-dur) var(--u-ease),
             color      var(--u-dur) var(--u-ease);
@@ -62,7 +63,6 @@
     box-shadow: var(--u-shadow-sm);
     margin-bottom: clamp(1.7rem, 4vw, 2.4rem);
 
-    /* Zentrierung */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -121,15 +121,6 @@
     outline-offset: 2px;
 }
 
-/* Wenn du bestimmte Buttons anders willst:
-.hourly-dashboard.scoped-dashboard .btn--sec {
-  background: var(--c-sec);
-  color: #fff;
-}
-.hourly-dashboard.scoped-dashboard .btn--sec:hover {
-  background: var(--c-sec-dim);
-} */
-
 /* =========================================================================
    6) Weekly-Overview
    ========================================================================= */
@@ -143,7 +134,7 @@
 }
 .hourly-dashboard.scoped-dashboard .weekly-overview h3 {
     margin: 0 0 1.8rem;
-    text-align: center; /* Zentrierung Überschrift */
+    text-align: center;
     font-size: clamp(1.5rem, 2.5vw, 1.8rem);
     border-bottom: 1px solid var(--c-border);
     padding-bottom: 1.1rem;
@@ -152,7 +143,7 @@
 /* Navigation zentrieren */
 .hourly-dashboard.scoped-dashboard .week-navigation {
     display: flex;
-    justify-content: center; /* Zentriert ← Vorherige Woche ... Nächste Woche */
+    justify-content: center;
     align-items: center;
     gap: 1rem;
     flex-wrap: wrap;
@@ -296,7 +287,15 @@
 .hourly-dashboard.scoped-dashboard .modal-content {
     background: var(--c-card);
     border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    box-shadow: var(--u-shadow-lg);
+    width: min(38rem, 100%);
+    max-height: 90vh;         /* nie höher als Viewport */
+    overflow-y: auto;         /* Inhalt bei langen Formularen scrollbar */
+    padding: 2rem 1.8rem;
+    animation: modalScaleIn var(--u-dur) var(--u-ease);
 }
+
 .hourly-dashboard.scoped-dashboard .modal-content h3 {
     font-size: 1.25rem;
     margin-top: 0;
@@ -313,6 +312,20 @@
     font-size: 0.93rem;
     margin-bottom: 0.65rem;
     width: 100%;
+}
+.hourly-dashboard.scoped-dashboard .modal-overlay {
+    position: fixed;          /* klebt ans Viewport */
+    inset: 0;                 /* top/right/bottom/left = 0 */
+    background: rgba(0,0,0,.45);   /* halbtransparenter Backdrop */
+    display: flex;
+    align-items: center;      /* vertikal zentrieren */
+    justify-content: center;  /* horizontal zentrieren */
+    z-index: 10000;           /* über allem */
+    padding: 1.2rem;          /* Abstand zum Rand auf kleinen Screens */
+}
+@keyframes modalScaleIn {
+    0%   { opacity: 0; transform: scale(.92); }
+    100% { opacity: 1; transform: scale(1); }
 }
 
 /* =========================================================================
@@ -334,7 +347,7 @@
     top: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background-color: #2ecc71; /* Grün */
+    background-color: #2ecc71;
     color: white;
     padding: 12px 24px;
     border-radius: 8px;
@@ -366,7 +379,7 @@
    12) Monatsübersicht + Print-Button
    ========================================================================= */
 .hourly-dashboard.scoped-dashboard .monthly-summary {
-    margin-top: var(--u-gap);
+    margin-top: var(--u-radius);
     text-align: center;
 }
 .hourly-dashboard.scoped-dashboard .monthly-summary h3 {
@@ -400,7 +413,7 @@
 /* Print-Button */
 .hourly-dashboard.scoped-dashboard .print-button {
     margin-top: 1.2rem;
-    text-align: center; /* Zentrieren */
+    text-align: center;
 }
 .hourly-dashboard.scoped-dashboard .print-button button {
     font-size: 0.85rem;
@@ -436,6 +449,7 @@
     .hourly-dashboard.scoped-dashboard *::before,
     .hourly-dashboard.scoped-dashboard *::after {
         transition: none !important;
+        animation: none !important;
     }
 }
 
@@ -465,6 +479,8 @@
     background-color: #2a2d36;
     color: #f0f1f5;
 }
+
+/* Date Input Styles (Dark) */
 .hourly-dashboard.scoped-dashboard .week-navigation input[type="date"] {
     background: var(--c-card);
     color: var(--c-text);
@@ -481,5 +497,27 @@
     filter: invert(40%);
 }
 .hourly-dashboard.scoped-dashboard .week-navigation input[type="date"] {
-    color-scheme: dark;
+    color-scheme: dark; /* Für dunkle Kalender-Picker */
+}
+@media (max-width: 480px) {
+    .hourly-dashboard.scoped-dashboard .weekly-overview {
+        padding: 1rem;
+    }
+
+    /* Week-Display: 1 Spalte */
+    .hourly-dashboard.scoped-dashboard .week-display {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .hourly-dashboard.scoped-dashboard .week-day-card {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    /* Buttons */
+    .hourly-dashboard.scoped-dashboard button {
+        font-size: 0.85rem;
+        padding: 0.5rem 0.9rem;
+    }
 }

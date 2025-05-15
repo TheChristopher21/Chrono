@@ -12,18 +12,16 @@ const HourlyCorrectionsPanel = ({
                                     showAllCorrections,
                                     setShowAllCorrections,
                                 }) => {
-    const sortedCorrections = (
-        showAllCorrections
-            ? correctionRequests
-            : correctionRequests.filter((req) => {
-                if (!req.desiredStart) return false;
-                const reqDate = new Date(req.desiredStart);
-                return (
-                    reqDate >= selectedCorrectionMonday &&
-                    reqDate < addDays(selectedCorrectionMonday, 7)
-                );
-            })
-    )
+    // Filtern & Sortieren
+    const filtered = showAllCorrections
+        ? correctionRequests
+        : correctionRequests.filter((req) => {
+            if (!req.desiredStart) return false;
+            const reqDate = new Date(req.desiredStart);
+            return reqDate >= selectedCorrectionMonday && reqDate < addDays(selectedCorrectionMonday, 7);
+        });
+
+    const sortedCorrections = filtered
         .slice()
         .sort((a, b) => new Date(b.desiredStart) - new Date(a.desiredStart));
 
@@ -50,8 +48,7 @@ const HourlyCorrectionsPanel = ({
                         <div className="week-navigation corrections-nav">
                             <button onClick={handlePrevWeek}>← {t("prevWeek")}</button>
                             <span className="week-label">
-                {formatDate(selectedCorrectionMonday)} –{" "}
-                                {formatDate(addDays(selectedCorrectionMonday, 6))}
+                {formatDate(selectedCorrectionMonday)} – {formatDate(addDays(selectedCorrectionMonday, 6))}
               </span>
                             <button onClick={handleNextWeek}>{t("nextWeek")} →</button>
                         </div>
@@ -59,9 +56,7 @@ const HourlyCorrectionsPanel = ({
 
                     <div className="toggle-all-button">
                         <button onClick={() => setShowAllCorrections((prev) => !prev)}>
-                            {showAllCorrections
-                                ? t("showWeeklyOnly")
-                                : t("showAll")}
+                            {showAllCorrections ? t("showWeeklyOnly") : t("showAll")}
                         </button>
                     </div>
 

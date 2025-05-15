@@ -2,23 +2,35 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
+/**
+ * Falls du Übersetzungen verwenden möchtest, füge hier "t" als Prop hinzu.
+ * Dann z.B. {t("submitCorrectionFor") || "Korrekturantrag für"}.
+ */
 const PercentageCorrectionModal = ({
                                        visible,
                                        correctionDate,
                                        correctionData,
                                        handleCorrectionInputChange,
                                        handleCorrectionSubmit,
-                                       onClose
+                                       onClose,
+                                       t, // <-- optional, falls gewünscht
                                    }) => {
     if (!visible) return null;
 
     return (
         <div className="modal-overlay">
             <div className="modal-content">
-                <h3>Korrekturantrag für {correctionDate}</h3>
+                <h3>
+                    {/* Falls du t() verwenden willst, sonst statischer Text: */}
+                    {t ? t("submitCorrectionFor") : "Korrekturantrag für"}{" "}
+                    {correctionDate}
+                </h3>
+
                 <form onSubmit={handleCorrectionSubmit}>
                     <div className="form-group">
-                        <label>Work Start:</label>
+                        <label>
+                            {t ? t("workStart") : "Work Start"}:
+                        </label>
                         <input
                             type="time"
                             name="workStart"
@@ -27,8 +39,11 @@ const PercentageCorrectionModal = ({
                             required
                         />
                     </div>
+
                     <div className="form-group">
-                        <label>Break Start:</label>
+                        <label>
+                            {t ? t("breakStart") : "Break Start"}:
+                        </label>
                         <input
                             type="time"
                             name="breakStart"
@@ -36,8 +51,11 @@ const PercentageCorrectionModal = ({
                             onChange={handleCorrectionInputChange}
                         />
                     </div>
+
                     <div className="form-group">
-                        <label>Break End:</label>
+                        <label>
+                            {t ? t("breakEnd") : "Break End"}:
+                        </label>
                         <input
                             type="time"
                             name="breakEnd"
@@ -45,8 +63,11 @@ const PercentageCorrectionModal = ({
                             onChange={handleCorrectionInputChange}
                         />
                     </div>
+
                     <div className="form-group">
-                        <label>Work End:</label>
+                        <label>
+                            {t ? t("workEnd") : "Work End"}:
+                        </label>
                         <input
                             type="time"
                             name="workEnd"
@@ -55,18 +76,26 @@ const PercentageCorrectionModal = ({
                             required
                         />
                     </div>
+
                     <div className="form-group">
-                        <label>Grund (Reason):</label>
+                        <label>
+                            {t ? t("reason") : "Reason"}:
+                        </label>
                         <textarea
                             name="reason"
                             value={correctionData.reason}
                             onChange={handleCorrectionInputChange}
                             required
-                        ></textarea>
+                        />
                     </div>
+
                     <div className="modal-buttons">
-                        <button type="submit">Antrag senden</button>
-                        <button type="button" onClick={onClose}>Abbrechen</button>
+                        <button type="submit">
+                            {t ? t("submitCorrection") : "Antrag senden"}
+                        </button>
+                        <button type="button" onClick={onClose}>
+                            {t ? t("cancel") : "Abbrechen"}
+                        </button>
                     </div>
                 </form>
             </div>
@@ -82,11 +111,12 @@ PercentageCorrectionModal.propTypes = {
         breakStart: PropTypes.string,
         breakEnd: PropTypes.string,
         workEnd: PropTypes.string,
-        reason: PropTypes.string
+        reason: PropTypes.string,
     }).isRequired,
     handleCorrectionInputChange: PropTypes.func.isRequired,
     handleCorrectionSubmit: PropTypes.func.isRequired,
-    onClose: PropTypes.func.isRequired
+    onClose: PropTypes.func.isRequired,
+    t: PropTypes.func, // optional
 };
 
 export default PercentageCorrectionModal;

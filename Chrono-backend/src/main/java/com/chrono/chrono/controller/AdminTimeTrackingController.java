@@ -94,8 +94,8 @@ public class AdminTimeTrackingController {
             @RequestParam String workEnd,
             @RequestParam String adminUsername,
             @RequestParam String adminPassword,
-            @RequestParam String userPassword) {
-
+            @RequestParam String userPassword
+    ) {
         try {
             String result = timeTrackingService.updateDayTimeEntries(
                     targetUsername,
@@ -106,10 +106,19 @@ public class AdminTimeTrackingController {
                     workEnd,
                     adminUsername,
                     adminPassword,
-                    userPassword);
+                    userPassword
+            );
             return ResponseEntity.ok(result);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+
+        } catch (RuntimeException ex) {
+            String msg = ex.getMessage() != null ? ex.getMessage() : "Unknown error";
+            if (msg.contains("Invalid admin password")
+                    || msg.contains("Invalid user password")
+                    || msg.contains("For self-edit, admin and user passwords must match")) {
+                return ResponseEntity.status(403).body("Passwort-Fehler: " + msg);
+            }
+            return ResponseEntity.status(400).body("Konnte dayTimeEntries nicht bearbeiten: " + msg);
         }
     }
+
 }

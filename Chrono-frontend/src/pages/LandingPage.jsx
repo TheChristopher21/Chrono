@@ -1,118 +1,168 @@
-// src/pages/LandingPage.jsx
-import React from 'react';
-import { Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import '../styles/LandingPageScoped.css';
-import { useTranslation } from '../context/LanguageContext';
+// src/pages/LandingPage.jsx  ·  Features aktualisiert (2025-06)
+import "react";
+import { Link } from "react-router-dom";
+import Navbar from "../components/Navbar";
+import "../styles/LandingPageScoped.css";
+import { useTranslation } from "../context/LanguageContext";
+
+/* ---------- Sub-Components ------------------------------------------ */
+const FeatureCard = ({ icon, title, text }) => (
+    <div className="feature-card">
+        <div className="feature-icon">{icon}</div>
+        <h3>{title}</h3>
+        <p>{text}</p>
+    </div>
+);
+
+const StepCard = ({ n, title, text }) => (
+    <div className="step-item">
+        <div className="step-number">{n}</div>
+        <h4>{title}</h4>
+        <p>{text}</p>
+    </div>
+);
 
 const LandingPage = () => {
     const { t } = useTranslation();
 
     return (
         <div className="landing-page scoped-landing">
-            {/* Navigation */}
             <Navbar />
 
-            {/* -------------------- HERO-SECTION -------------------- */}
-            <header className="landing-hero">
-                <div className="hero-text">
-                    <h1>{t("landingPage.headline", "Chrono-Logic")}</h1>
-                    <p>{t("landingPage.subHeadline", "Zeiterfassung und NFC-Stempeln – ganz einfach.")}</p>
-                    <div className="cta-buttons">
-                    </div>
-                </div>
-                <div className="hero-media">
-                    <img src="/images/hero-demo.png" alt="Zeiterfassungs-Demo" />
+            {/* HERO *********************************************************** */}
+            <header className="landing-hero site-section lg" id="home">
+                <h1>{t("lp.headline", "Zeiterfassung, die Projekte vereinfacht")}</h1>
+
+                <div className="cta-buttons">
+                    <Link to="/register" className="btn primary">
+                        {t("lp.ctaPrimary", "Kostenlos registrieren")}
+                    </Link>
                 </div>
             </header>
 
-            {/* -------------------- FEATURES -------------------- */}
-            <section className="features-section flow-section">
-                <h2>{t("landingPage.whyTitle", "Warum Chrono-Logic?")}</h2>
-                <div className="feature-list">
-                    <div className="feature-item">
-                        <img src="/images/nfc-icon.png" alt="NFC Icon" />
-                        <h3>{t("landingPage.featureNfcTitle", "NFC-Stempeln")}</h3>
-                        <p>{t("landingPage.featureNfcText", "Einfaches Ein- und Ausstempeln per NFC-Karte.")}</p>
-                    </div>
-                    <div className="feature-item">
-                        <img src="/images/report-icon.png" alt="Report Icon" />
-                        <h3>{t("landingPage.featureReportsTitle", "Automatische Berichte")}</h3>
-                        <p>{t("landingPage.featureReportsText", "Übersichtliche Auswertungen und PDF-Exports.")}</p>
-                    </div>
-                    <div className="feature-item">
-                        <img src="/images/calendar-icon.png" alt="Calendar Icon" />
-                        <h3>{t("landingPage.featureVacationTitle", "Urlaubsverwaltung")}</h3>
-                        <p>{t("landingPage.featureVacationText", "Urlaubstage im Blick, inkl. Genehmigungsprozess.")}</p>
-                    </div>
+            {/* INFO *********************************************************** */}
+            <section className="info-section site-section">
+                <h2 className="section-title accent">Warum Chrono-Logic?</h2>
+
+                {/* Glass-Card */}
+                <div className="info-box">
+                    <p>
+                        Chrono-Logic erkennt automatisch den richtigen Stempel, verhindert
+                        Dubletten in Millisekunden und füllt vergessene Punch-Outs nachts von
+                        selbst. Von Teilzeit-Prozent-Punch bis Überstunden-Management – die
+                        Engine läuft 24/7 transaktionssicher und audit-fest.
+                    </p>
                 </div>
             </section>
 
-            {/* -------------------- STEPS: So fängst du an -------------------- */}
-            <section className="steps-section flow-section">
-                <h2>{t("landingPage.stepsTitle", "So startest du in 3 Schritten")}</h2>
-                <div className="steps-grid">
-                    <div className="step-item">
-                        <div className="step-number">1</div>
-                        <h4>{t("landingPage.step1Title", "Firma Registrieren")}</h4>
-                        <p>
-                            {t("landingPage.step1Text", "Registriere dich in wenigen Sekunden und bekomme deinen Zugang.")}
-                        </p>
-                    </div>
-                    <div className="step-item">
-                        <div className="step-number">2</div>
-                        <h4>{t("landingPage.step2Title", "Karte programmieren")}</h4>
-                        <p>
-                            {t("landingPage.step2Text", "Halte deine NFC-Karte an den Reader, um sie deinem Account zuzuweisen.")}
-                        </p>
-                    </div>
-                    <div className="step-item">
-                        <div className="step-number">3</div>
-                        <h4>{t("landingPage.step3Title", "Losstempeln")}</h4>
-                        <p>
-                            {t("landingPage.step3Text", "Stemple ein und aus, verwalte Urlaub, erstelle Berichte – fertig!")}
-                        </p>
-                    </div>
-                </div>
 
-                {/* Hier die neue Zeile (Firma-Registrierung) */}
-                <div className="firma-register-callout">
-                    <h3>{t("landingPage.registerCompanyHeadline", "Registriere jetzt deine Firma")}</h3>
-                    <Link to="/register" className="btn primary">
-                        {t("landingPage.registerCompanyButton", "Firma registrieren")}
-                    </Link>
-                </div>
-            </section>
+            {/* FEATURES ******************************************************* */}
+            <section className="features-section site-section" id="features">
+                <h2>{t("lp.featuresTitle", "Alle Funktionen im Überblick")}</h2>
+                <p>
+                    {t(
+                        "lp.featuresSub",
+                        "Keine Gimmicks – nur Features, die deinen Alltag wirklich erleichtern."
+                    )}
+                </p>
 
-            {/* -------------------- VIDEO / HOW-IT-WORKS -------------------- */}
-            <section className="video-section flow-section">
-                <h2>{t("landingPage.howItWorks", "So funktioniert's")}</h2>
-                <div className="video-container">
-                    <iframe
-                        width="560"
-                        height="315"
-                        src="https://www.youtube.com/embed/DEIN_VIDEO_ID"
-                        title="YouTube video player"
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
+                <div className="features-grid">
+                    <FeatureCard
+                        icon="🧠"
+                        title="Smart Punch"
+                        text="Erkennt automatisch Work Start, Break Start/End & Work End."
+                    />
+                    <FeatureCard
+                        icon="👆"
+                        title="Direkter Punch"
+                        text="Vier feste Status gezielt wählbar – Übergangs-Logik inklusive."
+                    />
+                    <FeatureCard
+                        icon="🔄"
+                        title="Duplicate-Schutz"
+                        text="Einzigartiger DB-Index + Catch-Up-Logik verhindern Doppel-Clicks."
+                    />
+                    <FeatureCard
+                        icon="⏰"
+                        title="Auto Punch Out"
+                        text="Cron-Job 23:20 Uhr beendet vergessene Stempel automatisch."
+                    />
+                    <FeatureCard
+                        icon="📈"
+                        title="Prozent-Punch"
+                        text="Teilzeit gibt Tages-% an – Ist/Soll-Delta sofort berechnet."
+                    />
+                    <FeatureCard
+                        icon="🛠️"
+                        title="Korrekturen & Admin"
+                        text="Einträge editieren, ganzen Tag neu schreiben oder Notizen setzen."
+                    />
+                    <FeatureCard
+                        icon="📊"
+                        title="Berichte & Historie"
+                        text="Tages-, Wochen-, Bereichs-Reports + vollständige Nutzer-History."
+                    />
+                    <FeatureCard
+                        icon="➕"
+                        title="Überstunden-Mgmt"
+                        text="Persönliche Minuten-Balance auto-aktualisiert, Urlaub einbezogen."
                     />
                 </div>
             </section>
 
-            {/* -------------------- FOOTER -------------------- */}
+            {/* STEPS ********************************************************** */}
+            <section className="steps-section site-section">
+                <h2>{t("lp.stepsTitle", "In 3 Schritten startklar")}</h2>
+                <div className="steps-grid">
+                    <StepCard
+                        n="1"
+                        title="Account anlegen"
+                        text="Firmen-Profil & Teams in wenigen Minuten."
+                    />
+                    <StepCard
+                        n="2"
+                        title="NFC-Badges koppeln"
+                        text="Einmalig scannen, fertig."
+                    />
+                    <StepCard
+                        n="3"
+                        title="Dashboard nutzen"
+                        text="Echtzeit-Insights & Abwesenheiten verwalten."
+                    />
+                </div>
+            </section>
+
+            {/* ---------------------------------------------------------------
+         KOMMENTAR-INTEGRATION (auskommentiert)
+         ---------------------------------------------------------------
+         <section className="site-section" id="comments">
+           <h2>Kommentare</h2>
+           <div id="commento" />
+         </section>
+
+         //  Script z. B. in index.html oder via react-helmet:
+         //  <script defer src="https://cdn.commento.io/js/commento.js"></script>
+         ---------------------------------------------------------------- */}
+
+            {/* NEWSLETTER ***************************************************** */}
+            <section className="newsletter-section site-section">
+                <h2>{t("lp.newsTitle", "Bleib informiert!")}</h2>
+                <p>{t("lp.newsSub", "Updates & Tipps direkt in dein Postfach.")}</p>
+                <form className="newsletter-form">
+                    <input type="email" placeholder="Deine E-Mail" />
+                    <button className="btn primary">Abonnieren</button>
+                </form>
+            </section>
+
+            {/* FOOTER ********************************************************* */}
             <footer className="landing-footer">
                 <div className="footer-content">
-                    <p>© 2025 Chrono-Logic. {t("landingPage.allRights", "Alle Rechte vorbehalten.")}</p>
-
+                    <p>© 2025 Chrono-Logic · Alle Rechte vorbehalten</p>
                     <div className="social-icons">
-                        <a href="https://github.com/" target="_blank" rel="noopener noreferrer">
-                            <img src="/images/github-icon.png" alt="GitHub" />
-                        </a>
-                        <a href="https://twitter.com/" target="_blank" rel="noopener noreferrer">
-                            <img src="/images/twitter-icon.png" alt="Twitter" />
-                        </a>
-                        {/* Ggf. mehr Icons: LinkedIn, etc. */}
+                    </div>
+                    <div style={{ marginTop: "1rem" }}>
+                        <Link to="/impressum" style={{ marginRight: "1rem" }}>Impressum</Link>
+                        <Link to="/agb">AGB</Link>
                     </div>
                 </div>
             </footer>

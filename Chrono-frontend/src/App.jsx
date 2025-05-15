@@ -18,6 +18,8 @@ import AdminChangePassword          from "./pages/AdminChangePassword.jsx";
 import PercentagePunch              from "./pages/PercentageDashboard/PercentageDashboard.jsx";
 import PrintReport                  from "./pages/PrintReport.jsx";
 import CompanyManagementPage        from "./pages/CompanyManagementPage.jsx";
+import Impressum from "./pages/Impressum.jsx";
+import AGB from "./pages/AGB.jsx";
 
 import PrivateRoute                 from "./components/PrivateRoute.jsx";
 
@@ -99,6 +101,14 @@ function App() {
 
                 {/* PDF-/Druck-Seite – MUSS vor dem Catch-All stehen */}
                 <Route path="/print-report" element={<PrintReport />} />
+
+                {/* Catch-All (Not-Found / Redirect) */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+                {/* Impressum-Seite */}
+                <Route path="/impressum" element={<Impressum />} />
+
+                {/* AGB-Seite */}
+                <Route path="/agb" element={<AGB />} />
 
                 {/* Catch-All (Not-Found / Redirect) */}
                 <Route path="*" element={<Navigate to="/" replace />} />

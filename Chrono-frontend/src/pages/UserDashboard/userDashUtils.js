@@ -102,10 +102,8 @@ export function formatDiffDecimal(diffInMinutes) {
     return `${sign}${absHours.toFixed(2)}h`;
 }
 
-/**
- * Liest "expectedWorkHours" aus userProfile.schedule, falls hinterlegt (z. B. 8.5).
- * Fallback: defaultExpectedHours = 8.
- */
+
+
 export function getExpectedHoursForDay(dayObj, userConfig, defaultExpectedHours) {
     if (userConfig?.isHourly) return 0;
 
@@ -118,14 +116,15 @@ export function getExpectedHoursForDay(dayObj, userConfig, defaultExpectedHours)
         const epoch = new Date(2020, 0, 1);
         const diffWeeks = Math.floor((dayObj - epoch) / (7 * 24 * 60 * 60 * 1000));
         const cycleIndex = diffWeeks % userConfig.scheduleCycle;
-        const dayOfWeek = dayObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+        const dayOfWeek = dayObj
+            .toLocaleDateString('en-US', { weekday: 'long' })
+            .toLowerCase();
         const value = userConfig.weeklySchedule[cycleIndex]?.[dayOfWeek];
         if (!isNaN(value)) expectedForDay = Number(value);
     }
 
     return expectedForDay;
 }
-
 
 export function getStatusLabel(punchOrder) {
     switch (punchOrder) {
@@ -148,6 +147,7 @@ export function groupEntriesByDay(entries) {
     });
     return dayMap;
 }
+
 // /utils/timeUtils.js
 export function isLateTime(timeString) {
     const time = new Date(`1970-01-01T${timeString}`);

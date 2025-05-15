@@ -1,3 +1,4 @@
+// PercentageVacationSection.jsx
 import React from 'react';
 import PropTypes from 'prop-types';
 import VacationCalendar from '../../components/VacationCalendar';
@@ -9,10 +10,8 @@ const PercentageVacationSection = ({
                                        onRefreshVacations
                                    }) => {
     return (
-
         <section className="vacation-section">
             <h3>{t("vacationTitle")}</h3>
-
 
             {/* Kalender mit integriertem Antrag */}
             <div className="calendar-section">

@@ -19,7 +19,7 @@ export function parseHex16(hexString) {
 export function getMondayOfWeek(date) {
     const copy = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
     const day = copy.getUTCDay();
-    const diff = (day === 0) ? 6 : (day - 1);
+    const diff = day === 0 ? 6 : day - 1;
     copy.setUTCDate(copy.getUTCDate() - diff);
     copy.setUTCHours(0, 0, 0, 0);
     return copy;
@@ -47,7 +47,7 @@ export function formatDate(dateStr) {
     return `${day}-${month}-${year}`;
 }
 
-// "YYYY-MM-DDTHH:mm:ss" -> "HH:mm" (als Voreinstellung z. B. in Input-Feldern)
+// "YYYY-MM-DDTHH:mm:ss" -> "HH:mm"
 export function toTimeInput(dateStr) {
     if (!dateStr) return "";
     const d = new Date(dateStr);
@@ -109,7 +109,7 @@ export function computeDayTotalMinutes(dayEntries) {
         totalMins = endM - startM;
     }
 
-    // Pause
+    // Pausenzeiten abziehen
     const breakStart = dayEntries.find(e => e.punchOrder === 2);
     const breakEnd = dayEntries.find(e => e.punchOrder === 3);
     if (breakStart && breakEnd) {
@@ -124,6 +124,7 @@ export function computeDayTotalMinutes(dayEntries) {
         }
         totalMins -= (breakEndMins - breakStartMins);
     }
+
     return Math.max(0, totalMins);
 }
 
@@ -147,10 +148,11 @@ export function computeTotalMinutesInRange(allEntries, startDate, endDate) {
     });
     return total;
 }
+
 // /utils/timeUtils.js
 export function isLateTime(timeString) {
     const time = new Date(`1970-01-01T${timeString}`);
     const lateStart = new Date('1970-01-01T22:30:00');
-    const lateEnd = new Date('1970-01-01T23:40:00');
+    const lateEnd   = new Date('1970-01-01T23:40:00');
     return time >= lateStart && time <= lateEnd;
 }

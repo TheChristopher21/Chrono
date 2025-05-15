@@ -1,90 +1,98 @@
 // src/context/AuthContext.jsx
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import {
+    createContext,
+    useContext,
+    useState,
+    useEffect,
+    useCallback,
+} from 'react';
+import api from '../utils/api';
 import { useNotification } from './NotificationContext';
 
-const AuthContext = createContext();
+const AuthContext       = createContext();
+const SESSION_DURATION  = 30 * 60 * 1000;
 
-const SESSION_DURATION = 800000; // 5 Minuten
+/* Helper */
+const isSessionExpired = () => {
+    const t = parseInt(localStorage.getItem('loginTime') ?? '0', 10);
+    return Date.now() - t >= SESSION_DURATION;
+};
 
 export const AuthProvider = ({ children }) => {
-    const [authToken, setAuthToken] = useState(localStorage.getItem('token'));
+    const { notify }        = useNotification();
+    const [authToken, setAuthToken]   = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
-    const { notify } = useNotification();
 
+    /* ---------- Init --------------------------------------------- */
+    useEffect(() => {
+        const stored = localStorage.getItem('token');
+        if (stored && !isSessionExpired()) {
+            setAuthToken(stored);
+            api.defaults.headers.common.Authorization = `Bearer ${stored}`;
+            fetchCurrentUser();          //  ⬅️ holt User & setzt State
+            startSessionTimer();
+        } else {
+            logout();
+        }
+    }, []);
+
+    /* ---------- Timer -------------------------------------------- */
     const startSessionTimer = useCallback(() => {
-        localStorage.setItem('loginTime', Date.now().toString());
-        setTimeout(() => {
-            const loginTime = parseInt(localStorage.getItem('loginTime'), 10);
-            if (Date.now() - loginTime >= SESSION_DURATION) {
-                logout();
-                notify("Session expired. Please log in again.");
-            }
-        }, SESSION_DURATION);
+        const remaining =
+            SESSION_DURATION -
+            (Date.now() - parseInt(localStorage.getItem('loginTime') ?? '0', 10));
+
+        const id = setTimeout(() => {
+            logout();
+            notify('Session expired. Please log in again.');
+        }, Math.max(0, remaining));
+
+        return () => clearTimeout(id);
     }, [notify]);
 
-    useEffect(() => {
-        if (authToken) {
-            try {
-                const decoded = JSON.parse(atob(authToken.split('.')[1]));
-                const isPercentage = decoded.hasOwnProperty('isPercentage') ? decoded.isPercentage : false;
-                setCurrentUser({
-                    username: decoded.username || decoded.sub,
-                    roles: decoded.roles || [],
-                    firstName: decoded.firstName || '',
-                    lastName: decoded.lastName || '',
-                    email: decoded.email || '',
-                    isPercentage: isPercentage
-                });
-            } catch (error) {
-                console.error("Error decoding token", error);
-            }
-            startSessionTimer();
-        }
-    }, [authToken, startSessionTimer]);
-
-    const login = async (username, password) => {
+    /* ---------- User laden --------------------------------------- */
+    const fetchCurrentUser = async () => {
         try {
-            const response = await fetch(process.env.APIURL + '/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            });
-            if (!response.ok) {
-                throw new Error('Login failed');
-            }
-            const data = await response.json();
-            localStorage.setItem('token', data.token);
-            setAuthToken(data.token);
-            localStorage.setItem('loginTime', Date.now().toString());
-            const decoded = JSON.parse(atob(data.token.split('.')[1]));
-            const isPercentage = Object.prototype.hasOwnProperty.call(decoded, 'isPercentage') ? decoded.isPercentage : false;
-            // Erstelle ein User-Objekt, das alle gewünschten Felder enthält.
-            const userData = {
-                username: decoded.username || decoded.sub,
-                roles: decoded.roles || [],
-                firstName: decoded.firstName || '',
-                lastName: decoded.lastName || '',
-                email: decoded.email || '',
-                isPercentage: isPercentage
-            };
-            setCurrentUser(userData);
-            startSessionTimer();
-            // Gib nun das verarbeitete userData-Objekt zurück!
-            return { success: true, token: data.token, user: userData };
-        } catch (error) {
-            return { success: false, message: error.message };
+            const res = await api.get('/api/auth/me');
+            setCurrentUser(res.data);
+            return res.data;
+        } catch (err) {
+            console.error('⚠️ /api/auth/me fehlgeschlagen', err);
+            logout();
+            return {};                       // niemals null/undefined zurückgeben
         }
     };
 
+    /* ---------- Login -------------------------------------------- */
+    const login = async (username, password) => {
+        try {
+            const { data } = await api.post('/api/auth/login', { username, password });
+            const { token } = data;
+
+            localStorage.setItem('token', token);
+            localStorage.setItem('loginTime', Date.now().toString());
+            api.defaults.headers.common.Authorization = `Bearer ${token}`;
+            setAuthToken(token);
+
+            const user = await fetchCurrentUser();   // garantiert Objekt
+            startSessionTimer();
+            return { success: true, user };
+        } catch (err) {
+            return { success: false, message: err.message };
+        }
+    };
+
+    /* ---------- Logout ------------------------------------------- */
     const logout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('loginTime');
         setAuthToken(null);
         setCurrentUser(null);
+        delete api.defaults.headers.common.Authorization;
     };
 
     return (
-        <AuthContext.Provider value={{ authToken, currentUser, login, logout, setCurrentUser }}>
+        <AuthContext.Provider value={{ authToken, currentUser, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

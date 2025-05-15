@@ -3,34 +3,34 @@
    Scope: .percentage-dashboard.scoped-dashboard
    ========================================================================= */
 
-/* --------------------------- 1) Variablen (Light) --------------------------- */
+/* --------------------------- Variablen (Light) --------------------------- */
 .percentage-dashboard.scoped-dashboard {
-    --c-pri:   #475bff;
-    --c-pri-dim:#6b7cff;
-    --c-warn:  #ffc741;
+    --c-pri:      #475bff;
+    --c-pri-dim:  #6b7cff;
+    --c-warn:     #ffc741;
 
-    --c-text:  #1e1f22;
-    --c-muted: #5c606e;
-    --c-bg:    #f4f6ff;
-    --c-card:  #ffffff;
-    --c-border:#d5d8e5;
-    --c-line:  #e7e8f1;
+    --c-text:     #1e1f22;
+    --c-muted:    #5c606e;
+    --c-bg:       #f4f6ff;
+    --c-card:     #ffffff;
+    --c-border:   #d5d8e5;
+    --c-line:     #e7e8f1;
 
-    --u-radius:14px;
-    --u-gap:   clamp(1.4rem, 3vw, 2rem);
+    --u-radius:   14px;
+    --u-gap:      clamp(1.4rem, 3vw, 2rem);
+
     --u-shadow-sm:0 1px 4px rgba(0, 0, 0, 0.06);
     --u-shadow-lg:0 20px 34px rgba(0, 0, 0, 0.14);
 
-    --u-dur:   0.25s;
-    --u-ease:  cubic-bezier(0.4, 0.2, 0.2, 1);
+    --u-dur:      0.25s;
+    --u-ease:     cubic-bezier(0.4, 0.2, 0.2, 1);
 
-    /* Basis-Font & Hintergrund */
-    font-family: 'Poppins', system-ui, sans-serif;
-    background: var(--c-bg);
-    color: var(--c-text);
+    font-family:  'Poppins', system-ui, sans-serif;
+    background:   var(--c-bg);
+    color:        var(--c-text);
 }
 
-/* --------------------------- 2) Variablen (Dark) ---------------------------- */
+/* --------------------------- Variablen (Dark) ---------------------------- */
 [data-theme="dark"] .percentage-dashboard.scoped-dashboard {
     --c-text:   #e5e7ec;
     --c-muted:  #a1a4b2;
@@ -43,207 +43,51 @@
     --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.75);
 }
 
-/* --------------------------- 3) Header & Typografie ------------------------ */
-.percentage-dashboard.scoped-dashboard h1 {
-    font-size: clamp(2rem, 3.5vw, 2.6rem);
-}
-.percentage-dashboard.scoped-dashboard h2 {
-    font-size: clamp(1.6rem, 3vw, 2rem);
-}
-.percentage-dashboard.scoped-dashboard h3 {
-    font-size: clamp(1.2rem, 2vw, 1.4rem);
-}
-
-.percentage-dashboard.scoped-dashboard h1,
-.percentage-dashboard.scoped-dashboard h2,
-.percentage-dashboard.scoped-dashboard h3,
-.percentage-dashboard.scoped-dashboard h4,
-.percentage-dashboard.scoped-dashboard p,
-.percentage-dashboard.scoped-dashboard span,
-.percentage-dashboard.scoped-dashboard li,
-.percentage-dashboard.scoped-dashboard label,
-.percentage-dashboard.scoped-dashboard strong {
-    color: var(--c-text);
-}
-
-/* Haupt-Dashboard-Header */
+/* --------------------------- Header & Meta-Info -------------------------- */
 .percentage-dashboard.scoped-dashboard .dashboard-header {
     text-align: center;
     margin-bottom: 1.8rem;
 }
-
-/* Kleine Infotexte z. B. "User: test, Arbeits-%" etc. */
-.percentage-dashboard.scoped-dashboard .dashboard-header .dashboard-meta {
-    margin-top: 0.4rem;
+.percentage-dashboard.scoped-dashboard .personal-info {
+    margin-top: 0.6rem;
     font-size: 0.95rem;
     line-height: 1.4;
     color: var(--c-muted);
 }
-
-/* --------------------------- 4) Week Navigation / Manuell stempeln -------- */
-.percentage-dashboard.scoped-dashboard .week-navigation {
-    display: flex;
-    align-items: center;
-    justify-content: center; /* Zentriert: Vorige Woche, Datepicker, Nächste Woche */
-    gap: 1rem;
-    margin-bottom: 1.6rem;
+.percentage-dashboard.scoped-dashboard .overtime-info {
+    position: relative;
 }
-.percentage-dashboard.scoped-dashboard .week-navigation button {
-    padding: 0.4rem 0.9rem;
+.percentage-dashboard.scoped-dashboard .tooltip-wrapper {
+    margin-left: 0.4rem;
+    position: relative;
+    display: inline-block;
+}
+.percentage-dashboard.scoped-dashboard .tooltip-icon {
+    cursor: help;
     font-size: 0.85rem;
-    border-radius: var(--u-radius);
-    border: none;
-    background: var(--c-pri);
-    color: #fff;
-    font-weight: 600;
-    transition: background var(--u-dur) var(--u-ease), transform var(--u-dur) var(--u-ease);
 }
-.percentage-dashboard.scoped-dashboard .week-navigation button:hover {
-    background: var(--c-pri-dim);
-    transform: translateY(-3px);
-}
-.percentage-dashboard.scoped-dashboard .week-navigation input[type="date"] {
-    padding: 0.5rem 0.8rem;
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
+.percentage-dashboard.scoped-dashboard .tooltip-box {
+    visibility: hidden;
     background: var(--c-card);
+    border: 1px solid var(--c-border);
     color: var(--c-text);
-    font-size: 0.9rem;
-    transition: background var(--u-dur) var(--u-ease), color var(--u-dur) var(--u-ease), border-color var(--u-dur) var(--u-ease);
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .week-navigation input[type="date"] {
-    background: #2c2f37;
-    color: #e5e7ec;
-    border-color: #484A4D;
-}
-
-/* Button z. B. "Manuell stempeln" */
-.percentage-dashboard.scoped-dashboard .manual-punch-btn {
-    background: var(--c-pri);
-    color: #fff;
-    font-weight: 600;
-    border: none;
+    text-align: left;
+    padding: 0.7rem;
     border-radius: var(--u-radius);
-    padding: 0.55rem 1.25rem;
-    cursor: pointer;
-    transition: background var(--u-dur) var(--u-ease), transform var(--u-dur) var(--u-ease);
-    margin-bottom: 1rem; /* if needed */
-}
-.percentage-dashboard.scoped-dashboard .manual-punch-btn:hover {
-    background: var(--c-pri-dim);
-    transform: translateY(-2px);
-}
-
-/* --------------------------- 5) Week Display (Tageskarten) --------------- */
-.percentage-dashboard.scoped-dashboard .week-display {
-    display: grid;
-    gap: 1.8rem;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-}
-.percentage-dashboard.scoped-dashboard .week-day-card {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 1.5rem;
     box-shadow: var(--u-shadow-sm);
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start; /* oder center, wenn du die Buttons mittig willst */
+
+    position: absolute;
+    z-index: 999;
+    min-width: 200px;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
 }
-.percentage-dashboard.scoped-dashboard .week-day-header {
-    font-weight: 600;
-    margin-bottom: 0.8rem;
-    font-size: 1rem;
-}
-.percentage-dashboard.scoped-dashboard .week-day-content p {
-    color: var(--c-muted);
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .week-day-content p {
-    color: #c8cbd5;
-}
-.percentage-dashboard.scoped-dashboard .daily-summary {
-    font-weight: 600;
-    margin-top: 0.5rem;
-}
-.percentage-dashboard.scoped-dashboard .correction-button-row {
-    margin-top: 1rem;
+.percentage-dashboard.scoped-dashboard .tooltip-wrapper:hover .tooltip-box {
+    visibility: visible;
 }
 
-/* Korrektur-Button im Day-Card */
-.percentage-dashboard.scoped-dashboard .correction-button {
-    border-radius: var(--u-radius);
-    background: var(--c-pri);
-    color: #fff;
-    padding: 0.55rem 1.25rem;
-    margin-top: auto; /* schiebt ihn nach unten */
-    font-size: 0.84rem;
-}
-.percentage-dashboard.scoped-dashboard .correction-button:hover {
-    background: var(--c-pri-dim);
-    transform: translateY(-2px);
-}
-
-/* --------------------------- 6) Urlaub / Kalender Section --------------- */
-.percentage-dashboard.scoped-dashboard .calendar-section {
-    width: 100%;
-    max-width: none;
-}
-
-/* Datum + Select Felder im Urlaubspanel */
-.percentage-dashboard.scoped-dashboard input[type="date"],
-.percentage-dashboard.scoped-dashboard select {
-    width: 100%;
-    padding: 0.6rem 0.9rem;
-    font-size: 0.95rem;
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    background: var(--c-card);
-    color: var(--c-text);
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard input[type="date"],
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard select {
-    background: #2c2f37;
-    color: #e5e7ec;
-    border-color: #484A4D;
-}
-
-/* --------------------------- 7) Corrections Panel ------------------------ */
-.percentage-dashboard.scoped-dashboard .correction-panel {
-    margin-top: var(--u-gap);
-}
-.percentage-dashboard.scoped-dashboard .corrections-header {
-    background: var(--c-warn);
-    color: #1f1f1f;
-    font-weight: 700;
-    padding: 1rem 1.6rem;
-    border-radius: var(--u-radius) var(--u-radius) 0 0;
-    display: flex;
-    justify-content: space-between;
-    cursor: pointer;
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .corrections-header {
-    background: #363a45; /* dunkles Grau */
-    color: var(--c-text);
-}
-.percentage-dashboard.scoped-dashboard .corrections-content {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-top: none;
-    border-radius: 0 0 var(--u-radius) var(--u-radius);
-    padding: 1.6rem;
-    box-shadow: var(--u-shadow-sm);
-}
-.percentage-dashboard.scoped-dashboard .single-correction {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 1rem;
-    margin-bottom: 1.2rem;
-    box-shadow: var(--u-shadow-sm);
-    color: var(--c-text);
-}
-
-/* --------------------------- 8) Buttons (Global in scope) ----------------- */
+/* --------------------------- Buttons (global im Scope) ------------------- */
 .percentage-dashboard.scoped-dashboard button {
     border: none;
     border-radius: var(--u-radius);
@@ -251,7 +95,9 @@
     font-weight: 600;
     background: var(--c-pri);
     color: #fff;
-    transition: background var(--u-dur) var(--u-ease), transform var(--u-dur) var(--u-ease);
+    transition:
+            background var(--u-dur) var(--u-ease),
+            transform var(--u-dur) var(--u-ease);
     font-size: 0.88rem;
     padding: 0.55rem 1.25rem;
 }
@@ -260,71 +106,7 @@
     transform: translateY(-3px);
 }
 
-/* --------------------------- 9) Modal Overlay & Content -------------------- */
-.percentage-dashboard.scoped-dashboard .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3000;
-}
-.percentage-dashboard.scoped-dashboard .modal-content {
-    width: 90%;
-    max-width: 520px;
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 2.4rem;
-    box-shadow: var(--u-shadow-lg);
-    color: inherit;
-}
-.percentage-dashboard.scoped-dashboard .modal-content .form-group {
-    margin-bottom: 1rem;
-}
-.percentage-dashboard.scoped-dashboard .modal-content .form-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.4rem;
-    font-size: 0.85rem;
-}
-.percentage-dashboard.scoped-dashboard .modal-content .form-group input,
-.percentage-dashboard.scoped-dashboard .modal-content .form-group textarea {
-    width: 100%;
-    padding: 0.7rem 0.9rem;
-    border: 1px solid var(--c-border);
-    border-radius: 10px;
-    background: inherit;
-    color: inherit;
-    font: inherit;
-}
-.percentage-dashboard.scoped-dashboard .modal-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1.4rem;
-}
-.percentage-dashboard.scoped-dashboard .modal-buttons button {
-    font-size: 0.88rem;
-    padding: 0.55rem 1.25rem;
-    /* Primärdesign, s. global button style oben */
-}
-.percentage-dashboard.scoped-dashboard .modal-buttons button[type="button"] {
-    background: #888; /* Sekundärer Button */
-}
-.percentage-dashboard.scoped-dashboard .modal-buttons button[type="button"]:hover {
-    background: #666;
-}
-
-/* --------------------------- 10) Late Time / Punch Message ----------------- */
-.percentage-dashboard.scoped-dashboard .late-time {
-    color: #e53939;
-    font-weight: 600;
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .late-time {
-    color: #ff6b6b;
-}
-
+/* --------------------------- Punch-Message (Popup) ----------------------- */
 .percentage-dashboard.scoped-dashboard .punch-message {
     position: fixed;
     top: 20px;
@@ -358,50 +140,224 @@
     }
 }
 
-/* --------------------------- 11) Print-Report Button ----------------------- */
-.percentage-dashboard.scoped-dashboard .print-report-container {
-    margin-top: 1.2rem;
-    text-align: center;
+/* --------------------------- Week Overview ------------------------------- */
+.percentage-dashboard.scoped-dashboard .weekly-overview {
+    margin-bottom: var(--u-gap);
 }
-.percentage-dashboard.scoped-dashboard .print-report-container button {
-    padding: 0.7rem 1.4rem;
-    font-size: 0.95rem;
+.percentage-dashboard.scoped-dashboard .week-navigation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    margin-bottom: 1.6rem;
+}
+.percentage-dashboard.scoped-dashboard .week-navigation input[type="date"] {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--c-border);
     border-radius: var(--u-radius);
-    background: var(--c-pri);
-    color: #fff;
+    background: var(--c-card);
+    color: var(--c-text);
+    font-size: 0.9rem;
+    transition:
+            background var(--u-dur) var(--u-ease),
+            color var(--u-dur) var(--u-ease),
+            border-color var(--u-dur) var(--u-ease);
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .week-navigation input[type="date"] {
+    background: #2c2f37;
+    color: #e5e7ec;
+    border-color: #484A4D;
+}
+.percentage-dashboard.scoped-dashboard .week-display {
+    display: grid;
+    gap: 1.8rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+.percentage-dashboard.scoped-dashboard .week-day-card {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    padding: 1.5rem;
+    box-shadow: var(--u-shadow-sm);
+    display: flex;
+    flex-direction: column;
+}
+.percentage-dashboard.scoped-dashboard .week-day-header {
     font-weight: 600;
-    border: none;
-    cursor: pointer;
-    transition: background 0.2s ease;
+    margin-bottom: 0.8rem;
+    font-size: 1rem;
 }
-.percentage-dashboard.scoped-dashboard .print-report-container button:hover {
-    background: var(--c-pri-dim);
-}
-
-/* --------------------------- 12) Responsive & Reduced Motion ------------- */
-@media (max-width: 640px) {
-    .percentage-dashboard.scoped-dashboard .week-display {
-        grid-template-columns: 1fr;
-    }
-}
-@media (prefers-reduced-motion: reduce) {
-    .percentage-dashboard.scoped-dashboard *,
-    .percentage-dashboard.scoped-dashboard *::before,
-    .percentage-dashboard.scoped-dashboard *::after {
-        transition: none !important;
-        animation: none !important;
-    }
-}
-
-/* --------------------------- 13) Dark-Mode Lesbarkeits-Anpassungen -------- */
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard h2,
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard h3,
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard h4 {
-    color: #f2f4fa;
+.percentage-dashboard.scoped-dashboard .week-day-content p {
+    color: var(--c-muted);
 }
 [data-theme="dark"] .percentage-dashboard.scoped-dashboard .week-day-content p {
     color: #c8cbd5;
 }
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .no-entries {
-    color: #a8acbb;
+.percentage-dashboard.scoped-dashboard .daily-summary {
+    font-weight: 600;
+    margin-top: 0.5rem;
+}
+.percentage-dashboard.scoped-dashboard .correction-button-row {
+    margin-top: 1rem;
+}
+
+/* --------------------------- Vacation Section ---------------------------- */
+.percentage-dashboard.scoped-dashboard .vacation-section {
+    margin-bottom: var(--u-gap);
+}
+.percentage-dashboard.scoped-dashboard .calendar-section {
+    width: 100%;
+    max-width: none;
+}
+
+/* --------------------------- Corrections Panel --------------------------- */
+.percentage-dashboard.scoped-dashboard .correction-panel {
+    margin-top: var(--u-gap);
+}
+.percentage-dashboard.scoped-dashboard .corrections-header {
+    background: var(--c-warn);
+    color: #1f1f1f;
+    font-weight: 700;
+    padding: 1rem 1.6rem;
+    border-radius: var(--u-radius) var(--u-radius) 0 0;
+    display: flex;
+    justify-content: space-between;
+    cursor: pointer;
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .corrections-header {
+    background: #363a45;
+    color: var(--c-text);
+}
+.percentage-dashboard.scoped-dashboard .corrections-content {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-top: none;
+    border-radius: 0 0 var(--u-radius) var(--u-radius);
+    padding: 1.6rem;
+    box-shadow: var(--u-shadow-sm);
+}
+.percentage-dashboard.scoped-dashboard .single-correction {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    padding: 1rem;
+    margin-bottom: 1.2rem;
+    box-shadow: var(--u-shadow-sm);
+    color: var(--c-text);
+}
+.percentage-dashboard.scoped-dashboard .approved {
+    background-color: #2ecc71;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    margin-left: 0.3rem;
+    font-size: 0.85rem;
+}
+.percentage-dashboard.scoped-dashboard .denied {
+    background-color: #e74c3c;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    margin-left: 0.3rem;
+    font-size: 0.85rem;
+}
+.percentage-dashboard.scoped-dashboard .pending {
+    background-color: #f39c12;
+    color: #fff;
+    padding: 0.2rem 0.5rem;
+    border-radius: 6px;
+    margin-left: 0.3rem;
+    font-size: 0.85rem;
+}
+.percentage-dashboard.scoped-dashboard .admin-comment {
+    color: var(--c-muted);
+    font-style: italic;
+}
+
+/* --------------------------- Modal Overlay & Content --------------------- */
+.percentage-dashboard.scoped-dashboard .modal-overlay {
+    position: fixed;       /* bleibt am Viewport, egal wo man gescrollt hat   */
+    inset: 0;              /* deckt den gesamten Bildschirm ab                */
+    display: flex;         /* ermöglicht zentriertes Ausrichten               */
+    align-items: center;
+    justify-content: center;
+    background: rgba(0,0,0,.55);
+    z-index: 3000;
+}
+.percentage-dashboard.scoped-dashboard .modal-content {
+    width: 92%;
+    max-width: 520px;
+    max-height: 92vh;      /* >>> nimmt max. 92 % der Höhe ein                */
+    overflow-y: auto;      /* >>> Inneres scrollt, Overlay bleibt fix         */
+    border-radius: var(--u-radius);
+    background: var(--c-card);
+    box-shadow: var(--u-shadow-lg);
+    padding: 2.4rem;
+}
+.percentage-dashboard.scoped-dashboard .modal-content .form-group {
+    margin-bottom: 1rem;
+}
+.percentage-dashboard.scoped-dashboard .modal-content .form-group label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+}
+.percentage-dashboard.scoped-dashboard .modal-content .form-group input,
+.percentage-dashboard.scoped-dashboard .modal-content .form-group textarea {
+    width: 100%;
+    padding: 0.7rem 0.9rem;
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    background: inherit;
+    color: inherit;
+    font: inherit;
+}
+.percentage-dashboard.scoped-dashboard .modal-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.4rem;
+}
+.percentage-dashboard.scoped-dashboard .modal-buttons button[type="button"] {
+    background: #888;
+}
+.percentage-dashboard.scoped-dashboard .modal-buttons button[type="button"]:hover {
+    background: #666;
+}
+
+/* --------------------------- Late Time Coloring -------------------------- */
+.percentage-dashboard.scoped-dashboard .late-time {
+    color: #e53939;
+    font-weight: 600;
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .late-time {
+    color: #ff6b6b;
+}
+
+/* --------------------------- Print-Report ------------------------------- */
+.percentage-dashboard.scoped-dashboard .print-report-container {
+    margin-top: 1.2rem;
+    text-align: center;
+}
+
+/* --------------------------- Responsive & Reduced Motion --------------- */
+@media (max-width: 480px) {
+    .percentage-dashboard.scoped-dashboard .week-display {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .percentage-dashboard.scoped-dashboard .weekly-overview {
+        padding: 1rem;
+    }
+    .percentage-dashboard.scoped-dashboard .week-navigation {
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+
+    /* Etc. */
+    .percentage-dashboard.scoped-dashboard .modal-content {
+        width: 95%;
+        max-width: 350px;
+    }
 }

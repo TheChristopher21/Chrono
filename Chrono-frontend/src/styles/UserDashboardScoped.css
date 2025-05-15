@@ -11,13 +11,16 @@
 
     --c-text:       #1e1f22;
     --c-muted:      #595e6b;
-    --c-bg:         #15171c;    /* Nur wenn du den ganzen Body dunkler willst,
-                                kannst du's hier auf #15171c anheben.
-                                Falls du Light Mode by default willst,
-                                nimm #f4f6ff oder #fff. */
+
+    /* Falls du Light Mode by default möchtest, #f4f6ff oder #fff verwenden.
+       Für dunklen Body #15171c belassen. */
+    --c-bg:         #f4f6ff;
     --c-card:       #ffffff;
     --c-border:     #d5d8e5;
     --c-line:       #e7e8f1;
+
+    /* Neu hinzugefügt, damit Tabellen-Header eine konsistente Hintergrundfarbe haben: */
+    --c-surface:    var(--c-card);
 
     --u-radius:     14px;
     --u-gap:        clamp(1.5rem, 3vw, 2.2rem);
@@ -31,6 +34,7 @@
     font-family:    'Poppins', system-ui, sans-serif;
     background:     var(--c-bg);
     color:          var(--c-text);
+
     transition:
             background var(--u-dur) var(--u-ease),
             color      var(--u-dur) var(--u-ease);
@@ -38,7 +42,7 @@
 
 /* --------------------------- Variablen DARK ----------------------------
    Falls du Dark Mode / Light Mode über [data-theme="dark"] togglest:
-*/
+   ---------------------------------------------------------------------- */
 [data-theme="dark"] .user-dashboard.scoped-dashboard {
     --c-text:   #e5e7ec;
     --c-muted:  #a0a4b4;
@@ -49,6 +53,9 @@
 
     --u-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.45);
     --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.75);
+
+    /* Wenn du das möchtest, kann --c-surface hier ebenfalls angepasst werden,
+       z. B.: --c-surface: #2a2e34; */
 }
 
 /* =========================================================================
@@ -57,7 +64,7 @@
 .user-dashboard.scoped-dashboard .dashboard-header {
     display: flex;
     flex-direction: column; /* Damit alles untereinander steht */
-    align-items: center;    /* Zentrieren horizontal */
+    align-items: center;    /* Zentriert horizontal */
     gap: 0.5rem;
     margin-bottom: var(--u-gap);
     padding-block: 0.5rem;
@@ -71,11 +78,6 @@
     display: flex;
     gap: 1.6rem;
     flex-wrap: wrap;
-}
-.user-dashboard.scoped-dashboard .personal-info {
-    display: flex;
-    gap: 1.6rem;
-    flex-wrap: wrap;
     justify-content: center; /* Ebenfalls zentrieren */
     margin-top: 0.5rem;
 }
@@ -83,8 +85,8 @@
     margin: 0;
     font-size: 0.9rem;
     color: var(--c-muted);
-    /* Falls du sie in einer Zeile haben willst: kein block-Break */
 }
+
 /* =========================================================================
    2) Global Button Styles
    ========================================================================= */
@@ -105,7 +107,6 @@
     background: var(--c-pri-dim);
     transform: translateY(-2px);
 }
-
 /* Falls du separate Stile für "secondary" Buttons willst: */
 .user-dashboard.scoped-dashboard button.secondary {
     background: #666;
@@ -182,13 +183,13 @@
 }
 .user-dashboard.scoped-dashboard .week-navigation {
     display: flex;
-    justify-content: center;  /* Zentriert Links und Datum und RechtsButton */
+    justify-content: center;  /* Zentriert Links-, Datum- und Rechts-Button */
     align-items: center;
     gap: 0.8rem;
     margin-bottom: 1.2rem;
 }
 .user-dashboard.scoped-dashboard .week-navigation button {
-    /* inherits from global button style, can override if needed */
+    /* Erbt globale Button-Stile */
 }
 .user-dashboard.scoped-dashboard .week-navigation input[type="date"] {
     text-align: center; /* Inhalt (Datum) zentrieren */
@@ -251,7 +252,6 @@
     color: var(--c-muted);
     margin-bottom: 1.2rem;
 }
-
 /* Correction-Button */
 .user-dashboard.scoped-dashboard .correction-button {
     margin-top: auto;
@@ -263,7 +263,6 @@
 .user-dashboard.scoped-dashboard .correction-button:hover {
     background: #ffd966;
 }
-
 /* Späte Zeit */
 .user-dashboard.scoped-dashboard .late-time {
     color: #e74c3c;
@@ -390,24 +389,32 @@
     margin-bottom: var(--u-gap);
 }
 .user-dashboard.scoped-dashboard .print-report-container button {
-    /* inherits from global .user-dashboard.scoped-dashboard button style */
+    /* Erbt von den globalen Button-Stilen */
 }
 
 /* =========================================================================
    10) Modal Overlay & Content
    ========================================================================= */
 .user-dashboard.scoped-dashboard .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    position: fixed;          /* <— statt absolute / relative */
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, .55);
     display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 3000;
+    align-items: center;      /* vertikal ausmitteln */
+    justify-content: center;  /* horizontal ausmitteln */
+    z-index: 3000;            /* über allem */
+    padding: 1rem;            /* etwas „Luft“, falls sehr kleiner Screen */
 }
+
 .user-dashboard.scoped-dashboard .modal-content {
-    width: 90%;
+    position: relative;       /* für evtl. absolute Kinder */
+    width: 100%;
     max-width: 520px;
+    max-height: 90vh;         /* nie höher als das Viewport-Fenster */
+    overflow-y: auto;         /* falls Inhalt länger wird, nur innen scrollen */
     background: var(--c-card);
     border: 1px solid var(--c-border);
     border-radius: var(--u-radius);
@@ -415,6 +422,7 @@
     box-shadow: var(--u-shadow-lg);
     color: inherit;
 }
+
 .user-dashboard.scoped-dashboard .modal-content .form-group {
     margin-bottom: 1rem;
 }
@@ -440,7 +448,7 @@
     margin-top: 1.4rem;
 }
 .user-dashboard.scoped-dashboard .modal-buttons button {
-    /* inherits from global button style, but we can override for secondary: */
+    /* Erbt von global .user-dashboard.scoped-dashboard button */
 }
 .user-dashboard.scoped-dashboard .modal-buttons button[type="button"] {
     background: #666;
@@ -450,14 +458,36 @@
     background: #555;
 }
 
-/* =========================================================================
-   11) Reduced Motion
-   ========================================================================= */
-@media (prefers-reduced-motion: reduce) {
-    .user-dashboard.scoped-dashboard *,
-    .user-dashboard.scoped-dashboard *::before,
-    .user-dashboard.scoped-dashboard *::after {
-        transition: none !important;
-        animation: none !important;
+@media (max-width: 480px) {
+    .user-dashboard.scoped-dashboard .dashboard-header {
+        margin-bottom: 1rem;
+        padding: 1rem;
+    }
+    .user-dashboard.scoped-dashboard .personal-info {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .user-dashboard.scoped-dashboard .time-tracking-section {
+        padding: 1rem;
+    }
+    .user-dashboard.scoped-dashboard .modal-content {
+        padding: 1.6rem 1.2rem;
+        max-width: 95vw;      /* fast volle Breite auf sehr kleinen Geräten */
+    }
+    /* Week-Display nur 1 Spalte */
+    .user-dashboard.scoped-dashboard .week-display {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    /* Correction-Panel, etc. */
+    .user-dashboard.scoped-dashboard .correction-panel {
+        margin-top: 1rem;
+        padding: 1rem;
+    }
+
+    .user-dashboard.scoped-dashboard .vacation-calendar-section {
+        padding: 1rem;
     }
 }

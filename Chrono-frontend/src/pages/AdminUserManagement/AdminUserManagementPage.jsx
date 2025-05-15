@@ -2,8 +2,8 @@ import React, { useState, useEffect, useContext } from 'react';
 import Navbar from '../../components/Navbar';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation, LanguageContext } from '../../context/LanguageContext';
-
 import api from '../../utils/api';
+
 import '../../styles/AdminUserManagementPageScoped.css';
 
 import AdminUserList from './AdminUserList';
@@ -207,7 +207,6 @@ const AdminUserManagementPage = () => {
                 type: "PROGRAM",
                 data: user.username
             };
-
             const response = await api.post('/api/nfc/command', payload);
 
             if (response.data && response.data.id) {
@@ -228,7 +227,6 @@ const AdminUserManagementPage = () => {
                         setTimeout(() => setProgramStatus(""), 10000);
                     }
                 };
-
                 pollStatus();
             } else {
                 notify(t("userManagement.programCardError"));
@@ -242,6 +240,7 @@ const AdminUserManagementPage = () => {
     return (
         <div className="admin-user-management scoped-dashboard">
             <Navbar />
+
             {programStatus && (
                 <div className="nfc-status-message">{programStatus}</div>
             )}
@@ -281,6 +280,7 @@ const AdminUserManagementPage = () => {
                 visible={deleteConfirm.show}
                 title={t("userManagement.deleteConfirmTitle")}
                 message={t("userManagement.deleteConfirmMessage")}
+                userName={users.find(u => u.id === deleteConfirm.userId)?.username || ""}
                 onConfirm={confirmDelete}
                 onCancel={cancelDelete}
             />

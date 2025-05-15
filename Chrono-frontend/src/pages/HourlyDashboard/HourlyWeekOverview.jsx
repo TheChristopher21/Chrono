@@ -29,29 +29,30 @@ const HourlyWeekOverview = ({
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
         : [];
 
-    const weekStrs = weekDates.map((d) => formatLocalDate(d));
-    const weeklyEntries = allEntries.filter((track) => {
+    const weekStrs = weekDates.map(d => formatLocalDate(d));
+    const weeklyEntries = allEntries.filter(track => {
         const localDate = track.startTime.slice(0, 10);
         return weekStrs.includes(localDate);
     });
 
     const weeklyDayMap = {};
-    weeklyEntries.forEach((entry) => {
+    weeklyEntries.forEach(entry => {
         const ds = entry.startTime.slice(0, 10);
         if (!weeklyDayMap[ds]) weeklyDayMap[ds] = [];
         weeklyDayMap[ds].push(entry);
     });
 
+    // Summenanzeige
     const weeklyHrs = Math.floor(weeklyTotalMins / 60);
     const weeklyRemMins = weeklyTotalMins % 60;
     const monthlyHrs = Math.floor(monthlyTotalMins / 60);
     const monthlyRemMins = monthlyTotalMins % 60;
 
     function handlePrevWeek() {
-        setSelectedMonday((prev) => addDays(prev, -7));
+        setSelectedMonday(prev => addDays(prev, -7));
     }
     function handleNextWeek() {
-        setSelectedMonday((prev) => addDays(prev, 7));
+        setSelectedMonday(prev => addDays(prev, 7));
     }
     function handleWeekJump(e) {
         const picked = new Date(e.target.value);
@@ -68,7 +69,9 @@ const HourlyWeekOverview = ({
 
             <div className="punch-section">
                 <h4>{t("manualPunchTitle")}</h4>
-                <button onClick={handleManualPunch}>{t("manualPunchButton")}</button>
+                <button onClick={handleManualPunch}>
+                    {t("manualPunchButton")}
+                </button>
             </div>
 
             <div className="week-navigation">
@@ -91,18 +94,20 @@ const HourlyWeekOverview = ({
             </div>
 
             <div className="week-display">
-                {weekDates?.map((dayObj, index) => {
+                {weekDates.map((dayObj, index) => {
                     const isoDay = formatLocalDate(dayObj);
                     const dayEntries = weeklyDayMap[isoDay] || [];
                     const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
                     const formattedDay = formatDate(isoDay);
 
+                    // Sortierung nach punchOrder
                     dayEntries.sort((a, b) => a.punchOrder - b.punchOrder);
 
-                    const workStart = dayEntries.find((e) => e.punchOrder === 1);
-                    const breakStart = dayEntries.find((e) => e.punchOrder === 2);
-                    const breakEnd = dayEntries.find((e) => e.punchOrder === 3);
-                    const workEnd = dayEntries.find((e) => e.punchOrder === 4);
+                    // PunchOrders
+                    const workStart  = dayEntries.find(e => e.punchOrder === 1);
+                    const breakStart = dayEntries.find(e => e.punchOrder === 2);
+                    const breakEnd   = dayEntries.find(e => e.punchOrder === 3);
+                    const workEnd    = dayEntries.find(e => e.punchOrder === 4);
 
                     return (
                         <div key={index} className="week-day-card">
@@ -178,9 +183,7 @@ const HourlyWeekOverview = ({
                                                 })
                                             }
                                         >
-                                            {dailyNotes[isoDay]
-                                                ? t("editNotes")
-                                                : t("addNotes")}
+                                            {dailyNotes[isoDay] ? t("editNotes") : t("addNotes")}
                                         </button>
                                         {dailyNotes[isoDay] && (
                                             <div className="note-display">{dailyNotes[isoDay]}</div>

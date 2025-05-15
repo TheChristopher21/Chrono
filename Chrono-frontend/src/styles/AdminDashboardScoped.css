@@ -508,32 +508,81 @@
    Modal Overlay und Content
    ================================ */
 .admin-dashboard.scoped-dashboard .modal-overlay {
-    position: fixed;           /* Damit der Overlay immer oben ist */
+    position: absolute;  /* statt fixed */
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.6);  /* Halbdurchsichtiger Hintergrund */
-    display: flex;                      /* Flex-Layout für Zentrierung */
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;                     /* Höher als alles andere */
+    min-height: 100%;    /* damit Overlay den ganzen Inhalt abdeckt */
+    background: rgba(0,0,0,0.6);
+    z-index: 9999;
+    /* kein display:flex, da wir manuell per JS positionieren */
 }
 
 .admin-dashboard.scoped-dashboard .modal-content {
+    position: absolute;  /* nicht fixed */
+    left: 50%;           /* zentrierung horizontal */
+    transform: translateX(-50%);
+    top: 0;              /* JS setzt diesen Wert dynamisch */
     background: var(--c-card);
     border: 1px solid var(--c-border);
     border-radius: var(--u-radius);
     padding: 1.5rem;
-    max-width: 600px;   /* beliebig anpassen */
-    width: 90%;         /* responsiv */
-    box-shadow: var(--u-shadow-lg); /* oder ein eigenes Shadow */
-    position: relative;
-}
+    width: 90%;
+    max-width: 600px;
+    box-shadow: var(--u-shadow-lg);
 
+    /* Damit es bei kleinen Screens nicht unten abgeschnitten wird */
+    max-height: 90vh;
+    overflow-y: auto;
+}
 /* =========================================================================
    15) Responsive Tweaks
    ========================================================================= */
+
+/* =========================================================================
+   16) Modal-Formular-Layout: schön sortierte Inputs, Buttons etc.
+   ========================================================================= */
+
+/* Form-Elemente etwas strukturieren */
+.admin-dashboard.scoped-dashboard .modal-content form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Abstand zwischen den Gruppen */
+}
+
+/* Jede .form-group bekommt etwas Abstand und ordnet Label + Input untereinander an */
+.admin-dashboard.scoped-dashboard .modal-content .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+/* Labels etwas hervorheben */
+.admin-dashboard.scoped-dashboard .modal-content .form-group label {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+/* Zeit-Felder etwas schmaler halten */
+.admin-dashboard.scoped-dashboard .modal-content .form-group input[type="time"] {
+    max-width: 120px;
+}
+
+/* Buttons am Ende des Formulars nebeneinander */
+.admin-dashboard.scoped-dashboard .modal-content .modal-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+/* Wenn du willst, kannst du die Buttons hier genauso stylen wie andere Primary-Buttons:
+   z.B. Hintergrundfarbe, Hover-Effekt etc. */
+.admin-dashboard.scoped-dashboard .modal-content .modal-buttons button {
+    /* Beispiel */
+    padding: 0.6rem 1.2rem;
+    border-radius: var(--u-radius);
+}
+
 @media (max-width: 1024px) {
     /* Auf einspaltiges Layout schalten */
     .admin-dashboard.scoped-dashboard .dashboard-content {

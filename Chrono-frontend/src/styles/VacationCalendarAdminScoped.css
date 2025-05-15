@@ -265,17 +265,42 @@
 }
 
 /* =========================================================================
-   7) Responsive & Reduced Motion
+   VacationCalendarAdminScoped.css – Mobile Overrides
+   Scope: .vacation-calendar-admin.scoped-vacation
    ========================================================================= */
-@media (max-width: 540px) {
-    .vacation-calendar-admin.scoped-vacation .react-calendar__tile {
-        height: 74px;
+@media (max-width: 480px) {
+    /* Haupt-Padding reduzieren */
+    .vacation-calendar-admin.scoped-vacation {
+        padding: 1rem;
     }
-}
-@media (prefers-reduced-motion: reduce) {
-    .vacation-calendar-admin.scoped-vacation *,
-    .vacation-calendar-admin.scoped-vacation *::before,
-    .vacation-calendar-admin.scoped-vacation *::after {
-        transition: none !important;
+
+    /* Kalender-Kacheln niedriger machen */
+    .vacation-calendar-admin.scoped-vacation .react-calendar__tile {
+        height: 68px;
+    }
+
+    /* Admin-Passwort-Eingabe enger */
+    .vacation-calendar-admin.scoped-vacation .admin-password-input {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    .vacation-calendar-admin.scoped-vacation .admin-password-input input {
+        width: 100%;
+        max-width: 280px;
+        font-size: 0.9rem;
+    }
+
+    /* Modal Content schmaler */
+    .vacation-calendar-admin.scoped-vacation .modal-content {
+        width: 95%;
+        max-width: 340px;
+        padding: 1.4rem;
+    }
+    .vacation-calendar-admin.scoped-vacation .modal-content h3 {
+        margin-bottom: 1rem;
+    }
+    .vacation-calendar-admin.scoped-vacation .modal-content button {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
     }
 }

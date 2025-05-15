@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 
 /**
  * DeleteConfirmModal
- *
  * - Zeigt den `username` in der Nachricht an
  * - Hat ein etwas freundlicheres Button-Design
  */
@@ -20,10 +19,7 @@ function DeleteConfirmModal({
     return (
         <div className="modal-overlay">
             <div className="modal-content delete-confirm-modal">
-                {/* Title */}
                 <h3>{title}</h3>
-
-                {/* Nachricht inkl. Username */}
                 <p>
                     {message}
                     {userName && (
@@ -33,7 +29,6 @@ function DeleteConfirmModal({
                     )}
                 </p>
 
-                {/* Buttons */}
                 <div className="modal-buttons">
                     <button
                         className="delete-confirm-button confirm"
@@ -58,7 +53,7 @@ DeleteConfirmModal.propTypes = {
     visible: PropTypes.bool.isRequired,
     title: PropTypes.string,
     message: PropTypes.string,
-    userName: PropTypes.string,       // <-- Neu
+    userName: PropTypes.string,
     onConfirm: PropTypes.func.isRequired,
     onCancel: PropTypes.func.isRequired
 };

@@ -2,7 +2,11 @@ package com.chrono.chrono.repositories;
 
 import com.chrono.chrono.entities.TimeTracking;
 import com.chrono.chrono.entities.User;
+import jakarta.persistence.LockModeType;
+import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -27,6 +31,7 @@ public interface TimeTrackingRepository extends JpaRepository<TimeTracking, Long
     List<TimeTracking> findByUserAndStartTimeBetween(User user,
                                                      LocalDateTime start,
                                                      LocalDateTime end);
+    List<TimeTracking> findByUserAndDailyDate(User user, LocalDate dailyDate);
 
     List<TimeTracking> findByEndTimeIsNullAndStartTimeBetween(
             LocalDateTime start, LocalDateTime end);
@@ -36,12 +41,19 @@ public interface TimeTrackingRepository extends JpaRepository<TimeTracking, Long
             "ORDER BY t.startTime DESC")
     Optional<TimeTracking> findTopByUserAndPunchOrder(@Param("user") User user,
                                                       @Param("punchOrder") Integer punchOrder);
-
+    @Modifying
+    @Transactional
+    @Query("delete from TimeTracking t where t.user = :user and t.dailyDate = :day")
+    int deleteByUserAndDailyDate(@Param("user") User user,
+                                 @Param("day")  LocalDate day);
     /* ---------- NEU für den UNIQUE-Order-Fix ---------- */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<TimeTracking> findFirstByUserAndDailyDateAndPunchOrder(
+            User user, LocalDate dailyDate, Integer punchOrder);
 
-    /** Letzter Punch des heutigen Tages (=höchste punchOrder) */
-    Optional<TimeTracking> findTopByUserAndDailyDateOrderByPunchOrderDesc(User user,
-                                                                          LocalDate dailyDate);
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    Optional<TimeTracking> findTopByUserAndDailyDateOrderByPunchOrderDesc(
+            User user, LocalDate dailyDate);
 
     /** Einen ganz bestimmten Punch (für Duplicate-Key-Safety-Net) */
     List<TimeTracking> findByUserAndDailyDateAndPunchOrder(User user,

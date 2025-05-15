@@ -10,6 +10,7 @@ import com.chrono.chrono.services.WorkScheduleService;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -108,7 +109,7 @@ public class TimeTrackingController {
      * Alte Einträge für diesen Tag werden gelöscht und neu angelegt.
      */
     @PutMapping("/editDay")
-    public String editDayTimeEntries(
+    public ResponseEntity<?> editDayTimeEntries(
             @RequestParam String targetUsername,
             @RequestParam String date,
             @RequestParam String workStart,
@@ -119,18 +120,40 @@ public class TimeTrackingController {
             @RequestParam String adminPassword,
             @RequestParam String userPassword
     ) {
-        return timeTrackingService.updateDayTimeEntries(
-                targetUsername,
-                date,
-                workStart,
-                breakStart,
-                breakEnd,
-                workEnd,
-                adminUsername,
-                adminPassword,
-                userPassword
-        );
+        try {
+            String result = timeTrackingService.updateDayTimeEntries(
+                    targetUsername,
+                    date,
+                    workStart,
+                    breakStart,
+                    breakEnd,
+                    workEnd,
+                    adminUsername,
+                    adminPassword,
+                    userPassword
+            );
+            // Alles OK → 200
+            return ResponseEntity.ok(result);
+
+        } catch (RuntimeException ex) {
+            // Hier unterscheiden wir die Passwort-Fehler von anderen Fehlern
+            String msg = ex.getMessage() != null ? ex.getMessage() : "Unknown error";
+
+            // Wenn die Fehlermeldung "Invalid admin password" oder "Invalid user password"
+            // oder "For self-edit, admin and user passwords must match" enthält,
+            // geben wir 403 "Forbidden" zurück, statt 500/400.
+            if (msg.contains("Invalid admin password")
+                    || msg.contains("Invalid user password")
+                    || msg.contains("For self-edit, admin and user passwords must match")) {
+                return ResponseEntity.status(403).body("Passwort-Fehler: " + msg);
+            }
+            // Sonst → 400 (Bad Request) oder 500, je nachdem was du willst:
+            return ResponseEntity
+                    .status(400)
+                    .body("Konnte dayTimeEntries nicht bearbeiten: " + msg);
+        }
     }
+
 
     /**
      * Korrigiert einen einzelnen TimeTracking-Datensatz (per ID),

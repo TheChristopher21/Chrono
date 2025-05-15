@@ -30,13 +30,17 @@ const UserCorrectionsPanel = ({
                 <div className="corrections-content">
                     <div className="week-navigation corrections-nav">
                         <button
-                            onClick={() => setSelectedCorrectionMonday((prev) => addDays(prev, -7))}
+                            onClick={() =>
+                                setSelectedCorrectionMonday((prev) => addDays(prev, -7))
+                            }
                         >
                             ← {t("prevWeek")}
                         </button>
                         <span className="week-label">{correctionWeekLabel}</span>
                         <button
-                            onClick={() => setSelectedCorrectionMonday((prev) => addDays(prev, 7))}
+                            onClick={() =>
+                                setSelectedCorrectionMonday((prev) => addDays(prev, 7))
+                            }
                         >
                             {t("nextWeek")} →
                         </button>
@@ -60,7 +64,9 @@ const UserCorrectionsPanel = ({
                                     <li key={req.id}>
                                         {dateStr}{" "}
                                         {req.approved ? (
-                                            <span className="approved">{t("approved") || "Bestätigt"}</span>
+                                            <span className="approved">
+                        {t("approved") || "Bestätigt"}
+                      </span>
                                         ) : req.denied ? (
                                             <span className="denied">{t("denied") || "Abgelehnt"}</span>
                                         ) : (
@@ -83,7 +89,9 @@ const UserCorrectionsPanel = ({
                                         {req.adminComment && (
                                             <>
                                                 <br />
-                                                <em className="admin-comment">💬 {req.adminComment}</em>
+                                                <em className="admin-comment">
+                                                    💬 {req.adminComment}
+                                                </em>
                                             </>
                                         )}
                                     </li>

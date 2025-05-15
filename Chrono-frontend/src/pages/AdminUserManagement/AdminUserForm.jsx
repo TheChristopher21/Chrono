@@ -30,9 +30,7 @@ const AdminUserForm = ({
     return (
         <section className="user-form">
             <h3>
-                {isEditing
-                    ? t("userManagement.editUser")
-                    : t("userManagement.newUser")}
+                {isEditing ? t("userManagement.editUser") : t("userManagement.newUser")}
             </h3>
 
             <form onSubmit={onSubmit}>
@@ -86,15 +84,14 @@ const AdminUserForm = ({
                     </select>
                 </div>
 
+                {/* Color-Picker */}
                 <div className="form-group">
                     <label>{t("userManagement.color")}</label>
                     <div className="color-picker">
                         {STANDARD_COLORS.map((c, idx) => (
                             <div
                                 key={idx}
-                                className={`color-swatch ${
-                                    userData.color === c ? "selected" : ""
-                                }`}
+                                className={`color-swatch ${userData.color === c ? "selected" : ""}`}
                                 style={{ backgroundColor: c }}
                                 onClick={() => handleChange("color", c)}
                             />
@@ -124,9 +121,7 @@ const AdminUserForm = ({
 
                 {userData.isPercentage && (
                     <div className="form-group">
-                        <label>
-                            {t("userManagement.workPercentage") || "Work Percentage"}:
-                        </label>
+                        <label>{t("userManagement.workPercentage")}:</label>
                         <input
                             type="number"
                             min="0"
@@ -151,9 +146,7 @@ const AdminUserForm = ({
                         step="any"
                         placeholder="z.B. 25 oder 25.5"
                         value={userData.annualVacationDays || ""}
-                        onChange={(e) =>
-                            handleChange("annualVacationDays", e.target.value)
-                        }
+                        onChange={(e) => handleChange("annualVacationDays", e.target.value)}
                     />
                 </div>
 
@@ -167,9 +160,7 @@ const AdminUserForm = ({
                                 step="any"
                                 placeholder="z.B. 5 oder 4.5"
                                 value={userData.expectedWorkDays || ""}
-                                onChange={(e) =>
-                                    handleChange("expectedWorkDays", e.target.value)
-                                }
+                                onChange={(e) => handleChange("expectedWorkDays", e.target.value)}
                             />
                         </div>
                         <div className="form-group">

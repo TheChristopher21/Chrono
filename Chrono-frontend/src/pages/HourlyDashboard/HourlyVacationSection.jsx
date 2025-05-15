@@ -11,7 +11,6 @@ const HourlyVacationSection = ({
     return (
         <section className="vacation-section">
             <h3>{t('vacationTitle')}</h3>
-
             <p>
                 <strong>{t('vacationCalendarTitle')}:</strong>{" "}
                 {userProfile?.annualVacationDays ?? 0} {t('daysLabel')}

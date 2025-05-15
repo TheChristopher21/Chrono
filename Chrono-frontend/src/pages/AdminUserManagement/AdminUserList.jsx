@@ -34,7 +34,7 @@ const AdminUserList = ({ users, t, handleEditUser, requestDeleteUser, handleProg
                             </td>
                             <td>{user.email}</td>
 
-                            {/* Robuste Rollenanalyse */}
+                            {/* Rollenanalyse */}
                             <td>
                                 {user?.roles?.[0]?.roleName
                                     ? user.roles[0].roleName.replace("ROLE_", "")
