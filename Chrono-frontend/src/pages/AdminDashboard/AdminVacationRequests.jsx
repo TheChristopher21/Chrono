@@ -63,14 +63,17 @@ const AdminVacationRequests = ({
                         ) : (
                             <ul className="vacation-list space-y-2 max-h-80 overflow-y-auto border-t pt-2">
                                 {filteredVacations.map((v) => {
-                                    const statusConfig = v.approved
-                                        ? { color: 'bg-green-100', icon: '✔️', text: t('adminDashboard.approved') }
-                                        : v.denied
-                                            ? { color: 'bg-red-100', icon: '❌', text: t('adminDashboard.denied') }
-                                            : { color: 'bg-yellow-100', icon: '⏳', text: t('adminDashboard.pending') };
+                                     const statusConfig = v.approved
+                                        ? { className: 'status-card approved',   icon: '✔️', text: t('adminDashboard.approved') }
+                                            : v.denied
+                                             ? { className: 'status-card denied', icon: '❌', text: t('adminDashboard.denied') }
+                                                 : { className: 'status-card pending',icon: '⏳', text: t('adminDashboard.pending') };
                                     return (
-                                        <li key={v.id} className={`${statusConfig.color} p-3 rounded shadow flex justify-between items-center`}>
-                                            <div>
+                                        <li key={v.id} className={statusConfig.className}>
+
+
+
+                                        <div>
                                                 <strong>{v.username}</strong>: {formatDate(v.startDate)} – {formatDate(v.endDate)}{' '}
                                                 {v.usesOvertime && (
                                                     <em className="text-blue-600">

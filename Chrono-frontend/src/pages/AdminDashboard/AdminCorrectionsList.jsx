@@ -34,7 +34,7 @@ const AdminCorrectionsList = ({
 
     return (
         <div className="admin-dashboard scoped-dashboard">
-            <section className="correction-section">
+            <section className="correction-section w-full">
                 <h3>{t("adminDashboard.correctionRequestsTitle")}</h3>
 
                 {allCorrections.length === 0 ? (

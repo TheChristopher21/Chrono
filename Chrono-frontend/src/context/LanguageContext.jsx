@@ -90,6 +90,8 @@ const translations = {
                 cancel: "Abbrechen",
                 print: "Bericht drucken",
             },
+            printButton: "Zeiten drucken",   // de
+
             vacationRequestsTitle: "Urlaubsanträge (Alle Benutzer)",
             noVacations: "Keine Urlaubsanträge gefunden",
             correctionRequestsTitle: "Korrekturanträge (Alle Benutzer)",
@@ -473,6 +475,7 @@ const translations = {
                 cancel: "Cancel",
                 print: "Print Report",
             },
+            printButton: "Print times",      // en
             vacationRequestsTitle: "Vacation Requests (All Users)",
             noVacations: "No vacation requests found",
             correctionRequestsTitle: "Correction Requests (All Users)",

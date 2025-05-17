@@ -29,6 +29,10 @@
     color:         var(--c-text);
     font-family:   'Poppins', system-ui, sans-serif;
     padding:       1.5rem;
+    --stat-approved: #dcfce7; /* light green */
+    --stat-denied:   #fdecea; /* light red */
+    --stat-pending:  #fdf6b2; /* light yellow */
+
 }
 
 /* ------------------------ 2) Variablen (Dark) ------------------------- */
@@ -42,6 +46,11 @@
 
     --u-shadow-sm: 0 1px 4px rgba(0,0,0,0.45);
     --u-shadow-lg: 0 20px 34px rgba(0,0,0,0.75);
+
+    --stat-approved: #22543d; /* dark green */
+    --stat-denied:   #7f1d1d; /* dark red */
+    --stat-pending:  #92400e; /* dark yellow */
+
 }
 
 /* =========================================================================
@@ -349,28 +358,51 @@
     border-top: 1px solid var(--c-line);
     padding-top: 0.5rem;
 }
+/* ===== Vacation-Status Farben für Dark-Mode anpassen ===== */
+[data-theme="dark"] .vacation-list li.bg-green-100  {
+    background: var(--stat-approved) !important;
+    color: #e6e8ee;                /* Text hell halten */
+}
+[data-theme="dark"] .vacation-list li.bg-red-100   {
+    background: var(--stat-denied) !important;
+    color: #e6e8ee;
+}
+[data-theme="dark"] .vacation-list li.bg-yellow-100{
+    background: var(--stat-pending) !important;
+    color: #e6e8ee;
+}
 
-/* Kompakte Statuskarten für Urlaub und Korrektur */
+/* =========================================================================
+   10a) Status Cards
+   ========================================================================= */
 .admin-dashboard.scoped-dashboard .status-card {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 0.75rem;
+    gap: 0.6rem;
+    padding: 0.75rem 1rem;
     border-radius: var(--u-radius);
     box-shadow: var(--u-shadow-sm);
+    background: var(--c-card);
+    color: var(--c-text);
 }
-
-
-.admin-dashboard.scoped-dashboard .status-approved {
-    background: #dcfce7;
+.admin-dashboard.scoped-dashboard .status-card .status-label {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-weight: 600;
 }
-
-.admin-dashboard.scoped-dashboard .status-denied {
-    background: #fee2e2;
+.admin-dashboard.scoped-dashboard .status-card.approved {
+    background: var(--stat-approved);
+    color: var(--c-text);
 }
-
-.admin-dashboard.scoped-dashboard .status-pending {
-    background: #fef9c3;
+.admin-dashboard.scoped-dashboard .status-card.denied {
+    background: var(--stat-denied);
+    color: var(--c-text);
+}
+.admin-dashboard.scoped-dashboard .status-card.pending {
+    background: var(--stat-pending);
+    color: var(--c-text);
 }
 
 /* =========================================================================
@@ -563,6 +595,12 @@
     padding: 0.6rem 1.2rem;
     border-radius: var(--u-radius);
 }
+
+/* AdminDashboardScoped.css – Zusatz am Ende */
+.admin-dashboard.scoped-dashboard .correction-section {
+    flex: 1 1 100%;
+}
+
 
 @media (max-width: 1024px) {
     /* Auf einspaltiges Layout schalten */
