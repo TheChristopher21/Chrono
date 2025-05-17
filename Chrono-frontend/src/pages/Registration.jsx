@@ -20,11 +20,16 @@ const Registration = () => {
         additionalInfo: "",
     });
 
-    // Nur noch 3 Pakete
+    // Nur noch 3 Pakete (Small / Basic / Professional)
     const [selectedPackage, setSelectedPackage] = useState("");
     const [employeeCount, setEmployeeCount] = useState(5);
     const [billingPeriod, setBillingPeriod] = useState("monthly"); // "monthly" oder "yearly"
+
+    // Preise in CHF
     const [calculatedPrice, setCalculatedPrice] = useState(0);
+
+    // Einmalige Installationskosten (in CHF)
+    const INSTALL_FEE = 150;
 
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -51,31 +56,34 @@ const Registration = () => {
         setBillingPeriod(e.target.value);
     };
 
-    // Preisberechnung für 3 Pakete
+    /**
+     * 3 Pakete in CHF:
+     *   - Small: 19 CHF/Monat, bis 5 MA, +3 CHF pro extra-MA
+     *   - Basic: 49 CHF/Monat, bis 25 MA, +2.5 CHF pro extra-MA
+     *   - Professional: 99 CHF/Monat, bis 50 MA, +2.0 CHF pro extra-MA
+     *
+     * Bei yearly: 2 Monate geschenkt => 10 * (Monatspreis).
+     */
     function calculatePrice(pkg, empCount, period) {
         let baseMonthly = 0;
         let includedEmp = 0;
         let extraPerEmp = 0;
 
-        /*
-         * Alle Pakete enthalten Berichte
-         * Unterschied: Anzahl inkl. Mitarbeiter + Support
-         */
         switch (pkg) {
             case "Small":
-                baseMonthly = 19;   // Inkl. 5 MA
+                baseMonthly = 19;
                 includedEmp = 5;
-                extraPerEmp = 3.0;  // z.B. 3€ / MA
+                extraPerEmp = 3.0;
                 break;
             case "Basic":
-                baseMonthly = 49;   // Inkl. 25 MA
+                baseMonthly = 49;
                 includedEmp = 25;
-                extraPerEmp = 2.5;  // z.B. 2,50€ / MA
+                extraPerEmp = 2.5;
                 break;
             case "Professional":
-                baseMonthly = 99;   // Inkl. 50 MA
+                baseMonthly = 99;
                 includedEmp = 50;
-                extraPerEmp = 2.0;  // z.B. 2€ / MA
+                extraPerEmp = 2.0;
                 break;
             default:
                 return 0;
@@ -84,12 +92,12 @@ const Registration = () => {
         const extraMA = Math.max(0, empCount - includedEmp);
         let monthlyCost = baseMonthly + extraMA * extraPerEmp;
 
-        // Jährlich: 2 Monate gratis → 10 * monthly
+        // Jährlich => 10 * monthly
         if (period === "yearly") {
-            return monthlyCost * 10;
-        } else {
-            return monthlyCost;
+            monthlyCost = monthlyCost * 10;
         }
+        // Endpreis = Packet-Preis plus die einmalige Installationsgebühr
+        return monthlyCost + INSTALL_FEE;
     }
 
     // Re-Berechnung bei Änderungen
@@ -130,6 +138,11 @@ const Registration = () => {
         }
     };
 
+    // Format-Helfer, um in der Vorschau "xxx.xx CHF" auszugeben
+    function formatCHF(value) {
+        return value.toFixed(2).replace(".", ",") + " CHF";
+    }
+
     return (
         <>
             <Navbar />
@@ -142,7 +155,7 @@ const Registration = () => {
                         <p className="pricing-intro">
                             NFC-Stempeln, automatische Zeiterfassung und Berichte sind in jedem Paket enthalten.
                             <br />
-                            Der Unterschied liegt vor allem in der Anzahl mitgelieferter Mitarbeiterplätze und Support-Level.
+                            Der Unterschied liegt vor allem in der Anzahl mitgelieferter Mitarbeiterplätze und dem Support-Level.
                         </p>
 
                         <div className="billing-toggle">
@@ -176,13 +189,13 @@ const Registration = () => {
                             >
                                 <h3>Small</h3>
                                 <p className="price-line">
-                                    <strong>19 € / Monat*</strong><br />
-                                    <span className="yearly-hint">oder 190 € / Jahr</span>
+                                    <strong>19 CHF / Monat*</strong><br />
+                                    <span className="yearly-hint">oder 190 CHF / Jahr</span>
                                 </p>
                                 <ul>
                                     <li>Bis 5 Mitarbeiter inklusive</li>
                                     <li>E-Mail-Support (Mo-Fr)</li>
-                                    <li>Alle Berichte & Urlaubsverwaltung</li>
+                                    <li>Alle Berichte &amp; Urlaubsverwaltung</li>
                                 </ul>
                             </div>
 
@@ -193,13 +206,13 @@ const Registration = () => {
                             >
                                 <h3>Basic</h3>
                                 <p className="price-line">
-                                    <strong>49 € / Monat*</strong><br />
-                                    <span className="yearly-hint">oder 490 € / Jahr</span>
+                                    <strong>49 CHF / Monat*</strong><br />
+                                    <span className="yearly-hint">oder 490 CHF / Jahr</span>
                                 </p>
                                 <ul>
                                     <li>Bis 25 Mitarbeiter inklusive</li>
                                     <li>E-Mail + Chat-Support (Mo-Fr 8-18 Uhr)</li>
-                                    <li>Alle Berichte & Urlaubsverwaltung</li>
+                                    <li>Alle Berichte &amp; Urlaubsverwaltung</li>
                                 </ul>
                             </div>
 
@@ -210,19 +223,19 @@ const Registration = () => {
                             >
                                 <h3>Professional</h3>
                                 <p className="price-line">
-                                    <strong>99 € / Monat*</strong><br />
-                                    <span className="yearly-hint">oder 990 € / Jahr</span>
+                                    <strong>99 CHF / Monat*</strong><br />
+                                    <span className="yearly-hint">oder 990 CHF / Jahr</span>
                                 </p>
                                 <ul>
                                     <li>Bis 50 Mitarbeiter inklusive</li>
-                                    <li>Premium-Support (E-Mail, Chat & Telefon)</li>
-                                    <li>Alle Berichte & Urlaubsverwaltung</li>
+                                    <li>Premium-Support (E-Mail, Chat &amp; Telefon)</li>
+                                    <li>Alle Berichte &amp; Urlaubsverwaltung</li>
                                 </ul>
                             </div>
                         </div>
 
                         <p className="pricing-footnote">
-                            * Alle Preise netto zzgl. USt.
+                            * Alle Preise netto zzgl. MwSt.
                             &nbsp;|&nbsp; Bei jährlicher Zahlung nur 10 statt 12 Monatsraten.
                         </p>
                     </div>
@@ -270,7 +283,6 @@ const Registration = () => {
                                     placeholder="Telefon (optional)"
                                 />
 
-                                {/* Zeige Felder nur, wenn man ein Paket ausgewählt hat */}
                                 {selectedPackage && (
                                     <div className="emp-count-wrapper">
                                         <label htmlFor="employeeCount">Geschätzte Mitarbeiteranzahl:</label>
@@ -293,15 +305,21 @@ const Registration = () => {
                                     rows="4"
                                 />
 
-                                {/* Preisvorschau */}
                                 {selectedPackage && (
                                     <div className="price-preview">
-                                        <strong>Voraussichtlicher Preis:</strong> &nbsp;
-                                        {calculatedPrice > 0
-                                            ? `${calculatedPrice.toFixed(2).replace(".", ",")} € ${
-                                                billingPeriod === "monthly" ? "pro Monat" : "pro Jahr"
-                                            }`
-                                            : "—"}
+                                        <strong>Voraussichtlicher Preis:</strong>&nbsp;
+                                        {calculatedPrice > 0 ? (
+                                            <>
+                                                {formatCHF(calculatedPrice)}{" "}
+                                                {billingPeriod === "monthly" ? "pro Monat (inkl. 150 CHF Installation)" : "pro Jahr (inkl. 150 CHF Installation)"}
+                                            </>
+                                        ) : (
+                                            "—"
+                                        )}
+                                        <br />
+                                        <span style={{ fontSize: "0.85rem", color: "var(--c-muted)" }}>
+                      Einmalige Installationsgebühr: {formatCHF(150)}
+                    </span>
                                     </div>
                                 )}
 
@@ -311,6 +329,8 @@ const Registration = () => {
                             </form>
                         )}
                     </div>
+
+                    {/* Impressum/AGB, etc. */}
                     <div style={{ marginTop: "40px", textAlign: "center", fontSize: "0.9rem" }}>
                         <Link to="/impressum" style={{ marginRight: "1rem" }}>Impressum</Link>
                         <Link to="/agb">AGB</Link>

@@ -1,10 +1,15 @@
 package com.chrono.chrono.dto;
 
 import com.chrono.chrono.entities.TimeTracking;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
+@Setter
+@Getter
 public class AdminTimeTrackDTO {
+    // Getter und Setter
     private Long id;
     private String username;
     private LocalDateTime startTime;
@@ -39,27 +44,4 @@ public class AdminTimeTrackDTO {
                 : null;
     }
 
-    // Getter und Setter
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
-
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-
-    public LocalDateTime getStartTime() { return startTime; }
-    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
-
-    public LocalDateTime getEndTime() { return endTime; }
-    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
-
-    public boolean isCorrected() { return corrected; }
-    public void setCorrected(boolean corrected) { this.corrected = corrected; }
-
-    public int getPunchOrder() { return punchOrder; }
-    public void setPunchOrder(int punchOrder) { this.punchOrder = punchOrder; }
-
-    public String getColor() { return color; }
-    public void setColor(String color) { this.color = color; }
-    public Long getCompanyId() { return companyId; }
-    public void setCompanyId(Long companyId) { this.companyId = companyId; }
 }

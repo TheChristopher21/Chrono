@@ -1,9 +1,12 @@
 // src/pages/PrintReport.jsx
-import React, { useEffect, useState, useRef } from "react";
+
+import  { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../utils/api";
+
 import jsPDF from "jspdf";
-import "jspdf-autotable";
+import autoTable from "jspdf-autotable";
+
 import "../styles/PrintReportScoped.css";
 import { useTranslation } from "../context/LanguageContext";
 
@@ -36,9 +39,12 @@ export default function PrintReport() {
 
     // PDF-Export
     function handlePdf() {
+        // 1) Neues jsPDF-Objekt
         const doc = new jsPDF("p", "mm", "a4");
+
         doc.setFontSize(14);
         doc.text(`${t("printReport.title", "Zeitenbericht")} – ${username}`, 14, 15);
+
         doc.setFontSize(11);
         doc.text(
             `${t("printReport.periodLabel", "Zeitraum")}: ${startDate} – ${endDate}`,
@@ -46,6 +52,7 @@ export default function PrintReport() {
             22
         );
 
+        // 2) Body-Daten
         const body = rows.map((r) => [
             r.date,
             r.workStart || "-",
@@ -54,7 +61,8 @@ export default function PrintReport() {
             r.workEnd || "-",
         ]);
 
-        doc.autoTable({
+        // 3) autoTable-Aufruf über die *Funktion* autoTable(doc, { ... })
+        autoTable(doc, {
             head: [
                 [
                     t("printReport.date", "Datum"),
@@ -69,17 +77,23 @@ export default function PrintReport() {
             margin: { left: 14, right: 14 },
             styles: { fontSize: 9, cellPadding: 2 },
             headStyles: { fillColor: [0, 123, 255], halign: "center" },
+            // 4) Falls du Seitenzahlen etc. einfügen willst:
             didDrawPage: (data) => {
-                const page = `${data.pageNumber}/${doc.getNumberOfPages()}`;
-                doc.text(
-                    page,
-                    doc.internal.pageSize.getWidth() - 14,
-                    10,
-                    { align: "right" }
-                );
+                // doc.getNumberOfPages() o. doc.internal.getNumberOfPages(), je nach Version
+                // doc.internal.pageSize.getWidth() oder doc.internal.pageSize.width
+                const pageCount = doc.getNumberOfPages();
+                const pageStr = `${data.pageNumber} / ${pageCount}`;
+                // Manche Versionen brauchen doc.internal.pageSize.width anstelle von getWidth()
+                const pageWidth = doc.internal.pageSize.getWidth
+                    ? doc.internal.pageSize.getWidth()
+                    : doc.internal.pageSize.width; // Fallback
+
+                // Text an rechter Kante
+                doc.text(pageStr, pageWidth - 14, 10, { align: "right" });
             },
         });
 
+        // 5) PDF speichern
         doc.save(`timesheet_${username}_${startDate}_${endDate}.pdf`);
     }
 
@@ -88,7 +102,8 @@ export default function PrintReport() {
             <h1 className="title">{t("printReport.title", "Zeitenbericht")}</h1>
             <p className="sub">
                 <strong>{t("printReport.userLabel", "User")}:</strong> {username} &nbsp;|&nbsp;
-                <strong>{t("printReport.periodLabel", "Zeitraum")}:</strong> {startDate} – {endDate}
+                <strong>{t("printReport.periodLabel", "Zeitraum")}:</strong>{" "}
+                {startDate} – {endDate}
             </p>
 
             <table ref={tableRef}>
@@ -123,9 +138,11 @@ export default function PrintReport() {
             </table>
 
             <div className="btnRow">
+                {/* 6) "Drucken" => window.print() */}
                 <button onClick={() => window.print()}>
                     {t("printReport.printButton", "Drucken")}
                 </button>
+                {/* 7) PDF -> handlePdf */}
                 <button onClick={handlePdf}>
                     {t("printReport.pdfButton", "PDF speichern")}
                 </button>
