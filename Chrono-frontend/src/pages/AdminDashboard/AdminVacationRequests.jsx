@@ -28,20 +28,13 @@ const AdminVacationRequests = ({
         <div className="admin-dashboard scoped-dashboard">
             <section className="vacation-section">
                 <div
-                    className="vacation-header"
-                    style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        cursor: 'pointer',
-                        marginBottom: '1rem'
-                    }}
+                    className="flex justify-between items-center cursor-pointer mb-4"
                     onClick={toggleExpansion}
                 >
-                    <h3 style={{ margin: 0 }}>
+                    <h3 className="m-0">
                         {t('adminDashboard.vacationRequestsTitle')}
                     </h3>
-                    <span className="vacation-toggle-icon" style={{ fontSize: '1.3rem' }}>
+                    <span className="text-xl">
             {isExpanded ? '▲' : '▼'}
           </span>
                 </div>
@@ -49,15 +42,9 @@ const AdminVacationRequests = ({
                 {isExpanded && (
                     <div className="vacations-content">
                         <div
-                            className="vacation-search-bar"
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                marginBottom: '1rem',
-                                gap: '0.5rem'
-                            }}
+                            className="vacation-search-bar flex items-center mb-4 gap-2"
                         >
-                            <label style={{ fontWeight: 600 }}>
+                            <label className="font-semibold">
                                 {t('search') || 'Suchen:'}
                             </label>
                             <input
@@ -67,67 +54,53 @@ const AdminVacationRequests = ({
                                 placeholder={
                                     t('adminDashboard.searchUser') || 'Benutzer suchen...'
                                 }
-                                style={{ maxWidth: '240px' }}
+                                className="max-w-xs p-2 border rounded"
                             />
                         </div>
 
                         {filteredVacations.length === 0 ? (
                             <p>{t('adminDashboard.noVacations')}</p>
                         ) : (
-                            <ul
-                                className="vacation-list scrollable-list"
-                                style={{
-                                    maxHeight: '320px',
-                                    overflowY: 'auto',
-                                    overscrollBehavior: 'contain',
-                                    WebkitOverflowScrolling: 'touch',
-                                    borderTop: '1px solid var(--c-line)',
-                                    paddingTop: '0.5rem'
-                                }}
-                            >
-                                {filteredVacations.map((v) => (
-                                    <li key={v.id} className="vacation-item">
-                    <span className="vacation-text">
-                      <strong>{v.username}</strong>: {formatDate(v.startDate)} –{' '}
-                        {formatDate(v.endDate)}{' '}
-                        {v.usesOvertime && (
-                            <em style={{ color: '#007BFF' }}>
-                                {t('overtimeVacationIcon', '🌙 Überstundenfrei')}
-                            </em>
-                        )}{' '}
-                        {v.approved ? (
-                            <span className="approved">
-                          {t('adminDashboard.approved')}
-                        </span>
-                        ) : v.denied ? (
-                            <span className="denied">
-                          {t('adminDashboard.denied')}
-                        </span>
-                        ) : (
-                            <span className="pending">
-                          {t('adminDashboard.pending')}
-                        </span>
-                        )}
-                    </span>
-
-                                        {!v.approved && !v.denied && (
-                                            <span className="vacation-buttons">
-                        <button
-                            className="approve-btn"
-                            onClick={() => handleApproveVacation(v.id)}
-                        >
-                          {t('adminDashboard.acceptButton')}
-                        </button>
-                        <button
-                            className="reject-btn"
-                            onClick={() => handleDenyVacation(v.id)}
-                        >
-                          {t('adminDashboard.rejectButton')}
-                        </button>
-                      </span>
-                                        )}
-                                    </li>
-                                ))}
+                            <ul className="vacation-list space-y-2 max-h-80 overflow-y-auto border-t pt-2">
+                                {filteredVacations.map((v) => {
+                                    const statusConfig = v.approved
+                                        ? { color: 'bg-green-100', icon: '✔️', text: t('adminDashboard.approved') }
+                                        : v.denied
+                                            ? { color: 'bg-red-100', icon: '❌', text: t('adminDashboard.denied') }
+                                            : { color: 'bg-yellow-100', icon: '⏳', text: t('adminDashboard.pending') };
+                                    return (
+                                        <li key={v.id} className={`${statusConfig.color} p-3 rounded shadow flex justify-between items-center`}>
+                                            <div>
+                                                <strong>{v.username}</strong>: {formatDate(v.startDate)} – {formatDate(v.endDate)}{' '}
+                                                {v.usesOvertime && (
+                                                    <em className="text-blue-600">
+                                                        {t('overtimeVacationIcon', '🌙 Überstundenfrei')}
+                                                    </em>
+                                                )}
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <span>{statusConfig.icon}</span>
+                                                <span className="font-semibold">{statusConfig.text}</span>
+                                                {!v.approved && !v.denied && (
+                                                    <>
+                                                        <button
+                                                            className="ml-2 bg-green-500 text-white px-2 py-1 rounded"
+                                                            onClick={() => handleApproveVacation(v.id)}
+                                                        >
+                                                            {t('adminDashboard.acceptButton')}
+                                                        </button>
+                                                        <button
+                                                            className="ml-2 bg-red-500 text-white px-2 py-1 rounded"
+                                                            onClick={() => handleDenyVacation(v.id)}
+                                                        >
+                                                            {t('adminDashboard.rejectButton')}
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
+                                        </li>
+                                    );
+                                })}
                             </ul>
                         )}
                     </div>

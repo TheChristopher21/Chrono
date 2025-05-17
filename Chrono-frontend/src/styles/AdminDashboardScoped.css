@@ -338,58 +338,39 @@
     color: var(--c-text);
     border-radius: var(--u-radius);
 }
-.admin-dashboard.scoped-dashboard .vacation-list {
+.admin-dashboard.scoped-dashboard .vacation-list,
+.admin-dashboard.scoped-dashboard .correction-list {
     list-style: none;
     margin: 0;
     padding: 0;
     font-size: 0.95rem;
+    max-height: 20rem;
+    overflow-y: auto;
+    border-top: 1px solid var(--c-line);
+    padding-top: 0.5rem;
 }
-.admin-dashboard.scoped-dashboard .vacation-item {
-    border-bottom: 1px solid var(--c-line);
-    padding: 0.6rem 0;
-}
-.admin-dashboard.scoped-dashboard .vacation-text {
-    display: inline-block;
-    margin-bottom: 0.4rem;
-}
-.admin-dashboard.scoped-dashboard .vacation-buttons button {
-    background: var(--c-pri);
-    color: #fff;
-    border: none;
+
+/* Kompakte Statuskarten für Urlaub und Korrektur */
+.admin-dashboard.scoped-dashboard .status-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
     border-radius: var(--u-radius);
-    padding: 0.4rem 0.9rem;
-    margin-right: 0.5rem;
-    cursor: pointer;
-    font-weight: 600;
-    transition: background var(--u-dur), transform var(--u-dur);
+    box-shadow: var(--u-shadow-sm);
 }
-.admin-dashboard.scoped-dashboard .vacation-buttons button:hover {
-    background: var(--c-pri-dim);
-    transform: translateY(-2px);
+
+
+.admin-dashboard.scoped-dashboard .status-approved {
+    background: #dcfce7;
 }
-.admin-dashboard.scoped-dashboard .approve-btn {
-    background: #2ecc71 !important;
+
+.admin-dashboard.scoped-dashboard .status-denied {
+    background: #fee2e2;
 }
-.admin-dashboard.scoped-dashboard .approve-btn:hover {
-    background: #58d68d !important;
-}
-.admin-dashboard.scoped-dashboard .reject-btn {
-    background: #e74c3c !important;
-}
-.admin-dashboard.scoped-dashboard .reject-btn:hover {
-    background: #ec7063 !important;
-}
-.admin-dashboard.scoped-dashboard .approved {
-    color: #2ecc71;
-    font-weight: 600;
-}
-.admin-dashboard.scoped-dashboard .denied {
-    color: #e74c3c;
-    font-weight: 600;
-}
-.admin-dashboard.scoped-dashboard .pending {
-    color: var(--c-muted);
-    font-weight: 600;
+
+.admin-dashboard.scoped-dashboard .status-pending {
+    background: #fef9c3;
 }
 
 /* =========================================================================

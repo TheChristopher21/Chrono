@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { useTranslation } from '../../context/LanguageContext';
 
 /**
  * DeleteConfirmModal
@@ -14,6 +15,7 @@ function DeleteConfirmModal({
                                 onConfirm,
                                 onCancel
                             }) {
+    const { t } = useTranslation();
     if (!visible) return null;
 
     return (
@@ -35,13 +37,13 @@ function DeleteConfirmModal({
                         onClick={onConfirm}
                     >
                         {/* z.B. "Ja, löschen" */}
-                        Ja, löschen
+                        {t('userManagement.deleteConfirmConfirm')}
                     </button>
                     <button
                         className="delete-confirm-button cancel"
                         onClick={onCancel}
                     >
-                        Abbrechen
+                        {t('userManagement.deleteConfirmCancel')}
                     </button>
                 </div>
             </div>

@@ -167,8 +167,8 @@ const Login = () => {
 
             {/* FOOTER-Bereich am Seitenende */}
             <div className="impressum-agb-footer">
-                <Link to="/impressum">Impressum</Link>
-                <Link to="/agb">AGB</Link>
+                <Link to="/impressum">{t("impressum")}</Link>
+                <Link to="/agb">{t("agb")}</Link>
             </div>
         </div>
     );

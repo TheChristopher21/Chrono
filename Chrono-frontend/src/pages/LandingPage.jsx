@@ -31,34 +31,30 @@ const LandingPage = () => {
 
             {/* HERO *********************************************************** */}
             <header className="landing-hero site-section lg" id="home">
-                <h1>{t("lp.headline", "Zeiterfassung, die Projekte vereinfacht")}</h1>
+                <h1>{t("landingPage.headline", "Zeiterfassung, die Projekte vereinfacht")}</h1>
 
                 <div className="cta-buttons">
                     <Link to="/register" className="btn primary">
-                        {t("lp.ctaPrimary", "Kostenlos registrieren")}
+                        {t("landingPage.ctaPrimary", "Kostenlos registrieren")}
                     </Link>
                 </div>
             </header>
 
             {/* INFO *********************************************************** */}
             <section className="info-section site-section">
-                <h2 className="section-title accent">Warum Chrono-Logic?</h2>
+                <h2 className="section-title accent">{t("landingPage.whyTitle")}</h2>
 
                 {/* Glass-Card */}
                 <div className="info-box">
-                    <p>
-                        Chrono-Logic erkennt automatisch den richtigen Stempel, verhindert
-                        Dubletten in Millisekunden und füllt vergessene Punch-Outs nachts von
-                        selbst. Von Teilzeit-Prozent-Punch bis Überstunden-Management – die
-                        Engine läuft 24/7 transaktionssicher und audit-fest.
-                    </p>
+                    <p>{t('landingPage.infoText')}</p>
+
                 </div>
             </section>
 
 
             {/* FEATURES ******************************************************* */}
             <section className="features-section site-section" id="features">
-                <h2>{t("lp.featuresTitle", "Alle Funktionen im Überblick")}</h2>
+                <h2>{t("landingPage.featuresTitle", "Alle Funktionen im Überblick")}</h2>
                 <p>
                     {t(
                         "lp.featuresSub",
@@ -69,43 +65,43 @@ const LandingPage = () => {
                 <div className="features-grid">
                     <FeatureCard
                         icon="🧠"
-                        title="Smart Punch"
-                        text="Erkennt automatisch Work Start, Break Start/End & Work End."
+                        title={t("landingPage.featureSmartTitle")}
+                        text={t("landingPage.featureSmartText")}
                     />
                     <FeatureCard
                         icon="👆"
-                        title="Direkter Punch"
-                        text="Vier feste Status gezielt wählbar – Übergangs-Logik inklusive."
+                        title={t("landingPage.featureDirectTitle")}
+                        text={t("landingPage.featureDirectText")}
                     />
                     <FeatureCard
                         icon="🔄"
-                        title="Duplicate-Schutz"
-                        text="Einzigartiger DB-Index + Catch-Up-Logik verhindern Doppel-Clicks."
+                        title={t("landingPage.featureDuplicateTitle")}
+                        text={t("landingPage.featureDuplicateText")}
                     />
                     <FeatureCard
                         icon="⏰"
-                        title="Auto Punch Out"
-                        text="Cron-Job 23:20 Uhr beendet vergessene Stempel automatisch."
+                        title={t("landingPage.featureAutoPunchOutTitle")}
+                        text={t("landingPage.featureAutoPunchOutText")}
                     />
                     <FeatureCard
                         icon="📈"
-                        title="Prozent-Punch"
-                        text="Teilzeit gibt Tages-% an – Ist/Soll-Delta sofort berechnet."
+                        title={t("landingPage.featurePercentTitle")}
+                        text={t("landingPage.featurePercentText")}
                     />
                     <FeatureCard
                         icon="🛠️"
-                        title="Korrekturen & Admin"
-                        text="Einträge editieren, ganzen Tag neu schreiben oder Notizen setzen."
+                        title={t("landingPage.featureAdminTitle")}
+                        text={t("landingPage.featureAdminText")}
                     />
                     <FeatureCard
                         icon="📊"
-                        title="Berichte & Historie"
-                        text="Tages-, Wochen-, Bereichs-Reports + vollständige Nutzer-History."
+                        title={t("landingPage.featureHistoryTitle")}
+                        text={t("landingPage.featureHistoryText")}
                     />
                     <FeatureCard
                         icon="➕"
-                        title="Überstunden-Mgmt"
-                        text="Persönliche Minuten-Balance auto-aktualisiert, Urlaub einbezogen."
+                        title={t("landingPage.featureOvertimeTitle")}
+                        text={t("landingPage.featureOvertimeText")}
                     />
                 </div>
             </section>
@@ -116,18 +112,18 @@ const LandingPage = () => {
                 <div className="steps-grid">
                     <StepCard
                         n="1"
-                        title="Account anlegen"
-                        text="Firmen-Profil & Teams in wenigen Minuten."
+                        title={t("landingPage.step1Title")}
+                        text={t("landingPage.step1Text")}
                     />
                     <StepCard
                         n="2"
-                        title="NFC-Badges koppeln"
-                        text="Einmalig scannen, fertig."
+                        title={t("landingPage.step2Title")}
+                        text={t("landingPage.step2Text")}
                     />
                     <StepCard
                         n="3"
-                        title="Dashboard nutzen"
-                        text="Echtzeit-Insights & Abwesenheiten verwalten."
+                        title={t("landingPage.step3Title")}
+                        text={t("landingPage.step3Text")}
                     />
                 </div>
             </section>
@@ -146,23 +142,23 @@ const LandingPage = () => {
 
             {/* NEWSLETTER ***************************************************** */}
             <section className="newsletter-section site-section">
-                <h2>{t("lp.newsTitle", "Bleib informiert!")}</h2>
-                <p>{t("lp.newsSub", "Updates & Tipps direkt in dein Postfach.")}</p>
+                <h2>{t("landingPage.newsTitle", "Bleib informiert!")}</h2>
+                <p>{t("landingPage.newsSub", "Updates & Tipps direkt in dein Postfach.")}</p>
                 <form className="newsletter-form">
-                    <input type="email" placeholder="Deine E-Mail" />
-                    <button className="btn primary">Abonnieren</button>
+                    <input type="email" placeholder={t("landingPage.newsletterPlaceholder")} />
+                    <button className="btn primary">{t("landingPage.newsletterButton")}</button>
                 </form>
             </section>
 
             {/* FOOTER ********************************************************* */}
             <footer className="landing-footer">
                 <div className="footer-content">
-                    <p>© 2025 Chrono-Logic · Alle Rechte vorbehalten</p>
+                    <p>{t("landingPage.allRights")}</p>
                     <div className="social-icons">
                     </div>
                     <div style={{ marginTop: "1rem" }}>
-                        <Link to="/impressum" style={{ marginRight: "1rem" }}>Impressum</Link>
-                        <Link to="/agb">AGB</Link>
+                        <Link to="/impressum" style={{ marginRight: "1rem" }}>{t("impressum")}</Link>
+                        <Link to="/agb">{t("agb")}</Link>
                     </div>
                 </div>
             </footer>

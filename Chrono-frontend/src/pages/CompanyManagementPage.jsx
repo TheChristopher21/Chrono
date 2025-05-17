@@ -159,7 +159,7 @@ const CompanyManagementPage = () => {
                 {t('company.management.title','Firmen-Verwaltung (SUPERADMIN)')}
             </h2>
 
-            {loading ? <p>Loading...</p> : error ? <p style={{color:'red'}}>{error}</p> : (
+            {loading ? <p>{t("loading")}</p> : error ? <p style={{color:'red'}}>{error}</p> : (
                 <>
                     {/*  --------  Sektion: Nur-Firma anlegen  -------- */}
                     <section className="cmp-section">

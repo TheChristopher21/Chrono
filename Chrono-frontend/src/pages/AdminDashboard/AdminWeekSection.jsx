@@ -107,7 +107,7 @@ const AdminWeekSection = ({
 
                 {/* Suche */}
                 <div
-                    className="user-search-bar"
+                    className="user-search-bar mb-4 text-center"
                     style={{ marginBottom: "1rem", textAlign: "center" }}
                 >
                     <input
@@ -115,7 +115,7 @@ const AdminWeekSection = ({
                         placeholder={t("adminDashboard.searchUser") || "Benutzer suchen…"}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ maxWidth: "280px" }}
+                        className="max-w-xs p-2 border rounded"
                     />
                 </div>
 
@@ -128,11 +128,9 @@ const AdminWeekSection = ({
                     </p>
                 ) : (
                     <div
-                        className="admin-user-groups scrollable-user-list"
+                        className="admin-user-groups scrollable-user-list overflow-y-auto p-2"
                         style={{
                             maxHeight: userKeys.length > 10 ? "500px" : "auto",
-                            overflowY: userKeys.length > 10 ? "auto" : "visible",
-                            padding: userKeys.length > 10 ? "0.5rem" : "0",
                         }}
                     >
                         {userKeys.map((username) => {
@@ -243,14 +241,14 @@ const AdminWeekSection = ({
                                                             </div>
                                                             <div className="admin-day-content">
                                                                 <p className="no-entries">
-                                                                    {"Keine Einträge"}
+                                                                    {t('adminDashboard.noEntries')}
                                                                 </p>
                                                                 <button
                                                                     className="edit-day-button"
                                                                     style={{ background: "#2ecc71" }}
                                                                     onClick={() => openNewEntryModal(username, d)}
                                                                 >
-                                                                    {"Zeiten Eintragen"}
+                                                                    {t('adminDashboard.newEntryButton')}
                                                                 </button>
                                                             </div>
                                                         </div>

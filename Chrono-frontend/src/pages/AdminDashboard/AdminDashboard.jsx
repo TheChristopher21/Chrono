@@ -367,9 +367,9 @@ const AdminDashboard = () => {
                 )}
             </header>
 
-            <div className="dashboard-content">
+            <div className="dashboard-content grid lg:grid-cols-3 gap-4">
                 {/* Linke Spalte */}
-                <div className="left-column">
+                <div className="left-column lg:col-span-2 flex flex-col gap-4">
                     {/* Wochenübersicht */}
                     <AdminWeekSection
                         t={t}
@@ -400,7 +400,7 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* Rechte Spalte */}
-                <div className="right-column">
+                <div className="right-column flex flex-col gap-4">
                     {/* Korrekturanträge */}
                     <AdminCorrectionsList
                         t={t}
@@ -412,7 +412,7 @@ const AdminDashboard = () => {
             </div>
 
             {/* Urlaubskalender */}
-            <div style={{ marginTop: '2rem' }}>
+            <div className="mt-8">
                 <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
                 <VacationCalendarAdmin
                     vacationRequests={allVacations.filter(v => v.approved)}

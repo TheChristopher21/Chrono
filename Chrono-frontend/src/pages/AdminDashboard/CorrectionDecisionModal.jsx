@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "../../context/LanguageContext";
 import PropTypes from "prop-types";
 import "../../styles/AdminDashboardScoped.css";
 
@@ -10,13 +11,15 @@ const CorrectionDecisionModal = ({
                                      onSubmit,
                                      onClose,
                                  }) => {
+    const { t } = useTranslation();
     if (!visible) return null;
 
     const isApprove = mode === "approve";
     // Hier kannst du mit t(...) arbeiten
     // Ggf. Key: "adminDashboard.approveCorrectionTitle" / "adminDashboard.denyCorrectionTitle"
-    const header = isApprove ? "Korrektur genehmigen" : "Korrektur ablehnen";
-    const btnLabel = isApprove ? "Genehmigen" : "Ablehnen";
+
+    const header = isApprove ? t('adminDashboard.correctionModal.approveTitle') : t('adminDashboard.correctionModal.denyTitle');
+    const btnLabel = isApprove ? t('adminDashboard.acceptButton') : t('adminDashboard.rejectButton');
 
     return (
         <div className="modal-overlay">
@@ -25,11 +28,12 @@ const CorrectionDecisionModal = ({
 
                 <div className="form-group">
                     <label>Kommentar für den Nutzer:</label>
+                    <label>{t('adminDashboard.correctionModal.commentLabel')}</label>
                     <textarea
                         rows={4}
                         value={comment}
                         onChange={(e) => setComment(e.target.value)}
-                        placeholder="Warum genehmigst / lehnst du ab?"
+                        placeholder={t('adminDashboard.correctionModal.commentPlaceholder')}
                     />
                 </div>
 
@@ -37,6 +41,7 @@ const CorrectionDecisionModal = ({
                     <button onClick={onSubmit}>{btnLabel}</button>
                     <button onClick={onClose} className="secondary">
                         Abbrechen
+                        {t('cancel')}
                     </button>
                 </div>
             </div>
