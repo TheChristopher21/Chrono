@@ -52,6 +52,9 @@ public class TimeTrackingService {
     @PersistenceContext
     private EntityManager em;
 
+    @Autowired
+    private WorkScheduleService workScheduleService;
+
     // 8h30 pro Tag => 510 Minuten
     public static final int FULL_DAY_MINUTES = 510;
 
@@ -395,7 +398,16 @@ public class TimeTrackingService {
             }
         }
 
-        int expected = getExpectedMinutesForDay(user);
+        int expected;
+        if (Boolean.TRUE.equals(user.getIsHourly())) {
+            expected = 0;
+        } else {
+            expected = workScheduleService.computeExpectedWorkMinutes(user, day);
+            if (Boolean.TRUE.equals(user.getIsPercentage())) {
+                int perc = Optional.ofNullable(user.getWorkPercentage()).orElse(100);
+                expected = (int) Math.round(expected * (perc / 100.0));
+            }
+        }
         int diff = worked - expected;
         logger.debug("computeDailyWorkDifference: user={}, worked={}, expected={}, diff={}", user.getUsername(), worked, expected, diff);
         return diff;
@@ -405,17 +417,6 @@ public class TimeTrackingService {
         if (t.getStartTime() != null) return t.getStartTime();
         if (t.getEndTime()   != null) return t.getEndTime();
         return null;
-    }
-
-    private int getExpectedMinutesForDay(User user) {
-        if (Boolean.TRUE.equals(user.getIsHourly())) {
-            return 0;
-        }
-        if (Boolean.TRUE.equals(user.getIsPercentage())) {
-            int perc = Optional.ofNullable(user.getWorkPercentage()).orElse(100);
-            return (int) Math.round(FULL_DAY_MINUTES * (perc / 100.0));
-        }
-        return FULL_DAY_MINUTES;
     }
 
     // -------------------------------------------------------------------------
