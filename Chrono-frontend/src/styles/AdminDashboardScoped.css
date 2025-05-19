@@ -180,6 +180,12 @@
     /* Default: wir passen max-height inline an (z.B. 500px) */
     border: 1px solid transparent;
 }
+
+.admin-dashboard.scoped-dashboard .admin-user-groups {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 1rem;
+}
 .admin-dashboard.scoped-dashboard .scrollable-user-list::-webkit-scrollbar,
 .admin-dashboard.scoped-dashboard .scrollable-list::-webkit-scrollbar {
     width: 8px;
