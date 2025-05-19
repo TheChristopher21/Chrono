@@ -33,6 +33,9 @@ public class TimeTrackingController {
     private TimeTrackingService timeTrackingService;
 
     @Autowired
+    private AdminTimeTrackingService adminTimeTrackingService;
+
+    @Autowired
     private WorkScheduleService workScheduleService;
 
     @Autowired
@@ -121,7 +124,7 @@ public class TimeTrackingController {
             @RequestParam String userPassword
     ) {
         try {
-            String result = timeTrackingService.updateDayTimeEntries(
+            String result = adminTimeTrackingService.updateDayTimeEntries(
                     targetUsername,
                     date,
                     workStart,
@@ -175,7 +178,7 @@ public class TimeTrackingController {
         LocalDate parsedDate = LocalDate.parse(date);
         LocalDateTime newStart = parsedDate.atTime(java.time.LocalTime.parse(workStart));
         LocalDateTime newEnd = parsedDate.atTime(java.time.LocalTime.parse(workEnd));
-        return timeTrackingService.updateTimeTrackEntry(
+        return adminTimeTrackingService.updateTimeTrackEntry(
                 id, newStart, newEnd, userPassword, adminUsername, adminPassword
         );
     }

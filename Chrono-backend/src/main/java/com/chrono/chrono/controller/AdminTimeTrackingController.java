@@ -25,6 +25,9 @@ public class AdminTimeTrackingController {
     @Autowired
     private TimeTrackingService timeTrackingService;
 
+    @Autowired
+    private AdminTimeTrackingService adminTimeTrackingService;
+
     @GetMapping("/all")
     public ResponseEntity<?> getAllTimeTracks(Principal principal) {
         try {
@@ -35,7 +38,7 @@ public class AdminTimeTrackingController {
                     .getId();
 
             // Hier: 'dtos' ist eine List<AdminTimeTrackDTO>
-            List<AdminTimeTrackDTO> dtos = timeTrackingService.getAllTimeTracksWithUser();
+            List<AdminTimeTrackDTO> dtos = adminTimeTrackingService.getAllTimeTracksWithUser();
 
             // Filtern nach der Company des Admins
             List<AdminTimeTrackDTO> filtered = dtos.stream()
@@ -97,7 +100,7 @@ public class AdminTimeTrackingController {
             @RequestParam String userPassword
     ) {
         try {
-            String result = timeTrackingService.updateDayTimeEntries(
+            String result = adminTimeTrackingService.updateDayTimeEntries(
                     targetUsername,
                     date,
                     workStart,

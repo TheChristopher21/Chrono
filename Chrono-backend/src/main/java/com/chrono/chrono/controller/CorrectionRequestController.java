@@ -3,6 +3,7 @@ package com.chrono.chrono.controller;
 import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.services.CorrectionRequestService;
 import com.chrono.chrono.services.TimeTrackingService;
+import com.chrono.chrono.services.AdminTimeTrackingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +23,9 @@ public class CorrectionRequestController {
 
     @Autowired
     private TimeTrackingService timeTrackingService;
+
+    @Autowired
+    private AdminTimeTrackingService adminTimeTrackingService;
 
     // Erlaube allen authentifizierten Nutzern, eigene Korrekturanträge zu erstellen
     @PostMapping("/create-full")
@@ -89,7 +93,7 @@ public class CorrectionRequestController {
             // - corr.getWorkStartFormatted() / getBreakStartFormatted() / ...
             // - Falls passwort nötig, userPassword => optional
 
-            timeTrackingService.updateDayTimeEntries(
+            adminTimeTrackingService.updateDayTimeEntries(
                     corr.getUsername(),
                     corr.getDate().toString(),
                     corr.getWorkStartFormatted(),
