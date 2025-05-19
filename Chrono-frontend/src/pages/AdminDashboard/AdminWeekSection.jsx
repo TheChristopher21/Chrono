@@ -82,6 +82,17 @@ const AdminWeekSection = ({
     const toggleUserExpand = (uname) =>
         setExpandedUsers((p) => ({ ...p, [uname]: !p[uname] }));
 
+    const allExpanded = userKeys.length > 0 && userKeys.every((u) => expandedUsers[u]);
+    const toggleAll = () => {
+        if (allExpanded) {
+            setExpandedUsers({});
+        } else {
+            const obj = {};
+            userKeys.forEach((u) => { obj[u] = true; });
+            setExpandedUsers(obj);
+        }
+    };
+
     /* ------------------------------------------------------------------ */
     /* 7) Render                                                          */
     /* ------------------------------------------------------------------ */
@@ -117,6 +128,14 @@ const AdminWeekSection = ({
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="max-w-xs p-2 border rounded"
                     />
+                    <button
+                        className="ml-2 px-3 py-2"
+                        onClick={toggleAll}
+                    >
+                        {allExpanded
+                            ? t('adminDashboard.collapseAll')
+                            : t('adminDashboard.expandAll')}
+                    </button>
                 </div>
 
                 {/* Leerer Zustand */}
