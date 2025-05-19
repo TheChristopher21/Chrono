@@ -334,11 +334,11 @@ const translations = {
         // Landing Page
         // ----------------------------------------------------------------------
         landingPage: {
-            headline: "Chrono-Logic",
+            headline: "Chrono-Logisch",
             subHeadline: "Zeiterfassung und NFC-Stempeln – ganz einfach.",
             loginButton: "Anmelden",
             registerButton: "Registrieren",
-            whyTitle: "Warum Chrono-Logic?",
+            whyTitle: "Warum Chrono-Logisch?",
             howItWorks: "So funktioniert's",
             featureNfcTitle: "NFC-Stempeln",
             featureNfcText: "Einfaches Ein- und Ausstempeln per NFC-Karte.",
@@ -347,7 +347,7 @@ const translations = {
             featureVacationTitle: "Urlaubsverwaltung",
             featureVacationText: "Urlaubstage im Blick, inkl. Genehmigungsprozess.",
             allRights: "Alle Rechte vorbehalten.",
-            infoText: "Chrono-Logic erkennt automatisch den richtigen Stempel, verhindert Dubletten und füllt vergessene Punch-Outs von selbst.",
+            infoText: "Chrono-Logisch erkennt automatisch den richtigen Stempel, verhindert Dubletten und füllt vergessene Punch-Outs von selbst.",
             featuresTitle: "Alle Funktionen im Überblick",
             featuresSub: "Keine Gimmicks – nur Features, die deinen Alltag wirklich erleichtern.",
             ctaPrimary: "Kostenlos registrieren",
@@ -717,15 +717,15 @@ const translations = {
         // Landing Page
         // ----------------------------------------------------------------------
         landingPage: {
-            headline: "Chrono-Logic",
+            headline: "Chrono-Logisch",
             subHeadline: "Time tracking and NFC stamping made easy.",
             ctaPrimary: "Register for free",
             loginButton: "Login",
             registerButton: "Register",
-            whyTitle: "Why Chrono-Logic?",
+            whyTitle: "Why Chrono-Logisch?",
             howItWorks: "How it Works",
             featureNfcTitle: "NFC Stamping",
-            infoText: "Chrono-Logic automatically detects the correct punch, avoids duplicates and fills forgotten outs overnight.",
+            infoText: "Chrono-Logisch automatically detects the correct punch, avoids duplicates and fills forgotten outs overnight.",
             featuresTitle: "All Features at a Glance",
             featuresSub: "No gimmicks – just features that really ease your day.",
             featureNfcText: "Simply clock in and out with an NFC card.",
