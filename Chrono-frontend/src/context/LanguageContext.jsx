@@ -109,6 +109,8 @@ const translations = {
             correctionItemLabel: "Korrektur vom",
             noEntries: "Keine Einträge",
             newEntryButton: "Zeiten Eintragen",
+            expandAll: "Alle aufklappen",
+            collapseAll: "Alle zuklappen",
             correctionModal: {
                 approveTitle: "Korrektur genehmigen",
                 denyTitle: "Korrektur ablehnen",
@@ -493,6 +495,8 @@ const translations = {
             correctionItemLabel: "Correction for",
             noEntries: "No entries",
             newEntryButton: "Add Times",
+            expandAll: "Expand All",
+            collapseAll: "Collapse All",
             correctionModal: {
                 approveTitle: "Approve Correction",
                 denyTitle: "Deny Correction",
