@@ -30,6 +30,8 @@ const CompanyManagementPage = () => {
 
     useEffect(() => {
         fetchCompanies();
+        const interval = setInterval(fetchCompanies, 30000); // auto refresh
+        return () => clearInterval(interval);
     }, []);
 
     async function fetchCompanies() {
@@ -136,7 +138,17 @@ const CompanyManagementPage = () => {
             console.error('Fehler beim Edit:', err);
         }
     }
-
+    // (5) Payment Update
+    // ------------------------------------------------------
+    async function handleUpdatePayment(co, paid, method, canceled=false) {
+        try {
+            const body = { paid, paymentMethod: method, canceled };
+            await api.put(`/api/superadmin/companies/${co.id}/payment`, body);
+            fetchCompanies();
+        } catch (err) {
+            console.error('Fehler beim Update Payment:', err);
+        }
+    }
     // ------------------------------------------------------
     // (5) Delete
     // ------------------------------------------------------
@@ -254,12 +266,19 @@ const CompanyManagementPage = () => {
                                                 <span className="cmp-users">
                           {co.userCount} User
                         </span>
+                                                <span className="cmp-payment">
+                          {co.paid ? 'Bezahlt' : 'Offen'}
+                                                    {co.paymentMethod ? ` - ${co.paymentMethod}` : ''}
+                                                    {co.canceled ? ' (gekündigt)' : ''}
+                        </span>
                                             </div>
                                             <div className="cmp-btns">
                                                 <button onClick={() => startEdit(co)}>Bearbeiten</button>
                                                 <button onClick={() => toggleActive(co)}>
                                                     {co.active ? 'Deaktiv' : 'Aktiv'}
                                                 </button>
+                                                <button onClick={() => handleUpdatePayment(co, !co.paid, co.paymentMethod || 'manuell')}>Payment {co.paid ? 'zurücksetzen' : 'bestätigen'}</button>
+
                                                 <button className="danger" onClick={() => handleDeleteCompany(co.id)}>Löschen</button>
                                             </div>
                                         </div>

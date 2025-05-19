@@ -75,7 +75,8 @@ public class CompanyManagementController {
         company.setName(body.getCompanyName().trim());
         company.setActive(true);
         company = companyRepository.save(company);
-
+        company.setPaid(false);
+        company.setCanceled(false);
         // 4) Admin-User anlegen
         User admin = new User();
         admin.setUsername(body.getAdminUsername().trim());
@@ -113,6 +114,8 @@ public class CompanyManagementController {
         // ID muss null sein
         body.setId(null);
         body.setActive(true);
+        body.setPaid(false);
+        body.setCanceled(false);
         Company saved = companyRepository.save(body);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(CompanyDTO.fromEntity(saved));
@@ -130,12 +133,42 @@ public class CompanyManagementController {
                     if (body.isActive() != existing.isActive()) {
                         existing.setActive(body.isActive());
                     }
+                    if (body.isPaid() != existing.isPaid()) {
+                        existing.setPaid(body.isPaid());
+                    }
+                    if (body.getPaymentMethod() != null) {
+                        existing.setPaymentMethod(body.getPaymentMethod());
+                    }
+                    if (body.isCanceled() != existing.isCanceled()) {
+                        existing.setCanceled(body.isCanceled());
+                    }
                     companyRepository.save(existing);
                     return ResponseEntity.ok(existing);
+
                 })
                 // Falls nichts gefunden, company not found → BAD_REQUEST
                 .orElseGet(() -> ResponseEntity.badRequest().body("Company not found"));
     }
+
+    // ============ (5b) Zahlungsstatus aktualisieren ============
+    @PutMapping("/{id}/payment")
+    public ResponseEntity<CompanyDTO> updatePayment(@PathVariable Long id,
+                                                    @RequestBody PaymentUpdateDTO dto) {
+        return companyRepository.findById(id)
+                .map(co -> {
+                    if (dto.getPaymentMethod() != null)
+                        co.setPaymentMethod(dto.getPaymentMethod());
+                    if (dto.getPaid() != null)
+                        co.setPaid(dto.getPaid());
+                    if (dto.getCanceled() != null)
+                        co.setCanceled(dto.getCanceled());
+
+                    companyRepository.save(co);
+                    return ResponseEntity.ok(CompanyDTO.fromEntity(co));
+                })
+                .orElseGet(() -> ResponseEntity.badRequest().build());
+    }
+
 
 
     // ============ (6) Firma löschen ============
@@ -163,13 +196,19 @@ public class CompanyManagementController {
         private String name;
         private boolean active;
         private int    userCount;
+        private boolean paid;
+        private String  paymentMethod;
+        private boolean canceled;
 
         public static CompanyDTO fromEntity(Company co) {
             CompanyDTO dto = new CompanyDTO();
             dto.id        = co.getId();
             dto.name      = co.getName();
             dto.active    = co.isActive();
-            dto.userCount = co.getUsers().size();
+            dto.userCount     = co.getUsers().size();
+            dto.paid          = co.isPaid();
+            dto.paymentMethod = co.getPaymentMethod();
+            dto.canceled      = co.isCanceled();
             return dto;
         }
 
@@ -178,11 +217,17 @@ public class CompanyManagementController {
         public String getName() { return name; }
         public boolean isActive() { return active; }
         public int getUserCount() { return userCount; }
+        public boolean isPaid() { return paid; }
+        public String getPaymentMethod() { return paymentMethod; }
+        public boolean isCanceled() { return canceled; }
 
         public void setId(Long i) { this.id = i; }
         public void setName(String n) { this.name = n; }
         public void setActive(boolean a) { this.active = a; }
         public void setUserCount(int u) { this.userCount = u; }
+        public void setPaid(boolean p) { this.paid = p; }
+        public void setPaymentMethod(String pm) { this.paymentMethod = pm; }
+        public void setCanceled(boolean c) { this.canceled = c; }
     }
 
     /**
@@ -211,5 +256,19 @@ public class CompanyManagementController {
         public void setAdminLastName(String adminLastName) { this.adminLastName = adminLastName; }
         public String getAdminEmail() { return adminEmail; }
         public void setAdminEmail(String adminEmail) { this.adminEmail = adminEmail; }
+    }
+
+    /** DTO für updatePayment */
+    public static class PaymentUpdateDTO {
+        private Boolean paid;
+        private String  paymentMethod;
+        private Boolean canceled;
+
+        public Boolean getPaid() { return paid; }
+        public void setPaid(Boolean paid) { this.paid = paid; }
+        public String getPaymentMethod() { return paymentMethod; }
+        public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
+        public Boolean getCanceled() { return canceled; }
+        public void setCanceled(Boolean canceled) { this.canceled = canceled; }
     }
 }
