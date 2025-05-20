@@ -6,6 +6,8 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.services.StripeService;
+import com.stripe.model.PaymentIntent;
 import com.chrono.chrono.utils.PasswordEncoderConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -30,6 +32,7 @@ public class CompanyManagementController {
     @Autowired private UserRepository    userRepository;
     @Autowired private RoleRepository    roleRepository;
     @Autowired private PasswordEncoder   passwordEncoder;
+    @Autowired private StripeService     stripeService;
 
     // ============ (1) Alle Firmen laden ============
     @GetMapping
@@ -167,6 +170,18 @@ public class CompanyManagementController {
                     return ResponseEntity.ok(CompanyDTO.fromEntity(co));
                 })
                 .orElseGet(() -> ResponseEntity.badRequest().build());
+    }
+
+    // ============ (5c) Zahlungen einer Firma abrufen ============
+    @GetMapping("/{id}/payments")
+    public ResponseEntity<?> getPaymentsForCompany(@PathVariable Long id) {
+        try {
+            List<PaymentIntent> payments = stripeService.listPaymentsForCompany(id);
+            return ResponseEntity.ok(payments);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to fetch payments");
+        }
     }
 
 

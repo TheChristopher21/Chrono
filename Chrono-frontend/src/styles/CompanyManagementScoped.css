@@ -137,6 +137,22 @@
     color: var(--c-muted);
 }
 
+/* Tabelle mit Zahlungen pro Firma */
+.company-management-page.scoped-company .cmp-payments-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.5rem;
+}
+.company-management-page.scoped-company .cmp-payments-table th,
+.company-management-page.scoped-company .cmp-payments-table td {
+    border: 1px solid var(--c-border);
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+}
+.company-management-page.scoped-company .cmp-payments-table th {
+    background: var(--c-card);
+}
+
 /* Button-Gruppe */
 .company-management-page.scoped-company .cmp-btns {
     display: flex;
