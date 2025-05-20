@@ -171,14 +171,6 @@ public class TimeTrackingService {
         LocalDateTime now = LocalDateTime.now();
         TimeTracking newTt = createPunchInSeparateTx(user, nextOrder, now);
 
-        // Falls WORK_END => Überstunden aktualisieren
-        if (nextOrder == 4) {
-            int delta = computeDailyWorkDifference(user, today.toString());
-            int oldBal = Optional.ofNullable(user.getTrackingBalanceInMinutes()).orElse(0);
-            user.setTrackingBalanceInMinutes(oldBal + delta);
-            userRepository.save(user);
-            logger.info("handleSmartPunch: WORK_END => delta={}, newBalance={}", delta, user.getTrackingBalanceInMinutes());
-        }
 
         logger.info("handleSmartPunch: nextOrder={} angelegt (User={})", nextOrder, user.getUsername());
         return convertToResponse(newTt);
@@ -220,6 +212,7 @@ public class TimeTrackingService {
 
             } catch (CannotAcquireLockException | DeadlockLoserDataAccessException ex) {
                 logger.warn("createPunchInSeparateTx: Deadlock (#{}), retrying...", attempt);
+                em.clear();
                 if (attempt == MAX_DEADLOCK_RETRIES) {
                     logger.error("createPunchInSeparateTx: Deadlock final, werfe Exception");
                     throw ex;
@@ -232,6 +225,7 @@ public class TimeTrackingService {
 
             } catch (DataIntegrityViolationException dup) {
                 logger.warn("createPunchInSeparateTx: DuplicateKey -> fetch existing again");
+                em.clear();
                 Optional<TimeTracking> existing2 = timeTrackingRepository
                         .findFirstByUserAndDailyDateAndPunchOrder(user, now.toLocalDate(), punchOrder);
                 if (existing2.isPresent()) {

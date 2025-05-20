@@ -155,7 +155,7 @@ const Login = () => {
 
                         <div className="register-cta">
                             <span>{t('login.noAccount', 'Noch kein Account?')}</span>
-                            <a href="/register">{t('login.registerHere', 'Hier registrieren')}</a>
+                            <Link to="/register">{t('login.registerHere')}</Link>
                         </div>
                     </div>
                 </div>

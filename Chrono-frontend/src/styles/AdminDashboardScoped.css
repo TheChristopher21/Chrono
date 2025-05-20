@@ -378,6 +378,26 @@
     color: #e6e8ee;
 }
 
+/* ===== Correction-Status – Dark-Mode Overrides ==================== */
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li.bg-green-100 {
+    /* approved  ✔️  */
+    background: var(--stat-approved);   /* #22543d → sattes Dunkel-Grün      */
+    color: #e6e8ee;                     /* heller Text                      */
+}
+
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li.bg-red-100  {
+    /* denied  ❌  */
+    background: var(--stat-denied);     /* #7f1d1d → sattes Dunkel-Rot       */
+    color: #e6e8ee;
+}
+
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li.bg-yellow-100 {
+    /* pending  ⏳  */
+    background: var(--stat-pending);    /* #92400e → sattes Dunkel-Gelb/Orange */
+    color: #e6e8ee;
+}
+
+
 /* =========================================================================
    10a) Status Cards
    ========================================================================= */
