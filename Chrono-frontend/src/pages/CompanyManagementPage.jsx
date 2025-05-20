@@ -27,6 +27,8 @@ const CompanyManagementPage = () => {
 
     // Edit-Mode
     const [editingCompany, setEditingCompany] = useState(null);
+    const [paymentDetails, setPaymentDetails] = useState({});
+    const [openPayments, setOpenPayments] = useState({});
 
     useEffect(() => {
         fetchCompanies();
@@ -163,6 +165,29 @@ const CompanyManagementPage = () => {
         }
     }
 
+    // ------------------------------------------------------
+    // (6) Zahlungen einer Firma laden / toggeln
+    // ------------------------------------------------------
+    async function fetchPayments(companyId) {
+        try {
+            const res = await api.get(`/api/superadmin/companies/${companyId}/payments`);
+            setPaymentDetails(prev => ({ ...prev, [companyId]: res.data || [] }));
+        } catch (err) {
+            console.error('Fehler beim Laden der Zahlungen:', err);
+            setPaymentDetails(prev => ({ ...prev, [companyId]: [] }));
+        }
+    }
+
+    function togglePayments(co) {
+        setOpenPayments(prev => {
+            const open = !prev[co.id];
+            if (open && !paymentDetails[co.id]) {
+                fetchPayments(co.id);
+            }
+            return { ...prev, [co.id]: open };
+        });
+    }
+
     // ========================================================================
     return (
         <div className="company-management-page scoped-company">
@@ -278,10 +303,34 @@ const CompanyManagementPage = () => {
                                                     {co.active ? 'Deaktiv' : 'Aktiv'}
                                                 </button>
                                                 <button onClick={() => handleUpdatePayment(co, !co.paid, co.paymentMethod || 'manuell')}>Payment {co.paid ? 'zurücksetzen' : 'bestätigen'}</button>
-
+                                                <button onClick={() => togglePayments(co)}>
+                                                    {openPayments[co.id] ? 'Zahlungen ausblenden' : 'Zahlungen anzeigen'}
+                                                </button>
                                                 <button className="danger" onClick={() => handleDeleteCompany(co.id)}>Löschen</button>
                                             </div>
                                         </div>
+                                        {openPayments[co.id] && (
+                                            <table className="cmp-payments-table">
+                                                <thead>
+                                                    <tr>
+                                                        <th>ID</th>
+                                                        <th>Betrag</th>
+                                                        <th>Status</th>
+                                                        <th>Erstellt</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {(paymentDetails[co.id] || []).map(p => (
+                                                        <tr key={p.id}>
+                                                            <td>{p.id}</td>
+                                                            <td>{(p.amount / 100).toFixed(2)} {p.currency?.toUpperCase()}</td>
+                                                            <td>{p.status}</td>
+                                                            <td>{new Date(p.created * 1000).toLocaleString()}</td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        )}
                                     )}
                                 </li>
                             ))}
