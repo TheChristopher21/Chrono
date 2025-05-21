@@ -7,7 +7,7 @@
 .percentage-dashboard.scoped-dashboard {
     --c-pri:      #475bff;
     --c-pri-dim:  #6b7cff;
-    --c-warn:     #ffc741;
+    --c-warn:     #ff9d41;
 
     --c-text:     #1e1f22;
     --c-muted:    #5c606e;
@@ -45,8 +45,22 @@
 
 /* --------------------------- Header & Meta-Info -------------------------- */
 .percentage-dashboard.scoped-dashboard .dashboard-header {
+    background: var(--c-card);
+    padding: 2.2rem 1.8rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    box-shadow: var(--u-shadow-sm);
+    margin-bottom: clamp(1.7rem, 4vw, 2.4rem);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     text-align: center;
-    margin-bottom: 1.8rem;
+}
+.percentage-dashboard.scoped-dashboard .dashboard-header h2 {
+    margin: 0;
+    font-size: clamp(1.9rem, 3vw, 2.4rem);
+    font-weight: 700;
 }
 .percentage-dashboard.scoped-dashboard .personal-info {
     margin-top: 0.6rem;
@@ -171,7 +185,7 @@
 .percentage-dashboard.scoped-dashboard .week-display {
     display: grid;
     gap: 1.8rem;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 .percentage-dashboard.scoped-dashboard .week-day-card {
     background: var(--c-card);
@@ -225,8 +239,8 @@
     cursor: pointer;
 }
 [data-theme="dark"] .percentage-dashboard.scoped-dashboard .corrections-header {
-    background: #363a45;
-    color: var(--c-text);
+    background: var(--c-warn);
+    color: #1f1f1f;
 }
 .percentage-dashboard.scoped-dashboard .corrections-content {
     background: var(--c-card);

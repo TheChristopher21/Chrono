@@ -7,7 +7,7 @@
 .user-dashboard.scoped-dashboard {
     --c-pri:        #475bff;
     --c-pri-dim:    #6b7cff;
-    --c-warn:       #ffc741;
+    --c-warn:       #ff9d41;
 
     --c-text:       #1e1f22;
     --c-muted:      #595e6b;
@@ -62,17 +62,23 @@
    1) Dashboard Header + Info
    ========================================================================= */
 .user-dashboard.scoped-dashboard .dashboard-header {
+    background: var(--c-card);
+    padding: 2.2rem 1.8rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    box-shadow: var(--u-shadow-sm);
+    margin-bottom: clamp(1.7rem, 4vw, 2.4rem);
+
     display: flex;
-    flex-direction: column; /* Damit alles untereinander steht */
-    align-items: center;    /* Zentriert horizontal */
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
     gap: 0.5rem;
-    margin-bottom: var(--u-gap);
-    padding-block: 0.5rem;
-    text-align: center; /* Damit auch der Text selbst zentriert ist */
 }
 .user-dashboard.scoped-dashboard .dashboard-header h2 {
-    font-size: clamp(1.5rem, 3vw, 2rem);
     margin: 0;
+    font-size: clamp(1.9rem, 3vw, 2.4rem);
+    font-weight: 700;
 }
 .user-dashboard.scoped-dashboard .personal-info {
     display: flex;
@@ -215,7 +221,7 @@
 .user-dashboard.scoped-dashboard .week-display {
     display: grid;
     gap: 1.8rem;
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 .user-dashboard.scoped-dashboard .day-card {
     background: var(--c-card);
@@ -261,7 +267,7 @@
     font-size: 0.84rem;
 }
 .user-dashboard.scoped-dashboard .correction-button:hover {
-    background: #ffd966;
+    background: #ffb866;
 }
 /* Späte Zeit */
 .user-dashboard.scoped-dashboard .late-time {
