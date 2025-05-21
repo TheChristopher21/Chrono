@@ -9,20 +9,20 @@ const CompanyManagementPage = () => {
 
     // Firmenliste
     const [companies, setCompanies] = useState([]);
-    const [loading, setLoading]     = useState(true);
-    const [error, setError]         = useState('');
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState('');
 
     // Neues Formular: "Nur Firma anlegen"
     const [newCompanyName, setNewCompanyName] = useState('');
 
     // Alternativ: "Firma + Admin" anlegen
     const [createWithAdmin, setCreateWithAdmin] = useState({
-        companyName   : '',
-        adminUsername : '',
-        adminPassword : '',
-        adminEmail    : '',
+        companyName: '',
+        adminUsername: '',
+        adminPassword: '',
+        adminEmail: '',
         adminFirstName: '',
-        adminLastName : ''
+        adminLastName: ''
     });
 
     // Edit-Mode
@@ -30,9 +30,12 @@ const CompanyManagementPage = () => {
     const [paymentDetails, setPaymentDetails] = useState({});
     const [openPayments, setOpenPayments] = useState({});
 
+    // ------------------------------------------------------------------
+    // useEffect: Firmen laden + Intervall für automatisches Refresh
+    // ------------------------------------------------------------------
     useEffect(() => {
         fetchCompanies();
-        const interval = setInterval(fetchCompanies, 30000); // auto refresh
+        const interval = setInterval(fetchCompanies, 30000); // alle 30s aktualisieren
         return () => clearInterval(interval);
     }, []);
 
@@ -50,9 +53,9 @@ const CompanyManagementPage = () => {
         }
     }
 
-    // ------------------------------------------------------
+    // ------------------------------------------------------------------
     // (1) "Nur Firma" anlegen
-    // ------------------------------------------------------
+    // ------------------------------------------------------------------
     async function handleCreateCompany(e) {
         e.preventDefault();
         if (!newCompanyName.trim()) return;
@@ -66,50 +69,59 @@ const CompanyManagementPage = () => {
         }
     }
 
-    // ------------------------------------------------------
+    // ------------------------------------------------------------------
     // (2) Firma + Admin in einem Rutsch anlegen
-    // ------------------------------------------------------
+    // ------------------------------------------------------------------
     async function handleCreateWithAdmin(e) {
         e.preventDefault();
-        if (!createWithAdmin.companyName.trim() ||
+
+        if (
+            !createWithAdmin.companyName.trim() ||
             !createWithAdmin.adminUsername.trim() ||
             !createWithAdmin.adminPassword.trim()
         ) {
             alert('Bitte Firmenname, Admin-Username und Admin-Passwort angeben');
             return;
         }
+
         try {
             const payload = {
-                companyName   : createWithAdmin.companyName.trim(),
-                adminUsername : createWithAdmin.adminUsername.trim(),
-                adminPassword : createWithAdmin.adminPassword,
-                adminEmail    : createWithAdmin.adminEmail,
+                companyName: createWithAdmin.companyName.trim(),
+                adminUsername: createWithAdmin.adminUsername.trim(),
+                adminPassword: createWithAdmin.adminPassword,
+                adminEmail: createWithAdmin.adminEmail,
                 adminFirstName: createWithAdmin.adminFirstName,
-                adminLastName : createWithAdmin.adminLastName
+                adminLastName: createWithAdmin.adminLastName
             };
+
             const res = await api.post('/api/superadmin/companies/create-with-admin', payload);
-            // optional: Zeig dem User an, was erstellt wurde
             console.log('Created Company + Admin:', res.data);
+
             // Felder zurücksetzen
             setCreateWithAdmin({
-                companyName: '', adminUsername: '', adminPassword: '',
-                adminEmail: '', adminFirstName: '', adminLastName: ''
+                companyName: '',
+                adminUsername: '',
+                adminPassword: '',
+                adminEmail: '',
+                adminFirstName: '',
+                adminLastName: ''
             });
+
             fetchCompanies();
-            alert(`Firma + AdminUser wurden erstellt.`);
+            alert('Firma + AdminUser wurden erfolgreich erstellt.');
         } catch (err) {
             console.error('Error create-with-admin:', err);
             alert('Fehler beim Anlegen von Firma + Admin');
         }
     }
 
-    // ------------------------------------------------------
+    // ------------------------------------------------------------------
     // (3) Toggle Active
-    // ------------------------------------------------------
+    // ------------------------------------------------------------------
     async function toggleActive(co) {
         try {
             const updated = {
-                name  : co.name,
+                name: co.name,
                 active: !co.active
             };
             await api.put(`/api/superadmin/companies/${co.id}`, updated);
@@ -119,18 +131,20 @@ const CompanyManagementPage = () => {
         }
     }
 
-    // ------------------------------------------------------
+    // ------------------------------------------------------------------
     // (4) Edit: Name / Active
-    // ------------------------------------------------------
+    // ------------------------------------------------------------------
     function startEdit(company) {
         setEditingCompany({ ...company });
     }
+
     async function handleSaveEdit(e) {
         e.preventDefault();
         if (!editingCompany.name.trim()) return;
+
         try {
             const payload = {
-                name  : editingCompany.name.trim(),
+                name: editingCompany.name.trim(),
                 active: editingCompany.active
             };
             await api.put(`/api/superadmin/companies/${editingCompany.id}`, payload);
@@ -140,9 +154,11 @@ const CompanyManagementPage = () => {
             console.error('Fehler beim Edit:', err);
         }
     }
+
+    // ------------------------------------------------------------------
     // (5) Payment Update
-    // ------------------------------------------------------
-    async function handleUpdatePayment(co, paid, method, canceled=false) {
+    // ------------------------------------------------------------------
+    async function handleUpdatePayment(co, paid, method, canceled = false) {
         try {
             const body = { paid, paymentMethod: method, canceled };
             await api.put(`/api/superadmin/companies/${co.id}/payment`, body);
@@ -151,9 +167,10 @@ const CompanyManagementPage = () => {
             console.error('Fehler beim Update Payment:', err);
         }
     }
-    // ------------------------------------------------------
-    // (5) Delete
-    // ------------------------------------------------------
+
+    // ------------------------------------------------------------------
+    // (6) Delete
+    // ------------------------------------------------------------------
     async function handleDeleteCompany(id) {
         if (!window.confirm('Wirklich löschen? (Company muss leer sein)')) return;
         try {
@@ -165,21 +182,21 @@ const CompanyManagementPage = () => {
         }
     }
 
-    // ------------------------------------------------------
-    // (6) Zahlungen einer Firma laden / toggeln
-    // ------------------------------------------------------
+    // ------------------------------------------------------------------
+    // (7) Zahlungen einer Firma laden / toggeln
+    // ------------------------------------------------------------------
     async function fetchPayments(companyId) {
         try {
             const res = await api.get(`/api/superadmin/companies/${companyId}/payments`);
-            setPaymentDetails(prev => ({ ...prev, [companyId]: res.data || [] }));
+            setPaymentDetails((prev) => ({ ...prev, [companyId]: res.data || [] }));
         } catch (err) {
             console.error('Fehler beim Laden der Zahlungen:', err);
-            setPaymentDetails(prev => ({ ...prev, [companyId]: [] }));
+            setPaymentDetails((prev) => ({ ...prev, [companyId]: [] }));
         }
     }
 
     function togglePayments(co) {
-        setOpenPayments(prev => {
+        setOpenPayments((prev) => {
             const open = !prev[co.id];
             if (open && !paymentDetails[co.id]) {
                 fetchPayments(co.id);
@@ -188,149 +205,222 @@ const CompanyManagementPage = () => {
         });
     }
 
-    // ========================================================================
+    // ===================================================================
+    // Render
+    // ===================================================================
     return (
         <div className="company-management-page scoped-company">
             <Navbar />
             <h2 className="cmp-title">
-                {t('company.management.title','Firmen-Verwaltung (SUPERADMIN)')}
+                {t('company.management.title', 'Firmen-Verwaltung (SUPERADMIN)')}
             </h2>
 
-            {loading ? <p>{t("loading")}</p> : error ? <p style={{color:'red'}}>{error}</p> : (
+            {loading ? (
+                <p>{t('loading', 'Lade...')}</p>
+            ) : error ? (
+                <p style={{ color: 'red' }}>{error}</p>
+            ) : (
                 <>
-                    {/*  --------  Sektion: Nur-Firma anlegen  -------- */}
+                    {/* (A) Nur-Firma-Anlegen-Formular */}
                     <section className="cmp-section">
-                        <h3>{t('Nur Firma anlegen')}</h3>
+                        <h3>Nur Firma anlegen</h3>
                         <form onSubmit={handleCreateCompany} className="cmp-form">
                             <input
                                 type="text"
                                 placeholder="Firmenname"
                                 value={newCompanyName}
-                                onChange={e => setNewCompanyName(e.target.value)}
+                                onChange={(e) => setNewCompanyName(e.target.value)}
                             />
                             <button type="submit">Erstellen</button>
                         </form>
                     </section>
 
-                    {/*  --------  Sektion: Firma + Admin anlegen  -------- */}
+                    {/* (B) Firma + Admin anlegen */}
                     <section className="cmp-section">
-                        <h3>{t('Firma + Admin anlegen')}</h3>
+                        <h3>Firma + Admin anlegen</h3>
                         <form onSubmit={handleCreateWithAdmin} className="cmp-form">
                             <input
                                 type="text"
                                 placeholder="Firmenname"
                                 value={createWithAdmin.companyName}
-                                onChange={e => setCreateWithAdmin({...createWithAdmin, companyName: e.target.value})}
+                                onChange={(e) =>
+                                    setCreateWithAdmin({
+                                        ...createWithAdmin,
+                                        companyName: e.target.value
+                                    })
+                                }
                             />
                             <input
                                 type="text"
                                 placeholder="Admin-Username"
                                 value={createWithAdmin.adminUsername}
-                                onChange={e => setCreateWithAdmin({...createWithAdmin, adminUsername: e.target.value})}
+                                onChange={(e) =>
+                                    setCreateWithAdmin({
+                                        ...createWithAdmin,
+                                        adminUsername: e.target.value
+                                    })
+                                }
                             />
                             <input
                                 type="password"
                                 placeholder="Admin-Passwort"
                                 value={createWithAdmin.adminPassword}
-                                onChange={e => setCreateWithAdmin({...createWithAdmin, adminPassword: e.target.value})}
+                                onChange={(e) =>
+                                    setCreateWithAdmin({
+                                        ...createWithAdmin,
+                                        adminPassword: e.target.value
+                                    })
+                                }
                             />
                             <input
                                 type="text"
                                 placeholder="Admin Vorname (optional)"
                                 value={createWithAdmin.adminFirstName}
-                                onChange={e => setCreateWithAdmin({...createWithAdmin, adminFirstName: e.target.value})}
+                                onChange={(e) =>
+                                    setCreateWithAdmin({
+                                        ...createWithAdmin,
+                                        adminFirstName: e.target.value
+                                    })
+                                }
                             />
                             <input
                                 type="text"
                                 placeholder="Admin Nachname (optional)"
                                 value={createWithAdmin.adminLastName}
-                                onChange={e => setCreateWithAdmin({...createWithAdmin, adminLastName: e.target.value})}
+                                onChange={(e) =>
+                                    setCreateWithAdmin({
+                                        ...createWithAdmin,
+                                        adminLastName: e.target.value
+                                    })
+                                }
                             />
                             <input
                                 type="email"
                                 placeholder="Admin E-Mail (optional)"
                                 value={createWithAdmin.adminEmail}
-                                onChange={e => setCreateWithAdmin({...createWithAdmin, adminEmail: e.target.value})}
+                                onChange={(e) =>
+                                    setCreateWithAdmin({
+                                        ...createWithAdmin,
+                                        adminEmail: e.target.value
+                                    })
+                                }
                             />
 
                             <button type="submit">Firma+Admin erstellen</button>
                         </form>
                     </section>
 
-                    {/*  --------  Liste aller Companies  -------- */}
+                    {/* (C) Liste aller Companies */}
                     <section className="cmp-section">
                         <h3>Bestehende Firmen</h3>
                         <ul className="cmp-list">
-                            {companies.map(co => (
+                            {companies.map((co) => (
                                 <li key={co.id} className="cmp-item">
                                     {editingCompany && editingCompany.id === co.id ? (
+                                        // --- Edit-Form ---
                                         <form onSubmit={handleSaveEdit} className="cmp-inline-form">
                                             <input
                                                 type="text"
                                                 value={editingCompany.name}
-                                                onChange={e => setEditingCompany({...editingCompany, name:e.target.value})}
+                                                onChange={(e) =>
+                                                    setEditingCompany({
+                                                        ...editingCompany,
+                                                        name: e.target.value
+                                                    })
+                                                }
                                             />
-                                            <label style={{display:'flex', alignItems:'center', gap:'4px'}}>
+                                            <label
+                                                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
+                                            >
                                                 <input
                                                     type="checkbox"
                                                     checked={editingCompany.active}
-                                                    onChange={e => setEditingCompany({...editingCompany, active: e.target.checked})}
+                                                    onChange={(e) =>
+                                                        setEditingCompany({
+                                                            ...editingCompany,
+                                                            active: e.target.checked
+                                                        })
+                                                    }
                                                 />
                                                 Aktiv?
                                             </label>
                                             <button type="submit">Speichern</button>
-                                            <button type="button" onClick={() => setEditingCompany(null)}>Abbruch</button>
+                                            <button type="button" onClick={() => setEditingCompany(null)}>
+                                                Abbruch
+                                            </button>
                                         </form>
                                     ) : (
-                                        <div className="cmp-company-row">
-                                            <div className="cmp-info">
-                                                <strong>{co.name}</strong>
-                                                <span className={co.active ? 'cmp-active' : 'cmp-inactive'}>
-                          {co.active ? '(Aktiv)' : '(Inaktiv)'}
-                        </span>
-                                                <span className="cmp-users">
-                          {co.userCount} User
-                        </span>
-                                                <span className="cmp-payment">
-                          {co.paid ? 'Bezahlt' : 'Offen'}
-                                                    {co.paymentMethod ? ` - ${co.paymentMethod}` : ''}
-                                                    {co.canceled ? ' (gekündigt)' : ''}
-                        </span>
+                                        // --- Anzeigemodus ---
+                                        <>
+                                            <div className="cmp-company-row">
+                                                <div className="cmp-info">
+                                                    <strong>{co.name}</strong>
+                                                    <span className={co.active ? 'cmp-active' : 'cmp-inactive'}>
+                            {co.active ? '(Aktiv)' : '(Inaktiv)'}
+                          </span>
+                                                    <span className="cmp-users">{co.userCount} User</span>
+                                                    <span className="cmp-payment">
+                            {co.paid ? 'Bezahlt' : 'Offen'}
+                                                        {co.paymentMethod ? ` - ${co.paymentMethod}` : ''}
+                                                        {co.canceled ? ' (gekündigt)' : ''}
+                          </span>
+                                                </div>
+                                                <div className="cmp-btns">
+                                                    <button onClick={() => startEdit(co)}>Bearbeiten</button>
+                                                    <button onClick={() => toggleActive(co)}>
+                                                        {co.active ? 'Deaktiv' : 'Aktiv'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() =>
+                                                            handleUpdatePayment(
+                                                                co,
+                                                                !co.paid,
+                                                                co.paymentMethod || 'manuell'
+                                                            )
+                                                        }
+                                                    >
+                                                        Payment {co.paid ? 'zurücksetzen' : 'bestätigen'}
+                                                    </button>
+                                                    <button onClick={() => togglePayments(co)}>
+                                                        {openPayments[co.id]
+                                                            ? 'Zahlungen ausblenden'
+                                                            : 'Zahlungen anzeigen'}
+                                                    </button>
+                                                    <button className="danger" onClick={() => handleDeleteCompany(co.id)}>
+                                                        Löschen
+                                                    </button>
+                                                </div>
                                             </div>
-                                            <div className="cmp-btns">
-                                                <button onClick={() => startEdit(co)}>Bearbeiten</button>
-                                                <button onClick={() => toggleActive(co)}>
-                                                    {co.active ? 'Deaktiv' : 'Aktiv'}
-                                                </button>
-                                                <button onClick={() => handleUpdatePayment(co, !co.paid, co.paymentMethod || 'manuell')}>Payment {co.paid ? 'zurücksetzen' : 'bestätigen'}</button>
-                                                <button onClick={() => togglePayments(co)}>
-                                                    {openPayments[co.id] ? 'Zahlungen ausblenden' : 'Zahlungen anzeigen'}
-                                                </button>
-                                                <button className="danger" onClick={() => handleDeleteCompany(co.id)}>Löschen</button>
-                                            </div>
-                                        </div>
-                                        {openPayments[co.id] && (
-                                            <table className="cmp-payments-table">
-                                                <thead>
+
+                                            {/* Zahlungen (wenn geöffnet) */}
+                                            {openPayments[co.id] && (
+                                                <table className="cmp-payments-table">
+                                                    <thead>
                                                     <tr>
                                                         <th>ID</th>
                                                         <th>Betrag</th>
                                                         <th>Status</th>
                                                         <th>Erstellt</th>
                                                     </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {(paymentDetails[co.id] || []).map(p => (
+                                                    </thead>
+                                                    <tbody>
+                                                    {(paymentDetails[co.id] || []).map((p) => (
                                                         <tr key={p.id}>
                                                             <td>{p.id}</td>
-                                                            <td>{(p.amount / 100).toFixed(2)} {p.currency?.toUpperCase()}</td>
+                                                            <td>
+                                                                {(p.amount / 100).toFixed(2)}{' '}
+                                                                {p.currency?.toUpperCase()}
+                                                            </td>
                                                             <td>{p.status}</td>
-                                                            <td>{new Date(p.created * 1000).toLocaleString()}</td>
+                                                            <td>
+                                                                {new Date(p.created * 1000).toLocaleString()}
+                                                            </td>
                                                         </tr>
                                                     ))}
-                                                </tbody>
-                                            </table>
-                                        )}
+                                                    </tbody>
+                                                </table>
+                                            )}
+                                        </>
                                     )}
                                 </li>
                             ))}

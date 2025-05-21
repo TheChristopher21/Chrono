@@ -89,6 +89,7 @@ const Login = () => {
 
         const user  = res.user ?? currentUser ?? {};   // ⬅️ fallback {}
         const roles = user.roles ?? [];                // ⬅️ immer Array
+        const isPercentageUser = user.isPercentage ?? user.percentage ?? false;
 
         /* optional redirect */
         const next  = new URLSearchParams(location.search).get('next');
@@ -96,7 +97,7 @@ const Login = () => {
         if (next)                    navigate(next, { replace: true });
         else if (roles.includes('ROLE_SUPERADMIN')) navigate('/superadmin/companies', { replace: true });
         else if (roles.includes('ROLE_ADMIN'))      navigate('/admin',              { replace: true });
-        else if (user.isPercentage)                navigate('/percentage-punch',   { replace: true });
+        else if (isPercentageUser)                navigate('/percentage-punch',   { replace: true });
         else                                       navigate('/user',               { replace: true });
     };
 
