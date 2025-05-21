@@ -14,6 +14,7 @@ import {
     formatLocalDate,
     computeTotalMinutesInRange
 } from './hourDashUtils';
+import { formatDiffDecimal } from '../UserDashboard/userDashUtils';
 
 import HourlyWeekOverview from './HourlyWeekOverview';
 import HourlyVacationSection from './HourlyVacationSection';
@@ -63,12 +64,10 @@ const HourlyDashboard = () => {
     const [dailyNotes, setDailyNotes] = useState({});
     const [noteEditVisibility, setNoteEditVisibility] = useState({});
 
-    // 1) Profil laden
-    useEffect(() => {
-        async function fetchProfile() {
-            try {
-                const res = await api.get('/api/auth/me');
-                const profile = res.data;
+    async function loadProfile() {
+        try {
+            const res = await api.get('/api/auth/me');
+            const profile = res.data;
                 if (!profile.weeklySchedule) {
                     profile.weeklySchedule = [
                         {
@@ -83,12 +82,15 @@ const HourlyDashboard = () => {
                     ];
                     profile.scheduleCycle = 1;
                 }
-                setUserProfile(profile);
-            } catch (err) {
-                console.error(t('personalData.errorLoading'), err);
-            }
+            setUserProfile(profile);
+        } catch (err) {
+            console.error(t('personalData.errorLoading'), err);
         }
-        fetchProfile();
+    }
+
+    // 1) Profil laden
+    useEffect(() => {
+        loadProfile();
     }, [t]);
 
     // 2) Einträge, Urlaub, Korrekturen
@@ -163,6 +165,8 @@ const HourlyDashboard = () => {
                     await api.post('/api/timetracking/punch', null, {
                         params: { username: cardUser }
                     });
+                    fetchEntries();
+                    loadProfile();
                 }
             }
         } catch (err) {
@@ -180,6 +184,7 @@ const HourlyDashboard = () => {
             setPunchMessage(`${t("punchMessage")}: ${userProfile.username}`);
             setTimeout(() => setPunchMessage(''), 3000);
             fetchEntries();
+            loadProfile();
         } catch (err) {
             console.error('Punch-Fehler:', err);
             notify(t('manualPunchError'));
@@ -195,6 +200,7 @@ const HourlyDashboard = () => {
     const firstOfMonth = new Date(year, month, 1, 0, 0, 0);
     const lastOfMonth = new Date(year, month + 1, 0, 23, 59, 59);
     const monthlyTotalMins = computeTotalMinutesInRange(allEntries, firstOfMonth, lastOfMonth);
+    const overtimeBalanceStr = formatDiffDecimal(userProfile?.trackingBalanceInMinutes || 0);
 
     // 6) Drucken
     async function handlePrintReport() {
@@ -349,6 +355,9 @@ const HourlyDashboard = () => {
                 <div className="personal-info">
                     <p>
                         <strong>{t("usernameLabel")}:</strong> {userProfile.username}
+                    </p>
+                    <p>
+                        <strong>{t("overtimeBalance")}:</strong> {overtimeBalanceStr}
                     </p>
                 </div>
             </header>

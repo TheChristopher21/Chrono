@@ -81,29 +81,30 @@ function UserDashboard() {
         ? Number(userProfile.dailyWorkHours || 8)
         : 8;
 
+    async function loadProfile() {
+        try {
+            const res = await api.get('/api/auth/me');
+            const profile = res.data;
+
+            // WeeklySchedule fix
+            if (profile.weeklySchedule && !Array.isArray(profile.weeklySchedule)) {
+                profile.weeklySchedule = [profile.weeklySchedule];
+            }
+            if (!profile.weeklySchedule) {
+                profile.weeklySchedule = [
+                    { monday: 8, tuesday: 8, wednesday: 8, thursday: 8, friday: 8, saturday: 0, sunday: 0 }
+                ];
+                profile.scheduleCycle = 1;
+            }
+            setUserProfile(profile);
+        } catch (err) {
+            console.error(t('personalData.errorLoading'), err);
+        }
+    }
+
     // 1) Profil laden
     useEffect(() => {
-        async function fetchProfile() {
-            try {
-                const res = await api.get('/api/auth/me');
-                const profile = res.data;
-
-                // WeeklySchedule fix
-                if (profile.weeklySchedule && !Array.isArray(profile.weeklySchedule)) {
-                    profile.weeklySchedule = [profile.weeklySchedule];
-                }
-                if (!profile.weeklySchedule) {
-                    profile.weeklySchedule = [
-                        { monday: 8, tuesday: 8, wednesday: 8, thursday: 8, friday: 8, saturday: 0, sunday: 0 }
-                    ];
-                    profile.scheduleCycle = 1;
-                }
-                setUserProfile(profile);
-            } catch (err) {
-                console.error(t('personalData.errorLoading'), err);
-            }
-        }
-        fetchProfile();
+        loadProfile();
     }, [t, currentUser]);
 
     // 2) Daten laden
@@ -155,6 +156,7 @@ function UserDashboard() {
                         await api.post('/api/timetracking/punch', null, {
                             params: { username: cardUser }
                         });
+                        loadProfile();
                     } catch (err) {
                         console.error("Punch-Fehler:", err);
                     }
@@ -181,6 +183,7 @@ function UserDashboard() {
             const resEntries = await api.get(`/api/timetracking/history?username=${userProfile.username}`);
             const validEntries = (resEntries.data || []).filter(e => [1, 2, 3, 4].includes(e.punchOrder));
             setAllEntries(validEntries);
+            loadProfile();
         } catch (err) {
             console.error('Punch-Fehler:', err);
             notify(t("manualPunchError"));
@@ -434,6 +437,7 @@ function UserDashboard() {
     const weeklyDiffStr   = formatDiffDecimal(weeklyDiff);
     const monthlyDiffStr  = formatDiffDecimal(monthlyDiff);
     const overallDiffStr  = formatDiffDecimal(overallDiff);
+    const overtimeBalanceStr = formatDiffDecimal(userProfile?.trackingBalanceInMinutes || 0);
 
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
 
@@ -480,6 +484,7 @@ function UserDashboard() {
                     <p><strong>{t("weekBalance")}:</strong> {weeklyDiffStr}</p>
                     <p><strong>{t("monthBalance")}:</strong> {monthlyDiffStr}</p>
                     <p><strong>{t("overallBalance")}:</strong> {overallDiffStr}</p>
+                    <p><strong>{t("overtimeBalance")}:</strong> {overtimeBalanceStr}</p>
                 </div>
             </header>
 

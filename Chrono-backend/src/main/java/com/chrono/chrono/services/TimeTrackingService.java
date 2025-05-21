@@ -344,6 +344,9 @@ public class TimeTrackingService {
         logger.info("bookDailyBalances gestartet für {}", yesterday);
 
         userRepository.findAll().forEach(u -> {
+            if (Boolean.TRUE.equals(u.getIsPercentage())) {
+                return; // Prozentbasierte User werden wöchentlich abgerechnet
+            }
             int delta = computeDailyWorkDifference(u, yesterday.toString());
             int oldBal = Optional.ofNullable(u.getTrackingBalanceInMinutes()).orElse(0);
             u.setTrackingBalanceInMinutes(oldBal + delta);
@@ -411,6 +414,46 @@ public class TimeTrackingService {
         if (t.getStartTime() != null) return t.getStartTime();
         if (t.getEndTime()   != null) return t.getEndTime();
         return null;
+    }
+
+    // -------------------------------------------------------------------------
+    // WÖCHENTLICHE BALANCE FÜR PERCENTAGE-USER
+    // -------------------------------------------------------------------------
+    @Scheduled(cron = "0 10 0 * * MON")
+    @Transactional
+    public void bookWeeklyPercentageBalances() {
+        LocalDate mondayLastWeek = LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1);
+        logger.info("bookWeeklyPercentageBalances gestartet für Woche {}", mondayLastWeek);
+
+        userRepository.findAll().forEach(u -> {
+            if (Boolean.TRUE.equals(u.getIsPercentage())) {
+                int delta = computeWeeklyWorkDifference(u, mondayLastWeek);
+                int oldBal = Optional.ofNullable(u.getTrackingBalanceInMinutes()).orElse(0);
+                u.setTrackingBalanceInMinutes(oldBal + delta);
+            }
+        });
+
+        logger.info("✅ bookWeeklyPercentageBalances abgeschlossen für Woche {}", mondayLastWeek);
+    }
+
+    private int computeWeeklyWorkDifference(User user, LocalDate monday) {
+        // gearbeitete Minuten der Woche
+        int worked = getWeeklyBalance(user, monday);
+
+        // erwartete Minuten der Woche (ohne Prozentfaktor)
+        int expectedRaw = 0;
+        for (int i = 0; i < 7; i++) {
+            LocalDate day = monday.plusDays(i);
+            expectedRaw += workScheduleService.computeExpectedWorkMinutes(user, day);
+        }
+
+        int perc = Optional.ofNullable(user.getWorkPercentage()).orElse(100);
+        int expected = (int) Math.round(expectedRaw * (perc / 100.0));
+
+        int diff = worked - expected;
+        logger.debug("computeWeeklyWorkDifference: user={}, worked={}, expected={}, diff={}",
+                user.getUsername(), worked, expected, diff);
+        return diff;
     }
 
     // -------------------------------------------------------------------------

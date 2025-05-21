@@ -61,12 +61,10 @@ const PercentageDashboard = () => {
     const [printStartDate, setPrintStartDate] = useState(formatISO(new Date()));
     const [printEndDate, setPrintEndDate] = useState(formatISO(new Date()));
 
-    // Profil laden
-    useEffect(() => {
+    const loadProfile = useCallback(() => {
         api.get('/api/auth/me')
             .then(res => {
                 const p = res.data;
-                // Absicherung: defaults für isPercentage
                 if (p.isPercentage) {
                     if (p.workPercentage == null) p.workPercentage = 100;
                     if (p.annualVacationDays == null) p.annualVacationDays = 25;
@@ -79,6 +77,11 @@ const PercentageDashboard = () => {
                 notify("Fehler beim Laden des Nutzerprofils");
             });
     }, [notify]);
+
+    // Profil laden
+    useEffect(() => {
+        loadProfile();
+    }, [loadProfile]);
 
     // Einträge laden
     const loadEntries = useCallback(() => {
@@ -119,6 +122,7 @@ const PercentageDashboard = () => {
             setPunchMsg(`Eingestempelt: ${cardUser}`);
             setTimeout(() => setPunchMsg(''), 3000);
             loadEntries();
+            loadProfile();
         } catch (err) {
             console.error('NFC‑Fehler', err);
         }
@@ -132,6 +136,7 @@ const PercentageDashboard = () => {
             setPunchMsg(`Manuell gestempelt: ${profile.username}`);
             setTimeout(() => setPunchMsg(''), 3000);
             loadEntries();
+            loadProfile();
         } catch (e) {
             console.error('Punch‑Fehler', e);
             notify('Fehler beim Stempeln');
@@ -288,14 +293,14 @@ const PercentageDashboard = () => {
                 <h2>Percentage‑Dashboard</h2>
                 <div className="personal-info">
                     <p>
-                        <strong>User:</strong> {profile.username}
+                        <strong>{t('usernameLabel')}:</strong> {profile.username}
                     </p>
                     <p>
                         <strong>Arbeits‑%:</strong> {profile.workPercentage}%
                     </p>
                     {profile.trackingBalanceInMinutes != null && (
                         <p className="overtime-info">
-                            <strong>Überstunden:</strong> {profile.trackingBalanceInMinutes} min
+                            <strong>{t('overtimeBalance')}:</strong> {minutesToHours(profile.trackingBalanceInMinutes)}
                             <span className="tooltip-wrapper">
                 <span className="tooltip-icon">ℹ️</span>
                 <span className="tooltip-box">
