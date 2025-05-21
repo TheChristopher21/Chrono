@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import  { useState, useEffect, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import 'jspdf-autotable';
-import fileDownload from 'js-file-download';
 import jsPDF from 'jspdf';
 
 import {
