@@ -229,9 +229,7 @@ const AdminWeekSection = ({
                                                 {weekH}h {weekM}m
                                             </div>
                                             <div className="user-weekly-balance">
-                                                <strong>
-                                                    Tracking-Bilanz (inkl. Urlaub/Überstunden):
-                                                </strong>{" "}
+                                                <strong>{t('overtimeBalance')}:</strong>{" "}
                                                 {tbSign}
                                                 {tbH}h {tbM}m
                                             </div>
