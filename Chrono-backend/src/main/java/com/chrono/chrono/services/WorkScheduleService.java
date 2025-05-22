@@ -29,7 +29,7 @@ public class WorkScheduleService {
         // Wenn ein effektives Datum gesetzt ist und das Datum vor diesem liegt,
         // verwenden wir den Fallback (dailyWorkHours oder 8 Stunden).
         if (user.getScheduleEffectiveDate() != null && date.isBefore(user.getScheduleEffectiveDate())) {
-            return (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.0;
+            return (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.5;
         }
         List<Map<String, Double>> schedule = user.getWeeklySchedule();
         if (schedule != null && user.getScheduleCycle() != null) {
@@ -47,7 +47,7 @@ public class WorkScheduleService {
                 e.printStackTrace();
             }
         }
-        return (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.0;
+        return (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.5;
     }
 
     public boolean isDayOff(User user, LocalDate date) {

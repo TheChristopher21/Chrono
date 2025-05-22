@@ -7,6 +7,7 @@ import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.TimeTrackingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -50,6 +51,13 @@ public class AdminTimeTrackingController {
         }
     }
 
+    @PostMapping("/rebuild-balances")
+    @PreAuthorize("hasRole('ADMIN')")       // ⇦  Zugriffsschutz
+    public ResponseEntity<String> rebuildBalances() {
+        timeTrackingService.rebuildAllUserBalancesOnce();
+        return ResponseEntity.accepted()
+                .body("Balance-Rebuild erfolgreich angestoßen.");
+    }
 
 
     @GetMapping("/admin/weekly-balance")

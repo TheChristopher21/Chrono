@@ -31,8 +31,7 @@ public interface TimeTrackingRepository extends JpaRepository<TimeTracking, Long
     List<TimeTracking> findByUserAndStartTimeBetween(User user,
                                                      LocalDateTime start,
                                                      LocalDateTime end);
-    List<TimeTracking> findByUserAndStartTimeBetweenOrderByPunchOrderAsc(
-            User user, LocalDateTime start, LocalDateTime end);
+
     List<TimeTracking> findByUserAndDailyDate(User user, LocalDate dailyDate);
 
     List<TimeTracking> findByEndTimeIsNullAndStartTimeBetween(
@@ -61,6 +60,22 @@ public interface TimeTrackingRepository extends JpaRepository<TimeTracking, Long
     List<TimeTracking> findByUserAndDailyDateAndPunchOrder(User user,
                                                            LocalDate dailyDate,
                                                            Integer punchOrder);
+
+    List<TimeTracking> findByUserAndStartTimeBetweenOrderByPunchOrderAsc(
+            User user,
+            LocalDateTime from,
+            LocalDateTime to);
+
+    /*   DISTINCT-Liste aller Tage, an denen der User überhaupt gestempelt hat
+         – wird für komplette Salden-Neuberechnungen verwendet                     */
+    @Query("""
+           select distinct
+                  coalesce(t.dailyDate, function('DATE', t.startTime))
+           from   TimeTracking t
+           where  t.user = :user
+           order  by 1
+           """)
+    List<LocalDate> findDistinctTrackedDatesByUser(@Param("user") User user);
 
     /* ---------- bestehende Helfer ---------- */
 

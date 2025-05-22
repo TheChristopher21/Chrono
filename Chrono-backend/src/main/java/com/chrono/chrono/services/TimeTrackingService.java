@@ -29,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.IsoFields;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -404,8 +405,8 @@ public class TimeTrackingService {
             expected = 0;
         } else {
             expected = workScheduleService.computeExpectedWorkMinutes(user, day);
-            expected = Math.min(expected, 8 * 60);                       // 42h-/8h-Deckel
-            if (Boolean.TRUE.equals(user.getIsPercentage())) {
+
+            expected = Math.min(expected, FULL_DAY_MINUTES);            if (Boolean.TRUE.equals(user.getIsPercentage())) {
                 int perc = Optional.ofNullable(user.getWorkPercentage()).orElse(100);
                 expected = (int) Math.round(expected * (perc / 100.0));
             }
@@ -449,19 +450,39 @@ public class TimeTrackingService {
      * Summiert die Tages-Differenzen einer Kalenderwoche (Mo-So).
      * Liefert also genau den Wert, den wir auf das Konto buchen.
      */
+    /**
+     * Ermittelt die Wochen-Differenz (Ist-Minuten – Soll-Minuten) für einen User,
+     * wobei percentage-User ein fixes Wochen-Soll haben (42h30 × Prozent).
+     */
     private int computeWeeklyWorkDifference(User user, LocalDate monday) {
 
-        int weeklyDiff = 0;
-        for (int i = 0; i < 7; i++) {
-            LocalDate day = monday.plusDays(i);
-            weeklyDiff += computeDailyWorkDifference(user, day.toString());
+        // --- 1) Ist-Minuten -----------------------------------------------------
+        int worked = getWeeklyBalance(user, monday);  // berechnet bereits "Netto" (ohne Pausen)
+
+        // --- 2) Soll-Minuten ----------------------------------------------------
+        int expected;
+
+        if (Boolean.TRUE.equals(user.getIsPercentage())) {
+            // Basis-Woche = 42 h 30 min = 2550 min
+            int baseWeekMinutes = 2550;
+            int perc = Optional.ofNullable(user.getWorkPercentage()).orElse(100);
+            expected = (int) Math.round(baseWeekMinutes * (perc / 100.0));
+
+        } else {
+            // Vollzeit oder Stundenlöhner → auf Tages-Basis aus Wochenplan
+            expected = 0;
+            for (int i = 0; i < 7; i++) {
+                LocalDate day = monday.plusDays(i);
+                expected += workScheduleService.computeExpectedWorkMinutes(user, day);
+            }
         }
 
-        logger.debug("computeWeeklyWorkDifference: user={}, weekOf={}, diff={} min",
-                user.getUsername(), monday, weeklyDiff);
-
-        return weeklyDiff;
+        int diff = worked - expected;
+        logger.debug("computeWeeklyWorkDifference: user={}, weekOf={}, worked={}, expected={}, diff={}",
+                user.getUsername(), monday, worked, expected, diff);
+        return diff;
     }
+
 
 
     // -------------------------------------------------------------------------
@@ -885,4 +906,40 @@ public class TimeTrackingService {
         logger.debug("getWeeklyBalance: user={}, monday={}, total={} min", user.getUsername(), monday, total);
         return total;
     }
+    @Transactional
+    public void rebuildAllUserBalancesOnce() {
+
+        logger.warn("⚠  FULL BALANCE REBUILD triggered …");
+
+        userRepository.findAll().forEach(user -> {
+
+            int saldo = 0;
+
+            /* alle Tage mit Stempelungen holen */
+            List<LocalDate> days =
+                    timeTrackingRepository.findDistinctTrackedDatesByUser(user);
+
+            /* pro Tag / pro Woche verrechnen */
+            if (Boolean.TRUE.equals(user.getIsPercentage())) {
+
+                /* Percentage-User ⇒ erst Tagesdifferenzen sammeln,
+                   danach Wochen-Aggregate bilden                        */
+                Map<Integer/*isoWeek*/, Integer/*delta*/> perWeek = new HashMap<>();
+                days.forEach(day -> {
+                    int diff = computeDailyWorkDifference(user, day.toString());
+                    int week = day.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
+                    perWeek.merge(week, diff, Integer::sum);
+                });
+                saldo = perWeek.values().stream().mapToInt(Integer::intValue).sum();
+
+            } else {                 // Normal- bzw. Stunden-User
+                for (LocalDate d : days)
+                    saldo += computeDailyWorkDifference(user, d.toString());
+            }
+
+            user.setTrackingBalanceInMinutes(saldo);
+            logger.info(" → {} = {} min", user.getUsername(), saldo);
+        });
+    }
 }
+
