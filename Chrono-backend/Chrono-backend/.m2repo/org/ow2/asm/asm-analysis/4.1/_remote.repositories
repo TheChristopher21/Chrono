@@ -1,0 +1,5 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Sun Jan 19 12:23:16 CET 2025
+asm-analysis-4.1-sources.jar>central=
+asm-analysis-4.1.jar>central=
+asm-analysis-4.1.pom>central=
