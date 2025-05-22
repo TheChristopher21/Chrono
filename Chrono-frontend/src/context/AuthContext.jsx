@@ -5,18 +5,13 @@ import {
     useState,
     useEffect,
     useCallback,
+    useRef,
 } from 'react';
 import api from '../utils/api';
 import { useNotification } from './NotificationContext';
 
-const AuthContext       = createContext();
-const SESSION_DURATION  = 30 * 60 * 1000;
-
-/* Helper */
-const isSessionExpired = () => {
-    const t = parseInt(localStorage.getItem('loginTime') ?? '0', 10);
-    return Date.now() - t >= SESSION_DURATION;
-};
+const AuthContext        = createContext();
+const INACTIVITY_DURATION = 10 * 60 * 1000;
 
 export const AuthProvider = ({ children }) => {
     const { notify }        = useNotification();
@@ -26,29 +21,37 @@ export const AuthProvider = ({ children }) => {
     /* ---------- Init --------------------------------------------- */
     useEffect(() => {
         const stored = localStorage.getItem('token');
-        if (stored && !isSessionExpired()) {
+        if (stored) {
             setAuthToken(stored);
             api.defaults.headers.common.Authorization = `Bearer ${stored}`;
             fetchCurrentUser();          //  ⬅️ holt User & setzt State
-            startSessionTimer();
+            resetInactivityTimer();
         } else {
             logout();
         }
     }, []);
 
     /* ---------- Timer -------------------------------------------- */
-    const startSessionTimer = useCallback(() => {
-        const remaining =
-            SESSION_DURATION -
-            (Date.now() - parseInt(localStorage.getItem('loginTime') ?? '0', 10));
-
-        const id = setTimeout(() => {
+    const timerRef = useRef(null);
+    const resetInactivityTimer = useCallback(() => {
+        clearTimeout(timerRef.current);
+        timerRef.current = setTimeout(() => {
             logout();
             notify('Session expired. Please log in again.');
-        }, Math.max(0, remaining));
+        }, INACTIVITY_DURATION);
+    }, [logout, notify]);
 
-        return () => clearTimeout(id);
-    }, [notify]);
+    useEffect(() => {
+        if (!authToken) {
+            return;
+        }
+        const events = ['click', 'mousemove', 'keydown', 'scroll'];
+        events.forEach((e) => window.addEventListener(e, resetInactivityTimer));
+        return () => {
+            events.forEach((e) => window.removeEventListener(e, resetInactivityTimer));
+            clearTimeout(timerRef.current);
+        };
+    }, [authToken, resetInactivityTimer]);
 
     /* ---------- User laden --------------------------------------- */
     const fetchCurrentUser = async () => {
@@ -70,12 +73,11 @@ export const AuthProvider = ({ children }) => {
             const { token } = data;
 
             localStorage.setItem('token', token);
-            localStorage.setItem('loginTime', Date.now().toString());
             api.defaults.headers.common.Authorization = `Bearer ${token}`;
             setAuthToken(token);
 
             const user = await fetchCurrentUser();   // garantiert Objekt
-            startSessionTimer();
+            resetInactivityTimer();
             return { success: true, user };
         } catch (err) {
             return { success: false, message: err.message };
@@ -85,7 +87,6 @@ export const AuthProvider = ({ children }) => {
     /* ---------- Logout ------------------------------------------- */
     const logout = () => {
         localStorage.removeItem('token');
-        localStorage.removeItem('loginTime');
         setAuthToken(null);
         setCurrentUser(null);
         delete api.defaults.headers.common.Authorization;
