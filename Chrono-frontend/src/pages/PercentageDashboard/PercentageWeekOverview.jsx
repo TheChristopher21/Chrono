@@ -25,8 +25,8 @@ const PercentageWeekOverview = ({
                                 }) => {
     const { t } = useTranslation();
 
-    // Sieben Tage ab "monday"
-    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
+    // Fünf Tage ab "monday"
+    const weekDates = Array.from({ length: 5 }, (_, i) => addDays(monday, i));
     const isoStrings = weekDates.map(formatISO);
 
     // dayMap: isoString -> Array
