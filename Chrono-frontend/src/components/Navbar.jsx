@@ -1,106 +1,183 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
-import api from '../utils/api';
+/****************************************
+ * Navbar.jsx · mit Hamburger-Menü
+ ****************************************/
+import  { useState, useEffect } from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { useTranslation } from '../context/LanguageContext';
 
-// --------------------------------------------------------------
-// AuthContext – stellt login/logout & User‑Daten global bereit
-// --------------------------------------------------------------
-export const AuthContext = createContext(null);
+// Importiere dein CSS:
+import '../styles/Navbar.css';
 
-// Bequemer Hook zum Konsumieren des Contexts
-export const useAuth = () => useContext(AuthContext);
+const Navbar = () => {
+    const { authToken, logout, currentUser } = useAuth();
+    const { t } = useTranslation();
+    const location = useLocation();
 
-export default function AuthProvider({ children }) {
-    const [authToken, setAuthToken] = useState(null);
-    const [currentUser, setCurrentUser] = useState(null);
-
-    /* ------------------------------------------------------------
-       Inactivity‑Logout (30 Minuten ohne Benutzerinteraktion)
-    ------------------------------------------------------------ */
-    const inactivityTimer = useRef(null);
-    const INACTIVITY_LIMIT = 1_000 * 60 * 30; // 30 min
-
-    /* ------------------------------------------------------------
-       logout – **oberhalb** der Hooks, damit es bereits
-       initialisiert ist, wenn useEffect es das erste Mal aufruft
-    ------------------------------------------------------------ */
-    function logout() {
-        localStorage.removeItem('token');
-
-        // Context‑State leeren
-        setAuthToken(null);
-        setCurrentUser(null);
-
-        // Axios‑Defaults bereinigen
-        delete api.defaults.headers.common.Authorization;
-
-        // laufenden Timer stoppen
-        clearTimeout(inactivityTimer.current);
+    // Bestimme, ob es sich um eine "öffentliche" Seite handelt
+    let publicRoutes = ['/login', '/register'];
+    if (!authToken) {
+        publicRoutes.push('/');
     }
+    const isPublicPage = publicRoutes.includes(location.pathname);
 
-    /* ------------------------------------------------------------
-       Hilfsfunktion zum Zurücksetzen/Starten des Inactivity‑Timers
-    ------------------------------------------------------------ */
-    const resetInactivityTimer = useCallback(() => {
-        clearTimeout(inactivityTimer.current);
-        inactivityTimer.current = setTimeout(logout, INACTIVITY_LIMIT);
+    // Helligkeits-Logik
+    const [brightness, setBrightness] = useState(1);
+    useEffect(() => {
+        const saved = localStorage.getItem('appBrightness');
+        if (saved) setBrightness(Number(saved));
     }, []);
-
-    /* ------------------------------------------------------------
-       login – Token sichern & Benutzerdaten laden
-    ------------------------------------------------------------ */
-    const login = async (token) => {
-        localStorage.setItem('token', token);
-        api.defaults.headers.common.Authorization = `Bearer ${token}`;
-        setAuthToken(token);
-
-        await fetchCurrentUser();
-        resetInactivityTimer();
-    };
-
-    /* ------------------------------------------------------------
-       Aktuellen Benutzer vom Backend holen
-    ------------------------------------------------------------ */
-    const fetchCurrentUser = async () => {
-        try {
-            const { data } = await api.get('/users/me');
-            setCurrentUser(data);
-        } catch (err) {
-            console.error('Unable to fetch user – logging out', err);
-            logout();
-        }
-    };
-
-    /* ------------------------------------------------------------
-       Beim ersten Mount: gespeichertes Token laden (falls vorhanden)
-    ------------------------------------------------------------ */
     useEffect(() => {
-        const stored = localStorage.getItem('token');
-        if (!stored) return;                    // nichts zu tun → kein Token
+        document.documentElement.style.setProperty('--app-brightness', brightness);
+        localStorage.setItem('appBrightness', brightness);
+    }, [brightness]);
 
-        api.defaults.headers.common.Authorization = `Bearer ${stored}`;
-        setAuthToken(stored);
-        fetchCurrentUser();
-        resetInactivityTimer();
-    }, [resetInactivityTimer]);
-
-    /* ------------------------------------------------------------
-       Globale Event‑Listener für Benutzeraktivität
-    ------------------------------------------------------------ */
+    // Theme-Logik (Light / Dark)
+    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
     useEffect(() => {
-        const events = ['mousemove', 'keydown', 'click', 'wheel', 'scroll', 'touchstart'];
-        events.forEach((e) => window.addEventListener(e, resetInactivityTimer));
-        return () => events.forEach((e) => window.removeEventListener(e, resetInactivityTimer));
-    }, [resetInactivityTimer]);
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+    }, [theme]);
 
-    /* ------------------------------------------------------------
-       Context‑Wert exportieren
-    ------------------------------------------------------------ */
-    const value = {
-        authToken,
-        currentUser,
-        login,
-        logout,
+    const toggleTheme = () => {
+        setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
     };
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
-}
+    // Navbar UI
+    return (
+        <div className="scoped-navbar">
+            <nav className="navbar">
+                {/* Logo */}
+                <div className="navbar-brand">
+                    <Link to="/" className="navbar-logo">
+                        Chrono
+                    </Link>
+                </div>
+
+                {/* Hamburger Toggle */}
+                <input type="checkbox" id="nav-toggle" className="nav-toggle" />
+                <label htmlFor="nav-toggle" className="nav-toggle-label">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </label>
+
+                <ul className="navbar-links">
+                    {/* Wenn nicht eingeloggt ODER public Page => Login+Register */}
+                    {!authToken || isPublicPage ? (
+                        <>
+                            <li>
+                                <Link to="/login">{t('navbar.login', 'Login')}</Link>
+                            </li>
+                            <li>
+                                <Link to="/register">{t('navbar.register', 'Registrieren')}</Link>
+                            </li>
+                            <li>
+                                <div className="brightness-control">
+                                    <label htmlFor="brightness-slider">
+                                        {t('navbar.brightness', 'Helligkeit')}
+                                    </label>
+                                    <input
+                                        id="brightness-slider"
+                                        type="range"
+                                        min="0.5"
+                                        max="1.5"
+                                        step="0.01"
+                                        value={brightness}
+                                        onChange={(e) => setBrightness(Number(e.target.value))}
+                                    />
+                                    <span>{Math.round(brightness * 100)}%</span>
+                                </div>
+                            </li>
+                            <li>
+                                <button onClick={toggleTheme}>
+                                    {theme === 'light'
+                                        ? t('darkMode', 'Dark Mode')
+                                        : t('lightMode', 'Light Mode')}
+                                </button>
+                            </li>
+                        </>
+                    ) : (
+                        <>
+                            {/* Andernfalls => private Links (Admin oder User) */}
+                            {currentUser?.roles?.includes('ROLE_SUPERADMIN') ? (
+                                <>
+                                    <li>
+                                        <Link to="/superadmin/companies">
+                                            {t('navbar.companyManagement', 'Firmen')}
+                                        </Link>
+                                    </li>
+                                </>
+                            ) : currentUser?.roles?.includes('ROLE_ADMIN') ? (
+                                <>
+                                    <li>
+                                        <Link to="/admin">{t('navbar.adminStart', 'Admin‑Start')}</Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/admin/users">
+                                            {t('navbar.userManagement', 'Benutzerverwaltung')}
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/admin/change-password">
+                                            {t('admin.changePasswordTitle', 'Passwort ändern')}
+                                        </Link>
+                                    </li>
+                                </>
+                            ) : (
+                                <>
+                                    <li>
+                                        <Link to="/user">
+                                            {t('navbar.myDashboard', 'Mein Dashboard')}
+                                        </Link>
+                                    </li>
+                                    <li>
+                                        <Link to="/profile">
+                                            {t('navbar.profile', 'Mein Profil')}
+                                        </Link>
+                                    </li>
+                                </>
+                            )}
+
+                            {/* Username + Logout */}
+                            <li className="navbar-username">
+                                {t('navbar.hi', 'Hi')}, {currentUser?.username}
+                            </li>
+                            <li>
+                                <button className="navbar-logout" onClick={logout}>
+                                    {t('navbar.logout', 'Logout')}
+                                </button>
+                            </li>
+                            <li>
+                                <div className="brightness-control">
+                                    <label htmlFor="brightness-slider">
+                                        {t('navbar.brightness', 'Helligkeit')}
+                                    </label>
+                                    <input
+                                        id="brightness-slider"
+                                        type="range"
+                                        min="0.5"
+                                        max="1.5"
+                                        step="0.01"
+                                        value={brightness}
+                                        onChange={(e) => setBrightness(Number(e.target.value))}
+                                    />
+                                    <span>{Math.round(brightness * 100)}%</span>
+                                </div>
+                            </li>
+                            <li>
+                                <button onClick={toggleTheme}>
+                                    {theme === 'light'
+                                        ? t('darkMode', 'Dark Mode')
+                                        : t('lightMode', 'Light Mode')}
+                                </button>
+                            </li>
+                        </>
+                    )}
+                </ul>
+            </nav>
+        </div>
+    );
+};
+
+export default Navbar;

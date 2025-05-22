@@ -10,13 +10,21 @@ import {
 import api from '../utils/api';
 import { useNotification } from './NotificationContext';
 
-const AuthContext        = createContext();
-const INACTIVITY_DURATION = 10 * 60 * 1000;
+const AuthContext = createContext();
+const INACTIVITY_DURATION = 10 * 60 * 1000; // 10 min
 
 export const AuthProvider = ({ children }) => {
-    const { notify }        = useNotification();
-    const [authToken, setAuthToken]   = useState(null);
+    const { notify } = useNotification();
+    const [authToken, setAuthToken] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
+
+    /* ---------- Logout ------------------------------------------- */
+    const logout = () => {
+        localStorage.removeItem('token');
+        setAuthToken(null);
+        setCurrentUser(null);
+        delete api.defaults.headers.common.Authorization;
+    };
 
     /* ---------- Init --------------------------------------------- */
     useEffect(() => {
@@ -24,7 +32,7 @@ export const AuthProvider = ({ children }) => {
         if (stored) {
             setAuthToken(stored);
             api.defaults.headers.common.Authorization = `Bearer ${stored}`;
-            fetchCurrentUser();          //  ⬅️ holt User & setzt State
+            fetchCurrentUser();              //  ⬅️ holt User & setzt State
             resetInactivityTimer();
         } else {
             logout();
@@ -33,6 +41,7 @@ export const AuthProvider = ({ children }) => {
 
     /* ---------- Timer -------------------------------------------- */
     const timerRef = useRef(null);
+
     const resetInactivityTimer = useCallback(() => {
         clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => {
@@ -42,11 +51,11 @@ export const AuthProvider = ({ children }) => {
     }, [logout, notify]);
 
     useEffect(() => {
-        if (!authToken) {
-            return;
-        }
+        if (!authToken) return;
+
         const events = ['click', 'mousemove', 'keydown', 'scroll'];
         events.forEach((e) => window.addEventListener(e, resetInactivityTimer));
+
         return () => {
             events.forEach((e) => window.removeEventListener(e, resetInactivityTimer));
             clearTimeout(timerRef.current);
@@ -62,7 +71,7 @@ export const AuthProvider = ({ children }) => {
         } catch (err) {
             console.error('⚠️ /api/auth/me fehlgeschlagen', err);
             logout();
-            return {};                       // niemals null/undefined zurückgeben
+            return {}; // niemals null/undefined zurückgeben
         }
     };
 
@@ -82,14 +91,6 @@ export const AuthProvider = ({ children }) => {
         } catch (err) {
             return { success: false, message: err.message };
         }
-    };
-
-    /* ---------- Logout ------------------------------------------- */
-    const logout = () => {
-        localStorage.removeItem('token');
-        setAuthToken(null);
-        setCurrentUser(null);
-        delete api.defaults.headers.common.Authorization;
     };
 
     return (
