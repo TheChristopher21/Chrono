@@ -11,6 +11,8 @@ import {
     getExpectedHoursForDay,
     computeDailyDiffValue,
     computeDailyDiff,
+    computeDayTotalMinutes,
+    computeTotalMinutesInRange,
     isLateTime,
 } from "./adminDashboardUtils";
 
@@ -194,6 +196,25 @@ const AdminWeekSection = ({
                             const weekH = Math.floor(weekAbs / 60);
                             const weekM = weekAbs % 60;
 
+                            const isHourly = userConfig.isHourly;
+                            const isPercentage = userConfig.isPercentage;
+
+                            // Arbeitszeit-Summen für Stundenlöhner
+                            let weekWorked = 0;
+                            let monthWorked = 0;
+                            if (isHourly) {
+                                weekDates.forEach((d) => {
+                                    const iso = formatLocalDateYMD(d);
+                                    const dayEntries = dayMap[iso] || [];
+                                    weekWorked += computeDayTotalMinutes(dayEntries);
+                                });
+
+                                const monthStart = new Date(selectedMonday.getFullYear(), selectedMonday.getMonth(), 1);
+                                const monthEnd = new Date(selectedMonday.getFullYear(), selectedMonday.getMonth() + 1, 0, 23, 59, 59);
+                                const userEntries = allTracks.filter(tt => tt.username === username);
+                                monthWorked = computeTotalMinutesInRange(userEntries, monthStart, monthEnd);
+                            }
+
                             /* Globale Tracking-Bilanz */
                             const tb =
                                 weeklyBalances.find((wb) => wb.username === username)
@@ -202,6 +223,19 @@ const AdminWeekSection = ({
                             const tbAbs = Math.abs(tb);
                             const tbH = Math.floor(tbAbs / 60);
                             const tbM = tbAbs % 60;
+
+                            let weekExpectedMin = 0;
+                            if (isPercentage) {
+                                const perc = (userConfig.workPercentage ?? 100) / 100;
+                                weekExpectedMin = Math.round(510 * perc * 7);
+                            } else if (!isHourly) {
+                                weekDates.forEach((d) => {
+                                    const exp = getExpectedHoursForDay(d, userConfig, defaultExpectedHours);
+                                    weekExpectedMin += (exp ?? 0) * 60;
+                                });
+                            }
+                            const weekExpH = Math.floor(weekExpectedMin / 60);
+                            const weekExpM = weekExpectedMin % 60;
 
                             const expanded = !!expandedUsers[username];
 
@@ -223,16 +257,40 @@ const AdminWeekSection = ({
                                     {expanded && (
                                         <div className="admin-week-display">
                                             {/* Summen */}
-                                            <div className="user-total-diff">
-                                                <strong>{t("adminDashboard.total")} (Woche):</strong>{" "}
-                                                {weekSign}
-                                                {weekH}h {weekM}m
-                                            </div>
-                                            <div className="user-weekly-balance">
-                                                <strong>{t('overtimeBalance')}:</strong>{" "}
-                                                {tbSign}
-                                                {tbH}h {tbM}m
-                                            </div>
+                                            {isPercentage && (
+                                                <div className="percentage-summary">
+                                                    <p>
+                                                        <strong>{t('adminDashboard.expected')}:</strong>{' '}
+                                                        {weekExpH}h {weekExpM}m
+                                                    </p>
+                                                    <p>
+                                                        <strong>{t('weekBalance')}:</strong>{' '}
+                                                        {weekSign}
+                                                        {weekH}h {weekM}m
+                                                    </p>
+                                                </div>
+                                            )}
+
+                                            {!isPercentage && !isHourly && (
+                                                <div className="user-weekly-balance">
+                                                    <strong>{t('overtimeBalance')}:</strong>{' '}
+                                                    {tbSign}
+                                                    {tbH}h {tbM}m
+                                                </div>
+                                            )}
+
+                                            {isHourly && (
+                                                <div className="hourly-summary">
+                                                    <p>
+                                                        <strong>{t('weeklyHours')}:</strong>{' '}
+                                                        {Math.floor(weekWorked / 60)}h {weekWorked % 60}m
+                                                    </p>
+                                                    <p>
+                                                        <strong>{t('monthlyHours')}:</strong>{' '}
+                                                        {Math.floor(monthWorked / 60)}h {monthWorked % 60}m
+                                                    </p>
+                                                </div>
+                                            )}
 
                                             {/* Tage der Woche */}
                                             {weekDates.map((d, idx) => {

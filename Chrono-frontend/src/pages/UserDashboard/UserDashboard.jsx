@@ -28,6 +28,7 @@ import {
     groupEntriesByDay,
     isLateTime
 } from './userDashUtils';
+import { minutesToHours } from '../PercentageDashboard/percentageDashUtils';
 
 import UserCorrectionModal from './UserCorrectionModal';
 import UserCorrectionsPanel from './UserCorrectionsPanel';
@@ -440,6 +441,11 @@ function UserDashboard() {
     const overtimeBalanceStr = formatDiffDecimal(userProfile?.trackingBalanceInMinutes || 0);
 
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
+    const weeklyExpectedMins = weekDates.reduce((sum, d) => {
+        const exp = getExpectedHoursForDay(d, userProfile, defaultExpectedHours);
+        return sum + (exp ?? 0) * 60;
+    }, 0);
+    const weeklyExpectedStr = minutesToHours(weeklyExpectedMins);
 
     // Korrekturen
     const correctionsForWeek = correctionRequests.filter(req => {
@@ -481,10 +487,12 @@ function UserDashboard() {
                 <h2>{t("title")}</h2>
                 <div className="personal-info">
                     <p><strong>{t("usernameLabel")}:</strong> {userProfile?.username || t("notLoggedIn")}</p>
-                    <p><strong>{t("weekBalance")}:</strong> {weeklyDiffStr}</p>
-                    <p><strong>{t("monthBalance")}:</strong> {monthlyDiffStr}</p>
-                    <p><strong>{t("overallBalance")}:</strong> {overallDiffStr}</p>
-                    <p><strong>{t("overtimeBalance")}:</strong> {overtimeBalanceStr}</p>
+                    <p>
+                        <strong>{t('expected')}:</strong> {weeklyExpectedStr}
+                    </p>
+                    <p>
+                        <strong>{t('overtimeBalance')}:</strong> {overtimeBalanceStr}
+                    </p>
                 </div>
             </header>
 

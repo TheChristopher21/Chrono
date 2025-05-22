@@ -298,6 +298,12 @@ const PercentageDashboard = () => {
                     <p>
                         <strong>Arbeits‑%:</strong> {profile.workPercentage}%
                     </p>
+                    <p>
+                        <strong>{t('expected')}:</strong> {minutesToHours(weeklyExpected)}
+                    </p>
+                    <p>
+                        <strong>{t('weekBalance')}:</strong> {minutesToHours(weeklyDiff)}
+                    </p>
                     {profile.trackingBalanceInMinutes != null && (
                         <p className="overtime-info">
                             <strong>{t('overtimeBalance')}:</strong> {minutesToHours(profile.trackingBalanceInMinutes)}
