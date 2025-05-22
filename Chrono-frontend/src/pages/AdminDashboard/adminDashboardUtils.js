@@ -272,6 +272,24 @@ export function computeDayTotalMinutes(dayEntries) {
     }
     return Math.max(0, totalMins);
 }
+
+export function computeTotalMinutesInRange(allEntries, startDate, endDate) {
+    const filtered = allEntries.filter(e => {
+        const d = new Date(e.startTime);
+        return d >= startDate && d <= endDate;
+    });
+    const dayMap = {};
+    filtered.forEach(entry => {
+        const ds = entry.startTime.slice(0, 10);
+        if (!dayMap[ds]) dayMap[ds] = [];
+        dayMap[ds].push(entry);
+    });
+    let total = 0;
+    Object.keys(dayMap).forEach(ds => {
+        total += computeDayTotalMinutes(dayMap[ds]);
+    });
+    return total;
+}
 // /utils/timeUtils.js
 export function isLateTime(timeString) {
     const time = new Date(`1970-01-01T${timeString}`);

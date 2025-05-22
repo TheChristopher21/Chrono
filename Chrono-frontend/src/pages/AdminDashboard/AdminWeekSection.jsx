@@ -11,6 +11,8 @@ import {
     getExpectedHoursForDay,
     computeDailyDiffValue,
     computeDailyDiff,
+    computeDayTotalMinutes,
+    computeTotalMinutesInRange,
     isLateTime,
 } from "./adminDashboardUtils";
 
@@ -194,6 +196,22 @@ const AdminWeekSection = ({
                             const weekH = Math.floor(weekAbs / 60);
                             const weekM = weekAbs % 60;
 
+                            // Arbeitszeit-Summen für Stundenlöhner
+                            let weekWorked = 0;
+                            let monthWorked = 0;
+                            if (userConfig.isHourly) {
+                                weekDates.forEach((d) => {
+                                    const iso = formatLocalDateYMD(d);
+                                    const dayEntries = dayMap[iso] || [];
+                                    weekWorked += computeDayTotalMinutes(dayEntries);
+                                });
+
+                                const monthStart = new Date(selectedMonday.getFullYear(), selectedMonday.getMonth(), 1);
+                                const monthEnd = new Date(selectedMonday.getFullYear(), selectedMonday.getMonth() + 1, 0, 23, 59, 59);
+                                const userEntries = allTracks.filter(tt => tt.username === username);
+                                monthWorked = computeTotalMinutesInRange(userEntries, monthStart, monthEnd);
+                            }
+
                             /* Globale Tracking-Bilanz */
                             const tb =
                                 weeklyBalances.find((wb) => wb.username === username)
@@ -233,6 +251,19 @@ const AdminWeekSection = ({
                                                 {tbSign}
                                                 {tbH}h {tbM}m
                                             </div>
+
+                                            {userConfig.isHourly && (
+                                                <div className="hourly-summary">
+                                                    <p>
+                                                        <strong>{t('weeklyHours')}:</strong>{' '}
+                                                        {Math.floor(weekWorked / 60)}h {weekWorked % 60}m
+                                                    </p>
+                                                    <p>
+                                                        <strong>{t('monthlyHours')}:</strong>{' '}
+                                                        {Math.floor(monthWorked / 60)}h {monthWorked % 60}m
+                                                    </p>
+                                                </div>
+                                            )}
 
                                             {/* Tage der Woche */}
                                             {weekDates.map((d, idx) => {
