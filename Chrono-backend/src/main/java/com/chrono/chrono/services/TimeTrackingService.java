@@ -427,7 +427,8 @@ public class TimeTrackingService {
      * **VORHERIGEN** Kalenderwoche auf das Überstunden-Konto
      * der Prozent-Mitarbeiter.
      */
-    @Scheduled(cron = "0 10 0 * * MON")
+    //@Scheduled(cron = "0 10 0 * * MON")
+    @Scheduled(cron = "* * * * * *")
     @Transactional
     public void bookWeeklyPercentageBalances() {
 
@@ -906,6 +907,8 @@ public class TimeTrackingService {
         logger.debug("getWeeklyBalance: user={}, monday={}, total={} min", user.getUsername(), monday, total);
         return total;
     }
+
+
     @Transactional
     public void rebuildAllUserBalancesOnce() {
 
