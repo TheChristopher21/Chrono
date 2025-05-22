@@ -31,6 +31,8 @@ public interface TimeTrackingRepository extends JpaRepository<TimeTracking, Long
     List<TimeTracking> findByUserAndStartTimeBetween(User user,
                                                      LocalDateTime start,
                                                      LocalDateTime end);
+    List<TimeTracking> findByUserAndStartTimeBetweenOrderByPunchOrderAsc(
+            User user, LocalDateTime start, LocalDateTime end);
     List<TimeTracking> findByUserAndDailyDate(User user, LocalDate dailyDate);
 
     List<TimeTracking> findByEndTimeIsNullAndStartTimeBetween(
