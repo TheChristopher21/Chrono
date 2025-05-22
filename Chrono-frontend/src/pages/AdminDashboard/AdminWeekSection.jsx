@@ -261,21 +261,7 @@ const AdminWeekSection = ({
                                     {expanded && (
                                         <div className="admin-week-display">
                                             {/* Summen */}
-                                            {isPercentage && (
-                                                <div className="percentage-summary">
-                                                    <p>
-                                                        <strong>{t('adminDashboard.expected')}:</strong>{' '}
-                                                        {weekExpH}h {weekExpM}m
-                                                    </p>
-                                                    <p>
-                                                        <strong>{t('weekBalance')}:</strong>{' '}
-                                                        {weekSign}
-                                                        {weekH}h {weekM}m
-                                                    </p>
-                                                </div>
-                                            )}
-
-                                            {!isPercentage && !isHourly && (
+                                            {!isHourly && (
                                                 <div className="user-weekly-balance">
                                                     <strong>{t('overtimeBalance')}:</strong>{' '}
                                                     {tbSign}

@@ -9,11 +9,13 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.TimeTrackingRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import jakarta.annotation.PostConstruct;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.DeadlockLoserDataAccessException;
@@ -355,59 +357,63 @@ public class TimeTrackingService {
         logger.info("✅ bookDailyBalances abgeschlossen für {}", yesterday);
     }
 
-    // -------------------------------------------------------------------------
-    // BERECHNUNG: Überstunden (1 Pause)
-    // -------------------------------------------------------------------------
+    /**
+     * Liefert (Ist – Soll) in Minuten für **einen** Kalendertag.
+     *  • Percentage-User ⇒ Tages-Soll = Wochenplan × workPercentage
+     *  • Hourly-User     ⇒ Soll = 0
+     *  • Alle anderen    ⇒ Soll = von workScheduleService (max. 8 h)
+     */
     public int computeDailyWorkDifference(User user, String isoDate) {
-        logger.debug("computeDailyWorkDifference: user={}, isoDate={}", user.getUsername(), isoDate);
+
         LocalDate day = LocalDate.parse(isoDate);
 
-        // Alle Stempel des Tages chronologisch holen
+        // ----- 1) Stempel des Tages chronologisch holen
         LocalDateTime startOfDay = day.atStartOfDay();
         LocalDateTime endOfDay   = day.plusDays(1).atStartOfDay();
-        List<TimeTracking> list = timeTrackingRepository
+
+        List<TimeTracking> punches = timeTrackingRepository
                 .findByUserAndStartTimeBetweenOrderByPunchOrderAsc(user, startOfDay, endOfDay);
 
-        // container
-        LocalDateTime ws = null; // #1
-        LocalDateTime bs = null; // #2
-        LocalDateTime be = null; // #3
-        LocalDateTime we = null; // #4
+        // ----- 2) Work-/Break-Zeiten ermitteln
+        LocalDateTime ws = null, bs = null, be = null, we = null;
 
-        for (TimeTracking t : list) {
+        for (TimeTracking t : punches) {
             int po = Optional.ofNullable(t.getPunchOrder()).orElse(0);
+            LocalDateTime ts = t.getStartTime() != null ? t.getStartTime()
+                    : t.getEndTime();
             switch (po) {
-                case 1 -> ws = toDateTime(t);
-                case 2 -> bs = toDateTime(t);
-                case 3 -> be = toDateTime(t);
-                case 4 -> we = toDateTime(t);
+                case 1 -> ws = ts;
+                case 2 -> bs = ts;
+                case 3 -> be = ts;
+                case 4 -> we = ts;
             }
         }
 
+        // ----- 3) Ist-Zeit berechnen
         int worked = 0;
         if (ws != null && we != null) {
             worked = (int) ChronoUnit.MINUTES.between(ws, we);
-            if (bs != null && be != null) {
-                worked -= (int) ChronoUnit.MINUTES.between(bs, be);
+            if (bs != null && be != null && be.isAfter(bs)) {
+                worked -= (int) ChronoUnit.MINUTES.between(bs, be);      // Pause abziehen
             }
         }
 
+        // ----- 4) Soll-Zeit berechnen
         int expected;
         if (Boolean.TRUE.equals(user.getIsHourly())) {
             expected = 0;
         } else {
             expected = workScheduleService.computeExpectedWorkMinutes(user, day);
-            // 42h-/8h-Regel: pro Tag maximal 8h ansetzen
-            expected = Math.min(expected, 8 * 60);
+            expected = Math.min(expected, 8 * 60);                       // 42h-/8h-Deckel
             if (Boolean.TRUE.equals(user.getIsPercentage())) {
                 int perc = Optional.ofNullable(user.getWorkPercentage()).orElse(100);
                 expected = (int) Math.round(expected * (perc / 100.0));
             }
         }
-        int diff = worked - expected;
-        logger.debug("computeDailyWorkDifference: user={}, worked={}, expected={}, diff={}", user.getUsername(), worked, expected, diff);
-        return diff;
+
+        return worked - expected;
     }
+
 
     private LocalDateTime toDateTime(TimeTracking t) {
         if (t.getStartTime() != null) return t.getStartTime();
@@ -415,37 +421,48 @@ public class TimeTrackingService {
         return null;
     }
 
-    // -------------------------------------------------------------------------
-    // WÖCHENTLICHE BALANCE FÜR PERCENTAGE-USER
-    // -------------------------------------------------------------------------
+    /**
+     * Läuft jeden Montag 00:10 Uhr und bucht die Differenz der
+     * **VORHERIGEN** Kalenderwoche auf das Überstunden-Konto
+     * der Prozent-Mitarbeiter.
+     */
     @Scheduled(cron = "0 10 0 * * MON")
     @Transactional
     public void bookWeeklyPercentageBalances() {
-        LocalDate mondayLastWeek = LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1);
-        logger.info("bookWeeklyPercentageBalances gestartet für Woche {}", mondayLastWeek);
+
+        LocalDate lastMonday = LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1);
+        logger.info("bookWeeklyPercentageBalances started for week {}", lastMonday);
 
         userRepository.findAll().forEach(u -> {
             if (Boolean.TRUE.equals(u.getIsPercentage())) {
-                int delta = computeWeeklyWorkDifference(u, mondayLastWeek);
-                int oldBal = Optional.ofNullable(u.getTrackingBalanceInMinutes()).orElse(0);
-                u.setTrackingBalanceInMinutes(oldBal + delta);
+                int delta = computeWeeklyWorkDifference(u, lastMonday);
+                int old   = Optional.ofNullable(u.getTrackingBalanceInMinutes()).orElse(0);
+                u.setTrackingBalanceInMinutes(old + delta);
             }
         });
 
-        logger.info("✅ bookWeeklyPercentageBalances abgeschlossen für Woche {}", mondayLastWeek);
+        logger.info("✅ bookWeeklyPercentageBalances finished for week {}", lastMonday);
     }
 
+
+    /**
+     * Summiert die Tages-Differenzen einer Kalenderwoche (Mo-So).
+     * Liefert also genau den Wert, den wir auf das Konto buchen.
+     */
     private int computeWeeklyWorkDifference(User user, LocalDate monday) {
+
         int weeklyDiff = 0;
         for (int i = 0; i < 7; i++) {
             LocalDate day = monday.plusDays(i);
             weeklyDiff += computeDailyWorkDifference(user, day.toString());
         }
 
-        logger.debug("computeWeeklyWorkDifference: user={}, monday={}, diff={} min",
+        logger.debug("computeWeeklyWorkDifference: user={}, weekOf={}, diff={} min",
                 user.getUsername(), monday, weeklyDiff);
+
         return weeklyDiff;
     }
+
 
     // -------------------------------------------------------------------------
     //  handlePercentagePunch
