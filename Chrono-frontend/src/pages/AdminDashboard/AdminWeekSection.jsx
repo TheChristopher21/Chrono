@@ -174,9 +174,16 @@ const AdminWeekSection = ({
                                 dayMap[iso].push(tt);
                             });
 
+                            const isHourly = userConfig.isHourly;
+                            const isPercentage = userConfig.isPercentage;
+
                             /* Wochen-Saldo */
+                            const daysForUser = isPercentage
+                                ? weekDates.slice(0, 5)
+                                : weekDates;
+
                             let weekDiff = 0;
-                            weekDates.forEach((d) => {
+                            daysForUser.forEach((d) => {
                                 const iso = formatLocalDateYMD(d);
                                 const expected = getExpectedHoursForDay(
                                     d,
@@ -196,14 +203,11 @@ const AdminWeekSection = ({
                             const weekH = Math.floor(weekAbs / 60);
                             const weekM = weekAbs % 60;
 
-                            const isHourly = userConfig.isHourly;
-                            const isPercentage = userConfig.isPercentage;
-
                             // Arbeitszeit-Summen für Stundenlöhner
                             let weekWorked = 0;
                             let monthWorked = 0;
                             if (isHourly) {
-                                weekDates.forEach((d) => {
+                                daysForUser.forEach((d) => {
                                     const iso = formatLocalDateYMD(d);
                                     const dayEntries = dayMap[iso] || [];
                                     weekWorked += computeDayTotalMinutes(dayEntries);
@@ -227,9 +231,9 @@ const AdminWeekSection = ({
                             let weekExpectedMin = 0;
                             if (isPercentage) {
                                 const perc = (userConfig.workPercentage ?? 100) / 100;
-                                weekExpectedMin = Math.round(510 * perc * 7);
+                                weekExpectedMin = Math.round(510 * perc * 5);
                             } else if (!isHourly) {
-                                weekDates.forEach((d) => {
+                                daysForUser.forEach((d) => {
                                     const exp = getExpectedHoursForDay(d, userConfig, defaultExpectedHours);
                                     weekExpectedMin += (exp ?? 0) * 60;
                                 });
@@ -293,7 +297,7 @@ const AdminWeekSection = ({
                                             )}
 
                                             {/* Tage der Woche */}
-                                            {weekDates.map((d, idx) => {
+                                            {daysForUser.map((d, idx) => {
                                                 const iso = formatLocalDateYMD(d);
                                                 const dayEntries = dayMap[iso] || [];
                                                 const expected = getExpectedHoursForDay(
