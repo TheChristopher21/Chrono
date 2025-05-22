@@ -437,23 +437,15 @@ public class TimeTrackingService {
     }
 
     private int computeWeeklyWorkDifference(User user, LocalDate monday) {
-        // gearbeitete Minuten der Woche
-        int worked = getWeeklyBalance(user, monday);
-
-        // erwartete Minuten der Woche (ohne Prozentfaktor)
-        int expectedRaw = 0;
+        int weeklyDiff = 0;
         for (int i = 0; i < 7; i++) {
             LocalDate day = monday.plusDays(i);
-            expectedRaw += workScheduleService.computeExpectedWorkMinutes(user, day);
+            weeklyDiff += computeDailyWorkDifference(user, day.toString());
         }
 
-        int perc = Optional.ofNullable(user.getWorkPercentage()).orElse(100);
-        int expected = (int) Math.round(expectedRaw * (perc / 100.0));
-
-        int diff = worked - expected;
-        logger.debug("computeWeeklyWorkDifference: user={}, worked={}, expected={}, diff={}",
-                user.getUsername(), worked, expected, diff);
-        return diff;
+        logger.debug("computeWeeklyWorkDifference: user={}, monday={}, diff={} min",
+                user.getUsername(), monday, weeklyDiff);
+        return weeklyDiff;
     }
 
     // -------------------------------------------------------------------------
