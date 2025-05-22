@@ -16,6 +16,8 @@ const PercentageWeekOverview = ({
                                     entries,
                                     monday,
                                     setMonday,
+                                    weeklyWorked,
+                                    weeklyExpected,
                                     weeklyDiff,
                                     handleManualPunch,
                                     punchMessage,
@@ -72,6 +74,18 @@ const PercentageWeekOverview = ({
                 <button onClick={nextWeek}>
                     {t('nextWeek')} →
                 </button>
+            </div>
+
+            <div className="weekly-summary">
+                <p>
+                    <strong>{t('weeklyHours')}:</strong> {minutesToHours(weeklyWorked)}
+                </p>
+                <p>
+                    <strong>{t('expected')}:</strong> {minutesToHours(weeklyExpected)}
+                </p>
+                <p>
+                    <strong>{t('weekBalance')}:</strong> {minutesToHours(weeklyDiff)}
+                </p>
             </div>
 
             {/* Darstellung der Einträge */}
@@ -150,6 +164,8 @@ PercentageWeekOverview.propTypes = {
     entries: PropTypes.array.isRequired,
     monday: PropTypes.instanceOf(Date).isRequired,
     setMonday: PropTypes.func.isRequired,
+    weeklyWorked: PropTypes.number,
+    weeklyExpected: PropTypes.number,
     weeklyDiff: PropTypes.number,
     handleManualPunch: PropTypes.func.isRequired,
     punchMessage: PropTypes.string,
