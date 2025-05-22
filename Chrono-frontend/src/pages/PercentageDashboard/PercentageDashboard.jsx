@@ -24,6 +24,7 @@ import PercentageCorrectionModal from './PercentageCorrectionModal';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 
 import '../../styles/PercentageDashboardScoped.css';
+import {minutesToHours} from "date-fns";
 
 const PercentageDashboard = () => {
     const { t } = useTranslation();
