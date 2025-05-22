@@ -30,7 +30,6 @@
     "jspdf-autotable": "^3.8.4",
     "jwt-decode": "^2.2.0",
     "nfc-pcsc": "^0.8.1",
-    "pcsclite": "^1.0.1",
     "prop-types": "^15.8.1",
     "react": "^19.1.0",
     "react-calendar": "^5.1.0",
