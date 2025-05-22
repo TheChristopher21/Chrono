@@ -362,8 +362,11 @@ public class TimeTrackingService {
         logger.debug("computeDailyWorkDifference: user={}, isoDate={}", user.getUsername(), isoDate);
         LocalDate day = LocalDate.parse(isoDate);
 
-        // Alle DS an dem Tag
-        List<TimeTracking> list = timeTrackingRepository.findByUserAndDailyDate(user, day);
+        // Alle Stempel des Tages chronologisch holen
+        LocalDateTime startOfDay = day.atStartOfDay();
+        LocalDateTime endOfDay   = day.plusDays(1).atStartOfDay();
+        List<TimeTracking> list = timeTrackingRepository
+                .findByUserAndStartTimeBetweenOrderByPunchOrderAsc(user, startOfDay, endOfDay);
 
         // container
         LocalDateTime ws = null; // #1
@@ -383,15 +386,9 @@ public class TimeTrackingService {
 
         int worked = 0;
         if (ws != null && we != null) {
+            worked = (int) ChronoUnit.MINUTES.between(ws, we);
             if (bs != null && be != null) {
-                // Pause abziehen
-                LocalDateTime actualBs = bs.isAfter(ws) ? bs : ws;
-                LocalDateTime actualBe = be.isAfter(actualBs) ? be : actualBs;
-                worked += Duration.between(ws, actualBs).toMinutes();
-                worked += Duration.between(actualBe, we).toMinutes();
-            } else {
-                // Keine Pause
-                worked += Duration.between(ws, we).toMinutes();
+                worked -= (int) ChronoUnit.MINUTES.between(bs, be);
             }
         }
 
@@ -400,6 +397,8 @@ public class TimeTrackingService {
             expected = 0;
         } else {
             expected = workScheduleService.computeExpectedWorkMinutes(user, day);
+            // 42h-/8h-Regel: pro Tag maximal 8h ansetzen
+            expected = Math.min(expected, 8 * 60);
             if (Boolean.TRUE.equals(user.getIsPercentage())) {
                 int perc = Optional.ofNullable(user.getWorkPercentage()).orElse(100);
                 expected = (int) Math.round(expected * (perc / 100.0));
