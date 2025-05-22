@@ -24,6 +24,7 @@ import PercentageCorrectionModal from './PercentageCorrectionModal';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 
 import '../../styles/PercentageDashboardScoped.css';
+import {minutesToHours} from "date-fns";
 
 const PercentageDashboard = () => {
     const { t } = useTranslation();
@@ -144,13 +145,13 @@ const PercentageDashboard = () => {
     }
 
     // Summen-Logik
-    const weeklyWorked = Array.from({ length: 7 }, (_, i) => {
+    const weeklyWorked = Array.from({ length: 5 }, (_, i) => {
         const isoDay = formatISO(addDays(monday, i));
         const dayEntries = entries.filter(e => e.startTime.slice(0, 10) === isoDay);
         return computeDayTotalMinutes(dayEntries);
     }).reduce((a, b) => a + b, 0);
 
-    const weeklyExpected = 7 * expectedDayMinutes(profile || {});
+    const weeklyExpected = 5 * expectedDayMinutes(profile || {});
     const weeklyDiff = weeklyWorked - weeklyExpected;
 
     // Urlaub laden

@@ -183,9 +183,11 @@
 
 .admin-dashboard.scoped-dashboard .admin-user-groups {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(5, 1fr);   /* genau 5 gleich breite Spalten   */
+    gap: 1rem;                               /* Abstand zwischen den Karten     */
+    max-width: none;                         /* vorherige feste Begrenzung raus */
 }
+
 .admin-dashboard.scoped-dashboard .scrollable-user-list::-webkit-scrollbar,
 .admin-dashboard.scoped-dashboard .scrollable-list::-webkit-scrollbar {
     width: 8px;
@@ -627,6 +629,26 @@
     flex: 1 1 100%;
 }
 
+@media (max-width: 1280px) {                 /* Desktop kleiner */
+    .admin-dashboard.scoped-dashboard .admin-user-groups {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+@media (max-width: 960px) {                  /* Tablet quer */
+    .admin-dashboard.scoped-dashboard .admin-user-groups {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+@media (max-width: 640px) {                  /* Tablet hoch / großes Phone */
+    .admin-dashboard.scoped-dashboard .admin-user-groups {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+@media (max-width: 420px) {                  /* schmales Phone */
+    .admin-dashboard.scoped-dashboard .admin-user-groups {
+        grid-template-columns: 1fr;          /* eine Karte pro Zeile            */
+    }
+}
 
 @media (max-width: 1024px) {
     /* Auf einspaltiges Layout schalten */
