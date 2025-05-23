@@ -462,6 +462,7 @@ const AdminDashboard = () => {
                 setPrintUserEndDate={setPrintUserEndDate}
                 handlePrintUserTimesPeriodSubmit={handlePrintUserTimesPeriodSubmit}
                 setPrintUserModalVisible={setPrintUserModalVisible}
+                t={t}
             />
         </div>
     );
