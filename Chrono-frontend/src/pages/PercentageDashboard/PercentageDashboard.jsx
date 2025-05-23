@@ -16,6 +16,7 @@ import {
     computeDayTotalMinutes,
     expectedDayMinutes
 } from './percentageDashUtils';
+import { expandDayRows } from '../UserDashboard/userDashUtils';
 
 import PercentageWeekOverview from './PercentageWeekOverview';
 import PercentageVacationSection from './PercentageVacationSection';
@@ -89,7 +90,8 @@ const PercentageDashboard = () => {
         if (!profile) return;
         api.get(`/api/timetracking/history?username=${profile.username}`)
             .then(r => {
-                const data = (r.data || []).filter(e => [1,2,3,4].includes(e.punchOrder));
+                const expanded = expandDayRows(r.data || []);
+                const data = expanded.filter(e => [1,2,3,4].includes(e.punchOrder));
                 setEntries(data);
             })
             .catch(err => console.error('Eintrags‑Fehler', err));

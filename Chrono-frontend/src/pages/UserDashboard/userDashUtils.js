@@ -30,6 +30,57 @@ export function parseHex16(hexString) {
     return output;
 }
 
+/**
+ * Wandelt die vom Backend gelieferten Tagesobjekte in die bisher
+ * genutzte Event-Liste um, damit die bestehende Logik weiterhin
+ * funktioniert. Jeder Tag wird in bis zu vier Einträge aufgeteilt
+ * (punchOrder 1–4).
+ */
+export function expandDayRows(days) {
+    const result = [];
+    days.forEach((day) => {
+        const base = day.id ? day.id * 10 : Math.floor(Math.random() * 1e6);
+        const date = day.dailyDate;
+        if (day.workStart) {
+            result.push({
+                ...day,
+                id: `${base + 1}`,
+                punchOrder: 1,
+                startTime: `${date}T${day.workStart}`,
+            });
+        }
+        if (day.breakStart) {
+            result.push({
+                ...day,
+                id: `${base + 2}`,
+                punchOrder: 2,
+                startTime: `${date}T${day.breakStart}`,
+                breakStart: day.breakStart,
+            });
+        }
+        if (day.breakEnd) {
+            result.push({
+                ...day,
+                id: `${base + 3}`,
+                punchOrder: 3,
+                startTime: `${date}T${day.breakEnd}`,
+                breakEnd: day.breakEnd,
+            });
+        }
+        if (day.workEnd) {
+            result.push({
+                ...day,
+                id: `${base + 4}`,
+                punchOrder: 4,
+                startTime: `${date}T${day.workEnd}`,
+                endTime: `${date}T${day.workEnd}`,
+                workEnd: day.workEnd,
+            });
+        }
+    });
+    return result;
+}
+
 export function formatTime(dateStr) {
     const d = new Date(dateStr);
     return isNaN(d.getTime())
