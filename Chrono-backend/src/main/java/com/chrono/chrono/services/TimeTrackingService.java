@@ -32,7 +32,8 @@ public class TimeTrackingService {
     private PasswordEncoder passwordEncoder;
 
     // Beispiel: 8h30 = 510 Minuten
-    public static final int FULL_DAY_MINUTES = 8 * 60 + 30;   // 8 h 30 m
+    public static final int FULL_DAY_MINUTES  = 8 * 60 + 30;   // 8 h 30 m
+    public static final int FULL_WEEK_MINUTES = FULL_DAY_MINUTES * 5; // 42 h 30 m
 
     // Hilfsfunktion zum Laden eines Users oder Exception
     private User loadUserByUsername(String username) {
@@ -248,6 +249,24 @@ public class TimeTrackingService {
         }
         return sum;              // Minuten-Saldo der Woche (positiv = Überstunden)
     }
+
+    private int computeWeeklyWorkDifference(User user, LocalDate weekStart, LocalDate lastDay) {
+        int worked = 0;
+        LocalDate end = weekStart.plusDays(6);
+        for (LocalDate d = weekStart; !d.isAfter(end) && !d.isAfter(lastDay); d = d.plusDays(1)) {
+            try {
+                worked += getWorkedMinutes(user, d);
+            } catch (RuntimeException ex) {
+                // kein Eintrag -> 0 Minuten
+            }
+        }
+
+        double factor = (user.getWorkPercentage() != null)
+                ? user.getWorkPercentage() / 100.0
+                : 1.0;
+        int expected = (int) Math.round(FULL_WEEK_MINUTES * factor);
+        return worked - expected;
+    }
     public int getWorkedMinutes(User user, LocalDate date) {
         TimeTracking tt = timeTrackingRepo                      // eine Zeile pro Tag!
                 .findByUserAndDailyDate(user, date)
@@ -304,12 +323,18 @@ public class TimeTrackingService {
 
         int totalMinutes = 0;
 
-        for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
-            int temp=computeDailyWorkDifference(user, d);
-
-            totalMinutes += temp;
-            //  ►  Ist-Minuten = 0, wenn kein Eintrag vorhanden
-            //  ►  Soll-Minuten kommen immer aus WorkScheduleService
+        if (Boolean.TRUE.equals(user.getIsPercentage())) {
+            for (LocalDate w = firstDay; !w.isAfter(lastDay); w = w.plusWeeks(1)) {
+                int diff = computeWeeklyWorkDifference(user, w, lastDay);
+                totalMinutes += diff;
+            }
+        } else {
+            for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
+                int temp = computeDailyWorkDifference(user, d);
+                totalMinutes += temp;
+                //  ►  Ist-Minuten = 0, wenn kein Eintrag vorhanden
+                //  ►  Soll-Minuten kommen immer aus WorkScheduleService
+            }
         }
 
     /* ------------------------------------------------------------------
