@@ -4,6 +4,8 @@
 // damit du sie an zentraler Stelle wiederverwenden kannst.
 // Du importierst sie in AdminDashboard.jsx, AdminWeekSection.jsx etc.
 
+import {differenceInMinutes, parseISO} from "date-fns";
+
 export function getMondayOfWeek(date) {
     const copy = new Date(date);
     const day = copy.getDay();
@@ -20,6 +22,10 @@ export function formatDate(dateInput) {
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const year = date.getFullYear();
     return `${day}-${month}-${year}`;
+}
+export function timeToDate(dateStr, timeStr) {
+    // → JS-Date an einem beliebigen Tag (UTC-safe ISO)
+    return parseISO(`${dateStr}T${timeStr}`);
 }
 
 export function addDays(date, days) {
@@ -234,43 +240,29 @@ export function getStatusLabel(punchOrder) {
  * (Nicht identisch mit computeDailyDiffValue, hier wird nur die
  * tatsächlich gestempelte Zeit berechnet).
  */
-export function computeDayTotalMinutes(dayEntries) {
-    const entryStart = dayEntries.find(e => e.punchOrder === 1);
-    let entryEnd = dayEntries.find(e => e.punchOrder === 4);
-    if (!entryEnd) {
-        entryEnd = dayEntries.find(e => e.punchOrder === 2 || e.punchOrder === 3);
-    }
-    if (!entryStart || !entryEnd) return 0;
+export function computeDayTotalMinutes(day) {
+    // WorkEnd − WorkStart − Pausendauer
+    const { workStart, breakStart, breakEnd, workEnd, dailyDate } = day;
+    if (!workStart || !workEnd) return 0;
 
-    const start = new Date(entryStart.startTime);
-    const end = new Date(entryEnd.endTime || entryEnd.startTime);
-    let totalMins = 0;
+    let minutes = differenceInMinutes(
+        timeToDate(dailyDate, workEnd),
+        timeToDate(dailyDate, workStart)
+    );
 
-    if (end.toDateString() !== start.toDateString()) {
-        const midnight = new Date(start);
-        midnight.setHours(24, 0, 0, 0);
-        totalMins = (midnight - start) / 60000;
-    } else {
-        const startM = getMinutesSinceMidnight(start.toISOString());
-        const endM = getMinutesSinceMidnight(end.toISOString());
-        totalMins = endM - startM;
-    }
-
-    const breakStart = dayEntries.find(e => e.punchOrder === 2);
-    const breakEnd = dayEntries.find(e => e.punchOrder === 3);
     if (breakStart && breakEnd) {
-        let breakStartMins = breakStart.breakStart
-            ? parseTimeToMinutes(breakStart.breakStart)
-            : getMinutesSinceMidnight(breakStart.startTime);
-        let breakEndMins = breakEnd.breakEnd
-            ? parseTimeToMinutes(breakEnd.breakEnd)
-            : getMinutesSinceMidnight(breakEnd.startTime);
-        if (breakEndMins < breakStartMins) {
-            breakEndMins += 24 * 60;
-        }
-        totalMins -= (breakEndMins - breakStartMins);
+        minutes -= differenceInMinutes(
+            timeToDate(dailyDate, breakEnd),
+            timeToDate(dailyDate, breakStart)
+        );
     }
-    return Math.max(0, totalMins);
+    return Math.max(0, minutes);
+}
+
+export function minutesToHHMM(min) {
+    const h = String(Math.floor(min / 60)).padStart(2, '0');
+    const m = String(min % 60).padStart(2, '0');
+    return `${h}:${m}`;
 }
 
 export function computeTotalMinutesInRange(allEntries, startDate, endDate) {

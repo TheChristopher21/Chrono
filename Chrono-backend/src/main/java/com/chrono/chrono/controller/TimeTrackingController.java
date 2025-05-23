@@ -3,56 +3,42 @@ package com.chrono.chrono.controller;
 import com.chrono.chrono.dto.PercentagePunchResponse;
 import com.chrono.chrono.dto.TimeReportDTO;
 import com.chrono.chrono.dto.TimeTrackingResponse;
-import com.chrono.chrono.dto.AdminTimeTrackDTO;
-import com.chrono.chrono.services.TimeTrackingService;
-import com.chrono.chrono.services.UserService;
-import com.chrono.chrono.services.WorkScheduleService;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.services.TimeTrackingService;
+import com.chrono.chrono.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
-/**
- * Hier ruft dein Frontend die Endpunkte auf.
- * Die eigentliche Logik (Korrekturen, autoPunchOut usw.) ist in TimeTrackingService.
- */
 @RestController
 @RequestMapping("/api/timetracking")
 public class TimeTrackingController {
 
     @Autowired
-    private UserService userService; // NEU
+    private UserService userService;
 
     @Autowired
     private TimeTrackingService timeTrackingService;
 
     @Autowired
-    private WorkScheduleService workScheduleService;
-
-    @Autowired
     private UserRepository userRepository;
 
     /**
-     * Smart-Punch (autodetektiert WORK_START, BREAK_START, BREAK_END, WORK_END),
-     * prüft u.a. ob bei isPercentage=false schon WORK_END am heutigen Tag existiert.
+     * "Smart-Punch" => autom. 1->2->3->4
      */
     @PostMapping("/punch")
     public TimeTrackingResponse punch(@RequestParam String username, Principal principal) {
-
-        // Nur prüfen, wenn wirklich jemand eingeloggtes stempelt
         if (principal != null) {
             userService.assertSameCompany(principal.getName(), username);
         }
-
         return timeTrackingService.handleSmartPunch(username);
     }
-
 
     @PostMapping("/work-start")
     public TimeTrackingResponse workStart(@RequestParam String username) {
@@ -74,40 +60,39 @@ public class TimeTrackingController {
         return timeTrackingService.handlePunch(username, "WORK_END");
     }
 
-    /**
-     * Liefert die komplette Stempelhistorie (Liste der TimeTrackingResponse)
-     * nach absteigendem StartTime sortiert.
-     */
     @GetMapping("/history")
     public List<TimeTrackingResponse> getUserHistory(
             @RequestParam String username,
             Principal principal
     ) {
-        // 1) Hole den anfragenden User => check Firma
+        // Firma prüfen
         User requestingUser = userService.getUserByUsername(principal.getName());
-        // 2) Hole den targetUser => check, ob company übereinstimmt
         User targetUser = userService.getUserByUsername(username);
         if (!requestingUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
             throw new RuntimeException("Keine Berechtigung auf fremde Firma");
         }
         return timeTrackingService.getUserHistory(username);
     }
-    /**
-     * Reine Tagesberechnung: ermittelt, wie viele Minuten der User heute
-     * gearbeitet hat und wie viele er laut 'percentage' haben sollte.
-     */
+
     @GetMapping("/percentage-punch")
     public PercentagePunchResponse percentagePunch(
             @RequestParam String username,
             @RequestParam double percentage
     ) {
-        return timeTrackingService.handlePercentagePunch(username, percentage);
+        // Bsp: 8h30 * (percentage/100)
+        int expected = (int)Math.round(TimeTrackingService.FULL_DAY_MINUTES * (percentage / 100.0));
+        User user = userService.getUserByUsername(username);
+
+        int worked = timeTrackingService.computeDailyWorkDifference(user, LocalDate.now().toString());
+        int diff = worked - expected;
+
+        String msg = (diff >= 0)
+                ? "Überstunden: " + diff + " min"
+                : "Fehlstunden: " + (-diff) + " min";
+
+        return new PercentagePunchResponse(username, worked, expected, diff, msg);
     }
 
-    /**
-     * Korrigiert den gesamten Tag (alle Einträge) auf workStart, breakStart, breakEnd, workEnd.
-     * Alte Einträge für diesen Tag werden gelöscht und neu angelegt.
-     */
     @PutMapping("/editDay")
     public ResponseEntity<?> editDayTimeEntries(
             @RequestParam String targetUsername,
@@ -132,58 +117,45 @@ public class TimeTrackingController {
                     adminPassword,
                     userPassword
             );
-            // Alles OK → 200
             return ResponseEntity.ok(result);
 
         } catch (RuntimeException ex) {
-            // Hier unterscheiden wir die Passwort-Fehler von anderen Fehlern
             String msg = ex.getMessage() != null ? ex.getMessage() : "Unknown error";
-
-            // Wenn die Fehlermeldung "Invalid admin password" oder "Invalid user password"
-            // oder "For self-edit, admin and user passwords must match" enthält,
-            // geben wir 403 "Forbidden" zurück, statt 500/400.
             if (msg.contains("Invalid admin password")
                     || msg.contains("Invalid user password")
                     || msg.contains("For self-edit, admin and user passwords must match")) {
                 return ResponseEntity.status(403).body("Passwort-Fehler: " + msg);
             }
-            // Sonst → 400 (Bad Request) oder 500, je nachdem was du willst:
-            return ResponseEntity
-                    .status(400)
+            return ResponseEntity.badRequest()
                     .body("Konnte dayTimeEntries nicht bearbeiten: " + msg);
         }
     }
 
-
-    /**
-     * Korrigiert einen einzelnen TimeTracking-Datensatz (per ID),
-     * indem Start-/EndTime gesetzt werden (z.B. aus dem Admin-Panel).
-     */
     @PutMapping("/edit")
-    public AdminTimeTrackDTO editTimeTrackEntry(
+    public TimeTrackingResponse editTimeTrackEntry(
             @RequestParam Long id,
             @RequestParam String username,
             @RequestParam String date,
             @RequestParam String workStart,
-            @RequestParam String breakStart,
-            @RequestParam String breakEnd,
             @RequestParam String workEnd,
             @RequestParam String adminUsername,
             @RequestParam String adminPassword,
             @RequestParam String userPassword
     ) {
         LocalDate parsedDate = LocalDate.parse(date);
-        LocalDateTime newStart = parsedDate.atTime(java.time.LocalTime.parse(workStart));
-        LocalDateTime newEnd = parsedDate.atTime(java.time.LocalTime.parse(workEnd));
+        LocalTime ws = LocalTime.parse(workStart);
+        LocalTime we = LocalTime.parse(workEnd);
+
         return timeTrackingService.updateTimeTrackEntry(
-                id, newStart, newEnd, userPassword, adminUsername, adminPassword
+                id,
+                parsedDate.atTime(ws),
+                parsedDate.atTime(we),
+                userPassword,
+                adminUsername,
+                adminPassword
         );
     }
 
-    /**
-     * Erstellt einen Bericht über Start-/Endzeiten, Pausen und DailyNotes
-     * in dem angegebenen Datumsbereich (z.B. für PDF-Ausdruck).
-     */
     @GetMapping("/report")
     public List<TimeReportDTO> getReport(
             @RequestParam String username,
@@ -193,22 +165,20 @@ public class TimeTrackingController {
         return timeTrackingService.getReport(username, startDate, endDate);
     }
 
-    /**
-     * Fügt oder aktualisiert für stundenbasierte Mitarbeiter eine Tages-Notiz.
-     */
     @PostMapping("/daily-note")
-    public TimeTrackingResponse updateDailyNote(@RequestParam String username,
-                                                @RequestParam String date,
-                                                @RequestParam String note) {
+    public TimeTrackingResponse updateDailyNote(
+            @RequestParam String username,
+            @RequestParam String date,
+            @RequestParam String note
+    ) {
         return timeTrackingService.updateDailyNote(username, date, note);
     }
 
-    /**
-     * Beispiel: Berechnet die Differenz zwischen Ist- und Soll-Zeit an einem Tag
-     * (wird je nach isPercentage, isHourly etc. anders berechnet).
-     */
     @GetMapping("/work-difference")
-    public int getWorkDifference(@RequestParam String username, @RequestParam String date) {
+    public int getWorkDifference(
+            @RequestParam String username,
+            @RequestParam String date
+    ) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return timeTrackingService.computeDailyWorkDifference(user, date);

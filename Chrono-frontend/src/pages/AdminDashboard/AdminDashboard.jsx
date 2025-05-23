@@ -184,27 +184,42 @@ const AdminDashboard = () => {
     // 5) EditTimeModal (Bearbeiten / Neuen Tag anlegen)
     //
     function openEditModal(targetUsername, dateObj, entries) {
-        // Minimales Default
+        // Wir gehen davon aus: entries[] enthält 4 Punches (1..4)
+        // oder wir haben 1 Zeile pro Tag. Hier also noch "alte" Logik,
+        // aber mit neuen Feldern:
+
         const defaultTime = '00:00';
 
-        // Versuche existierende Punches zu finden
+        // WORK START (#1)
         const eStart = entries.find(e => e.punchOrder === 1);
-        let eEnd     = entries.find(e => e.punchOrder === 4);
-        if (!eEnd) {
-            // Fallback: falls 4 fehlt, nimm evtl punchOrder=2
-            eEnd = entries.find(e => e.punchOrder === 2);
-        }
-        const workStartVal = eStart ? formatTime(eStart.startTime) : defaultTime;
-        const workEndVal   = eEnd
-            ? formatTime(eEnd.endTime || eEnd.startTime)
+        const workStartVal = eStart && eStart.workStart
+            ? formatTime(eStart.workStart)
+            : defaultTime;
+
+        // BREAK START (#2)
+        const eBreakS = entries.find(e => e.punchOrder === 2);
+        const breakStartVal = eBreakS && eBreakS.breakStart
+            ? formatTime(eBreakS.breakStart)
+            : defaultTime;
+
+        // BREAK END (#3)
+        const eBreakE = entries.find(e => e.punchOrder === 3);
+        const breakEndVal = eBreakE && eBreakE.breakEnd
+            ? formatTime(eBreakE.breakEnd)
+            : defaultTime;
+
+        // WORK END (#4)
+        const eEnd = entries.find(e => e.punchOrder === 4);
+        const workEndVal = eEnd && eEnd.workEnd
+            ? formatTime(eEnd.workEnd)
             : defaultTime;
 
         setEditTargetUsername(targetUsername);
         setEditDate(dateObj);
         setEditData({
             workStart:   workStartVal,
-            breakStart:  defaultTime,
-            breakEnd:    defaultTime,
+            breakStart:  breakStartVal,
+            breakEnd:    breakEndVal,
             workEnd:     workEndVal,
             adminPassword: '',
             userPassword: ''
@@ -212,7 +227,7 @@ const AdminDashboard = () => {
         setEditModalVisible(true);
     }
 
-    /** NEU: "Zeiten Eintragen" - Modal öffnen, aber ohne vorhandene Einträge */
+
     function openNewEntryModal(targetUsername, dateObj) {
         setEditTargetUsername(targetUsername);
         setEditDate(dateObj);
@@ -235,7 +250,7 @@ const AdminDashboard = () => {
         }
         const formattedDate = formatLocalDateYMD(editDate);
 
-        // Falls der Admin sein eigener Eintrag => AdminPasswort = userPassword
+        // Falls der Admin sein eigener Eintrag => adminPassword = userPassword
         const finalAdminPassword =
             (currentUser.username === editTargetUsername)
                 ? editData.userPassword
@@ -255,12 +270,13 @@ const AdminDashboard = () => {
         try {
             await api.put('/api/timetracking/editDay', null, { params });
             setEditModalVisible(false);
-            fetchAllTracks(); // Daten neu laden
+            fetchAllTracks();
         } catch (err) {
             console.error('Edit failed', err);
             notify(t('adminDashboard.editFailed') + ': ' + err.message);
         }
     }
+
     function handleEditInputChange(e) {
         const { name, value } = e.target;
         setEditData(prev => ({ ...prev, [name]: value }));

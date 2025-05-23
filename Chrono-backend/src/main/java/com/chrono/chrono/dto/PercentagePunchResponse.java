@@ -1,56 +1,22 @@
 package com.chrono.chrono.dto;
 
+import lombok.Getter;
+
+@Getter
 public class PercentagePunchResponse {
-    private String username;
-    private int workedMinutes;
-    private int expectedMinutes;
-    private int differenceMinutes;
-    private String message;
+    // GETTER
+    private final String username;
+    private final int worked;
+    private final int expected;
+    private final int difference;
+    private final String message;
 
-    public PercentagePunchResponse(String username,
-                                   int workedMinutes,
-                                   int expectedMinutes,
-                                   int differenceMinutes,
-                                   String message) {
+    public PercentagePunchResponse(String username, int worked, int expected, int difference, String message) {
         this.username = username;
-        this.workedMinutes = workedMinutes;
-        this.expectedMinutes = expectedMinutes;
-        this.differenceMinutes = differenceMinutes;
+        this.worked = worked;
+        this.expected = expected;
+        this.difference = difference;
         this.message = message;
     }
 
-    public String getUsername() {
-        return username;
-    }
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
-    public int getWorkedMinutes() {
-        return workedMinutes;
-    }
-    public void setWorkedMinutes(int workedMinutes) {
-        this.workedMinutes = workedMinutes;
-    }
-
-    public int getExpectedMinutes() {
-        return expectedMinutes;
-    }
-    public void setExpectedMinutes(int expectedMinutes) {
-        this.expectedMinutes = expectedMinutes;
-    }
-
-    public int getDifferenceMinutes() {
-        return differenceMinutes;
-    }
-    public void setDifferenceMinutes(int differenceMinutes) {
-        this.differenceMinutes = differenceMinutes;
-    }
-
-    public String getMessage() {
-        return message;
-    }
-    public void setMessage(String message) {
-        this.message = message;
-    }
 }

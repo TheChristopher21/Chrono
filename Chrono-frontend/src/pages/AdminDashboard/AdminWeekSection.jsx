@@ -335,32 +335,25 @@ const AdminWeekSection = ({
                                                             <div className="admin-day-content">
                                                                 <ul className="time-entry-list">
                                                                     {dayEntries
-                                                                        .sort((a, b) => a.punchOrder - b.punchOrder)
-                                                                        .map((e) => {
+                                                                        .sort((a, b) => (a.punchOrder - b.punchOrder))
+                                                                        .map(e => {
                                                                             let disp = "-";
                                                                             if (e.punchOrder === 1) {
-                                                                                disp = formatTime(e.startTime);
+                                                                                // Work Start
+                                                                                disp = e.workStart ? formatTime(e.workStart) : "-";
                                                                             } else if (e.punchOrder === 2) {
-                                                                                disp = e.breakStart
-                                                                                    ? formatTime(e.breakStart)
-                                                                                    : formatTime(e.startTime);
+                                                                                // Break Start
+                                                                                disp = e.breakStart ? formatTime(e.breakStart) : "-";
                                                                             } else if (e.punchOrder === 3) {
-                                                                                disp = e.breakEnd
-                                                                                    ? formatTime(e.breakEnd)
-                                                                                    : formatTime(e.startTime);
+                                                                                // Break End
+                                                                                disp = e.breakEnd ? formatTime(e.breakEnd) : "-";
                                                                             } else if (e.punchOrder === 4) {
-                                                                                disp = formatTime(e.endTime);
+                                                                                // Work End
+                                                                                disp = e.workEnd ? formatTime(e.workEnd) : "-";
                                                                             }
                                                                             return (
-                                                                                <li
-                                                                                    key={e.id}
-                                                                                    className={
-                                                                                        isLateTime(disp) ? "late-time" : ""
-                                                                                    }
-                                                                                >
-                                          <span className="entry-label">
-                                            {getStatusLabel(e.punchOrder)}:
-                                          </span>{" "}
+                                                                                <li key={e.id} className={isLateTime(disp) ? "late-time" : ""}>
+                                                                                    <span className="entry-label">{getStatusLabel(e.punchOrder)}:</span>{" "}
                                                                                     {disp}
                                                                                 </li>
                                                                             );

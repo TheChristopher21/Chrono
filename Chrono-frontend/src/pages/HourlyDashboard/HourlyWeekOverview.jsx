@@ -124,30 +124,29 @@ const HourlyWeekOverview = ({
                                     <ul>
                                         <li>
                                             <strong>{t("workStart")}:</strong>{" "}
-                                            {workStart ? formatTime(workStart.startTime) : "-"}
+                                            {workStart && workStart.workStart
+                                                ? formatTime(workStart.workStart)
+                                                : "-"}
                                         </li>
                                         <li>
                                             <strong>{t("breakStart")}:</strong>{" "}
-                                            {breakStart
-                                                ? breakStart.breakStart
-                                                    ? formatTime(breakStart.breakStart)
-                                                    : formatTime(breakStart.startTime)
+                                            {breakStart && breakStart.breakStart
+                                                ? formatTime(breakStart.breakStart)
                                                 : "-"}
                                         </li>
                                         <li>
                                             <strong>{t("breakEnd")}:</strong>{" "}
-                                            {breakEnd
-                                                ? breakEnd.breakEnd
-                                                    ? formatTime(breakEnd.breakEnd)
-                                                    : formatTime(breakEnd.startTime)
+                                            {breakEnd && breakEnd.breakEnd
+                                                ? formatTime(breakEnd.breakEnd)
                                                 : "-"}
                                         </li>
                                         <li>
                                             <strong>{t("workEnd")}:</strong>{" "}
-                                            {workEnd
-                                                ? formatTime(workEnd.endTime || workEnd.startTime)
+                                            {workEnd && workEnd.workEnd
+                                                ? formatTime(workEnd.workEnd)
                                                 : "-"}
                                         </li>
+
                                     </ul>
                                 )}
                             </div>

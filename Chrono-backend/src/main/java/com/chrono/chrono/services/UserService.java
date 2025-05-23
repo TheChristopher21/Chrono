@@ -17,23 +17,20 @@ public class UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
 
-        // 🛡️ TrackingBalance sicherstellen (niemals null)
+        // Sicherstellen, dass Null nicht vorkommt
         if (user.getTrackingBalanceInMinutes() == null) {
             user.setTrackingBalanceInMinutes(0);
         }
-
         return user;
     }
-
 
     public void assertSameCompany(String requestingUsername, String targetUsername) {
         User req = getUserByUsername(requestingUsername);
         User tgt = getUserByUsername(targetUsername);
-        if(!req.getCompany().getId().equals(tgt.getCompany().getId())) {
+        if (!req.getCompany().getId().equals(tgt.getCompany().getId())) {
             throw new AccessDeniedException("Unterschiedliche Firmen!");
         }
     }
-
 
     public User updateUser(User updatedUser) {
         User user = userRepository.findByUsername(updatedUser.getUsername())
@@ -46,7 +43,6 @@ public class UserService {
         if (updatedUser.getAnnualVacationDays() != null) {
             user.setAnnualVacationDays(updatedUser.getAnnualVacationDays());
         }
-
         if (updatedUser.getIsHourly() != null) {
             user.setIsHourly(updatedUser.getIsHourly());
         }
@@ -57,7 +53,6 @@ public class UserService {
             user.setWorkPercentage(updatedUser.getWorkPercentage());
         }
 
-        // ✅ Überstunden absichern
         if (updatedUser.getTrackingBalanceInMinutes() == null) {
             user.setTrackingBalanceInMinutes(0);
         } else {

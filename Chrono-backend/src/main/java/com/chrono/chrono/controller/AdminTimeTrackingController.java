@@ -12,17 +12,15 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/admin/timetracking")
 public class AdminTimeTrackingController {
+
     @Autowired
     private UserRepository userRepository;
+
     @Autowired
     private TimeTrackingService timeTrackingService;
 
@@ -32,19 +30,23 @@ public class AdminTimeTrackingController {
             Long adminCompanyId = userRepository
                     .findByUsername(principal.getName())
                     .orElseThrow(() -> new RuntimeException("Admin not found"))
-                    .getCompany()
-                    .getId();
+                    .getCompany().getId();
 
-            // Hier: 'dtos' ist eine List<AdminTimeTrackDTO>
-            List<AdminTimeTrackDTO> dtos = timeTrackingService.getAllTimeTracksWithUser();
+            List<User> allUsers = userRepository.findAll();
+            List<AdminTimeTrackDTO> result = new ArrayList<>();
 
-            // Filtern nach der Company des Admins
-            List<AdminTimeTrackDTO> filtered = dtos.stream()
-                    .filter(dto -> dto.getCompanyId() != null
-                            && dto.getCompanyId().equals(adminCompanyId))
-                    .toList();
-
-            return ResponseEntity.ok(filtered);
+            // Sammle für die eigene Company
+            for (User u : allUsers) {
+                if (!u.getCompany().getId().equals(adminCompanyId)) {
+                    continue;
+                }
+                // Alle TimeTracking-Einträge für diesen User
+                List<TimeTracking> rows = timeTrackingService.getTimeTrackingRowsForUser(u);
+                for (TimeTracking row : rows) {
+                    result.add(new AdminTimeTrackDTO(row));
+                }
+            }
+            return ResponseEntity.ok(result);
 
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
@@ -52,13 +54,12 @@ public class AdminTimeTrackingController {
     }
 
     @PostMapping("/rebuild-balances")
-    @PreAuthorize("hasRole('ADMIN')")       // ⇦  Zugriffsschutz
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<String> rebuildBalances() {
         timeTrackingService.rebuildAllUserBalancesOnce();
         return ResponseEntity.accepted()
                 .body("Balance-Rebuild erfolgreich angestoßen.");
     }
-
 
     @GetMapping("/admin/weekly-balance")
     public ResponseEntity<?> getAdminWeeklyBalances(@RequestParam String monday) {
@@ -74,21 +75,20 @@ public class AdminTimeTrackingController {
             entry.put("color", u.getColor());
             result.add(entry);
         }
-
         return ResponseEntity.ok(result);
     }
+
     @GetMapping("/admin/tracking-balances")
     public ResponseEntity<?> getAllCurrentTrackingBalances() {
         List<User> users = userRepository.findAll();
-
-        List<Map<String, Object>> result = users.stream().map(u -> {
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (User u : users) {
             Map<String, Object> entry = new HashMap<>();
             entry.put("username", u.getUsername());
             entry.put("trackingBalance", u.getTrackingBalanceInMinutes());
             entry.put("color", u.getColor());
-            return entry;
-        }).toList();
-
+            result.add(entry);
+        }
         return ResponseEntity.ok(result);
     }
 
@@ -106,15 +106,9 @@ public class AdminTimeTrackingController {
     ) {
         try {
             String result = timeTrackingService.updateDayTimeEntries(
-                    targetUsername,
-                    date,
-                    workStart,
-                    breakStart,
-                    breakEnd,
-                    workEnd,
-                    adminUsername,
-                    adminPassword,
-                    userPassword
+                    targetUsername, date,
+                    workStart, breakStart, breakEnd, workEnd,
+                    adminUsername, adminPassword, userPassword
             );
             return ResponseEntity.ok(result);
 
@@ -125,8 +119,8 @@ public class AdminTimeTrackingController {
                     || msg.contains("For self-edit, admin and user passwords must match")) {
                 return ResponseEntity.status(403).body("Passwort-Fehler: " + msg);
             }
-            return ResponseEntity.status(400).body("Konnte dayTimeEntries nicht bearbeiten: " + msg);
+            return ResponseEntity.status(400)
+                    .body("Konnte dayTimeEntries nicht bearbeiten: " + msg);
         }
     }
-
 }

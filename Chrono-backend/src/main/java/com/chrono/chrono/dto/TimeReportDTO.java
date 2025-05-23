@@ -1,20 +1,25 @@
 package com.chrono.chrono.dto;
 
 import lombok.Getter;
-import lombok.Setter;
 
-@Setter
 @Getter
 public class TimeReportDTO {
-    private String username;   // Benutzername
-    private String date;       // z. B. "Dienstag, 11.2.2025"
-    private String workStart;
-    private String breakStart;
-    private String breakEnd;
-    private String workEnd;
-    private String dailyNote;  // Tägliche Notiz
+    // GETTER
+    private final String username;
+    private final String date;       // z.B. "Montag, 1.5.2025"
+    private final String workStart;
+    private final String breakStart;
+    private final String breakEnd;
+    private final String workEnd;
+    private final String dailyNote;
 
-    public TimeReportDTO(String username, String date, String workStart, String breakStart, String breakEnd, String workEnd, String dailyNote) {
+    public TimeReportDTO(String username,
+                         String date,
+                         String workStart,
+                         String breakStart,
+                         String breakEnd,
+                         String workEnd,
+                         String dailyNote) {
         this.username = username;
         this.date = date;
         this.workStart = workStart;

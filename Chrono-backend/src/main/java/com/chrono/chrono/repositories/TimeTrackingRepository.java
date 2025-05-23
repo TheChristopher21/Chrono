@@ -2,89 +2,27 @@ package com.chrono.chrono.repositories;
 
 import com.chrono.chrono.entities.TimeTracking;
 import com.chrono.chrono.entities.User;
-import jakarta.persistence.LockModeType;
-import jakarta.transaction.Transactional;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Lock;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 public interface TimeTrackingRepository extends JpaRepository<TimeTracking, Long> {
 
-    /* ---------- bereits vorhanden ---------- */
-    List<TimeTracking> findByUserOrderByStartTimeDesc(User user);
-    List<TimeTracking> findByUserOrderByStartTimeAsc(User user);
-    Optional<TimeTracking> findFirstByUserAndEndTimeIsNullOrderByStartTimeDesc(User user);
-    Optional<TimeTracking> findTopByUserOrderByIdDesc(User user);
-    Optional<TimeTracking> findTopByUserAndEndTimeIsNotNullAndStartTimeBetweenOrderByStartTimeDesc(
-            User user, LocalDateTime start, LocalDateTime end);
+    // Holt genau den Eintrag für (user, dailyDate)
+    Optional<TimeTracking> findByUserAndDailyDate(User user, LocalDate dailyDate);
 
-    @Query("SELECT t FROM TimeTracking t JOIN FETCH t.user")
-    List<TimeTracking> findAllWithUser();
+    // History: Liste aller Einträge für User, absteigend nach Datum
+    List<TimeTracking> findByUserOrderByDailyDateDesc(User user);
 
-    List<TimeTracking> findByUserAndStartTimeBetween(User user,
-                                                     LocalDateTime start,
-                                                     LocalDateTime end);
+    // Datensätze in Datumsspanne (z.B. für Reports)
+    List<TimeTracking> findByUserAndDailyDateBetweenOrderByDailyDateAsc(
+            User user, LocalDate from, LocalDate to);
 
-    List<TimeTracking> findByUserAndDailyDate(User user, LocalDate dailyDate);
+    // Falls du alle Datensätze eines Users brauchst (z.B. zum Salden-Rebuild)
+    List<TimeTracking> findByUser(User user);
 
-    List<TimeTracking> findByEndTimeIsNullAndStartTimeBetween(
-            LocalDateTime start, LocalDateTime end);
-
-    @Query("SELECT t FROM TimeTracking t " +
-            "WHERE t.user = :user AND t.punchOrder = :punchOrder " +
-            "ORDER BY t.startTime DESC")
-    Optional<TimeTracking> findTopByUserAndPunchOrder(@Param("user") User user,
-                                                      @Param("punchOrder") Integer punchOrder);
-    @Modifying
-    @Transactional
-    @Query("delete from TimeTracking t where t.user = :user and t.dailyDate = :day")
-    int deleteByUserAndDailyDate(@Param("user") User user,
-                                 @Param("day")  LocalDate day);
-    /* ---------- NEU für den UNIQUE-Order-Fix ---------- */
-    @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<TimeTracking> findFirstByUserAndDailyDateAndPunchOrder(
-            User user, LocalDate dailyDate, Integer punchOrder);
-
-    @Lock(LockModeType.PESSIMISTIC_READ)
-    Optional<TimeTracking> findTopByUserAndDailyDateOrderByPunchOrderDesc(
-            User user, LocalDate dailyDate);
-
-    /** Einen ganz bestimmten Punch (für Duplicate-Key-Safety-Net) */
-    List<TimeTracking> findByUserAndDailyDateAndPunchOrder(User user,
-                                                           LocalDate dailyDate,
-                                                           Integer punchOrder);
-
-    List<TimeTracking> findByUserAndStartTimeBetweenOrderByPunchOrderAsc(
-            User user,
-            LocalDateTime from,
-            LocalDateTime to);
-
-    /*   DISTINCT-Liste aller Tage, an denen der User überhaupt gestempelt hat
-         – wird für komplette Salden-Neuberechnungen verwendet                     */
-    @Query("""
-           select distinct
-                  coalesce(t.dailyDate, function('DATE', t.startTime))
-           from   TimeTracking t
-           where  t.user = :user
-           order  by 1
-           """)
-    List<LocalDate> findDistinctTrackedDatesByUser(@Param("user") User user);
-
-    /* ---------- bestehende Helfer ---------- */
-
-    @Query(value = "SELECT DISTINCT DATE(start_time) FROM time_tracking WHERE user_id = :userId",
-            nativeQuery = true)
-    List<String> findAllTrackedDateStringsByUser(@Param("userId") Long userId);
-
-    default List<TimeTracking> findDailyNoteByUserAndDate(User user,
-                                                          LocalDate dailyDate) {
-        return findByUserAndDailyDateAndPunchOrder(user, dailyDate, 0);
-    }
+    // Option, um Distinct-Liste zu haben (hier könnte man anders vorgehen)
+    // List<LocalDate> findDistinctDailyDateByUser(User user);
 }

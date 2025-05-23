@@ -2,85 +2,109 @@ package com.chrono.chrono.entities;
 
 import jakarta.persistence.*;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "time_tracking")
+@Table(name = "time_tracking",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user_id", "daily_date"})
+        })
 public class TimeTracking {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-    private boolean corrected;
-
-    private Integer punchOrder;
-
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    // Jede Zeile gehört zu genau einem Nutzer
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
-    // Felder für korrigierte Zeiten (nur Uhrzeit)
-    @Column(name = "work_start", columnDefinition = "TIME")
-    private LocalTime workStart;
-
-    @Column(name = "break_start", columnDefinition = "TIME")
-    private LocalTime breakStart;
-
-    @Column(name = "break_end", columnDefinition = "TIME")
-    private LocalTime breakEnd;
-
-    @Column(name = "work_end", columnDefinition = "TIME")
-    private LocalTime workEnd;
-
-    // Tägliche Notiz (dailyNote) für Stundenlöhner
-    @Column(name = "daily_note", columnDefinition = "TEXT")
-    private String dailyNote;
-
-    // Reines Datum für die Notiz (ohne Uhrzeit – vermeidet Zeitzonenprobleme)
-    @Column(name = "daily_date")
+    // Genau ein Eintrag pro Tag
+    @Column(name = "daily_date", nullable = false)
     private LocalDate dailyDate;
 
-    public TimeTracking() {
+    // Arbeitsbeginn
+    private LocalTime workStart;
+
+    // Pausenbeginn
+    private LocalTime breakStart;
+
+    // Pausenende
+    private LocalTime breakEnd;
+
+    // Arbeitsende
+    private LocalTime workEnd;
+
+    // Falls es eine manuelle Korrektur war
+    private boolean corrected;
+
+    // Optionale Tagesnotiz für stundenbasierte Mitarbeiter
+    @Column(length = 2000)
+    private String dailyNote;
+
+    // GETTER & SETTER
+
+    public Long getId() {
+        return id;
+    }
+    public void setId(Long id) {
+        this.id = id;
     }
 
-    // Getter & Setter
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public User getUser() {
+        return user;
+    }
+    public void setUser(User user) {
+        this.user = user;
+    }
 
-    public LocalDateTime getStartTime() { return startTime; }
-    public void setStartTime(LocalDateTime startTime) { this.startTime = startTime; }
+    public LocalDate getDailyDate() {
+        return dailyDate;
+    }
+    public void setDailyDate(LocalDate dailyDate) {
+        this.dailyDate = dailyDate;
+    }
 
-    public LocalDateTime getEndTime() { return endTime; }
-    public void setEndTime(LocalDateTime endTime) { this.endTime = endTime; }
+    public LocalTime getWorkStart() {
+        return workStart;
+    }
+    public void setWorkStart(LocalTime workStart) {
+        this.workStart = workStart;
+    }
 
-    public boolean isCorrected() { return corrected; }
-    public void setCorrected(boolean corrected) { this.corrected = corrected; }
+    public LocalTime getBreakStart() {
+        return breakStart;
+    }
+    public void setBreakStart(LocalTime breakStart) {
+        this.breakStart = breakStart;
+    }
 
-    public Integer getPunchOrder() { return punchOrder; }
-    public void setPunchOrder(Integer punchOrder) { this.punchOrder = punchOrder; }
+    public LocalTime getBreakEnd() {
+        return breakEnd;
+    }
+    public void setBreakEnd(LocalTime breakEnd) {
+        this.breakEnd = breakEnd;
+    }
 
-    public User getUser() { return user; }
-    public void setUser(User user) { this.user = user; }
+    public LocalTime getWorkEnd() {
+        return workEnd;
+    }
+    public void setWorkEnd(LocalTime workEnd) {
+        this.workEnd = workEnd;
+    }
 
-    public LocalTime getWorkStart() { return workStart; }
-    public void setWorkStart(LocalTime workStart) { this.workStart = workStart; }
+    public boolean isCorrected() {
+        return corrected;
+    }
+    public void setCorrected(boolean corrected) {
+        this.corrected = corrected;
+    }
 
-    public LocalTime getBreakStart() { return breakStart; }
-    public void setBreakStart(LocalTime breakStart) { this.breakStart = breakStart; }
-
-    public LocalTime getBreakEnd() { return breakEnd; }
-    public void setBreakEnd(LocalTime breakEnd) { this.breakEnd = breakEnd; }
-
-    public LocalTime getWorkEnd() { return workEnd; }
-    public void setWorkEnd(LocalTime workEnd) { this.workEnd = workEnd; }
-
-    public String getDailyNote() { return dailyNote; }
-    public void setDailyNote(String dailyNote) { this.dailyNote = dailyNote; }
-
-    public LocalDate getDailyDate() { return dailyDate; }
-    public void setDailyDate(LocalDate dailyDate) { this.dailyDate = dailyDate; }
+    public String getDailyNote() {
+        return dailyNote;
+    }
+    public void setDailyNote(String dailyNote) {
+        this.dailyNote = dailyNote;
+    }
 }

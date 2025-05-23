@@ -5,39 +5,54 @@ import java.util.Map;
 
 public class DashboardResponse {
 
-    private String userName;
-    // Für klassische Nutzer: tägliche Einträge
-    private List<String> dailyEntries;
-    // Für stundenbasierte Nutzer: Monatsübersicht (z. B. "2025-03" -> gearbeitete Minuten)
-    private Map<String, Long> monthlyOverview;
-    private String role;
+    private String username;
+    private Map<String, Long> monthlyTotals;  // für stundenbasierte
+    private List<String> dailyEntries;        // für nicht-stundenbasierte
+    private String roleName;
 
-    public DashboardResponse() {}
+    // Konstruktoren, z.B. Overloads:
+    public DashboardResponse(String username, Map<String, Long> monthlyTotals, String roleName) {
+        this.username = username;
+        this.monthlyTotals = monthlyTotals;
+        this.roleName = roleName;
+    }
 
-    // Konstruktor für tägliche Übersicht
-    public DashboardResponse(String userName, List<String> dailyEntries, String role) {
-        this.userName = userName;
+    public DashboardResponse(String username, List<String> dailyEntries, String roleName) {
+        this.username = username;
         this.dailyEntries = dailyEntries;
-        this.role = role;
+        this.roleName = roleName;
     }
 
-    // Konstruktor für stundenbasierte Übersicht
-    public DashboardResponse(String userName, Map<String, Long> monthlyOverview, String role) {
-        this.userName = userName;
-        this.monthlyOverview = monthlyOverview;
-        this.role = role;
+
+    public String getUsername() {
+        return username;
     }
 
-    // Getter und Setter
-    public String getUserName() { return userName; }
-    public void setUserName(String userName) { this.userName = userName; }
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
-    public List<String> getDailyEntries() { return dailyEntries; }
-    public void setDailyEntries(List<String> dailyEntries) { this.dailyEntries = dailyEntries; }
+    public List<String> getDailyEntries() {
+        return dailyEntries;
+    }
 
-    public Map<String, Long> getMonthlyOverview() { return monthlyOverview; }
-    public void setMonthlyOverview(Map<String, Long> monthlyOverview) { this.monthlyOverview = monthlyOverview; }
+    public void setDailyEntries(List<String> dailyEntries) {
+        this.dailyEntries = dailyEntries;
+    }
 
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
+    public Map<String, Long> getMonthlyTotals() {
+        return monthlyTotals;
+    }
+
+    public void setMonthlyTotals(Map<String, Long> monthlyTotals) {
+        this.monthlyTotals = monthlyTotals;
+    }
+
+    public String getRoleName() {
+        return roleName;
+    }
+
+    public void setRoleName(String roleName) {
+        this.roleName = roleName;
+    }
 }

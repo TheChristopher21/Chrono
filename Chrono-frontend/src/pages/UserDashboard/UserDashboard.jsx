@@ -581,26 +581,22 @@ function UserDashboard() {
                                             .map(e => {
                                                 let displayTime = '-';
                                                 if (e.punchOrder === 1) {
-                                                    displayTime = formatTime(e.startTime);
+                                                    displayTime = e.workStart ? formatTime(e.workStart) : '-';
                                                 } else if (e.punchOrder === 2) {
-                                                    displayTime = e.breakStart
-                                                        ? formatTime(e.breakStart)
-                                                        : formatTime(e.startTime);
+                                                    displayTime = e.breakStart ? formatTime(e.breakStart) : '-';
                                                 } else if (e.punchOrder === 3) {
-                                                    displayTime = e.breakEnd
-                                                        ? formatTime(e.breakEnd)
-                                                        : formatTime(e.startTime);
+                                                    displayTime = e.breakEnd ? formatTime(e.breakEnd) : '-';
                                                 } else if (e.punchOrder === 4) {
-                                                    displayTime = formatTime(e.endTime);
+                                                    displayTime = e.workEnd   ? formatTime(e.workEnd)   : '-';
                                                 }
                                                 return (
                                                     <li key={e.id}>
-                            <span className="entry-label">
-                              {getStatusLabel(e.punchOrder)}:
-                            </span>{" "}
+        <span className="entry-label">
+          {getStatusLabel(e.punchOrder)}:
+        </span>{" "}
                                                         <span className={isLateTime(displayTime) ? 'late-time' : ''}>
-                              {displayTime}
-                            </span>
+          {displayTime}
+        </span>
                                                     </li>
                                                 );
                                             })}

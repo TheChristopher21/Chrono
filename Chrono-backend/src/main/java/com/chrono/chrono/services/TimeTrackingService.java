@@ -1,7 +1,5 @@
 package com.chrono.chrono.services;
 
-import com.chrono.chrono.dto.AdminTimeTrackDTO;
-import com.chrono.chrono.dto.PercentagePunchResponse;
 import com.chrono.chrono.dto.TimeReportDTO;
 import com.chrono.chrono.dto.TimeTrackingResponse;
 import com.chrono.chrono.entities.TimeTracking;
@@ -9,42 +7,19 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.TimeTrackingRepository;
 import com.chrono.chrono.repositories.UserRepository;
-import jakarta.annotation.PostConstruct;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Lazy;
-import org.springframework.dao.CannotAcquireLockException;
-import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.dao.DeadlockLoserDataAccessException;
-import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Isolation;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.time.temporal.IsoFields;
 import java.util.*;
 import java.util.stream.Collectors;
 
-/**
- * Zentrale Service-Klasse zur Zeiterfassung.
- * Enthält Punch-Methoden, Überstundenberechnung, AutoPunchOut-Logik
- * und die Weekly-Balance (getWeeklyBalance) für das Admin-Dashboard.
- */
 @Service
 public class TimeTrackingService {
-
-    private static final Logger logger = LoggerFactory.getLogger(TimeTrackingService.class);
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private TimeTrackingRepository timeTrackingRepository;
@@ -52,719 +27,170 @@ public class TimeTrackingService {
     @Autowired
     private UserRepository userRepository;
 
-    @PersistenceContext
-    private EntityManager em;
-
     @Autowired
     private WorkScheduleService workScheduleService;
 
-    // 8h30 pro Tag => 510 Minuten
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    // Beispiel: 8h30 = 510 Minuten
     public static final int FULL_DAY_MINUTES = 510;
 
-    // Anzahl Versuche bei Deadlocks
-    private static final int MAX_DEADLOCK_RETRIES = 3;
-
-
-    // -------------------------------------------------------------------------
-    // PRIVATE HELPER
-    // -------------------------------------------------------------------------
-
-    /** Lädt einen User oder wirft UserNotFoundException. */
+    // Hilfsfunktion zum Laden eines Users oder Exception
     private User loadUserByUsername(String username) {
-        logger.debug("loadUserByUsername(username={}) aufgerufen", username);
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> {
-                    logger.warn("User '{}' nicht gefunden!", username);
-                    return new UserNotFoundException("User not found: " + username);
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+    }
+
+    // Holt oder erzeugt die Zeile (TimeTracking) für einen bestimmten Tag
+    @Transactional
+    public TimeTracking getOrCreateRow(User user, LocalDate date) {
+        return timeTrackingRepository.findByUserAndDailyDate(user, date)
+                .orElseGet(() -> {
+                    TimeTracking tt = new TimeTracking();
+                    tt.setUser(user);
+                    tt.setDailyDate(date);
+                    tt.setCorrected(false);
+                    // Hier kann man auch default-Werte für z.B. dailyNote setzen
+                    return timeTrackingRepository.save(tt);
                 });
     }
 
-    /** Konvertiert Status-String in PunchOrder-Zahl (1..4). */
-    private int mapStatusToPunchOrder(String newStatus) {
-        switch (newStatus) {
-            case "WORK_START":  return 1;
-            case "BREAK_START": return 2;
-            case "BREAK_END":   return 3;
-            case "WORK_END":    return 4;
-            default:
-                logger.warn("mapStatusToPunchOrder: Unbekannter Status {}", newStatus);
-                return 0;
-        }
-    }
-
-
-    // -------------------------------------------------------------------------
-    // PUNCH-LOGIK
-    // -------------------------------------------------------------------------
-
-    /**
-     * Direkte Punch-Aktion (WORK_START, BREAK_START, BREAK_END, WORK_END).
-     * Umgeht die "Smart Punch"-Automatik.
-     */
     @Transactional
-    public TimeTrackingResponse handlePunch(String username, String newStatus) {
-        logger.info("handlePunch aufgerufen (username={}, newStatus={})", username, newStatus);
-
-        User user = loadUserByUsername(username);
-        int order = mapStatusToPunchOrder(newStatus);
-
-        LocalDateTime now = LocalDateTime.now();
-        TimeTracking tt = createPunchInSeparateTx(user, order, now);
-
-        logger.info("handlePunch abgeschlossen: user={}, punchOrder={}", username, order);
-        return convertToResponse(tt);
+    public TimeTracking getOrCreateTodayRow(User user) {
+        return getOrCreateRow(user, LocalDate.now());
     }
 
-    /**
-     * "Smart Punch": geht automatisch 1->2->3->4
-     * + Anti-Doppel-Klick + orElse(0), um NoSuchElementException zu vermeiden.
-     */
+    // -------------------------------------------------------------------------
+    // SMART PUNCH: 1->2->3->4
+    // -------------------------------------------------------------------------
     @Transactional
     public TimeTrackingResponse handleSmartPunch(String username) {
-        logger.info("handleSmartPunch aufgerufen (username={})", username);
-
-        User user  = loadUserByUsername(username);
-        LocalDate today = LocalDate.now();
-
-        // Letzten Punch heute ermitteln, absteigend
-        Optional<TimeTracking> lastOpt = timeTrackingRepository
-                .findTopByUserAndDailyDateOrderByPunchOrderDesc(user, today);
-
-        // Falls gar kein Punch => lastOrder=0
-        int lastOrder = lastOpt.map(TimeTracking::getPunchOrder).orElse(0);
-        logger.debug("handleSmartPunch: lastOrder={} (User={})", lastOrder, user.getUsername());
-
-        // Anti-Doppel-Klick: wenn letzter Punch < 5s her
-        if (lastOpt.isPresent()) {
-            LocalDateTime lastTime = lastOpt.get().getStartTime();
-            long seconds = Duration.between(lastTime, LocalDateTime.now()).abs().getSeconds();
-            if (seconds < 5) {
-                logger.info("handleSmartPunch: Doppel-Klick erkannt ({}s).", seconds);
-                return convertToResponse(lastOpt.get());
-            }
-        }
-
-        // Falls Tag schon beendet (#4)
-        if (lastOrder == 4 && lastOpt.isPresent()) {
-            logger.info("handleSmartPunch: Tag bereits beendet, gebe letzten Punch zurück.");
-            return convertToResponse(lastOpt.get());
-        } else if (lastOrder == 4) {
-            // lastOpt leer => fallback
-            logger.debug("handleSmartPunch: lastOrder=4, aber kein DS -> setze lastOrder=0");
-            lastOrder = 0;
-        }
-
-        // Bestimme nextOrder  (1->2->3->4, 0 => 1)
-        int nextOrder;
-        switch (lastOrder) {
-            case 0:
-            case 4:
-                nextOrder = 1; break;
-            case 1:
-                nextOrder = 2; break;
-            case 2:
-                nextOrder = 3; break;
-            case 3:
-                nextOrder = 4; break;
-            default:
-                nextOrder = 1;
-                break;
-        }
-
-        LocalDateTime now = LocalDateTime.now();
-        TimeTracking newTt = createPunchInSeparateTx(user, nextOrder, now);
-
-
-        logger.info("handleSmartPunch: nextOrder={} angelegt (User={})", nextOrder, user.getUsername());
-        return convertToResponse(newTt);
-    }
-
-    /**
-     * Separate Methode (eigene Transaktion) mit "Finde oder Erzeuge" + Deadlock-Retry.
-     */
-    @Transactional(propagation = Propagation.REQUIRES_NEW, isolation = Isolation.SERIALIZABLE)
-    public TimeTracking createPunchInSeparateTx(User user, int punchOrder, LocalDateTime now) {
-        logger.debug("createPunchInSeparateTx aufgerufen (user={}, punchOrder={}, now={})",
-                user.getUsername(), punchOrder, now);
-
-        for (int attempt = 1; attempt <= MAX_DEADLOCK_RETRIES; attempt++) {
-            try {
-                // (1) check if already exists
-                Optional<TimeTracking> existing = timeTrackingRepository
-                        .findFirstByUserAndDailyDateAndPunchOrder(user, now.toLocalDate(), punchOrder);
-
-                if (existing.isPresent()) {
-                    logger.debug("createPunchInSeparateTx: DS existiert schon, gebe ihn zurück");
-                    return existing.get();
-                }
-
-                // (2) Neu anlegen
-                TimeTracking tt = new TimeTracking();
-                tt.setUser(user);
-                tt.setPunchOrder(punchOrder);
-                tt.setDailyDate(now.toLocalDate());
-                tt.setStartTime(now);
-
-                if (punchOrder == 4) {
-                    tt.setEndTime(now);
-                    tt.setWorkEnd(now.toLocalTime());
-                }
-                TimeTracking saved = timeTrackingRepository.save(tt);
-                logger.debug("createPunchInSeparateTx: DS neu angelegt (PunchOrder={})", punchOrder);
-                return saved;
-
-            } catch (CannotAcquireLockException | DeadlockLoserDataAccessException ex) {
-                logger.warn("createPunchInSeparateTx: Deadlock (#{}), retrying...", attempt);
-                em.clear();
-                if (attempt == MAX_DEADLOCK_RETRIES) {
-                    logger.error("createPunchInSeparateTx: Deadlock final, werfe Exception");
-                    throw ex;
-                }
-                try {
-                    Thread.sleep(50L * attempt);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-
-            } catch (DataIntegrityViolationException dup) {
-                logger.warn("createPunchInSeparateTx: DuplicateKey -> fetch existing again");
-                em.clear();
-                Optional<TimeTracking> existing2 = timeTrackingRepository
-                        .findFirstByUserAndDailyDateAndPunchOrder(user, now.toLocalDate(), punchOrder);
-                if (existing2.isPresent()) {
-                    logger.debug("createPunchInSeparateTx: DS gefunden nach DuplicateKey");
-                    return existing2.get();
-                }
-                throw dup; // wenn immer noch nicht da, werfe
-            }
-        }
-        throw new IllegalStateException("createPunchInSeparateTx: Unreachable, max deadlock retries exceeded");
-    }
-
-    /**
-     * Hilfsmethode zum Anlegen eines PunchOrder (#4 etc.) im AutoPunchOut.
-     */
-    private TimeTracking createPunchForUser(User user, int punchOrder, LocalDateTime stampTime) {
-        logger.debug("createPunchForUser: user={}, punchOrder={}, stampTime={}", user.getUsername(), punchOrder, stampTime);
-
-        TimeTracking newTt = createPunchInSeparateTx(user, punchOrder, stampTime);
-        if (punchOrder == 4) {
-            newTt.setEndTime(stampTime);
-            newTt.setWorkEnd(stampTime.toLocalTime());
-            timeTrackingRepository.save(newTt);
-            logger.debug("createPunchForUser: #4 => EndTime gesetzt");
-        }
-        return newTt;
-    }
-
-    // -------------------------------------------------------------------------
-    // AUTO-PUNCH-OUT
-    // -------------------------------------------------------------------------
-    @Scheduled(cron = "0 20 23 * * *", zone = "Europe/Zurich")
-    @Transactional
-    public void autoPunchOut() {
-        LocalDateTime now = LocalDateTime.now();
-        LocalDate today = now.toLocalDate();
-        logger.info("autoPunchOut gestartet ({} {})", today, now.toLocalTime());
-
-        LocalDateTime startOfDay = today.atStartOfDay();
-        List<TimeTracking> openPunches =
-                timeTrackingRepository.findByEndTimeIsNullAndStartTimeBetween(startOfDay, now);
-
-        // gruppieren
-        Map<User, List<TimeTracking>> byUser = openPunches.stream()
-                .collect(Collectors.groupingBy(TimeTracking::getUser));
-
-        byUser.forEach((user, punches) -> completeMissingPunchesForUser(user, punches, now));
-
-        logger.info("✅ AutoPunchOut beendet – {}", today);
-    }
-
-    /**
-     * Sorgt dafür, dass pro Tag (isPercentage => 2 Stempel, sonst 4) sauber abgeschlossen wird.
-     */
-    private void completeMissingPunchesForUser(User user, List<TimeTracking> openPunches, LocalDateTime punchOutTime) {
-        logger.debug("completeMissingPunchesForUser aufgerufen (user={}, #openPunches={})",
-                user.getUsername(), openPunches.size());
-
-        openPunches.sort(Comparator.comparingInt(tt ->
-                Optional.ofNullable(tt.getPunchOrder()).orElse(0)));
-        TimeTracking last = openPunches.get(openPunches.size()-1);
-        int lastOrder = Optional.ofNullable(last.getPunchOrder()).orElse(0);
-
-        // Prüfe, ob #4 schon existiert
-        Optional<TimeTracking> existing4 = timeTrackingRepository
-                .findFirstByUserAndDailyDateAndPunchOrder(user, punchOutTime.toLocalDate(), 4);
-        if (existing4.isPresent()) {
-            logger.warn("AutoPunchOut {}: PunchOrder #4 existiert schon, skip", user.getUsername());
-            return;
-        }
-
-        switch (lastOrder) {
-            case 1 -> {
-                // Nur WORK_START => #4 => 2 Stempel
-                createPunchForUser(user, 4, punchOutTime);
-                logger.info("completeMissingPunchesForUser: user={}, lastOrder=1 => #4 erzeugt => 2 Stempel", user.getUsername());
-            }
-            case 2 -> {
-                // Pause gestartet, kein BREAK_END
-                if (Boolean.TRUE.equals(user.getIsPercentage())) {
-                    // rename #2 => #4
-                    last.setPunchOrder(4);
-                    last.setEndTime(punchOutTime);
-                    last.setWorkEnd(punchOutTime.toLocalTime());
-                    timeTrackingRepository.save(last);
-                    logger.info("completeMissingPunchesForUser: user={}, lastOrder=2 => rename->#4 (isPercentage)", user.getUsername());
-                } else {
-                    // #3 + #4
-                    createPunchForUser(user, 3, punchOutTime);
-                    createPunchForUser(user, 4, punchOutTime);
-                    logger.info("completeMissingPunchesForUser: user={}, lastOrder=2 => #3+#4 erzeugt => 4 Stempel", user.getUsername());
-                }
-            }
-            case 3 -> {
-                // Pause beendet => #4
-                createPunchForUser(user, 4, punchOutTime);
-                logger.info("completeMissingPunchesForUser: user={}, lastOrder=3 => #4 erzeugt => 4 Stempel", user.getUsername());
-            }
-            case 4 -> {
-                logger.warn("completeMissingPunchesForUser: user={}, #4 existiert, skip", user.getUsername());
-            }
-            default -> {
-                logger.info("completeMissingPunchesForUser: user={}, fallback lastOrder={}, force #4", user.getUsername(), lastOrder);
-                createPunchForUser(user, 4, punchOutTime);
-            }
-        }
-    }
-
-    // -------------------------------------------------------------------------
-    // TÄGLICHE BALANCE UM 00:05
-    // -------------------------------------------------------------------------
-    @Scheduled(cron = "0 5 0 * * *")
-    @Transactional
-    public void bookDailyBalances() {
-        LocalDate yesterday = LocalDate.now().minusDays(1);
-        logger.info("bookDailyBalances gestartet für {}", yesterday);
-
-        userRepository.findAll().forEach(u -> {
-            if (Boolean.TRUE.equals(u.getIsPercentage())) {
-                return; // Prozentbasierte User werden wöchentlich abgerechnet
-            }
-            int delta = computeDailyWorkDifference(u, yesterday.toString());
-            int oldBal = Optional.ofNullable(u.getTrackingBalanceInMinutes()).orElse(0);
-            u.setTrackingBalanceInMinutes(oldBal + delta);
-        });
-
-        logger.info("✅ bookDailyBalances abgeschlossen für {}", yesterday);
-    }
-
-    /**
-     * Liefert (Ist – Soll) in Minuten für **einen** Kalendertag.
-     *  • Percentage-User ⇒ Tages-Soll = Wochenplan × workPercentage
-     *  • Hourly-User     ⇒ Soll = 0
-     *  • Alle anderen    ⇒ Soll = von workScheduleService (max. 8 h)
-     */
-    public int computeDailyWorkDifference(User user, String isoDate) {
-
-        LocalDate day = LocalDate.parse(isoDate);
-
-        // ----- 1) Stempel des Tages chronologisch holen
-        LocalDateTime startOfDay = day.atStartOfDay();
-        LocalDateTime endOfDay   = day.plusDays(1).atStartOfDay();
-
-        List<TimeTracking> punches = timeTrackingRepository
-                .findByUserAndStartTimeBetweenOrderByPunchOrderAsc(user, startOfDay, endOfDay);
-
-        // ----- 2) Work-/Break-Zeiten ermitteln
-        LocalDateTime ws = null, bs = null, be = null, we = null;
-
-        for (TimeTracking t : punches) {
-            int po = Optional.ofNullable(t.getPunchOrder()).orElse(0);
-            LocalDateTime ts = t.getStartTime() != null ? t.getStartTime()
-                    : t.getEndTime();
-            switch (po) {
-                case 1 -> ws = ts;
-                case 2 -> bs = ts;
-                case 3 -> be = ts;
-                case 4 -> we = ts;
-            }
-        }
-
-        // ----- 3) Ist-Zeit berechnen
-        int worked = 0;
-        if (ws != null && we != null) {
-            worked = (int) ChronoUnit.MINUTES.between(ws, we);
-            if (bs != null && be != null && be.isAfter(bs)) {
-                worked -= (int) ChronoUnit.MINUTES.between(bs, be);      // Pause abziehen
-            }
-        }
-
-        // ----- 4) Soll-Zeit berechnen
-        int expected;
-        if (Boolean.TRUE.equals(user.getIsHourly())) {
-            expected = 0;
-        } else {
-            expected = workScheduleService.computeExpectedWorkMinutes(user, day);
-
-            expected = Math.min(expected, FULL_DAY_MINUTES);            if (Boolean.TRUE.equals(user.getIsPercentage())) {
-                int perc = Optional.ofNullable(user.getWorkPercentage()).orElse(100);
-                expected = (int) Math.round(expected * (perc / 100.0));
-            }
-        }
-
-        return worked - expected;
-    }
-
-
-    private LocalDateTime toDateTime(TimeTracking t) {
-        if (t.getStartTime() != null) return t.getStartTime();
-        if (t.getEndTime()   != null) return t.getEndTime();
-        return null;
-    }
-
-    /**
-     * Läuft jeden Montag 00:10 Uhr und bucht die Differenz der
-     * **VORHERIGEN** Kalenderwoche auf das Überstunden-Konto
-     * der Prozent-Mitarbeiter.
-     */
-    //@Scheduled(cron = "0 10 0 * * MON")
-    @Scheduled(cron = "* * * * * *")
-    @Transactional
-    public void bookWeeklyPercentageBalances() {
-
-        LocalDate lastMonday = LocalDate.now().with(DayOfWeek.MONDAY).minusWeeks(1);
-        logger.info("bookWeeklyPercentageBalances started for week {}", lastMonday);
-
-        userRepository.findAll().forEach(u -> {
-            if (Boolean.TRUE.equals(u.getIsPercentage())) {
-                int delta = computeWeeklyWorkDifference(u, lastMonday);
-                int old   = Optional.ofNullable(u.getTrackingBalanceInMinutes()).orElse(0);
-                u.setTrackingBalanceInMinutes(old + delta);
-            }
-        });
-
-        logger.info("✅ bookWeeklyPercentageBalances finished for week {}", lastMonday);
-    }
-
-
-    /**
-     * Summiert die Tages-Differenzen einer Kalenderwoche (Mo-So).
-     * Liefert also genau den Wert, den wir auf das Konto buchen.
-     */
-    /**
-     * Ermittelt die Wochen-Differenz (Ist-Minuten – Soll-Minuten) für einen User,
-     * wobei percentage-User ein fixes Wochen-Soll haben (42h30 × Prozent).
-     */
-    private int computeWeeklyWorkDifference(User user, LocalDate monday) {
-
-        // --- 1) Ist-Minuten -----------------------------------------------------
-        int worked = getWeeklyBalance(user, monday);  // berechnet bereits "Netto" (ohne Pausen)
-
-        // --- 2) Soll-Minuten ----------------------------------------------------
-        int expected;
-
-        if (Boolean.TRUE.equals(user.getIsPercentage())) {
-            // Basis-Woche = 42 h 30 min = 2550 min
-            int baseWeekMinutes = 2550;
-            int perc = Optional.ofNullable(user.getWorkPercentage()).orElse(100);
-            expected = (int) Math.round(baseWeekMinutes * (perc / 100.0));
-
-        } else {
-            // Vollzeit oder Stundenlöhner → auf Tages-Basis aus Wochenplan
-            expected = 0;
-            for (int i = 0; i < 7; i++) {
-                LocalDate day = monday.plusDays(i);
-                expected += workScheduleService.computeExpectedWorkMinutes(user, day);
-            }
-        }
-
-        int diff = worked - expected;
-        logger.debug("computeWeeklyWorkDifference: user={}, weekOf={}, worked={}, expected={}, diff={}",
-                user.getUsername(), monday, worked, expected, diff);
-        return diff;
-    }
-
-
-
-    // -------------------------------------------------------------------------
-    //  handlePercentagePunch
-    // -------------------------------------------------------------------------
-    public PercentagePunchResponse handlePercentagePunch(String username, double percentage) {
-        logger.info("handlePercentagePunch: user={}, percentage={}", username, percentage);
-        int expected = (int) Math.round(FULL_DAY_MINUTES * (percentage / 100.0));
         User user = loadUserByUsername(username);
+        TimeTracking row = getOrCreateTodayRow(user);
 
-        LocalDate today = LocalDate.now();
-        LocalDateTime startOfDay = today.atStartOfDay();
-        LocalDateTime endOfDay   = today.plusDays(1).atStartOfDay();
+        if (row.getWorkStart() == null) {
+            row.setWorkStart(LocalTime.now());
+        } else if (row.getBreakStart() == null) {
+            row.setBreakStart(LocalTime.now());
+        } else if (row.getBreakEnd() == null) {
+            row.setBreakEnd(LocalTime.now());
+        } else if (row.getWorkEnd() == null) {
+            row.setWorkEnd(LocalTime.now());
+        } else {
+            // Wenn alles belegt ist, passiert nichts mehr
+        }
+        row.setCorrected(false);
+        timeTrackingRepository.save(row);
 
-        // gearbeitete Zeit
-        int worked = timeTrackingRepository
-                .findByUserAndStartTimeBetween(user, startOfDay, endOfDay)
-                .stream()
-                .filter(tt -> tt.getStartTime() != null && tt.getEndTime() != null)
-                .mapToInt(tt -> (int) ChronoUnit.MINUTES.between(tt.getStartTime(), tt.getEndTime()))
-                .sum();
-
-        int diff = worked - expected;
-        String msg = (diff >= 0)
-                ? "Überstunden: " + diff + " min"
-                : "Fehlstunden: " + (-diff) + " min";
-
-        logger.info("handlePercentagePunch: worked={}, expected={}, diff={}", worked, expected, diff);
-        return new PercentagePunchResponse(username, worked, expected, diff, msg);
+        return convertToResponse(row);
     }
 
     // -------------------------------------------------------------------------
-    // HISTORY, NOTES, REPORTS, etc.
+    // Direkte Punch-Methoden: WORK_START, BREAK_START, BREAK_END, WORK_END
+    // -------------------------------------------------------------------------
+    @Transactional
+    public TimeTrackingResponse handlePunch(String username, String punchType) {
+        User user = loadUserByUsername(username);
+        TimeTracking row = getOrCreateTodayRow(user);
+
+        LocalTime now = LocalTime.now();
+
+        switch (punchType) {
+            case "WORK_START" -> {
+                if (row.getWorkStart() == null) row.setWorkStart(now);
+            }
+            case "BREAK_START" -> {
+                if (row.getBreakStart() == null) row.setBreakStart(now);
+            }
+            case "BREAK_END" -> {
+                if (row.getBreakEnd() == null) row.setBreakEnd(now);
+            }
+            case "WORK_END" -> {
+                if (row.getWorkEnd() == null) row.setWorkEnd(now);
+            }
+        }
+        row.setCorrected(false);
+        timeTrackingRepository.save(row);
+
+        return convertToResponse(row);
+    }
+
+    // -------------------------------------------------------------------------
+    // HISTORY: Liste aller Tage, absteigend
     // -------------------------------------------------------------------------
     public List<TimeTrackingResponse> getUserHistory(String username) {
-        logger.info("getUserHistory: username={}", username);
         User user = loadUserByUsername(username);
+        List<TimeTracking> list = timeTrackingRepository.findByUserOrderByDailyDateDesc(user);
 
-        List<TimeTracking> list = timeTrackingRepository.findByUserOrderByStartTimeDesc(user);
-        return list.stream().map(this::convertToResponse).collect(Collectors.toList());
+        return list.stream()
+                .map(this::convertToResponse)
+                .collect(Collectors.toList());
     }
 
+    // -------------------------------------------------------------------------
+    // DAILY NOTE
+    // -------------------------------------------------------------------------
     @Transactional
-    public TimeTrackingResponse updateDailyNote(String username, String date, String note) {
-        logger.info("updateDailyNote: user={}, date={}, note='{}'", username, date, note);
-
+    public TimeTrackingResponse updateDailyNote(String username, String dateStr, String note) {
         User user = loadUserByUsername(username);
-        if (!user.isHourly()) {
-            logger.warn("updateDailyNote: user {} ist kein stundenbasierter Mitarbeiter!", username);
-            throw new RuntimeException("Daily note is only available for hourly employees.");
-        }
-        LocalDate localDate = LocalDate.parse(date);
-        List<TimeTracking> noteEntries = timeTrackingRepository.findDailyNoteByUserAndDate(user, localDate);
+        LocalDate date = LocalDate.parse(dateStr);
 
-        TimeTracking noteEntry;
-        if (!noteEntries.isEmpty()) {
-            noteEntry = noteEntries.get(0);
-            noteEntry.setDailyNote(note);
-        } else {
-            noteEntry = new TimeTracking();
-            noteEntry.setUser(user);
-            noteEntry.setPunchOrder(0);
-            noteEntry.setStartTime(localDate.atStartOfDay());
-            noteEntry.setEndTime(localDate.atStartOfDay());
-            noteEntry.setDailyNote(note);
-            noteEntry.setCorrected(true);
-        }
-        noteEntry.setDailyDate(localDate);
-        timeTrackingRepository.save(noteEntry);
+        TimeTracking row = getOrCreateRow(user, date);
+        row.setDailyNote(note);
+        row.setCorrected(true);
+        timeTrackingRepository.save(row);
 
-        logger.info("updateDailyNote: Eintrag gespeichert -> dailyNote='{}'", note);
-        return convertToResponse(noteEntry);
+        return convertToResponse(row);
     }
 
+    // -------------------------------------------------------------------------
+    // ADMIN: gesamten Tag updaten (WORK_START, BREAK_START, BREAK_END, WORK_END)
+    // -------------------------------------------------------------------------
     @Transactional
-    public String updateDayTimeEntries(String targetUsername,
-                                       String date,
-                                       String workStartStr,
-                                       String breakStartStr,
-                                       String breakEndStr,
-                                       String workEndStr,
-                                       String adminUsername,
-                                       String adminPassword,
-                                       String userPassword) {
-        logger.info("updateDayTimeEntries: target={}, date={}", targetUsername, date);
-
-        User targetUser = userRepository.findByUsername(targetUsername)
-                .orElseThrow(() -> new UserNotFoundException("User not found"));
+    public String updateDayTimeEntries(
+            String targetUsername,
+            String date,
+            String workStart,
+            String breakStart,
+            String breakEnd,
+            String workEnd,
+            String adminUsername,
+            String adminPassword,
+            String userPassword
+    ) {
+        User targetUser = loadUserByUsername(targetUsername);
 
         checkAdminAndUserPasswords(targetUser, adminUsername, adminPassword, userPassword);
 
-        LocalDate parsedDate = LocalDate.parse(date);
-        LocalTime newWorkStart = LocalTime.parse(workStartStr);
-        LocalTime newWorkEnd   = LocalTime.parse(workEndStr);
+        LocalDate day = LocalDate.parse(date);
+        TimeTracking row = getOrCreateRow(targetUser, day);
 
-        boolean hasBreak = !(breakStartStr.equals("00:00") && breakEndStr.equals("00:00"));
-        LocalTime newBreakStart = hasBreak ? LocalTime.parse(breakStartStr) : null;
-        LocalTime newBreakEnd   = hasBreak ? LocalTime.parse(breakEndStr)   : null;
+        // Falls "00:00" => man kann interpretieren als "keine Pause"
+        LocalTime ws = LocalTime.parse(workStart);
+        LocalTime bs = breakStart.equals("00:00") ? null : LocalTime.parse(breakStart);
+        LocalTime be = breakEnd.equals("00:00")   ? null : LocalTime.parse(breakEnd);
+        LocalTime we = LocalTime.parse(workEnd);
 
-        LocalDateTime newWorkStartDT  = parsedDate.atTime(newWorkStart);
-        LocalDateTime newWorkEndDT    = parsedDate.atTime(newWorkEnd);
-        LocalDateTime newBreakStartDT = hasBreak ? parsedDate.atTime(newBreakStart) : null;
-        LocalDateTime newBreakEndDT   = hasBreak ? parsedDate.atTime(newBreakEnd)   : null;
+        row.setWorkStart(ws);
+        row.setBreakStart(bs);
+        row.setBreakEnd(be);
+        row.setWorkEnd(we);
+        row.setCorrected(true);
 
-        // 1) Alte Einträge löschen
-        int deleted = timeTrackingRepository.deleteByUserAndDailyDate(targetUser, parsedDate);
-        logger.info("updateDayTimeEntries: {} alte Einträge für {} gelöscht.", deleted, date);
+        timeTrackingRepository.save(row);
 
-        // 2) Neu anlegen: #1, #2, #3, #4
-        // #1
-        TimeTracking ts1 = new TimeTracking();
-        ts1.setUser(targetUser);
-        ts1.setPunchOrder(1);
-        ts1.setDailyDate(parsedDate);
-        ts1.setStartTime(newWorkStartDT);
-        ts1.setWorkStart(newWorkStart);
-        ts1.setCorrected(true);
-        timeTrackingRepository.save(ts1);
-
-        if (hasBreak) {
-            // #2
-            TimeTracking ts2 = new TimeTracking();
-            ts2.setUser(targetUser);
-            ts2.setPunchOrder(2);
-            ts2.setDailyDate(parsedDate);
-            ts2.setStartTime(newBreakStartDT);
-            ts2.setBreakStart(newBreakStart);
-            ts2.setCorrected(true);
-            timeTrackingRepository.save(ts2);
-
-            // #3
-            TimeTracking ts3 = new TimeTracking();
-            ts3.setUser(targetUser);
-            ts3.setPunchOrder(3);
-            ts3.setDailyDate(parsedDate);
-            ts3.setStartTime(newBreakEndDT);
-            ts3.setBreakEnd(newBreakEnd);
-            ts3.setCorrected(true);
-            timeTrackingRepository.save(ts3);
-        }
-
-        // #4
-        TimeTracking ts4 = new TimeTracking();
-        ts4.setUser(targetUser);
-        ts4.setPunchOrder(4);
-        ts4.setDailyDate(parsedDate);
-        ts4.setStartTime(newWorkEndDT);
-        ts4.setEndTime(newWorkEndDT);
-        ts4.setWorkEnd(newWorkEnd);
-        ts4.setCorrected(true);
-        timeTrackingRepository.save(ts4);
-
-        // 3) Balance neu berechnen
-        try {
-            List<String> trackedDates =
-                    timeTrackingRepository.findAllTrackedDateStringsByUser(targetUser.getId());
-
-            int newBalance = 0;
-            for (String dStr : trackedDates) {
-                newBalance += computeDailyWorkDifference(targetUser, dStr);
-            }
-            targetUser.setTrackingBalanceInMinutes(newBalance);
-            userRepository.save(targetUser);
-
-            logger.info("✅ updateDayTimeEntries: Balance für {} neu berechnet: {} min", targetUsername, newBalance);
-        } catch (Exception ex) {
-            logger.warn("⚠️ updateDayTimeEntries: Fehler bei Balance-Refresh: {}", ex.getMessage());
-        }
+        // Anschließend Salden neu berechnen (optional)
+        rebuildUserBalance(targetUser);
 
         return "Day entries updated successfully";
     }
 
-    /**
-     * Erzeugt einen Tagesbericht (Liste TimeReportDTO) im Datumsbereich.
-     */
-    public List<TimeReportDTO> getReport(String username, String startDateStr, String endDateStr) {
-        logger.info("getReport: user={}, start={}, end={}", username, startDateStr, endDateStr);
-
-        LocalDate startDate = LocalDate.parse(startDateStr);
-        LocalDate endDate   = LocalDate.parse(endDateStr);
-        LocalDateTime startDateTime = startDate.atStartOfDay();
-        LocalDateTime endDateTime   = endDate.plusDays(1).atStartOfDay();
-
-        User user = loadUserByUsername(username);
-
-        List<TimeTracking> entries = timeTrackingRepository
-                .findByUserAndStartTimeBetween(user, startDateTime, endDateTime);
-
-        // Gruppieren nach Tag
-        Map<LocalDate, List<TimeTracking>> grouped =
-                entries.stream()
-                        .collect(Collectors.groupingBy(e -> e.getStartTime().toLocalDate()));
-
-        List<TimeReportDTO> report = new ArrayList<>();
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, d.M.yyyy", Locale.GERMAN);
-        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-
-        // Sortierte Liste der Tage
-        List<LocalDate> sortedDates = new ArrayList<>(grouped.keySet());
-        Collections.sort(sortedDates);
-
-        for (LocalDate date : sortedDates) {
-            List<TimeTracking> dayEntries = grouped.get(date);
-            dayEntries.sort(Comparator.comparingInt(
-                    e -> e.getPunchOrder() != null ? e.getPunchOrder() : 0
-            ));
-
-            String workStart = "-";
-            String breakStart = "-";
-            String breakEnd = "-";
-            String workEnd = "-";
-            String dailyNote = "";
-
-            for (TimeTracking e : dayEntries) {
-                int po = (e.getPunchOrder() != null) ? e.getPunchOrder() : 0;
-                if (po == 1 && workStart.equals("-")) {
-                    workStart = (e.getWorkStart() != null)
-                            ? e.getWorkStart().format(timeFormatter)
-                            : e.getStartTime().format(timeFormatter);
-                } else if (po == 2 && breakStart.equals("-")) {
-                    breakStart = (e.getBreakStart() != null)
-                            ? e.getBreakStart().format(timeFormatter)
-                            : e.getStartTime().format(timeFormatter);
-                } else if (po == 3 && breakEnd.equals("-")) {
-                    breakEnd = (e.getBreakEnd() != null)
-                            ? e.getBreakEnd().format(timeFormatter)
-                            : e.getStartTime().format(timeFormatter);
-                } else if (po == 4 && workEnd.equals("-")) {
-                    if (e.getWorkEnd() != null) {
-                        workEnd = e.getWorkEnd().format(timeFormatter);
-                    } else if (e.getEndTime() != null) {
-                        workEnd = e.getEndTime().format(timeFormatter);
-                    }
-                }
-                if (e.getDailyNote() != null && !e.getDailyNote().isEmpty() && dailyNote.isEmpty()) {
-                    dailyNote = e.getDailyNote();
-                }
-            }
-            String formattedDate = date.format(dateFormatter);
-            report.add(new TimeReportDTO(
-                    user.getUsername(),
-                    formattedDate,
-                    workStart,
-                    breakStart,
-                    breakEnd,
-                    workEnd,
-                    dailyNote
-            ));
-        }
-        logger.info("getReport: user={}, #Tage={}", username, report.size());
-        return report;
-    }
-
     // -------------------------------------------------------------------------
-    //  HELFER ADMIN
+    // ADMIN: einzelnes TimeTracking updaten (z.B. Start-/Endzeit)
     // -------------------------------------------------------------------------
-    /**
-     * Ergänzend: hole TimeTracking-Einträge für user in Zeitspanne
-     */
-    public List<TimeTracking> getTimeTrackingEntriesForUserAndDate(User user, LocalDateTime start, LocalDateTime end) {
-        logger.debug("getTimeTrackingEntriesForUserAndDate: user={}, start={}, end={}",
-                user.getUsername(), start, end);
-        return timeTrackingRepository.findByUserAndStartTimeBetween(user, start, end);
-    }
-
-    /**
-     * Hole alle TimeTracks + user => DTO.
-     */
-    public List<AdminTimeTrackDTO> getAllTimeTracksWithUser() {
-        logger.info("getAllTimeTracksWithUser aufgerufen");
-        List<TimeTracking> all = timeTrackingRepository.findAllWithUser();
-        return all.stream()
-                .map(AdminTimeTrackDTO::new)
-                .collect(Collectors.toList());
-    }
-
-    /**
-     * Admin kann einen DS direkt editieren (Start/End).
-     */
     @Transactional
-    public AdminTimeTrackDTO updateTimeTrackEntry(
+    public TimeTrackingResponse updateTimeTrackEntry(
             Long id,
             LocalDateTime newStart,
             LocalDateTime newEnd,
@@ -772,79 +198,165 @@ public class TimeTrackingService {
             String adminUsername,
             String adminPassword
     ) {
-        logger.info("updateTimeTrackEntry: id={}, newStart={}, newEnd={}", id, newStart, newEnd);
         TimeTracking tt = timeTrackingRepository.findById(id)
-                .orElseThrow(() -> {
-                    logger.warn("TimeTracking ID {} nicht gefunden", id);
-                    return new RuntimeException("Time tracking entry not found");
-                });
+                .orElseThrow(() -> new RuntimeException("Time tracking entry not found"));
+
         User targetUser = tt.getUser();
 
         checkAdminAndUserPasswords(targetUser, adminUsername, adminPassword, userPassword);
 
-        tt.setStartTime(newStart);
-        tt.setEndTime(newEnd);
-        TimeTracking updated = timeTrackingRepository.save(tt);
+        // Beispiel: hier interpretieren wir newStart = WorkStart,
+        //           newEnd   = WorkEnd (Pause manuell?)
+        tt.setWorkStart(newStart.toLocalTime());
+        tt.setWorkEnd(newEnd.toLocalTime());
+        tt.setCorrected(true);
 
-        logger.info("updateTimeTrackEntry: ID={} aktualisiert (start={}, end={})",
-                updated.getId(), updated.getStartTime(), updated.getEndTime());
-
-        return new AdminTimeTrackDTO(
-                updated.getId(),
-                updated.getUser().getUsername(),
-                updated.getStartTime(),
-                updated.getEndTime(),
-                updated.isCorrected(),
-                updated.getPunchOrder() != null ? updated.getPunchOrder() : 0,
-                updated.getUser().getColor()
-        );
+        timeTrackingRepository.save(tt);
+        return convertToResponse(tt);
     }
 
     // -------------------------------------------------------------------------
-    // PASSWORTCHECK ADMIN + USER
+    // ÜBERSTUNDEN = (IST - SOLL)
     // -------------------------------------------------------------------------
-    private void checkAdminAndUserPasswords(User targetUser,
-                                            String adminUsername,
-                                            String adminPassword,
-                                            String userPassword) {
-        if (adminUsername != null && !adminUsername.trim().isEmpty()) {
-            logger.debug("checkAdminAndUserPasswords: adminUsername={}, targetUser={}", adminUsername, targetUser.getUsername());
+    public int computeDailyWorkDifference(User user, String isoDate) {
+        LocalDate date = LocalDate.parse(isoDate);
+        Optional<TimeTracking> opt = timeTrackingRepository.findByUserAndDailyDate(user, date);
 
+        // Wenn kein Eintrag => 0 - soll = -soll oder 0, je nach Anforderung
+        if (opt.isEmpty()) {
+            // Hier kann man definieren: "kein Eintrag" => "nicht gearbeitet" => 0 min
+            // Dann wäre Over/Under = 0 - expected
+            int expectedIfNoEntry = workScheduleService.computeExpectedWorkMinutes(user, date);
+            return 0 - expectedIfNoEntry;
+        }
+
+        TimeTracking row = opt.get();
+        int worked = 0;
+
+        if (row.getWorkStart() != null && row.getWorkEnd() != null) {
+            worked = (int) ChronoUnit.MINUTES.between(row.getWorkStart(), row.getWorkEnd());
+            if (row.getBreakStart() != null && row.getBreakEnd() != null) {
+                int pause = (int) ChronoUnit.MINUTES.between(row.getBreakStart(), row.getBreakEnd());
+                worked -= pause;
+            }
+        }
+
+        int expected = workScheduleService.computeExpectedWorkMinutes(user, date);
+        return worked - expected;
+    }
+
+    // -------------------------------------------------------------------------
+    // Wöchentlicher Saldo => summiere daily difference von Mo–So
+    // -------------------------------------------------------------------------
+    public int getWeeklyBalance(User user, LocalDate monday) {
+        int sum = 0;
+        for (int i = 0; i < 7; i++) {
+            LocalDate day = monday.plusDays(i);
+            sum += computeDailyWorkDifference(user, day.toString());
+        }
+        return sum;
+    }
+
+    // -------------------------------------------------------------------------
+    // ADMIN: Salden Rebuild für einen User
+    // -------------------------------------------------------------------------
+    @Transactional
+    public void rebuildUserBalance(User user) {
+        int total = 0;
+        // Hol alle seine TimeTracking-Einträge
+        List<TimeTracking> rows = timeTrackingRepository.findByUser(user);
+
+        // Summiere daily difference
+        for (TimeTracking row : rows) {
+            LocalDate d = row.getDailyDate();
+            total += computeDailyWorkDifference(user, d.toString());
+        }
+        user.setTrackingBalanceInMinutes(total);
+        userRepository.save(user);
+    }
+
+    // -------------------------------------------------------------------------
+    // ADMIN: Salden Rebuild für alle User
+    // -------------------------------------------------------------------------
+    @Transactional
+    public void rebuildAllUserBalancesOnce() {
+        for (User u : userRepository.findAll()) {
+            rebuildUserBalance(u);
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // REPORT im Datumsbereich
+    // -------------------------------------------------------------------------
+    public List<TimeReportDTO> getReport(String username, String startDate, String endDate) {
+        User user = loadUserByUsername(username);
+        LocalDate from = LocalDate.parse(startDate);
+        LocalDate to   = LocalDate.parse(endDate);
+
+        List<TimeTracking> entries = timeTrackingRepository
+                .findByUserAndDailyDateBetweenOrderByDailyDateAsc(user, from, to);
+
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, d.M.yyyy", Locale.GERMAN);
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+
+        List<TimeReportDTO> report = new ArrayList<>();
+
+        for (TimeTracking row : entries) {
+            String dayStr = row.getDailyDate().format(dateFormatter);
+
+            String ws = (row.getWorkStart()  != null) ? row.getWorkStart().format(timeFormatter)  : "-";
+            String bs = (row.getBreakStart() != null) ? row.getBreakStart().format(timeFormatter) : "-";
+            String be = (row.getBreakEnd()   != null) ? row.getBreakEnd().format(timeFormatter)   : "-";
+            String we = (row.getWorkEnd()    != null) ? row.getWorkEnd().format(timeFormatter)    : "-";
+
+            report.add(new TimeReportDTO(
+                    user.getUsername(),
+                    dayStr,
+                    ws,
+                    bs,
+                    be,
+                    we,
+                    row.getDailyNote()
+            ));
+        }
+        return report;
+    }
+
+    // -------------------------------------------------------------------------
+    // Helfer zum Passwort-Check
+    // -------------------------------------------------------------------------
+    private void checkAdminAndUserPasswords(
+            User targetUser,
+            String adminUsername,
+            String adminPassword,
+            String userPassword
+    ) {
+        if (adminUsername != null && !adminUsername.trim().isEmpty()) {
             User adminUser = userRepository.findByUsername(adminUsername)
                     .orElseThrow(() -> new RuntimeException("Admin user not found"));
 
             String storedAdminPwd = adminUser.getAdminPassword();
             if (storedAdminPwd == null || storedAdminPwd.trim().isEmpty()) {
                 storedAdminPwd = adminUser.getPassword();
-                logger.info("checkAdminAndUserPasswords: Kein separates Admin-Passwort, verwende Login-Passwort.");
             }
 
-            // Selbst-Bearbeitung?
-            if (targetUser.getUsername().equals(adminUsername)) {
+            // Self-edit?
+            if (adminUser.getId().equals(targetUser.getId())) {
                 if (!adminPassword.equals(userPassword)) {
-                    logger.warn("checkAdminAndUserPasswords: Self-Edit, adminPassword != userPassword");
                     throw new RuntimeException("For self-edit, admin and user passwords must match");
                 }
-                boolean adminPwdMatch = passwordEncoder.matches(adminPassword, storedAdminPwd);
-                boolean userPwdMatch  = passwordEncoder.matches(userPassword, targetUser.getPassword());
-                if (!adminPwdMatch) {
-                    logger.warn("checkAdminAndUserPasswords: admin password falsch");
+                if (!passwordEncoder.matches(adminPassword, storedAdminPwd)) {
                     throw new RuntimeException("Invalid admin password");
                 }
-                if (!userPwdMatch) {
-                    logger.warn("checkAdminAndUserPasswords: user password falsch (self-edit)");
+                if (!passwordEncoder.matches(userPassword, targetUser.getPassword())) {
                     throw new RuntimeException("Invalid user password");
                 }
             } else {
                 // Fremd-Bearbeitung
-                boolean adminPwdMatch = passwordEncoder.matches(adminPassword, storedAdminPwd);
-                boolean userPwdMatch  = passwordEncoder.matches(userPassword, targetUser.getPassword());
-                if (!adminPwdMatch) {
-                    logger.warn("checkAdminAndUserPasswords: admin password falsch");
+                if (!passwordEncoder.matches(adminPassword, storedAdminPwd)) {
                     throw new RuntimeException("Invalid admin password");
                 }
-                if (!userPwdMatch) {
-                    logger.warn("checkAdminAndUserPasswords: user password falsch (Fremdedit)");
+                if (!passwordEncoder.matches(userPassword, targetUser.getPassword())) {
                     throw new RuntimeException("Invalid user password");
                 }
             }
@@ -852,97 +364,25 @@ public class TimeTrackingService {
     }
 
     // -------------------------------------------------------------------------
-    // KONVERTIERUNG -> DTO
+    // DTO-Konvertierung
     // -------------------------------------------------------------------------
     private TimeTrackingResponse convertToResponse(TimeTracking tt) {
-        int pOrder = (tt.getPunchOrder() != null) ? tt.getPunchOrder() : 0;
-
-        String label;
-        switch (pOrder) {
-            case 1: label = "Work Start";  break;
-            case 2: label = "Break Start"; break;
-            case 3: label = "Break End";   break;
-            case 4: label = "Work End";    break;
-            case 0: label = "Daily Note";  break;
-            default: label = "Unknown";    break;
-        }
-
         return new TimeTrackingResponse(
                 tt.getId(),
-                tt.getStartTime(),
-                tt.getEndTime(),
-                tt.isCorrected(),
-                label,
-                pOrder,
-                tt.getDailyNote()
+                tt.getDailyDate(),
+                tt.getWorkStart(),
+                tt.getBreakStart(),
+                tt.getBreakEnd(),
+                tt.getWorkEnd(),
+                tt.getDailyNote(),
+                tt.isCorrected()
         );
     }
 
-
     // -------------------------------------------------------------------------
-    //  NEU: getWeeklyBalance (für AdminTimeTrackingController)
+    // Admin-Helfer, z.B. fürs Auslesen in /api/admin/timetracking/all
     // -------------------------------------------------------------------------
-    /**
-     * Gibt eine einfache Summierung aller gearbeiteten Minuten (Mo–So)
-     * ohne ausführliche Pausenberechnung. Wenn du die Pausenabzüge
-     * exakt möchtest, müsstest du pro Tag computeDailyWorkDifference aufrufen.
-     */
-    public int getWeeklyBalance(User user, LocalDate monday) {
-        logger.debug("getWeeklyBalance: user={}, monday={}", user.getUsername(), monday);
-        LocalDate sunday = monday.plusDays(6);
-
-        // Summiere "raw" alle (Start-EndTime)
-        List<TimeTracking> entries = timeTrackingRepository.findByUserAndStartTimeBetween(
-                user,
-                monday.atStartOfDay(),
-                sunday.plusDays(1).atStartOfDay()
-        );
-
-        // Summiere gearbeitete Zeit
-        int total = entries.stream()
-                .filter(tt -> tt.getStartTime() != null && tt.getEndTime() != null)
-                .mapToInt(tt -> (int) ChronoUnit.MINUTES.between(tt.getStartTime(), tt.getEndTime()))
-                .sum();
-
-        logger.debug("getWeeklyBalance: user={}, monday={}, total={} min", user.getUsername(), monday, total);
-        return total;
-    }
-
-
-    @Transactional
-    public void rebuildAllUserBalancesOnce() {
-
-        logger.warn("⚠  FULL BALANCE REBUILD triggered …");
-
-        userRepository.findAll().forEach(user -> {
-
-            int saldo = 0;
-
-            /* alle Tage mit Stempelungen holen */
-            List<LocalDate> days =
-                    timeTrackingRepository.findDistinctTrackedDatesByUser(user);
-
-            /* pro Tag / pro Woche verrechnen */
-            if (Boolean.TRUE.equals(user.getIsPercentage())) {
-
-                /* Percentage-User ⇒ erst Tagesdifferenzen sammeln,
-                   danach Wochen-Aggregate bilden                        */
-                Map<Integer/*isoWeek*/, Integer/*delta*/> perWeek = new HashMap<>();
-                days.forEach(day -> {
-                    int diff = computeDailyWorkDifference(user, day.toString());
-                    int week = day.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR);
-                    perWeek.merge(week, diff, Integer::sum);
-                });
-                saldo = perWeek.values().stream().mapToInt(Integer::intValue).sum();
-
-            } else {                 // Normal- bzw. Stunden-User
-                for (LocalDate d : days)
-                    saldo += computeDailyWorkDifference(user, d.toString());
-            }
-
-            user.setTrackingBalanceInMinutes(saldo);
-            logger.info(" → {} = {} min", user.getUsername(), saldo);
-        });
+    public List<TimeTracking> getTimeTrackingRowsForUser(User user) {
+        return timeTrackingRepository.findByUserOrderByDailyDateDesc(user);
     }
 }
-

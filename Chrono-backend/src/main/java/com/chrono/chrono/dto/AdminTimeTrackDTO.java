@@ -1,47 +1,40 @@
 package com.chrono.chrono.dto;
 
 import com.chrono.chrono.entities.TimeTracking;
-import lombok.Getter;
-import lombok.Setter;
+import java.time.LocalDate;
+import java.time.LocalTime;
 
-import java.time.LocalDateTime;
-
-@Setter
-@Getter
 public class AdminTimeTrackDTO {
-    // Getter und Setter
     private Long id;
     private String username;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
+    private LocalDate dailyDate;
+    private LocalTime workStart;
+    private LocalTime breakStart;
+    private LocalTime breakEnd;
+    private LocalTime workEnd;
     private boolean corrected;
-    private int punchOrder;
-    private String color;
     private Long companyId;
 
-    public AdminTimeTrackDTO(Long id, String username, LocalDateTime startTime, LocalDateTime endTime, boolean corrected, int punchOrder, String color) {
-        this.id = id;
-        this.username = username;
-        this.startTime = startTime;
-        this.endTime = endTime;
-        this.corrected = corrected;
-        this.punchOrder = punchOrder;
-        this.color = color;
-    }
-
-
-    //  Konstruktor aus Entity
     public AdminTimeTrackDTO(TimeTracking tt) {
-        this.id         = tt.getId();
-        this.username   = tt.getUser().getUsername();
-        this.startTime  = tt.getStartTime();
-        this.endTime    = tt.getEndTime();
-        this.corrected  = tt.isCorrected();
-        this.punchOrder = (tt.getPunchOrder() != null) ? tt.getPunchOrder() : 0;
-        this.color      = tt.getUser().getColor();
-        this.companyId  = (tt.getUser().getCompany() != null)
-                ? tt.getUser().getCompany().getId()
-                : null;
+        this.id = tt.getId();
+        this.username = tt.getUser().getUsername();
+        this.dailyDate = tt.getDailyDate();
+        this.workStart = tt.getWorkStart();
+        this.breakStart = tt.getBreakStart();
+        this.breakEnd = tt.getBreakEnd();
+        this.workEnd = tt.getWorkEnd();
+        this.corrected = tt.isCorrected();
+        this.companyId = tt.getUser().getCompany().getId();
     }
 
+    // GETTER / SETTER
+    public Long getId() { return id; }
+    public String getUsername() { return username; }
+    public LocalDate getDailyDate() { return dailyDate; }
+    public LocalTime getWorkStart() { return workStart; }
+    public LocalTime getBreakStart() { return breakStart; }
+    public LocalTime getBreakEnd() { return breakEnd; }
+    public LocalTime getWorkEnd() { return workEnd; }
+    public boolean isCorrected() { return corrected; }
+    public Long getCompanyId() { return companyId; }
 }
