@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import { pickTime } from "./hourDashUtils";
 
 import {
     addDays,
@@ -124,28 +125,21 @@ const HourlyWeekOverview = ({
                                     <ul>
                                         <li>
                                             <strong>{t("workStart")}:</strong>{" "}
-                                            {workStart && workStart.workStart
-                                                ? formatTime(workStart.workStart)
-                                                : "-"}
+                                            {pickTime(workStart, "workStart") || "-"}
                                         </li>
                                         <li>
                                             <strong>{t("breakStart")}:</strong>{" "}
-                                            {breakStart && breakStart.breakStart
-                                                ? formatTime(breakStart.breakStart)
-                                                : "-"}
+                                            {pickTime(breakStart, "breakStart") || "-"}
                                         </li>
                                         <li>
                                             <strong>{t("breakEnd")}:</strong>{" "}
-                                            {breakEnd && breakEnd.breakEnd
-                                                ? formatTime(breakEnd.breakEnd)
-                                                : "-"}
+                                            {pickTime(breakEnd, "breakEnd") || "-"}
                                         </li>
                                         <li>
                                             <strong>{t("workEnd")}:</strong>{" "}
-                                            {workEnd && workEnd.workEnd
-                                                ? formatTime(workEnd.workEnd)
-                                                : "-"}
+                                            {pickTime(workEnd, "workEnd") || "-"}
                                         </li>
+
 
                                     </ul>
                                 )}

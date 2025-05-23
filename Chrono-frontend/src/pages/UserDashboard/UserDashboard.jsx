@@ -593,7 +593,7 @@ function UserDashboard() {
                                                     displayTime = e.workEnd   ? formatTime(e.workEnd)   : '-';
                                                 }
                                                 return (
-                                                    <li key={e.id}>
+                                                    <li key={`${e.dailyDate}-${e.punchOrder}`}>
         <span className="entry-label">
           {getStatusLabel(e.punchOrder)}:
         </span>{" "}

@@ -34,12 +34,20 @@ export function addDays(date, days) {
     return d;
 }
 
-export function formatTime(dateStr) {
-    const d = new Date(dateStr);
+export function formatTime(value) {
+    if (!value) return '-';
+
+    // ▸ Zeit-String ohne Datum (“HH:MM” oder “HH:MM:SS”)?
+    if (/^\d{2}:\d{2}(:\d{2})?$/.test(value)) {
+        return value.slice(0, 5);                 // “07:40:00” → “07:40”
+    }
+
+    // ▸ ISO-DateTime oder anderes parsebares Format
+    const d = new Date(value);
     return isNaN(d.getTime())
         ? '-'
         : d.toLocaleTimeString('de-DE', {
-            hour: '2-digit',
+            hour:   '2-digit',
             minute: '2-digit',
             timeZone: 'Europe/Berlin'
         });

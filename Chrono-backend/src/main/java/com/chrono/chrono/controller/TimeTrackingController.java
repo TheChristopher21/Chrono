@@ -76,18 +76,19 @@ public class TimeTrackingController {
 
     @GetMapping("/percentage-punch")
     public PercentagePunchResponse percentagePunch(
-            @RequestParam String username,
-            @RequestParam double percentage
-    ) {
-        // Bsp: 8h30 * (percentage/100)
-        int expected = (int)Math.round(TimeTrackingService.FULL_DAY_MINUTES * (percentage / 100.0));
+            @RequestParam String  username,
+            @RequestParam double  percentage) {
+
+        // Soll-Minuten für einen *vollen* Arbeitstag bei diesem Pensum
+        int expected = (int) Math.round(TimeTrackingService.FULL_DAY_MINUTES * (percentage / 100.0));
+
         User user = userService.getUserByUsername(username);
 
-        int worked = timeTrackingService.computeDailyWorkDifference(user, LocalDate.now().toString());
-        int diff = worked - expected;
+        int worked = timeTrackingService.getWorkedMinutes(user, LocalDate.now());
+        int diff   = worked - expected;
 
         String msg = (diff >= 0)
-                ? "Überstunden: " + diff + " min"
+                ? "Überstunden:  " +  diff + " min"
                 : "Fehlstunden: " + (-diff) + " min";
 
         return new PercentagePunchResponse(username, worked, expected, diff, msg);
@@ -177,10 +178,11 @@ public class TimeTrackingController {
     @GetMapping("/work-difference")
     public int getWorkDifference(
             @RequestParam String username,
-            @RequestParam String date
-    ) {
+            @RequestParam String date) {
+
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        return timeTrackingService.computeDailyWorkDifference(user, date);
+
+        return timeTrackingService.computeDailyWorkDifference(user, LocalDate.parse(date));
     }
 }

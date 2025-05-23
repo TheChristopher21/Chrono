@@ -81,16 +81,29 @@ export function expandDayRows(days) {
     return result;
 }
 
-export function formatTime(dateStr) {
-    const d = new Date(dateStr);
+// userDashUtils.js
+export function formatTime(dateOrTimeStr) {
+    if (!dateOrTimeStr) return '-';
+
+    const trimmed = dateOrTimeStr.trim();
+
+    /* Akzeptiere jetzt sowohl “HH:mm”   als auch “HH:mm:ss” */
+    if (/^\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+        // Wir zeigen nur Stunden:Minuten an
+        return trimmed.slice(0, 5);      // → "07:40"
+    }
+
+    /* Fallback für ISO-Date-Strings (2025-05-23T09:17:00Z …) */
+    const d = new Date(trimmed);
     return isNaN(d.getTime())
         ? '-'
         : d.toLocaleTimeString('de-DE', {
-            hour: '2-digit',
+            hour:   '2-digit',
             minute: '2-digit',
-            timeZone: 'Europe/Berlin'
+            timeZone: 'Europe/Berlin',
         });
 }
+
 
 export function formatLocalDate(date) {
     const year = date.getFullYear();

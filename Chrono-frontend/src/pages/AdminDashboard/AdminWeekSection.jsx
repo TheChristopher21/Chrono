@@ -1,5 +1,5 @@
 // src/pages/AdminDashboard/AdminWeekSection.jsx
-import React, { useState } from "react";
+import  { useState } from "react";
 import PropTypes from "prop-types";
 import "../../styles/AdminDashboardScoped.css";
 
@@ -198,12 +198,9 @@ const AdminWeekSection = ({
                                     );
                                 }
                             });
-                            const weekSign = weekDiff >= 0 ? "+" : "-";
                             const weekAbs = Math.abs(weekDiff);
-                            const weekH = Math.floor(weekAbs / 60);
-                            const weekM = weekAbs % 60;
-
-                            // Arbeitszeit-Summen für Stundenlöhner
+                            Math.floor(weekAbs / 60);
+// Arbeitszeit-Summen für Stundenlöhner
                             let weekWorked = 0;
                             let monthWorked = 0;
                             if (isHourly) {
@@ -226,6 +223,7 @@ const AdminWeekSection = ({
                             const tbSign = tb >= 0 ? "+" : "-";
                             const tbAbs = Math.abs(tb);
                             const tbH = Math.floor(tbAbs / 60);
+                            console.log(username,tb)
                             const tbM = tbAbs % 60;
 
                             let weekExpectedMin = 0;
@@ -238,9 +236,7 @@ const AdminWeekSection = ({
                                     weekExpectedMin += (exp ?? 0) * 60;
                                 });
                             }
-                            const weekExpH = Math.floor(weekExpectedMin / 60);
-                            const weekExpM = weekExpectedMin % 60;
-
+                            Math.floor(weekExpectedMin / 60);
                             const expanded = !!expandedUsers[username];
 
                             return (
@@ -335,25 +331,42 @@ const AdminWeekSection = ({
                                                             <div className="admin-day-content">
                                                                 <ul className="time-entry-list">
                                                                     {dayEntries
-                                                                        .sort((a, b) => (a.punchOrder - b.punchOrder))
+                                                                        .sort((a, b) => a.punchOrder - b.punchOrder)
                                                                         .map(e => {
-                                                                            let disp = "-";
-                                                                            if (e.punchOrder === 1) {
-                                                                                // Work Start
-                                                                                disp = e.workStart ? formatTime(e.workStart) : "-";
-                                                                            } else if (e.punchOrder === 2) {
-                                                                                // Break Start
-                                                                                disp = e.breakStart ? formatTime(e.breakStart) : "-";
-                                                                            } else if (e.punchOrder === 3) {
-                                                                                // Break End
-                                                                                disp = e.breakEnd ? formatTime(e.breakEnd) : "-";
-                                                                            } else if (e.punchOrder === 4) {
-                                                                                // Work End
-                                                                                disp = e.workEnd ? formatTime(e.workEnd) : "-";
+                                                                            let disp = '-';
+                                                                            switch (e.punchOrder) {
+                                                                                case 1: // Work Start
+                                                                                    disp = e.workStart
+                                                                                        ? formatTime(e.workStart)
+                                                                                        : formatTime(e.startTime);
+                                                                                    break;
+                                                                                case 2: // Break Start
+                                                                                    disp = e.breakStart
+                                                                                        ? formatTime(e.breakStart)
+                                                                                        : formatTime(e.startTime);
+                                                                                    break;
+                                                                                case 3: // Break End
+                                                                                    disp = e.breakEnd
+                                                                                        ? formatTime(e.breakEnd)
+                                                                                        : formatTime(e.startTime);
+                                                                                    break;
+                                                                                case 4: // Work End
+                                                                                    disp = e.workEnd
+                                                                                        ? formatTime(e.workEnd)
+                                                                                        : formatTime(e.endTime);
+                                                                                    break;
+                                                                                default:
+                                                                                    break;
                                                                             }
+
                                                                             return (
-                                                                                <li key={e.id} className={isLateTime(disp) ? "late-time" : ""}>
-                                                                                    <span className="entry-label">{getStatusLabel(e.punchOrder)}:</span>{" "}
+                                                                                <li
+                                                                                    key={`${e.id}-${e.punchOrder}`}
+                                                                                    className={isLateTime(disp) ? 'late-time' : ''}
+                                                                                >
+                    <span className="entry-label">
+                        {getStatusLabel(e.punchOrder)}:
+                    </span>{' '}
                                                                                     {disp}
                                                                                 </li>
                                                                             );
@@ -405,34 +418,34 @@ const AdminWeekSection = ({
                                                         <div className="admin-day-content">
                                                             <ul className="time-entry-list">
                                                                 {dayEntries
-                                                                    .sort(
-                                                                        (a, b) => a.punchOrder - b.punchOrder
-                                                                    )
-                                                                    .map((e) => {
-                                                                        let disp = "-";
-                                                                        if (e.punchOrder === 1) {
-                                                                            disp = formatTime(e.startTime);
-                                                                        } else if (e.punchOrder === 2) {
-                                                                            disp = e.breakStart
-                                                                                ? formatTime(e.breakStart)
-                                                                                : formatTime(e.startTime);
-                                                                        } else if (e.punchOrder === 3) {
-                                                                            disp = e.breakEnd
-                                                                                ? formatTime(e.breakEnd)
-                                                                                : formatTime(e.startTime);
-                                                                        } else if (e.punchOrder === 4) {
-                                                                            disp = formatTime(e.endTime);
+                                                                    .sort((a, b) => a.punchOrder - b.punchOrder)
+                                                                    .map(e => {
+                                                                        let disp = '-';
+                                                                        switch (e.punchOrder) {
+                                                                            case 1:
+                                                                                disp = e.workStart ? formatTime(e.workStart) : '-';
+                                                                                break;
+                                                                            case 2:
+                                                                                disp = e.breakStart ? formatTime(e.breakStart) : '-';
+                                                                                break;
+                                                                            case 3:
+                                                                                disp = e.breakEnd ? formatTime(e.breakEnd) : '-';
+                                                                                break;
+                                                                            case 4:
+                                                                                disp = e.workEnd ? formatTime(e.workEnd) : '-';
+                                                                                break;
+                                                                            default:
+                                                                                break;
                                                                         }
+
                                                                         return (
                                                                             <li
-                                                                                key={e.id}
-                                                                                className={
-                                                                                    isLateTime(disp) ? "late-time" : ""
-                                                                                }
+                                                                                key={`${e.id}-${e.punchOrder}`}
+                                                                                className={isLateTime(disp) ? 'late-time' : ''}
                                                                             >
-                                        <span className="entry-label">
-                                          {getStatusLabel(e.punchOrder)}:
-                                        </span>{" "}
+                    <span className="entry-label">
+                        {getStatusLabel(e.punchOrder)}:
+                    </span>{' '}
                                                                                 {disp}
                                                                             </li>
                                                                         );

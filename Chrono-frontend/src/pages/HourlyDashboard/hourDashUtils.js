@@ -1,4 +1,5 @@
 // hourDashUtils.js
+const PLAIN_TIME_RX = /^\d{2}:\d{2}(?::\d{2})?$/;
 
 // NFC-Parsing: Liest aus 32-stelligem Hex-String den Usernamen
 export function parseHex16(hexString) {
@@ -14,6 +15,26 @@ export function parseHex16(hexString) {
         }
     }
     return output;
+}
+// Gibt HH:mm zurück, egal in welchem Feld die Uhrzeit steckt.
+// raw kann ein Date-String "2025-05-14T05:45:00" oder "05:45:00" sein.
+export function pickTime(entry, preferredField) {
+    if (!entry) return null;
+
+    const raw =
+        entry[preferredField] ||
+        entry.startTime ||
+        entry.endTime ||
+        entry.workStart ||
+        entry.breakStart ||
+        entry.breakEnd ||
+        entry.workEnd;
+
+    if (!raw) return null;
+
+    //  ⬇ HH:mm extrahieren
+    const iso = typeof raw === "string" ? raw : raw.toString();
+    return iso.slice(11, 16) || iso.slice(0, 5);
 }
 
 export function getMondayOfWeek(date) {
@@ -58,12 +79,19 @@ export function toTimeInput(dateStr) {
 }
 
 // Zeitstempel formatiert anzeigen
-export function formatTime(dateStr) {
-    if (!dateStr) return '-';
-    const d = new Date(dateStr);
+export function formatTime(value) {
+    if (!value) return '-';
+
+    //  ⏰  Nur HH:mm(:ss) ?
+    if (typeof value === 'string' && PLAIN_TIME_RX.test(value)) {
+        return value.slice(0, 5);           // nur HH:mm anzeigen
+    }
+
+    const d = new Date(value);
     if (isNaN(d.getTime())) return '-';
+
     return d.toLocaleTimeString('de-DE', {
-        hour: '2-digit',
+        hour:   '2-digit',
         minute: '2-digit',
         timeZone: 'Europe/Berlin'
     });
@@ -87,50 +115,33 @@ export function getMinutesSinceMidnight(dateStr) {
  * Berechnet die Arbeitsminuten eines Tages (Work Start-End / Pausen abziehen).
  */
 export function computeDayTotalMinutes(dayEntries) {
-    const entryStart = dayEntries.find(e => e.punchOrder === 1);
-    let entryEnd = dayEntries.find(e => e.punchOrder === 4);
-    if (!entryEnd) {
-        entryEnd = dayEntries.find(e => e.punchOrder === 2 || e.punchOrder === 3);
-    }
-    if (!entryStart || !entryEnd) return 0;
 
-    const start = new Date(entryStart.startTime);
-    const end = new Date(entryEnd.endTime || entryEnd.startTime);
-    let totalMins = 0;
+    /* ----- ✅ NEUER MODE: genau 1 Eintrag mit workStart/... ---------- */
+    if (Array.isArray(dayEntries) &&
+        dayEntries.length === 1 &&
+        dayEntries[0].workStart /*⇢ daily-table-Datensatz */) {
 
-    // Falls Tag über Mitternacht hinausgeht:
-    if (end.toISOString().slice(0, 10) !== start.toISOString().slice(0, 10)) {
-        const midnight = new Date(start);
-        midnight.setHours(24, 0, 0, 0);
-        totalMins = (midnight - start) / 60000;
-    } else {
-        const startM = getMinutesSinceMidnight(start.toISOString());
-        const endM = getMinutesSinceMidnight(end.toISOString());
-        totalMins = endM - startM;
-    }
+        const {workStart, breakStart, breakEnd, workEnd} = dayEntries[0];
+        if (!workStart || !workEnd) return 0;
 
-    // Pausenzeiten abziehen
-    const breakStart = dayEntries.find(e => e.punchOrder === 2);
-    const breakEnd = dayEntries.find(e => e.punchOrder === 3);
-    if (breakStart && breakEnd) {
-        let breakStartMins = breakStart.breakStart
-            ? parseTimeToMinutes(breakStart.breakStart)
-            : getMinutesSinceMidnight(breakStart.startTime);
-        let breakEndMins = breakEnd.breakEnd
-            ? parseTimeToMinutes(breakEnd.breakEnd)
-            : getMinutesSinceMidnight(breakEnd.startTime);
-        if (breakEndMins < breakStartMins) {
-            breakEndMins += 24 * 60;
+        const start = parseTimeToMinutes(workStart);
+        const end = parseTimeToMinutes(workEnd) >= start
+            ? parseTimeToMinutes(workEnd)
+            : parseTimeToMinutes(workEnd) + 24 * 60;
+
+        let minutes = end - start;
+
+        if (breakStart && breakEnd) {
+            const bs = parseTimeToMinutes(breakStart);
+            const be = parseTimeToMinutes(breakEnd) >= bs
+                ? parseTimeToMinutes(breakEnd)
+                : parseTimeToMinutes(breakEnd) + 24 * 60;
+            minutes -= (be - bs);
         }
-        totalMins -= (breakEndMins - breakStartMins);
+        return Math.max(0, minutes);
     }
-
-    return Math.max(0, totalMins);
 }
 
-/**
- * Summiert alle Arbeitsminuten in einem Datumsbereich.
- */
 export function computeTotalMinutesInRange(allEntries, startDate, endDate) {
     const filtered = allEntries.filter(e => {
         const d = new Date(e.startTime);

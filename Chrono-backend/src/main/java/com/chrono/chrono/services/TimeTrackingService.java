@@ -20,7 +20,8 @@ import java.util.stream.Collectors;
 
 @Service
 public class TimeTrackingService {
-
+    @Autowired private TimeTrackingRepository timeTrackingRepo;
+    @Autowired private WorkScheduleService  workScheduleService;
     @Autowired
     private TimeTrackingRepository timeTrackingRepository;
 
@@ -28,13 +29,10 @@ public class TimeTrackingService {
     private UserRepository userRepository;
 
     @Autowired
-    private WorkScheduleService workScheduleService;
-
-    @Autowired
     private PasswordEncoder passwordEncoder;
 
     // Beispiel: 8h30 = 510 Minuten
-    public static final int FULL_DAY_MINUTES = 510;
+    public static final int FULL_DAY_MINUTES = 8 * 60 + 30;   // 8 h 30 m
 
     // Hilfsfunktion zum Laden eines Users oder Exception
     private User loadUserByUsername(String username) {
@@ -218,62 +216,109 @@ public class TimeTrackingService {
     // -------------------------------------------------------------------------
     // ÜBERSTUNDEN = (IST - SOLL)
     // -------------------------------------------------------------------------
-    public int computeDailyWorkDifference(User user, String isoDate) {
-        LocalDate date = LocalDate.parse(isoDate);
-        Optional<TimeTracking> opt = timeTrackingRepository.findByUserAndDailyDate(user, date);
 
-        // Wenn kein Eintrag => 0 - soll = -soll oder 0, je nach Anforderung
-        if (opt.isEmpty()) {
-            // Hier kann man definieren: "kein Eintrag" => "nicht gearbeitet" => 0 min
-            // Dann wäre Over/Under = 0 - expected
-            int expectedIfNoEntry = workScheduleService.computeExpectedWorkMinutes(user, date);
-            return 0 - expectedIfNoEntry;
+    public int computeDailyWorkDifference(User user, LocalDate date) {
+
+        /* 1) Gearbeitete Minuten (IST) ------------------------------- */
+        int workedMinutes = 0;                          // default = 0
+        try {
+            workedMinutes = getWorkedMinutes(user, date);
+        } catch (RuntimeException ex) {
+            // kein Eintrag → bleibt 0 Ist-Minuten
         }
 
-        TimeTracking row = opt.get();
-        int worked = 0;
-
-        if (row.getWorkStart() != null && row.getWorkEnd() != null) {
-            worked = (int) ChronoUnit.MINUTES.between(row.getWorkStart(), row.getWorkEnd());
-            if (row.getBreakStart() != null && row.getBreakEnd() != null) {
-                int pause = (int) ChronoUnit.MINUTES.between(row.getBreakStart(), row.getBreakEnd());
-                worked -= pause;
-            }
+        /* 2) Erwartete Minuten (SOLL) ------------------------------- */
+        int expectedMinutes = 0;
+        if (!Boolean.TRUE.equals(user.getIsHourly())) {     // Stundenlöhner haben kein Soll
+            expectedMinutes = workScheduleService
+                    .computeExpectedWorkMinutes(user, date);
         }
 
-        int expected = workScheduleService.computeExpectedWorkMinutes(user, date);
-        return worked - expected;
+        /* 3) Saldo zurückgeben -------------------------------------- */
+        return workedMinutes - expectedMinutes;
     }
 
-    // -------------------------------------------------------------------------
-    // Wöchentlicher Saldo => summiere daily difference von Mo–So
-    // -------------------------------------------------------------------------
+
+
+
     public int getWeeklyBalance(User user, LocalDate monday) {
         int sum = 0;
         for (int i = 0; i < 7; i++) {
-            LocalDate day = monday.plusDays(i);
-            sum += computeDailyWorkDifference(user, day.toString());
+            sum += computeDailyWorkDifference(user, monday.plusDays(i));
         }
-        return sum;
+        return sum;              // Minuten-Saldo der Woche (positiv = Überstunden)
     }
+    public int getWorkedMinutes(User user, LocalDate date) {
+        TimeTracking tt = timeTrackingRepo                      // eine Zeile pro Tag!
+                .findByUserAndDailyDate(user, date)
+                .orElseThrow(() -> new RuntimeException(
+                        "No time-tracking entry for " + user.getUsername() + " on " + date));
 
+        int start  = toMinutes(tt.getWorkStart());              // 07:45 -> 465 min
+        int end    = toMinutes(tt.getWorkEnd());                // 17:30 -> 1050 min
+        int pause  = 0;
+        if (tt.getBreakStart() != null && tt.getBreakEnd() != null) {
+            pause = toMinutes(tt.getBreakEnd()) - toMinutes(tt.getBreakStart());
+        }
+        return (end - start) - pause;                           // effektive Arbeitszeit
+    }
+    private static int toMinutes(LocalTime t) {
+        return (t == null) ? 0 : t.getHour() * 60 + t.getMinute();
+    }
     // -------------------------------------------------------------------------
     // ADMIN: Salden Rebuild für einen User
     // -------------------------------------------------------------------------
+    /**
+     * Baut das Überstunden­konto eines Users komplett neu auf.
+     * – berücksichtigt **jeden** Kalendertag vom ersten Eintrag bis heute
+     * – Tage ohne Tracking-Zeile zählen als 0 Ist­minuten
+     */
+
+
+
+
     @Transactional
     public void rebuildUserBalance(User user) {
-        int total = 0;
-        // Hol alle seine TimeTracking-Einträge
+
+    /* ------------------------------------------------------------------
+       0) Alle vorhandenen Tracking-Zeilen holen
+          – wir brauchen sie nur, um den Datumsbereich zu kennen.
+       ------------------------------------------------------------------ */
         List<TimeTracking> rows = timeTrackingRepository.findByUser(user);
 
-        // Summiere daily difference
-        for (TimeTracking row : rows) {
-            LocalDate d = row.getDailyDate();
-            total += computeDailyWorkDifference(user, d.toString());
+        if (rows.isEmpty()) {                    // User hat noch gar nichts getrackt
+            user.setTrackingBalanceInMinutes(0);
+            userRepository.save(user);
+            return;
         }
-        user.setTrackingBalanceInMinutes(total);
+
+    /* ------------------------------------------------------------------
+       1) Von ERSTEM Eintrag bis HEUTE jeden Kalendertag durchlaufen
+       ------------------------------------------------------------------ */
+        LocalDate firstDay = rows.stream()
+                .map(TimeTracking::getDailyDate)
+                .min(LocalDate::compareTo)
+                .orElse(LocalDate.now());
+
+        LocalDate lastDay  = LocalDate.now();
+
+        int totalMinutes = 0;
+
+        for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
+            int temp=computeDailyWorkDifference(user, d);
+
+            totalMinutes += temp;
+            //  ►  Ist-Minuten = 0, wenn kein Eintrag vorhanden
+            //  ►  Soll-Minuten kommen immer aus WorkScheduleService
+        }
+
+    /* ------------------------------------------------------------------
+       2) Speichern
+       ------------------------------------------------------------------ */
+        user.setTrackingBalanceInMinutes(totalMinutes);
         userRepository.save(user);
     }
+
 
     // -------------------------------------------------------------------------
     // ADMIN: Salden Rebuild für alle User

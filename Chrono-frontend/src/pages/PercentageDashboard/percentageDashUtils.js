@@ -14,7 +14,23 @@ export function parseHex16(hexString) {
     }
     return out;
 }
+export const pickTime = (e, ...cand) => {
+    for (const c of cand) {
+        if (e && e[c]) return e[c];
+    }
+    return null;
+};
 
+// Zeitstempel formatiert anzeigen
+export function formatTime(stamp) {
+    if (!stamp) return "-";
+    const d = new Date(stamp);
+    return isNaN(d) ? "-" : d.toLocaleTimeString("de-DE", {
+        hour: "2-digit",
+        minute: "2-digit",
+        timeZone: "Europe/Berlin",
+    });
+}
 //--------------------------------------------------
 // Zeit- und Datums‐Utilities
 //--------------------------------------------------
@@ -60,15 +76,7 @@ export const formatDate = (isoOrDate) => {
     return "-";
 };
 
-export function formatTime(stamp) {
-    if (!stamp) return '-';
-    const d = new Date(stamp);
-    return d.toLocaleTimeString('de-DE', {
-        hour: '2-digit',
-        minute: '2-digit',
-        timeZone: 'Europe/Berlin'
-    });
-}
+
 
 export const timeToMinutes = (hhmm) => {
     const [h, m] = hhmm.split(':').map(Number);
@@ -84,18 +92,17 @@ export function computeDayTotalMinutes(dayEntries) {
     const we = dayEntries.find(e => e.punchOrder === 4);
     if (!ws || !we) return 0;
 
-    let mins = (new Date(we.endTime || we.startTime) - new Date(ws.startTime)) / 60000;
+    const start = new Date(pickTime(ws, "workStart", "startTime"));
+    const end   = new Date(pickTime(we, "workEnd",   "endTime",   "startTime"));
+
+    let mins = (end - start) / 60000;
 
     const bs = dayEntries.find(e => e.punchOrder === 2);
     const be = dayEntries.find(e => e.punchOrder === 3);
     if (bs && be) {
-        const s = bs.breakStart
-            ? timeToMinutes(bs.breakStart)
-            : minutesSinceMidnight(bs.startTime);
-        const e = be.breakEnd
-            ? timeToMinutes(be.breakEnd)
-            : minutesSinceMidnight(be.startTime);
-        mins -= (e - s);
+        const bStart = new Date(pickTime(bs, "breakStart", "startTime"));
+        const bEnd   = new Date(pickTime(be, "breakEnd",   "endTime",   "startTime"));
+        mins -= (bEnd - bStart) / 60000;
     }
     return Math.max(0, mins);
 }

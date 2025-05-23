@@ -9,7 +9,7 @@ import {
     formatTime,
     computeDayTotalMinutes,
     isLateTime,
-    minutesToHours,
+    minutesToHours, pickTime,
 } from './percentageDashUtils';
 
 const PercentageWeekOverview = ({
@@ -111,24 +111,25 @@ const PercentageWeekOverview = ({
                                 ) : (
                                     <ul>
                                         {dayEntries.map(e => {
-                                            const labelByOrder = {
-                                                1: t('workStart'),
-                                                2: t('breakStart'),
-                                                3: t('breakEnd'),
-                                                4: t('workEnd'),
-                                            };
-                                            const label = labelByOrder[e.punchOrder] || '-';
-
-                                            let time = '-';
-                                            if (e.punchOrder === 4) {
-                                                time = e.endTime ? formatTime(e.endTime) : formatTime(e.startTime);
-                                            } else if (e.punchOrder === 2 && e.breakStart) {
-                                                time = formatTime(e.breakStart);
-                                            } else if (e.punchOrder === 3 && e.breakEnd) {
-                                                time = formatTime(e.breakEnd);
-                                            } else {
-                                                time = formatTime(e.startTime);
+                                            const labelByOrder = {1:t('workStart'),2:t('breakStart'),3:t('breakEnd'),4:t('workEnd')};
+                                            let time = "-";
+                                            switch (e.punchOrder) {
+                                                case 1:
+                                                    time = formatTime(pickTime(e,"workStart","startTime"));
+                                                    break;
+                                                case 2:
+                                                    time = formatTime(pickTime(e,"breakStart","startTime"));
+                                                    break;
+                                                case 3:
+                                                    time = formatTime(pickTime(e,"breakEnd","endTime","startTime"));
+                                                    break;
+                                                case 4:
+                                                    time = formatTime(pickTime(e,"workEnd","endTime","startTime"));
+                                                    break;
+                                                default:
+                                                    time = "-";
                                             }
+                                            const label = labelByOrder[e.punchOrder] || '-';
 
                                             return (
                                                 <li key={e.id} className={isLateTime(time) ? 'late-time' : ''}>

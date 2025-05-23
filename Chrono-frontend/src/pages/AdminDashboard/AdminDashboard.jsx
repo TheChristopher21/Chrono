@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
+import { expandDayRows } from '../../utils/timeHelpers';
 
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
@@ -24,7 +25,6 @@ import {
     computeDayTotalMinutes,
     formatTime
 } from './adminDashboardUtils';
-import { expandDayRows } from '../UserDashboard/userDashUtils';
 
 const AdminDashboard = () => {
     const { currentUser } = useAuth();
@@ -91,13 +91,17 @@ const AdminDashboard = () => {
     async function fetchAllTracks() {
         try {
             const res = await api.get('/api/admin/timetracking/all');
+            // API liefert Tages­zeilen ⇒ erst auf­splitten …
             const expanded = expandDayRows(res.data || []);
-            const validEntries = expanded.filter(e => [1,2,3,4].includes(e.punchOrder));
-            setAllTracks(validEntries);
+            // … dann nur die Einträge behalten, die wir wirklich brauchen
+            const valid = expanded.filter(e => [1,2,3,4].includes(e.punchOrder));
+            setAllTracks(valid);
         } catch (err) {
             console.error('Error loading time entries', err);
         }
     }
+
+
     async function fetchAllVacations() {
         try {
             const res = await api.get('/api/vacation/all');
