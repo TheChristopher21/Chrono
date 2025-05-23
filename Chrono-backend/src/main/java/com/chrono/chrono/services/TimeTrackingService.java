@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -267,19 +268,27 @@ public class TimeTrackingService {
         int expected = (int) Math.round(FULL_WEEK_MINUTES * factor);
         return worked - expected;
     }
-    public int getWorkedMinutes(User user, LocalDate date) {
-        TimeTracking tt = timeTrackingRepo                      // eine Zeile pro Tag!
-                .findByUserAndDailyDate(user, date)
-                .orElseThrow(() -> new RuntimeException(
-                        "No time-tracking entry for " + user.getUsername() + " on " + date));
 
-        int start  = toMinutes(tt.getWorkStart());              // 07:45 -> 465 min
-        int end    = toMinutes(tt.getWorkEnd());                // 17:30 -> 1050 min
-        int pause  = 0;
-        if (tt.getBreakStart() != null && tt.getBreakEnd() != null) {
-            pause = toMinutes(tt.getBreakEnd()) - toMinutes(tt.getBreakStart());
+
+    public int getWorkedMinutes(User user, LocalDate date) {
+        Optional<TimeTracking> ott = timeTrackingRepo                      // eine Zeile pro Tag!
+                .findByUserAndDailyDate(user, date);
+
+        if (ott.isPresent()) {
+            TimeTracking tt = ott.get();
+            int start = toMinutes(tt.getWorkStart());              // 07:45 -> 465 min
+            int end = toMinutes(tt.getWorkEnd());                // 17:30 -> 1050 min
+            int pause = 0;
+            if (tt.getBreakStart() != null && tt.getBreakEnd() != null) {
+                pause = toMinutes(tt.getBreakEnd()) - toMinutes(tt.getBreakStart());
+            }
+            return (end - start) - pause;
         }
-        return (end - start) - pause;                           // effektive Arbeitszeit
+        else {
+            return 0;
+        }
+
+        // effektive Arbeitszeit
     }
     private static int toMinutes(LocalTime t) {
         return (t == null) ? 0 : t.getHour() * 60 + t.getMinute();
@@ -324,7 +333,7 @@ public class TimeTrackingService {
         int totalMinutes = 0;
 
         if (Boolean.TRUE.equals(user.getIsPercentage())) {
-            for (LocalDate w = firstDay; !w.isAfter(lastDay); w = w.plusWeeks(1)) {
+            for (LocalDate w = firstDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)); !w.isAfter(lastDay); w = w.plusWeeks(1)) {
                 int diff = computeWeeklyWorkDifference(user, w, lastDay);
                 totalMinutes += diff;
             }
