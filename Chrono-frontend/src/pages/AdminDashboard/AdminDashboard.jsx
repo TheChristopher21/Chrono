@@ -24,6 +24,7 @@ import {
     computeDayTotalMinutes,
     formatTime
 } from './adminDashboardUtils';
+import { expandDayRows } from '../UserDashboard/userDashUtils';
 
 const AdminDashboard = () => {
     const { currentUser } = useAuth();
@@ -90,7 +91,8 @@ const AdminDashboard = () => {
     async function fetchAllTracks() {
         try {
             const res = await api.get('/api/admin/timetracking/all');
-            const validEntries = (res.data || []).filter(e => [1,2,3,4].includes(e.punchOrder));
+            const expanded = expandDayRows(res.data || []);
+            const validEntries = expanded.filter(e => [1,2,3,4].includes(e.punchOrder));
             setAllTracks(validEntries);
         } catch (err) {
             console.error('Error loading time entries', err);

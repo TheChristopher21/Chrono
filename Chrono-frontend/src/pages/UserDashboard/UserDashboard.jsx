@@ -26,6 +26,7 @@ import {
     getExpectedHoursForDay,
     getStatusLabel,
     groupEntriesByDay,
+    expandDayRows,
     isLateTime
 } from './userDashUtils';
 import { minutesToHours } from '../PercentageDashboard/percentageDashUtils';
@@ -116,7 +117,8 @@ function UserDashboard() {
             try {
                 // Einträge
                 const resEntries = await api.get(`/api/timetracking/history?username=${userProfile.username}`);
-                const validEntries = (resEntries.data || []).filter(e => [1, 2, 3, 4].includes(e.punchOrder));
+                const expanded = expandDayRows(resEntries.data || []);
+                const validEntries = expanded.filter(e => [1, 2, 3, 4].includes(e.punchOrder));
                 setAllEntries(validEntries);
 
                 // Urlaub
@@ -182,7 +184,8 @@ function UserDashboard() {
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username}`);
 
             const resEntries = await api.get(`/api/timetracking/history?username=${userProfile.username}`);
-            const validEntries = (resEntries.data || []).filter(e => [1, 2, 3, 4].includes(e.punchOrder));
+            const expanded = expandDayRows(resEntries.data || []);
+            const validEntries = expanded.filter(e => [1, 2, 3, 4].includes(e.punchOrder));
             setAllEntries(validEntries);
             loadProfile();
         } catch (err) {

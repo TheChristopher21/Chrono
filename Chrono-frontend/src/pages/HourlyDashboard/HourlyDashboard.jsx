@@ -13,7 +13,7 @@ import {
     formatLocalDate,
     computeTotalMinutesInRange
 } from './hourDashUtils';
-import { formatDiffDecimal } from '../UserDashboard/userDashUtils';
+import { formatDiffDecimal, expandDayRows } from '../UserDashboard/userDashUtils';
 
 import HourlyWeekOverview from './HourlyWeekOverview';
 import HourlyVacationSection from './HourlyVacationSection';
@@ -105,20 +105,18 @@ const HourlyDashboard = () => {
         if (!userProfile) return;
         try {
             const res = await api.get(`/api/timetracking/history?username=${userProfile.username}`);
-            const allData = res.data || [];
-            const validEntries = allData.filter(e => [1, 2, 3, 4].includes(e.punchOrder));
+            const raw = res.data || [];
+            const expanded = expandDayRows(raw);
+            const validEntries = expanded.filter(e => [1, 2, 3, 4].includes(e.punchOrder));
             setAllEntries(validEntries);
 
-            // Notiz-Einträge
-            const noteEntries = allData.filter(
-                (e) => e.punchOrder === 0 && e.dailyNote && e.dailyNote.trim().length > 0
-            );
+            // Notiz-Einträge direkt aus den Tagesobjekten
+            const noteEntries = raw.filter(d => d.dailyNote && d.dailyNote.trim().length > 0);
             if (noteEntries.length > 0) {
-                setDailyNotes((prev) => {
+                setDailyNotes(prev => {
                     const merged = { ...prev };
-                    noteEntries.forEach((noteEntry) => {
-                        const isoDate = noteEntry.startTime.slice(0, 10);
-                        merged[isoDate] = noteEntry.dailyNote;
+                    noteEntries.forEach(n => {
+                        merged[n.dailyDate] = n.dailyNote;
                     });
                     return merged;
                 });
