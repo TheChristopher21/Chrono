@@ -149,23 +149,12 @@ const LandingPage = () => {
                 </div>
             </section>
 
-            {/* ---------------------------------------------------------------
-         KOMMENTAR-INTEGRATION (auskommentiert)
-         ---------------------------------------------------------------
-         <section className="site-section" id="comments">
-           <h2>Kommentare</h2>
-           <div id="commento" />
-         </section>
 
-         //  Script z. B. in index.html oder via react-helmet:
-         //  <script defer src="https://cdn.commento.io/js/commento.js"></script>
-         ---------------------------------------------------------------- */}
-
-            {/* NEWSLETTER ***************************************************** */}
             <section className="newsletter-section site-section">
                 <div className="section-inner">
-                    <h2>{t("landingPage.newsTitle", "Bleib informiert!")}</h2>
+                    <h3>{t("landingPage.newsTitle", "Bleib informiert!")}</h3>
                     <p>{t("landingPage.newsSub", "Updates & Tipps direkt in dein Postfach.")}</p>
+                    <br/>
                     <form className="newsletter-form">
                         <input type="email" placeholder={t("landingPage.newsletterPlaceholder")} />
                         <button className="btn primary">{t("landingPage.newsletterButton")}</button>

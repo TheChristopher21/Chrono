@@ -1,5 +1,5 @@
 /* =========================================================================
-   Navbar.css · “Hamburger-Menü”-Version
+   Navbar.css · “Hamburger-Menü”-Version · ZENTRIERTE VERTIKALE AUSRICHTUNG
    Scope: .scoped-navbar
    ========================================================================= */
 
@@ -42,11 +42,12 @@
     position: sticky;
     top: 0;
     z-index: 1000;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.7rem 1.6rem;
 
+    padding: 0.7rem 1.6rem;
     background: rgba(var(--c-bg-rgb), 0.74);
     backdrop-filter: saturate(180%) blur(14px);
 
@@ -120,7 +121,15 @@
     list-style: none;
     margin: 0;
     padding: 0;
+
     transition: all 0.3s ease;
+}
+
+/* Neu: Jeder <li> wird zum Flex-Container,
+   um Text / Button / Controls sauber zu zentrieren */
+.scoped-navbar .navbar-links li {
+    display: flex;
+    align-items: center;
 }
 
 /* Links normal */
@@ -131,10 +140,12 @@
     color: var(--c-text);
     font-weight: 500;
     text-decoration: none;
+
     transition:
             background var(--u-dur) var(--u-ease),
             color      var(--u-dur) var(--u-ease);
 }
+
 .scoped-navbar .navbar-links a:hover {
     background: var(--c-pri);
     color: #fff;
@@ -150,6 +161,7 @@
     padding: 0.55rem 1rem;
     background: var(--c-pri);
     color: #fff;
+
     transition:
             background var(--u-dur) var(--u-ease),
             transform var(--u-dur) var(--u-ease);
@@ -171,11 +183,12 @@
 .scoped-navbar .navbar-username {
     color: var(--c-muted);
     font-weight: 600;
+    padding: 0 0.6rem; /* etwas Abstand links und rechts */
 }
 
 /* Helligkeitskontrolle */
 .scoped-navbar .brightness-control {
-    display: flex;
+    display: inline-flex;     /* inline-flex, damit Label + Slider + Span zentriert sind */
     align-items: center;
     gap: 0.45rem;
 }
@@ -183,6 +196,7 @@
     font-size: 0.8rem;
     font-weight: 500;
     color: var(--c-muted);
+    line-height: 1;           /* Verhindert, dass Label etwas „höher“ steht */
 }
 .scoped-navbar .brightness-control input[type="range"] {
     -webkit-appearance: none;
@@ -203,10 +217,10 @@
 
 /* -------------- Mobile Layout -------------- */
 @media (max-width: 768px) {
-    /* Zeige hamburger-Label, verstecke Link-Liste standardmäßig */
+    /* Zeige Hamburger-Label, verstecke Link-Liste standardmäßig */
     .scoped-navbar .nav-toggle-label {
         display: block;
-        margin-left: auto; /* schiebt hamburger nach rechts */
+        margin-left: auto; /* schiebt Hamburger nach rechts */
     }
     /* Default: kein Menu */
     .scoped-navbar .navbar-links {
@@ -233,6 +247,7 @@
     /* Alle Links & Buttons in Spalte => 100% Breite */
     .scoped-navbar .navbar-links li {
         width: 100%;
+        margin: 4px 0; /* kleine Abstände zwischen den List-Items */
     }
     .scoped-navbar .navbar-links a,
     .scoped-navbar .navbar-links button,
@@ -240,7 +255,6 @@
         width: 100%;
         text-align: left;
         padding: 0.6rem;
-        margin: 2px 0;
         border-radius: 8px;
     }
 }
@@ -257,9 +271,7 @@
 
 /* -------------- Reduced Motion -------------- */
 @media (prefers-reduced-motion: reduce) {
-    .scoped-navbar *,
-    .scoped-navbar *::before,
-    .scoped-navbar *::after {
+    .scoped-navbar * {
         transition: none !important;
         animation: none !important;
     }

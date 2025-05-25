@@ -629,6 +629,173 @@
     flex: 1 1 100%;
 }
 
+
+/* ... (deine bestehenden Variablen und Styles für .week-overview-section, .week-table etc.) ... */
+
+.admin-dashboard.scoped-dashboard .week-table .day-cell.vacation {
+    background-color: var(--c-bg-vacation, #e6f7ff); /* Heller Blauton für Urlaub */
+    text-align: center;
+    font-style: italic;
+    color: var(--c-text-vacation, #00528e);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .week-table .day-cell.vacation {
+    background-color: var(--c-bg-vacation-dark, #1f3a4d); /* Dunklerer Blauton für Dark Mode */
+    color: var(--c-text-vacation-dark, #9cdaff);
+}
+
+.admin-dashboard.scoped-dashboard .week-table .vacation-indicator {
+    display: block;
+    font-size: 0.85em;
+    font-weight: 500;
+}
+
+.admin-dashboard.scoped-dashboard .week-table .day-cell .no-entry {
+    color: var(--c-muted);
+    font-style: italic;
+}
+
+.admin-dashboard.scoped-dashboard .week-table .day-cell .missing-entry-indicator {
+    color: var(--c-warn, #ffc107); /* Warnfarbe für fehlende Einträge */
+    font-weight: bold;
+    display: inline-block;
+    transform: scale(1.2);
+}
+
+
+/* Styles für die Detailansicht im Expanded Row */
+.admin-dashboard.scoped-dashboard .expanded-content .day-detail.vacation-detail {
+    padding: 0.4rem 0.8rem;
+    background-color: var(--c-bg-vacation-detail, #f0faff);
+    border-left: 3px solid var(--c-pri-dim, #6b7cff); /* Akzentfarbe */
+    margin: 0.3rem 0;
+    border-radius: var(--u-radius-sm, 4px);
+    color: var(--c-text-vacation-detail, #004085);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .expanded-content .day-detail.vacation-detail {
+    background-color: var(--c-bg-vacation-detail-dark, #2a4d66);
+    border-left-color: var(--c-pri, #475bff);
+    color: var(--c-text-vacation-detail-dark, #b8e2ff);
+}
+
+.admin-dashboard.scoped-dashboard .expanded-content .vacation-text {
+    font-weight: 600;
+    margin-left: 0.5rem;
+}
+
+/* Kleinere Buttons für die Detailansicht (Edit, New Entry) */
+.admin-dashboard.scoped-dashboard .day-actions .edit-button-small,
+.admin-dashboard.scoped-dashboard .day-actions .new-entry-button-small {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.75rem;
+    margin-left: 0.5rem;
+    border: 1px solid var(--c-border);
+    background-color: var(--c-surface);
+    color: var(--c-text);
+    border-radius: var(--u-radius-sm, 4px);
+    cursor: pointer;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .day-actions .edit-button-small,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .day-actions .new-entry-button-small {
+    background-color: var(--c-bg);
+    border-color: var(--c-line);
+}
+
+.admin-dashboard.scoped-dashboard .day-actions .edit-button-small:hover,
+.admin-dashboard.scoped-dashboard .day-actions .new-entry-button-small:hover {
+    background-color: var(--c-border);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .day-actions .edit-button-small:hover,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .day-actions .new-entry-button-small:hover {
+    background-color: var(--c-line);
+}
+
+.admin-dashboard.scoped-dashboard .print-times-button-expanded {
+    /* Styling für den Drucken-Button in der aufgeklappten Ansicht */
+    padding: 0.4rem 0.8rem;
+    margin-top: 0.5rem;
+    background-color: var(--c-pri);
+    color: var(--c-card); /* Heller Text für dunklen Button */
+    border: none;
+    border-radius: var(--u-radius-sm);
+    cursor: pointer;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .print-times-button-expanded {
+    color: #fff;
+}
+
+.admin-dashboard.scoped-dashboard .print-times-button-expanded:hover {
+    background-color: var(--c-pri-dim);
+}
+
+
+/* Allgemeine Klasse für Sektionen (falls noch nicht vorhanden) */
+.admin-dashboard.scoped-dashboard .content-section {
+    background-color: var(--c-card);
+    padding: var(--u-gap, 1.5rem);
+    border-radius: var(--u-radius);
+    box-shadow: var(--u-shadow-sm);
+    margin-bottom: var(--u-gap, 1.5rem);
+}
+
+.admin-dashboard.scoped-dashboard .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--c-line);
+    margin-bottom: 1rem;
+}
+
+.admin-dashboard.scoped-dashboard .section-header:hover {
+    background-color: color-mix(in srgb, var(--c-surface) 90%, var(--c-text) 5%);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .section-header:hover {
+    background-color: color-mix(in srgb, var(--c-bg) 90%, var(--c-text) 10%);
+}
+
+.admin-dashboard.scoped-dashboard .section-title {
+    margin: 0;
+    font-size: 1.2rem; /* Etwas kleiner für Sub-Sektionen */
+    font-weight: 600;
+    color: var(--c-text);
+}
+.admin-dashboard.scoped-dashboard .section-content {
+    /* Kein extra Padding hier, da .content-section bereits Padding hat */
+}
+
+/* Stile für die Wochennavigation und Tabellenüberschriften */
+.admin-dashboard.scoped-dashboard .week-overview-section .week-navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    flex-wrap: wrap; /* Für kleinere Bildschirme */
+    gap: 0.5rem;
+}
+.admin-dashboard.scoped-dashboard .week-overview-section .nav-button,
+.admin-dashboard.scoped-dashboard .week-overview-section .week-jump-input {
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--c-border);
+    background-color: var(--c-surface);
+    color: var(--c-text);
+    border-radius: var(--u-radius-sm);
+    font-size: 0.9rem;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .week-overview-section .nav-button,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .week-overview-section .week-jump-input {
+    background-color: var(--c-bg);
+    border-color: var(--c-line);
+}
+
+.admin-dashboard.scoped-dashboard .week-overview-section .week-jump-input {
+    max-width: 150px; /* Verhindert, dass das Datumsfeld zu breit wird */
+}
+
+.admin-dashboard.scoped-dashboard .week-overview-section .week-search-input {
+    margin-bottom: 1rem; /* Abstand unter dem Suchfeld */
+}
+
 @media (max-width: 1280px) {                 /* Desktop kleiner */
     .admin-dashboard.scoped-dashboard .admin-user-groups {
         grid-template-columns: repeat(4, 1fr);
