@@ -8,13 +8,16 @@ import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus; // Importiert für ResponseEntity
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize; // Für Berechtigungen
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Map; // Importiert für Map in ResponseEntity
 
 @RestController
 @RequestMapping("/api/timetracking")
@@ -34,29 +37,52 @@ public class TimeTrackingController {
      */
     @PostMapping("/punch")
     public TimeTrackingResponse punch(@RequestParam String username, Principal principal) {
+        // Sicherstellen, dass der Principal existiert, bevor darauf zugegriffen wird
         if (principal != null) {
-            userService.assertSameCompany(principal.getName(), username);
+            User requestingUser = userService.getUserByUsername(principal.getName());
+            User targetUser = userService.getUserByUsername(username);
+            // Es ist besser, eine spezifische Berechtigungsprüfung im Service oder via Spring Security zu haben.
+            // Hier eine einfache Prüfung, ob sie zur selben Firma gehören, falls nicht SUPERADMIN.
+            if (!requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) &&
+                    (requestingUser.getCompany() == null || targetUser.getCompany() == null ||
+                            !requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()))) {
+                throw new SecurityException("Benutzer " + principal.getName() + " darf keinen Punch für Benutzer " + username + " einer anderen Firma durchführen.");
+            }
+        } else if (!username.equals("nfc-background-service")) { // Allow specific internal user for NFC background tasks
+            throw new SecurityException("Nicht autorisierter Punch-Versuch ohne Principal.");
         }
         return timeTrackingService.handleSmartPunch(username);
     }
 
     @PostMapping("/work-start")
-    public TimeTrackingResponse workStart(@RequestParam String username) {
+    public TimeTrackingResponse workStart(@RequestParam String username, Principal principal) {
+        if (!principal.getName().equals(username)) {
+            throw new SecurityException("Benutzer dürfen nur für sich selbst 'Work Start' stempeln.");
+        }
         return timeTrackingService.handlePunch(username, "WORK_START");
     }
 
     @PostMapping("/break-start")
-    public TimeTrackingResponse breakStart(@RequestParam String username) {
+    public TimeTrackingResponse breakStart(@RequestParam String username, Principal principal) {
+        if (!principal.getName().equals(username)) {
+            throw new SecurityException("Benutzer dürfen nur für sich selbst 'Break Start' stempeln.");
+        }
         return timeTrackingService.handlePunch(username, "BREAK_START");
     }
 
     @PostMapping("/break-end")
-    public TimeTrackingResponse breakEnd(@RequestParam String username) {
+    public TimeTrackingResponse breakEnd(@RequestParam String username, Principal principal) {
+        if (!principal.getName().equals(username)) {
+            throw new SecurityException("Benutzer dürfen nur für sich selbst 'Break End' stempeln.");
+        }
         return timeTrackingService.handlePunch(username, "BREAK_END");
     }
 
     @PostMapping("/work-end")
-    public TimeTrackingResponse workEnd(@RequestParam String username) {
+    public TimeTrackingResponse workEnd(@RequestParam String username, Principal principal) {
+        if (!principal.getName().equals(username)) {
+            throw new SecurityException("Benutzer dürfen nur für sich selbst 'Work End' stempeln.");
+        }
         return timeTrackingService.handlePunch(username, "WORK_END");
     }
 
@@ -65,25 +91,46 @@ public class TimeTrackingController {
             @RequestParam String username,
             Principal principal
     ) {
-        // Firma prüfen
         User requestingUser = userService.getUserByUsername(principal.getName());
         User targetUser = userService.getUserByUsername(username);
-        if (!requestingUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
-            throw new RuntimeException("Keine Berechtigung auf fremde Firma");
+
+        // Allow user to see their own history
+        if (requestingUser.getId().equals(targetUser.getId())) {
+            return timeTrackingService.getUserHistory(username);
         }
-        return timeTrackingService.getUserHistory(username);
+        // Allow admin/superadmin to see history of users in their company
+        boolean isAdminOrSuperAdmin = requestingUser.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
+
+        if (isAdminOrSuperAdmin &&
+                requestingUser.getCompany() != null &&
+                targetUser.getCompany() != null &&
+                requestingUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
+            return timeTrackingService.getUserHistory(username);
+        }
+        // Allow superadmin to see anyone's history
+        if (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+            return timeTrackingService.getUserHistory(username);
+        }
+
+        throw new SecurityException("Keine Berechtigung, die Zeiterfassung dieses Benutzers einzusehen.");
     }
 
     @GetMapping("/percentage-punch")
     public PercentagePunchResponse percentagePunch(
             @RequestParam String  username,
-            @RequestParam double  percentage) {
+            @RequestParam double  percentage,
+            Principal principal) {
 
-        // Soll-Minuten für einen *vollen* Arbeitstag bei diesem Pensum
-        int expected = (int) Math.round(TimeTrackingService.FULL_DAY_MINUTES * (percentage / 100.0));
-
+        if (!principal.getName().equals(username)) {
+            throw new SecurityException("Benutzer dürfen Percentage-Punch nur für sich selbst ausführen.");
+        }
         User user = userService.getUserByUsername(username);
+        if (!Boolean.TRUE.equals(user.getIsPercentage())) {
+            throw new IllegalArgumentException("Benutzer " + username + " ist kein prozentualer Mitarbeiter.");
+        }
 
+        int expected = (int) Math.round(TimeTrackingService.FULL_DAY_MINUTES * (percentage / 100.0));
         int worked = timeTrackingService.getWorkedMinutes(user, LocalDate.now());
         int diff   = worked - expected;
 
@@ -94,75 +141,67 @@ public class TimeTrackingController {
         return new PercentagePunchResponse(username, worked, expected, diff, msg);
     }
 
-    @PutMapping("/editDay")
-    public ResponseEntity<?> editDayTimeEntries(
-            @RequestParam String targetUsername,
-            @RequestParam String date,
+    // Diese Methode ist im AdminTimeTrackingController, nicht hier.
+    // @PutMapping("/editDay")
+    // ...
+
+    @PutMapping("/edit")
+    @PreAuthorize("hasRole('USER')") // Assuming users can edit their own, or admins can edit via admin controller
+    public ResponseEntity<?> editTimeTrackEntry(
+            @RequestParam Long id,
+            // @RequestParam String username, // username can be derived from Principal or already part of TimeTracking entry
+            @RequestParam String date, // Date of the entry, might not be needed if ID is sufficient
             @RequestParam String workStart,
-            @RequestParam String breakStart,
-            @RequestParam String breakEnd,
             @RequestParam String workEnd,
-            @RequestParam String adminUsername,
-            @RequestParam String adminPassword,
-            @RequestParam String userPassword
+            // @RequestParam String adminUsername, // REMOVED - Admin actions go through AdminController
+            // @RequestParam String adminPassword, // REMOVED
+            @RequestParam(required = false) String userPassword, // Keep if users need to confirm their own edits
+            Principal principal
     ) {
         try {
-            String result = timeTrackingService.updateDayTimeEntries(
-                    targetUsername,
-                    date,
-                    workStart,
-                    breakStart,
-                    breakEnd,
-                    workEnd,
-                    adminUsername,
-                    adminPassword,
-                    userPassword
-            );
-            return ResponseEntity.ok(result);
+            LocalDate parsedDate = LocalDate.parse(date);
+            LocalTime ws = LocalTime.parse(workStart);
+            LocalTime we = LocalTime.parse(workEnd);
 
-        } catch (RuntimeException ex) {
-            String msg = ex.getMessage() != null ? ex.getMessage() : "Unknown error";
-            if (msg.contains("Invalid admin password")
-                    || msg.contains("Invalid user password")
-                    || msg.contains("For self-edit, admin and user passwords must match")) {
-                return ResponseEntity.status(403).body("Passwort-Fehler: " + msg);
-            }
-            return ResponseEntity.badRequest()
-                    .body("Konnte dayTimeEntries nicht bearbeiten: " + msg);
+            // The service method 'updateTimeTrackEntry' needs to be adjusted
+            // to not expect adminPassword and to correctly handle userPassword for self-edits.
+            TimeTrackingResponse response = timeTrackingService.updateTimeTrackEntry(
+                    id,
+                    parsedDate.atTime(ws),
+                    parsedDate.atTime(we),
+                    userPassword, // Pass for self-correction validation if applicable
+                    principal.getName() // Pass the principal's name as the acting user (could be admin or self)
+                    // If it's a self-edit, service needs to check if principal.getName() matches owner of entry 'id'
+            );
+            return ResponseEntity.ok(response);
+        } catch (IllegalArgumentException | SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Konnte Zeiteintrag nicht bearbeiten: " + e.getMessage()));
         }
     }
 
-    @PutMapping("/edit")
-    public TimeTrackingResponse editTimeTrackEntry(
-            @RequestParam Long id,
-            @RequestParam String username,
-            @RequestParam String date,
-            @RequestParam String workStart,
-            @RequestParam String workEnd,
-            @RequestParam String adminUsername,
-            @RequestParam String adminPassword,
-            @RequestParam String userPassword
-    ) {
-        LocalDate parsedDate = LocalDate.parse(date);
-        LocalTime ws = LocalTime.parse(workStart);
-        LocalTime we = LocalTime.parse(workEnd);
-
-        return timeTrackingService.updateTimeTrackEntry(
-                id,
-                parsedDate.atTime(ws),
-                parsedDate.atTime(we),
-                userPassword,
-                adminUsername,
-                adminPassword
-        );
-    }
 
     @GetMapping("/report")
     public List<TimeReportDTO> getReport(
             @RequestParam String username,
             @RequestParam String startDate,
-            @RequestParam String endDate
+            @RequestParam String endDate,
+            Principal principal
     ) {
+        User requestingUser = userService.getUserByUsername(principal.getName());
+        User targetUser = userService.getUserByUsername(username);
+
+        if (!requestingUser.getId().equals(targetUser.getId())) {
+            boolean isAdminOrSuperAdmin = requestingUser.getRoles().stream()
+                    .anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
+            boolean isSuperAdmin = requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+
+            if (!isSuperAdmin && (!isAdminOrSuperAdmin || requestingUser.getCompany() == null || targetUser.getCompany() == null ||
+                    !requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()))) {
+                throw new SecurityException("Keine Berechtigung, den Bericht dieses Benutzers einzusehen.");
+            }
+        }
         return timeTrackingService.getReport(username, startDate, endDate);
     }
 
@@ -170,19 +209,45 @@ public class TimeTrackingController {
     public TimeTrackingResponse updateDailyNote(
             @RequestParam String username,
             @RequestParam String date,
-            @RequestParam String note
+            @RequestParam String note,
+            Principal principal
     ) {
+        if (!principal.getName().equals(username)) {
+            // Admins might be allowed to edit notes for users in their company
+            User requestingUser = userService.getUserByUsername(principal.getName());
+            User targetUser = userService.getUserByUsername(username);
+            boolean isAdminOrSuperAdmin = requestingUser.getRoles().stream()
+                    .anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
+
+            if (!isAdminOrSuperAdmin || requestingUser.getCompany() == null || targetUser.getCompany() == null ||
+                    !requestingUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
+                throw new SecurityException("Keine Berechtigung, die Notiz für diesen Benutzer zu ändern.");
+            }
+        }
         return timeTrackingService.updateDailyNote(username, date, note);
     }
 
     @GetMapping("/work-difference")
     public int getWorkDifference(
             @RequestParam String username,
-            @RequestParam String date) {
+            @RequestParam String date,
+            Principal principal) {
 
-        User user = userRepository.findByUsername(username)
+        User requestingUser = userService.getUserByUsername(principal.getName());
+        User targetUser = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return timeTrackingService.computeDailyWorkDifference(user, LocalDate.parse(date));
+        if (!requestingUser.getId().equals(targetUser.getId())) {
+            boolean isAdminOrSuperAdmin = requestingUser.getRoles().stream()
+                    .anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
+            boolean isSuperAdmin = requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+
+
+            if (!isSuperAdmin && (!isAdminOrSuperAdmin || requestingUser.getCompany() == null || targetUser.getCompany() == null ||
+                    !requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()))) {
+                throw new SecurityException("Keine Berechtigung, die Arbeitsdifferenz dieses Benutzers einzusehen.");
+            }
+        }
+        return timeTrackingService.computeDailyWorkDifference(targetUser, LocalDate.parse(date));
     }
 }
