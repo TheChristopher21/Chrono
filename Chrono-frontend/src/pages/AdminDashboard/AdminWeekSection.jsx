@@ -1,474 +1,474 @@
 // src/pages/AdminDashboard/AdminWeekSection.jsx
-import  { useState } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import PropTypes from "prop-types";
 import "../../styles/AdminDashboardScoped.css";
 
 import {
     formatLocalDateYMD,
     formatDate,
-    formatTime,
     getStatusLabel,
     getExpectedHoursForDay,
     computeDailyDiffValue,
     computeDailyDiff,
-    computeDayTotalMinutes,
-    computeTotalMinutesInRange,
+    computeDayTotalMinutesFromEntries,
+    minutesToHHMM,
+    groupTracksByDay,
+    calculateWeeklyActualMinutes,
+    calculateWeeklyExpectedMinutes,
     isLateTime,
+    getDetailedGlobalProblemIndicators,
+    getMondayOfWeek // Hinzufügen, falls nicht schon importiert
 } from "./adminDashboardUtils";
 
 const AdminWeekSection = ({
                               t,
                               weekDates,
-                              selectedMonday,
+                              selectedMonday, // Das aktuell im Dashboard ausgewählte Montag-Datum
                               handlePrevWeek,
                               handleNextWeek,
                               handleWeekJump,
+                              onFocusProblemWeek, // NEUE Prop von AdminDashboard
                               allTracks,
+                              allVacations,
                               users,
-                              expandedUsers,
-                              setExpandedUsers,
                               defaultExpectedHours,
                               openEditModal,
                               openPrintUserModal,
                               weeklyBalances = [],
                               openNewEntryModal,
                           }) => {
+    // ... (bestehende States: searchTerm, detailedUser, sortConfig, focusedProblem, etc.) ...
     const [searchTerm, setSearchTerm] = useState("");
+    const [detailedUser, setDetailedUser] = useState(null);
+    const [sortConfig, setSortConfig] = useState({ key: 'username', direction: 'ascending' });
+    const [focusedProblem, setFocusedProblem] = useState({ username: null, dateIso: null });
 
-    /* ------------------------------------------------------------------ */
-    /* 1) Woche als ISO-Strings vorbereiten                               */
-    /* ------------------------------------------------------------------ */
-    const weekISO = weekDates.map((d) => formatLocalDateYMD(d));
+    const HIDDEN_USERS_LOCAL_STORAGE_KEY = 'adminDashboard_hiddenUsers_v1';
 
-    /* ------------------------------------------------------------------ */
-    /* 2) Tracks auf genau diese Woche einschränken                       */
-    /* ------------------------------------------------------------------ */
-    const filteredTracks = allTracks.filter((tt) =>
-        weekISO.includes(tt.startTime.slice(0, 10))
-    );
-
-    /* ------------------------------------------------------------------ */
-    /* 3) Mapping Username → Track-Liste                                  */
-    /*     Zunächst NUR aus vorhandenen Tracks …                          */
-    /* ------------------------------------------------------------------ */
-    const tracksByUser = filteredTracks.reduce((acc, tt) => {
-        if (!acc[tt.username]) acc[tt.username] = [];
-        acc[tt.username].push(tt);
-        return acc;
-    }, {});
-
-    /* ------------------------------------------------------------------ */
-    /* 4) …und jetzt JEDEN bekannten User ergänzen                        */
-    /* ------------------------------------------------------------------ */
-    const userGroups = {};
-    users.forEach((u) => {
-        userGroups[u.username] = tracksByUser[u.username] || [];
+    const [hiddenUsers, setHiddenUsers] = useState(() => {
+        const savedHiddenUsers = localStorage.getItem(HIDDEN_USERS_LOCAL_STORAGE_KEY);
+        if (savedHiddenUsers) {
+            try {
+                const hiddenUserArray = JSON.parse(savedHiddenUsers);
+                return new Set(Array.isArray(hiddenUserArray) ? hiddenUserArray : []);
+            } catch (e) {
+                console.error("Error parsing hidden users from localStorage:", e);
+                return new Set();
+            }
+        }
+        return new Set();
     });
+    const [showHiddenUsersManager, setShowHiddenUsersManager] = useState(false);
+    const detailSectionRef = useRef(null);
 
-    /* ------------------------------------------------------------------ */
-    /* 5) Alphabetische Sortierung + Suche                                */
-    /* ------------------------------------------------------------------ */
-    let userKeys = Object.keys(userGroups).sort((a, b) =>
-        a.localeCompare(b)
-    );
+    useEffect(() => {
+        localStorage.setItem(HIDDEN_USERS_LOCAL_STORAGE_KEY, JSON.stringify(Array.from(hiddenUsers)));
+    }, [hiddenUsers]);
 
-    if (searchTerm.trim() !== "") {
-        userKeys = userKeys.filter((uname) =>
-            uname.toLowerCase().includes(searchTerm.toLowerCase())
-        );
-    }
+    // processedUserData und sortedUserData bleiben wie in der vorherigen Antwort
 
-    /* ------------------------------------------------------------------ */
-    /* 6) Expand / Collapse                                               */
-    /* ------------------------------------------------------------------ */
-    const toggleUserExpand = (uname) =>
-        setExpandedUsers((p) => ({ ...p, [uname]: !p[uname] }));
+    const processedUserData = useMemo(() => {
+        return users
+            .map((user) => {
+                const userConfig = user;
+                const userAllTracks = allTracks.filter(track => track.username === user.username);
+                const allUserDayMapGlobal = groupTracksByDay(userAllTracks);
 
-    const allExpanded = userKeys.length > 0 && userKeys.every((u) => expandedUsers[u]);
-    const toggleAll = () => {
-        if (allExpanded) {
-            setExpandedUsers({});
-        } else {
-            const obj = {};
-            userKeys.forEach((u) => { obj[u] = true; });
-            setExpandedUsers(obj);
+                const userTracksCurrentWeek = userAllTracks.filter(track => {
+                    const trackDate = track.dailyDate || (track.startTime ? track.startTime.slice(0, 10) : null);
+                    return trackDate && weekDates.some(d => formatLocalDateYMD(d) === trackDate);
+                });
+                const userDayMapCurrentWeek = groupTracksByDay(userTracksCurrentWeek);
+
+                const userApprovedVacations = allVacations.filter(
+                    (vac) => vac.username === user.username && vac.approved
+                );
+
+                const weeklyActualMinutes = calculateWeeklyActualMinutes(userDayMapCurrentWeek, weekDates);
+                const weeklyExpectedMinutes = calculateWeeklyExpectedMinutes(userConfig, weekDates, defaultExpectedHours, userApprovedVacations);
+                const currentWeekOvertimeMinutes = weeklyActualMinutes - weeklyExpectedMinutes;
+
+                const balanceEntry = weeklyBalances.find(b => b.username === user.username);
+                const cumulativeBalanceMinutes = balanceEntry?.trackingBalance !== undefined && balanceEntry?.trackingBalance !== null
+                    ? balanceEntry.trackingBalance
+                    : userConfig.trackingBalanceInMinutes ?? currentWeekOvertimeMinutes;
+
+                const problemIndicators = getDetailedGlobalProblemIndicators(
+                    allUserDayMapGlobal,
+                    userApprovedVacations,
+                    userConfig,
+                    defaultExpectedHours
+                );
+
+                return {
+                    username: user.username,
+                    userColor: /^#[0-9A-F]{6}$/i.test(userConfig.color || "") ? userConfig.color : "#007BFF",
+                    department: userConfig.department || '-',
+                    weeklyActualMinutes,
+                    weeklyExpectedMinutes,
+                    currentWeekOvertimeMinutes,
+                    cumulativeBalanceMinutes,
+                    problemIndicators,
+                    userConfig,
+                    userDayMap: userDayMapCurrentWeek,
+                    userApprovedVacations,
+                    allUserDayMapGlobal
+                };
+            })
+            .filter(ud =>
+                ud.username.toLowerCase().includes(searchTerm.toLowerCase()) &&
+                !hiddenUsers.has(ud.username)
+            );
+
+    }, [users, allTracks, allVacations, weekDates, defaultExpectedHours, weeklyBalances, searchTerm, hiddenUsers]);
+
+    const sortedUserData = useMemo(() => {
+        let sortableItems = [...processedUserData];
+        if (sortConfig !== null) {
+            sortableItems.sort((a, b) => {
+                let valA = a[sortConfig.key];
+                let valB = b[sortConfig.key];
+
+                if (sortConfig.key === 'weeklyBalanceMinutes') {
+                    valA = a.currentWeekOvertimeMinutes;
+                    valB = b.currentWeekOvertimeMinutes;
+                } else if (sortConfig.key === 'cumulativeBalanceMinutes') {
+                    valA = a.cumulativeBalanceMinutes;
+                    valB = b.cumulativeBalanceMinutes;
+                } else if (sortConfig.key === 'problemIndicators') {
+                    valA = (a.problemIndicators.missingEntriesCount + a.problemIndicators.incompleteDaysCount + a.problemIndicators.autoCompletedCount);
+                    valB = (b.problemIndicators.missingEntriesCount + b.problemIndicators.incompleteDaysCount + b.problemIndicators.autoCompletedCount);
+                } else if (typeof valA === 'string') {
+                    valA = valA.toLowerCase();
+                    valB = valB.toLowerCase();
+                }
+
+                if (valA < valB) {
+                    return sortConfig.direction === 'ascending' ? -1 : 1;
+                }
+                if (valA > valB) {
+                    return sortConfig.direction === 'ascending' ? 1 : -1;
+                }
+                return 0;
+            });
+        }
+        return sortableItems;
+    }, [processedUserData, sortConfig]);
+
+
+    const requestSort = (key) => {
+        let direction = 'ascending';
+        if (sortConfig.key === key && sortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setSortConfig({ key, direction });
+    };
+
+    const getSortIndicator = (key) => {
+        if (sortConfig.key === key) {
+            return sortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
+        }
+        return '';
+    };
+
+    const toggleDetails = (username) => {
+        const newDetailedUser = detailedUser === username ? null : username;
+        setDetailedUser(newDetailedUser);
+        if (newDetailedUser === null) {
+            setFocusedProblem({ username: null, dateIso: null });
         }
     };
 
-    /* ------------------------------------------------------------------ */
-    /* 7) Render                                                          */
-    /* ------------------------------------------------------------------ */
+    const daysForUserDetailView = () => {
+        return weekDates;
+    };
+
+    const handleProblemIndicatorClick = (username, globalProblematicDays) => {
+        if (globalProblematicDays && globalProblematicDays.length > 0) {
+            const firstProblemDateIso = globalProblematicDays[0].dateIso;
+            const problemDate = new Date(firstProblemDateIso + "T00:00:00"); // Für Datumsvergleiche
+            const problemWeekMonday = getMondayOfWeek(problemDate);
+
+            // Prüfen, ob die Woche des Problems von der aktuell ausgewählten Woche abweicht
+            // Wichtig: selectedMonday ist ein Date-Objekt, problemWeekMonday auch. Zeitkomponenten müssen ignoriert werden.
+            if (problemWeekMonday.getTime() !== selectedMonday.getTime()) {
+                if (onFocusProblemWeek) {
+                    onFocusProblemWeek(problemDate); // Übergibt das genaue Datum, AdminDashboard setzt den Montag dieser Woche
+                }
+            }
+            setDetailedUser(username); // Details für den User auf jeden Fall öffnen/beibehalten
+            setFocusedProblem({ username, dateIso: firstProblemDateIso }); // Fokus auf das Problem setzen
+        }
+    };
+
+    const handleHideUser = (usernameToHide) => {
+        setHiddenUsers(prev => new Set(prev).add(usernameToHide));
+        if (detailedUser === usernameToHide) {
+            setDetailedUser(null);
+            setFocusedProblem({ username: null, dateIso: null });
+        }
+    };
+
+    const handleUnhideUser = (usernameToUnhide) => {
+        setHiddenUsers(prev => {
+            const next = new Set(prev);
+            next.delete(usernameToUnhide);
+            return next;
+        });
+    };
+
+    const handleUnhideAllUsers = () => {
+        setHiddenUsers(new Set());
+        setShowHiddenUsersManager(false);
+    };
+
+    useEffect(() => {
+        if (focusedProblem.username && focusedProblem.dateIso && detailSectionRef.current) {
+            const elementId = `day-card-${focusedProblem.username}-${focusedProblem.dateIso}`;
+            // console.log("Attempting to scroll to:", elementId, "in ref:", detailSectionRef.current);
+            const element = detailSectionRef.current.querySelector(`#${elementId}`);
+            // console.log("Element found for scrolling:", element);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else {
+                // console.log(`Day card with ID ${elementId} not found in the current detail view.`);
+            }
+        }
+    }, [focusedProblem, detailedUser, weekDates]); // weekDates hinzugefügt, damit es neu versucht zu scrollen, wenn sich die Woche ändert
+
     return (
         <div className="admin-dashboard scoped-dashboard">
             <section className="week-section">
                 <h3>{t("adminDashboard.timeTrackingCurrentWeek")}</h3>
-
-                {/* Navigation */}
                 <div className="week-navigation">
-                    <button onClick={handlePrevWeek}>
-                        ← {t("adminDashboard.prevWeek")}
-                    </button>
-                    <input
-                        type="date"
-                        value={formatLocalDateYMD(selectedMonday)}
-                        onChange={handleWeekJump}
-                    />
-                    <button onClick={handleNextWeek}>
-                        {t("adminDashboard.nextWeek")} →
-                    </button>
+                    <button onClick={handlePrevWeek}>← {t("adminDashboard.prevWeek")}</button>
+                    <input type="date" value={formatLocalDateYMD(selectedMonday)} onChange={handleWeekJump} />
+                    <button onClick={handleNextWeek}>{t("adminDashboard.nextWeek")} →</button>
                 </div>
 
-                {/* Suche */}
-                <div
-                    className="user-search-bar mb-4 text-center"
-                    style={{ marginBottom: "1rem", textAlign: "center" }}
-                >
+                <div className="user-search-controls">
                     <input
                         type="text"
-                        placeholder={t("adminDashboard.searchUser") || "Benutzer suchen…"}
+                        placeholder={t("adminDashboard.searchUser") || "Benutzer suchen..."}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="max-w-xs p-2 border rounded"
+                        className="user-search-input"
                     />
-                    <button
-                        className="ml-2 px-3 py-2"
-                        onClick={toggleAll}
-                    >
-                        {allExpanded
-                            ? t('adminDashboard.collapseAll')
-                            : t('adminDashboard.expandAll')}
-                    </button>
+                    {users.length > 0 && (
+                        <button
+                            onClick={() => setShowHiddenUsersManager(!showHiddenUsersManager)}
+                            className="manage-hidden-users-button"
+                            title={t('manageHiddenUsersTooltip', 'Ausgeblendete Benutzer verwalten')}
+                        >
+                            {showHiddenUsersManager ? t('hideHiddenUsersList', 'Liste verbergen') : t('showHiddenUsersList', 'Ausgeblendete zeigen')} ({hiddenUsers.size})
+                        </button>
+                    )}
                 </div>
 
-                {/* Leerer Zustand */}
-                {userKeys.length === 0 ? (
+                {showHiddenUsersManager && (
+                    <div className="hidden-users-manager card-style">
+                        <h4>{t('hiddenUsersTitle', 'Ausgeblendete Benutzer')}</h4>
+                        {hiddenUsers.size === 0 ? (
+                            <p>{t('noHiddenUsers', 'Aktuell sind keine Benutzer ausgeblendet.')}</p>
+                        ) : (
+                            <>
+                                <ul className="hidden-users-list">
+                                    {Array.from(hiddenUsers).sort().map(username => (
+                                        <li key={username}>
+                                            <span>{username}</span>
+                                            <button onClick={() => handleUnhideUser(username)} className="action-button unhide-button">
+                                                {t('unhideUser', 'Einblenden')}
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                                <button onClick={handleUnhideAllUsers} className="action-button unhide-all-button">
+                                    {t('unhideAllUsers', 'Alle einblenden')}
+                                </button>
+                            </>
+                        )}
+                    </div>
+                )}
+
+                {sortedUserData.length === 0 ? (
                     <p>
-                        {searchTerm.trim() === ""
-                            ? t("adminDashboard.noEntriesThisWeek")
-                            : t("adminDashboard.noMatch") || "Keine passenden Benutzer."}
+                        {hiddenUsers.size > 0 && searchTerm.trim() === ""
+                            ? t("adminDashboard.allVisibleUsersHiddenOrNoData", "Keine sichtbaren Benutzer für diese Woche oder alle gefilterten Benutzer sind ausgeblendet.")
+                            : (searchTerm.trim() === ""
+                                ? t("adminDashboard.noUserDataForWeek")
+                                : t("adminDashboard.noMatch"))
+                        }
                     </p>
                 ) : (
-                    <div
-                        className="admin-user-groups scrollable-user-list overflow-y-auto p-2"
-                        style={{
-                            maxHeight: userKeys.length > 10 ? "500px" : "auto",
-                        }}
-                    >
-                        {userKeys.map((username) => {
-                            /* ---------------------------------------------------------- */
-                            /* User-bezogene Konstanten                                   */
-                            /* ---------------------------------------------------------- */
-                            const userConfig =
-                                users.find((u) => u.username === username) || {};
-                            const userColor =
-                                /^#[0-9A-F]{6}$/i.test(userConfig.color || "")
-                                    ? userConfig.color
-                                    : "#007BFF";
-                            const tracks = userGroups[username]; // kann leer sein
-
-                            /* Tag-Weise gruppieren */
-                            const dayMap = {};
-                            tracks.forEach((tt) => {
-                                const iso = tt.startTime.slice(0, 10);
-                                if (!dayMap[iso]) dayMap[iso] = [];
-                                dayMap[iso].push(tt);
-                            });
-
-                            const isHourly = userConfig.isHourly;
-                            const isPercentage = userConfig.isPercentage;
-
-                            /* Wochen-Saldo */
-                            const daysForUser = isPercentage
-                                ? weekDates.slice(0, 5)
-                                : weekDates;
-
-                            let weekDiff = 0;
-                            daysForUser.forEach((d) => {
-                                const iso = formatLocalDateYMD(d);
-                                const expected = getExpectedHoursForDay(
-                                    d,
-                                    userConfig,
-                                    defaultExpectedHours
-                                );
-                                if (dayMap[iso]?.length) {
-                                    weekDiff += computeDailyDiffValue(
-                                        dayMap[iso],
-                                        expected,
-                                        userConfig.isHourly
-                                    );
-                                }
-                            });
-                            const weekAbs = Math.abs(weekDiff);
-                            Math.floor(weekAbs / 60);
-// Arbeitszeit-Summen für Stundenlöhner
-                            let weekWorked = 0;
-                            let monthWorked = 0;
-                            if (isHourly) {
-                                daysForUser.forEach((d) => {
-                                    const iso = formatLocalDateYMD(d);
-                                    const dayEntries = dayMap[iso] || [];
-                                    weekWorked += computeDayTotalMinutes(dayEntries);
-                                });
-
-                                const monthStart = new Date(selectedMonday.getFullYear(), selectedMonday.getMonth(), 1);
-                                const monthEnd = new Date(selectedMonday.getFullYear(), selectedMonday.getMonth() + 1, 0, 23, 59, 59);
-                                const userEntries = allTracks.filter(tt => tt.username === username);
-                                monthWorked = computeTotalMinutesInRange(userEntries, monthStart, monthEnd);
-                            }
-
-                            /* Globale Tracking-Bilanz */
-                            const tb =
-                                weeklyBalances.find((wb) => wb.username === username)
-                                    ?.trackingBalance ?? 0;
-                            const tbSign = tb >= 0 ? "+" : "-";
-                            const tbAbs = Math.abs(tb);
-                            const tbH = Math.floor(tbAbs / 60);
-                            console.log(username,tb)
-                            const tbM = tbAbs % 60;
-
-                            let weekExpectedMin = 0;
-                            if (isPercentage) {
-                                const perc = (userConfig.workPercentage ?? 100) / 100;
-                                weekExpectedMin = Math.round(510 * perc * 5);
-                            } else if (!isHourly) {
-                                daysForUser.forEach((d) => {
-                                    const exp = getExpectedHoursForDay(d, userConfig, defaultExpectedHours);
-                                    weekExpectedMin += (exp ?? 0) * 60;
-                                });
-                            }
-                            Math.floor(weekExpectedMin / 60);
-                            const expanded = !!expandedUsers[username];
-
-                            return (
-                                <div key={username} className="admin-user-block">
-                                    {/* Kopf */}
-                                    <div
-                                        className="admin-user-header"
-                                        style={{ backgroundColor: userColor }}
-                                        onClick={() => toggleUserExpand(username)}
-                                    >
-                                        <h4 style={{ color: "#fff", margin: 0 }}>{username}</h4>
-                                        <button className="edit-button">
-                                            {expanded ? "–" : "+"}
+                    <table className="admin-week-table">
+                        <thead>
+                        <tr>
+                            <th onClick={() => requestSort('username')}>{t('user', 'Benutzer')} {getSortIndicator('username')}</th>
+                            <th onClick={() => requestSort('weeklyActualMinutes')}>{t('actualHours', 'Ist (Wo)')} {getSortIndicator('weeklyActualMinutes')}</th>
+                            <th onClick={() => requestSort('weeklyExpectedMinutes')}>{t('expectedHours', 'Soll (Wo)')} {getSortIndicator('weeklyExpectedMinutes')}</th>
+                            <th onClick={() => requestSort('weeklyBalanceMinutes')}>{t('balanceWeek', 'Saldo (diese Woche)')} {getSortIndicator('weeklyBalanceMinutes')}</th>
+                            <th onClick={() => requestSort('cumulativeBalanceMinutes')}>{t('balanceTotal', 'Gesamtsaldo')} {getSortIndicator('cumulativeBalanceMinutes')}</th>
+                            <th onClick={() => requestSort('problemIndicators')}>{t('issues', 'Probleme')} {getSortIndicator('problemIndicators')}</th>
+                            <th>{t('actions', 'Aktionen')}</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {sortedUserData.map((userData) => (
+                            <React.Fragment key={userData.username}>
+                                <tr className={detailedUser === userData.username ? "user-row-detailed" : ""}>
+                                    <td data-label={t('user', 'Benutzer')} style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.username}</td>
+                                    <td data-label={t('actualHours', 'Ist (Wo)')}>{minutesToHHMM(userData.weeklyActualMinutes)}</td>
+                                    <td data-label={t('expectedHours', 'Soll (Wo)')}>{minutesToHHMM(userData.weeklyExpectedMinutes)}</td>
+                                    <td data-label={t('balanceWeek', 'Saldo (diese Woche)')} className={userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}>
+                                        {minutesToHHMM(userData.currentWeekOvertimeMinutes)}
+                                    </td>
+                                    <td data-label={t('balanceTotal', 'Gesamtsaldo')} className={userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}>
+                                        {minutesToHHMM(userData.cumulativeBalanceMinutes)}
+                                    </td>
+                                    <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell">
+                                        {(userData.problemIndicators.missingEntriesCount > 0 || userData.problemIndicators.incompleteDaysCount > 0 || userData.problemIndicators.autoCompletedCount > 0) ? (
+                                            <>
+                                                {userData.problemIndicators.missingEntriesCount > 0 && (
+                                                    <span
+                                                        title={`${userData.problemIndicators.missingEntriesCount} ${t('problemTooltips.missingEntries', 'Tag(e) ohne Eintrag')}`}
+                                                        onClick={() => handleProblemIndicatorClick(userData.username, userData.problemIndicators.problematicDays)}
+                                                        className="problem-icon"
+                                                    >❗</span>
+                                                )}
+                                                {userData.problemIndicators.incompleteDaysCount > 0 && (
+                                                    <span
+                                                        title={`${userData.problemIndicators.incompleteDaysCount} ${t('problemTooltips.incompleteDays', 'Tag(e) unvollständig')}`}
+                                                        onClick={() => handleProblemIndicatorClick(userData.username, userData.problemIndicators.problematicDays)}
+                                                        className="problem-icon"
+                                                    >⚠️</span>
+                                                )}
+                                                {userData.problemIndicators.autoCompletedCount > 0 && (
+                                                    <span
+                                                        title={`${userData.problemIndicators.autoCompletedCount} ${t('problemTooltips.autoCompletedDays', 'Tag(e) automatisch beendet (23:20)')}`}
+                                                        onClick={() => handleProblemIndicatorClick(userData.username, userData.problemIndicators.problematicDays)}
+                                                        className="problem-icon auto-completed-icon"
+                                                    >🤖</span>
+                                                )}
+                                            </>
+                                        ) : '✅'}
+                                    </td>
+                                    <td data-label={t('actions', 'Aktionen')} className="actions-cell">
+                                        <button
+                                            onClick={() => toggleDetails(userData.username)}
+                                            className="action-button details-toggle-button"
+                                            title={detailedUser === userData.username ? t('hideDetails', 'Details Ausblenden') : t('showDetails', 'Details Anzeigen')}
+                                        >
+                                            {detailedUser === userData.username ? '📂' : '📄'}
                                         </button>
-                                    </div>
-
-                                    {/* Inhalt – kann leer sein */}
-                                    {expanded && (
-                                        <div className="admin-week-display">
-                                            {/* Summen */}
-                                            {!isHourly && (
-                                                <div className="user-weekly-balance">
-                                                    <strong>{t('overtimeBalance')}:</strong>{' '}
-                                                    {tbSign}
-                                                    {tbH}h {tbM}m
+                                        <button
+                                            onClick={() => openPrintUserModal(userData.username)}
+                                            className="action-button print-user-button"
+                                            title={t('printButtonUser', 'Zeiten dieses Benutzers drucken')}
+                                        >
+                                            🖨️
+                                        </button>
+                                        <button
+                                            onClick={() => handleHideUser(userData.username)}
+                                            className="action-button hide-user-row-button"
+                                            title={t('hideUserInTable', 'Diesen Benutzer in der Tabelle ausblenden')}
+                                        >
+                                            🙈
+                                        </button>
+                                    </td>
+                                </tr>
+                                {detailedUser === userData.username && (
+                                    <tr className="user-detail-row">
+                                        <td colSpan="7" ref={detailSectionRef}>
+                                            <div className="admin-week-display-detail">
+                                                <div className="user-weekly-balance-detail">
+                                                    <strong>{t('balanceTotal', 'Gesamtsaldo')}:</strong> {minutesToHHMM(userData.cumulativeBalanceMinutes)}
+                                                    <br />
+                                                    <strong>{t('balanceWeek', 'Saldo (diese Woche)')}:</strong> {minutesToHHMM(userData.currentWeekOvertimeMinutes)}
                                                 </div>
-                                            )}
 
-                                            {isHourly && (
-                                                <div className="hourly-summary">
-                                                    <p>
-                                                        <strong>{t('weeklyHours')}:</strong>{' '}
-                                                        {Math.floor(weekWorked / 60)}h {weekWorked % 60}m
-                                                    </p>
-                                                    <p>
-                                                        <strong>{t('monthlyHours')}:</strong>{' '}
-                                                        {Math.floor(monthWorked / 60)}h {monthWorked % 60}m
-                                                    </p>
-                                                </div>
-                                            )}
+                                                {daysForUserDetailView().map((d) => {
+                                                    const iso = formatLocalDateYMD(d);
+                                                    const dayEntriesArray = userData.userDayMap[iso] || [];
+                                                    const singleDayEntryObject = dayEntriesArray[0];
 
-                                            {/* Tage der Woche */}
-                                            {daysForUser.map((d, idx) => {
-                                                const iso = formatLocalDateYMD(d);
-                                                const dayEntries = dayMap[iso] || [];
-                                                const expected = getExpectedHoursForDay(
-                                                    d,
-                                                    userConfig,
-                                                    defaultExpectedHours
-                                                );
+                                                    const expected = getExpectedHoursForDay(d, userData.userConfig, defaultExpectedHours);
 
-                                                /* -------- Keine Einträge – Button “Zeiten eintragen” */
-                                                if (dayEntries.length === 0) {
-                                                    return (
-                                                        <div key={idx} className="admin-day-card">
-                                                            <div className="admin-day-card-header">
-                                                                <strong>
-                                                                    {d.toLocaleDateString("de-DE", {
-                                                                        weekday: "long",
-                                                                    })}
-                                                                    , {formatDate(d)}
-                                                                </strong>
+                                                    let vacationOnThisDay = null;
+                                                    const currentDayDate = new Date(d);
+                                                    currentDayDate.setHours(0, 0, 0, 0);
+
+                                                    for (const vac of userData.userApprovedVacations) {
+                                                        const vacStart = new Date(vac.startDate + "T00:00:00");
+                                                        const vacEnd = new Date(vac.endDate + "T00:00:00"); // Korrigiert, um nur Startdatum zu vergleichen
+                                                        if (currentDayDate >= vacStart && currentDayDate <= vacEnd) {
+                                                            vacationOnThisDay = vac;
+                                                            break;
+                                                        }
+                                                    }
+
+                                                    const dayCardId = `day-card-${userData.username}-${iso}`;
+                                                    const isFocused = focusedProblem.username === userData.username && focusedProblem.dateIso === iso;
+                                                    const isAutoCompleted = singleDayEntryObject?.corrected && singleDayEntryObject?.workEnd?.startsWith("23:20");
+                                                    const dayOfWeek = d.getDay();
+
+                                                    if (vacationOnThisDay) {
+                                                        return (
+                                                            <div id={dayCardId} key={dayCardId} className={`admin-day-card admin-day-card-vacation ${isFocused ? 'focused-problem' : ''}`}>
+                                                                <div className="admin-day-card-header"><strong>{d.toLocaleDateString("de-DE", { weekday: "long" })}, {formatDate(d)}</strong></div>
+                                                                <div className="admin-day-content"><p className="vacation-indicator"><span role="img" aria-label="vacation">🏖️</span> {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p></div>
                                                             </div>
-                                                            <div className="admin-day-content">
-                                                                <p className="no-entries">
-                                                                    {t('adminDashboard.noEntries')}
-                                                                </p>
-                                                                <button
-                                                                    className="edit-day-button"
-                                                                    style={{ background: "#2ecc71" }}
-                                                                    onClick={() => openNewEntryModal(username, d)}
-                                                                >
-                                                                    {t('adminDashboard.newEntryButton')}
-                                                                </button>
+                                                        );
+                                                    } else if (!singleDayEntryObject || (!singleDayEntryObject.workStart && !singleDayEntryObject.workEnd)) {
+                                                        let showNewEntryButton = (expected != null && expected > 0) || (userData.userConfig.isPercentage && (dayOfWeek !== 0 && dayOfWeek !== 6));
+                                                        const relevantEffectiveStartDate = userData.userConfig.scheduleEffectiveDate ? new Date(userData.userConfig.scheduleEffectiveDate + "T00:00:00") : null;
+                                                        if (relevantEffectiveStartDate && currentDayDate < relevantEffectiveStartDate) {
+                                                            showNewEntryButton = false;
+                                                        }
+                                                        return (
+                                                            <div id={dayCardId} key={dayCardId} className={`admin-day-card ${isFocused ? 'focused-problem' : ''} ${isAutoCompleted ? 'auto-completed-day-card' : ''}`}>
+                                                                <div className="admin-day-card-header"><strong>{d.toLocaleDateString("de-DE", { weekday: "long" })}, {formatDate(d)}</strong></div>
+                                                                <div className="admin-day-content">
+                                                                    <p className="no-entries">{t('adminDashboard.noEntries')}</p>
+                                                                    {showNewEntryButton ? (
+                                                                        <button className="edit-day-button new-entry" onClick={() => openNewEntryModal(userData.username, d)}>{t('adminDashboard.newEntryButton')}</button>
+                                                                    ) : null}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                /* -------- Stempelliste (isHourly) */
-                                                if (userConfig.isHourly) {
-                                                    return (
-                                                        <div key={idx} className="admin-day-card">
-                                                            <div className="admin-day-card-header">
-                                                                <strong>
-                                                                    {d.toLocaleDateString("de-DE", {
-                                                                        weekday: "long",
-                                                                    })}
-                                                                    , {formatDate(d)}
-                                                                </strong>
+                                                        );
+                                                    } else {
+                                                        const dailyDiffStr = computeDailyDiff([singleDayEntryObject], expected, userData.userConfig.isHourly);
+                                                        return (
+                                                            <div id={dayCardId} key={dayCardId} className={`admin-day-card ${isFocused ? 'focused-problem' : ''} ${isAutoCompleted ? 'auto-completed-day-card' : ''}`}>
+                                                                <div className="admin-day-card-header">
+                                                                    <strong>{d.toLocaleDateString("de-DE", { weekday: "long" })}, {formatDate(d)}{expected !== null && !userData.userConfig.isHourly && <span className="expected-hours"> (Soll: {expected}h)</span>}</strong>
+                                                                    {!userData.userConfig.isHourly && dailyDiffStr && <span className={`daily-diff ${computeDailyDiffValue([singleDayEntryObject], expected, false) < 0 ? 'negative-balance' : 'positive-balance'}`}> ({dailyDiffStr})</span>}
+                                                                    {isAutoCompleted && <span className="auto-completed-tag">AUTO</span>}
+                                                                    <button className="edit-day-button" onClick={() => openEditModal(userData.username, d, [singleDayEntryObject])}>{t("adminDashboard.editButton")}</button>
+                                                                </div>
+                                                                <div className="admin-day-content">
+                                                                    <ul className="time-entry-list">
+                                                                        {singleDayEntryObject.workStart && <li><span className="entry-label">{getStatusLabel(1)}:</span> <span className={isLateTime(singleDayEntryObject.workStart) ? 'late-time' : ''}>{singleDayEntryObject.workStart}</span></li>}
+                                                                        {singleDayEntryObject.breakStart && <li><span className="entry-label">{getStatusLabel(2)}:</span> {singleDayEntryObject.breakStart}</li>}
+                                                                        {singleDayEntryObject.breakEnd && <li><span className="entry-label">{getStatusLabel(3)}:</span> {singleDayEntryObject.breakEnd}</li>}
+                                                                        {singleDayEntryObject.workEnd && <li><span className="entry-label">{getStatusLabel(4)}:</span> <span className={isLateTime(singleDayEntryObject.workEnd) ? 'late-time' : ''}>{singleDayEntryObject.workEnd}</span></li>}
+                                                                    </ul>
+                                                                    {userData.userConfig.isHourly && <p><strong>{t('totalTime', 'Gesamtzeit')}:</strong> {minutesToHHMM(computeDayTotalMinutesFromEntries([singleDayEntryObject]))}</p>}
+                                                                </div>
                                                             </div>
-                                                            <div className="admin-day-content">
-                                                                <ul className="time-entry-list">
-                                                                    {dayEntries
-                                                                        .sort((a, b) => a.punchOrder - b.punchOrder)
-                                                                        .map(e => {
-                                                                            let disp = '-';
-                                                                            switch (e.punchOrder) {
-                                                                                case 1: // Work Start
-                                                                                    disp = e.workStart
-                                                                                        ? formatTime(e.workStart)
-                                                                                        : formatTime(e.startTime);
-                                                                                    break;
-                                                                                case 2: // Break Start
-                                                                                    disp = e.breakStart
-                                                                                        ? formatTime(e.breakStart)
-                                                                                        : formatTime(e.startTime);
-                                                                                    break;
-                                                                                case 3: // Break End
-                                                                                    disp = e.breakEnd
-                                                                                        ? formatTime(e.breakEnd)
-                                                                                        : formatTime(e.startTime);
-                                                                                    break;
-                                                                                case 4: // Work End
-                                                                                    disp = e.workEnd
-                                                                                        ? formatTime(e.workEnd)
-                                                                                        : formatTime(e.endTime);
-                                                                                    break;
-                                                                                default:
-                                                                                    break;
-                                                                            }
-
-                                                                            return (
-                                                                                <li
-                                                                                    key={`${e.id}-${e.punchOrder}`}
-                                                                                    className={isLateTime(disp) ? 'late-time' : ''}
-                                                                                >
-                    <span className="entry-label">
-                        {getStatusLabel(e.punchOrder)}:
-                    </span>{' '}
-                                                                                    {disp}
-                                                                                </li>
-                                                                            );
-                                                                        })}
-                                                                </ul>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                }
-
-                                                /* -------- Festangestellte mit Tagesdiff */
-                                                const dailyDiff =
-                                                    dayEntries.length >= 4
-                                                        ? computeDailyDiff(
-                                                            dayEntries,
-                                                            expected,
-                                                            false /* isHourly */
-                                                        )
-                                                        : "";
-
-                                                return (
-                                                    <div key={idx} className="admin-day-card">
-                                                        <div className="admin-day-card-header">
-                                                            <strong>
-                                                                {d.toLocaleDateString("de-DE", {
-                                                                    weekday: "long",
-                                                                })}
-                                                                , {formatDate(d)}
-                                                                <span className="expected-hours">
-                                  (
-                                                                    {t("adminDashboard.expected") ||
-                                                                        "Soll"}: {expected}h)
-                                </span>
-                                                            </strong>
-                                                            {dailyDiff && (
-                                                                <span className="daily-diff">
-                                  ({dailyDiff})
-                                </span>
-                                                            )}
-                                                            <button
-                                                                className="edit-day-button"
-                                                                onClick={() =>
-                                                                    openEditModal(username, d, dayEntries)
-                                                                }
-                                                            >
-                                                                {t("adminDashboard.editButton")}
-                                                            </button>
-                                                        </div>
-                                                        <div className="admin-day-content">
-                                                            <ul className="time-entry-list">
-                                                                {dayEntries
-                                                                    .sort((a, b) => a.punchOrder - b.punchOrder)
-                                                                    .map(e => {
-                                                                        let disp = '-';
-                                                                        switch (e.punchOrder) {
-                                                                            case 1:
-                                                                                disp = e.workStart ? formatTime(e.workStart) : '-';
-                                                                                break;
-                                                                            case 2:
-                                                                                disp = e.breakStart ? formatTime(e.breakStart) : '-';
-                                                                                break;
-                                                                            case 3:
-                                                                                disp = e.breakEnd ? formatTime(e.breakEnd) : '-';
-                                                                                break;
-                                                                            case 4:
-                                                                                disp = e.workEnd ? formatTime(e.workEnd) : '-';
-                                                                                break;
-                                                                            default:
-                                                                                break;
-                                                                        }
-
-                                                                        return (
-                                                                            <li
-                                                                                key={`${e.id}-${e.punchOrder}`}
-                                                                                className={isLateTime(disp) ? 'late-time' : ''}
-                                                                            >
-                    <span className="entry-label">
-                        {getStatusLabel(e.punchOrder)}:
-                    </span>{' '}
-                                                                                {disp}
-                                                                            </li>
-                                                                        );
-                                                                    })}
-                                                            </ul>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            })}
-
-                                            {/* Drucken */}
-                                            <button
-                                                className="print-times-button"
-                                                onClick={() => openPrintUserModal(username)}
-                                            >
-                                                {t("adminDashboard.printButton") || "Zeiten Drucken"}
-                                            </button>
-                                        </div>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
+                                                        );
+                                                    }
+                                                })}
+                                                <button className="print-times-button" onClick={() => openPrintUserModal(userData.username)}>
+                                                    {t("adminDashboard.printButton") || "Zeiten Drucken"}
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
+                        ))}
+                        </tbody>
+                    </table>
                 )}
             </section>
         </div>
@@ -478,18 +478,22 @@ const AdminWeekSection = ({
 AdminWeekSection.propTypes = {
     t: PropTypes.func.isRequired,
     weekDates: PropTypes.arrayOf(PropTypes.instanceOf(Date)).isRequired,
-    weeklyBalances: PropTypes.array.isRequired,
     selectedMonday: PropTypes.instanceOf(Date).isRequired,
     handlePrevWeek: PropTypes.func.isRequired,
     handleNextWeek: PropTypes.func.isRequired,
     handleWeekJump: PropTypes.func.isRequired,
+    onFocusProblemWeek: PropTypes.func.isRequired, // NEUE PropType-Validierung
     allTracks: PropTypes.array.isRequired,
+    allVacations: PropTypes.arrayOf(
+        PropTypes.shape({
+            // ... (bestehende Vacation-Props)
+        })
+    ).isRequired,
     users: PropTypes.array.isRequired,
-    expandedUsers: PropTypes.object.isRequired,
-    setExpandedUsers: PropTypes.func.isRequired,
     defaultExpectedHours: PropTypes.number.isRequired,
     openEditModal: PropTypes.func.isRequired,
     openPrintUserModal: PropTypes.func.isRequired,
+    weeklyBalances: PropTypes.array,
     openNewEntryModal: PropTypes.func.isRequired,
 };
 

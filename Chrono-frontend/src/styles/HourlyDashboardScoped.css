@@ -1,523 +1,439 @@
 /* =========================================================================
-   HourlyDashboardScoped.css
+   HourlyDashboardScoped.css · V2 Modern (Mai 2025)
    Scope: .hourly-dashboard.scoped-dashboard
    ========================================================================= */
 
-/* --------------------------- 1) Variablen (Light) --------------------------- */
+/* Erbt viele Variablen von UserDashboardScoped.css oder global.css.
+   Hier können bei Bedarf spezifische Overrides oder Ergänzungen erfolgen.
+   Für dieses Beispiel gehen wir davon aus, dass die meisten Basis-Styles
+   und Variablen von UserDashboardScoped.css übernommen oder dort definiert werden.
+   Wir verwenden hier direkt die --ud- Variablen für Konsistenz.
+*/
+
 .hourly-dashboard.scoped-dashboard {
-    --c-pri:        #475bff;
-    --c-pri-dim:    #6b7cff;
-    --c-sec:        #20c997;
-    --c-sec-dim:    #3ad8a7;
-    --c-text:       #1f2024;
-    --c-muted:      #5d626e;
-    --c-bg:         #f5f7ff;
-    --c-card:       #ffffff;
-    --c-surface:    #f0f2fe;
-    --c-border:     #d5d8e5;
-    --c-line:       #e7e8f1;
-    --c-warn:       #ff9d41;
-    --c-danger:     #ed5757;
-
-    --u-radius:     14px;
-    --u-shadow-sm:  0 2px 6px rgba(0, 0, 0, 0.06);
-    --u-shadow-lg:  0 20px 34px rgba(0, 0, 0, 0.14);
-    --u-dur:        0.25s;
-    --u-ease:       cubic-bezier(0.4, 0.2, 0.2, 1);
-
-    font-size:      16px;
-    line-height:    1.55;
-    font-family:    'Poppins', system-ui, sans-serif;
-
-    background: var(--c-bg);
-    color: var(--c-text);
+    /* Basis-Layout und Schrift */
     min-height: 100vh;
-
-    transition:
-            background var(--u-dur) var(--u-ease),
-            color      var(--u-dur) var(--u-ease);
-}
-
-/* --------------------------- 2) Variablen (Dark) ---------------------------- */
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard {
-    --c-text:    #e6e8ee;
-    --c-muted:   #a1a5b4;
-    --c-bg:      #16181d;
-    --c-card:    #1f2229;
-    --c-surface: #242731;
-    --c-border:  #3a3e4b;
-    --c-line:    #2d3039;
-
-    --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.45);
-    --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.75);
+    font-family: var(--ud-font-family, 'Poppins', system-ui, sans-serif);
+    background: var(--ud-c-bg, #f5f7ff);
+    color: var(--ud-c-text, #1f2024);
+    font-size: var(--ud-fz-base, 1rem);
+    line-height: 1.65;
+    padding: var(--ud-gap-lg, 2rem);
+    box-sizing: border-box;
+    transition: background var(--u-dur, 0.25s) var(--u-ease, ease), color var(--u-dur, 0.25s) var(--u-ease, ease);
 }
 
 /* =========================================================================
-   3) Header & Grundlayout
+   Header & Info-Bereich
    ========================================================================= */
 .hourly-dashboard.scoped-dashboard .dashboard-header {
-    background: var(--c-card);
-    padding: 2.2rem 1.8rem;
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    box-shadow: var(--u-shadow-sm);
-    margin-bottom: clamp(1.7rem, 4vw, 2.4rem);
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    /* Identisch zu UserDashboard */
+    background: linear-gradient(135deg, var(--ud-c-primary, #475bff) 0%, var(--ud-c-primary-dim, #6b7cff) 100%);
+    color: #fff;
+    padding: var(--ud-gap-lg, 2rem) var(--ud-gap-xl, 2.5rem);
+    border-radius: var(--ud-radius-xl, 20px);
+    box-shadow: var(--ud-shadow-lg, 0 10px 25px rgba(0,0,0,0.12));
+    margin-bottom: var(--ud-gap-xl, 2.5rem);
     text-align: center;
 }
 .hourly-dashboard.scoped-dashboard .dashboard-header h2 {
-    margin: 0;
-    font-size: clamp(1.9rem, 3vw, 2.4rem);
+    margin: 0 0 var(--ud-gap-sm, 0.75rem) 0;
+    font-size: var(--ud-fz-xxl, 2.25rem);
     font-weight: 700;
+    letter-spacing: -0.5px;
+}
+.hourly-dashboard.scoped-dashboard .personal-info {
+    /* Identisch zu UserDashboard */
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+    gap: var(--ud-gap-sm, 0.75rem) var(--ud-gap-lg, 2rem);
+    margin-top: var(--ud-gap-md, 1.25rem);
+}
+.hourly-dashboard.scoped-dashboard .personal-info p {
+    margin: 0; font-size: var(--ud-fz-md, 1rem);
+    background-color: rgba(255,255,255,0.15);
+    padding: var(--ud-gap-xs, 0.5rem) var(--ud-gap-md, 1.25rem);
+    border-radius: var(--ud-radius-md, 10px);
+    border: 1px solid rgba(255,255,255,0.2);
+    color: #fff;
+}
+.hourly-dashboard.scoped-dashboard .personal-info p strong {
+    font-weight: 600;
+}
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .dashboard-header {
+    background: linear-gradient(135deg, var(--ud-c-primary-dim, #6b7cff) 0%, var(--ud-c-primary, #475bff) 100%);
+}
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .personal-info p {
+    background-color: rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.1);
 }
 
 /* =========================================================================
-   4) Punch-Section
+   Punch-Section (Manuelles Stempeln)
    ========================================================================= */
 .hourly-dashboard.scoped-dashboard .punch-section {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 2rem 1.6rem;
-    text-align: center;
-    box-shadow: var(--u-shadow-sm);
-    margin-bottom: clamp(1.6rem, 3vw, 2rem);
+    /* Identisch zu UserDashboard */
+    text-align: center; padding: var(--ud-gap-lg, 2rem) 0; margin-bottom: var(--ud-gap-lg, 2rem);
+    background: var(--ud-c-surface, #f3f5fd); border-radius: var(--ud-radius-lg, 16px);
+    border: 1px solid var(--ud-c-border, #d0d3e2);
 }
-.hourly-dashboard.scoped-dashboard .punch-message {
-    margin-bottom: 1.2rem;
-    padding: 0.8rem;
-    border-radius: var(--u-radius);
-    background: rgba(32, 201, 151, 0.14);
-    color: var(--c-sec);
-    border: 1px solid var(--c-sec);
-    font-weight: 600;
+.hourly-dashboard.scoped-dashboard .punch-section h4 { /* Überschrift für Stempelbereich */
+    font-size: var(--ud-fz-lg, 1.125rem); margin: 0 0 var(--ud-gap-md, 1.25rem) 0; color: var(--ud-c-text, #1f2024);
 }
-
-/* =========================================================================
-   5) Buttons (global scope for .scoped-dashboard)
-   ========================================================================= */
-.hourly-dashboard.scoped-dashboard button {
-    font-size: 0.93rem;
-    font-weight: 600;
-    border: none;
-    border-radius: var(--u-radius);
-    cursor: pointer;
-    transition:
-            background var(--u-dur) var(--u-ease),
-            transform var(--u-dur) var(--u-ease);
-    padding: 0.6rem 1rem;
-    background: var(--c-pri);
-    color: #fff;
+.hourly-dashboard.scoped-dashboard .punch-section button {
+    /* Nutzt globale Button-Styles */
 }
-.hourly-dashboard.scoped-dashboard button:hover {
-    background: var(--c-pri-dim);
-    transform: translateY(-2px);
+.hourly-dashboard.scoped-dashboard .punch-message { /* Popup-Nachricht */
+    /* Identisch zu UserDashboard */
+    position: fixed; top: calc(var(--navbar-height, 60px) + var(--ud-gap-md, 1.25rem));
+    left: 50%; transform: translateX(-50%);
+    background-color: var(--ud-c-success, #34D399);
+    color: #fff; padding: var(--ud-gap-sm, 0.75rem) var(--ud-gap-lg, 2rem); border-radius: var(--ud-radius-md, 10px); font-weight: 600;
+    box-shadow: var(--ud-shadow-lg, 0 10px 25px rgba(0,0,0,0.12)); z-index: 10001; opacity: 0;
+    animation: fadeInOutUserDash 4s ease-in-out forwards; /* Animation von UserDashboard */
+    font-size: var(--ud-fz-md, 1rem);
 }
-.hourly-dashboard.scoped-dashboard button:focus-visible {
-    outline: 3px solid var(--c-pri);
-    outline-offset: 2px;
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .punch-message {
+    background-color: var(--ud-c-success-dim, #10B981); color: var(--ud-c-text, #E5E7EB);
 }
 
 /* =========================================================================
-   6) Weekly-Overview
+   Weekly Overview Section (Hauptcontainer für Wochenansicht)
    ========================================================================= */
 .hourly-dashboard.scoped-dashboard .weekly-overview {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 2.2rem;
-    box-shadow: var(--u-shadow-sm);
-    margin-bottom: clamp(1.7rem, 4vw, 2.4rem);
+    /* Identisch zu UserDashboard .content-section */
+    background: var(--ud-c-card, #ffffff); border: 1px solid var(--ud-c-border, #d0d3e2); border-radius: var(--ud-radius-lg, 16px);
+    padding: var(--ud-gap-lg, 2rem); box-shadow: var(--ud-shadow-card, 0 8px 24px rgba(71,91,255,0.08));
+    margin-bottom: var(--ud-gap-xl, 2.5rem);
 }
-.hourly-dashboard.scoped-dashboard .weekly-overview h3 {
-    margin: 0 0 1.8rem;
-    text-align: center;
-    font-size: clamp(1.5rem, 2.5vw, 1.8rem);
-    border-bottom: 1px solid var(--c-border);
-    padding-bottom: 1.1rem;
+.hourly-dashboard.scoped-dashboard .weekly-overview > h3 { /* Direkter Kind-Selektor */
+    /* Identisch zu UserDashboard */
+    margin: 0 0 var(--ud-gap-lg, 2rem) 0; font-size: var(--ud-fz-xl, 1.5rem); font-weight: 600; color: var(--ud-c-primary-text, var(--c-pri));
+    padding-bottom: var(--ud-gap-md, 1.25rem); border-bottom: 1px solid var(--ud-c-line, #e2e8f0);
+    display: flex; align-items: center; gap: var(--ud-gap-sm, 0.75rem);
 }
 
-/* Navigation zentrieren */
+/* Wochennavigation (Buttons und Datumsauswahl) */
 .hourly-dashboard.scoped-dashboard .week-navigation {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-    margin-bottom: 1.9rem;
+    /* Identisch zu UserDashboard */
+    display: flex; justify-content: space-between; align-items: center; gap: var(--ud-gap-md, 1.25rem); margin-bottom: var(--ud-gap-lg, 2rem);
+    flex-wrap: wrap; padding: var(--ud-gap-md, 1.25rem); background-color: var(--ud-c-surface, #f3f5fd); border-radius: var(--ud-radius-md, 10px);
+}
+.hourly-dashboard.scoped-dashboard .week-navigation input[type="date"] {
+    text-align: center; width: auto; min-width: 200px;
+    padding: var(--ud-gap-sm, 0.75rem) var(--ud-gap-md, 1.25rem); font-size: var(--ud-fz-md, 1rem);
+    cursor: pointer; border-color: var(--ud-c-border, #d0d3e2); background-color: var(--ud-c-card, #ffffff);
+}
+.hourly-dashboard.scoped-dashboard .week-navigation button {
+    padding: var(--ud-gap-sm, 0.75rem) var(--ud-gap-md, 1.25rem);
+    font-size: var(--ud-fz-sm, 0.875rem);
+}
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .week-navigation {
+    background-color: var(--ud-c-card, #1F2937);
 }
 
-/* Summenanzeige (Wochensaldo, Monatssaldo) */
+/* Anzeige der Wochen- und Monatssummen */
 .hourly-dashboard.scoped-dashboard .weekly-monthly-totals {
-    text-align: center;
-    margin-bottom: 2.1rem;
-    font-size: 1.05rem;
-    font-weight: 600;
+    text-align: center; margin-bottom: var(--ud-gap-lg, 2rem);
+    padding: var(--ud-gap-md, 1.25rem); background-color: var(--ud-c-primary-light-bg, rgba(71,91,255,0.08));
+    border-radius: var(--ud-radius-md, 10px);
+    border: 1px solid var(--ud-c-primary-light-bg, rgba(71,91,255,0.08)); /* kaum sichtbarer Rand, eher für Konsistenz */
+}
+.hourly-dashboard.scoped-dashboard .weekly-monthly-totals p {
+    margin: var(--ud-gap-xs, 0.5rem) 0; font-size: var(--ud-fz-lg, 1.125rem); font-weight: 500; color: var(--ud-c-text, #1f2024);
+}
+.hourly-dashboard.scoped-dashboard .weekly-monthly-totals p strong {
+    color: var(--ud-c-primary-text, var(--c-pri)); font-weight: 600;
+}
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .weekly-monthly-totals {
+    background-color: var(--ud-c-primary-light-bg, rgba(99,179,237,0.15));
 }
 
-/* Week-Display Cards */
+/* Container für die Tageskarten */
 .hourly-dashboard.scoped-dashboard .week-display {
-    display: grid;
-    gap: 1.9rem;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    /* Identisch zu UserDashboard */
+    display: grid; gap: var(--ud-gap-lg, 2rem);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
 }
+
+/* Styling der einzelnen Tageskarten */
 .hourly-dashboard.scoped-dashboard .week-day-card {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    display: flex;
-    flex-direction: column;
-    box-shadow: var(--u-shadow-sm);
-    margin-bottom: 1rem;
+    /* Identisch zu UserDashboard .day-card */
+    background: var(--ud-c-card, #ffffff); border: 1px solid var(--ud-c-border, #d0d3e2); border-radius: var(--ud-radius-lg, 16px);
+    padding: var(--ud-gap-md, 1.25rem); box-shadow: var(--ud-shadow-card, 0 8px 24px rgba(71,91,255,0.08)); display: flex; flex-direction: column;
+    transition: transform var(--u-dur, 0.25s) var(--u-ease, ease), box-shadow var(--u-dur, 0.25s) var(--u-ease, ease);
 }
+.hourly-dashboard.scoped-dashboard .week-day-card:hover {
+    transform: translateY(-5px); box-shadow: 0 10px 20px rgba(var(--c-pri-rgb, 71,91,255), 0.12);
+}
+
 .hourly-dashboard.scoped-dashboard .week-day-header {
-    background: var(--c-surface);
-    padding: 1rem;
-    text-align: center;
-    font-weight: 700;
-    font-size: 1rem;
-    border-bottom: 1px solid var(--c-border);
+    margin-bottom: var(--ud-gap-md, 1.25rem);
+    font-size: var(--ud-fz-lg, 1.125rem); font-weight: 600; color: var(--ud-c-text, #1f2024);
+    padding-bottom: var(--ud-gap-sm, 0.75rem); border-bottom: 1px solid var(--ud-c-line, #e2e8f0);
 }
+
 .hourly-dashboard.scoped-dashboard .week-day-content {
-    padding: 1rem 1.2rem;
-    font-size: 1rem;
-    line-height: 1.45;
+    font-size: var(--ud-fz-sm, 0.875rem); line-height: 1.6; flex-grow: 1;
 }
 .hourly-dashboard.scoped-dashboard .week-day-content ul {
-    margin: 0;
-    padding: 0;
-    list-style: none;
+    list-style: none; padding: 0; margin: 0 0 var(--ud-gap-md, 1.25rem) 0;
 }
 .hourly-dashboard.scoped-dashboard .week-day-content li {
-    margin-bottom: 0.45rem;
+    padding: var(--ud-gap-xs, 0.5rem) 0; display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px dashed var(--ud-c-line, #e2e8f0);
 }
-.hourly-dashboard.scoped-dashboard .week-day-content li strong {
-    font-weight: 700;
+.hourly-dashboard.scoped-dashboard .week-day-content li:last-child { border-bottom: none; }
+.hourly-dashboard.scoped-dashboard .week-day-content li strong { /* Zeit-Label z.B. "Work Start" */
+    color: var(--ud-c-text-muted, #6B7280); font-weight: 500;
+}
+.hourly-dashboard.scoped-dashboard .week-day-content .entry-time { /* Die eigentliche Uhrzeit */
+    font-weight: 600; color: var(--ud-c-text, #1f2024);
+}
+.hourly-dashboard.scoped-dashboard .late-time { /* Hervorhebung für späte Zeiten */
+    color: var(--ud-c-late-time, #F87171); font-weight: 600;
+    background-color: var(--ud-c-late-time-bg, rgba(248,113,113,0.1)); padding: 0.15em 0.4em; border-radius: var(--ud-radius-sm, 6px);
+}
+.hourly-dashboard.scoped-dashboard .no-entries {
+    /* Identisch zu UserDashboard */
+    font-size: var(--ud-fz-sm, 0.875rem); color: var(--ud-c-text-muted, #6B7280); font-style: italic;
+    margin: var(--ud-gap-md, 1.25rem) 0; flex-grow: 1; display: flex; align-items: center; justify-content: center;
+    min-height: 80px; background-color: var(--ud-c-surface, #f3f5fd); border-radius: var(--ud-radius-md, 10px);
+    padding: var(--ud-gap-md, 1.25rem); border: 1px dashed var(--ud-c-border, #d0d3e2);
+}
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .no-entries {
+    background-color: var(--ud-c-surface, #374151); border-color: var(--ud-c-border, #374151);
 }
 
-/* Notiz-Bereich */
+
+/* Tagesnotiz-Bereich in der Tageskarte */
 .hourly-dashboard.scoped-dashboard .daily-note-section {
-    margin-top: auto;
-    padding: 1.1rem 1.2rem;
-    border-top: 1px solid var(--c-border);
+    margin-top: var(--ud-gap-md, 1.25rem); padding-top: var(--ud-gap-md, 1.25rem);
+    border-top: 1px solid var(--ud-c-line, #e2e8f0);
 }
 .hourly-dashboard.scoped-dashboard .daily-note-section textarea {
-    width: 100%;
-    padding: 0.6rem;
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    background: inherit;
-    color: inherit;
-    font-size: 0.9rem;
-    margin-block: 0.7rem;
-    resize: vertical;
+    width: 100%; min-height: 60px; resize: vertical;
+    padding: var(--ud-gap-sm, 0.75rem); border: 1px solid var(--ud-c-border, #d0d3e2);
+    border-radius: var(--ud-radius-md, 10px); background: var(--ud-c-surface, #f3f5fd);
+    color: var(--ud-c-text, #1f2024); font-size: var(--ud-fz-sm, 0.875rem);
+    margin-bottom: var(--ud-gap-sm, 0.75rem);
 }
-.hourly-dashboard.scoped-dashboard .note-display {
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 0.7rem;
-    font-size: 0.9rem;
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .daily-note-section textarea {
+    background: var(--ud-c-surface, #374151); /* Oberfläche im Dark Mode für Inputs */
+}
+.hourly-dashboard.scoped-dashboard .daily-note-section .note-display {
+    background: var(--ud-c-primary-light-bg, rgba(71,91,255,0.08));
+    border: 1px solid var(--ud-c-primary-light-bg, rgba(71,91,255,0.08));
+    border-left: 3px solid var(--ud-c-primary, var(--c-pri));
+    border-radius: var(--ud-radius-md, 10px);
+    padding: var(--ud-gap-sm, 0.75rem) var(--ud-gap-md, 1.25rem);
+    font-size: var(--ud-fz-sm, 0.875rem); color: var(--ud-c-text, #1f2024);
+    white-space: pre-wrap; /* Umbrüche in Notizen anzeigen */
+    margin-top: var(--ud-gap-sm, 0.75rem);
+}
+.hourly-dashboard.scoped-dashboard .daily-note-section button {
+    /* Nutzt .button-secondary Stil */
+    font-size: var(--ud-fz-sm, 0.875rem); padding: var(--ud-gap-xs, 0.5rem) var(--ud-gap-sm, 0.75rem);
+    margin-top: var(--ud-gap-xs, 0.5rem);
 }
 
-/* Correction-Button in day-cards */
+
+/* Korrektur-Button in der Tageskarte */
 .hourly-dashboard.scoped-dashboard .correction-button-row {
-    padding: 1.1rem;
-    border-top: 1px solid var(--c-border);
-    text-align: center;
+    /* Identisch zu UserDashboard */
+    margin-top: auto; padding-top: var(--ud-gap-md, 1.25rem);
+    border-top: 1px solid var(--ud-c-line, #e2e8f0);
 }
 .hourly-dashboard.scoped-dashboard .correction-button-row button {
-    font-size: 0.88rem;
-    padding: 0.55rem 1.25rem;
+    /* Identisch zu UserDashboard .correction-button */
+    background: transparent; color: var(--ud-c-primary-text, var(--c-pri));
+    border: 1px solid var(--ud-c-primary, var(--c-pri));
+    font-size: var(--ud-fz-sm, 0.875rem); padding: 0.6rem 1rem; width: 100%; box-shadow: none;
+}
+.hourly-dashboard.scoped-dashboard .correction-button-row button:hover {
+    background: var(--ud-c-primary-light-bg, rgba(71,91,255,0.08)); border-color: var(--ud-c-primary-dim, #6b7cff);
+    color: var(--ud-c-primary-dim, #6b7cff); transform: translateY(-1px);
+}
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .correction-button-row button {
+    color: var(--ud-c-primary, #60A5FA); border-color: var(--ud-c-primary, #60A5FA);
+}
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .correction-button-row button:hover {
+    background: var(--ud-c-primary-light-bg, rgba(99,179,237,0.15)); color: var(--ud-c-primary-dim, #4299e1);
+    border-color: var(--ud-c-primary-dim, #4299e1);
 }
 
 /* =========================================================================
-   7) Vacation-Section
+   Vacation Section & Corrections Panel
    ========================================================================= */
-.hourly-dashboard.scoped-dashboard .vacation-section {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 2.2rem;
-    box-shadow: var(--u-shadow-sm);
-    margin-bottom: clamp(1.7rem, 4vw, 2.4rem);
-}
-.hourly-dashboard.scoped-dashboard .vacation-section h3 {
-    margin: 0 0 1.6rem;
-    font-size: clamp(1.45rem, 2.4vw, 1.65rem);
-    border-bottom: 1px solid var(--c-border);
-    padding-bottom: 1rem;
-    text-align: left;
-}
-
-/* =========================================================================
-   8) Corrections-Panel
-   ========================================================================= */
+.hourly-dashboard.scoped-dashboard .vacation-section,
 .hourly-dashboard.scoped-dashboard .correction-panel {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 2.2rem;
-    box-shadow: var(--u-shadow-sm);
-    margin-bottom: clamp(1.7rem, 4vw, 2.4rem);
+    /* Identisch zu UserDashboard .content-section für Konsistenz */
+    background: var(--ud-c-card, #ffffff); border: 1px solid var(--ud-c-border, #d0d3e2); border-radius: var(--ud-radius-lg, 16px);
+    padding: var(--ud-gap-lg, 2rem); box-shadow: var(--ud-shadow-card, 0 8px 24px rgba(71,91,255,0.08));
+    margin-bottom: var(--ud-gap-xl, 2.5rem);
 }
-.hourly-dashboard.scoped-dashboard .corrections-header {
-    display: flex;
-    justify-content: space-between;
+.hourly-dashboard.scoped-dashboard .vacation-section > h3,
+.hourly-dashboard.scoped-dashboard .corrections-header { /* Überschrift für Korrekturpanel ist speziell */
+    /* Identisch zu UserDashboard .content-section > h3 */
+    margin: 0 0 var(--ud-gap-lg, 2rem) 0; font-size: var(--ud-fz-xl, 1.5rem); font-weight: 600; color: var(--ud-c-primary-text, var(--c-pri));
+    padding-bottom: var(--ud-gap-md, 1.25rem); border-bottom: 1px solid var(--ud-c-line, #e2e8f0);
+    display: flex; align-items: center; gap: var(--ud-gap-sm, 0.75rem);
+}
+.hourly-dashboard.scoped-dashboard .corrections-header { /* Spezifisch für das Panel-Header-Element */
+    margin-bottom: 0; border-bottom: none; /* Panel-Header hat eigenen Rahmen bei Bedarf */
+    border-radius: var(--ud-radius-lg, 16px) var(--ud-radius-lg, 16px) 0 0;
     cursor: pointer;
-    border-bottom: 1px solid var(--c-border);
-    padding-bottom: 0.7rem;
-    margin-bottom: 1.2rem;
 }
-.hourly-dashboard.scoped-dashboard .single-correction {
-    background: var(--c-surface);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 1rem 0.9rem;
-    margin-bottom: 0.85rem;
-    font-size: 0.93rem;
+.hourly-dashboard.scoped-dashboard .vacation-section .react-calendar {
+    border: none; box-shadow: none;
 }
+.hourly-dashboard.scoped-dashboard .correction-panel .corrections-content { /* Inhalt des Panels */
+    /* Identisch zu UserDashboard */
+    background: var(--ud-c-card, #ffffff); border: 1px solid var(--ud-c-border, #d0d3e2); border-top: none;
+    border-radius: 0 0 var(--ud-radius-lg, 16px) var(--ud-radius-lg, 16px);
+    padding: var(--ud-gap-lg, 2rem);
+}
+.hourly-dashboard.scoped-dashboard .correction-panel .corrections-list { /* Liste der Korrekturen */
+    /* Identisch zu UserDashboard */
+    list-style: none; padding: 0; margin: 0; max-height: 350px;
+    overflow-y: auto; border: 1px solid var(--ud-c-line, #e2e8f0); border-radius: var(--ud-radius-md, 10px);
+    background-color: var(--ud-c-surface, #f3f5fd);
+}
+.hourly-dashboard.scoped-dashboard .correction-panel .single-correction { /* Einzelner Korrektureintrag */
+    padding: var(--ud-gap-md, 1.25rem); border-bottom: 1px solid var(--ud-c-border, #d0d3e2);
+    font-size: var(--ud-fz-sm, 0.875rem); color: var(--ud-c-text-light, #9CA3AF); line-height: 1.6;
+}
+.hourly-dashboard.scoped-dashboard .correction-panel .single-correction:last-child { border-bottom: none; }
+.hourly-dashboard.scoped-dashboard .correction-panel .status-badge { /* Status-Badges */
+    /* Identisch zu UserDashboard */
+    padding: 0.3rem 0.7rem; border-radius: var(--ud-radius-sm, 6px); margin-left: var(--ud-gap-sm, 0.75rem);
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; display: inline-block;
+}
+.hourly-dashboard.scoped-dashboard .correction-panel .approved { background-color: var(--ud-c-success-light-bg, rgba(52,211,153,0.1)); color: var(--ud-c-success-text, #059669); }
+.hourly-dashboard.scoped-dashboard .correction-panel .denied { background-color: var(--ud-c-error-light-bg, rgba(248,113,113,0.1)); color: var(--ud-c-error-text, #DC2626); }
+.hourly-dashboard.scoped-dashboard .correction-panel .pending { background-color: var(--ud-c-warn-light-bg, rgba(251,191,36,0.1)); color: var(--ud-c-warn-text, #D97706); }
+
 
 /* =========================================================================
-   9) Modal
+   Modals (Korrektur, Drucken)
    ========================================================================= */
-.hourly-dashboard.scoped-dashboard .modal-content {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    box-shadow: var(--u-shadow-lg);
-    width: min(38rem, 100%);
-    max-height: 90vh;         /* nie höher als Viewport */
-    overflow-y: auto;         /* Inhalt bei langen Formularen scrollbar */
-    padding: 2rem 1.8rem;
-    animation: modalScaleIn var(--u-dur) var(--u-ease);
-}
-
-.hourly-dashboard.scoped-dashboard .modal-content h3 {
-    font-size: 1.25rem;
-    margin-top: 0;
-    margin-bottom: 1.3rem;
-    font-weight: 700;
-}
-.hourly-dashboard.scoped-dashboard .modal-content input,
-.hourly-dashboard.scoped-dashboard .modal-content textarea {
-    padding: 0.65rem;
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    background: inherit;
-    color: inherit;
-    font-size: 0.93rem;
-    margin-bottom: 0.65rem;
-    width: 100%;
-}
 .hourly-dashboard.scoped-dashboard .modal-overlay {
-    position: fixed;          /* klebt ans Viewport */
-    inset: 0;                 /* top/right/bottom/left = 0 */
-    background: rgba(0,0,0,.45);   /* halbtransparenter Backdrop */
-    display: flex;
-    align-items: center;      /* vertikal zentrieren */
-    justify-content: center;  /* horizontal zentrieren */
-    z-index: 10000;           /* über allem */
-    padding: 1.2rem;          /* Abstand zum Rand auf kleinen Screens */
+    /* Identisch zu UserDashboard */
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(var(--c-bg-rgb, 20,20,25), 0.65);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10000; padding: var(--ud-gap-lg, 2rem);
+    animation: modalFadeIn var(--u-dur, 0.25s) var(--u-ease, ease);
 }
-@keyframes modalScaleIn {
-    0%   { opacity: 0; transform: scale(.92); }
-    100% { opacity: 1; transform: scale(1); }
+.hourly-dashboard.scoped-dashboard .modal-content {
+    /* Identisch zu UserDashboard */
+    position: relative; width: 100%; max-width: 560px;
+    max-height: 90vh; overflow-y: auto;
+    background: var(--ud-c-card, #ffffff); border: 1px solid var(--ud-c-border, #d0d3e2);
+    border-radius: var(--ud-radius-xl, 20px);
+    padding: var(--ud-gap-xl, 2.5rem);
+    box-shadow: var(--ud-shadow-lg, 0 10px 25px rgba(0,0,0,0.12)); color: var(--ud-c-text, #1f2024);
+    transform: scale(0.95); opacity: 0;
+    animation: modalScaleUp var(--u-dur, 0.25s) var(--u-ease, ease) forwards;
 }
-
-/* =========================================================================
-   10) Späte Zeit (late-time)
-   ========================================================================= */
-.hourly-dashboard.scoped-dashboard .late-time {
-    color: #e53939;
-    font-weight: 600;
+.hourly-dashboard.scoped-dashboard .modal-content h3 {
+    /* Identisch zu UserDashboard */
+    margin: 0 0 var(--ud-gap-lg, 2rem) 0; font-size: var(--ud-fz-xl, 1.5rem); font-weight: 700;
+    color: var(--ud-c-primary-text, var(--c-pri)); padding-bottom: var(--ud-gap-md, 1.25rem);
+    border-bottom: 1px solid var(--ud-c-primary-light-bg, rgba(71,91,255,0.08));
 }
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard .late-time {
-    color: #ff6b6b;
+.hourly-dashboard.scoped-dashboard .modal-content .form-group {
+    /* Identisch zu UserDashboard */
+    margin-bottom: var(--ud-gap-lg, 2rem); display: flex; flex-direction: column; gap: var(--ud-gap-xs, 0.5rem);
 }
-
-/* =========================================================================
-   11) Punch-Message Global
-   ========================================================================= */
-.hourly-dashboard.scoped-dashboard .punch-message-global {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #2ecc71;
-    color: white;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-weight: bold;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 9999;
-    opacity: 0;
-    animation: fadeInOut 4s ease-in-out forwards;
+.hourly-dashboard.scoped-dashboard .modal-content .form-group label {
+    font-weight: 600; font-size: var(--ud-fz-sm, 0.875rem); color: var(--ud-c-text-muted, #6B7280);
 }
-@keyframes fadeInOut {
-    0% {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-10px);
-    }
-    10% {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-    90% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-10px);
-    }
+.hourly-dashboard.scoped-dashboard .modal-content .form-group input[type="time"] { max-width: 180px; }
+.hourly-dashboard.scoped-dashboard .modal-content .form-group textarea { min-height: 100px; resize: vertical; }
+.hourly-dashboard.scoped-dashboard .modal-buttons {
+    /* Identisch zu UserDashboard */
+    display: flex; gap: var(--ud-gap-md, 1.25rem); margin-top: var(--ud-gap-lg, 2rem); justify-content: flex-end;
+}
+.hourly-dashboard.scoped-dashboard .modal-buttons button {
+    padding: var(--ud-gap-sm, 0.75rem) var(--ud-gap-lg, 2rem);
+    font-size: var(--ud-fz-md, 1rem);
 }
 
 /* =========================================================================
-   12) Monatsübersicht + Print-Button
+   Print Report Container
    ========================================================================= */
-.hourly-dashboard.scoped-dashboard .monthly-summary {
-    margin-top: var(--u-radius);
-    text-align: center;
+.hourly-dashboard.scoped-dashboard .print-report-container {
+    margin-top: var(--ud-gap-xl, 2.5rem); text-align: center; padding-bottom: var(--ud-gap-lg, 2rem);
 }
-.hourly-dashboard.scoped-dashboard .monthly-summary h3 {
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
-}
-.hourly-dashboard.scoped-dashboard .monthly-table {
-    display: flex;
-    justify-content: center;
-}
-.hourly-dashboard.scoped-dashboard .monthly-table table {
-    width: auto;
-    border-collapse: collapse;
-    font-size: 0.95rem;
-}
-.hourly-dashboard.scoped-dashboard .monthly-table th,
-.hourly-dashboard.scoped-dashboard .monthly-table td {
-    padding: 0.4rem 0.8rem;
-    text-align: center;
-}
-.hourly-dashboard.scoped-dashboard .monthly-table th {
-    color: var(--c-muted);
-    font-weight: 600;
-    font-size: 0.9rem;
-    border-bottom: 1px solid var(--c-border);
-}
-.hourly-dashboard.scoped-dashboard .monthly-table td {
-    color: var(--c-text);
-}
-
-/* Print-Button */
-.hourly-dashboard.scoped-dashboard .print-button {
-    margin-top: 1.2rem;
-    text-align: center;
-}
-.hourly-dashboard.scoped-dashboard .print-button button {
-    font-size: 0.85rem;
-    background: var(--c-pri);
-    color: #fff;
-    border: none;
-    border-radius: var(--u-radius);
-    cursor: pointer;
-    transition: background var(--u-dur) var(--u-ease);
-    padding: 0.5rem 1.2rem;
-}
-.hourly-dashboard.scoped-dashboard .print-button button:hover {
-    background: var(--c-pri-dim);
+.hourly-dashboard.scoped-dashboard .print-report-container button {
+    font-size: var(--ud-fz-md, 1rem); /* Konsistente Button-Größe */
 }
 
 /* =========================================================================
-   13) Responsive Tweaks
+   Responsive Anpassungen
    ========================================================================= */
-@media (max-width: 640px) {
-    .hourly-dashboard.scoped-dashboard .week-display {
-        grid-template-columns: 1fr;
+@media (max-width: 768px) { /* Tablet */
+    .hourly-dashboard.scoped-dashboard { padding: var(--ud-gap-md, 1.25rem); }
+    .hourly-dashboard.scoped-dashboard .content-section,
+    .hourly-dashboard.scoped-dashboard .dashboard-header,
+    .hourly-dashboard.scoped-dashboard .modal-content,
+    .hourly-dashboard.scoped-dashboard .weekly-overview { padding: var(--ud-gap-lg, 2rem); }
+
+    .hourly-dashboard.scoped-dashboard .dashboard-header h2 { font-size: var(--ud-fz-xl, 1.5rem); }
+    .hourly-dashboard.scoped-dashboard .personal-info { flex-direction: column; gap: var(--ud-gap-md, 1.25rem); align-items: stretch; }
+    .hourly-dashboard.scoped-dashboard .personal-info p { text-align: center; }
+
+    .hourly-dashboard.scoped-dashboard .week-navigation { flex-direction: column; gap: var(--ud-gap-md, 1.25rem); }
+    .hourly-dashboard.scoped-dashboard .week-navigation input[type="date"],
+    .hourly-dashboard.scoped-dashboard .week-navigation button { width: 100%; max-width: none; }
+
+    .hourly-dashboard.scoped-dashboard .modal-buttons { flex-direction: column-reverse; }
+    .hourly-dashboard.scoped-dashboard .modal-buttons button { width: 100%; }
+}
+@media (max-width: 480px) { /* Mobile */
+    .hourly-dashboard.scoped-dashboard {
+        padding: var(--ud-gap-md, 1.25rem); /* Mehr Padding für Mobile */
+        --ud-fz-base: 0.95rem;
+        --ud-fz-lg: 1.05rem;
+        --ud-fz-xl: 1.25rem;
+        --ud-fz-xxl: 1.6rem;
+        --ud-gap-lg: 1.5rem;
+        --ud-gap-md: 1rem;
+        --ud-gap-sm: 0.6rem;
     }
-    .hourly-dashboard.scoped-dashboard .dashboard-header {
-        padding: 1.6rem;
-    }
+    .hourly-dashboard.scoped-dashboard .week-display { grid-template-columns: 1fr; }
+    .hourly-dashboard.scoped-dashboard .daily-note-section textarea { font-size: var(--ud-fz-base, 0.95rem); }
 }
 
-/* =========================================================================
-   14) Reduced Motion
-   ========================================================================= */
+/* Reduced Motion (identisch zu UserDashboard) */
 @media (prefers-reduced-motion: reduce) {
     .hourly-dashboard.scoped-dashboard *,
     .hourly-dashboard.scoped-dashboard *::before,
     .hourly-dashboard.scoped-dashboard *::after {
-        transition: none !important;
-        animation: none !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
     }
-}
-
-/* =========================================================================
-   15) Dark‑Mode Lesbarkeits-Anpassungen
-   ========================================================================= */
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard h2,
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard h3,
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard h4 {
-    color: #f2f4fa;
-}
-
-/* Kleine Texte / Labels */
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard .expected-hours,
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard .weekly-monthly-totals,
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard .week-day-content li {
-    color: #d4d7e0;
-}
-
-/* Keine Einträge */
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard .no-entries {
-    color: #a8acbb;
-}
-
-/* Header in einer Woche */
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard .week-day-header {
-    background-color: #2a2d36;
-    color: #f0f1f5;
-}
-
-/* Date Input Styles (Dark) */
-.hourly-dashboard.scoped-dashboard .week-navigation input[type="date"] {
-    background: var(--c-card);
-    color: var(--c-text);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 0.5rem 0.8rem;
-    font-size: 0.9rem;
-    transition:
-            background var(--u-dur) var(--u-ease),
-            color      var(--u-dur) var(--u-ease),
-            border-color var(--u-dur) var(--u-ease);
-}
-.hourly-dashboard.scoped-dashboard .week-navigation input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(40%);
-}
-.hourly-dashboard.scoped-dashboard .week-navigation input[type="date"] {
-    color-scheme: dark; /* Für dunkle Kalender-Picker */
-}
-@media (max-width: 480px) {
+    .hourly-dashboard.scoped-dashboard .dashboard-header,
+    .hourly-dashboard.scoped-dashboard .content-section,
+    .hourly-dashboard.scoped-dashboard .week-day-card,
+    .hourly-dashboard.scoped-dashboard .punch-message,
+    .hourly-dashboard.scoped-dashboard .modal-content,
+    .hourly-dashboard.scoped-dashboard button,
     .hourly-dashboard.scoped-dashboard .weekly-overview {
-        padding: 1rem;
+        box-shadow: var(--ud-shadow-sm) !important;
     }
-
-    /* Week-Display: 1 Spalte */
-    .hourly-dashboard.scoped-dashboard .week-display {
-        grid-template-columns: 1fr;
-        gap: 1rem;
-    }
-
-    .hourly-dashboard.scoped-dashboard .week-day-card {
-        padding: 1rem;
-        margin-bottom: 1rem;
-    }
-
-    /* Buttons */
-    .hourly-dashboard.scoped-dashboard button {
-        font-size: 0.85rem;
-        padding: 0.5rem 0.9rem;
+    [data-theme="dark"] .hourly-dashboard.scoped-dashboard .dashboard-header,
+    [data-theme="dark"] .hourly-dashboard.scoped-dashboard .content-section,
+    [data-theme="dark"] .hourly-dashboard.scoped-dashboard .week-day-card,
+    [data-theme="dark"] .hourly-dashboard.scoped-dashboard .punch-message,
+    [data-theme="dark"] .hourly-dashboard.scoped-dashboard .modal-content,
+    [data-theme="dark"] .hourly-dashboard.scoped-dashboard button,
+    [data-theme="dark"] .hourly-dashboard.scoped-dashboard .weekly-overview {
+        box-shadow: var(--ud-shadow-sm) !important;
     }
 }

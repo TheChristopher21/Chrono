@@ -1,10 +1,5 @@
-// adminDashboardUtils.js
-//
-// Hier liegen alle Hilfsfunktionen 1:1 aus deinem AdminDashboard-Code,
-// damit du sie an zentraler Stelle wiederverwenden kannst.
-// Du importierst sie in AdminDashboard.jsx, AdminWeekSection.jsx etc.
-
-import {differenceInMinutes, parseISO} from "date-fns";
+// src/pages/AdminDashboard/adminDashboardUtils.js
+import { differenceInMinutes, parseISO } from "date-fns";
 
 export function getMondayOfWeek(date) {
     const copy = new Date(date);
@@ -24,8 +19,12 @@ export function formatDate(dateInput) {
     return `${day}-${month}-${year}`;
 }
 export function timeToDate(dateStr, timeStr) {
-    // → JS-Date an einem beliebigen Tag (UTC-safe ISO)
-    return parseISO(`${dateStr}T${timeStr}`);
+    if (!dateStr || !timeStr) return null;
+    try {
+        return parseISO(`${dateStr}T${timeStr}`);
+    } catch (e) {
+        return null;
+    }
 }
 
 export function addDays(date, days) {
@@ -36,24 +35,23 @@ export function addDays(date, days) {
 
 export function formatTime(value) {
     if (!value) return '-';
-
-    // ▸ Zeit-String ohne Datum (“HH:MM” oder “HH:MM:SS”)?
     if (/^\d{2}:\d{2}(:\d{2})?$/.test(value)) {
-        return value.slice(0, 5);                 // “07:40:00” → “07:40”
+        return value.slice(0, 5);
     }
-
-    // ▸ ISO-DateTime oder anderes parsebares Format
     const d = new Date(value);
     return isNaN(d.getTime())
         ? '-'
         : d.toLocaleTimeString('de-DE', {
-            hour:   '2-digit',
+            hour: '2-digit',
             minute: '2-digit',
             timeZone: 'Europe/Berlin'
         });
 }
 
 export function formatLocalDateYMD(d) {
+    if (!(d instanceof Date) || isNaN(d.getTime())) {
+        return "";
+    }
     const year = d.getFullYear();
     const month = String(d.getMonth() + 1).padStart(2, '0');
     const day = String(d.getDate()).padStart(2, '0');
@@ -63,130 +61,38 @@ export function formatLocalDateYMD(d) {
 export function getMinutesSinceMidnight(datetimeStr) {
     if (!datetimeStr) return 0;
     const d = new Date(datetimeStr);
+    if (isNaN(d.getTime())) return 0;
     return d.getHours() * 60 + d.getMinutes();
 }
 
 export function parseTimeToMinutes(timeStr) {
-    if (!timeStr) return 0;
+    if (!timeStr || !/^\d{2}:\d{2}(:\d{2})?$/.test(timeStr)) return 0;
     const parts = timeStr.split(':');
     const hours = parseInt(parts[0], 10);
     const minutes = parseInt(parts[1], 10);
+    if (isNaN(hours) || isNaN(minutes)) return 0;
     return hours * 60 + minutes;
 }
 
-/**
- * Berechnet die Abweichung (IST - SOLL) in Minuten.
- * dayEntries = Array mit Punches (1..4). Falls isHourly, wird Pause abgezogen.
- */
 export function computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly) {
-    // 1:1 dein Code aus AdminDashboard.jsx
-    // (siehe Original)
-    // ...
     if (isHourly) {
-        const entryStart = dayEntries.find(e => e.punchOrder === 1);
-        const entryBreakStart = dayEntries.find(e => e.punchOrder === 2);
-        const entryBreakEnd = dayEntries.find(e => e.punchOrder === 3);
-        const entryEnd = dayEntries.find(e => e.punchOrder === 4);
-
-        if (entryStart && entryBreakStart && entryBreakEnd && entryEnd) {
-            const workStartMins = getMinutesSinceMidnight(entryStart.startTime);
-            const workEndMins = getMinutesSinceMidnight(entryEnd.endTime || entryEnd.startTime);
-            let minutesWorked = workEndMins - workStartMins;
-
-            let breakStartMins = entryBreakStart.breakStart
-                ? parseTimeToMinutes(entryBreakStart.breakStart)
-                : getMinutesSinceMidnight(entryBreakStart.startTime);
-            let breakEndMins = entryBreakEnd.breakEnd
-                ? parseTimeToMinutes(entryBreakEnd.breakEnd)
-                : getMinutesSinceMidnight(entryBreakEnd.startTime);
-            if (breakEndMins < breakStartMins) {
-                breakEndMins += 24 * 60;
-            }
-            const breakDuration = breakEndMins - breakStartMins;
-            const actualWorked = minutesWorked - breakDuration;
-            const expectedMinutes = expectedWorkHours * 60;
-            return actualWorked - expectedMinutes;
-        } else {
-            // Falls z.B. nicht alle Stempel existieren
-            const entryStartFallback = dayEntries.find(e => e.punchOrder === 1);
-            let entryEndFallback = dayEntries.find(e => e.punchOrder === 4);
-            if (!entryEndFallback) {
-                // Falls 4 nicht existiert, nimm 2
-                entryEndFallback = dayEntries.find(e => e.punchOrder === 2);
-            }
-            if (entryStartFallback && entryEndFallback) {
-                const startTime = new Date(entryStartFallback.startTime);
-                const endTime = new Date(entryEndFallback.endTime || entryEndFallback.startTime);
-                if (endTime.toDateString() !== startTime.toDateString()) {
-                    const midnight = new Date(startTime);
-                    midnight.setHours(24, 0, 0, 0);
-                    const minutesWorked = (midnight - startTime) / 60000;
-                    const expectedMinutes = expectedWorkHours * 60;
-                    return minutesWorked - expectedMinutes;
-                } else {
-                    const workStartMins = getMinutesSinceMidnight(entryStartFallback.startTime);
-                    const workEndMins = getMinutesSinceMidnight(endTime.toISOString());
-                    const minutesWorked = workEndMins - workStartMins;
-                    const expectedMinutes = expectedWorkHours * 60;
-                    return minutesWorked - expectedMinutes;
-                }
-            }
-            return 0;
-        }
+        return computeDayTotalMinutesFromEntries(dayEntries);
     }
-
-    // Normalfall Festangestellte
-    const entryStart = dayEntries.find(e => e.punchOrder === 1);
-    const entryBreakStart = dayEntries.find(e => e.punchOrder === 2);
-    const entryBreakEnd = dayEntries.find(e => e.punchOrder === 3);
-    const entryEnd = dayEntries.find(e => e.punchOrder === 4);
-    if (entryStart && entryBreakStart && entryBreakEnd && entryEnd) {
-        const workStartMins = getMinutesSinceMidnight(entryStart.startTime);
-        let workEndMins = getMinutesSinceMidnight(entryEnd.endTime);
-        if (workEndMins < workStartMins) {
-            workEndMins += 24 * 60;
-        }
-        const workDuration = workEndMins - workStartMins;
-
-        let breakStartMins = entryBreakStart.breakStart
-            ? parseTimeToMinutes(entryBreakStart.breakStart)
-            : getMinutesSinceMidnight(entryBreakStart.startTime);
-        let breakEndMins = entryBreakEnd.breakEnd
-            ? parseTimeToMinutes(entryBreakEnd.breakEnd)
-            : getMinutesSinceMidnight(entryBreakEnd.startTime);
-        if (breakEndMins < breakStartMins) {
-            breakEndMins += 24 * 60;
-        }
-        const breakDuration = breakEndMins - breakStartMins;
-        const actualWorked = workDuration - breakDuration;
-        const expectedMinutes = expectedWorkHours * 60;
-        return actualWorked - expectedMinutes;
-    }
-    return 0;
+    const actualWorkedMinutes = computeDayTotalMinutesFromEntries(dayEntries);
+    if (actualWorkedMinutes === 0 && dayEntries.length === 0) return 0;
+    const expectedMinutes = (expectedWorkHours || 0) * 60;
+    return actualWorkedMinutes - expectedMinutes;
 }
 
-/**
- * Summiert die gesamte (IST - SOLL)-Differenz für einen User.
- */
 export function computeOverallDiffForUser(allTracks, username, userConfig, defaultExpectedHours) {
     const userEntries = allTracks.filter(e => e.username === username);
-
-    // Nach Datum gruppieren
-    const dayMap = {};
-    userEntries.forEach(entry => {
-        const isoDay = entry.startTime.slice(0, 10);
-        if (!dayMap[isoDay]) {
-            dayMap[isoDay] = [];
-        }
-        dayMap[isoDay].push(entry);
-    });
-
+    const dayMap = groupTracksByDay(userEntries);
     let totalDiffMinutes = 0;
     for (const isoDay in dayMap) {
         const dayEntries = dayMap[isoDay];
         if (dayEntries.length > 0) {
-            const someDate = new Date(dayEntries[0].startTime);
-            const expected = getExpectedHoursForDay(someDate, userConfig, defaultExpectedHours);
+            const dayDate = new Date(dayEntries[0].dailyDate || isoDay + "T00:00:00");
+            const expected = getExpectedHoursForDay(dayDate, userConfig, defaultExpectedHours);
             const diffMins = computeDailyDiffValue(dayEntries, expected, userConfig.isHourly);
             totalDiffMinutes += diffMins;
         }
@@ -196,104 +102,383 @@ export function computeOverallDiffForUser(allTracks, username, userConfig, defau
 
 export function computeDailyDiff(dayEntries, expectedWorkHours, isHourly) {
     const diff = computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly);
-    const sign = diff >= 0 ? '+' : '';
-    return `${sign}${Math.round(diff)} min`;
+    if (isHourly) {
+        const hours = Math.floor(diff / 60);
+        const minutes = diff % 60;
+        return `${hours}h ${minutes}m`;
+    }
+    const sign = diff >= 0 ? '+' : '-';
+    const absDiff = Math.abs(diff);
+    const hours = Math.floor(absDiff / 60);
+    const minutes = absDiff % 60;
+    return `${sign}${hours}h ${minutes}m`;
 }
 
 export function getExpectedHoursForDay(dayObj, userConfig, defaultExpectedHours) {
-    // ⏱️ Stundenbasierte Nutzer: kein Tages-Soll
+    if (!dayObj || !(dayObj instanceof Date) || isNaN(dayObj.getTime())) {
+        return userConfig?.isHourly ? 0 : (userConfig?.isPercentage ? null : defaultExpectedHours);
+    }
     if (userConfig?.isHourly) return 0;
+    if (userConfig?.isPercentage) return null; // Für Prozent-Nutzer ist das Tagessoll hier nicht relevant.
 
-    // 🧮 Prozent-Nutzer: Wochenmodell → kein Tages-Soll anzeigen
-    if (userConfig?.isPercentage) return null;
-
-    // 📅 Klassische Arbeitszeitnutzung → berechne echtes Tages-Soll
     let expectedForDay = defaultExpectedHours;
-
-    if (userConfig?.weeklySchedule && userConfig?.scheduleCycle) {
+    if (userConfig?.weeklySchedule && Array.isArray(userConfig.weeklySchedule) && userConfig?.scheduleCycle > 0) {
         try {
-            const epoch = new Date(2020, 0, 1);
-            const diffWeeks = Math.floor((dayObj - epoch) / (7 * 24 * 60 * 60 * 1000));
-            const cycleIndex = diffWeeks % userConfig.scheduleCycle;
+            const epochMonday = new Date(2020, 0, 6);
+            epochMonday.setHours(0, 0, 0, 0);
+            const currentDayMonday = getMondayOfWeek(dayObj);
+            const weeksSinceEpoch = Math.floor(differenceInMinutes(currentDayMonday, epochMonday) / (60 * 24 * 7));
+            let cycleIndex = weeksSinceEpoch % userConfig.scheduleCycle;
+            if (cycleIndex < 0) {
+                cycleIndex += userConfig.scheduleCycle;
+            }
             const dayOfWeek = dayObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
-            const value = userConfig.weeklySchedule[cycleIndex]?.[dayOfWeek];
-
-            if (!isNaN(value)) expectedForDay = Number(value);
+            if (userConfig.weeklySchedule[cycleIndex] && typeof userConfig.weeklySchedule[cycleIndex][dayOfWeek] === 'number') {
+                expectedForDay = userConfig.weeklySchedule[cycleIndex][dayOfWeek];
+            } else {
+                if (dayObj.getDay() === 0 || dayObj.getDay() === 6) { // Sonntag oder Samstag
+                    expectedForDay = 0;
+                }
+            }
         } catch (e) {
-            console.warn("getExpectedHoursForDay: Fehler beim Schedule-Parsing", e);
+            if (dayObj.getDay() === 0 || dayObj.getDay() === 6) {
+                expectedForDay = 0;
+            }
+        }
+    } else {
+        if (dayObj.getDay() === 0 || dayObj.getDay() === 6) { // Sonntag oder Samstag
+            expectedForDay = 0;
         }
     }
-
     return expectedForDay;
 }
 
-
 export function getStatusLabel(punchOrder) {
     switch (punchOrder) {
-        case 1:
-            return 'Work Start';
-        case 2:
-            return 'Break Start';
-        case 3:
-            return 'Break End';
-        case 4:
-            return 'Work End';
-        default:
-            return '';
+        case 1: return 'Work Start';
+        case 2: return 'Break Start';
+        case 3: return 'Break End';
+        case 4: return 'Work End';
+        default: return '';
     }
 }
 
-/**
- * Holt die reine Arbeitszeit (IST-Zeit) eines Tages:
- * (Nicht identisch mit computeDailyDiffValue, hier wird nur die
- * tatsächlich gestempelte Zeit berechnet).
- */
-export function computeDayTotalMinutes(day) {
-    // WorkEnd − WorkStart − Pausendauer
-    const { workStart, breakStart, breakEnd, workEnd, dailyDate } = day;
-    if (!workStart || !workEnd) return 0;
-
-    let minutes = differenceInMinutes(
-        timeToDate(dailyDate, workEnd),
-        timeToDate(dailyDate, workStart)
-    );
-
-    if (breakStart && breakEnd) {
-        minutes -= differenceInMinutes(
-            timeToDate(dailyDate, breakEnd),
-            timeToDate(dailyDate, breakStart)
-        );
+export function groupTracksByDay(tracks) {
+    const dayMap = {};
+    (tracks || []).forEach((tt) => {
+        let isoDay = tt.dailyDate;
+        if (!isoDay && tt.startTime) {
+            isoDay = tt.startTime.slice(0, 10);
+        }
+        if (!isoDay) {
+            return;
+        }
+        if (tt.workStart !== undefined) {
+            dayMap[isoDay] = [tt];
+        } else {
+            if (!dayMap[isoDay]) {
+                dayMap[isoDay] = [];
+            }
+            dayMap[isoDay].push(tt);
+        }
+    });
+    for (const isoDay in dayMap) {
+        const entries = dayMap[isoDay];
+        if (entries.length > 0 && entries[0].punchOrder !== undefined) {
+            const consolidatedEntry = {
+                dailyDate: isoDay,
+                username: entries[0].username,
+                id: entries[0].id,
+                corrected: entries.some(e => e.corrected === true)
+            };
+            entries.forEach(e => {
+                switch (e.punchOrder) {
+                    case 1: consolidatedEntry.workStart = formatTime(e.startTime); break;
+                    case 2: consolidatedEntry.breakStart = formatTime(e.startTime); break;
+                    case 3: consolidatedEntry.breakEnd = formatTime(e.endTime || e.startTime); break;
+                    case 4: consolidatedEntry.workEnd = formatTime(e.endTime || e.startTime); break;
+                }
+            });
+            dayMap[isoDay] = [consolidatedEntry];
+        }
     }
-    return Math.max(0, minutes);
+    return dayMap;
 }
 
-export function minutesToHHMM(min) {
-    const h = String(Math.floor(min / 60)).padStart(2, '0');
-    const m = String(min % 60).padStart(2, '0');
-    return `${h}:${m}`;
+export function computeDayTotalMinutes(dayEntry) {
+    if (!dayEntry || !dayEntry.workStart || !dayEntry.workEnd || !dayEntry.dailyDate) {
+        return 0;
+    }
+    const workStartTime = timeToDate(dayEntry.dailyDate, dayEntry.workStart);
+    const workEndTime = timeToDate(dayEntry.dailyDate, dayEntry.workEnd);
+    if (!workStartTime || !workEndTime || workEndTime < workStartTime) {
+        return 0;
+    }
+    let minutesWorked = differenceInMinutes(workEndTime, workStartTime);
+    if (dayEntry.breakStart && dayEntry.breakEnd) {
+        const breakStartTime = timeToDate(dayEntry.dailyDate, dayEntry.breakStart);
+        const breakEndTime = timeToDate(dayEntry.dailyDate, dayEntry.breakEnd);
+        if (breakStartTime && breakEndTime && breakEndTime > breakStartTime) {
+            const breakDuration = differenceInMinutes(breakEndTime, breakStartTime);
+            minutesWorked -= breakDuration;
+        }
+    }
+    return Math.max(0, minutesWorked);
+}
+
+export function computeDayTotalMinutesFromEntries(dayEntriesArray) {
+    if (!dayEntriesArray || dayEntriesArray.length === 0) return 0;
+    return computeDayTotalMinutes(dayEntriesArray[0]);
+}
+
+export function minutesToHHMM(totalMinutes) {
+    if (typeof totalMinutes !== 'number' || isNaN(totalMinutes)) {
+        return "0h 0m";
+    }
+    const sign = totalMinutes < 0 ? "-" : "";
+    const absMinutes = Math.abs(totalMinutes);
+    const h = Math.floor(absMinutes / 60);
+    const m = absMinutes % 60;
+    return `${sign}${h}h ${m}m`;
 }
 
 export function computeTotalMinutesInRange(allEntries, startDate, endDate) {
-    const filtered = allEntries.filter(e => {
-        const d = new Date(e.startTime);
-        return d >= startDate && d <= endDate;
-    });
-    const dayMap = {};
-    filtered.forEach(entry => {
-        const ds = entry.startTime.slice(0, 10);
-        if (!dayMap[ds]) dayMap[ds] = [];
-        dayMap[ds].push(entry);
-    });
-    let total = 0;
-    Object.keys(dayMap).forEach(ds => {
-        total += computeDayTotalMinutes(dayMap[ds]);
-    });
-    return total;
+    const userDayMap = groupTracksByDay(allEntries);
+    let totalMinutes = 0;
+    for (const isoDay in userDayMap) {
+        const dayDate = new Date(isoDay + "T00:00:00");
+        if (dayDate >= startDate && dayDate <= endDate) {
+            totalMinutes += computeDayTotalMinutesFromEntries(userDayMap[isoDay]);
+        }
+    }
+    return totalMinutes;
 }
-// /utils/timeUtils.js
+
 export function isLateTime(timeString) {
-    const time = new Date(`1970-01-01T${timeString}`);
-    const lateStart = new Date('1970-01-01T22:30:00');
-    const lateEnd = new Date('1970-01-01T23:40:00');
-    return time >= lateStart && time <= lateEnd;
+    if (!timeString || typeof timeString !== 'string' || !timeString.includes(':')) return false;
+    try {
+        const [hours, minutes] = timeString.split(':').map(Number);
+        if (isNaN(hours) || isNaN(minutes)) return false;
+        const timeInMinutes = hours * 60 + minutes;
+        const lateStartInMinutes = 22 * 60 + 30;
+        const lateEndInMinutes = 23 * 60 + 40;
+        return timeInMinutes >= lateStartInMinutes && timeInMinutes <= lateEndInMinutes;
+    } catch (e) {
+        return false;
+    }
+}
+
+export function calculateWeeklyActualMinutes(userDayMap, weekDates) {
+    let totalMinutes = 0;
+    weekDates.forEach(date => {
+        const isoDate = formatLocalDateYMD(date);
+        const dayEntries = userDayMap[isoDate] || [];
+        totalMinutes += computeDayTotalMinutesFromEntries(dayEntries);
+    });
+    return totalMinutes;
+}
+
+export function calculateWeeklyExpectedMinutes(userConfig, weekDates, defaultExpectedHours, userApprovedVacations) {
+    if (userConfig.isHourly) return 0; // Stundenlöhner haben kein Wochensoll in diesem Sinne
+    let totalExpectedMinutes = 0;
+    if (userConfig.isPercentage) { // Für prozentuale User
+        const workPercentage = userConfig.workPercentage || 100; //
+        let rawWeeklyTargetMinutes = Math.round(defaultExpectedHours * 5 * 60 * (workPercentage / 100.0)); // Annahme: defaultExpectedHours ist für 100% bei 5 Tagen
+        let vacationDeductionMinutes = 0;
+        const dailyTargetMinutesForPercentageUser = Math.round((defaultExpectedHours * (workPercentage / 100.0)) * 60); //
+
+        weekDates.forEach(date => {
+            const dayOfWeek = date.getDay();
+            if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Nur Mo-Fr für Urlaubsreduktion prüfen
+                let isVacationDayThisDate = false;
+                let isHalfDayVacation = false;
+                for (const vac of userApprovedVacations) { //
+                    const vacStart = new Date(vac.startDate + "T00:00:00"); //
+                    const vacEnd = new Date(vac.endDate + "T23:59:59"); //
+                    const currentDate = new Date(date);
+                    currentDate.setHours(0, 0, 0, 0);
+                    if (currentDate >= vacStart && currentDate <= vacEnd) { //
+                        isVacationDayThisDate = true;
+                        isHalfDayVacation = vac.halfDay; //
+                        break;
+                    }
+                }
+                if (isVacationDayThisDate) {
+                    vacationDeductionMinutes += isHalfDayVacation ? (dailyTargetMinutesForPercentageUser / 2) : dailyTargetMinutesForPercentageUser; //
+                }
+            }
+        });
+        totalExpectedMinutes = Math.max(0, rawWeeklyTargetMinutes - vacationDeductionMinutes); //
+    } else { // Für festangestellte, nicht-prozentuale User
+        weekDates.forEach(date => {
+            let dailyExpectedMinutes = (getExpectedHoursForDay(date, userConfig, defaultExpectedHours) || 0) * 60; //
+            if (dailyExpectedMinutes > 0) { // Nur anpassen, wenn es ein erwarteter Arbeitstag war
+                let isVacationDayThisDate = false;
+                let isHalfDayVacation = false;
+                for (const vac of userApprovedVacations) { //
+                    const vacStart = new Date(vac.startDate + "T00:00:00"); //
+                    const vacEnd = new Date(vac.endDate + "T23:59:59"); //
+                    const currentDate = new Date(date);
+                    currentDate.setHours(0, 0, 0, 0);
+                    if (currentDate >= vacStart && currentDate <= vacEnd) { //
+                        isVacationDayThisDate = true;
+                        isHalfDayVacation = vac.halfDay; //
+                        break;
+                    }
+                }
+                if (isVacationDayThisDate) {
+                    if (isHalfDayVacation) { //
+                        dailyExpectedMinutes /= 2; //
+                    } else {
+                        dailyExpectedMinutes = 0; // Ganzer Urlaubstag = 0 Sollstunden
+                    }
+                }
+            }
+            totalExpectedMinutes += dailyExpectedMinutes; //
+        });
+    }
+    return Math.round(totalExpectedMinutes); //
+}
+
+
+export function getDetailedGlobalProblemIndicators(allUserDayMap, userApprovedVacations, userConfig, defaultExpectedHours) {
+    const indicators = {
+        missingEntriesCount: 0,
+        incompleteDaysCount: 0,
+        autoCompletedCount: 0,
+        problematicDays: []
+    };
+
+    if (!userConfig || !allUserDayMap) {
+        return indicators;
+    }
+
+    let checkStartDate = null;
+    if (userConfig.scheduleEffectiveDate) { //
+        try {
+            const parts = userConfig.scheduleEffectiveDate.split('-');
+            if (parts.length === 3) {
+                checkStartDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    const entryDates = Object.keys(allUserDayMap).sort();
+    if (entryDates.length > 0) {
+        const firstEntryDate = new Date(entryDates[0] + "T00:00:00");
+        if (!checkStartDate || firstEntryDate < checkStartDate) {
+            checkStartDate = firstEntryDate;
+        }
+    }
+
+    if (!checkStartDate && userConfig.companyJoinedDate) {
+        try {
+            const parts = userConfig.companyJoinedDate.split('-');
+            if (parts.length === 3) {
+                checkStartDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            }
+        } catch (e) { /* ignore */ }
+    }
+
+    if (!checkStartDate) {
+        return indicators;
+    }
+    checkStartDate.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    for (let currentDateIter = new Date(checkStartDate); currentDateIter <= today; currentDateIter.setDate(currentDateIter.getDate() + 1)) {
+        const isoDate = formatLocalDateYMD(currentDateIter);
+        const dayEntry = allUserDayMap[isoDate]?.[0];
+
+        let relevantEffectiveStartDate = null;
+        if (userConfig.scheduleEffectiveDate) { //
+            try {
+                const parts = userConfig.scheduleEffectiveDate.split('-');
+                if (parts.length === 3) {
+                    relevantEffectiveStartDate = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    relevantEffectiveStartDate.setHours(0, 0, 0, 0);
+                }
+            } catch (e) { /* ignore */ }
+        }
+        if (relevantEffectiveStartDate && new Date(currentDateIter) < relevantEffectiveStartDate) {
+            continue;
+        }
+
+        const expectedHoursToday = getExpectedHoursForDay(new Date(currentDateIter), userConfig, defaultExpectedHours); //
+        const dayOfWeek = currentDateIter.getDay(); // 0 für Sonntag, 6 für Samstag
+
+        // Für Prozent-Nutzer ist ein "potenzieller Arbeitstag" jeder Wochentag (Mo-Fr),
+        // da sie flexibel arbeiten und nur das Wochensoll erreichen müssen.
+        // Für andere Nutzer hängt es von den `expectedHoursToday` ab.
+        const isPotentiallyWorkDay = userConfig.isPercentage
+            ? (dayOfWeek >= 1 && dayOfWeek <= 5) // Mo-Fr für Prozent-Nutzer
+            : (expectedHoursToday != null && expectedHoursToday > 0); // Für Standard-Nutzer
+
+        let isVacation = false;
+        if (userApprovedVacations && Array.isArray(userApprovedVacations)) { //
+            for (const vac of userApprovedVacations) { //
+                const vacStart = new Date(vac.startDate + "T00:00:00"); //
+                const vacEnd = new Date(vac.endDate + "T23:59:59"); //
+                const checkDate = new Date(currentDateIter);
+                checkDate.setHours(0, 0, 0, 0);
+                if (checkDate >= vacStart && checkDate <= vacEnd) { //
+                    isVacation = true;
+                    break;
+                }
+            }
+        }
+
+        if (isPotentiallyWorkDay && !isVacation) {
+            // *** Änderung für Prozent-Nutzer: Fehlende Einträge nicht als Problem zählen ***
+            if (!userConfig.isPercentage) { //
+                if (!dayEntry || (!dayEntry.workStart && !dayEntry.workEnd)) { //
+                    // Für Standard-Nutzer bleibt die Logik für fehlende Einträge bestehen.
+                    // Ggf. könnte man hier für Prozent-Nutzer nur dann einen fehlenden Eintrag zählen,
+                    // wenn sie zwar gekommen sind (workStart), aber nie gegangen sind (workEnd fehlt)
+                    // - dies wird aber eher unter "incompleteDays" abgedeckt.
+                    // Für den Moment: Prozent-Nutzer bekommen hier keinen 'missingEntriesCount'.
+                    indicators.missingEntriesCount++; //
+                    indicators.problematicDays.push({ dateIso: isoDate, type: 'missing' }); //
+                }
+            }
+
+            // *** Unvollständige und Auto-Vervollständigte Tage gelten weiterhin für alle (auch Prozent-Nutzer), WENN sie gestempelt haben ***
+            if (dayEntry && (dayEntry.workStart || dayEntry.workEnd)) { // Nur prüfen, wenn überhaupt ein Eintrag existiert
+                let dayIsIncomplete = false;
+                const hasWorkStart = !!dayEntry.workStart; //
+                const hasWorkEnd = !!dayEntry.workEnd; //
+                const hasBreakStart = !!dayEntry.breakStart; //
+                const hasBreakEnd = !!dayEntry.breakEnd; //
+
+                if (hasWorkStart && !hasWorkEnd) { //
+                    dayIsIncomplete = true;
+                    indicators.problematicDays.push({ dateIso: isoDate, type: 'incomplete_work_end_missing' }); //
+                }
+                if (hasBreakStart && !hasBreakEnd) { //
+                    dayIsIncomplete = true;
+                    if (!indicators.problematicDays.some(p => p.dateIso === isoDate && p.type === 'incomplete_work_end_missing')) { //
+                        indicators.problematicDays.push({ dateIso: isoDate, type: 'incomplete_break_end_missing' }); //
+                    }
+                }
+                if (dayIsIncomplete) {
+                    indicators.incompleteDaysCount++; //
+                }
+
+                if (dayEntry.corrected === true && dayEntry.workEnd && dayEntry.workEnd.startsWith("23:20")) { //
+                    indicators.autoCompletedCount++; //
+                    const existingProblemIndex = indicators.problematicDays.findIndex(p => p.dateIso === isoDate && p.type.startsWith('incomplete')); //
+                    if (existingProblemIndex !== -1) { //
+                        indicators.problematicDays[existingProblemIndex].subType = 'auto_completed_override'; //
+                        indicators.problematicDays[existingProblemIndex].type = 'auto_completed_incomplete'; //
+                    } else if (!indicators.problematicDays.some(p => p.dateIso === isoDate && p.type === 'auto_completed')) { //
+                        indicators.problematicDays.push({ dateIso: isoDate, type: 'auto_completed' }); //
+                    }
+                }
+            }
+        }
+    }
+    indicators.problematicDays.sort((a, b) => a.dateIso.localeCompare(b.dateIso)); //
+    return indicators;
 }

@@ -111,10 +111,6 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
             notify(t("adminVacation.datesMissing", "Bitte Start- und Enddatum angeben"), 'warning');
             return;
         }
-        if (!adminPassword) {
-            notify(t("adminVacation.adminPassMissing", "Bitte Admin-Passwort eingeben"), 'warning');
-            return;
-        }
 
         let startD, endD;
         try {
@@ -147,7 +143,6 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
 
         const params = {
             adminUsername: currentUser.username,
-            adminPassword,
             username: newVacationUser,
             startDate: formatYMD(startD),
             endDate: formatYMD(endD),
@@ -360,19 +355,6 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations }) => {
                                     )}
                                 </div>
                             )}
-
-                            <div className="form-group">
-                                <label htmlFor="adminPasswordInput">
-                                    {t('adminVacation.adminPasswordLabel', 'Admin-Passwort')}:
-                                </label>
-                                <input
-                                    type="password"
-                                    id="adminPasswordInput"
-                                    value={adminPassword}
-                                    onChange={(e) => setAdminPassword(e.target.value)}
-                                    required
-                                />
-                            </div>
 
                             <div className="modal-buttons">
                                 <button type="submit" className="button-confirm">

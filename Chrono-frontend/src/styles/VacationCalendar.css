@@ -1,256 +1,311 @@
 /* =========================================================================
-   VacationCalendar.css · gescopt & optimiert für Light & Dark
+   VacationCalendar.css · V2 Modern (Mai 2025)
+   Scope: .scoped-vacation (wird von VacationCalendar.jsx und VacationCalendarAdmin.jsx genutzt)
    ========================================================================= */
 
-/*
-   Scope: .scoped-vacation
-   - Dadurch wird verhindert, dass diese Styles andere Seiten beeinflussen.
+/* Basisvariablen werden von der umgebenden Dashboard-Scope geerbt (.user-dashboard.scoped-dashboard etc.)
+   Wir verwenden hier die --ud- (User Dashboard) Variablen als Referenz,
+   gehen aber davon aus, dass globale --c- oder spezifische Dashboard-Variablen
+   durch den Scope bereits verfügbar sind.
 */
 
-/* --------------------------- Variablen für LIGHT --------------------------- */
-.scoped-vacation {
-    /* Primärfarben, Light Mode */
-    --c-pri:      #475bff;
-    --c-pri-dim:  #6b7cff;
-    --c-pri-rgb:  71,91,255;  /* Für rgba-Hover-Effekte */
-
-    --c-text:     #1e1f22;
-    --c-muted:    #575c6a;
-    --c-bg:       #ffffff;
-    --c-surface:  #f3f5fd;
-    --c-card:     #ffffff;
-    --c-border:   #d1d4e2;
-
-    --u-radius:   12px;
-    --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.06);
-    --u-shadow-lg: 0 10px 26px rgba(0, 0, 0, 0.12);
-
-    --u-dur:      0.22s;
-    --u-ease:     cubic-bezier(0.4, 0.2, 0.2, 1);
+.scoped-vacation .vacation-calendar-wrapper { /* Neuer äußerer Wrapper für Padding und Kontext */
+    font-family: var(--ud-font-family, 'Poppins', system-ui, sans-serif);
+    color: var(--ud-c-text, #1e1f22);
+    padding: var(--ud-gap-md, 1.25rem);
+    background-color: var(--ud-c-card, #ffffff);
+    border-radius: var(--ud-radius-lg, 16px);
+    border: 1px solid var(--ud-c-border, #d0d3e2);
+    box-shadow: var(--ud-shadow-card, 0 8px 24px rgba(71,91,255,0.08));
+}
+[data-theme="dark"] .scoped-vacation .vacation-calendar-wrapper {
+    background-color: var(--ud-c-card, #1F2937);
+    border-color: var(--ud-c-border, #374151);
 }
 
-/* --------------------------- Variablen für DARK --------------------------- */
-[data-theme="dark"] .scoped-vacation {
-    --c-text:    #e6e8ee;
-    --c-muted:   #9fa4b4;
-    --c-bg:      #121315;
-    --c-surface: #1d1f25;
-    --c-card:    #1d1f25;
-    --c-border:  #363a46;
-
-    --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.45);
-    --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
-
-    /* --c-pri & --c-pri-dim bleiben gleich, falls du dieselbe Primärfarbe nutzen willst */
-    --c-pri-rgb: 71,91,255;
+.scoped-vacation .vacation-info-header {
+    margin-bottom: var(--ud-gap-md, 1.25rem);
+    padding-bottom: var(--ud-gap-md, 1.25rem);
+    border-bottom: 1px solid var(--ud-c-line, #e2e8f0);
 }
-
-/* --------------------------- Container & Headings --------------------------- */
-.scoped-vacation .vacation-calendar {
-    font-family: 'Poppins', system-ui, sans-serif;
-    color: var(--c-text);
+.scoped-vacation .vacation-info-header h4 {
+    margin: var(--ud-gap-xs, 0.5rem) 0;
+    font-size: var(--ud-fz-md, 1rem);
+    font-weight: 500;
+    color: var(--ud-c-text-muted, #6B7280);
 }
-.scoped-vacation .vacation-calendar h4 {
-    margin: 0.28rem 0;
-    font-size: 0.95rem;
+.scoped-vacation .vacation-info-header h4 strong {
+    color: var(--ud-c-text, #1f2024);
     font-weight: 600;
 }
 
-/* --------------------------- React-Calendar-Override ------------------------ */
+/* React-Calendar Basis-Override */
 .scoped-vacation .react-calendar {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 0.8rem 0.6rem 1rem;
+    background: transparent; /* Kalender selbst hat keinen eigenen Hintergrund mehr */
+    border: none; /* Kein eigener Rand mehr */
+    border-radius: 0; /* Kein eigener Radius, da im Wrapper */
+    padding: 0;
     width: 100% !important;
-    box-shadow: var(--u-shadow-sm);
-
-    display: grid;
-    grid-template-rows: auto auto 1fr; /* navigation, weekdays, grid */
+    box-shadow: none;
+    font-family: inherit; /* Erbt vom Wrapper */
 }
 
+/* Navigation (Monat/Jahr wechseln) */
 .scoped-vacation .react-calendar__navigation {
-    margin-bottom: 0.4rem;
+    margin-bottom: var(--ud-gap-md, 1.25rem);
+    display: flex;
+    align-items: center;
+    padding: var(--ud-gap-xs, 0.5rem) 0;
+    border-bottom: 1px solid var(--ud-c-line, #e2e8f0);
 }
 .scoped-vacation .react-calendar__navigation button {
     background: none;
     border: none;
     font-weight: 600;
     cursor: pointer;
-    color: var(--c-text);
-    padding: 0.35rem 0.65rem;
-    border-radius: 8px;
-    transition:
-            background var(--u-dur) var(--u-ease),
-            color      var(--u-dur) var(--u-ease);
+    color: var(--ud-c-primary-text, var(--c-pri));
+    padding: var(--ud-gap-sm, 0.75rem) var(--ud-gap-md, 1.25rem);
+    border-radius: var(--ud-radius-md, 10px);
+    transition: background-color var(--u-dur, 0.25s) var(--u-ease, ease), color var(--u-dur, 0.25s) var(--u-ease, ease);
+    min-width: 44px; /* Mindestbreite für Klickbarkeit */
+    flex-grow: 0; /* Verhindert, dass Buttons den Platz einnehmen */
 }
 .scoped-vacation .react-calendar__navigation button:hover {
-    background: rgba(var(--c-pri-rgb), 0.14); /* Hellblaues Hover */
-    color: var(--c-pri);
+    background-color: var(--ud-c-primary-light-bg, rgba(71,91,255,0.08));
+    color: var(--ud-c-primary-dim, #6b7cff);
+}
+.scoped-vacation .react-calendar__navigation__label { /* Monats/Jahres-Label in der Mitte */
+    flex-grow: 1;
+    text-align: center;
+    font-size: var(--ud-fz-lg, 1.125rem);
+    color: var(--ud-c-text, #1f2024);
+}
+.scoped-vacation .react-calendar__navigation__arrow {
+    font-size: 1.5em; /* Größere Pfeile */
 }
 
-/* --------------------------- Wochentage-Header ---------------------------- */
+/* Wochentage-Header (Mo, Di, Mi...) */
 .scoped-vacation .react-calendar__month-view__weekdays {
     text-transform: uppercase;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--c-muted);
+    font-size: var(--ud-fz-sm, 0.875rem); /* Etwas größer für Lesbarkeit */
+    font-weight: 500; /* Weniger fett als Nav-Buttons */
+    color: var(--ud-c-text-muted, #6B7280);
+    padding-bottom: var(--ud-gap-sm, 0.75rem);
 }
 .scoped-vacation .react-calendar__month-view__weekdays abbr {
     text-decoration: none;
 }
+.scoped-vacation .react-calendar__month-view__weekdays__weekday {
+    padding: var(--ud-gap-xs, 0.5rem) 0; /* Etwas vertikales Padding */
+}
 
-/* --------------------------- Tages-Kacheln ------------------------------- */
+/* Tages-Kacheln */
 .scoped-vacation .react-calendar__tile {
-    /* Zentrierung */
-    height: 86px;
+    min-height: 75px; /* Etwas weniger Höhe als im Admin-Kalender für kompaktere Darstellung */
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start; /* Datum oben, Marker darunter */
     align-items: center;
-
-    padding: 0;
-    border-radius: 10px;
-    background: var(--c-surface);
-
-    transition:
-            background var(--u-dur) var(--u-ease),
-            box-shadow var(--u-dur) var(--u-ease);
+    padding: var(--ud-gap-xs, 0.5rem);
+    border-radius: var(--ud-radius-md, 10px);
+    background: var(--ud-c-surface, #f3f5fd);
+    border: 1px solid transparent; /* Platzhalter für Hover/Focus */
+    transition: background-color var(--u-dur, 0.25s) var(--u-ease, ease),
+    border-color var(--u-dur, 0.25s) var(--u-ease, ease),
+    transform var(--u-dur, 0.25s) var(--u-ease, ease);
+    color: var(--ud-c-text, #1f2024);
+    cursor: pointer;
 }
 [data-theme="dark"] .scoped-vacation .react-calendar__tile {
-    background: #202328;
+    background: var(--ud-c-surface, #374151);
 }
-
-/* Datum */
-.scoped-vacation .react-calendar__tile abbr {
-    font-weight: 600;
-    font-size: 0.80rem;
-    color: var(--c-text);
+.scoped-vacation .react-calendar__tile abbr { /* Datumszahl */
+    font-weight: 500;
+    font-size: var(--ud-fz-sm, 0.875rem);
     margin: 0;
-    line-height: 1;
+    line-height: 1.2;
+    padding: var(--ud-gap-xs, 0.5rem) 0;
 }
 
-/* Hover & Active */
-.scoped-vacation .react-calendar__tile:enabled:hover {
-    background: rgba(var(--c-pri-rgb), 0.08);
+/* Hover & Active & Fokus Stile für Kacheln */
+.scoped-vacation .react-calendar__tile:enabled:hover,
+.scoped-vacation .react-calendar__tile:enabled:focus {
+    background-color: var(--ud-c-primary-light-bg, rgba(71,91,255,0.08));
+    border-color: var(--ud-c-primary, var(--c-pri));
+    outline: none;
+    transform: scale(1.03); /* Leichter Zoom-Effekt */
 }
-.scoped-vacation .react-calendar__tile--active {
-    background: var(--c-pri);
+.scoped-vacation .react-calendar__tile--active,
+.scoped-vacation .react-calendar__tile--active:enabled:hover,
+.scoped-vacation .react-calendar__tile--active:enabled:focus {
+    background: var(--ud-c-primary, var(--c-pri));
+    color: #fff; /* Heller Text auf Akzentfarbe */
+    border-color: var(--ud-c-primary, var(--c-pri));
 }
 .scoped-vacation .react-calendar__tile--active abbr {
     color: #fff;
 }
 
-/* Today marker (Rand) */
+/* "Heute" Markierung */
 .scoped-vacation .react-calendar__tile--now {
-    box-shadow: inset 0 0 0 2px var(--c-pri);
+    background-color: var(--ud-c-surface, #f3f5fd); /* Basis-Hintergrund */
+    border: 2px solid var(--ud-c-primary-dim, #6b7cff); /* Deutlicherer Rand */
+}
+.scoped-vacation .react-calendar__tile--now:enabled:hover,
+.scoped-vacation .react-calendar__tile--now:enabled:focus {
+    background-color: var(--ud-c-primary-light-bg, rgba(71,91,255,0.08));
+}
+[data-theme="dark"] .scoped-vacation .react-calendar__tile--now {
+    background-color: var(--ud-c-surface, #374151);
+    border-color: var(--ud-c-primary-dim, #60A5FA);
 }
 
-/* --------------------------- Urlaubspunkt (Dot) -------------------------- */
+/* Urlaubs-Marker (Punkte oder Balken unter dem Datum) */
 .scoped-vacation .holiday-dot {
-    margin-top: 0.45rem;
-    width: 9px;
-    height: 9px;
+    margin-top: var(--ud-gap-xs, 0.5rem);
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
-    box-shadow: 0 0 0 2px var(--c-surface);
+    /* Schatten wird nicht mehr von der Kachelfarbe abhängig gemacht, sondern ist neutral */
+    box-shadow: 0 0 0 2px var(--ud-c-card, #ffffff); /* Ring in Kartenfarbe */
+    flex-shrink: 0; /* Verhindert Schrumpfen */
 }
 [data-theme="dark"] .scoped-vacation .holiday-dot {
-    box-shadow: 0 0 0 2px #202328;
+    box-shadow: 0 0 0 2px var(--ud-c-card, #1F2937);
 }
 
-/* --------------------------- Modal Styles -------------------------------- */
+/* Button zum Beantragen unter dem Kalender */
+.scoped-vacation .request-vacation-button { /* Neuer Name für Klarheit */
+    margin-top: var(--ud-gap-lg, 2rem);
+    /* Nutzt globale .button-primary Stile über die Klasse im JSX */
+}
+
+/* Modal Styles (basierend auf UserDashboard Modal für Konsistenz) */
 .scoped-vacation .vacation-modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2000;
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(var(--c-bg-rgb, 20,20,25), 0.65);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10000; padding: var(--ud-gap-lg, 2rem);
+    animation: modalFadeIn var(--u-dur, 0.25s) var(--u-ease, ease);
 }
 .scoped-vacation .vacation-modal-content {
-    width: 90%;
-    max-width: 420px;
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 2rem;
-    box-shadow: var(--u-shadow-lg);
+    position: relative; width: 100%; max-width: 480px; /* Etwas schmaler als Dashboard-Modals */
+    max-height: 90vh; overflow-y: auto;
+    background: var(--ud-c-card, #ffffff); border: 1px solid var(--ud-c-border, #d0d3e2);
+    border-radius: var(--ud-radius-xl, 20px);
+    padding: var(--ud-gap-xl, 2.5rem);
+    box-shadow: var(--ud-shadow-lg, 0 10px 25px rgba(0,0,0,0.12)); color: var(--ud-c-text, #1f2024);
+    transform: scale(0.95); opacity: 0;
+    animation: modalScaleUp var(--u-dur, 0.25s) var(--u-ease, ease) forwards;
 }
 .scoped-vacation .vacation-modal-content h3 {
-    margin: 0 0 1.3rem;
+    margin: 0 0 var(--ud-gap-lg, 2rem) 0; font-size: var(--ud-fz-xl, 1.5rem); font-weight: 700;
+    color: var(--ud-c-primary-text, var(--c-pri)); padding-bottom: var(--ud-gap-md, 1.25rem);
+    border-bottom: 1px solid var(--ud-c-primary-light-bg, rgba(71,91,255,0.08));
 }
-.scoped-vacation .vacation-modal-content label {
-    display: block;
-    font-weight: 600;
-    margin: 0.9rem 0 0.3rem;
+.scoped-vacation .vacation-modal-content .form-group {
+    margin-bottom: var(--ud-gap-lg, 2rem); display: flex; flex-direction: column; gap: var(--ud-gap-xs, 0.5rem);
 }
-.scoped-vacation .vacation-modal-content input,
-.scoped-vacation .vacation-modal-content select {
+.scoped-vacation .vacation-modal-content .form-group label {
+    font-weight: 600; font-size: var(--ud-fz-sm, 0.875rem); color: var(--ud-c-text-muted, #6B7280);
+}
+.scoped-vacation .vacation-modal-content .form-group input[type="date"],
+.scoped-vacation .vacation-modal-content .form-group select,
+.scoped-vacation .vacation-modal-content .form-group input[type="number"] { /* Für Überstundenabzug */
+    /* Nutzt globale Input-Stile aus dem Dashboard-Scope */
+    font-family: inherit;
+    border: 1px solid var(--ud-c-border, #d0d3e2);
+    border-radius: var(--ud-radius-md, 10px);
+    color: var(--ud-c-text, #1f2024);
+    background-color: var(--ud-c-card, #ffffff); /* Oder --ud-c-surface für leichten Kontrast */
+    padding: var(--ud-gap-sm, 0.75rem) var(--ud-gap-md, 1.25rem);
+    font-size: var(--ud-fz-md, 1rem);
     width: 100%;
-    padding: 0.6rem 0.8rem;
-    border: 1px solid var(--c-border);
-    border-radius: 10px;
-    background: inherit;
-    color: inherit;
+    box-sizing: border-box;
 }
-.scoped-vacation .modal-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1.4rem;
-    justify-content: flex-end;
+[data-theme="dark"] .scoped-vacation .vacation-modal-content .form-group input[type="date"],
+[data-theme="dark"] .scoped-vacation .vacation-modal-content .form-group select,
+[data-theme="dark"] .scoped-vacation .vacation-modal-content .form-group input[type="number"] {
+    background-color: var(--ud-c-surface, #374151);
 }
-.scoped-vacation .vacation-modal-content button {
-    padding: 0.55rem 1.4rem;
-    border: none;
-    border-radius: 10px;
-    font-weight: 600;
-    background: var(--c-pri);
-    color: #fff;
-    cursor: pointer;
-    transition: background 0.2s ease, transform 0.2s ease;
-}
-.scoped-vacation .vacation-modal-content button:hover {
-    background: var(--c-pri-dim);
-    transform: translateY(-2px);
+.scoped-vacation .vacation-modal-content .form-group .form-text.text-muted { /* Für Hinweise unter Inputs */
+    font-size: var(--ud-fz-sm, 0.875rem);
+    color: var(--ud-c-text-muted, #6B7280);
+    margin-top: var(--ud-gap-xs, 0.5rem);
 }
 
-/* =========================================================================
-   VacationCalendar.css – Mobile Overrides
-   Scope: .scoped-vacation
-   ========================================================================= */
-@media (max-width: 480px) {
-    /* Kalender-Kacheln niedriger machen */
+.scoped-vacation .vacation-modal-content .modal-buttons {
+    display: flex; gap: var(--ud-gap-md, 1.25rem); margin-top: var(--ud-gap-lg, 2rem); justify-content: flex-end;
+}
+.scoped-vacation .vacation-modal-content .modal-buttons button {
+    /* Nutzt globale Button-Stile über Klassen .button-primary / .button-secondary im JSX */
+    padding: var(--ud-gap-sm, 0.75rem) var(--ud-gap-lg, 2rem);
+    font-size: var(--ud-fz-md, 1rem);
+}
+
+/* Responsive Anpassungen für den Kalender */
+@media (max-width: 768px) {
+    .scoped-vacation .vacation-calendar-wrapper {
+        padding: var(--ud-gap-sm, 0.75rem);
+    }
     .scoped-vacation .react-calendar__tile {
-        height: 70px;
+        min-height: 65px; /* Etwas kleiner auf Tablets */
+        padding: var(--ud-gap-xs, 0.5rem) / 2;
     }
-
-    /* Ggf. weniger Padding in .vacation-calendar */
-    .scoped-vacation .vacation-calendar {
-        padding: 1rem 0.5rem;
+    .scoped-vacation .react-calendar__navigation button {
+        padding: var(--ud-gap-xs, 0.5rem) var(--ud-gap-sm, 0.75rem);
     }
-
-    /* Modal noch schmaler */
     .scoped-vacation .vacation-modal-content {
-        width: 95%;
-        max-width: 320px;
-        padding: 1.2rem;
+        padding: var(--ud-gap-lg, 2rem);
+    }
+}
+
+@media (max-width: 480px) {
+    .scoped-vacation .vacation-calendar-wrapper {
+        padding: var(--ud-gap-xs, 0.5rem);
+        border-radius: var(--ud-radius-md, 10px); /* Etwas kleinerer Radius für den Wrapper */
+    }
+    .scoped-vacation .react-calendar__month-view__weekdays__weekday abbr {
+        font-size: 0.7rem; /* Kleinere Wochentags-Abkürzungen */
+    }
+    .scoped-vacation .react-calendar__tile {
+        min-height: 50px; /* Deutlich kleiner auf Mobilgeräten */
+        padding: var(--ud-gap-xs, 0.5rem) / 3;
+        border-radius: var(--ud-radius-sm, 6px);
+    }
+    .scoped-vacation .react-calendar__tile abbr {
+        font-size: 0.75rem; /* Kleinere Datumszahlen */
+        padding: var(--ud-gap-xs, 0.5rem) / 2 0;
+    }
+    .scoped-vacation .holiday-dot {
+        width: 7px; height: 7px; margin-top: var(--ud-gap-xs, 0.5rem) / 2;
+        box-shadow: 0 0 0 1.5px var(--ud-c-card, #ffffff);
+    }
+    .scoped-vacation .vacation-modal-content {
+        padding: var(--ud-gap-md, 1.25rem);
+        max-width: calc(100vw - var(--ud-gap-lg, 2rem)); /* Modal füllt fast die Breite */
     }
     .scoped-vacation .vacation-modal-content h3 {
-        margin-bottom: 1rem;
-        font-size: 1.1rem;
+        font-size: var(--ud-fz-lg, 1.125rem);
     }
-    .scoped-vacation .vacation-modal-content label {
-        margin-top: 0.8rem;
-        font-size: 0.9rem;
+    .scoped-vacation .vacation-modal-content .modal-buttons {
+        flex-direction: column-reverse;
     }
-    .scoped-vacation .vacation-modal-content input,
-    .scoped-vacation .vacation-modal-content select {
-        font-size: 0.9rem;
-        padding: 0.5rem 0.7rem;
+    .scoped-vacation .vacation-modal-content .modal-buttons button {
+        width: 100%;
     }
-    .scoped-vacation .vacation-modal-content button {
-        padding: 0.5rem 1rem;
-        font-size: 0.9rem;
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .scoped-vacation * {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        transform: none !important;
+    }
+    .scoped-vacation .vacation-calendar-wrapper,
+    .scoped-vacation .modal-content {
+        box-shadow: var(--ud-shadow-sm) !important; /* Minimaler Schatten */
     }
 }

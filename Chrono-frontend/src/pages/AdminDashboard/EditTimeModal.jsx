@@ -89,30 +89,6 @@ const EditTimeModal = ({
                                 required
                             />
                         </div>
-                        <div className="form-group">
-                            <label>
-                                {t("adminDashboard.adminPassword", "Admin Passwort")}:
-                            </label>
-                            <input
-                                type="password"
-                                name="adminPassword"
-                                value={editData.adminPassword}
-                                onChange={handleEditInputChange}
-                                required
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>
-                                {t("adminDashboard.userPassword", "Benutzerpasswort")}:
-                            </label>
-                            <input
-                                type="password"
-                                name="userPassword"
-                                value={editData.userPassword}
-                                onChange={handleEditInputChange}
-                                required
-                            />
-                        </div>
                         <div className="modal-buttons">
                             <button type="submit">{t("save", "Speichern")}</button>
                             <button type="button" onClick={() => setEditModalVisible(false)}>
@@ -135,8 +111,6 @@ EditTimeModal.propTypes = {
         breakStart: PropTypes.string.isRequired,
         breakEnd: PropTypes.string.isRequired,
         workEnd: PropTypes.string.isRequired,
-        adminPassword: PropTypes.string.isRequired,
-        userPassword: PropTypes.string.isRequired,
     }).isRequired,
     handleEditInputChange: PropTypes.func.isRequired,
     handleEditSubmit: PropTypes.func.isRequired,

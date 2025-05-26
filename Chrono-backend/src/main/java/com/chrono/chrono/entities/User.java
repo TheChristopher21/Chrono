@@ -1,12 +1,16 @@
 package com.chrono.chrono.entities;
 
+import com.chrono.chrono.dto.CorrectionRequest;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference; // Für bidirektionale Beziehungen, falls benötigt
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.HashMap; // Import für HashMap
 import java.util.Set;
 import java.util.List;
+import java.util.ArrayList; // Import für ArrayList
 import com.chrono.chrono.converters.WeeklyScheduleConverter;
 
 @Entity
@@ -17,7 +21,10 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(unique = true, nullable = false)
     private String username;
+
+    @Column(nullable = false)
     private String password;
 
     @Column(name = "admin_password")
@@ -25,15 +32,22 @@ public class User {
 
     private String firstName;
     private String lastName;
+
+    @Column(unique = true) // E-Mail sollte normalerweise eindeutig sein
     private String email;
-    // ganz oben bei den anderen Feldern
-    private Integer trackingBalanceInMinutes = 0;
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+
+    @Column(nullable = false)
+    private Integer trackingBalanceInMinutes = 0; // Default-Wert direkt hier
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference // Verhindert Rekursion, wenn VacationRequest auch User serialisiert
     private Set<VacationRequest> vacationRequests = new HashSet<>();
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY) // Lazy Fetching für Company ist oft sinnvoll
     @JoinColumn(name = "company_id")
-    @JsonBackReference
+    @JsonBackReference // Verhindert Rekursion mit Company
     private Company company;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",
@@ -42,8 +56,13 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference // Verhindert Rekursion, wenn TimeTracking auch User serialisiert
     private Set<TimeTracking> timeTracks = new HashSet<>();
+
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference // Verhindert Rekursion
+    private Set<CorrectionRequest> correctionRequests = new HashSet<>();
 
     @Column(name = "expected_work_days")
     private Double expectedWorkDays;
@@ -65,26 +84,36 @@ public class User {
 
     @Lob
     @Convert(converter = WeeklyScheduleConverter.class)
-    @Column(name = "weekly_schedule")
-    private List<Map<String, Double>> weeklySchedule;
+    @Column(name = "weekly_schedule", columnDefinition = "TEXT")
+    private List<Map<String, Double>> weeklySchedule = new ArrayList<>(); // Initialisieren, um NullPointer zu vermeiden
 
     @Column(name = "schedule_effective_date")
     private LocalDate scheduleEffectiveDate;
 
-    @Column(name = "is_hourly")
-    private Boolean isHourly;
+    @Column(name = "is_hourly", nullable = false)
+    private Boolean isHourly = false;
 
-    // Neues Feld: ob der User percentage-basiert arbeitet
-    @Column(name = "is_percentage")
+    @Column(name = "is_percentage", nullable = false)
     private Boolean isPercentage = false;
 
-    // Neues Feld: Der Prozentwert 0..100
-    @Column(name = "work_percentage")
-    private Integer workPercentage = 100;
+    @Column(name = "work_percentage") // Standardwert 100 ist hier nicht nötig, wird im Getter gehandhabt
+    private Integer workPercentage;
 
     public User() {}
 
-    // ------------------- Getter/Setter -------------------
+    public static Map<String, Double> getDefaultWeeklyScheduleMap() {
+        Map<String, Double> defaultSchedule = new HashMap<>();
+        defaultSchedule.put("monday", 8.5); // Standardwert, anpassbar
+        defaultSchedule.put("tuesday", 8.5);
+        defaultSchedule.put("wednesday", 8.5);
+        defaultSchedule.put("thursday", 8.5);
+        defaultSchedule.put("friday", 8.5);
+        defaultSchedule.put("saturday", 0.0);
+        defaultSchedule.put("sunday", 0.0);
+        return defaultSchedule;
+    }
+
+    // --- Getter und Setter ---
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -107,11 +136,27 @@ public class User {
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
 
+    public Integer getTrackingBalanceInMinutes() {
+        return trackingBalanceInMinutes != null ? trackingBalanceInMinutes : 0;
+    }
+    public void setTrackingBalanceInMinutes(Integer trackingBalanceInMinutes) {
+        this.trackingBalanceInMinutes = (trackingBalanceInMinutes != null ? trackingBalanceInMinutes : 0);
+    }
+
+    public Set<VacationRequest> getVacationRequests() { return vacationRequests; }
+    public void setVacationRequests(Set<VacationRequest> vacationRequests) { this.vacationRequests = vacationRequests; }
+
+    public Company getCompany() { return company; }
+    public void setCompany(Company company) { this.company = company; }
+
     public Set<Role> getRoles() { return roles; }
     public void setRoles(Set<Role> roles) { this.roles = roles; }
 
     public Set<TimeTracking> getTimeTracks() { return timeTracks; }
     public void setTimeTracks(Set<TimeTracking> timeTracks) { this.timeTracks = timeTracks; }
+
+    public Set<CorrectionRequest> getCorrectionRequests() { return correctionRequests; }
+    public void setCorrectionRequests(Set<CorrectionRequest> correctionRequests) { this.correctionRequests = correctionRequests; }
 
     public Double getExpectedWorkDays() { return expectedWorkDays; }
     public void setExpectedWorkDays(Double expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }
@@ -131,45 +176,22 @@ public class User {
     public Integer getScheduleCycle() { return scheduleCycle; }
     public void setScheduleCycle(Integer scheduleCycle) { this.scheduleCycle = scheduleCycle; }
 
-    public List<Map<String, Double>> getWeeklySchedule() { return weeklySchedule; }
+    public List<Map<String, Double>> getWeeklySchedule() {
+        return weeklySchedule != null ? weeklySchedule : new ArrayList<>();
+    }
     public void setWeeklySchedule(List<Map<String, Double>> weeklySchedule) { this.weeklySchedule = weeklySchedule; }
 
     public LocalDate getScheduleEffectiveDate() { return scheduleEffectiveDate; }
     public void setScheduleEffectiveDate(LocalDate scheduleEffectiveDate) { this.scheduleEffectiveDate = scheduleEffectiveDate; }
 
     public Boolean getIsHourly() { return isHourly != null ? isHourly : false; }
-    public boolean isHourly()   { return getIsHourly(); }
-    public void setIsHourly(Boolean isHourly) { this.isHourly = isHourly; }
+    public void setIsHourly(Boolean isHourly) { this.isHourly = (isHourly != null ? isHourly : false); }
 
     public Boolean getIsPercentage() { return isPercentage != null ? isPercentage : false; }
-    public void setIsPercentage(Boolean isPercentage) { this.isPercentage = isPercentage; }
-    public Integer getTrackingBalanceInMinutes() {
-        return trackingBalanceInMinutes;
-    }
+    public void setIsPercentage(Boolean isPercentage) { this.isPercentage = (isPercentage != null ? isPercentage : false); }
 
-    public void setTrackingBalanceInMinutes(Integer trackingBalanceInMinutes) {
-        this.trackingBalanceInMinutes = trackingBalanceInMinutes;
-    }
-    public Set<VacationRequest> getVacationRequests() {
-        return vacationRequests;
-    }
-    public void setVacationRequests(Set<VacationRequest> vacationRequests) {
-        this.vacationRequests = vacationRequests;
-    }
-    public Company getCompany() {
-        return company;
-    }
-    public void setCompany(Company company) {
-        this.company = company;
-    }
-    public Integer getWorkPercentage() {
-        return workPercentage != null ? workPercentage : 100;
-    }
+    public Integer getWorkPercentage() { return workPercentage != null && workPercentage >= 0 && workPercentage <=100 ? workPercentage : 100; }
     public void setWorkPercentage(Integer workPercentage) {
-        if (workPercentage == null) {
-            this.workPercentage = 100;
-        } else {
-            this.workPercentage = workPercentage;
-        }
+        this.workPercentage = (workPercentage != null && workPercentage >= 0 && workPercentage <=100 ? workPercentage : 100);
     }
 }

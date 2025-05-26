@@ -1,11 +1,11 @@
-import  { useState, useEffect } from 'react';
+// AdminDashboard.jsx
+import  { useState, useEffect, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
-import { expandDayRows } from '../../utils/timeHelpers';
-
+import { Link } from 'react-router-dom'; // Import Link
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -22,9 +22,14 @@ import {
     getMondayOfWeek,
     formatLocalDateYMD,
     addDays,
-    computeDayTotalMinutes,
-    formatTime
+    minutesToHHMM, // Hinzugefügt für PDF-Export Konsistenz
+    computeDayTotalMinutes // Hinzugefügt für PDF-Export Konsistenz
 } from './adminDashboardUtils';
+
+// formatDate aus date-fns für den PDF-Export, jetzt als ES6-Import
+import { formatDate as formatDateExternal } from "date-fns";
+import autoTable from "jspdf-autotable";
+
 
 const AdminDashboard = () => {
     const { currentUser } = useAuth();
@@ -39,9 +44,6 @@ const AdminDashboard = () => {
 
     // State: Wochen-Navigation
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
-
-    // State: erweiterte Userblöcke
-    const [expandedUsers, setExpandedUsers] = useState({});
 
     // State: EditTimeModal
     const [editModalVisible, setEditModalVisible] = useState(false);
@@ -64,68 +66,73 @@ const AdminDashboard = () => {
 
     // Sonstige
     const [weeklyBalances, setWeeklyBalances] = useState([]);
-    const defaultExpectedHours                = 8;
+    const defaultExpectedHours                = 8.5;
 
     //
-    // 1) Data Loading
+    // 1) Data Loading Callbacks
     //
-    useEffect(() => {
-        fetchUsers();
-        fetchAllTracks();
-        fetchAllVacations();
-        fetchAllCorrections();
-    }, []);
-
-    useEffect(() => {
-        fetchTrackingBalances();
-    }, []);
-
-    async function fetchUsers() {
+    const fetchUsers = useCallback(async () => {
         try {
             const res = await api.get('/api/admin/users');
             setUsers(Array.isArray(res.data) ? res.data : []);
         } catch (err) {
             console.error('Error loading users', err);
+            notify(t('errors.fetchUsersError', 'Fehler beim Laden der Benutzer.'), 'error');
         }
-    }
-    async function fetchAllTracks() {
+    }, [notify, t]);
+
+    const fetchAllTracks = useCallback(async () => {
         try {
             const res = await api.get('/api/admin/timetracking/all');
-            // API liefert Tages­zeilen ⇒ erst auf­splitten …
-            const expanded = expandDayRows(res.data || []);
-            // … dann nur die Einträge behalten, die wir wirklich brauchen
-            const valid = expanded.filter(e => [1,2,3,4].includes(e.punchOrder));
-            setAllTracks(valid);
+            setAllTracks(res.data || []);
         } catch (err) {
             console.error('Error loading time entries', err);
+            notify(t('errors.fetchTimeEntriesError', 'Fehler beim Laden der Zeiteinträge.'), 'error');
         }
-    }
+    }, [notify, t]);
 
-
-    async function fetchAllVacations() {
+    const fetchAllVacations = useCallback(async () => {
         try {
             const res = await api.get('/api/vacation/all');
             setAllVacations(res.data || []);
         } catch (err) {
             console.error('Error loading vacation requests', err);
+            notify(t('errors.fetchVacationsError', 'Fehler beim Laden der Urlaubsanträge.'), 'error');
         }
-    }
-    async function fetchAllCorrections() {
+    }, [notify, t]);
+
+    const fetchAllCorrections = useCallback(async () => {
         try {
             const res = await api.get('/api/correction/all');
             setAllCorrections(res.data || []);
         } catch (err) {
             console.error('Error loading correction requests', err);
+            notify(t('errors.fetchCorrectionsError', 'Fehler beim Laden der Korrekturanträge.'), 'error');
         }
-    }
-    async function fetchTrackingBalances() {
-        try {
-            const res = await api.get('/api/admin/timetracking/admin/tracking-balances');
-            setWeeklyBalances(res.data || []);
-        } catch (err) {
-            console.error("Fehler beim Laden der Tracking-Bilanzen:", err);
+    }, [notify, t]);
+
+    const fetchTrackingBalances = useCallback(async () => {
+        if (users.length > 0) {
+            try {
+                const res = await api.get('/api/admin/timetracking/admin/tracking-balances');
+                setWeeklyBalances(res.data || []);
+            } catch (err) {
+                console.error("Fehler beim Laden der Tracking-Bilanzen:", err);
+                notify(t('errors.fetchBalancesError', 'Fehler beim Laden der Salden.'), 'error');
+            }
         }
-    }
+    }, [users, notify, t]);
+
+    useEffect(() => {
+        fetchUsers();
+        fetchAllTracks();
+        fetchAllVacations();
+        fetchAllCorrections();
+    }, [fetchUsers, fetchAllTracks, fetchAllVacations, fetchAllCorrections]);
+
+    useEffect(() => {
+        fetchTrackingBalances();
+    }, [fetchTrackingBalances]);
 
     //
     // 2) Week Navigation
@@ -149,18 +156,22 @@ const AdminDashboard = () => {
     async function handleApproveVacation(id) {
         try {
             await api.post(`/api/vacation/approve/${id}`);
-            fetchAllVacations();
+            notify(t('adminDashboard.vacationApprovedMsg', 'Urlaub genehmigt.'), 'success');
+            await fetchAllVacations();
+            await fetchTrackingBalances();
         } catch (err) {
             console.error('Error approving vacation', err);
-            notify('Error approving vacation: ' + err.message);
+            notify(t('adminDashboard.vacationApproveErrorMsg', 'Fehler beim Genehmigen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
         }
     }
     async function handleDenyVacation(id) {
         try {
             await api.post(`/api/vacation/deny/${id}`);
-            fetchAllVacations();
+            notify(t('adminDashboard.vacationDeniedMsg', 'Urlaub abgelehnt.'), 'success');
+            await fetchAllVacations();
         } catch (err) {
             console.error('Error denying vacation', err);
+            notify(t('adminDashboard.vacationDenyErrorMsg', 'Fehler beim Ablehnen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
         }
     }
 
@@ -170,69 +181,43 @@ const AdminDashboard = () => {
     async function handleApproveCorrection(id, comment) {
         try {
             await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
-            fetchAllCorrections();
+            notify(t('adminDashboard.correctionApprovedMsg', 'Korrekturantrag genehmigt.'), 'success');
+            await fetchAllCorrections();
+            await fetchAllTracks();
+            await fetchTrackingBalances();
         } catch (err) {
             console.error('Error approving correction', err);
-            notify('Error approving correction: ' + err.message);
+            notify(t('adminDashboard.correctionApproveErrorMsg', 'Fehler beim Genehmigen der Korrektur: ') + (err.response?.data?.message || err.message), 'error');
         }
     }
     async function handleDenyCorrection(id, comment) {
         try {
             await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
-            fetchAllCorrections();
+            notify(t('adminDashboard.correctionDeniedMsg', 'Korrekturantrag abgelehnt.'), 'success');
+            await fetchAllCorrections();
         } catch (err) {
             console.error('Error denying correction', err);
-            notify('Error denying correction: ' + err.message);
+            notify(t('adminDashboard.correctionDenyErrorMsg', 'Fehler beim Ablehnen der Korrektur: ') + (err.response?.data?.message || err.message), 'error');
         }
     }
 
     //
-    // 5) EditTimeModal (Bearbeiten / Neuen Tag anlegen)
+    // 5) EditTimeModal
     //
     function openEditModal(targetUsername, dateObj, entries) {
-        // Wir gehen davon aus: entries[] enthält 4 Punches (1..4)
-        // oder wir haben 1 Zeile pro Tag. Hier also noch "alte" Logik,
-        // aber mit neuen Feldern:
-
-        const defaultTime = '00:00';
-
-        // WORK START (#1)
-        const eStart = entries.find(e => e.punchOrder === 1);
-        const workStartVal = eStart && eStart.workStart
-            ? formatTime(eStart.workStart)
-            : defaultTime;
-
-        // BREAK START (#2)
-        const eBreakS = entries.find(e => e.punchOrder === 2);
-        const breakStartVal = eBreakS && eBreakS.breakStart
-            ? formatTime(eBreakS.breakStart)
-            : defaultTime;
-
-        // BREAK END (#3)
-        const eBreakE = entries.find(e => e.punchOrder === 3);
-        const breakEndVal = eBreakE && eBreakE.breakEnd
-            ? formatTime(eBreakE.breakEnd)
-            : defaultTime;
-
-        // WORK END (#4)
-        const eEnd = entries.find(e => e.punchOrder === 4);
-        const workEndVal = eEnd && eEnd.workEnd
-            ? formatTime(eEnd.workEnd)
-            : defaultTime;
-
+        const entry = entries[0] || {};
         setEditTargetUsername(targetUsername);
         setEditDate(dateObj);
         setEditData({
-            workStart:   workStartVal,
-            breakStart:  breakStartVal,
-            breakEnd:    breakEndVal,
-            workEnd:     workEndVal,
+            workStart:   entry.workStart || '',
+            breakStart:  entry.breakStart || '',
+            breakEnd:    entry.breakEnd || '',
+            workEnd:     entry.workEnd || '',
             adminPassword: '',
             userPassword: ''
         });
         setEditModalVisible(true);
     }
-
 
     function openNewEntryModal(targetUsername, dateObj) {
         setEditTargetUsername(targetUsername);
@@ -251,37 +236,37 @@ const AdminDashboard = () => {
     async function handleEditSubmit(e) {
         e.preventDefault();
         if (!editDate) {
-            notify(t('adminDashboard.noValidDate'));
+            notify(t('adminDashboard.noValidDate', "Kein gültiges Datum ausgewählt."), 'error');
             return;
         }
         const formattedDate = formatLocalDateYMD(editDate);
 
-        // Falls der Admin sein eigener Eintrag => adminPassword = userPassword
-        const finalAdminPassword =
-            (currentUser.username === editTargetUsername)
-                ? editData.userPassword
-                : editData.adminPassword;
-
         const params = {
             targetUsername: editTargetUsername,
             date:           formattedDate,
-            workStart:      editData.workStart,
-            breakStart:     editData.breakStart,
-            breakEnd:       editData.breakEnd,
-            workEnd:        editData.workEnd,
+            workStart:      editData.workStart || null,
+            breakStart:     editData.breakStart || null,
+            breakEnd:       editData.breakEnd || null,
+            workEnd:        editData.workEnd || null,
             adminUsername:  currentUser.username,
-            adminPassword:  finalAdminPassword,
-            userPassword:   editData.userPassword
         };
         try {
             await api.put('/api/timetracking/editDay', null, { params });
             setEditModalVisible(false);
-            fetchAllTracks();
+            notify(t('adminDashboard.editSuccessfulMsg', 'Zeiten erfolgreich bearbeitet.'), 'success');
+            await fetchAllTracks();
+            await fetchTrackingBalances();
         } catch (err) {
             console.error('Edit failed', err);
-            notify(t('adminDashboard.editFailed') + ': ' + err.message);
+            notify(t('adminDashboard.editFailed', "Fehler beim Bearbeiten") + ': ' + (err.response?.data?.message || err.message), 'error');
         }
     }
+
+    const focusWeekForProblem = useCallback((dateForWeek) => {
+        if (dateForWeek && !isNaN(new Date(dateForWeek).getTime())) {
+            setSelectedMonday(getMondayOfWeek(new Date(dateForWeek)));
+        }
+    }, []);
 
     function handleEditInputChange(e) {
         const { name, value } = e.target;
@@ -300,66 +285,49 @@ const AdminDashboard = () => {
     }
 
     async function handlePrintUserTimesPeriodSubmit() {
-        const userEntries = allTracks.filter(e => {
-            const entryDate = new Date(e.startTime);
+        const userTracksForPrint = allTracks.filter(e => {
+            const entryDateStr = e.dailyDate;
+            if (!entryDateStr) return false;
             return (
                 e.username === printUser &&
-                entryDate >= new Date(printUserStartDate) &&
-                entryDate <= new Date(printUserEndDate)
+                entryDateStr >= printUserStartDate &&
+                entryDateStr <= printUserEndDate
             );
         });
-        const grouped = {};
-        userEntries.forEach(entry => {
-            const ds = new Date(entry.startTime).toLocaleDateString("de-DE");
-            if (!grouped[ds]) grouped[ds] = [];
-            grouped[ds].push(entry);
-        });
-        const sortedDates = Object.keys(grouped).sort(
-            (a,b) => new Date(a.split(".").reverse()) - new Date(b.split(".").reverse())
+
+        const sortedEntries = userTracksForPrint.sort(
+            (a,b) => new Date(a.dailyDate) - new Date(b.dailyDate)
         );
 
-        // PDF
         const doc = new jsPDF("p", "mm", "a4");
         doc.setFontSize(14);
         doc.text(`Zeitenbericht für ${printUser}`, 14, 15);
         doc.setFontSize(11);
-        doc.text(`Zeitraum: ${printUserStartDate} – ${printUserEndDate}`, 14, 22);
+        doc.text(`Zeitraum: ${formatDateExternal(new Date(printUserStartDate + "T00:00:00"), 'dd-MM-yyyy')} – ${formatDateExternal(new Date(printUserEndDate + "T00:00:00"), 'dd-MM-yyyy')}`, 14, 22);
 
-        const tableBody = sortedDates.map(dateStr => {
-            const dayEntries = grouped[dateStr].sort((a, b) => a.punchOrder - b.punchOrder);
-            const eStart  = dayEntries.find(e => e.punchOrder === 1);
-            const eBreakS = dayEntries.find(e => e.punchOrder === 2);
-            const eBreakE = dayEntries.find(e => e.punchOrder === 3);
-            const eEnd    = dayEntries.find(e => e.punchOrder === 4);
+        const tableBody = sortedEntries.map(dayData => {
+            const displayDate = formatDateExternal(new Date(dayData.dailyDate + "T00:00:00"), 'dd-MM-yyyy');
+            const workStart  = dayData.workStart  ? dayData.workStart  : "-";
+            const breakStart = dayData.breakStart ? dayData.breakStart : "-";
+            const breakEnd   = dayData.breakEnd   ? dayData.breakEnd   : "-";
+            const workEnd    = dayData.workEnd    ? dayData.workEnd    : "-";
 
-            const safeTime = (entry, type = "start") => {
-                if (!entry) return "-";
-                if (type === "end" && entry.endTime) {
-                    return formatTime(entry.endTime);
-                }
-                return formatTime(entry.startTime);
-            };
-            const workStart  = safeTime(eStart, "start");
-            const breakStart = eBreakS ? safeTime(eBreakS) : "-";
-            const breakEnd   = eBreakE ? safeTime(eBreakE, "end") : "-";
-            const workEnd    = safeTime(eEnd, "end");
+            const totalMins = computeDayTotalMinutes(dayData); // Assuming this util handles the structure of dayData
+            const totalStr  = totalMins > 0 ? minutesToHHMM(totalMins) : "-";
 
-            // Kannst hier noch dailyDiff oder Zeit-Spannen berechnen
-            const totalMins = computeDayTotalMinutes(dayEntries);
-            const totalStr  = `${totalMins} min`;
-
-            return [dateStr, workStart, breakStart, breakEnd, workEnd, totalStr];
+            return [displayDate, workStart, breakStart, breakEnd, workEnd, totalStr];
         });
 
-        doc.autoTable({
-            head: [["Datum", "Work-Start", "Break-Start", "Break-End", "Work-End", "Minuten"]],
+        // Changed from doc.autoTable to autoTable(doc, options)
+        autoTable(doc, {
+            head: [["Datum", "Work-Start", "Break-Start", "Break-End", "Work-End", "Gesamt"]],
             body: tableBody,
             startY: 30,
             margin: { left: 14, right: 14 },
             styles: { fontSize: 9, cellPadding: 3 },
             headStyles: {
                 fillColor: [0, 123, 255],
-                textColor: 255,
+                textColor: 255, // Ensuring white text on blue background for header
                 halign: "center",
                 fontStyle: "bold"
             },
@@ -372,6 +340,7 @@ const AdminDashboard = () => {
                 });
             }
         });
+
         doc.save(`zeiten_${printUser}_${printUserStartDate}_${printUserEndDate}.pdf`);
         setPrintUserModalVisible(false);
     }
@@ -384,15 +353,15 @@ const AdminDashboard = () => {
             <Navbar />
             <header className="dashboard-header">
                 <h2>{t('adminDashboard.titleWeekly')}</h2>
-                {currentUser && (
-                    <p>{t('adminDashboard.loggedInAs')} {currentUser.username}</p>
-                )}
+                {currentUser && ( <p>{t('adminDashboard.loggedInAs')} {currentUser.username}</p> )}
             </header>
-
+                        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                            <Link to="/admin/import-timetracking" className="button-primary" style={{ textDecoration: 'none', padding: '0.75rem 1.5rem', display: 'inline-block' }}>
+                                {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
+                            </Link>
+                        </div>
             <div className="dashboard-content grid lg:grid-cols-3 gap-4">
-                {/* Linke Spalte */}
                 <div className="left-column lg:col-span-2 flex flex-col gap-4">
-                    {/* Wochenübersicht */}
                     <AdminWeekSection
                         t={t}
                         weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
@@ -400,30 +369,25 @@ const AdminDashboard = () => {
                         handlePrevWeek={handlePrevWeek}
                         handleNextWeek={handleNextWeek}
                         handleWeekJump={handleWeekJump}
+                        onFocusProblemWeek={focusWeekForProblem} // NEUE Prop
                         allTracks={allTracks}
+                        allVacations={allVacations}
                         users={users}
-                        expandedUsers={expandedUsers}
-                        setExpandedUsers={setExpandedUsers}
                         defaultExpectedHours={defaultExpectedHours}
                         openEditModal={openEditModal}
                         openPrintUserModal={openPrintUserModal}
                         weeklyBalances={weeklyBalances}
-                        // NEU: die Funktion zum "Zeiten Eintragen" bei leeren Tagen:
                         openNewEntryModal={openNewEntryModal}
                     />
-
-                    {/* VacationRequests */}
                     <AdminVacationRequests
                         t={t}
                         allVacations={allVacations}
                         handleApproveVacation={handleApproveVacation}
                         handleDenyVacation={handleDenyVacation}
+                        onReloadVacations={() => { fetchAllVacations(); fetchTrackingBalances(); }}
                     />
                 </div>
-
-                {/* Rechte Spalte */}
                 <div className="right-column flex flex-col gap-4">
-                    {/* Korrekturanträge */}
                     <AdminCorrectionsList
                         t={t}
                         allCorrections={allCorrections}
@@ -432,16 +396,13 @@ const AdminDashboard = () => {
                     />
                 </div>
             </div>
-
-            {/* Urlaubskalender */}
             <div className="mt-8">
                 <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
                 <VacationCalendarAdmin
                     vacationRequests={allVacations.filter(v => v.approved)}
+                    onReloadVacations={() => { fetchAllVacations(); fetchTrackingBalances(); }}
                 />
             </div>
-
-            {/* Modal: Zeiten bearbeiten/eintragen */}
             <EditTimeModal
                 t={t}
                 editModalVisible={editModalVisible}
@@ -451,8 +412,6 @@ const AdminDashboard = () => {
                 handleEditSubmit={handleEditSubmit}
                 setEditModalVisible={setEditModalVisible}
             />
-
-            {/* Modal: User-Zeiten drucken */}
             <PrintUserTimesModal
                 printUserModalVisible={printUserModalVisible}
                 printUser={printUser}

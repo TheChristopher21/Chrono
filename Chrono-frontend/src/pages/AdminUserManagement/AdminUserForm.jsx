@@ -1,92 +1,114 @@
-import React from 'react';
+// src/pages/AdminUserManagement/AdminUserForm.jsx
+import 'react';
 import PropTypes from 'prop-types';
-import { STANDARD_COLORS, defaultWeeklySchedule } from './adminUserManagementUtils';
+import { STANDARD_COLORS } from './adminUserManagementUtils';
 
 const AdminUserForm = ({
                            t,
                            isEditing,
                            userData,
-                           setUserData,
+                           setUserData, // Dies ist jetzt handleFormChange aus der Parent-Komponente
                            onSubmit,
-                           onCancel
+                           onCancel,
+                           onScheduleCycleChange,
+                           onWeeklyScheduleDayChange
                        }) => {
+
+    // Direkte Verwendung der setUserData-Prop, die auf handleFormChange zeigt
     const handleChange = (field, value) => {
-        setUserData((prev) => ({ ...prev, [field]: value }));
+        setUserData(field, value);
     };
 
-    const handleScheduleCycleChange = (newCycle) => {
-        let newSchedule = userData.weeklySchedule || [];
-        if (newCycle > newSchedule.length) {
-            const diff = newCycle - newSchedule.length;
-            for (let i = 0; i < diff; i++) {
-                newSchedule.push({ ...defaultWeeklySchedule });
-            }
-        } else {
-            newSchedule = newSchedule.slice(0, newCycle);
-        }
-        setUserData({ ...userData, scheduleCycle: newCycle, weeklySchedule: newSchedule });
+    const handleCheckboxChange = (field, checked) => {
+        setUserData(field, checked);
+    };
+
+    const handleRoleChange = (e) => {
+        // userData.roles ist ein Array von Strings im DTO, das Formular zeigt aber nur eine Rolle an.
+        // Wir senden ein Array mit der ausgewählten Rolle.
+        handleChange("roles", [e.target.value]);
     };
 
     return (
         <section className="user-form">
             <h3>
-                {isEditing ? t("userManagement.editUser") : t("userManagement.newUser")}
+                {isEditing ? t("userManagement.editUser", "Benutzer bearbeiten") : t("userManagement.newUser", "Neuen Benutzer anlegen")}
             </h3>
 
             <form onSubmit={onSubmit}>
-                <input
-                    type="text"
-                    placeholder={t("userManagement.username")}
-                    value={userData.username || ""}
-                    onChange={(e) => handleChange("username", e.target.value)}
-                    required
-                />
-                <input
-                    type="text"
-                    placeholder={t("userManagement.firstName")}
-                    value={userData.firstName || ""}
-                    onChange={(e) => handleChange("firstName", e.target.value)}
-                    required
-                />
-                <input
-                    type="text"
-                    placeholder={t("userManagement.lastName")}
-                    value={userData.lastName || ""}
-                    onChange={(e) => handleChange("lastName", e.target.value)}
-                    required
-                />
-                <input
-                    type="email"
-                    placeholder={t("userManagement.email")}
-                    value={userData.email || ""}
-                    onChange={(e) => handleChange("email", e.target.value)}
-                    required
-                />
-
-                {!isEditing && (
-                    <input
-                        type="password"
-                        placeholder={t("userManagement.password")}
-                        value={userData.password || ""}
-                        onChange={(e) => handleChange("password", e.target.value)}
-                        required
-                    />
-                )}
+                {/* Basisinformationen - Spannen sich über 3 Spalten im Desktop-Layout */}
+                <h4 className="form-section-title full-width">{t('userManagement.section.basicInfo', 'Basisinformationen')}</h4>
 
                 <div className="form-group">
-                    <label>{t("userManagement.role")}:</label>
+                    <label htmlFor="username">{t("userManagement.username", "Benutzername")}:</label>
+                    <input
+                        id="username"
+                        type="text"
+                        value={userData.username || ""}
+                        onChange={(e) => handleChange("username", e.target.value)}
+                        required
+                        disabled={isEditing} // Benutzername im Edit-Modus nicht änderbar
+                    />
+                </div>
+
+                {!isEditing && (
+                    <div className="form-group">
+                        <label htmlFor="password">{t("userManagement.password", "Passwort")}:</label>
+                        <input
+                            id="password"
+                            type="password"
+                            value={userData.password || ""}
+                            onChange={(e) => handleChange("password", e.target.value)}
+                            required={!isEditing}
+                        />
+                    </div>
+                )}
+                <div className="form-group">
+                    <label htmlFor="firstName">{t("userManagement.firstName", "Vorname")}:</label>
+                    <input
+                        id="firstName"
+                        type="text"
+                        value={userData.firstName || ""}
+                        onChange={(e) => handleChange("firstName", e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="lastName">{t("userManagement.lastName", "Nachname")}:</label>
+                    <input
+                        id="lastName"
+                        type="text"
+                        value={userData.lastName || ""}
+                        onChange={(e) => handleChange("lastName", e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="email">{t("userManagement.email", "E-Mail")}:</label>
+                    <input
+                        id="email"
+                        type="email"
+                        value={userData.email || ""}
+                        onChange={(e) => handleChange("email", e.target.value)}
+                        required
+                    />
+                </div>
+
+                <div className="form-group">
+                    <label htmlFor="roles">{t("userManagement.role", "Rolle")}:</label>
                     <select
-                        value={userData.role || "ROLE_USER"}
-                        onChange={(e) => handleChange("role", e.target.value)}
+                        id="roles"
+                        value={userData.roles?.[0] || "ROLE_USER"}
+                        onChange={handleRoleChange}
                     >
                         <option value="ROLE_USER">User</option>
                         <option value="ROLE_ADMIN">Admin</option>
+                        {/* <option value="ROLE_SUPERADMIN">Super Admin</option> // Falls SUPERADMIN hier auch setzbar sein soll */}
                     </select>
                 </div>
 
-                {/* Color-Picker */}
-                <div className="form-group">
-                    <label>{t("userManagement.color")}</label>
+                <div className="form-group full-width"> {/* Color Picker über volle Breite */}
+                    <label>{t("userManagement.color", "Farbe")}:</label>
                     <div className="color-picker">
                         {STANDARD_COLORS.map((c, idx) => (
                             <div
@@ -94,151 +116,159 @@ const AdminUserForm = ({
                                 className={`color-swatch ${userData.color === c ? "selected" : ""}`}
                                 style={{ backgroundColor: c }}
                                 onClick={() => handleChange("color", c)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyPress={(e) => e.key === 'Enter' && handleChange("color", c)}
+                                aria-label={`Farbe ${c} auswählen`}
                             />
                         ))}
                     </div>
                 </div>
 
-                <div className="form-group">
-                    <label>{t("userManagement.isHourly")}</label>
+                {/* Arbeitsmodell - Spannen sich über 3 Spalten */}
+                <h4 className="form-section-title full-width">{t('userManagement.section.workModel', 'Arbeitsmodell')}</h4>
+                <div className="form-group form-group-checkbox">
                     <input
                         type="checkbox"
+                        id="isHourly"
                         checked={!!userData.isHourly}
-                        onChange={(e) => handleChange("isHourly", e.target.checked)}
+                        onChange={(e) => handleCheckboxChange("isHourly", e.target.checked)}
                     />
+                    <label htmlFor="isHourly">{t("userManagement.isHourly", "Stundenbasiert abrechnen")}</label>
                 </div>
-
-                <div className="form-group">
-                    <label>
-                        <input
-                            type="checkbox"
-                            checked={!!userData.isPercentage}
-                            onChange={(e) => handleChange("isPercentage", e.target.checked)}
-                        />
-                        {t("userManagement.percentageTracking")}
-                    </label>
+                <div className="form-group form-group-checkbox">
+                    <input
+                        type="checkbox"
+                        id="isPercentage"
+                        checked={!!userData.isPercentage}
+                        onChange={(e) => handleCheckboxChange("isPercentage", e.target.checked)}
+                    />
+                    <label htmlFor="isPercentage">{t("userManagement.percentageTracking", "Prozentbasierte Zeiterfassung")}</label>
                 </div>
-
-                {userData.isPercentage && (
+                {userData.isPercentage && !userData.isHourly && (
                     <div className="form-group">
-                        <label>{t("userManagement.workPercentage")}:</label>
+                        <label htmlFor="workPercentage">{t("userManagement.workPercentage", "Arbeitspensum (%)")}:</label>
                         <input
+                            id="workPercentage"
                             type="number"
-                            min="0"
-                            max="100"
-                            step="any"
-                            placeholder="z.B. 10"
+                            min="1" max="100" step="1"
                             value={userData.workPercentage ?? ""}
-                            onChange={(e) => {
-                                const valStr = e.target.value;
-                                const numeric = parseFloat(valStr.replace(",", ".")) || 0;
-                                handleChange("workPercentage", numeric);
-                            }}
+                            onChange={(e) => handleChange("workPercentage", e.target.value ? parseInt(e.target.value, 10) : null)}
+                            placeholder="1-100"
                         />
                     </div>
                 )}
 
-                {/* Urlaubstage */}
+                {/* Allgemeine Einstellungen */}
+                <h4 className="form-section-title full-width">{t('userManagement.section.generalSettings', 'Allgemeine Einstellungen')}</h4>
                 <div className="form-group">
-                    <label>{t("userManagement.annualVacationDays")}</label>
+                    <label htmlFor="annualVacationDays">{t("userManagement.annualVacationDays", "Urlaubstage/Jahr")}:</label>
+                    <input
+                        id="annualVacationDays"
+                        type="number" step="0.5" min="0"
+                        value={userData.annualVacationDays === null || userData.annualVacationDays === undefined ? "" : userData.annualVacationDays}
+                        onChange={(e) => handleChange("annualVacationDays", e.target.value ? parseFloat(e.target.value) : null)}
+                        placeholder="z.B. 25"
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="breakDuration">{t("userManagement.breakDuration", "Standard Pausendauer (Min)")}:</label>
+                    <input
+                        id="breakDuration"
+                        type="number" min="0"
+                        value={userData.breakDuration === null || userData.breakDuration === undefined ? "" : userData.breakDuration}
+                        onChange={(e) => handleChange("breakDuration", e.target.value ? parseInt(e.target.value, 10) : null)}
+                        placeholder="z.B. 30"
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="trackingBalanceInMinutes">{t('userManagement.balanceMinutes', 'Überstundensaldo (Minuten)')}:</label>
                     <input
                         type="number"
-                        step="any"
-                        placeholder="z.B. 25 oder 25.5"
-                        value={userData.annualVacationDays || ""}
-                        onChange={(e) => handleChange("annualVacationDays", e.target.value)}
+                        id="trackingBalanceInMinutes"
+                        value={userData.trackingBalanceInMinutes === null || userData.trackingBalanceInMinutes === undefined ? "" : userData.trackingBalanceInMinutes}
+                        onChange={(e) => handleChange('trackingBalanceInMinutes', e.target.value ? parseInt(e.target.value, 10) : 0)}
+                        placeholder={t('userManagement.balanceMinutesPlaceholder', 'z.B. 120 oder -60')}
                     />
                 </div>
 
-                {/* Nur bei klassischer Zeiterfassung sichtbar */}
-                {!userData.isPercentage && !userData.isHourly && (
-                    <>
-                        <div className="form-group">
-                            <label>{t("userManagement.expectedWorkDays")}:</label>
-                            <input
-                                type="number"
-                                step="any"
-                                placeholder="z.B. 5 oder 4.5"
-                                value={userData.expectedWorkDays || ""}
-                                onChange={(e) => handleChange("expectedWorkDays", e.target.value)}
-                            />
-                        </div>
-                        <div className="form-group">
-                            <label>{t("userManagement.breakDuration")}:</label>
-                            <input
-                                type="number"
-                                step="any"
-                                placeholder="z.B. 30 oder 30.5"
-                                value={userData.breakDuration || ""}
-                                onChange={(e) => handleChange("breakDuration", e.target.value)}
-                            />
-                        </div>
 
-                        <h4>{t("userManagement.scheduleConfig")}</h4>
+                {/* Wochenplan-Konfiguration (nur für Standard-User) */}
+                {!userData.isPercentage && !userData.isHourly && (
+                    <div className="weekly-schedule-config full-width">
+                        <h4 className="form-section-title">{t("userManagement.scheduleConfig", "Wochenplan & Sollzeiten")}</h4>
                         <div className="form-group">
-                            <label>{t("userManagement.cycleLength")}</label>
+                            <label htmlFor="dailyWorkHours">{t("userManagement.dailyWorkHours", "Standard Tagessoll (Std)")}:</label>
+                            <input
+                                id="dailyWorkHours"
+                                type="number" step="0.01" min="0"
+                                value={userData.dailyWorkHours === null || userData.dailyWorkHours === undefined ? "" : userData.dailyWorkHours}
+                                onChange={(e) => handleChange("dailyWorkHours", e.target.value ? parseFloat(e.target.value) : null)}
+                                placeholder="z.B. 8.5"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="expectedWorkDays">{t("userManagement.expectedWorkDays", "Erw. Arbeitstage/Woche")}:</label>
+                            <input
+                                id="expectedWorkDays"
+                                type="number" step="0.5" min="0" max="7"
+                                value={userData.expectedWorkDays === null || userData.expectedWorkDays === undefined ? "" : userData.expectedWorkDays}
+                                onChange={(e) => handleChange("expectedWorkDays", e.target.value ? parseFloat(e.target.value) : null)}
+                                placeholder="z.B. 5"
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="scheduleEffectiveDate">{t("userManagement.scheduleEffectiveDate", "Plan gültig ab")}:</label>
+                            <input
+                                type="date"
+                                id="scheduleEffectiveDate"
+                                value={userData.scheduleEffectiveDate || ''}
+                                onChange={(e) => handleChange("scheduleEffectiveDate", e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="scheduleCycle">{t("userManagement.cycleLength", "Zykluslänge (Wochen)")}:</label>
                             <input
                                 type="number"
+                                id="scheduleCycle"
                                 min="1"
                                 value={userData.scheduleCycle || 1}
-                                onChange={(e) => handleScheduleCycleChange(Number(e.target.value))}
+                                onChange={(e) => onScheduleCycleChange(Number(e.target.value))}
                             />
                         </div>
 
-                        <div className="weekly-schedule">
-                            {userData.weeklySchedule?.map((week, idx) => (
-                                <div key={idx} className="schedule-week">
-                                    <h5>
-                                        {t("userManagement.week")} {idx + 1}
-                                    </h5>
-                                    {[
-                                        "monday",
-                                        "tuesday",
-                                        "wednesday",
-                                        "thursday",
-                                        "friday",
-                                        "saturday",
-                                        "sunday"
-                                    ].map((dayKey) => (
-                                        <div key={dayKey}>
-                                            <label>{t("days." + dayKey)}:</label>
+                        <div className="schedule-week-container">
+                            {(userData.weeklySchedule || []).map((week, weekIdx) => (
+                                <div key={weekIdx} className="schedule-week">
+                                    <h5>{t("userManagement.week", "Woche")} {weekIdx + 1}</h5>
+                                    {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((dayKey) => (
+                                        <div key={dayKey} className="day-input-group">
+                                            <label htmlFor={`schedule-${weekIdx}-${dayKey}`}>{t(`days.${dayKey}`)}:</label>
                                             <input
                                                 type="number"
-                                                min="0"
-                                                max="24"
-                                                step="any"
-                                                value={week[dayKey] || 0}
-                                                onChange={(e) => {
-                                                    const newVal = Number(e.target.value);
-                                                    const newSchedule = [...userData.weeklySchedule];
-                                                    newSchedule[idx] = {
-                                                        ...newSchedule[idx],
-                                                        [dayKey]: newVal
-                                                    };
-                                                    setUserData({
-                                                        ...userData,
-                                                        weeklySchedule: newSchedule
-                                                    });
-                                                }}
+                                                id={`schedule-${weekIdx}-${dayKey}`}
+                                                min="0" max="24" step="0.01"
+                                                value={week[dayKey] !== null && week[dayKey] !== undefined ? week[dayKey] : ""}
+                                                placeholder="Std."
+                                                onChange={(e) => onWeeklyScheduleDayChange(weekIdx, dayKey, e.target.value)}
                                             />
                                         </div>
                                     ))}
                                 </div>
                             ))}
                         </div>
-                    </>
+                    </div>
                 )}
 
-                <button type="submit">
-                    {isEditing
-                        ? t("userManagement.button.save")
-                        : t("userManagement.button.save")}
-                </button>
-                {isEditing && (
-                    <button type="button" onClick={onCancel}>
-                        {t("userManagement.button.cancel")}
+                <div className="form-actions full-width">
+                    <button type="submit" className="button-primary">
+                        {isEditing ? t("userManagement.button.saveChanges", "Änderungen speichern") : t("userManagement.button.createUser", "Benutzer erstellen")}
                     </button>
-                )}
+                    {/* Cancel-Button wird jetzt in AdminUserManagementPage gerendert, wenn editingUser existiert */}
+                    <button type="button" onClick={onCancel} className="button-secondary">
+                        {t("userManagement.button.cancel", "Abbrechen")}
+                    </button>
+                </div>
             </form>
         </section>
     );
@@ -250,7 +280,9 @@ AdminUserForm.propTypes = {
     userData: PropTypes.object.isRequired,
     setUserData: PropTypes.func.isRequired,
     onSubmit: PropTypes.func.isRequired,
-    onCancel: PropTypes.func
+    onCancel: PropTypes.func.isRequired,
+    onScheduleCycleChange: PropTypes.func.isRequired,
+    onWeeklyScheduleDayChange: PropTypes.func.isRequired,
 };
 
 export default AdminUserForm;

@@ -18,9 +18,10 @@ public class VacationRequest {
     private boolean approved;
     private boolean denied;
     private boolean halfDay;
-
-    // ✅ NEU: Urlaub über Überstunden
     private boolean usesOvertime;
+
+    @Column(name = "overtime_deduction_minutes") // NEUES FELD
+    private Integer overtimeDeductionMinutes; // Nur für usesOvertime = true & prozentuale User
 
     @ManyToOne
     @JoinColumn(name = "user_id")
@@ -29,23 +30,37 @@ public class VacationRequest {
 
     public VacationRequest() {}
 
+    // GETTER und SETTER
     public Long getId() { return id; }
-    public LocalDate getStartDate() { return startDate; }
-    public LocalDate getEndDate() { return endDate; }
-    public boolean isApproved() { return approved; }
-    public boolean isDenied() { return denied; }
-    public boolean isHalfDay() { return halfDay; }
-    public boolean isUsesOvertime() { return usesOvertime; }
-    public User getUser() { return user; }
-
     public void setId(Long id) { this.id = id; }
+
+    public LocalDate getStartDate() { return startDate; }
     public void setStartDate(LocalDate startDate) { this.startDate = startDate; }
+
+    public LocalDate getEndDate() { return endDate; }
     public void setEndDate(LocalDate endDate) { this.endDate = endDate; }
+
+    public boolean isApproved() { return approved; }
     public void setApproved(boolean approved) { this.approved = approved; }
+
+    public boolean isDenied() { return denied; }
     public void setDenied(boolean denied) { this.denied = denied; }
+
+    public boolean isHalfDay() { return halfDay; }
     public void setHalfDay(boolean halfDay) { this.halfDay = halfDay; }
+
+    public boolean isUsesOvertime() { return usesOvertime; }
     public void setUsesOvertime(boolean usesOvertime) { this.usesOvertime = usesOvertime; }
+
+    public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+
+    public Integer getOvertimeDeductionMinutes() { // NEUER GETTER
+        return overtimeDeductionMinutes;
+    }
+    public void setOvertimeDeductionMinutes(Integer overtimeDeductionMinutes) { // NEUER SETTER
+        this.overtimeDeductionMinutes = overtimeDeductionMinutes;
+    }
 
     @JsonProperty("username")
     public String getUsername() {

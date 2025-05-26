@@ -13,10 +13,14 @@ import java.util.List;
 public interface VacationRequestRepository extends JpaRepository<VacationRequest, Long> {
 
     List<VacationRequest> findByUser(User user);
+
+    List<VacationRequest> findByUserAndApprovedTrue(User user);
+
     @Modifying
     @Transactional
     @Query("DELETE FROM VacationRequest vr WHERE vr.user = :user")
     void deleteByUser(@Param("user") User user);
+
     List<VacationRequest> findByUser_Company_Id(Long companyId);
 
 }

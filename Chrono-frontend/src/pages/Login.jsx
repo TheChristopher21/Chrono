@@ -1,6 +1,6 @@
 // src/pages/Login.jsx
 import { useState, useEffect, useRef, useContext } from 'react';
-import {useNavigate, useLocation, Link} from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import '../styles/Login.css';
@@ -25,16 +25,16 @@ const parseHex16 = (hex) => {
 };
 
 const Login = () => {
-    const { login, currentUser } = useAuth();
-    const navigate   = useNavigate();
-    const location   = useLocation();
+    const { login} = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
     const { language, setLanguage } = useContext(LanguageContext);
-    const { t }      = useTranslation();
+    const { t } = useTranslation();
 
-    const [form, setForm]        = useState({ username: '', password: '' });
-    const [error, setError]      = useState('');
-    const [punchMsg, setPunchMsg]= useState('');
-    const lastPunchRef           = useRef(0);
+    const [form, setForm] = useState({ username: '', password: '' });
+    const [error, setError] = useState('');
+    const [punchMsg, setPunchMsg] = useState('');
+    const lastPunchRef = useRef(0);
 
     /* ---------- NFC Poll ----------------------------------------- */
     useEffect(() => {
@@ -87,23 +87,34 @@ const Login = () => {
             return;
         }
 
-        const user  = res.user ?? currentUser ?? {};   // ⬅️ fallback {}
-        const roles = user.roles ?? [];                // ⬅️ immer Array
-        const isPercentageUser = user.isPercentage ?? user.percentage ?? false;
+        // Stellen Sie sicher, dass res.user vorhanden ist und die Eigenschaften enthält.
+        // Die Logik im AuthContext sollte dies bereits sicherstellen.
+        const user = res.user || {}; // Fallback auf leeres Objekt, falls res.user undefiniert ist
+        const roles = user.roles || [];
+        const isPercentageUser = user.isPercentage || false;
+        const isHourlyUser = user.isHourly || false; // NEU: Direkte Prüfung
 
         /* optional redirect */
-        const next  = new URLSearchParams(location.search).get('next');
+        const next = new URLSearchParams(location.search).get('next');
 
-        if (next)                    navigate(next, { replace: true });
-        else if (roles.includes('ROLE_SUPERADMIN')) navigate('/superadmin/companies', { replace: true });
-        else if (roles.includes('ROLE_ADMIN'))      navigate('/admin',              { replace: true });
-        else if (isPercentageUser)                navigate('/percentage-punch',   { replace: true });
-        else                                       navigate('/user',               { replace: true });
+        if (next) {
+            navigate(next, { replace: true });
+        } else if (roles.includes('ROLE_SUPERADMIN')) {
+            navigate('/superadmin/companies', { replace: true });
+        } else if (roles.includes('ROLE_ADMIN')) {
+            navigate('/admin', { replace: true });
+        } else if (isPercentageUser) {
+            navigate('/percentage-punch', { replace: true });
+        } else if (isHourlyUser) { // NEU: Explizite Weiterleitung für Stundenlöhner
+            navigate('/user', { replace: true }); // Das UserDashboard rendert dann das HourlyDashboard
+        } else { // Standard-Benutzer
+            navigate('/user', { replace: true });
+        }
     };
 
     /* ---------- UI ------------------------------------------------ */
     return (
-        <div className="scoped-login">       {/* <-- Umfassender Wrapper, Flex-Kolumne */}
+        <div className="scoped-login"> {/* <-- Umfassender Wrapper, Flex-Kolumne */}
             <Navbar />
 
             {/* Hauptbereich (Form + Hintergrundbild) */}
@@ -164,7 +175,7 @@ const Login = () => {
                 <div className="login-right">
                     <div className="colorful-area" />
                 </div>
-            </div>  {/* Ende login-page-2col */}
+            </div> {/* Ende login-page-2col */}
 
             {/* FOOTER-Bereich am Seitenende */}
             <div className="impressum-agb-footer">
@@ -173,7 +184,6 @@ const Login = () => {
             </div>
         </div>
     );
-
 };
 
 export default Login;

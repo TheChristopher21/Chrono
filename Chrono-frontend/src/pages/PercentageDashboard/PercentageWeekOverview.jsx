@@ -5,11 +5,13 @@ import { useTranslation } from '../../context/LanguageContext';
 
 import {
     addDays,
-    formatISO,
+    formatISO, // Behält formatISO für die interne Logik und Keys
     formatTime,
     computeDayTotalMinutes,
     isLateTime,
-    minutesToHours, pickTime,
+    minutesToHours,
+    pickTime,
+    formatDate, // Hinzugefügt für eine benutzerfreundlichere Datumsanzeige
 } from './percentageDashUtils';
 
 const PercentageWeekOverview = ({
@@ -17,7 +19,7 @@ const PercentageWeekOverview = ({
                                     monday,
                                     setMonday,
                                     weeklyWorked,
-                                    weeklyExpected,
+                                    weeklyExpected, // Wird hier nicht mehr direkt für tägliches Soll verwendet
                                     weeklyDiff,
                                     handleManualPunch,
                                     punchMessage,
@@ -25,15 +27,18 @@ const PercentageWeekOverview = ({
                                 }) => {
     const { t } = useTranslation();
 
-    const weekDates = Array.from({ length: 5 }, (_, i) => addDays(monday, i));
+    const weekDates = Array.from({ length: 5 }, (_, i) => addDays(monday, i)); // Mo-Fr
     const isoStrings = weekDates.map(formatISO);
 
-    // dayMap: isoString -> Array
+    // dayMap: isoString -> Array von Einträgen
     const dayMap = {};
     entries.forEach(e => {
-        const iso = e.startTime.slice(0, 10);
-        if (!dayMap[iso]) dayMap[iso] = [];
-        dayMap[iso].push(e);
+        // Stellt sicher, dass startTime vorhanden ist, bevor slice aufgerufen wird
+        const iso = e.startTime ? e.startTime.slice(0, 10) : null;
+        if (iso) {
+            if (!dayMap[iso]) dayMap[iso] = [];
+            dayMap[iso].push(e);
+        }
     });
 
     function prevWeek() {
@@ -44,7 +49,16 @@ const PercentageWeekOverview = ({
     }
     function jumpWeek(e) {
         const d = new Date(e.target.value);
-        if (!isNaN(d)) setMonday(d);
+        // Stelle sicher, dass das Datum gültig ist, bevor es gesetzt wird
+        if (!isNaN(d.getTime())) {
+            // getMondayOfWeek stellen sicher, dass immer ein Montag ausgewählt wird,
+            // auch wenn der Nutzer einen anderen Tag im Datepicker wählt.
+            // Hier gehen wir davon aus, dass 'monday' immer ein Montag ist
+            // und die Navigation um ganze Wochen erfolgt.
+            // Wenn der Datepicker direkt den Montag setzen soll:
+            // setMonday(getMondayOfWeek(d)); ansonsten:
+            setMonday(d);
+        }
     }
 
     return (
@@ -67,14 +81,14 @@ const PercentageWeekOverview = ({
                 </button>
                 <input
                     type="date"
-                    value={formatISO(monday)}
+                    value={formatISO(monday)} // ISO-Format für den Input-Wert ist oft robuster
                     onChange={jumpWeek}
                 />
                 <button onClick={nextWeek}>
                     {t('nextWeek')} →
-                </button>
-            </div>
+                </button>            </div>
 
+            {/* Die wöchentliche Zusammenfassung (Ist, Soll, Saldo) bleibt hier, da sie das Wochensoll anzeigt */}
             <div className="weekly-summary">
                 <p>
                     <strong>{t('weeklyHours')}:</strong> {minutesToHours(weeklyWorked)}
@@ -83,7 +97,12 @@ const PercentageWeekOverview = ({
                     <strong>{t('expected')}:</strong> {minutesToHours(weeklyExpected)}
                 </p>
                 <p>
-                    <strong>{t('weekBalance')}:</strong> {minutesToHours(weeklyDiff)}
+                    <strong className={(weeklyDiff ?? 0) < 0 ? 'balance-negative' : 'balance-positive'}>
+                        {t('weekBalance')}:
+                    </strong>
+                    <span className={(weeklyDiff ?? 0) < 0 ? 'balance-negative' : 'balance-positive'}>
+                        {minutesToHours(weeklyDiff)}
+                    </span>
                 </p>
             </div>
 
@@ -93,26 +112,28 @@ const PercentageWeekOverview = ({
                     const iso = isoStrings[idx];
                     const dayEntries = (dayMap[iso] || []).sort((a,b) => a.punchOrder - b.punchOrder);
                     const worked = computeDayTotalMinutes(dayEntries);
+                    const displayDate = formatDate(dayObj); // Benutzerfreundliches Datumsformat
 
                     return (
                         <div key={idx} className="week-day-card">
                             <div className="week-day-header">
                                 {dayObj.toLocaleDateString('de-DE', {
-                                    weekday: 'long',
+                                    weekday: 'short', // z.B. "Mo"
                                     day: '2-digit',
                                     month: '2-digit',
-                                    year: 'numeric'
                                 })}
+                                {/* Hier wird KEINE tägliche Sollzeit mehr angezeigt */}
                             </div>
 
                             <div className="week-day-content">
                                 {dayEntries.length === 0 ? (
-                                    <p>{t('noEntries')}</p>
+                                    <p className="no-entries">{t('noEntries')}</p>
                                 ) : (
                                     <ul>
                                         {dayEntries.map(e => {
                                             const labelByOrder = {1:t('workStart'),2:t('breakStart'),3:t('breakEnd'),4:t('workEnd')};
                                             let time = "-";
+                                            // Stellt sicher, dass die Felder existieren, bevor darauf zugegriffen wird
                                             switch (e.punchOrder) {
                                                 case 1:
                                                     time = formatTime(pickTime(e,"workStart","startTime"));
@@ -129,11 +150,12 @@ const PercentageWeekOverview = ({
                                                 default:
                                                     time = "-";
                                             }
-                                            const label = labelByOrder[e.punchOrder] || '-';
+                                            const label = labelByOrder[e.punchOrder] || 'Unbekannt';
 
                                             return (
-                                                <li key={e.id} className={isLateTime(time) ? 'late-time' : ''}>
-                                                    <strong>{label}:</strong> {time}
+                                                <li key={e.id || `entry-${idx}-${e.punchOrder}`} className={isLateTime(time) ? 'late-time' : ''}>
+                                                    <span className="entry-label">{label}:</span>
+                                                    <span className="entry-time">{time}</span>
                                                 </li>
                                             );
                                         })}
@@ -141,6 +163,7 @@ const PercentageWeekOverview = ({
                                 )}
                             </div>
 
+                            {/* Anzeige der tatsächlich gearbeiteten Stunden pro Tag */}
                             {dayEntries.length > 0 && (
                                 <div className="daily-summary">
                                     ⏱ {minutesToHours(worked)}
@@ -165,7 +188,7 @@ PercentageWeekOverview.propTypes = {
     monday: PropTypes.instanceOf(Date).isRequired,
     setMonday: PropTypes.func.isRequired,
     weeklyWorked: PropTypes.number,
-    weeklyExpected: PropTypes.number,
+    weeklyExpected: PropTypes.number, // Bleibt als Prop für die Gesamtanzeige
     weeklyDiff: PropTypes.number,
     handleManualPunch: PropTypes.func.isRequired,
     punchMessage: PropTypes.string,

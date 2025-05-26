@@ -1,4 +1,4 @@
-// percentageDashUtils.js
+// src/pages/PercentageDashboard/percentageDashUtils.js
 
 //--------------------------------------------------
 // parseHex16
@@ -21,15 +21,26 @@ export const pickTime = (e, ...cand) => {
     return null;
 };
 
-// Zeitstempel formatiert anzeigen
-export function formatTime(stamp) {
-    if (!stamp) return "-";
-    const d = new Date(stamp);
-    return isNaN(d) ? "-" : d.toLocaleTimeString("de-DE", {
-        hour: "2-digit",
-        minute: "2-digit",
-        timeZone: "Europe/Berlin",
-    });
+// Zeitstempel formatiert anzeigen - ERSETZTE VERSION
+export function formatTime(dateOrTimeStr) {
+    if (!dateOrTimeStr) return '-';
+
+    const trimmed = typeof dateOrTimeStr === 'string' ? dateOrTimeStr.trim() : dateOrTimeStr.toString();
+
+    // Akzeptiert "HH:mm" oder "HH:mm:ss"
+    if (/^\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) {
+        return trimmed.slice(0, 5); // Nur HH:mm anzeigen
+    }
+
+    // Fallback für ISO-Date-Strings oder andere parsebare Datumsformate
+    const d = new Date(trimmed);
+    return isNaN(d.getTime()) // Wichtig: getTime() um Invalid Date sicher zu erkennen
+        ? '-'
+        : d.toLocaleTimeString('de-DE', {
+            hour: '2-digit',
+            minute: '2-digit',
+            timeZone: 'Europe/Berlin', // Konsistente Zeitzone
+        });
 }
 //--------------------------------------------------
 // Zeit- und Datums‐Utilities
@@ -92,33 +103,52 @@ export function computeDayTotalMinutes(dayEntries) {
     const we = dayEntries.find(e => e.punchOrder === 4);
     if (!ws || !we) return 0;
 
-    const start = new Date(pickTime(ws, "workStart", "startTime"));
-    const end   = new Date(pickTime(we, "workEnd",   "endTime",   "startTime"));
+    // pickTime verwenden, um sicherzustellen, dass wir den korrekten Zeitwert für die Date-Erstellung nehmen
+    // startTime/endTime sind volle ISO-Strings, während workStart/workEnd nur HH:mm sein können
+    const startDateString = pickTime(ws, "startTime", "workStart"); //Bevorzuge vollen Zeitstempel
+    const endDateString = pickTime(we, "endTime", "workEnd", "startTime");
 
-    let mins = (end - start) / 60000;
+    if (!startDateString || !endDateString) return 0; // Fehlende Zeitangaben
+
+    const start = new Date(startDateString);
+    const end   = new Date(endDateString);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) return 0; // Ungültige Daten
+
+    let mins = (end.getTime() - start.getTime()) / 60000;
 
     const bs = dayEntries.find(e => e.punchOrder === 2);
     const be = dayEntries.find(e => e.punchOrder === 3);
     if (bs && be) {
-        const bStart = new Date(pickTime(bs, "breakStart", "startTime"));
-        const bEnd   = new Date(pickTime(be, "breakEnd",   "endTime",   "startTime"));
-        mins -= (bEnd - bStart) / 60000;
+        const breakStartDateString = pickTime(bs, "startTime", "breakStart");
+        const breakEndDateString = pickTime(be, "endTime", "breakEnd", "startTime");
+
+        if (breakStartDateString && breakEndDateString) {
+            const bStart = new Date(breakStartDateString);
+            const bEnd   = new Date(breakEndDateString);
+            if (!isNaN(bStart.getTime()) && !isNaN(bEnd.getTime())) {
+                mins -= (bEnd.getTime() - bStart.getTime()) / 60000;
+            }
+        }
     }
     return Math.max(0, mins);
 }
 
 export const expectedDayMinutes = (u) => {
+    if (!u) return 480; // Fallback, falls user-Profil nicht geladen ist
     if (u.isPercentage) {
         const p = (u.workPercentage ?? 100) / 100;
-        return Math.round(510 * p); // 8.5h * p
+        // Annahme: 8.5 Stunden als Basis für 100% (510 Minuten)
+        return Math.round(510 * p);
     }
-    if (u.isHourly) return 0;
-    return 480; // fallback 8h
+    if (u.isHourly) return 0; // Stundenlöhner haben kein Tagessoll in diesem Sinne
+    return u.dailyWorkHours ? u.dailyWorkHours * 60 : 480; // Fallback 8h, wenn dailyWorkHours nicht definiert
 };
 
 export function isLateTime(timeStr) {
-    if (!timeStr) return false;
+    if (!timeStr || typeof timeStr !== 'string' || !timeStr.includes(':')) return false;
     const [hours, minutes] = timeStr.split(":").map(Number);
+    if (isNaN(hours) || isNaN(minutes)) return false;
     // Beispiel: >= 22:10 bis <= 23:50
     return (
         (hours === 22 && minutes >= 10) ||

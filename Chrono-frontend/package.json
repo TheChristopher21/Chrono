@@ -27,7 +27,7 @@
     "html2canvas": "^1.4.1",
     "js-file-download": "^0.4.12",
     "jspdf": "3.0.1",
-    "jspdf-autotable": "^3.8.4",
+    "jspdf-autotable": "^5.0.2",
     "jwt-decode": "^2.2.0",
     "nfc-pcsc": "^0.8.1",
     "pcsclite": "^1.0.1",

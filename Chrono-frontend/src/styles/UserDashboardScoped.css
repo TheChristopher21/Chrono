@@ -1,499 +1,639 @@
 /* =========================================================================
-   UserDashboardScoped.css
+   UserDashboardScoped.css · V2 Modern (Mai 2025)
    Scope: .user-dashboard.scoped-dashboard
    ========================================================================= */
 
-/* --------------------------- Variablen LIGHT --------------------------- */
+/* --------------------------- BASIS-VARIABLEN (aus global.css geerbt & erweitert) --------------------------- */
 .user-dashboard.scoped-dashboard {
-    --c-pri:        #475bff;
-    --c-pri-dim:    #6b7cff;
-    --c-warn:       #ff9d41;
+    --ud-font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --ud-fz-base: 1rem;      /* 16px */
+    --ud-fz-sm: 0.875rem;  /* 14px */
+    --ud-fz-md: 1rem;
+    --ud-fz-lg: 1.125rem;   /* 18px - Etwas größer für Sektions-Header */
+    --ud-fz-xl: 1.5rem;    /* 24px - Für Hauptüberschriften in Cards */
+    --ud-fz-xxl: 2.25rem;   /* 36px - Für die Hauptüberschrift des Dashboards */
 
-    --c-text:       #1e1f22;
-    --c-muted:      #595e6b;
+    --ud-radius-xl: 20px; /* Stärker abgerundete große Karten */
+    --ud-radius-lg: 16px; /* Standard Kartenradius */
+    --ud-radius-md: 10px; /* Für Buttons und kleinere Elemente */
+    --ud-radius-sm: 6px;
 
-    /* Falls du Light Mode by default möchtest, #f4f6ff oder #fff verwenden.
-       Für dunklen Body #15171c belassen. */
-    --c-bg:         #f4f6ff;
-    --c-card:       #ffffff;
-    --c-border:     #d5d8e5;
-    --c-line:       #e7e8f1;
+    --ud-gap-xl: 2.5rem;
+    --ud-gap-lg: 2rem;
+    --ud-gap-md: 1.25rem;
+    --ud-gap-sm: 0.75rem;
+    --ud-gap-xs: 0.5rem;
 
-    /* Neu hinzugefügt, damit Tabellen-Header eine konsistente Hintergrundfarbe haben: */
-    --c-surface:    var(--c-card);
+    --ud-shadow-card: 0 8px 24px rgba(var(--c-pri-rgb, 71, 91, 255), 0.08); /* Subtiler, farbiger Schatten */
+    --ud-shadow-interactive: 0 4px 12px rgba(var(--c-pri-rgb, 71, 91, 255), 0.15);
 
-    --u-radius:     14px;
-    --u-gap:        clamp(1.5rem, 3vw, 2.2rem);
-    --u-shadow-sm:  0 1px 4px rgba(0, 0, 0, 0.06);
-    --u-shadow-lg:  0 20px 34px rgba(0, 0, 0, 0.14);
+    /* Farb-Aliase und spezifische Dashboard-Farben */
+    --ud-c-text: var(--c-text);
+    --ud-c-text-muted: var(--c-muted);
+    --ud-c-bg: var(--c-bg);
+    --ud-c-card: var(--c-card);
+    --ud-c-border: var(--c-border);
+    --ud-c-line: var(--c-border); /* Konsistenz mit Border */
+    --ud-c-surface: var(--c-surface); /* Für leicht abgehobene Elemente innerhalb von Cards */
 
-    --u-dur:        0.26s;
-    --u-ease:       cubic-bezier(0.4, 0.2, 0.2, 1);
+    --ud-c-primary: var(--c-pri);
+    --ud-c-primary-dim: var(--c-pri-dim);
+    --ud-c-primary-rgb: var(--c-pri-rgb);
+    --ud-c-primary-light-bg: rgba(var(--c-pri-rgb), 0.08); /* Sehr heller Akzenthintergrund */
+    --ud-c-primary-text: var(--c-pri); /* Für Texte in Primärfarbe */
 
-    min-height:     100vh;
-    font-family:    'Poppins', system-ui, sans-serif;
-    background:     var(--c-bg);
-    color:          var(--c-text);
+    --ud-c-success: #34D399; /* Lebendiges Grün */
+    --ud-c-success-dim: #10B981;
+    --ud-c-success-light-bg: rgba(52, 211, 153, 0.1);
+    --ud-c-success-text: #059669;
 
-    transition:
-            background var(--u-dur) var(--u-ease),
-            color      var(--u-dur) var(--u-ease);
+    --ud-c-error: #F87171; /* Klares Rot */
+    --ud-c-error-dim: #EF4444;
+    --ud-c-error-light-bg: rgba(248, 113, 113, 0.1);
+    --ud-c-error-text: #DC2626;
+
+    --ud-c-warn: #FBBF24; /* Warmes Gelb/Orange */
+    --ud-c-warn-dim: #F59E0B;
+    --ud-c-warn-light-bg: rgba(251, 191, 36, 0.1);
+    --ud-c-warn-text: #D97706;
+
+    --ud-c-late-time: var(--ud-c-error);
+    --ud-c-late-time-bg: var(--ud-c-error-light-bg);
+
+    min-height: 100vh;
+    font-family: var(--ud-font-family);
+    background: var(--ud-c-bg);
+    color: var(--ud-c-text);
+    font-size: var(--ud-fz-base);
+    line-height: 1.65; /* Etwas mehr Zeilenhöhe für Lesbarkeit */
+    padding: var(--ud-gap-lg);
+    box-sizing: border-box;
+    transition: background var(--u-dur, 0.25s) var(--u-ease, ease), color var(--u-dur, 0.25s) var(--u-ease, ease);
 }
 
-/* --------------------------- Variablen DARK ----------------------------
-   Falls du Dark Mode / Light Mode über [data-theme="dark"] togglest:
-   ---------------------------------------------------------------------- */
+/* Dark Mode Anpassungen für Dashboard-spezifische Farben */
 [data-theme="dark"] .user-dashboard.scoped-dashboard {
-    --c-text:   #e5e7ec;
-    --c-muted:  #a0a4b4;
-    --c-bg:     #15171c;
-    --c-card:   #1f2127;
-    --c-border: #373b46;
-    --c-line:   #2c2f37;
+    --ud-c-text: #E5E7EB;
+    --ud-c-text-muted: #9CA3AF;
+    --ud-c-bg: #111827; /* Dunklerer Hintergrund */
+    --ud-c-card: #1F2937; /* Dunklere Karten */
+    --ud-c-border: #374151;
+    --ud-c-line: #374151;
+    --ud-c-surface: #374151; /* Angepasst für Dark Mode */
 
-    --u-shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.45);
-    --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.75);
+    --ud-c-primary: var(--c-pri); /* Kann gleich bleiben oder angepasst werden, z.B. #60A5FA */
+    --ud-c-primary-dim: var(--c-pri-dim);
+    --ud-c-primary-rgb: var(--c-pri-rgb);
+    --ud-c-primary-light-bg: rgba(var(--c-pri-rgb), 0.12);
+    --ud-c-primary-text: var(--c-pri);
 
-    /* Wenn du das möchtest, kann --c-surface hier ebenfalls angepasst werden,
-       z. B.: --c-surface: #2a2e34; */
+    --ud-c-success: #34D399;
+    --ud-c-success-dim: #10B981;
+    --ud-c-success-light-bg: rgba(52, 211, 153, 0.15);
+    --ud-c-success-text: #A7F3D0; /* Hellerer Text für Dark Mode */
+
+    --ud-c-error: #F87171;
+    --ud-c-error-dim: #EF4444;
+    --ud-c-error-light-bg: rgba(248, 113, 113, 0.15);
+    --ud-c-error-text: #FECACA;
+
+    --ud-c-warn: #FBBF24;
+    --ud-c-warn-dim: #F59E0B;
+    --ud-c-warn-light-bg: rgba(251, 191, 36, 0.15);
+    --ud-c-warn-text: #FDE68A;
+
+    --ud-c-late-time: var(--ud-c-error);
+    --ud-c-late-time-bg: var(--ud-c-error-light-bg);
+
+    --ud-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.25);
+    --ud-shadow-interactive: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* =========================================================================
+   Generelle Element-Styles (Inputs, Selects etc.)
+   ========================================================================= */
+.user-dashboard.scoped-dashboard input,
+.user-dashboard.scoped-dashboard select,
+.user-dashboard.scoped-dashboard textarea {
+    font-family: inherit;
+    border: 1px solid var(--ud-c-border);
+    border-radius: var(--ud-radius-md);
+    color: var(--ud-c-text);
+    background-color: var(--ud-c-card); /* Passt sich dem Kartendesign an */
+    padding: var(--ud-gap-sm) var(--ud-gap-md);
+    font-size: var(--ud-fz-md);
+    width: 100%;
+    box-sizing: border-box;
+    transition: border-color var(--u-dur, 0.25s) var(--u-ease, ease),
+    background-color var(--u-dur, 0.25s) var(--u-ease, ease),
+    color var(--u-dur, 0.25s) var(--u-ease, ease),
+    box-shadow var(--u-dur, 0.25s) var(--u-ease, ease);
+}
+.user-dashboard.scoped-dashboard input:focus,
+.user-dashboard.scoped-dashboard select:focus,
+.user-dashboard.scoped-dashboard textarea:focus {
+    outline: none;
+    border-color: var(--ud-c-primary);
+    box-shadow: 0 0 0 3px var(--ud-c-primary-light-bg);
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard input,
+[data-theme="dark"] .user-dashboard.scoped-dashboard select,
+[data-theme="dark"] .user-dashboard.scoped-dashboard textarea {
+    background-color: var(--ud-c-surface); /* Oberfläche im Dark Mode für Inputs */
+}
+.user-dashboard.scoped-dashboard select {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59L6 5.17L10.59.59L12 2L6 8L0 2L1.41.59Z' fill='%236B7280'/%3E%3C/svg%3E"); /* Grauer Pfeil */
+    background-repeat: no-repeat; background-position: right var(--ud-gap-md) center; background-size: 12px 8px;
+    padding-right: calc(var(--ud-gap-md) + 1.5rem); /* Platz für Pfeil */
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard select {
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59L6 5.17L10.59.59L12 2L6 8L0 2L1.41.59Z' fill='%239CA3AF'/%3E%3C/svg%3E"); /* Hellerer Pfeil */
 }
 
 /* =========================================================================
    1) Dashboard Header + Info
    ========================================================================= */
 .user-dashboard.scoped-dashboard .dashboard-header {
-    background: var(--c-card);
-    padding: 2.2rem 1.8rem;
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    box-shadow: var(--u-shadow-sm);
-    margin-bottom: clamp(1.7rem, 4vw, 2.4rem);
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    background: linear-gradient(135deg, var(--ud-c-primary) 0%, var(--ud-c-primary-dim) 100%);
+    color: #fff; /* Heller Text auf dunklem Gradient */
+    padding: var(--ud-gap-lg) var(--ud-gap-xl);
+    border-radius: var(--ud-radius-xl);
+    box-shadow: var(--ud-shadow-lg); /* Stärkerer Schatten für Header */
+    margin-bottom: var(--ud-gap-xl);
     text-align: center;
-    gap: 0.5rem;
 }
 .user-dashboard.scoped-dashboard .dashboard-header h2 {
-    margin: 0;
-    font-size: clamp(1.9rem, 3vw, 2.4rem);
+    margin: 0 0 var(--ud-gap-sm) 0;
+    font-size: var(--ud-fz-xxl);
     font-weight: 700;
+    letter-spacing: -0.5px;
 }
 .user-dashboard.scoped-dashboard .personal-info {
-    display: flex;
-    gap: 1.6rem;
-    flex-wrap: wrap;
-    justify-content: center; /* Ebenfalls zentrieren */
-    margin-top: 0.5rem;
+    display: flex; flex-wrap: wrap; justify-content: center; align-items: center;
+    gap: var(--ud-gap-sm) var(--ud-gap-lg);
+    margin-top: var(--ud-gap-md);
 }
 .user-dashboard.scoped-dashboard .personal-info p {
-    margin: 0;
-    font-size: 0.9rem;
-    color: var(--c-muted);
+    margin: 0; font-size: var(--ud-fz-md);
+    background-color: rgba(255,255,255,0.15); /* Leicht transparenter Hintergrund auf Gradient */
+    padding: var(--ud-gap-xs) var(--ud-gap-md);
+    border-radius: var(--ud-radius-md);
+    border: 1px solid rgba(255,255,255,0.2);
+    box-shadow: none;
+    color: #fff;
 }
+.user-dashboard.scoped-dashboard .personal-info p strong {
+    font-weight: 600;
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard .dashboard-header {
+    /* Gradient kann im Dark Mode ähnlich bleiben oder angepasst werden */
+    background: linear-gradient(135deg, var(--ud-c-primary-dim) 0%, var(--ud-c-primary) 100%);
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard .personal-info p {
+    background-color: rgba(0,0,0,0.2);
+    border-color: rgba(255,255,255,0.1);
+}
+
 
 /* =========================================================================
    2) Global Button Styles
    ========================================================================= */
-.user-dashboard.scoped-dashboard button {
-    border: none;
-    border-radius: var(--u-radius);
-    cursor: pointer;
-    font-weight: 600;
-    transition:
-            background var(--u-dur) var(--u-ease),
-            transform var(--u-dur) var(--u-ease);
-    font-size: 0.88rem;
-    padding: 0.6rem 1rem;
-    background: var(--c-pri);
-    color: #fff;
+.user-dashboard.scoped-dashboard button,
+.user-dashboard.scoped-dashboard .button-primary {
+    border: none; border-radius: var(--ud-radius-md); cursor: pointer; font-weight: 600;
+    transition: background-color var(--u-dur, 0.25s) var(--u-ease, ease),
+    transform var(--u-dur, 0.25s) var(--u-ease, ease),
+    box-shadow var(--u-dur, 0.25s) var(--u-ease, ease);
+    font-size: var(--ud-fz-md); padding: var(--ud-gap-sm) var(--ud-gap-lg);
+    background: var(--ud-c-primary);
+    color: #fff; text-align: center; box-shadow: var(--ud-shadow-interactive);
+    line-height: 1.5;
 }
-.user-dashboard.scoped-dashboard button:hover {
-    background: var(--c-pri-dim);
-    transform: translateY(-2px);
+.user-dashboard.scoped-dashboard button:hover,
+.user-dashboard.scoped-dashboard .button-primary:hover {
+    background: var(--ud-c-primary-dim); transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(var(--c-pri-rgb, 71, 91, 255), 0.2);
 }
-/* Falls du separate Stile für "secondary" Buttons willst: */
-.user-dashboard.scoped-dashboard button.secondary {
-    background: #666;
+.user-dashboard.scoped-dashboard button:active,
+.user-dashboard.scoped-dashboard .button-primary:active { transform: translateY(-1px); box-shadow: var(--ud-shadow-interactive); }
+.user-dashboard.scoped-dashboard button:focus-visible,
+.user-dashboard.scoped-dashboard .button-primary:focus-visible {
+    outline: 3px solid var(--ud-c-primary-light-bg);
+    outline-offset: 2px;
 }
-.user-dashboard.scoped-dashboard button.secondary:hover {
-    background: #555;
+
+.user-dashboard.scoped-dashboard button.button-secondary {
+    background: var(--ud-c-surface); color: var(--ud-c-primary-text);
+    border: 1px solid var(--ud-c-primary); box-shadow: none;
+}
+.user-dashboard.scoped-dashboard button.button-secondary:hover {
+    background: var(--ud-c-primary-light-bg); border-color: var(--ud-c-primary-dim);
+    color: var(--ud-c-primary-dim); transform: translateY(-1px);
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard button.button-secondary {
+    background: var(--ud-c-surface); color: var(--ud-c-primary);
+    border-color: var(--ud-c-primary);
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard button.button-secondary:hover {
+    background: var(--ud-c-primary-light-bg); color: var(--ud-c-primary-dim);
+    border-color: var(--ud-c-primary-dim);
 }
 
 /* =========================================================================
    3) Punch-Message (Popup)
    ========================================================================= */
 .user-dashboard.scoped-dashboard .punch-message {
-    position: fixed;
-    top: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #2ecc71;
-    color: #fff;
-    padding: 12px 24px;
-    border-radius: 8px;
-    font-weight: bold;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    z-index: 9999;
-    opacity: 0;
-    animation: fadeInOut 4s ease-in-out forwards;
+    position: fixed; top: calc(var(--navbar-height, 60px) + var(--ud-gap-md)); /* Unter Navbar, falls Navbar Höhe bekannt */
+    left: 50%; transform: translateX(-50%);
+    background-color: var(--ud-c-success);
+    color: #fff; padding: var(--ud-gap-sm) var(--ud-gap-lg); border-radius: var(--ud-radius-md); font-weight: 600;
+    box-shadow: var(--ud-shadow-lg); z-index: 10001; opacity: 0;
+    animation: fadeInOutUserDash 4s ease-in-out forwards;
+    font-size: var(--ud-fz-md);
 }
-@keyframes fadeInOut {
-    0% {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-10px);
-    }
-    10% {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-    90% {
-        opacity: 1;
-    }
-    100% {
-        opacity: 0;
-        transform: translateX(-50%) translateY(-10px);
-    }
+@keyframes fadeInOutUserDash { 0% { opacity: 0; transform: translate(-50%, -20px); } 10%, 90% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -20px); } }
+[data-theme="dark"] .user-dashboard.scoped-dashboard .punch-message {
+    background-color: var(--ud-c-success-dim); color: var(--ud-c-text);
 }
 
 /* =========================================================================
-   4) Punch-Section (Manuelles Einstempeln)
+   4) Sektionen Allgemein
    ========================================================================= */
+.user-dashboard.scoped-dashboard .content-section {
+    background: var(--ud-c-card); border: 1px solid var(--ud-c-border); border-radius: var(--ud-radius-lg);
+    padding: var(--ud-gap-lg); box-shadow: var(--ud-shadow-card); margin-bottom: var(--ud-gap-xl);
+}
+.user-dashboard.scoped-dashboard .content-section > h3 {
+    margin: 0 0 var(--ud-gap-lg) 0; font-size: var(--ud-fz-xl); font-weight: 600; color: var(--ud-c-primary-text);
+    padding-bottom: var(--ud-gap-md); border-bottom: 1px solid var(--ud-c-line);
+    display: flex; align-items: center; gap: var(--ud-gap-sm);
+}
+.user-dashboard.scoped-dashboard .content-section > h3::before { /* Optional: Icon vor Sektionsüberschrift */
+    /* content: '📅'; Beispiel */
+    font-size: 1.2em;
+}
 .user-dashboard.scoped-dashboard .punch-section {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 1.6rem;
-    box-shadow: var(--u-shadow-sm);
-    margin-bottom: var(--u-gap);
-    text-align: center;
+    text-align: center; padding: var(--ud-gap-lg) 0; margin-bottom: var(--ud-gap-lg);
+    background: var(--ud-c-surface); border-radius: var(--ud-radius-lg);
+    border: 1px solid var(--ud-c-border);
 }
 .user-dashboard.scoped-dashboard .punch-section h3 {
-    margin: 0 0 1rem;
-    font-size: 1.05rem;
-    font-weight: 700;
+    font-size: var(--ud-fz-lg); margin-bottom: var(--ud-gap-md); color: var(--ud-c-text);
 }
 
 /* =========================================================================
    5) Wochenübersicht, Zeitcards
    ========================================================================= */
-.user-dashboard.scoped-dashboard .time-tracking-section {
-    margin-bottom: var(--u-gap);
-}
-.user-dashboard.scoped-dashboard .time-tracking-section h3 {
-    text-align: center;
-    margin-bottom: 1rem;
-    font-size: 1.1rem;
-    font-weight: 700;
-}
 .user-dashboard.scoped-dashboard .week-navigation {
-    display: flex;
-    justify-content: center;  /* Zentriert Links-, Datum- und Rechts-Button */
-    align-items: center;
-    gap: 0.8rem;
-    margin-bottom: 1.2rem;
-}
-.user-dashboard.scoped-dashboard .week-navigation button {
-    /* Erbt globale Button-Stile */
+    display: flex; justify-content: space-between; align-items: center; gap: var(--ud-gap-md); margin-bottom: var(--ud-gap-lg);
+    flex-wrap: wrap; padding: var(--ud-gap-md); background-color: var(--ud-c-surface); border-radius: var(--ud-radius-md);
 }
 .user-dashboard.scoped-dashboard .week-navigation input[type="date"] {
-    text-align: center; /* Inhalt (Datum) zentrieren */
-    width: auto;
-    min-width: 120px;
-    padding: 0.5rem 0.8rem;
-    font-size: 0.9rem;
-    cursor: pointer;
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    background: var(--c-card);
-    color: var(--c-text);
-    transition:
-            background var(--u-dur) var(--u-ease),
-            color      var(--u-dur) var(--u-ease),
-            border-color var(--u-dur) var(--u-ease);
+    text-align: center; width: auto; min-width: 200px;
+    padding: var(--ud-gap-sm) var(--ud-gap-md); font-size: var(--ud-fz-md);
+    cursor: pointer; border-color: var(--ud-c-border); background-color: var(--ud-c-card);
 }
-.user-dashboard.scoped-dashboard .time-entry-list {
-    list-style: none;
-    padding: 0;
-    margin: 0 0 1.2rem;
+.user-dashboard.scoped-dashboard .week-navigation button {
+    padding: var(--ud-gap-sm) var(--ud-gap-md); /* Etwas kleiner als Hauptbuttons */
+    font-size: var(--ud-fz-sm);
 }
+[data-theme="dark"] .user-dashboard.scoped-dashboard .week-navigation {
+    background-color: var(--ud-c-card); /* Im Dark Mode die Kartenfarbe für den Nav-Hintergrund */
+}
+
 .user-dashboard.scoped-dashboard .week-display {
-    display: grid;
-    gap: 1.8rem;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    display: grid; gap: var(--ud-gap-lg);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); /* Flexiblere Kartengröße */
 }
 .user-dashboard.scoped-dashboard .day-card {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 1.4rem 1.2rem 1.7rem;
-    box-shadow: var(--u-shadow-sm);
-    display: flex;
-    flex-direction: column;
+    background: var(--ud-c-card); border: 1px solid var(--ud-c-border); border-radius: var(--ud-radius-lg);
+    padding: var(--ud-gap-md); box-shadow: var(--ud-shadow-card); display: flex; flex-direction: column;
+    transition: transform var(--u-dur, 0.25s) var(--u-ease, ease), box-shadow var(--u-dur, 0.25s) var(--u-ease, ease);
 }
+.user-dashboard.scoped-dashboard .day-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(var(--c-pri-rgb, 71, 91, 255), 0.12); }
+
 .user-dashboard.scoped-dashboard .day-card-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.8rem;
+    margin-bottom: var(--ud-gap-md);
 }
-.user-dashboard.scoped-dashboard .day-card-header h4 {
-    font-size: 0.92rem;
-    margin: 0;
-    font-weight: 600;
+.user-dashboard.scoped-dashboard .day-card-header h4 { /* Wochentag, Datum */
+    font-size: var(--ud-fz-lg); margin: 0 0 var(--ud-gap-xs) 0; font-weight: 600; color: var(--ud-c-text);
 }
-.user-dashboard.scoped-dashboard .expected-hours {
-    color: var(--c-muted);
-    font-size: 0.82rem;
-    margin-left: 0.4rem;
+.user-dashboard.scoped-dashboard .day-card-meta { /* Für Soll und Saldo */
+    display: flex; justify-content: space-between; align-items: baseline; font-size: var(--ud-fz-sm);
+    color: var(--ud-c-text-muted); margin-bottom: var(--ud-gap-sm);
 }
-.user-dashboard.scoped-dashboard .daily-diff {
-    font-weight: 700;
-    font-size: 0.85rem;
-    color: var(--c-pri);
+.user-dashboard.scoped-dashboard .expected-hours strong,
+.user-dashboard.scoped-dashboard .daily-diff strong {
+    color: var(--ud-c-text); font-weight: 500;
+}
+.user-dashboard.scoped-dashboard .daily-diff.positive { color: var(--ud-c-success-text); font-weight: 600; }
+.user-dashboard.scoped-dashboard .daily-diff.negative { color: var(--ud-c-error-text); font-weight: 600; }
+
+.user-dashboard.scoped-dashboard .day-card .time-entry-list {
+    list-style: none; padding: 0; margin: 0 0 var(--ud-gap-md) 0; font-size: var(--ud-fz-sm); flex-grow: 1;
+}
+.user-dashboard.scoped-dashboard .day-card .time-entry-list li {
+    padding: var(--ud-gap-xs) 0; display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px dashed var(--ud-c-line);
+}
+.user-dashboard.scoped-dashboard .day-card .time-entry-list li:last-child { border-bottom: none; }
+.user-dashboard.scoped-dashboard .day-card .entry-label { color: var(--ud-c-text-muted); margin-right: var(--ud-gap-sm); }
+.user-dashboard.scoped-dashboard .day-card .entry-time { font-weight: 500; color: var(--ud-c-text); }
+
+.user-dashboard.scoped-dashboard .late-time {
+    color: var(--ud-c-late-time); font-weight: 600;
+    background-color: var(--ud-c-late-time-bg); padding: 0.15em 0.4em; border-radius: var(--ud-radius-sm);
 }
 .user-dashboard.scoped-dashboard .no-entries {
-    font-size: 0.88rem;
-    color: var(--c-muted);
-    margin-bottom: 1.2rem;
+    font-size: var(--ud-fz-sm); color: var(--ud-c-text-muted); font-style: italic;
+    margin: var(--ud-gap-md) 0; flex-grow: 1; display: flex; align-items: center; justify-content: center;
+    min-height: 80px; background-color: var(--ud-c-surface); border-radius: var(--ud-radius-md);
+    padding: var(--ud-gap-md); border: 1px dashed var(--ud-c-border);
 }
-/* Correction-Button */
+[data-theme="dark"] .user-dashboard.scoped-dashboard .no-entries {
+    background-color: var(--ud-c-surface); border-color: var(--ud-c-border);
+}
+
 .user-dashboard.scoped-dashboard .correction-button {
-    margin-top: auto;
-    background: var(--c-warn);
-    color: #1f1f1f;
-    box-shadow: var(--u-shadow-sm);
-    font-size: 0.84rem;
+    margin-top: auto; background: transparent; color: var(--ud-c-primary-text);
+    border: 1px solid var(--ud-c-primary);
+    font-size: var(--ud-fz-sm); padding: 0.6rem 1rem; width: 100%; box-shadow: none;
 }
 .user-dashboard.scoped-dashboard .correction-button:hover {
-    background: #ffb866;
+    background: var(--ud-c-primary-light-bg); border-color: var(--ud-c-primary-dim);
+    color: var(--ud-c-primary-dim); transform: translateY(-1px);
 }
-/* Späte Zeit */
-.user-dashboard.scoped-dashboard .late-time {
-    color: #e74c3c;
-    font-weight: 600;
+[data-theme="dark"] .user-dashboard.scoped-dashboard .correction-button {
+    color: var(--ud-c-primary); border-color: var(--ud-c-primary);
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard .correction-button:hover {
+    background: var(--ud-c-primary-light-bg); color: var(--ud-c-primary-dim);
+    border-color: var(--ud-c-primary-dim);
 }
 
 /* =========================================================================
    6) VacationCalendar Section
    ========================================================================= */
 .user-dashboard.scoped-dashboard .vacation-calendar-section {
-    margin-bottom: var(--u-gap);
+    /* Die `.content-section` Stile werden bereits angewendet. */
 }
-.user-dashboard.scoped-dashboard .vacation-calendar-section,
-.user-dashboard.scoped-dashboard .vacation-calendar-section .scoped-vacation,
-.user-dashboard.scoped-dashboard .vacation-calendar-section .vacation-calendar,
+/* Spezifische Stile für den VacationCalendar selbst innerhalb dieses Dashboards */
 .user-dashboard.scoped-dashboard .vacation-calendar-section .react-calendar {
-    width: 100%;
-    max-width: none;
+    border-radius: var(--ud-radius-lg);
+    box-shadow: none; /* Kalender selbst hat keinen extra Schatten, da in Card */
+    border: none; /* Kein doppelter Rand */
 }
 
 /* =========================================================================
    7) Corrections Panel
    ========================================================================= */
-.user-dashboard.scoped-dashboard .correction-panel {
-    margin-top: var(--u-gap);
-}
 .user-dashboard.scoped-dashboard .corrections-header {
-    background: var(--c-warn);
-    color: #1f1f1f;
-    font-weight: 700;
-    padding: 1rem 1.6rem;
-    border-radius: var(--u-radius) var(--u-radius) 0 0;
-    display: flex;
-    justify-content: space-between;
-    cursor: pointer;
+    background: var(--ud-c-surface); color: var(--ud-c-text); font-weight: 600;
+    padding: var(--ud-gap-md) var(--ud-gap-lg);
+    border-radius: var(--ud-radius-lg) var(--ud-radius-lg) 0 0;
+    border: 1px solid var(--ud-c-border); border-bottom: none;
+    display: flex; justify-content: space-between; align-items: center; cursor: pointer;
+    transition: background-color var(--u-dur, 0.25s) var(--u-ease, ease);
 }
+.user-dashboard.scoped-dashboard .corrections-header:hover { background-color: var(--ud-c-line); }
+[data-theme="dark"] .user-dashboard.scoped-dashboard .corrections-header { background: var(--ud-c-surface); border-color: var(--ud-c-border); }
+[data-theme="dark"] .user-dashboard.scoped-dashboard .corrections-header:hover { background-color: var(--ud-c-border); }
+
+.user-dashboard.scoped-dashboard .corrections-header h3 {
+    margin:0; font-size: var(--ud-fz-lg); border: none; padding: 0; color: var(--ud-c-primary-text);
+}
+.user-dashboard.scoped-dashboard .corrections-header .toggle-icon {
+    font-size: var(--ud-fz-md); transition: transform var(--u-dur, 0.25s) var(--u-ease, ease);
+}
+.user-dashboard.scoped-dashboard .corrections-header[aria-expanded="true"] .toggle-icon { transform: rotate(180deg); }
+
 .user-dashboard.scoped-dashboard .corrections-content {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-top: none;
-    border-radius: 0 0 var(--u-radius) var(--u-radius);
-    padding: 1.6rem;
-    box-shadow: var(--u-shadow-sm);
+    background: var(--ud-c-card); border: 1px solid var(--ud-c-border); border-top: none;
+    border-radius: 0 0 var(--ud-radius-lg) var(--ud-radius-lg);
+    padding: var(--ud-gap-lg); box-shadow: var(--ud-shadow-card); /* Schatten von der Sektion geerbt */
 }
 .user-dashboard.scoped-dashboard .corrections-nav {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    margin-bottom: 1rem;
+    display: flex; align-items: center; gap: var(--ud-gap-md); margin-bottom: var(--ud-gap-lg); flex-wrap: wrap;
 }
-.user-dashboard.scoped-dashboard .week-label {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--c-text);
+.user-dashboard.scoped-dashboard .corrections-nav .week-label {
+    font-size: var(--ud-fz-md); font-weight: 500; color: var(--ud-c-text-light);
+    flex-grow: 1; text-align: center;
 }
-.user-dashboard.scoped-dashboard .toggle-all-button {
-    margin-bottom: 1rem;
+.user-dashboard.scoped-dashboard .toggle-all-button { margin-bottom: var(--ud-gap-lg); text-align: center; }
+.user-dashboard.scoped-dashboard .toggle-all-button button {
+    font-size: var(--ud-fz-sm); padding: var(--ud-gap-xs) var(--ud-gap-md);
+    background-color: var(--ud-c-surface); color: var(--ud-c-text); box-shadow: none;
+    border: 1px solid var(--ud-c-border);
 }
+.user-dashboard.scoped-dashboard .toggle-all-button button:hover {
+    background-color: var(--ud-c-line);
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard .toggle-all-button button {
+    background-color: var(--ud-c-surface); color: var(--ud-c-text); border-color: var(--ud-c-border);
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard .toggle-all-button button:hover {
+    background-color: var(--ud-c-border);
+}
+
 .user-dashboard.scoped-dashboard .corrections-list {
-    list-style: none;
-    padding: 0;
-    margin: 0;
+    list-style: none; padding: 0; margin: 0; max-height: 350px;
+    overflow-y: auto; border: 1px solid var(--ud-c-line); border-radius: var(--ud-radius-md);
+    background-color: var(--ud-c-surface);
 }
 .user-dashboard.scoped-dashboard .corrections-list li {
-    padding: 0.7rem 0;
-    border-bottom: 1px solid var(--c-line);
-    font-size: 0.9rem;
-    color: inherit;
+    padding: var(--ud-gap-md); border-bottom: 1px solid var(--ud-c-border);
+    font-size: var(--ud-fz-sm); color: var(--ud-c-text-light); line-height: 1.6;
 }
-.user-dashboard.scoped-dashboard .approved {
-    background-color: #2ecc71;
-    color: #fff;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    margin-left: 0.3rem;
-    font-size: 0.8rem;
+.user-dashboard.scoped-dashboard .corrections-list li:last-child { border-bottom: none; }
+.user-dashboard.scoped-dashboard .corrections-list strong { color: var(--ud-c-text); font-weight: 600; }
+
+.user-dashboard.scoped-dashboard .corrections-list .status-badge {
+    padding: 0.3rem 0.7rem; border-radius: var(--ud-radius-sm); margin-left: var(--ud-gap-sm);
+    font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.5px; display: inline-block;
 }
-.user-dashboard.scoped-dashboard .denied {
-    background-color: #e74c3c;
-    color: #fff;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    margin-left: 0.3rem;
-    font-size: 0.8rem;
-}
-.user-dashboard.scoped-dashboard .pending {
-    background-color: #f39c12;
-    color: #fff;
-    padding: 0.2rem 0.5rem;
-    border-radius: 6px;
-    margin-left: 0.3rem;
-    font-size: 0.8rem;
-}
+.user-dashboard.scoped-dashboard .corrections-list .approved { background-color: var(--ud-c-success-light-bg); color: var(--ud-c-success-text); }
+.user-dashboard.scoped-dashboard .corrections-list .denied { background-color: var(--ud-c-error-light-bg); color: var(--ud-c-error-text); }
+.user-dashboard.scoped-dashboard .corrections-list .pending { background-color: var(--ud-c-warn-light-bg); color: var(--ud-c-warn-text); }
+
 .user-dashboard.scoped-dashboard .admin-comment {
-    color: var(--c-muted);
-    font-style: italic;
+    color: var(--ud-c-text-muted); font-style: italic; font-size: 0.8rem; display: block;
+    margin-top: var(--ud-gap-sm); padding: var(--ud-gap-sm) var(--ud-gap-md);
+    border-left: 3px solid var(--ud-c-primary);
+    background-color: var(--ud-c-primary-light-bg);
+    border-radius: 0 var(--ud-radius-md) var(--ud-radius-md) 0;
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard .admin-comment {
+    border-left-color: var(--ud-c-primary-dim);
 }
 
 /* =========================================================================
    8) Monthly Summary Table
    ========================================================================= */
-.user-dashboard.scoped-dashboard .monthly-all {
-    margin-bottom: var(--u-gap);
-}
 .user-dashboard.scoped-dashboard .daily-summary-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.88rem;
+    width: 100%; border-collapse: separate;
+    border-spacing: 0;
+    font-size: var(--ud-fz-md); margin-top: var(--ud-gap-md); /* Mehr Abstand nach oben */
+    border: 1px solid var(--ud-c-border); border-radius: var(--ud-radius-lg); overflow: hidden;
 }
 .user-dashboard.scoped-dashboard .daily-summary-table th,
 .user-dashboard.scoped-dashboard .daily-summary-table td {
-    border: 1px solid var(--c-line);
-    padding: 0.5rem 0.7rem;
+    border-bottom: 1px solid var(--ud-c-border); padding: var(--ud-gap-md); text-align: left;
 }
 .user-dashboard.scoped-dashboard .daily-summary-table th {
-    background: var(--c-surface);
-    font-weight: 600;
+    background: var(--ud-c-surface); font-weight: 600; color: var(--ud-c-text);
+    text-transform: uppercase; font-size: var(--ud-fz-sm); letter-spacing: 0.5px;
+}
+.user-dashboard.scoped-dashboard .daily-summary-table tbody tr:last-child td { border-bottom: none; }
+.user-dashboard.scoped-dashboard .daily-summary-table tbody tr:nth-child(even) { background-color: var(--ud-c-surface); }
+.user-dashboard.scoped-dashboard .daily-summary-table tbody tr:hover {
+    background-color: var(--ud-c-primary-light-bg);
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard .daily-summary-table th {
+    background: var(--ud-c-card); /* Im Dark Mode Header etwas dunkler */
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard .daily-summary-table tbody tr:nth-child(even) {
+    background-color: var(--ud-c-surface);
 }
 
 /* =========================================================================
-   9) Print-Report
+   9) Print-Report Container
    ========================================================================= */
 .user-dashboard.scoped-dashboard .print-report-container {
-    margin-bottom: var(--u-gap);
+    margin-top: var(--ud-gap-xl); text-align: center; padding-bottom: var(--ud-gap-lg);
 }
 .user-dashboard.scoped-dashboard .print-report-container button {
-    /* Erbt von den globalen Button-Stilen */
+    font-size: var(--ud-fz-md); /* Konsistente Button-Größe */
 }
 
 /* =========================================================================
    10) Modal Overlay & Content
    ========================================================================= */
 .user-dashboard.scoped-dashboard .modal-overlay {
-    position: fixed;          /* <— statt absolute / relative */
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    background: rgba(0, 0, 0, .55);
-    display: flex;
-    align-items: center;      /* vertikal ausmitteln */
-    justify-content: center;  /* horizontal ausmitteln */
-    z-index: 3000;            /* über allem */
-    padding: 1rem;            /* etwas „Luft“, falls sehr kleiner Screen */
+    position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+    background: rgba(var(--c-bg-rgb, 20, 20, 25), 0.65); /* Globale Variable für Overlay-Farbe oder Fallback */
+    backdrop-filter: blur(8px); /* Stärkerer Blur-Effekt */
+    display: flex; align-items: center; justify-content: center;
+    z-index: 10000; padding: var(--ud-gap-lg);
+    animation: modalFadeIn var(--u-dur, 0.25s) var(--u-ease, ease);
 }
+@keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 .user-dashboard.scoped-dashboard .modal-content {
-    position: relative;       /* für evtl. absolute Kinder */
-    width: 100%;
-    max-width: 520px;
-    max-height: 90vh;         /* nie höher als das Viewport-Fenster */
-    overflow-y: auto;         /* falls Inhalt länger wird, nur innen scrollen */
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 2.4rem;
-    box-shadow: var(--u-shadow-lg);
-    color: inherit;
+    position: relative; width: 100%; max-width: 560px; /* Etwas breiter für mehr Inhalt */
+    max-height: 90vh; overflow-y: auto;
+    background: var(--ud-c-card); border: 1px solid var(--ud-c-border);
+    border-radius: var(--ud-radius-xl); /* Größerer Radius für Modals */
+    padding: var(--ud-gap-xl); /* Mehr Padding im Modal */
+    box-shadow: var(--ud-shadow-lg); color: var(--ud-c-text);
+    transform: scale(0.95);
+    opacity: 0;
+    animation: modalScaleUp var(--u-dur, 0.25s) var(--u-ease, ease) forwards;
 }
+@keyframes modalScaleUp { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
+.user-dashboard.scoped-dashboard .modal-content h3 {
+    margin: 0 0 var(--ud-gap-lg) 0; font-size: var(--ud-fz-xl); font-weight: 700;
+    color: var(--ud-c-primary-text); padding-bottom: var(--ud-gap-md);
+    border-bottom: 1px solid var(--ud-c-primary-light-bg);
+}
 .user-dashboard.scoped-dashboard .modal-content .form-group {
-    margin-bottom: 1rem;
+    margin-bottom: var(--ud-gap-lg); display: flex; flex-direction: column; gap: var(--ud-gap-xs);
 }
 .user-dashboard.scoped-dashboard .modal-content .form-group label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.4rem;
-    font-size: 0.85rem;
+    font-weight: 600; font-size: var(--ud-fz-sm); color: var(--ud-c-text-muted);
 }
-.user-dashboard.scoped-dashboard .modal-content .form-group input,
+.user-dashboard.scoped-dashboard .modal-content .form-group input[type="time"] {
+    max-width: 180px; /* Etwas mehr Platz für Uhrzeit */
+}
 .user-dashboard.scoped-dashboard .modal-content .form-group textarea {
-    width: 100%;
-    padding: 0.7rem 0.9rem;
-    border: 1px solid var(--c-border);
-    border-radius: 10px;
-    background: inherit;
-    color: inherit;
-    font: inherit;
+    min-height: 100px; resize: vertical;
 }
+
 .user-dashboard.scoped-dashboard .modal-buttons {
-    display: flex;
-    gap: 1rem;
-    margin-top: 1.4rem;
+    display: flex; gap: var(--ud-gap-md); margin-top: var(--ud-gap-lg); justify-content: flex-end;
 }
 .user-dashboard.scoped-dashboard .modal-buttons button {
-    /* Erbt von global .user-dashboard.scoped-dashboard button */
-}
-.user-dashboard.scoped-dashboard .modal-buttons button[type="button"] {
-    background: #666;
-    color: #fff;
-}
-.user-dashboard.scoped-dashboard .modal-buttons button[type="button"]:hover {
-    background: #555;
+    padding: var(--ud-gap-sm) var(--ud-gap-lg);
+    font-size: var(--ud-fz-md);
 }
 
-@media (max-width: 480px) {
-    .user-dashboard.scoped-dashboard .dashboard-header {
-        margin-bottom: 1rem;
-        padding: 1rem;
-    }
-    .user-dashboard.scoped-dashboard .personal-info {
-        flex-direction: column;
-        gap: 0.5rem;
-    }
-
-    .user-dashboard.scoped-dashboard .time-tracking-section {
-        padding: 1rem;
-    }
-    .user-dashboard.scoped-dashboard .modal-content {
-        padding: 1.6rem 1.2rem;
-        max-width: 95vw;      /* fast volle Breite auf sehr kleinen Geräten */
-    }
-    /* Week-Display nur 1 Spalte */
+/* =========================================================================
+   11) Responsive Tweaks
+   ========================================================================= */
+@media (max-width: 1024px) { /* Größere Tablets */
     .user-dashboard.scoped-dashboard .week-display {
-        grid-template-columns: 1fr;
-        gap: 1rem;
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
     }
+}
 
-    /* Correction-Panel, etc. */
-    .user-dashboard.scoped-dashboard .correction-panel {
-        margin-top: 1rem;
-        padding: 1rem;
+@media (max-width: 768px) { /* Tablet */
+    .user-dashboard.scoped-dashboard { padding: var(--ud-gap-md); }
+    .user-dashboard.scoped-dashboard .content-section,
+    .user-dashboard.scoped-dashboard .dashboard-header,
+    .user-dashboard.scoped-dashboard .modal-content { padding: var(--ud-gap-lg); }
+
+    .user-dashboard.scoped-dashboard .dashboard-header h2 { font-size: var(--ud-fz-xl); }
+    .user-dashboard.scoped-dashboard .personal-info { flex-direction: column; gap: var(--ud-gap-md); align-items: stretch; }
+    .user-dashboard.scoped-dashboard .personal-info p { text-align: center; }
+
+    .user-dashboard.scoped-dashboard .week-navigation { flex-direction: column; gap: var(--ud-gap-md); }
+    .user-dashboard.scoped-dashboard .week-navigation input[type="date"],
+    .user-dashboard.scoped-dashboard .week-navigation button { width: 100%; max-width: none; }
+
+    .user-dashboard.scoped-dashboard .day-card-header h4 { font-size: var(--ud-fz-md); }
+    .user-dashboard.scoped-dashboard .day-card-meta { flex-direction: column; align-items: flex-start; gap: var(--ud-gap-xs); }
+
+    .user-dashboard.scoped-dashboard .modal-buttons { flex-direction: column-reverse; } /* Wichtige Aktion unten */
+    .user-dashboard.scoped-dashboard .modal-buttons button { width: 100%; }
+}
+@media (max-width: 480px) { /* Mobile */
+    .user-dashboard.scoped-dashboard {
+        padding: var(--ud-gap-md); /* Mehr Padding für Mobile */
+        --ud-fz-base: 0.95rem; /* Kleinere Basisschrift */
+        --ud-fz-lg: 1.05rem;
+        --ud-fz-xl: 1.25rem;
+        --ud-fz-xxl: 1.6rem;
+        --ud-gap-lg: 1.5rem;
+        --ud-gap-md: 1rem;
+        --ud-gap-sm: 0.6rem;
     }
+    .user-dashboard.scoped-dashboard .week-display { grid-template-columns: 1fr; }
+    .user-dashboard.scoped-dashboard .daily-summary-table th,
+    .user-dashboard.scoped-dashboard .daily-summary-table td { padding: var(--ud-gap-sm); font-size: var(--ud-fz-sm); }
 
-    .user-dashboard.scoped-dashboard .vacation-calendar-section {
-        padding: 1rem;
+    .user-dashboard.scoped-dashboard .corrections-nav { flex-direction: column; }
+    .user-dashboard.scoped-dashboard .corrections-nav button,
+    .user-dashboard.scoped-dashboard .corrections-nav .week-label { width: 100%; text-align: center; }
+}
+
+/* Reduced Motion */
+@media (prefers-reduced-motion: reduce) {
+    .user-dashboard.scoped-dashboard *,
+    .user-dashboard.scoped-dashboard *::before,
+    .user-dashboard.scoped-dashboard *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+        transform: none !important;
+    }
+    /* Spezifisch Schatten entfernen bei reduced motion, falls gewünscht */
+    .user-dashboard.scoped-dashboard .dashboard-header,
+    .user-dashboard.scoped-dashboard .content-section,
+    .user-dashboard.scoped-dashboard .day-card,
+    .user-dashboard.scoped-dashboard .punch-message,
+    .user-dashboard.scoped-dashboard .modal-content,
+    .user-dashboard.scoped-dashboard button {
+        box-shadow: var(--ud-shadow-sm) !important; /* Nur den kleinsten Schatten beibehalten oder ganz entfernen */
+    }
+    [data-theme="dark"] .user-dashboard.scoped-dashboard .dashboard-header,
+    [data-theme="dark"] .user-dashboard.scoped-dashboard .content-section,
+    [data-theme="dark"] .user-dashboard.scoped-dashboard .day-card,
+    [data-theme="dark"] .user-dashboard.scoped-dashboard .punch-message,
+    [data-theme="dark"] .user-dashboard.scoped-dashboard .modal-content,
+    [data-theme="dark"] .user-dashboard.scoped-dashboard button {
+        box-shadow: var(--ud-shadow-sm) !important;
     }
 }

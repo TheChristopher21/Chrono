@@ -24,7 +24,6 @@ const AdminVacationRequests = ({
     // State für das Lösch-Modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [vacationToDelete, setVacationToDelete] = useState(null);
-    const [adminPasswordForDelete, setAdminPasswordForDelete] = useState('');
 
     function toggleExpansion() {
         setIsExpanded(!isExpanded);
@@ -45,10 +44,6 @@ const AdminVacationRequests = ({
             notify(t('adminVacation.delete.noSelection', 'Kein Urlaub zum Löschen ausgewählt.'), 'error');
             return;
         }
-        if (!adminPasswordForDelete) {
-            notify(t('adminVacation.delete.missingAdminPass', 'Bitte Admin-Passwort zur Bestätigung eingeben.'), 'warning');
-            return;
-        }
         if (!currentUser || !currentUser.username) {
             notify(t('errors.notLoggedIn', 'Admin nicht eingeloggt oder Benutzername fehlt.'), 'error');
             return;
@@ -58,7 +53,6 @@ const AdminVacationRequests = ({
             await api.delete(`/api/vacation/${vacationToDelete.id}`, {
                 params: { // Wichtig: adminUsername und adminPassword als Request-Parameter senden
                     adminUsername: currentUser.username,
-                    adminPassword: adminPasswordForDelete,
                 },
             });
             notify(t('adminVacation.delete.success', 'Urlaubsantrag erfolgreich gelöscht.'), 'success');
@@ -192,19 +186,6 @@ const AdminVacationRequests = ({
                             </p>
                         )}
 
-                        <div className="form-group"> {/* Wiederverwendung aus VacationCalendarAdmin */}
-                            <label htmlFor="adminPasswordForDeleteInput">
-                                {t('adminVacation.adminPasswordLabel', 'Admin-Passwort zur Bestätigung:')}
-                            </label>
-                            <input
-                                type="password"
-                                id="adminPasswordForDeleteInput"
-                                value={adminPasswordForDelete}
-                                onChange={(e) => setAdminPasswordForDelete(e.target.value)}
-                                required
-                                autoFocus
-                            />
-                        </div>
 
                         <div className="modal-buttons"> {/* Wiederverwendung aus VacationCalendarAdmin */}
                             <button onClick={handleDeleteVacation} className="button-danger"> {/* Spezifische Klasse für Lösch-Button */}

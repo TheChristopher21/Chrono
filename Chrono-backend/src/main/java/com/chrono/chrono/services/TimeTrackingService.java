@@ -4,16 +4,25 @@ import com.chrono.chrono.dto.TimeReportDTO;
 import com.chrono.chrono.dto.TimeTrackingResponse;
 import com.chrono.chrono.entities.TimeTracking;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.TimeTrackingRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.repositories.VacationRequestRepository;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.crypto.password.PasswordEncoder; // Keep for other potential uses if any
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.InputStream;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.*;
@@ -21,358 +30,495 @@ import java.util.stream.Collectors;
 
 @Service
 public class TimeTrackingService {
-    @Autowired private TimeTrackingRepository timeTrackingRepo;
-    @Autowired private WorkScheduleService  workScheduleService;
-    @Autowired
-    private TimeTrackingRepository timeTrackingRepository;
+    private static final Logger logger = LoggerFactory.getLogger(TimeTrackingService.class);
 
+    @Autowired
+    private TimeTrackingRepository timeTrackingRepo;
+    @Autowired
+    private WorkScheduleService workScheduleService;
     @Autowired
     private UserRepository userRepository;
-
     @Autowired
-    private PasswordEncoder passwordEncoder;
+    private PasswordEncoder passwordEncoder; // Keep for other potential uses
+    @Autowired
+    private VacationRequestRepository vacationRequestRepository;
 
-    // Beispiel: 8h30 = 510 Minuten
-    public static final int FULL_DAY_MINUTES  = 8 * 60 + 30;   // 8 h 30 m
-    public static final int FULL_WEEK_MINUTES = FULL_DAY_MINUTES * 5; // 42 h 30 m
+    public static final int FULL_DAY_MINUTES = 8 * 60 + 30;
+    public static final int FULL_WEEK_MINUTES = FULL_DAY_MINUTES * 5;
 
-    // Hilfsfunktion zum Laden eines Users oder Exception
     private User loadUserByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
     }
 
-    // Holt oder erzeugt die Zeile (TimeTracking) für einen bestimmten Tag
     @Transactional
     public TimeTracking getOrCreateRow(User user, LocalDate date) {
-        return timeTrackingRepository.findByUserAndDailyDate(user, date)
+        return timeTrackingRepo.findByUserAndDailyDate(user, date)
                 .orElseGet(() -> {
                     TimeTracking tt = new TimeTracking();
                     tt.setUser(user);
                     tt.setDailyDate(date);
                     tt.setCorrected(false);
-                    // Hier kann man auch default-Werte für z.B. dailyNote setzen
-                    return timeTrackingRepository.save(tt);
+                    tt.setWorkStart(null);
+                    tt.setBreakStart(null);
+                    tt.setBreakEnd(null);
+                    tt.setWorkEnd(null);
+                    return timeTrackingRepo.save(tt);
                 });
     }
 
     @Transactional
     public TimeTracking getOrCreateTodayRow(User user) {
-        return getOrCreateRow(user, LocalDate.now());
+        return getOrCreateRow(user, LocalDate.now(ZoneId.of("Europe/Zurich")));
     }
 
-    // -------------------------------------------------------------------------
-    // SMART PUNCH: 1->2->3->4
-    // -------------------------------------------------------------------------
     @Transactional
     public TimeTrackingResponse handleSmartPunch(String username) {
         User user = loadUserByUsername(username);
         TimeTracking row = getOrCreateTodayRow(user);
+        LocalTime now = LocalTime.now(ZoneId.of("Europe/Zurich")).truncatedTo(ChronoUnit.MINUTES);
 
         if (row.getWorkStart() == null) {
-            row.setWorkStart(LocalTime.now());
-        } else if (row.getBreakStart() == null) {
-            row.setBreakStart(LocalTime.now());
-        } else if (row.getBreakEnd() == null) {
-            row.setBreakEnd(LocalTime.now());
+            row.setWorkStart(now);
+        } else if (row.getBreakStart() == null && row.getWorkEnd() == null) {
+            row.setBreakStart(now);
+        } else if (row.getBreakEnd() == null && row.getWorkEnd() == null) {
+            row.setBreakEnd(now);
         } else if (row.getWorkEnd() == null) {
-            row.setWorkEnd(LocalTime.now());
+            row.setWorkEnd(now);
         } else {
-            // Wenn alles belegt ist, passiert nichts mehr
+            logger.info("SmartPunch für {}: Alle Stempelungen für heute ({}) bereits vorhanden.", username, row.getDailyDate());
         }
         row.setCorrected(false);
-        timeTrackingRepository.save(row);
-
+        timeTrackingRepo.save(row);
+        rebuildUserBalance(user);
         return convertToResponse(row);
     }
 
-    // -------------------------------------------------------------------------
-    // Direkte Punch-Methoden: WORK_START, BREAK_START, BREAK_END, WORK_END
-    // -------------------------------------------------------------------------
     @Transactional
     public TimeTrackingResponse handlePunch(String username, String punchType) {
         User user = loadUserByUsername(username);
         TimeTracking row = getOrCreateTodayRow(user);
-
-        LocalTime now = LocalTime.now();
+        LocalTime now = LocalTime.now(ZoneId.of("Europe/Zurich")).truncatedTo(ChronoUnit.MINUTES);
+        boolean changed = false;
 
         switch (punchType) {
-            case "WORK_START" -> {
-                if (row.getWorkStart() == null) row.setWorkStart(now);
-            }
-            case "BREAK_START" -> {
-                if (row.getBreakStart() == null) row.setBreakStart(now);
-            }
-            case "BREAK_END" -> {
-                if (row.getBreakEnd() == null) row.setBreakEnd(now);
-            }
-            case "WORK_END" -> {
-                if (row.getWorkEnd() == null) row.setWorkEnd(now);
-            }
+            case "WORK_START":
+                if (row.getWorkStart() == null) {
+                    row.setWorkStart(now);
+                    changed = true;
+                } else
+                    logger.warn("Punch für {}: WORK_START am {} bereits um {} vorhanden.", username, row.getDailyDate(), row.getWorkStart());
+                break;
+            case "BREAK_START":
+                if (row.getWorkStart() != null && row.getBreakStart() == null && row.getWorkEnd() == null) {
+                    row.setBreakStart(now);
+                    changed = true;
+                } else
+                    logger.warn("Punch für {}: BREAK_START am {} nicht möglich (Bedingungen nicht erfüllt).", username, row.getDailyDate());
+                break;
+            case "BREAK_END":
+                if (row.getBreakStart() != null && row.getBreakEnd() == null && row.getWorkEnd() == null) {
+                    row.setBreakEnd(now);
+                    changed = true;
+                } else
+                    logger.warn("Punch für {}: BREAK_END am {} nicht möglich (Bedingungen nicht erfüllt).", username, row.getDailyDate());
+                break;
+            case "WORK_END":
+                if (row.getWorkStart() != null && row.getWorkEnd() == null) {
+                    row.setWorkEnd(now);
+                    changed = true;
+                } else
+                    logger.warn("Punch für {}: WORK_END am {} nicht möglich (Bedingungen nicht erfüllt).", username, row.getDailyDate());
+                break;
+            default:
+                logger.warn("Unbekannter Punch-Typ: {}", punchType);
+                break;
         }
-        row.setCorrected(false);
-        timeTrackingRepository.save(row);
-
+        if (changed) {
+            row.setCorrected(false);
+            timeTrackingRepo.save(row);
+            rebuildUserBalance(user);
+        }
         return convertToResponse(row);
     }
 
-    // -------------------------------------------------------------------------
-    // HISTORY: Liste aller Tage, absteigend
-    // -------------------------------------------------------------------------
     public List<TimeTrackingResponse> getUserHistory(String username) {
         User user = loadUserByUsername(username);
-        List<TimeTracking> list = timeTrackingRepository.findByUserOrderByDailyDateDesc(user);
-
+        List<TimeTracking> list = timeTrackingRepo.findByUserOrderByDailyDateDesc(user);
         return list.stream()
                 .map(this::convertToResponse)
                 .collect(Collectors.toList());
     }
 
-    // -------------------------------------------------------------------------
-    // DAILY NOTE
-    // -------------------------------------------------------------------------
     @Transactional
     public TimeTrackingResponse updateDailyNote(String username, String dateStr, String note) {
         User user = loadUserByUsername(username);
         LocalDate date = LocalDate.parse(dateStr);
-
         TimeTracking row = getOrCreateRow(user, date);
         row.setDailyNote(note);
-        row.setCorrected(true);
-        timeTrackingRepository.save(row);
-
+        timeTrackingRepo.save(row);
         return convertToResponse(row);
     }
 
-    // -------------------------------------------------------------------------
-    // ADMIN: gesamten Tag updaten (WORK_START, BREAK_START, BREAK_END, WORK_END)
-    // -------------------------------------------------------------------------
+    // MODIFIED METHOD
     @Transactional
     public String updateDayTimeEntries(
-            String targetUsername,
-            String date,
-            String workStart,
-            String breakStart,
-            String breakEnd,
-            String workEnd,
-            String adminUsername,
-            String adminPassword,
-            String userPassword
+            String targetUsername, String date,
+            String workStartStr, String breakStartStr, String breakEndStr, String workEndStr,
+            String adminUsername // adminPassword and userPassword are removed
     ) {
         User targetUser = loadUserByUsername(targetUsername);
+        User performingAdmin = loadUserByUsername(adminUsername);
 
-        checkAdminAndUserPasswords(targetUser, adminUsername, adminPassword, userPassword);
+        // Permission check (example: admin and target user must be in the same company, or admin is SUPERADMIN)
+        boolean isSuperAdmin = performingAdmin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        if (!isSuperAdmin) {
+            if (performingAdmin.getCompany() == null || targetUser.getCompany() == null ||
+                    !performingAdmin.getCompany().getId().equals(targetUser.getCompany().getId())) {
+                throw new SecurityException("Admin " + adminUsername + " ist nicht berechtigt, Benutzer " + targetUsername + " zu bearbeiten (andere Firma oder keine Firma zugewiesen).");
+            }
+        }
+        // Password checks previously here are removed.
 
         LocalDate day = LocalDate.parse(date);
         TimeTracking row = getOrCreateRow(targetUser, day);
 
-        // Falls "00:00" => man kann interpretieren als "keine Pause"
-        LocalTime ws = LocalTime.parse(workStart);
-        LocalTime bs = breakStart.equals("00:00") ? null : LocalTime.parse(breakStart);
-        LocalTime be = breakEnd.equals("00:00")   ? null : LocalTime.parse(breakEnd);
-        LocalTime we = LocalTime.parse(workEnd);
+        row.setWorkStart(parseLocalTimeSafe(workStartStr));
+        row.setBreakStart(parseLocalTimeSafe(breakStartStr));
+        row.setBreakEnd(parseLocalTimeSafe(breakEndStr));
+        row.setWorkEnd(parseLocalTimeSafe(workEndStr));
+        row.setCorrected(true); // Mark as edited by admin
 
-        row.setWorkStart(ws);
-        row.setBreakStart(bs);
-        row.setBreakEnd(be);
-        row.setWorkEnd(we);
-        row.setCorrected(true);
-
-        timeTrackingRepository.save(row);
-
-        // Anschließend Salden neu berechnen (optional)
+        timeTrackingRepo.save(row);
         rebuildUserBalance(targetUser);
-
-        return "Day entries updated successfully";
+        logger.info("Zeiteinträge für Benutzer {} am {} durch Admin {} erfolgreich aktualisiert.", targetUsername, date, adminUsername);
+        return "Zeiteinträge erfolgreich aktualisiert.";
     }
 
-    // -------------------------------------------------------------------------
-    // ADMIN: einzelnes TimeTracking updaten (z.B. Start-/Endzeit)
-    // -------------------------------------------------------------------------
+
+    private LocalTime parseLocalTimeSafe(String timeStr) {
+        if (timeStr == null || timeStr.trim().isEmpty() || "00:00".equals(timeStr) || "00:00:00".equals(timeStr)) {
+            return null;
+        }
+        try {
+            return LocalTime.parse(timeStr);
+        } catch (Exception e) {
+            logger.warn("Ungültiges Zeitformat empfangen: '{}'. Wird als null interpretiert.", timeStr, e);
+            return null;
+        }
+    }
+
     @Transactional
     public TimeTrackingResponse updateTimeTrackEntry(
-            Long id,
-            LocalDateTime newStart,
-            LocalDateTime newEnd,
-            String userPassword,
-            String adminUsername,
-            String adminPassword
+            Long id, LocalDateTime newStart, LocalDateTime newEnd,
+            String userPassword, // This password is for the target user if they are editing themselves
+            String actingUsername // This is the username of who is performing an edit (could be admin or self)
+            // adminPassword parameter is removed
     ) {
-        TimeTracking tt = timeTrackingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Time tracking entry not found"));
-
+        TimeTracking tt = timeTrackingRepo.findById(id)
+                .orElseThrow(() -> new RuntimeException("Time tracking entry not found with ID: " + id));
         User targetUser = tt.getUser();
+        User performingUser = loadUserByUsername(actingUsername);
 
-        checkAdminAndUserPasswords(targetUser, adminUsername, adminPassword, userPassword);
 
-        // Beispiel: hier interpretieren wir newStart = WorkStart,
-        //           newEnd   = WorkEnd (Pause manuell?)
-        tt.setWorkStart(newStart.toLocalTime());
-        tt.setWorkEnd(newEnd.toLocalTime());
+        boolean isAdminAction = performingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
+
+        if (isAdminAction) {
+            // Admin is performing the action
+            boolean isSuperAdmin = performingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+            if (!isSuperAdmin) {
+                if (performingUser.getCompany() == null || targetUser.getCompany() == null ||
+                        !performingUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
+                    throw new SecurityException("Admin " + actingUsername + " ist nicht berechtigt, Benutzer " + targetUser.getUsername() + " zu bearbeiten.");
+                }
+            }
+            // Admin password check is removed.
+            // If userPassword was for target user's confirmation of admin edit, it's not typically done this way.
+            // The responsibility lies with the admin.
+        } else {
+            // Self-correction by user (actingUsername is the targetUser's username)
+            if (!targetUser.getUsername().equals(actingUsername)) {
+                throw new SecurityException("Nicht autorisierter Bearbeitungsversuch.");
+            }
+            if (userPassword == null || userPassword.trim().isEmpty() || !passwordEncoder.matches(userPassword, targetUser.getPassword())) {
+                throw new IllegalArgumentException("Ungültiges Benutzerpasswort für die Selbstkorrektur.");
+            }
+        }
+
+        tt.setWorkStart(newStart.toLocalTime().truncatedTo(ChronoUnit.MINUTES));
+        tt.setWorkEnd(newEnd.toLocalTime().truncatedTo(ChronoUnit.MINUTES));
         tt.setCorrected(true);
 
-        timeTrackingRepository.save(tt);
+        timeTrackingRepo.save(tt);
+        rebuildUserBalance(targetUser);
         return convertToResponse(tt);
     }
 
-    // -------------------------------------------------------------------------
-    // ÜBERSTUNDEN = (IST - SOLL)
-    // -------------------------------------------------------------------------
+    private int getAdjustedExpectedWorkMinutes(User user, LocalDate date, List<VacationRequest> approvedVacations) {
+        if (Boolean.TRUE.equals(user.getIsHourly())) {
+            return 0;
+        }
+        int baseExpectedMinutes = workScheduleService.computeExpectedWorkMinutes(user, date);
+
+        for (VacationRequest vacation : approvedVacations) {
+            if (vacation.isApproved() && !date.isBefore(vacation.getStartDate()) && !date.isAfter(vacation.getEndDate())) {
+                if (vacation.isHalfDay()) {
+                    return baseExpectedMinutes / 2;
+                } else {
+                    return 0;
+                }
+            }
+        }
+        return baseExpectedMinutes;
+    }
+
+    public int computeDailyWorkDifference(User user, LocalDate date, List<VacationRequest> approvedVacations) {
+        int workedMinutes = getWorkedMinutes(user, date);
+        int adjustedExpectedMinutes = getAdjustedExpectedWorkMinutes(user, date, approvedVacations);
+        return workedMinutes - adjustedExpectedMinutes;
+    }
 
     public int computeDailyWorkDifference(User user, LocalDate date) {
-
-        /* 1) Gearbeitete Minuten (IST) ------------------------------- */
-        int workedMinutes = 0;                          // default = 0
-        try {
-            workedMinutes = getWorkedMinutes(user, date);
-        } catch (RuntimeException ex) {
-            // kein Eintrag → bleibt 0 Ist-Minuten
-        }
-
-        /* 2) Erwartete Minuten (SOLL) ------------------------------- */
-        int expectedMinutes = 0;
-        if (!Boolean.TRUE.equals(user.getIsHourly())) {     // Stundenlöhner haben kein Soll
-            expectedMinutes = workScheduleService
-                    .computeExpectedWorkMinutes(user, date);
-        }
-
-        /* 3) Saldo zurückgeben -------------------------------------- */
-        return workedMinutes - expectedMinutes;
+        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
+        return computeDailyWorkDifference(user, date, approvedVacations);
     }
 
-
-
-
-    public int getWeeklyBalance(User user, LocalDate monday) {
-        int sum = 0;
-        for (int i = 0; i < 7; i++) {
-            sum += computeDailyWorkDifference(user, monday.plusDays(i));
-        }
-        return sum;              // Minuten-Saldo der Woche (positiv = Überstunden)
-    }
-
-    private int computeWeeklyWorkDifference(User user, LocalDate weekStart, LocalDate lastDay) {
-        int worked = 0;
-        LocalDate end = weekStart.plusDays(6);
-        for (LocalDate d = weekStart; !d.isAfter(end) && !d.isAfter(lastDay); d = d.plusDays(1)) {
-            try {
-                worked += getWorkedMinutes(user, d);
-            } catch (RuntimeException ex) {
-                // kein Eintrag -> 0 Minuten
-            }
-        }
-
-        double factor = (user.getWorkPercentage() != null)
-                ? user.getWorkPercentage() / 100.0
-                : 1.0;
-        int expected = (int) Math.round(FULL_WEEK_MINUTES * factor);
-        return worked - expected;
-    }
-
-
-    public int getWorkedMinutes(User user, LocalDate date) {
-        Optional<TimeTracking> ott = timeTrackingRepo                      // eine Zeile pro Tag!
-                .findByUserAndDailyDate(user, date);
-
-        if (ott.isPresent()) {
-            TimeTracking tt = ott.get();
-            int start = toMinutes(tt.getWorkStart());              // 07:45 -> 465 min
-            int end = toMinutes(tt.getWorkEnd());                // 17:30 -> 1050 min
-            int pause = 0;
-            if (tt.getBreakStart() != null && tt.getBreakEnd() != null) {
-                pause = toMinutes(tt.getBreakEnd()) - toMinutes(tt.getBreakStart());
-            }
-            return (end - start) - pause;
-        }
-        else {
+    private int computeWeeklyWorkDifferenceForPercentageUser(User user, LocalDate weekStart, LocalDate lastDayOverall, List<VacationRequest> allApprovedVacationsForUser) {
+        if (!Boolean.TRUE.equals(user.getIsPercentage())) {
             return 0;
         }
 
-        // effektive Arbeitszeit
+        int totalWorkedMinutesInWeek = 0;
+        LocalDate endOfWeek = weekStart.plusDays(6);
+
+        for (LocalDate d = weekStart; !d.isAfter(endOfWeek) && !d.isAfter(lastDayOverall); d = d.plusDays(1)) {
+            totalWorkedMinutesInWeek += getWorkedMinutes(user, d);
+        }
+
+        List<VacationRequest> approvedVacationsInThisWeek = allApprovedVacationsForUser.stream()
+                .filter(vr -> vr.isApproved() &&
+                        !vr.getEndDate().isBefore(weekStart) &&
+                        !vr.getStartDate().isAfter(endOfWeek))
+                .collect(Collectors.toList());
+
+        int expectedWeeklyMinutesAdjustedForVacation = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, weekStart, approvedVacationsInThisWeek);
+
+        logger.debug("User: {}, Woche ab: {}, Gearbeitet: {}min, Erwartet (bereinigt): {}min, Differenz: {}",
+                user.getUsername(), weekStart, totalWorkedMinutesInWeek, expectedWeeklyMinutesAdjustedForVacation, totalWorkedMinutesInWeek - expectedWeeklyMinutesAdjustedForVacation);
+
+        return totalWorkedMinutesInWeek - expectedWeeklyMinutesAdjustedForVacation;
     }
-    private static int toMinutes(LocalTime t) {
-        return (t == null) ? 0 : t.getHour() * 60 + t.getMinute();
-    }
-    // -------------------------------------------------------------------------
-    // ADMIN: Salden Rebuild für einen User
-    // -------------------------------------------------------------------------
-    /**
-     * Baut das Überstunden­konto eines Users komplett neu auf.
-     * – berücksichtigt **jeden** Kalendertag vom ersten Eintrag bis heute
-     * – Tage ohne Tracking-Zeile zählen als 0 Ist­minuten
-     */
-
-
-
 
     @Transactional
     public void rebuildUserBalance(User user) {
+        List<TimeTracking> rows = timeTrackingRepo.findByUser(user);
+        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
 
-    /* ------------------------------------------------------------------
-       0) Alle vorhandenen Tracking-Zeilen holen
-          – wir brauchen sie nur, um den Datumsbereich zu kennen.
-       ------------------------------------------------------------------ */
-        List<TimeTracking> rows = timeTrackingRepository.findByUser(user);
+        if (user.getIsHourly() == null) {
+            user.setIsHourly(false);
+        }
+        if (user.getIsPercentage() == null) {
+            user.setIsPercentage(false);
+        }
+        if (user.getTrackingBalanceInMinutes() == null) {
+            user.setTrackingBalanceInMinutes(0);
+        }
 
-        if (rows.isEmpty()) {                    // User hat noch gar nichts getrackt
+
+        if (rows.isEmpty() && approvedVacations.stream().noneMatch(vr -> vr.isApproved() && vr.isUsesOvertime())) {
             user.setTrackingBalanceInMinutes(0);
             userRepository.save(user);
+            logger.info("Saldo für {} auf 0 gesetzt (keine Zeiteinträge und keine relevanten genehmigten Überstundenurlaube).", user.getUsername());
             return;
         }
 
-    /* ------------------------------------------------------------------
-       1) Von ERSTEM Eintrag bis HEUTE jeden Kalendertag durchlaufen
-       ------------------------------------------------------------------ */
-        LocalDate firstDay = rows.stream()
+        LocalDate firstDayToConsiderInitialized = LocalDate.now(ZoneId.of("Europe/Zurich"));
+
+        Optional<LocalDate> firstTrackingDayOpt = rows.stream()
                 .map(TimeTracking::getDailyDate)
-                .min(LocalDate::compareTo)
-                .orElse(LocalDate.now());
+                .min(LocalDate::compareTo);
+        Optional<LocalDate> firstVacationDayOpt = approvedVacations.stream()
+                .filter(VacationRequest::isApproved)
+                .map(VacationRequest::getStartDate)
+                .min(LocalDate::compareTo);
 
-        LocalDate lastDay  = LocalDate.now();
-
-        int totalMinutes = 0;
-
-        if (Boolean.TRUE.equals(user.getIsPercentage())) {
-            for (LocalDate w = firstDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)); !w.isAfter(lastDay); w = w.plusWeeks(1)) {
-                int diff = computeWeeklyWorkDifference(user, w, lastDay);
-                totalMinutes += diff;
-            }
+        if (firstTrackingDayOpt.isPresent() && firstVacationDayOpt.isPresent()) {
+            firstDayToConsiderInitialized = firstTrackingDayOpt.get().isBefore(firstVacationDayOpt.get()) ? firstTrackingDayOpt.get() : firstVacationDayOpt.get();
+        } else if (firstTrackingDayOpt.isPresent()) {
+            firstDayToConsiderInitialized = firstTrackingDayOpt.get();
         } else {
-            for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
-                int temp = computeDailyWorkDifference(user, d);
-                totalMinutes += temp;
-                //  ►  Ist-Minuten = 0, wenn kein Eintrag vorhanden
-                //  ►  Soll-Minuten kommen immer aus WorkScheduleService
+            if (firstVacationDayOpt.isPresent()) {
+                firstDayToConsiderInitialized = firstVacationDayOpt.get();
             }
         }
 
-    /* ------------------------------------------------------------------
-       2) Speichern
-       ------------------------------------------------------------------ */
-        user.setTrackingBalanceInMinutes(totalMinutes);
+        final LocalDate firstDay = firstDayToConsiderInitialized;
+
+
+        LocalDate lastDay = LocalDate.now(ZoneId.of("Europe/Zurich"));
+        int totalMinutes = 0;
+
+        if (!firstDay.isAfter(lastDay) || !rows.isEmpty() ||
+                (approvedVacations.stream().anyMatch(VacationRequest::isApproved))) {
+
+            logger.info("Saldo-Neuberechnung für {}: Zeitraum {} bis {}", user.getUsername(), firstDay, lastDay);
+            if (Boolean.TRUE.equals(user.getIsPercentage())) {
+                LocalDate currentWeekStart = firstDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                while (!currentWeekStart.isAfter(lastDay)) {
+                    totalMinutes += computeWeeklyWorkDifferenceForPercentageUser(user, currentWeekStart, lastDay, approvedVacations);
+                    currentWeekStart = currentWeekStart.plusWeeks(1);
+                }
+            } else {
+                for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
+                    totalMinutes += computeDailyWorkDifference(user, d, approvedVacations);
+                }
+            }
+            user.setTrackingBalanceInMinutes(totalMinutes);
+            logger.info("Saldo für {} neu berechnet: {} Minuten.", user.getUsername(), totalMinutes);
+        } else {
+            logger.info("Kein relevanter Zeitraum für Saldo-Neuberechnung für {}, Saldo bleibt unverändert: {}", user.getUsername(), Optional.ofNullable(user.getTrackingBalanceInMinutes()).orElse(0));
+        }
         userRepository.save(user);
     }
 
 
-    // -------------------------------------------------------------------------
-    // ADMIN: Salden Rebuild für alle User
-    // -------------------------------------------------------------------------
     @Transactional
     public void rebuildAllUserBalancesOnce() {
+        logger.info("Starte Saldo-Neuberechnung für alle User...");
         for (User u : userRepository.findAll()) {
-            rebuildUserBalance(u);
+            try {
+                rebuildUserBalance(u);
+            } catch (Exception e) {
+                logger.error("Fehler bei der Saldo-Neuberechnung für User {}: {}", u.getUsername(), e.getMessage(), e);
+            }
+        }
+        logger.info("✅ Saldo-Neuberechnung für alle User abgeschlossen.");
+    }
+
+    public int getWeeklyBalance(User user, LocalDate monday) {
+        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
+
+        if (Boolean.TRUE.equals(user.getIsPercentage())) {
+            LocalDate sunday = monday.plusDays(6);
+            return computeWeeklyWorkDifferenceForPercentageUser(user, monday, sunday, approvedVacations);
+        } else {
+            int sum = 0;
+            for (int i = 0; i < 7; i++) {
+                sum += computeDailyWorkDifference(user, monday.plusDays(i), approvedVacations);
+            }
+            return sum;
         }
     }
 
-    // -------------------------------------------------------------------------
-    // REPORT im Datumsbereich
-    // -------------------------------------------------------------------------
+    public int getWorkedMinutes(User user, LocalDate date) {
+        Optional<TimeTracking> ott = timeTrackingRepo.findByUserAndDailyDate(user, date);
+
+        if (ott.isPresent()) {
+            TimeTracking tt = ott.get();
+            LocalTime workStart = tt.getWorkStart();
+            LocalTime workEnd = tt.getWorkEnd();
+            LocalTime breakStart = tt.getBreakStart();
+            LocalTime breakEnd = tt.getBreakEnd();
+
+            if (workStart == null || workEnd == null) return 0;
+            if (workEnd.isBefore(workStart)) {
+                logger.warn("User {} an Datum {}: Arbeitsende ({}) ist vor Arbeitsbeginn ({}). Arbeitszeit für diesen Tag wird als 0 gewertet.", user.getUsername(), date, workEnd, workStart);
+                return 0;
+            }
+
+            long workDurationMinutes = ChronoUnit.MINUTES.between(workStart, workEnd);
+            long breakDurationMinutes = 0;
+
+            if (breakStart != null && breakEnd != null) {
+                if (breakEnd.isBefore(breakStart)) {
+                    logger.warn("User {} an Datum {}: Pausenende ({}) ist vor Pausenbeginn ({}). Pause wird als 0 gewertet.", user.getUsername(), date, breakEnd, breakStart);
+                } else if (breakStart.isAfter(workEnd) || breakEnd.isBefore(workStart) || breakStart.isBefore(workStart) || breakEnd.isAfter(workEnd)) {
+                    logger.warn("User {} an Datum {}: Pause ({}-{}) liegt teilweise oder ganz außerhalb der Arbeitszeit ({}-{}). Pause wird als 0 gewertet.", user.getUsername(), date, breakStart, breakEnd, workStart, workEnd);
+                } else {
+                    breakDurationMinutes = ChronoUnit.MINUTES.between(breakStart, breakEnd);
+                }
+            }
+
+            return (int) Math.max(0, workDurationMinutes - breakDurationMinutes);
+        }
+        return 0;
+    }
+
+    @Scheduled(cron = "0 20 23 * * MON-FRI", zone = "Europe/Zurich")
+    @Transactional
+    public void autoPunchOutForgottenEntries() {
+        LocalDate today = LocalDate.now(ZoneId.of("Europe/Zurich"));
+        LocalTime autoPunchOutTime = LocalTime.of(23, 20);
+
+        logger.info("AutoPunchOutForgottenEntries gestartet für Datum: {} um {}", today, autoPunchOutTime);
+
+        List<TimeTracking> openEntries = timeTrackingRepo.findByDailyDateAndWorkStartIsNotNullAndWorkEndIsNull(today);
+
+        if (openEntries.isEmpty()) {
+            logger.info("Keine offenen Einträge für AutoPunchOut am {} gefunden.", today);
+            return;
+        }
+
+        for (TimeTracking entry : openEntries) {
+            User user = entry.getUser();
+            if (Boolean.TRUE.equals(user.getIsHourly())) {
+                logger.info("Überspringe stündlichen Mitarbeiter {} für AutoPunchOut.", user.getUsername());
+                continue;
+            }
+
+            logger.info("Bearbeite offenen Eintrag für User: {}, Datum: {}", user.getUsername(), today);
+            boolean changed = false;
+
+            if (entry.getWorkStart() != null && entry.getWorkEnd() == null) {
+                if (Boolean.TRUE.equals(user.getIsPercentage()) &&
+                        entry.getBreakStart() != null &&
+                        entry.getBreakEnd() == null) {
+
+                    logger.info("Prozentualer User {} hat WorkStart ({}) und BreakStart ({}) aber kein BreakEnd/WorkEnd. " +
+                                    "Setze WorkEnd auf BreakStart-Zeit ({}) und entferne Pausenzeiten für {}.",
+                            user.getUsername(), entry.getWorkStart(), entry.getBreakStart(), entry.getBreakStart(), today);
+
+                    entry.setWorkEnd(entry.getBreakStart());
+                    entry.setBreakStart(null);
+                    entry.setBreakEnd(null);
+                    changed = true;
+                } else if (entry.getBreakStart() != null && entry.getBreakEnd() == null) {
+                    logger.info("User {} ist noch in der Pause. Setze BreakEnd ({}) und WorkEnd ({}) für {}.",
+                            user.getUsername(), autoPunchOutTime, autoPunchOutTime, today);
+                    entry.setBreakEnd(autoPunchOutTime);
+                    entry.setWorkEnd(autoPunchOutTime);
+                    changed = true;
+                } else {
+                    logger.info("Setze WorkEnd ({}) für User {} am {}. (WorkStart: {}, BreakStart: {}, BreakEnd: {})",
+                            autoPunchOutTime, user.getUsername(), today, entry.getWorkStart(), entry.getBreakStart(), entry.getBreakEnd());
+                    entry.setWorkEnd(autoPunchOutTime);
+                    changed = true;
+                }
+            }
+
+            if (changed) {
+                entry.setCorrected(true);
+                logger.info("Eintrag für User {} am {} automatisch vervollständigt. WorkStart: {}, BreakStart: {}, BreakEnd: {}, WorkEnd: {}",
+                        user.getUsername(), today, entry.getWorkStart(), entry.getBreakStart(), entry.getBreakEnd(), entry.getWorkEnd());
+
+                try {
+                    this.rebuildUserBalance(user);
+                    logger.info("Saldo für User {} nach AutoPunchOut neu berechnet.", user.getUsername());
+                } catch (Exception e) {
+                    logger.error("Fehler bei der Saldo-Neuberechnung für User {} nach AutoPunchOut: {}", user.getUsername(), e.getMessage(), e);
+                }
+            }
+        }
+        logger.info("✅ AutoPunchOutForgottenEntries beendet für Datum: {}", today);
+    }
+
     public List<TimeReportDTO> getReport(String username, String startDate, String endDate) {
         User user = loadUserByUsername(username);
         LocalDate from = LocalDate.parse(startDate);
-        LocalDate to   = LocalDate.parse(endDate);
+        LocalDate to = LocalDate.parse(endDate);
 
-        List<TimeTracking> entries = timeTrackingRepository
+        List<TimeTracking> entries = timeTrackingRepo
                 .findByUserAndDailyDateBetweenOrderByDailyDateAsc(user, from, to);
 
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEEE, d.M.yyyy", Locale.GERMAN);
@@ -383,68 +529,33 @@ public class TimeTrackingService {
         for (TimeTracking row : entries) {
             String dayStr = row.getDailyDate().format(dateFormatter);
 
-            String ws = (row.getWorkStart()  != null) ? row.getWorkStart().format(timeFormatter)  : "-";
+            String ws = (row.getWorkStart() != null) ? row.getWorkStart().format(timeFormatter) : "-";
             String bs = (row.getBreakStart() != null) ? row.getBreakStart().format(timeFormatter) : "-";
-            String be = (row.getBreakEnd()   != null) ? row.getBreakEnd().format(timeFormatter)   : "-";
-            String we = (row.getWorkEnd()    != null) ? row.getWorkEnd().format(timeFormatter)    : "-";
+            String be = (row.getBreakEnd() != null) ? row.getBreakEnd().format(timeFormatter) : "-";
+            String we = (row.getWorkEnd() != null) ? row.getWorkEnd().format(timeFormatter) : "-";
 
             report.add(new TimeReportDTO(
-                    user.getUsername(),
-                    dayStr,
-                    ws,
-                    bs,
-                    be,
-                    we,
-                    row.getDailyNote()
+                    user.getUsername(), dayStr, ws, bs, be, we, row.getDailyNote()
             ));
         }
         return report;
     }
 
-    // -------------------------------------------------------------------------
-    // Helfer zum Passwort-Check
-    // -------------------------------------------------------------------------
+    // REMOVE THIS METHOD as it's no longer directly needed by updateDayTimeEntries in this form.
+    // Or, if it's used elsewhere, keep it but ensure its callers are aware of the changes.
+    // For this specific request (removing password checks for admin actions),
+    // the direct password validation logic is what we're removing or bypassing.
+    /*
     private void checkAdminAndUserPasswords(
-            User targetUser,
-            String adminUsername,
-            String adminPassword,
-            String userPassword
+            User targetUser, String adminUsername, String adminPassword, String userPassword
     ) {
-        if (adminUsername != null && !adminUsername.trim().isEmpty()) {
-            User adminUser = userRepository.findByUsername(adminUsername)
-                    .orElseThrow(() -> new RuntimeException("Admin user not found"));
-
-            String storedAdminPwd = adminUser.getAdminPassword();
-            if (storedAdminPwd == null || storedAdminPwd.trim().isEmpty()) {
-                storedAdminPwd = adminUser.getPassword();
-            }
-
-            // Self-edit?
-            if (adminUser.getId().equals(targetUser.getId())) {
-                if (!adminPassword.equals(userPassword)) {
-                    throw new RuntimeException("For self-edit, admin and user passwords must match");
-                }
-                if (!passwordEncoder.matches(adminPassword, storedAdminPwd)) {
-                    throw new RuntimeException("Invalid admin password");
-                }
-                if (!passwordEncoder.matches(userPassword, targetUser.getPassword())) {
-                    throw new RuntimeException("Invalid user password");
-                }
-            } else {
-                // Fremd-Bearbeitung
-                if (!passwordEncoder.matches(adminPassword, storedAdminPwd)) {
-                    throw new RuntimeException("Invalid admin password");
-                }
-                if (!passwordEncoder.matches(userPassword, targetUser.getPassword())) {
-                    throw new RuntimeException("Invalid user password");
-                }
-            }
-        }
+        // ... original implementation ...
+        // This method can be removed if no other part of the service uses it after these changes.
+        // If kept for other uses, ensure it handles cases where adminPassword might be null/empty.
     }
+    */
 
-    // -------------------------------------------------------------------------
-    // DTO-Konvertierung
-    // -------------------------------------------------------------------------
+
     private TimeTrackingResponse convertToResponse(TimeTracking tt) {
         return new TimeTrackingResponse(
                 tt.getId(),
@@ -458,10 +569,181 @@ public class TimeTrackingService {
         );
     }
 
-    // -------------------------------------------------------------------------
-    // Admin-Helfer, z.B. fürs Auslesen in /api/admin/timetracking/all
-    // -------------------------------------------------------------------------
     public List<TimeTracking> getTimeTrackingRowsForUser(User user) {
-        return timeTrackingRepository.findByUserOrderByDailyDateDesc(user);
+        return timeTrackingRepo.findByUserOrderByDailyDateDesc(user);
+    }
+
+    private String getCellValueAsString(Cell cell) {
+        if (cell == null) {
+            return null;
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                if (DateUtil.isCellDateFormatted(cell)) {
+                    return new DataFormatter().formatCellValue(cell);
+                } else {
+                    double numericValue = cell.getNumericCellValue();
+                    if (numericValue == Math.floor(numericValue)) {
+                        return String.valueOf((long) numericValue);
+                    } else {
+                        return String.valueOf(numericValue);
+                    }
+                }
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            case FORMULA:
+                try {
+                    return new DataFormatter().formatCellValue(cell, cell.getSheet().getWorkbook().getCreationHelper().createFormulaEvaluator());
+                } catch (Exception e) {
+                    return cell.getCellFormula();
+                }
+            case BLANK:
+                return null;
+            default:
+                return null;
+        }
+    }
+
+    private LocalDate parseLocalDateSafe(String dateStr) {
+        if (dateStr == null || dateStr.trim().isEmpty()) {
+            return null;
+        }
+        try {
+            return LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE);
+        } catch (DateTimeParseException e) {
+            logger.warn("Ungültiges Datumsformat empfangen: '{}'. Wird als null interpretiert. Erwartet: yyyy-MM-dd", dateStr, e);
+            return null;
+        }
+    }
+
+    @Transactional
+    public Map<String, Object> importTimeTrackingFromExcel(InputStream inputStream, Long adminCompanyId) {
+        Map<String, Object> result = new HashMap<>();
+        List<String> errors = new ArrayList<>();
+        List<String> successes = new ArrayList<>();
+        int importedCount = 0;
+
+        try (Workbook workbook = new XSSFWorkbook(inputStream)) {
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rowIterator = sheet.iterator();
+
+            if (rowIterator.hasNext()) {
+                rowIterator.next(); // Skip header
+            }
+
+            int rowNum = 1;
+            while (rowIterator.hasNext()) {
+                Row row = rowIterator.next();
+                rowNum++;
+                try {
+                    String username = getCellValueAsString(row.getCell(0));
+                    String dateStr = getCellValueAsString(row.getCell(1));
+                    String workStartStr = getCellValueAsString(row.getCell(2));
+                    String breakStartStr = getCellValueAsString(row.getCell(3));
+                    String breakEndStr = getCellValueAsString(row.getCell(4));
+                    String workEndStr = getCellValueAsString(row.getCell(5));
+                    String dailyNote = getCellValueAsString(row.getCell(6));
+
+                    if (username == null || username.trim().isEmpty()) {
+                        errors.add("Zeile " + rowNum + ": Username fehlt.");
+                        continue;
+                    }
+                    // ... (restliche Validierungen für die Zeile)
+                    Optional<User> userOpt = userRepository.findByUsername(username);
+                    if (userOpt.isEmpty()) {
+                        errors.add("Zeile " + rowNum + ": User '" + username + "' nicht gefunden.");
+                        continue;
+                    }
+                    User user = userOpt.get();
+                    if (user.getCompany() == null || !user.getCompany().getId().equals(adminCompanyId)) {
+                        errors.add("Zeile " + rowNum + ": User '" + username + "' gehört nicht zur Firma des Admins.");
+                        continue;
+                    }
+
+                    LocalDate date = parseLocalDateSafe(dateStr);
+                    if (date == null) {
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiges Datumsformat '" + dateStr + "'. Erwartet: yyyy-MM-DD");
+                        continue;
+                    }
+                    // ... (weitere Parsing und Validierungen für Zeiten)
+
+                    LocalTime workStart = parseLocalTimeSafe(workStartStr);
+                    if (workStart == null && (workStartStr != null && !workStartStr.trim().isEmpty()) ) { // Nur Fehler wenn was drin stand aber nicht parsebar war
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiges Zeitformat für Arbeitsbeginn '" + workStartStr + "'. Erwartet: HH:mm");
+                        continue;
+                    }
+                    LocalTime workEnd = parseLocalTimeSafe(workEndStr);
+                    if (workEnd == null && (workEndStr != null && !workEndStr.trim().isEmpty()) ) {
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiges Zeitformat für Arbeitsende '" + workEndStr + "'. Erwartet: HH:mm");
+                        continue;
+                    }
+                    LocalTime breakStart = parseLocalTimeSafe(breakStartStr);
+                    if (breakStart == null && (breakStartStr != null && !breakStartStr.trim().isEmpty()) ) {
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiges Zeitformat für Pausenbeginn '" + breakStartStr + "'. Erwartet: HH:mm");
+                        continue;
+                    }
+                    LocalTime breakEnd = parseLocalTimeSafe(breakEndStr);
+                    if (breakEnd == null && (breakEndStr != null && !breakEndStr.trim().isEmpty()) ) {
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiges Zeitformat für Pausenende '" + breakEndStr + "'. Erwartet: HH:mm");
+                        continue;
+                    }
+                    // Zusätzliche Logik-Validierungen
+                    if (workStart != null && workEnd != null && workEnd.isBefore(workStart)) {
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Arbeitsende (" + workEndStr + ") ist vor Arbeitsbeginn (" + workStartStr + ").");
+                        continue;
+                    }
+                    if (breakStart != null && breakEnd != null && breakEnd.isBefore(breakStart)) {
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Pausenende (" + breakEndStr + ") ist vor Pausenbeginn (" + breakStartStr + ").");
+                        continue;
+                    }
+                    // Validierung, dass Pausen innerhalb der Arbeitszeit liegen (nur wenn alle Zeiten vorhanden)
+                    if (workStart != null && workEnd != null && breakStart != null && (breakStart.isBefore(workStart) || breakStart.isAfter(workEnd))) {
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Pausenbeginn (" + breakStartStr + ") liegt außerhalb der Arbeitszeit (" + workStartStr + "-" + workEndStr + ").");
+                        continue;
+                    }
+                    if (workStart != null && workEnd != null && breakEnd != null && (breakEnd.isAfter(workEnd) || breakEnd.isBefore(workStart))) {
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Pausenende (" + breakEndStr + ") liegt außerhalb der Arbeitszeit (" + workStartStr + "-" + workEndStr + ").");
+                        continue;
+                    }
+                    if (workStart == null && workEnd != null) { // Ende ohne Anfang
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Arbeitsende ohne Arbeitsbeginn angegeben.");
+                        continue;
+                    }
+                    if (breakStart == null && breakEnd != null) { // Pausenende ohne Pausenanfang
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Pausenende ohne Pausenbeginn angegeben.");
+                        continue;
+                    }
+
+
+                    TimeTracking timeTracking = getOrCreateRow(user, date);
+                    timeTracking.setWorkStart(workStart);
+                    timeTracking.setBreakStart(breakStart);
+                    timeTracking.setBreakEnd(breakEnd);
+                    timeTracking.setWorkEnd(workEnd);
+                    timeTracking.setDailyNote(dailyNote);
+                    timeTracking.setCorrected(true);
+
+                    timeTrackingRepo.save(timeTracking);
+                    rebuildUserBalance(user);
+                    successes.add("Zeile " + rowNum + ": Eintrag für User '" + username + "' am " + dateStr + " erfolgreich importiert/aktualisiert.");
+                    importedCount++;
+
+                } catch (Exception e) {
+                    logger.error("Fehler beim Verarbeiten der Zeile {}: {}", rowNum, e.getMessage(), e);
+                    errors.add("Zeile " + rowNum + ": Unerwarteter Fehler - " + e.getMessage());
+                }
+            }
+
+        } catch (Exception e) {
+            logger.error("Fehler beim Import der Excel-Datei: {}", e.getMessage(), e);
+            errors.add("Genereller Fehler beim Lesen der Excel-Datei: " + e.getMessage());
+        }
+
+        result.put("importedCount", importedCount);
+        result.put("successMessages", successes);
+        result.put("errorMessages", errors);
+        return result;
     }
 }

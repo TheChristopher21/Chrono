@@ -12,21 +12,18 @@ import java.util.Optional;
 
 public interface TimeTrackingRepository extends JpaRepository<TimeTracking, Long> {
 
-    // Holt genau den Eintrag für (user, dailyDate)
     Optional<TimeTracking> findByUserAndDailyDate(User user, LocalDate day);
+
     @Lock(LockModeType.PESSIMISTIC_READ)
-    Optional<TimeTracking> findFirstByUserAndDailyDate(
-            User user, LocalDate dailyDate);
-    // History: Liste aller Einträge für User, absteigend nach Datum
+    Optional<TimeTracking> findFirstByUserAndDailyDate(User user, LocalDate dailyDate);
+
     List<TimeTracking> findByUserOrderByDailyDateDesc(User user);
 
-    // Datensätze in Datumsspanne (z.B. für Reports)
     List<TimeTracking> findByUserAndDailyDateBetweenOrderByDailyDateAsc(
             User user, LocalDate from, LocalDate to);
 
-    // Falls du alle Datensätze eines Users brauchst (z.B. zum Salden-Rebuild)
     List<TimeTracking> findByUser(User user);
 
-    // Option, um Distinct-Liste zu haben (hier könnte man anders vorgehen)
-    // List<LocalDate> findDistinctDailyDateByUser(User user);
+    // NEUE METHODE für autoPunchOutForgottenEntries
+    List<TimeTracking> findByDailyDateAndWorkStartIsNotNullAndWorkEndIsNull(LocalDate date);
 }

@@ -1,7 +1,7 @@
 /* ------------------------------------------------------------------------
    App.jsx · zentrale Routen‐Definition
    ------------------------------------------------------------------------ */
-import React            from "react";
+import "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 
 /* ---------- globale Styles -------------------------------------------- */
@@ -24,6 +24,7 @@ import CompanyManagementPage   from "./pages/CompanyManagementPage.jsx";
 import PrintReport             from "./pages/PrintReport.jsx";
 import Impressum               from "./pages/Impressum.jsx";
 import AGB                     from "./pages/AGB.jsx";
+import TimeTrackingImport      from "./TimeTrackingImport.jsx"; // Import the new page
 
 import PrivateRoute from "./components/PrivateRoute.jsx";
 
@@ -36,7 +37,14 @@ function App() {
                 <Route path="/register"  element={<Registration />} />
                 <Route path="/impressum" element={<Impressum />} />
                 <Route path="/agb"       element={<AGB />} />
-
+                +                <Route
+                path="/admin/import-timetracking"
+                                    element={
+                                        <PrivateRoute requiredRole="ROLE_ADMIN">
+                                               <TimeTrackingImport />
+                                           </PrivateRoute>
+                                    }
+                                />
                 <Route
                     path="/user"
                     element={

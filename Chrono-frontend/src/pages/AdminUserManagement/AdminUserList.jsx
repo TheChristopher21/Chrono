@@ -1,59 +1,53 @@
-import React from 'react';
+// src/pages/AdminUserManagement/AdminUserList.jsx
+import 'react';
 import PropTypes from 'prop-types';
 
 const AdminUserList = ({ users, t, handleEditUser, requestDeleteUser, handleProgramCard }) => {
     return (
         <section className="user-list">
+            <h3>{t('userManagement.existingUsers', 'Vorhandene Benutzer')}</h3>
             {users.length === 0 ? (
-                <p>{t("userManagement.noUsers")}</p>
+                <p>{t("userManagement.noUsers", "Keine Benutzer vorhanden.")}</p>
             ) : (
                 <table>
                     <thead>
                     <tr>
-                        <th>{t("userManagement.username")}</th>
-                        <th>
-                            {t("userManagement.firstName")} {t("userManagement.lastName")}
-                        </th>
-                        <th>{t("userManagement.email")}</th>
-                        <th>{t("userManagement.role")}</th>
-                        <th>{t("userManagement.expectedWorkDays")}</th>
-                        <th>{t("userManagement.breakDuration")}</th>
-                        <th>{t("userManagement.annualVacationDays")}</th>
-                        <th>{t("userManagement.table.actions")}</th>
+                        <th>{t("userManagement.username", "Benutzername")}</th>
+                        <th>{t("userManagement.fullName", "Name")}</th>
+                        <th>{t("userManagement.email", "E-Mail")}</th>
+                        <th>{t("userManagement.role", "Rolle")}</th>
+                        <th>{t("userManagement.workModel", "Arbeitsmodell")}</th>
+                        <th>{t("userManagement.annualVacationDays", "Urlaubstage")}</th>
+                        <th style={{ textAlign: 'right' }}>{t("userManagement.table.actions", "Aktionen")}</th>
                     </tr>
                     </thead>
                     <tbody>
                     {users.map((user) => (
-                        <tr
-                            key={user.id}
-                            style={{ backgroundColor: user.color || "transparent" }}
-                        >
-                            <td>{user.username}</td>
-                            <td>
+                        <tr key={user.id}>
+                            <td data-label={t("userManagement.username", "Benutzername")} style={{ borderLeft: `4px solid ${user.color || 'var(--c-muted)'}` }}>
+                                {user.username}
+                            </td>
+                            <td data-label={t("userManagement.fullName", "Name")}>
                                 {user.firstName} {user.lastName}
                             </td>
-                            <td>{user.email}</td>
-
-                            {/* Rollenanalyse */}
-                            <td>
-                                {user?.roles?.[0]?.roleName
-                                    ? user.roles[0].roleName.replace("ROLE_", "")
-                                    : "USER"}
+                            <td data-label={t("userManagement.email", "E-Mail")}>{user.email}</td>
+                            <td data-label={t("userManagement.role", "Rolle")}>
+                                {/* DTO liefert roles als List<String> */}
+                                {user.roles?.[0]?.replace("ROLE_", "") || "USER"}
                             </td>
-
-                            <td>{user.expectedWorkDays ?? "-"}</td>
-                            <td>{user.breakDuration ?? "-"}</td>
-                            <td>{user.annualVacationDays ?? "-"}</td>
-
-                            <td>
-                                <button onClick={() => handleEditUser(user)}>
-                                    {t("userManagement.table.edit")}
+                            <td data-label={t("userManagement.workModel", "Arbeitsmodell")}>
+                                {user.isHourly ? t('userTypes.hourly','Stündlich') : (user.isPercentage ? `${t('userTypes.percentage','Prozentual')} (${user.workPercentage}%)` : t('userTypes.standard','Standard'))}
+                            </td>
+                            <td data-label={t("userManagement.annualVacationDays", "Urlaubstage")}>{user.annualVacationDays ?? "-"}</td>
+                            <td data-label={t("userManagement.table.actions", "Aktionen")} className="actions-cell">
+                                <button onClick={() => handleEditUser(user)} className="action-button edit-action" title={t("userManagement.table.edit", "Bearbeiten")}>
+                                    ✏️
                                 </button>
-                                <button onClick={() => requestDeleteUser(user.id)}>
-                                    {t("userManagement.table.delete")}
+                                <button onClick={() => handleProgramCard(user)} className="action-button program-action" title={t("userManagement.table.programCard", "Karte programmieren")}>
+                                    💳
                                 </button>
-                                <button onClick={() => handleProgramCard(user)}>
-                                    {t("userManagement.table.programCard")}
+                                <button onClick={() => requestDeleteUser(user)} className="action-button delete-action" title={t("userManagement.table.delete", "Löschen")}>
+                                    🗑️
                                 </button>
                             </td>
                         </tr>
@@ -69,7 +63,7 @@ AdminUserList.propTypes = {
     users: PropTypes.array.isRequired,
     t: PropTypes.func.isRequired,
     handleEditUser: PropTypes.func.isRequired,
-    requestDeleteUser: PropTypes.func.isRequired,
+    requestDeleteUser: PropTypes.func.isRequired, // Nimmt jetzt das User-Objekt
     handleProgramCard: PropTypes.func.isRequired
 };
 
