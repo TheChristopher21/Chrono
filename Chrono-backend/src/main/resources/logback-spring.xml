@@ -1,28 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration scan="true">
-
-    <!-- Boot-Defaults (liefert CONSOLE_LOG_PATTERN) -->
+    <logger name="com.chrono.chrono.services.WorkScheduleService" level="DEBUG"/>
+    <logger name="com.chrono.chrono.services.TimeTrackingService" level="DEBUG"/>
+    <logger name="com.chrono.chrono.services.VacationService" level="DEBUG"/>
     <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 
-    <!-- Turbo-Filter greift VOR allen Loggern/Appendern -->
     <turboFilter class="ch.qos.logback.classic.turbo.DuplicateMessageFilter">
-        <!-- Wie oft dieselbe Nachricht nacheinander ausgegeben wird -->
         <AllowedRepetitions>1</AllowedRepetitions>
-        <!-- Sekunden, bis dieselbe Nachricht wieder erscheinen darf -->
         <CacheExpiration>60</CacheExpiration>
     </turboFilter>
 
-    <!-- EINZIGER Console-Appender -->
     <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>${CONSOLE_LOG_PATTERN}</pattern>
         </encoder>
     </appender>
 
-    <!-- Wir wollen SQL weiterhin sehen -->
     <logger name="org.hibernate.SQL" level="DEBUG"/>
 
-    <root level="INFO">
-        <appender-ref ref="STDOUT"/>
+    <root level="INFO"> <appender-ref ref="STDOUT"/>
     </root>
 </configuration>

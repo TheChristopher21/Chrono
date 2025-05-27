@@ -3,6 +3,8 @@ package com.chrono.chrono.controller;
 import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.services.CorrectionRequestService;
 import com.chrono.chrono.services.TimeTrackingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,7 +16,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 
-import static com.chrono.chrono.services.WorkScheduleService.logger;
 
 @RestController
 @RequestMapping("/api/correction")
@@ -25,6 +26,7 @@ public class CorrectionRequestController {
 
     @Autowired
     private TimeTrackingService timeTrackingService;
+    private static final Logger logger = LoggerFactory.getLogger(CorrectionRequestController.class);
 
     // Erlaube allen authentifizierten Nutzern, eigene Korrekturanträge zu erstellen
     @PostMapping("/create-full")

@@ -35,7 +35,6 @@ const AdminVacationRequests = ({
 
     const openDeleteModal = (vacation) => {
         setVacationToDelete(vacation);
-        setAdminPasswordForDelete(''); // Passwort immer zurücksetzen, wenn Modal geöffnet wird
         setShowDeleteModal(true);
     };
 

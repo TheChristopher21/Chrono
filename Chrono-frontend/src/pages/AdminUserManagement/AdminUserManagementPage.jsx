@@ -5,14 +5,13 @@ import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
 
-import '../../styles/AdminUserManagementPageScoped.css'; // Ihre überarbeitete CSS-Datei
+import '../../styles/AdminUserManagementPageScoped.css';
 
 import AdminUserList from './AdminUserList';
 import AdminUserForm from './AdminUserForm';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import { STANDARD_COLORS, defaultWeeklySchedule } from './adminUserManagementUtils';
 
-// Hilfsfunktion, um das heutige Datum als YYYY-MM-DD String zu bekommen
 const getTodayISOString = () => {
     const today = new Date();
     const year = today.getFullYear();
@@ -38,7 +37,7 @@ const AdminUserManagementPage = () => {
         email: '',
         password: '',
         roles: ['ROLE_USER'],
-        expectedWorkDays: 5.0,
+        expectedWorkDays: 5.0, // Default für alle neuen User
         dailyWorkHours: 8.5,
         breakDuration: 30,
         annualVacationDays: 25,
@@ -48,9 +47,9 @@ const AdminUserManagementPage = () => {
         scheduleEffectiveDate: getTodayISOString(),
         isHourly: false,
         isPercentage: false,
-        workPercentage: 100,
+        workPercentage: 100, // Default, falls isPercentage true wird
         trackingBalanceInMinutes: 0,
-        companyId: null
+        companyId: null // Wird später serverseitig gesetzt oder für Superadmin-Erstellung
     };
 
     const [currentUserFormData, setCurrentUserFormData] = useState({ ...initialNewUserState });
@@ -66,7 +65,8 @@ const AdminUserManagementPage = () => {
                 scheduleCycle: user.scheduleCycle || 1,
                 isHourly: user.isHourly || false,
                 isPercentage: user.isPercentage || false,
-                workPercentage: user.workPercentage !== null && user.workPercentage !== undefined ? user.workPercentage : 100,
+                workPercentage: user.workPercentage !== null && user.workPercentage !== undefined ? user.workPercentage : (user.isPercentage ? 100 : null),
+                expectedWorkDays: user.expectedWorkDays !== null && user.expectedWorkDays !== undefined ? user.expectedWorkDays : (user.isHourly ? null : 5.0), // Default 5.0 if not hourly and not set
                 trackingBalanceInMinutes: user.trackingBalanceInMinutes !== null && user.trackingBalanceInMinutes !== undefined ? user.trackingBalanceInMinutes : 0,
                 roles: user.roles && user.roles.length > 0 ? user.roles : ['ROLE_USER']
             })));
@@ -100,38 +100,50 @@ const AdminUserManagementPage = () => {
         setCurrentUserFormData(prev => {
             const newState = { ...prev, [field]: value };
 
-            if (field === 'isPercentage') {
-                newState.isHourly = value ? false : prev.isHourly;
-                if (value) {
-                    newState.workPercentage = prev.workPercentage !== null && prev.workPercentage !== undefined ? prev.workPercentage : 100;
-                    newState.dailyWorkHours = null;
-                    newState.expectedWorkDays = null;
+            if (field === 'isHourly') {
+                if (value) { // Wird stündlich
+                    newState.isPercentage = false;
+                    newState.workPercentage = null; // oder 100, je nach Logik
+                    newState.expectedWorkDays = null; // Stündliche haben dies nicht für die Soll-Berechnung
+                    newState.dailyWorkHours = prev.dailyWorkHours !== null && prev.dailyWorkHours !== undefined ? prev.dailyWorkHours : 8.0; // Standardwert für Stundenzettel
                     newState.scheduleCycle = null;
                     newState.weeklySchedule = null;
                     newState.scheduleEffectiveDate = null;
-                } else if (!newState.isHourly) {
-                    newState.workPercentage = null;
-                    newState.dailyWorkHours = prev.dailyWorkHours !== null && prev.dailyWorkHours !== undefined ? prev.dailyWorkHours : 8.5;
-                    newState.expectedWorkDays = prev.expectedWorkDays !== null && prev.expectedWorkDays !== undefined ? prev.expectedWorkDays : 5.0;
-                    newState.scheduleCycle = prev.scheduleCycle !== null && prev.scheduleCycle !== undefined ? prev.scheduleCycle : 1;
-                    newState.weeklySchedule = (prev.weeklySchedule && prev.weeklySchedule.length > 0) ? prev.weeklySchedule : [{ ...defaultWeeklySchedule }];
-                    newState.scheduleEffectiveDate = prev.scheduleEffectiveDate || getTodayISOString();
+                } else { // Wird NICHT stündlich
+                    // Wenn isPercentage false ist, wird es Standard User, sonst Percentage
+                    if (!newState.isPercentage) { // Standard User
+                        newState.dailyWorkHours = prev.dailyWorkHours !== null && prev.dailyWorkHours !== undefined ? prev.dailyWorkHours : 8.5;
+                        newState.expectedWorkDays = prev.expectedWorkDays !== null && prev.expectedWorkDays !== undefined ? prev.expectedWorkDays : 5.0;
+                        newState.scheduleCycle = prev.scheduleCycle !== null && prev.scheduleCycle !== undefined ? prev.scheduleCycle : 1;
+                        newState.weeklySchedule = (prev.weeklySchedule && prev.weeklySchedule.length > 0) ? prev.weeklySchedule : [{ ...defaultWeeklySchedule }];
+                        newState.scheduleEffectiveDate = prev.scheduleEffectiveDate || getTodayISOString();
+                    } else { // Bleibt Percentage User
+                        newState.workPercentage = prev.workPercentage !== null && prev.workPercentage !== undefined ? prev.workPercentage : 100;
+                        newState.expectedWorkDays = prev.expectedWorkDays !== null && prev.expectedWorkDays !== undefined ? prev.expectedWorkDays : 5.0; // Behalte oder setze Default
+                        // dailyWorkHours etc. bleiben null für Percentage
+                    }
                 }
-            } else if (field === 'isHourly') {
-                newState.isPercentage = value ? false : prev.isPercentage;
-                if (value) {
-                    newState.workPercentage = null;
-                    newState.dailyWorkHours = prev.dailyWorkHours;
-                    newState.expectedWorkDays = null;
+            } else if (field === 'isPercentage') {
+                if (value) { // Wird prozentual
+                    newState.isHourly = false;
+                    newState.workPercentage = prev.workPercentage !== null && prev.workPercentage !== undefined ? prev.workPercentage : 100;
+                    // ANPASSUNG HIER: expectedWorkDays beibehalten oder auf Standard setzen
+                    newState.expectedWorkDays = prev.expectedWorkDays !== null && prev.expectedWorkDays !== undefined ? prev.expectedWorkDays : 5.0;
+                    newState.dailyWorkHours = null;
                     newState.scheduleCycle = null;
                     newState.weeklySchedule = null;
                     newState.scheduleEffectiveDate = null;
-                } else if (!newState.isPercentage) {
-                    newState.dailyWorkHours = prev.dailyWorkHours !== null && prev.dailyWorkHours !== undefined ? prev.dailyWorkHours : 8.5;
-                    newState.expectedWorkDays = prev.expectedWorkDays !== null && prev.expectedWorkDays !== undefined ? prev.expectedWorkDays : 5.0;
-                    newState.scheduleCycle = prev.scheduleCycle !== null && prev.scheduleCycle !== undefined ? prev.scheduleCycle : 1;
-                    newState.weeklySchedule = (prev.weeklySchedule && prev.weeklySchedule.length > 0) ? prev.weeklySchedule : [{ ...defaultWeeklySchedule }];
-                    newState.scheduleEffectiveDate = prev.scheduleEffectiveDate || getTodayISOString();
+                } else { // Wird NICHT prozentual
+                    // Wenn isHourly false ist, wird es Standard User
+                    if (!newState.isHourly) { // Standard User
+                        newState.workPercentage = null; // Oder 100, aber Standard User hat kein workPercentage-Feld direkt
+                        newState.dailyWorkHours = prev.dailyWorkHours !== null && prev.dailyWorkHours !== undefined ? prev.dailyWorkHours : 8.5;
+                        newState.expectedWorkDays = prev.expectedWorkDays !== null && prev.expectedWorkDays !== undefined ? prev.expectedWorkDays : 5.0;
+                        newState.scheduleCycle = prev.scheduleCycle !== null && prev.scheduleCycle !== undefined ? prev.scheduleCycle : 1;
+                        newState.weeklySchedule = (prev.weeklySchedule && prev.weeklySchedule.length > 0) ? prev.weeklySchedule : [{ ...defaultWeeklySchedule }];
+                        newState.scheduleEffectiveDate = prev.scheduleEffectiveDate || getTodayISOString();
+                    }
+                    // Wenn isHourly true ist, bleibt es stündlich (wurde oben schon behandelt)
                 }
             }
             return newState;
@@ -195,6 +207,34 @@ const AdminUserManagementPage = () => {
             delete dataToSend.role;
         }
 
+        // Sicherstellen, dass Felder für das Backend korrekt formatiert/gesetzt sind
+        if (dataToSend.isHourly) {
+            dataToSend.isPercentage = false;
+            dataToSend.workPercentage = null;
+            dataToSend.scheduleCycle = null;
+            dataToSend.weeklySchedule = null;
+            dataToSend.scheduleEffectiveDate = null;
+            dataToSend.expectedWorkDays = null; // Explizit null für stündliche User
+        } else if (dataToSend.isPercentage) {
+            dataToSend.isHourly = false;
+            dataToSend.dailyWorkHours = null;
+            dataToSend.scheduleCycle = null;
+            dataToSend.weeklySchedule = null;
+            dataToSend.scheduleEffectiveDate = null;
+            // expectedWorkDays wird für Percentage-User beibehalten/gesetzt
+            if (dataToSend.expectedWorkDays === null || dataToSend.expectedWorkDays === undefined) {
+                dataToSend.expectedWorkDays = 5.0; // Default, falls nicht gesetzt
+            }
+        } else { // Standard User
+            dataToSend.isHourly = false;
+            dataToSend.isPercentage = false;
+            dataToSend.workPercentage = null; // Oder 100, aber DTO erwartet es so
+            if (dataToSend.expectedWorkDays === null || dataToSend.expectedWorkDays === undefined) {
+                dataToSend.expectedWorkDays = 5.0; // Default für Standard, falls nicht gesetzt
+            }
+        }
+
+
         if (isCreatingNewUser) {
             if (!dataToSend.password || dataToSend.password.trim() === '') {
                 notify(t("userManagement.errorPasswordRequired", "Passwort ist für neue Benutzer erforderlich."), "error");
@@ -212,8 +252,12 @@ const AdminUserManagementPage = () => {
         } else if (editingUser) {
             try {
                 const payloadForUpdate = { ...dataToSend, id: editingUser.id };
+                // Passwort wird nur gesendet, wenn es geändert werden soll (über separates Feld/Request im Backend)
+                // Im AdminUserController wird 'newPassword' als RequestParam erwartet, nicht im Body des DTOs für Update.
+                // Das DTO 'password' Feld ist hier also nicht direkt für Update gedacht.
                 delete payloadForUpdate.password;
-                await api.put(`/api/admin/users`, payloadForUpdate);
+
+                await api.put(`/api/admin/users`, payloadForUpdate); // Ggf. newPassword als QueryParam anhängen, falls benötigt
 
                 notify(t("userManagement.userUpdatedSuccess", "Benutzer erfolgreich aktualisiert!"), "success");
                 fetchUsers();
@@ -228,16 +272,17 @@ const AdminUserManagementPage = () => {
     const handleEditUser = (userToEdit) => {
         setEditingUser(userToEdit);
         setCurrentUserFormData({
-            ...initialNewUserState,
-            ...userToEdit,
-            password: '',
+            ...initialNewUserState, // Start mit Defaults
+            ...userToEdit,          // Überschreibe mit User-Daten
+            password: '',           // Passwort nicht vorausfüllen für Bearbeitung
             roles: userToEdit.roles && userToEdit.roles.length > 0 ? userToEdit.roles : ['ROLE_USER'],
             scheduleEffectiveDate: userToEdit.scheduleEffectiveDate ? userToEdit.scheduleEffectiveDate.toString() : getTodayISOString(),
             weeklySchedule: userToEdit.weeklySchedule && userToEdit.weeklySchedule.length > 0
                 ? userToEdit.weeklySchedule
                 : [{ ...defaultWeeklySchedule }],
             scheduleCycle: userToEdit.scheduleCycle || 1,
-            workPercentage: userToEdit.workPercentage !== null && userToEdit.workPercentage !== undefined ? userToEdit.workPercentage : (userToEdit.isPercentage ? 100 : null)
+            workPercentage: userToEdit.workPercentage !== null && userToEdit.workPercentage !== undefined ? userToEdit.workPercentage : (userToEdit.isPercentage ? 100 : null),
+            expectedWorkDays: userToEdit.expectedWorkDays !== null && userToEdit.expectedWorkDays !== undefined ? userToEdit.expectedWorkDays : (userToEdit.isHourly ? null : 5.0) // Wichtig für Edit
         });
         setIsCreatingNewUser(false);
     };
@@ -253,7 +298,10 @@ const AdminUserManagementPage = () => {
             try {
                 await api.delete(`/api/admin/users/${deleteConfirm.userId}`);
                 notify(t("userManagement.userDeletedSuccess", "Benutzer erfolgreich gelöscht."), "success");
-                fetchUsers();
+                fetchUsers(); // Liste neu laden
+                if (editingUser && editingUser.id === deleteConfirm.userId) { // Falls der bearbeitete User gelöscht wurde
+                    handleCancelForm(); // Formular zurücksetzen
+                }
             } catch (err) {
                 console.error(t("userManagement.errorDeletingUser"), err);
                 notify(t("userManagement.errorDeletingUser", "Fehler beim Löschen des Benutzers.") + `: ${err.response?.data?.message || err.response?.data || err.message}`, "error");
@@ -264,30 +312,38 @@ const AdminUserManagementPage = () => {
 
     async function handleProgramCard(user) {
         try {
-            const payload = { type: "PROGRAM", data: user.username };
+            // Konvertiere Username zu Hex (max 16 ASCII Chars -> 32 Hex Chars)
+            // Annahme: stringToHex16 ist korrekt implementiert und verfügbar
+            // const hexUsername = stringToHex16(user.username); // stringToHex16 ist nicht in diesem Snippet definiert
+            // Stattdessen senden wir den Username direkt und der Service kümmert sich ggf. um die Konvertierung, falls nötig, oder es wird anders gehandhabt.
+            // Für den aktuellen NFCCommandService wird der 'data'-String direkt verwendet.
+            const dataPayload = user.username; // Oder eine spezifische ID/Formatierung
+
+            const payload = { type: "PROGRAM", data: dataPayload };
             const response = await api.post('/api/nfc/command', payload);
 
             if (response.data && response.data.id) {
-                setProgramStatus(t("userManagement.nfcProgramStart"));
+                setProgramStatus(t("userManagement.nfcProgramStart", "Kartenprogrammierung gestartet. Bitte NFC-Karte auflegen..."));
                 const commandId = response.data.id;
-                let maxTries = 10;
+                let maxTries = 20; // Erhöhte Versuche für längere Wartezeit (20 * 1.5s = 30s)
                 let delay = 1500;
 
                 const pollStatus = async () => {
                     try {
                         const res = await api.get(`/api/nfc/command/status/${commandId}`);
                         if (res.data.status === "done") {
-                            setProgramStatus(t("userManagement.programCardSuccess"));
+                            setProgramStatus(t("userManagement.programCardSuccess", "Karte erfolgreich programmiert!"));
                             setTimeout(() => setProgramStatus(""), 7000);
-                        } else if (maxTries-- > 0) {
+                        } else if (res.data.status === "pending" && maxTries-- > 0) {
+                            setProgramStatus(t("userManagement.nfcProgramProgress", `Warte auf NFC-Agent... (${maxTries} Versuche übrig)`));
                             setTimeout(pollStatus, delay);
                         } else {
-                            setProgramStatus(t("userManagement.programCardErrorTimeout"));
+                            setProgramStatus(t("userManagement.programCardErrorTimeout", "Zeitüberschreitung bei Kartenprogrammierung oder Befehl nicht gefunden."));
                             setTimeout(() => setProgramStatus(""), 7000);
                         }
                     } catch (pollError) {
                         console.error("NFC poll error:", pollError);
-                        setProgramStatus(t("userManagement.programCardErrorComm"));
+                        setProgramStatus(t("userManagement.programCardErrorComm", "Kommunikationsfehler mit NFC-Agent."));
                         setTimeout(() => setProgramStatus(""), 7000);
                     }
                 };
@@ -301,13 +357,15 @@ const AdminUserManagementPage = () => {
         }
     }
 
+
     return (
         <div className="admin-user-management-page scoped-dashboard">
             <Navbar />
 
             {programStatus && (
-                <div className={`nfc-status-message ${programStatus.includes(t("userManagement.programCardSuccess")) ? 'success' : 'error'}`}>{programStatus}</div>
+                <div className={`nfc-status-message ${programStatus.includes(t("userManagement.programCardSuccess")) ? 'success' : (programStatus.includes("Fehler") || programStatus.includes("error") || programStatus.includes("Zeitüberschreitung") ? 'error' : 'info')}`}>{programStatus}</div>
             )}
+
 
             <header className="page-header">
                 <h2>{t("userManagement.title")}</h2>
@@ -326,7 +384,7 @@ const AdminUserManagementPage = () => {
                     t={t}
                     isEditing={!!editingUser}
                     userData={currentUserFormData}
-                    setUserData={handleFormChange} // Stellt sicher, dass die Logik zum Zurücksetzen greift
+                    setUserData={handleFormChange}
                     onSubmit={handleSubmitForm}
                     onCancel={handleCancelForm}
                     onScheduleCycleChange={handleScheduleCycleChangeInForm}

@@ -65,7 +65,7 @@ public class User {
     private Set<CorrectionRequest> correctionRequests = new HashSet<>();
 
     @Column(name = "expected_work_days")
-    private Double expectedWorkDays;
+    private Integer expectedWorkDays; // MODIFIED: Changed from Double to Integer
 
     @Column(name = "daily_work_hours")
     private Double dailyWorkHours;
@@ -158,8 +158,10 @@ public class User {
     public Set<CorrectionRequest> getCorrectionRequests() { return correctionRequests; }
     public void setCorrectionRequests(Set<CorrectionRequest> correctionRequests) { this.correctionRequests = correctionRequests; }
 
-    public Double getExpectedWorkDays() { return expectedWorkDays; }
-    public void setExpectedWorkDays(Double expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }
+    // MODIFIED: Getter for Integer
+    public Integer getExpectedWorkDays() { return expectedWorkDays; }
+    // MODIFIED: Setter for Integer
+    public void setExpectedWorkDays(Integer expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }
 
     public Double getDailyWorkHours() { return dailyWorkHours; }
     public void setDailyWorkHours(Double dailyWorkHours) { this.dailyWorkHours = dailyWorkHours; }

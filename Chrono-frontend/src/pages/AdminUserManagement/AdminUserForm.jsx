@@ -14,7 +14,6 @@ const AdminUserForm = ({
                            onWeeklyScheduleDayChange
                        }) => {
 
-    // Direkte Verwendung der setUserData-Prop, die auf handleFormChange zeigt
     const handleChange = (field, value) => {
         setUserData(field, value);
     };
@@ -24,8 +23,6 @@ const AdminUserForm = ({
     };
 
     const handleRoleChange = (e) => {
-        // userData.roles ist ein Array von Strings im DTO, das Formular zeigt aber nur eine Rolle an.
-        // Wir senden ein Array mit der ausgewählten Rolle.
         handleChange("roles", [e.target.value]);
     };
 
@@ -36,7 +33,6 @@ const AdminUserForm = ({
             </h3>
 
             <form onSubmit={onSubmit}>
-                {/* Basisinformationen - Spannen sich über 3 Spalten im Desktop-Layout */}
                 <h4 className="form-section-title full-width">{t('userManagement.section.basicInfo', 'Basisinformationen')}</h4>
 
                 <div className="form-group">
@@ -47,7 +43,7 @@ const AdminUserForm = ({
                         value={userData.username || ""}
                         onChange={(e) => handleChange("username", e.target.value)}
                         required
-                        disabled={isEditing} // Benutzername im Edit-Modus nicht änderbar
+                        disabled={isEditing}
                     />
                 </div>
 
@@ -103,11 +99,10 @@ const AdminUserForm = ({
                     >
                         <option value="ROLE_USER">User</option>
                         <option value="ROLE_ADMIN">Admin</option>
-                        {/* <option value="ROLE_SUPERADMIN">Super Admin</option> // Falls SUPERADMIN hier auch setzbar sein soll */}
                     </select>
                 </div>
 
-                <div className="form-group full-width"> {/* Color Picker über volle Breite */}
+                <div className="form-group full-width">
                     <label>{t("userManagement.color", "Farbe")}:</label>
                     <div className="color-picker">
                         {STANDARD_COLORS.map((c, idx) => (
@@ -125,7 +120,6 @@ const AdminUserForm = ({
                     </div>
                 </div>
 
-                {/* Arbeitsmodell - Spannen sich über 3 Spalten */}
                 <h4 className="form-section-title full-width">{t('userManagement.section.workModel', 'Arbeitsmodell')}</h4>
                 <div className="form-group form-group-checkbox">
                     <input
@@ -142,9 +136,11 @@ const AdminUserForm = ({
                         id="isPercentage"
                         checked={!!userData.isPercentage}
                         onChange={(e) => handleCheckboxChange("isPercentage", e.target.checked)}
+                        disabled={!!userData.isHourly} // Deaktivieren, wenn isHourly true ist
                     />
                     <label htmlFor="isPercentage">{t("userManagement.percentageTracking", "Prozentbasierte Zeiterfassung")}</label>
                 </div>
+
                 {userData.isPercentage && !userData.isHourly && (
                     <div className="form-group">
                         <label htmlFor="workPercentage">{t("userManagement.workPercentage", "Arbeitspensum (%)")}:</label>
@@ -159,7 +155,6 @@ const AdminUserForm = ({
                     </div>
                 )}
 
-                {/* Allgemeine Einstellungen */}
                 <h4 className="form-section-title full-width">{t('userManagement.section.generalSettings', 'Allgemeine Einstellungen')}</h4>
                 <div className="form-group">
                     <label htmlFor="annualVacationDays">{t("userManagement.annualVacationDays", "Urlaubstage/Jahr")}:</label>
@@ -192,6 +187,20 @@ const AdminUserForm = ({
                     />
                 </div>
 
+                {/* ANPASSUNG HIER: expectedWorkDays für Standard- und Prozent-Nutzer (nicht für Stunden-Nutzer) */}
+                {!userData.isHourly && (
+                    <div className="form-group">
+                        <label htmlFor="expectedWorkDays">{t("userManagement.expectedWorkDays", "Erw. Arbeitstage/Woche")}:</label>
+                        <input
+                            id="expectedWorkDays"
+                            type="number" step="0.5" min="0" max="7"
+                            value={userData.expectedWorkDays === null || userData.expectedWorkDays === undefined ? "" : userData.expectedWorkDays}
+                            onChange={(e) => handleChange("expectedWorkDays", e.target.value ? parseFloat(e.target.value) : null)}
+                            placeholder="z.B. 5"
+                        />
+                    </div>
+                )}
+
 
                 {/* Wochenplan-Konfiguration (nur für Standard-User) */}
                 {!userData.isPercentage && !userData.isHourly && (
@@ -207,16 +216,7 @@ const AdminUserForm = ({
                                 placeholder="z.B. 8.5"
                             />
                         </div>
-                        <div className="form-group">
-                            <label htmlFor="expectedWorkDays">{t("userManagement.expectedWorkDays", "Erw. Arbeitstage/Woche")}:</label>
-                            <input
-                                id="expectedWorkDays"
-                                type="number" step="0.5" min="0" max="7"
-                                value={userData.expectedWorkDays === null || userData.expectedWorkDays === undefined ? "" : userData.expectedWorkDays}
-                                onChange={(e) => handleChange("expectedWorkDays", e.target.value ? parseFloat(e.target.value) : null)}
-                                placeholder="z.B. 5"
-                            />
-                        </div>
+                        {/* expectedWorkDays wurde nach oben verschoben, um Duplizierung zu vermeiden */}
                         <div className="form-group">
                             <label htmlFor="scheduleEffectiveDate">{t("userManagement.scheduleEffectiveDate", "Plan gültig ab")}:</label>
                             <input
@@ -264,7 +264,6 @@ const AdminUserForm = ({
                     <button type="submit" className="button-primary">
                         {isEditing ? t("userManagement.button.saveChanges", "Änderungen speichern") : t("userManagement.button.createUser", "Benutzer erstellen")}
                     </button>
-                    {/* Cancel-Button wird jetzt in AdminUserManagementPage gerendert, wenn editingUser existiert */}
                     <button type="button" onClick={onCancel} className="button-secondary">
                         {t("userManagement.button.cancel", "Abbrechen")}
                     </button>

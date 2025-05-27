@@ -9,7 +9,7 @@
   "main": "src/electron-main.js",
   "scripts": {
     "cypress:open": "cypress open",
-    "dev": "vite",
+    "dev": "vite --config vite.config.js",
     "build": "vite build",
     "build:prod": "vite build --config vite.config.prod.js",
     "electron": "electron .",

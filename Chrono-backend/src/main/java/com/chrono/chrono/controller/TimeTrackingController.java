@@ -36,8 +36,8 @@ public class TimeTrackingController {
      * "Smart-Punch" => autom. 1->2->3->4
      */
     @PostMapping("/punch")
-    public TimeTrackingResponse punch(@RequestParam String username, Principal principal) {
-        // Sicherstellen, dass der Principal existiert, bevor darauf zugegriffen wird
+    public TimeTrackingResponse punch(@RequestParam String username, Principal principal, @RequestHeader(value = "X-NFC-Agent-Request", required = false) String nfcAgentHeader) {
+        // Sicherstellen, dass der Principal existiert, oder es eine valide NFC-Agent-Anfrage ist
         if (principal != null) {
             User requestingUser = userService.getUserByUsername(principal.getName());
             User targetUser = userService.getUserByUsername(username);
@@ -48,8 +48,21 @@ public class TimeTrackingController {
                             !requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()))) {
                 throw new SecurityException("Benutzer " + principal.getName() + " darf keinen Punch für Benutzer " + username + " einer anderen Firma durchführen.");
             }
-        } else if (!username.equals("nfc-background-service")) { // Allow specific internal user for NFC background tasks
-            throw new SecurityException("Nicht autorisierter Punch-Versuch ohne Principal.");
+        } else {
+            // Kein Principal vorhanden, prüfe ob es eine erlaubte Anfrage ohne Principal ist
+            // Erlaube "nfc-background-service" ODER wenn der spezielle Header vom NFC-Agenten vorhanden ist.
+            // Der Wert des Headers "X-NFC-Agent-Request" könnte optional auch geprüft werden, falls ein Token verwendet wird.
+            // Für diese Lösung reicht die Präsenz des Headers aus, um den NFC Agent zu identifizieren.
+            System.out.println("NFC Agent Header X-NFC-Agent-Request: " + nfcAgentHeader); // Temporäres Logging
+
+            boolean isNfcAgentCall = nfcAgentHeader != null && nfcAgentHeader.equals("true"); // Oder ein spezifischer Token-Wert
+            boolean isAllowedInternalService = username.equals("nfc-background-service");
+
+            if (!isAllowedInternalService && !isNfcAgentCall) {
+                throw new SecurityException("Nicht autorisierter Punch-Versuch ohne Principal oder gültigen NFC-Agent-Header.");
+            }
+            // Wenn isNfcAgentCall true ist, wird die Anfrage vom NFC-Agenten als legitim betrachtet,
+            // auch wenn `username` nicht "nfc-background-service" ist.
         }
         return timeTrackingService.handleSmartPunch(username);
     }

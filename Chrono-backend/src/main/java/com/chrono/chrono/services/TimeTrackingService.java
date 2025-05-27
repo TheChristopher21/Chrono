@@ -91,7 +91,7 @@ public class TimeTrackingService {
         }
         row.setCorrected(false);
         timeTrackingRepo.save(row);
-        rebuildUserBalance(user);
+        rebuildUserBalance(user); // Hier wird das ursprüngliche User-Objekt übergeben
         return convertToResponse(row);
     }
 
@@ -138,7 +138,7 @@ public class TimeTrackingService {
         if (changed) {
             row.setCorrected(false);
             timeTrackingRepo.save(row);
-            rebuildUserBalance(user);
+            rebuildUserBalance(user); // Hier wird das ursprüngliche User-Objekt übergeben
         }
         return convertToResponse(row);
     }
@@ -161,17 +161,15 @@ public class TimeTrackingService {
         return convertToResponse(row);
     }
 
-    // MODIFIED METHOD
     @Transactional
     public String updateDayTimeEntries(
             String targetUsername, String date,
             String workStartStr, String breakStartStr, String breakEndStr, String workEndStr,
-            String adminUsername // adminPassword and userPassword are removed
+            String adminUsername
     ) {
         User targetUser = loadUserByUsername(targetUsername);
         User performingAdmin = loadUserByUsername(adminUsername);
 
-        // Permission check (example: admin and target user must be in the same company, or admin is SUPERADMIN)
         boolean isSuperAdmin = performingAdmin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
         if (!isSuperAdmin) {
             if (performingAdmin.getCompany() == null || targetUser.getCompany() == null ||
@@ -179,7 +177,6 @@ public class TimeTrackingService {
                 throw new SecurityException("Admin " + adminUsername + " ist nicht berechtigt, Benutzer " + targetUsername + " zu bearbeiten (andere Firma oder keine Firma zugewiesen).");
             }
         }
-        // Password checks previously here are removed.
 
         LocalDate day = LocalDate.parse(date);
         TimeTracking row = getOrCreateRow(targetUser, day);
@@ -188,10 +185,10 @@ public class TimeTrackingService {
         row.setBreakStart(parseLocalTimeSafe(breakStartStr));
         row.setBreakEnd(parseLocalTimeSafe(breakEndStr));
         row.setWorkEnd(parseLocalTimeSafe(workEndStr));
-        row.setCorrected(true); // Mark as edited by admin
+        row.setCorrected(true);
 
         timeTrackingRepo.save(row);
-        rebuildUserBalance(targetUser);
+        rebuildUserBalance(targetUser); // Hier wird das ursprüngliche targetUser-Objekt übergeben
         logger.info("Zeiteinträge für Benutzer {} am {} durch Admin {} erfolgreich aktualisiert.", targetUsername, date, adminUsername);
         return "Zeiteinträge erfolgreich aktualisiert.";
     }
@@ -212,20 +209,18 @@ public class TimeTrackingService {
     @Transactional
     public TimeTrackingResponse updateTimeTrackEntry(
             Long id, LocalDateTime newStart, LocalDateTime newEnd,
-            String userPassword, // This password is for the target user if they are editing themselves
-            String actingUsername // This is the username of who is performing an edit (could be admin or self)
-            // adminPassword parameter is removed
+            String userPassword,
+            String actingUsername
     ) {
         TimeTracking tt = timeTrackingRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Time tracking entry not found with ID: " + id));
-        User targetUser = tt.getUser();
+        User targetUser = tt.getUser(); // User aus dem TimeTracking-Eintrag
         User performingUser = loadUserByUsername(actingUsername);
 
 
         boolean isAdminAction = performingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
 
         if (isAdminAction) {
-            // Admin is performing the action
             boolean isSuperAdmin = performingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
             if (!isSuperAdmin) {
                 if (performingUser.getCompany() == null || targetUser.getCompany() == null ||
@@ -233,11 +228,7 @@ public class TimeTrackingService {
                     throw new SecurityException("Admin " + actingUsername + " ist nicht berechtigt, Benutzer " + targetUser.getUsername() + " zu bearbeiten.");
                 }
             }
-            // Admin password check is removed.
-            // If userPassword was for target user's confirmation of admin edit, it's not typically done this way.
-            // The responsibility lies with the admin.
         } else {
-            // Self-correction by user (actingUsername is the targetUser's username)
             if (!targetUser.getUsername().equals(actingUsername)) {
                 throw new SecurityException("Nicht autorisierter Bearbeitungsversuch.");
             }
@@ -251,11 +242,13 @@ public class TimeTrackingService {
         tt.setCorrected(true);
 
         timeTrackingRepo.save(tt);
-        rebuildUserBalance(targetUser);
+        rebuildUserBalance(targetUser); // Hier wird targetUser (aus tt.getUser()) übergeben
         return convertToResponse(tt);
     }
 
     private int getAdjustedExpectedWorkMinutes(User user, LocalDate date, List<VacationRequest> approvedVacations) {
+        // Diese Methode sollte idealerweise den frisch geladenen User verwenden, wenn sie aus rebuildUserBalance aufgerufen wird.
+        // Für den Moment belassen wir es so, da die Hauptänderung in rebuildUserBalance ist.
         if (Boolean.TRUE.equals(user.getIsHourly())) {
             return 0;
         }
@@ -274,17 +267,21 @@ public class TimeTrackingService {
     }
 
     public int computeDailyWorkDifference(User user, LocalDate date, List<VacationRequest> approvedVacations) {
+        // Diese Methode sollte idealerweise den frisch geladenen User verwenden.
         int workedMinutes = getWorkedMinutes(user, date);
         int adjustedExpectedMinutes = getAdjustedExpectedWorkMinutes(user, date, approvedVacations);
         return workedMinutes - adjustedExpectedMinutes;
     }
 
     public int computeDailyWorkDifference(User user, LocalDate date) {
-        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
-        return computeDailyWorkDifference(user, date, approvedVacations);
+        // Hier wird der User frisch geladen, was gut ist.
+        User freshUser = userRepository.findById(user.getId()).orElseThrow(() -> new UserNotFoundException("User not found"));
+        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(freshUser);
+        return computeDailyWorkDifference(freshUser, date, approvedVacations);
     }
 
     private int computeWeeklyWorkDifferenceForPercentageUser(User user, LocalDate weekStart, LocalDate lastDayOverall, List<VacationRequest> allApprovedVacationsForUser) {
+        // Diese Methode sollte idealerweise den frisch geladenen User verwenden.
         if (!Boolean.TRUE.equals(user.getIsPercentage())) {
             return 0;
         }
@@ -292,6 +289,7 @@ public class TimeTrackingService {
         int totalWorkedMinutesInWeek = 0;
         LocalDate endOfWeek = weekStart.plusDays(6);
 
+        // Verwende den übergebenen User, da er idealerweise schon 'freshUser' aus rebuildUserBalance ist
         for (LocalDate d = weekStart; !d.isAfter(endOfWeek) && !d.isAfter(lastDayOverall); d = d.plusDays(1)) {
             totalWorkedMinutesInWeek += getWorkedMinutes(user, d);
         }
@@ -302,34 +300,52 @@ public class TimeTrackingService {
                         !vr.getStartDate().isAfter(endOfWeek))
                 .collect(Collectors.toList());
 
+        // Stelle sicher, dass hier der (potenziell) frisch geladene User verwendet wird.
         int expectedWeeklyMinutesAdjustedForVacation = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, weekStart, approvedVacationsInThisWeek);
 
-        logger.debug("User: {}, Woche ab: {}, Gearbeitet: {}min, Erwartet (bereinigt): {}min, Differenz: {}",
+        logger.debug("TimeTrackingService.computeWeeklyWorkDifferenceForPercentageUser: User: {}, Woche ab: {}, Gearbeitet: {}min, Erwartet (bereinigt durch WorkScheduleService): {}min, Differenz für diese Woche: {}min",
                 user.getUsername(), weekStart, totalWorkedMinutesInWeek, expectedWeeklyMinutesAdjustedForVacation, totalWorkedMinutesInWeek - expectedWeeklyMinutesAdjustedForVacation);
 
         return totalWorkedMinutesInWeek - expectedWeeklyMinutesAdjustedForVacation;
     }
 
+    // =======================================================================================
+    // KORRIGIERTE rebuildUserBalance METHODE
+    // =======================================================================================
     @Transactional
     public void rebuildUserBalance(User user) {
-        List<TimeTracking> rows = timeTrackingRepo.findByUser(user);
-        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
+        // Den Benutzer explizit neu laden, um sicherzustellen, dass alle Felder (insbesondere expectedWorkDays) vorhanden sind.
+        User freshUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new UserNotFoundException("User not found with id: " + user.getId()));
 
-        if (user.getIsHourly() == null) {
-            user.setIsHourly(false);
+        // Logging zum Vergleich der expectedWorkDays Werte
+        logger.debug("TimeTrackingService.rebuildUserBalance: Entering rebuildUserBalance for user: '{}'. Original passed expectedWorkDays: {}, Freshly loaded expectedWorkDays: {}",
+                freshUser.getUsername(), user.getExpectedWorkDays(), freshUser.getExpectedWorkDays());
+
+        // Ab hier 'freshUser' anstelle von 'user' für alle Logik verwenden
+        List<TimeTracking> rows = timeTrackingRepo.findByUser(freshUser);
+        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(freshUser);
+
+        // Null-Checks für freshUser Eigenschaften
+        if (freshUser.getIsHourly() == null) {
+            freshUser.setIsHourly(false);
         }
-        if (user.getIsPercentage() == null) {
-            user.setIsPercentage(false);
+        if (freshUser.getIsPercentage() == null) {
+            freshUser.setIsPercentage(false);
         }
-        if (user.getTrackingBalanceInMinutes() == null) {
-            user.setTrackingBalanceInMinutes(0);
+        // Getter für trackingBalanceInMinutes in User.java behandelt bereits null, daher hier nicht unbedingt nötig, aber schadet nicht.
+        if (freshUser.getTrackingBalanceInMinutes() == null) {
+            freshUser.setTrackingBalanceInMinutes(0);
         }
+        logger.debug("TimeTrackingService.rebuildUserBalance: Starting balance rebuild for user: '{}'. Initial DB values: isPercentage={}, expectedWorkDays={}, workPercentage={}",
+                freshUser.getUsername(), freshUser.getIsPercentage(), freshUser.getExpectedWorkDays(), freshUser.getWorkPercentage());
 
 
-        if (rows.isEmpty() && approvedVacations.stream().noneMatch(vr -> vr.isApproved() && vr.isUsesOvertime())) {
-            user.setTrackingBalanceInMinutes(0);
-            userRepository.save(user);
-            logger.info("Saldo für {} auf 0 gesetzt (keine Zeiteinträge und keine relevanten genehmigten Überstundenurlaube).", user.getUsername());
+        // Wenn keine Einträge und keine relevanten Überstunden-Urlaube, Saldo auf 0 setzen
+        if (rows.isEmpty() && approvedVacations.stream().noneMatch(vr -> vr.isApproved() && Boolean.TRUE.equals(vr.isUsesOvertime()))) {
+            freshUser.setTrackingBalanceInMinutes(0);
+            userRepository.save(freshUser);
+            logger.info("Saldo für {} auf 0 gesetzt (keine Zeiteinträge und keine relevanten genehmigten Überstundenurlaube).", freshUser.getUsername());
             return;
         }
 
@@ -339,7 +355,7 @@ public class TimeTrackingService {
                 .map(TimeTracking::getDailyDate)
                 .min(LocalDate::compareTo);
         Optional<LocalDate> firstVacationDayOpt = approvedVacations.stream()
-                .filter(VacationRequest::isApproved)
+                .filter(VacationRequest::isApproved) // Nur genehmigte Urlaube für Startdatum berücksichtigen
                 .map(VacationRequest::getStartDate)
                 .min(LocalDate::compareTo);
 
@@ -347,48 +363,55 @@ public class TimeTrackingService {
             firstDayToConsiderInitialized = firstTrackingDayOpt.get().isBefore(firstVacationDayOpt.get()) ? firstTrackingDayOpt.get() : firstVacationDayOpt.get();
         } else if (firstTrackingDayOpt.isPresent()) {
             firstDayToConsiderInitialized = firstTrackingDayOpt.get();
-        } else {
-            if (firstVacationDayOpt.isPresent()) {
-                firstDayToConsiderInitialized = firstVacationDayOpt.get();
-            }
+        } else if (firstVacationDayOpt.isPresent()) {
+            firstDayToConsiderInitialized = firstVacationDayOpt.get();
         }
-
+        // final, damit es in Lambda verwendet werden kann, falls nötig (hier nicht direkt, aber gute Praxis)
         final LocalDate firstDay = firstDayToConsiderInitialized;
 
 
-        LocalDate lastDay = LocalDate.now(ZoneId.of("Europe/Zurich"));
+        LocalDate lastDay = LocalDate.now(ZoneId.of("Europe/Zurich")); // Heute als letzter Tag
         int totalMinutes = 0;
 
-        if (!firstDay.isAfter(lastDay) || !rows.isEmpty() ||
-                (approvedVacations.stream().anyMatch(VacationRequest::isApproved))) {
+        // Überprüfen, ob der Zeitraum überhaupt relevant ist
+        if (!firstDay.isAfter(lastDay) || !rows.isEmpty() || approvedVacations.stream().anyMatch(VacationRequest::isApproved)) {
+            logger.info("Saldo-Neuberechnung für {}: Zeitraum {} bis {}", freshUser.getUsername(), firstDay, lastDay);
 
-            logger.info("Saldo-Neuberechnung für {}: Zeitraum {} bis {}", user.getUsername(), firstDay, lastDay);
-            if (Boolean.TRUE.equals(user.getIsPercentage())) {
+            if (Boolean.TRUE.equals(freshUser.getIsPercentage())) {
+                logger.debug("TimeTrackingService.rebuildUserBalance: User '{}' is percentage based. Calculating weekly differences.", freshUser.getUsername());
                 LocalDate currentWeekStart = firstDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
                 while (!currentWeekStart.isAfter(lastDay)) {
-                    totalMinutes += computeWeeklyWorkDifferenceForPercentageUser(user, currentWeekStart, lastDay, approvedVacations);
+                    // Wichtig: 'freshUser' an die Berechnungsmethoden weitergeben
+                    totalMinutes += computeWeeklyWorkDifferenceForPercentageUser(freshUser, currentWeekStart, lastDay, approvedVacations);
                     currentWeekStart = currentWeekStart.plusWeeks(1);
                 }
             } else {
+                logger.debug("TimeTrackingService.rebuildUserBalance: User '{}' is NOT percentage based. Calculating daily differences.", freshUser.getUsername());
                 for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
-                    totalMinutes += computeDailyWorkDifference(user, d, approvedVacations);
+                    // Wichtig: 'freshUser' an die Berechnungsmethoden weitergeben
+                    totalMinutes += computeDailyWorkDifference(freshUser, d, approvedVacations);
                 }
             }
-            user.setTrackingBalanceInMinutes(totalMinutes);
-            logger.info("Saldo für {} neu berechnet: {} Minuten.", user.getUsername(), totalMinutes);
+            freshUser.setTrackingBalanceInMinutes(totalMinutes);
+            logger.info("Saldo für {} neu berechnet: {} Minuten.", freshUser.getUsername(), totalMinutes);
         } else {
-            logger.info("Kein relevanter Zeitraum für Saldo-Neuberechnung für {}, Saldo bleibt unverändert: {}", user.getUsername(), Optional.ofNullable(user.getTrackingBalanceInMinutes()).orElse(0));
+            // Fallback, falls kein relevanter Zeitraum (sollte selten vorkommen bei obiger Logik)
+            logger.info("Kein relevanter Zeitraum für Saldo-Neuberechnung für {}, Saldo bleibt unverändert bei: {}", freshUser.getUsername(), Optional.ofNullable(freshUser.getTrackingBalanceInMinutes()).orElse(0));
         }
-        userRepository.save(user);
+        userRepository.save(freshUser); // Speichere den User mit dem aktualisierten Saldo
     }
+    // =======================================================================================
+    // ENDE KORRIGIERTE rebuildUserBalance METHODE
+    // =======================================================================================
 
 
     @Transactional
     public void rebuildAllUserBalancesOnce() {
         logger.info("Starte Saldo-Neuberechnung für alle User...");
-        for (User u : userRepository.findAll()) {
+        List<User> allUsers = userRepository.findAll(); // Erst alle User laden
+        for (User u : allUsers) { // Dann iterieren
             try {
-                rebuildUserBalance(u);
+                rebuildUserBalance(u); // Diese Methode verwendet jetzt intern den frisch geladenen User
             } catch (Exception e) {
                 logger.error("Fehler bei der Saldo-Neuberechnung für User {}: {}", u.getUsername(), e.getMessage(), e);
             }
@@ -397,15 +420,17 @@ public class TimeTrackingService {
     }
 
     public int getWeeklyBalance(User user, LocalDate monday) {
-        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
+        // Hier sollte auch der 'freshUser'-Ansatz verfolgt werden, falls 'user' von außen kommt
+        User freshUser = userRepository.findById(user.getId()).orElseThrow(() -> new UserNotFoundException("User not found"));
+        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(freshUser);
 
-        if (Boolean.TRUE.equals(user.getIsPercentage())) {
-            LocalDate sunday = monday.plusDays(6);
-            return computeWeeklyWorkDifferenceForPercentageUser(user, monday, sunday, approvedVacations);
+        if (Boolean.TRUE.equals(freshUser.getIsPercentage())) {
+            LocalDate sunday = monday.plusDays(6); // Ende der Woche
+            return computeWeeklyWorkDifferenceForPercentageUser(freshUser, monday, sunday, approvedVacations);
         } else {
             int sum = 0;
             for (int i = 0; i < 7; i++) {
-                sum += computeDailyWorkDifference(user, monday.plusDays(i), approvedVacations);
+                sum += computeDailyWorkDifference(freshUser, monday.plusDays(i), approvedVacations);
             }
             return sum;
         }
@@ -461,23 +486,30 @@ public class TimeTrackingService {
         }
 
         for (TimeTracking entry : openEntries) {
-            User user = entry.getUser();
-            if (Boolean.TRUE.equals(user.getIsHourly())) {
-                logger.info("Überspringe stündlichen Mitarbeiter {} für AutoPunchOut.", user.getUsername());
+            User user = entry.getUser(); // User aus dem Eintrag
+            // Es ist besser, hier den User neu zu laden, um sicherzustellen, dass isHourly aktuell ist
+            User freshUser = userRepository.findById(user.getId()).orElse(null);
+            if (freshUser == null) {
+                logger.error("User mit ID {} für AutoPunchOut nicht gefunden, überspringe Eintrag ID {}.", user.getId(), entry.getId());
                 continue;
             }
 
-            logger.info("Bearbeite offenen Eintrag für User: {}, Datum: {}", user.getUsername(), today);
+            if (Boolean.TRUE.equals(freshUser.getIsHourly())) {
+                logger.info("Überspringe stündlichen Mitarbeiter {} für AutoPunchOut.", freshUser.getUsername());
+                continue;
+            }
+
+            logger.info("Bearbeite offenen Eintrag für User: {}, Datum: {}", freshUser.getUsername(), today);
             boolean changed = false;
 
             if (entry.getWorkStart() != null && entry.getWorkEnd() == null) {
-                if (Boolean.TRUE.equals(user.getIsPercentage()) &&
+                if (Boolean.TRUE.equals(freshUser.getIsPercentage()) &&
                         entry.getBreakStart() != null &&
                         entry.getBreakEnd() == null) {
 
                     logger.info("Prozentualer User {} hat WorkStart ({}) und BreakStart ({}) aber kein BreakEnd/WorkEnd. " +
                                     "Setze WorkEnd auf BreakStart-Zeit ({}) und entferne Pausenzeiten für {}.",
-                            user.getUsername(), entry.getWorkStart(), entry.getBreakStart(), entry.getBreakStart(), today);
+                            freshUser.getUsername(), entry.getWorkStart(), entry.getBreakStart(), entry.getBreakStart(), today);
 
                     entry.setWorkEnd(entry.getBreakStart());
                     entry.setBreakStart(null);
@@ -485,28 +517,30 @@ public class TimeTrackingService {
                     changed = true;
                 } else if (entry.getBreakStart() != null && entry.getBreakEnd() == null) {
                     logger.info("User {} ist noch in der Pause. Setze BreakEnd ({}) und WorkEnd ({}) für {}.",
-                            user.getUsername(), autoPunchOutTime, autoPunchOutTime, today);
+                            freshUser.getUsername(), autoPunchOutTime, autoPunchOutTime, today);
                     entry.setBreakEnd(autoPunchOutTime);
                     entry.setWorkEnd(autoPunchOutTime);
                     changed = true;
                 } else {
                     logger.info("Setze WorkEnd ({}) für User {} am {}. (WorkStart: {}, BreakStart: {}, BreakEnd: {})",
-                            autoPunchOutTime, user.getUsername(), today, entry.getWorkStart(), entry.getBreakStart(), entry.getBreakEnd());
+                            autoPunchOutTime, freshUser.getUsername(), today, entry.getWorkStart(), entry.getBreakStart(), entry.getBreakEnd());
                     entry.setWorkEnd(autoPunchOutTime);
                     changed = true;
                 }
             }
 
             if (changed) {
-                entry.setCorrected(true);
+                entry.setCorrected(true); // Markieren, dass es automatisch korrigiert wurde
+                // Repository Save ist nicht nötig, da @Transactional Änderungen am Ende committet,
+                // aber explizit schadet es nicht und ist klarer. timeTrackingRepo.save(entry);
                 logger.info("Eintrag für User {} am {} automatisch vervollständigt. WorkStart: {}, BreakStart: {}, BreakEnd: {}, WorkEnd: {}",
-                        user.getUsername(), today, entry.getWorkStart(), entry.getBreakStart(), entry.getBreakEnd(), entry.getWorkEnd());
+                        freshUser.getUsername(), today, entry.getWorkStart(), entry.getBreakStart(), entry.getBreakEnd(), entry.getWorkEnd());
 
                 try {
-                    this.rebuildUserBalance(user);
-                    logger.info("Saldo für User {} nach AutoPunchOut neu berechnet.", user.getUsername());
+                    this.rebuildUserBalance(freshUser); // Wichtig: freshUser übergeben
+                    logger.info("Saldo für User {} nach AutoPunchOut neu berechnet.", freshUser.getUsername());
                 } catch (Exception e) {
-                    logger.error("Fehler bei der Saldo-Neuberechnung für User {} nach AutoPunchOut: {}", user.getUsername(), e.getMessage(), e);
+                    logger.error("Fehler bei der Saldo-Neuberechnung für User {} nach AutoPunchOut: {}", freshUser.getUsername(), e.getMessage(), e);
                 }
             }
         }
@@ -514,7 +548,7 @@ public class TimeTrackingService {
     }
 
     public List<TimeReportDTO> getReport(String username, String startDate, String endDate) {
-        User user = loadUserByUsername(username);
+        User user = loadUserByUsername(username); // Lädt den User frisch
         LocalDate from = LocalDate.parse(startDate);
         LocalDate to = LocalDate.parse(endDate);
 
@@ -541,21 +575,6 @@ public class TimeTrackingService {
         return report;
     }
 
-    // REMOVE THIS METHOD as it's no longer directly needed by updateDayTimeEntries in this form.
-    // Or, if it's used elsewhere, keep it but ensure its callers are aware of the changes.
-    // For this specific request (removing password checks for admin actions),
-    // the direct password validation logic is what we're removing or bypassing.
-    /*
-    private void checkAdminAndUserPasswords(
-            User targetUser, String adminUsername, String adminPassword, String userPassword
-    ) {
-        // ... original implementation ...
-        // This method can be removed if no other part of the service uses it after these changes.
-        // If kept for other uses, ensure it handles cases where adminPassword might be null/empty.
-    }
-    */
-
-
     private TimeTrackingResponse convertToResponse(TimeTracking tt) {
         return new TimeTrackingResponse(
                 tt.getId(),
@@ -570,7 +589,9 @@ public class TimeTrackingService {
     }
 
     public List<TimeTracking> getTimeTrackingRowsForUser(User user) {
-        return timeTrackingRepo.findByUserOrderByDailyDateDesc(user);
+        // User sollte hier idealerweise frisch geladen werden, wenn der Kontext unklar ist.
+        User freshUser = userRepository.findById(user.getId()).orElseThrow(() -> new UserNotFoundException("User not found"));
+        return timeTrackingRepo.findByUserOrderByDailyDateDesc(freshUser);
     }
 
     private String getCellValueAsString(Cell cell) {
@@ -613,7 +634,7 @@ public class TimeTrackingService {
         try {
             return LocalDate.parse(dateStr, DateTimeFormatter.ISO_LOCAL_DATE);
         } catch (DateTimeParseException e) {
-            logger.warn("Ungültiges Datumsformat empfangen: '{}'. Wird als null interpretiert. Erwartet: yyyy-MM-dd", dateStr, e);
+            logger.warn("Ungültiges Datumsformat empfangen: '{}'. Wird als null interpretiert. Erwartet:<y_bin_46>-MM-dd", dateStr, e);
             return null;
         }
     }
@@ -650,13 +671,12 @@ public class TimeTrackingService {
                         errors.add("Zeile " + rowNum + ": Username fehlt.");
                         continue;
                     }
-                    // ... (restliche Validierungen für die Zeile)
-                    Optional<User> userOpt = userRepository.findByUsername(username);
+                    Optional<User> userOpt = userRepository.findByUsername(username); // Lädt den User frisch
                     if (userOpt.isEmpty()) {
                         errors.add("Zeile " + rowNum + ": User '" + username + "' nicht gefunden.");
                         continue;
                     }
-                    User user = userOpt.get();
+                    User user = userOpt.get(); // Dies ist der frisch geladene User
                     if (user.getCompany() == null || !user.getCompany().getId().equals(adminCompanyId)) {
                         errors.add("Zeile " + rowNum + ": User '" + username + "' gehört nicht zur Firma des Admins.");
                         continue;
@@ -664,13 +684,12 @@ public class TimeTrackingService {
 
                     LocalDate date = parseLocalDateSafe(dateStr);
                     if (date == null) {
-                        errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiges Datumsformat '" + dateStr + "'. Erwartet: yyyy-MM-DD");
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiges Datumsformat '" + dateStr + "'. Erwartet:<y_bin_46>-MM-DD");
                         continue;
                     }
-                    // ... (weitere Parsing und Validierungen für Zeiten)
 
                     LocalTime workStart = parseLocalTimeSafe(workStartStr);
-                    if (workStart == null && (workStartStr != null && !workStartStr.trim().isEmpty()) ) { // Nur Fehler wenn was drin stand aber nicht parsebar war
+                    if (workStart == null && (workStartStr != null && !workStartStr.trim().isEmpty()) ) {
                         errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiges Zeitformat für Arbeitsbeginn '" + workStartStr + "'. Erwartet: HH:mm");
                         continue;
                     }
@@ -689,7 +708,6 @@ public class TimeTrackingService {
                         errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiges Zeitformat für Pausenende '" + breakEndStr + "'. Erwartet: HH:mm");
                         continue;
                     }
-                    // Zusätzliche Logik-Validierungen
                     if (workStart != null && workEnd != null && workEnd.isBefore(workStart)) {
                         errors.add("Zeile " + rowNum + " (User: " + username + "): Arbeitsende (" + workEndStr + ") ist vor Arbeitsbeginn (" + workStartStr + ").");
                         continue;
@@ -698,7 +716,6 @@ public class TimeTrackingService {
                         errors.add("Zeile " + rowNum + " (User: " + username + "): Pausenende (" + breakEndStr + ") ist vor Pausenbeginn (" + breakStartStr + ").");
                         continue;
                     }
-                    // Validierung, dass Pausen innerhalb der Arbeitszeit liegen (nur wenn alle Zeiten vorhanden)
                     if (workStart != null && workEnd != null && breakStart != null && (breakStart.isBefore(workStart) || breakStart.isAfter(workEnd))) {
                         errors.add("Zeile " + rowNum + " (User: " + username + "): Pausenbeginn (" + breakStartStr + ") liegt außerhalb der Arbeitszeit (" + workStartStr + "-" + workEndStr + ").");
                         continue;
@@ -707,17 +724,17 @@ public class TimeTrackingService {
                         errors.add("Zeile " + rowNum + " (User: " + username + "): Pausenende (" + breakEndStr + ") liegt außerhalb der Arbeitszeit (" + workStartStr + "-" + workEndStr + ").");
                         continue;
                     }
-                    if (workStart == null && workEnd != null) { // Ende ohne Anfang
+                    if (workStart == null && workEnd != null) {
                         errors.add("Zeile " + rowNum + " (User: " + username + "): Arbeitsende ohne Arbeitsbeginn angegeben.");
                         continue;
                     }
-                    if (breakStart == null && breakEnd != null) { // Pausenende ohne Pausenanfang
+                    if (breakStart == null && breakEnd != null) {
                         errors.add("Zeile " + rowNum + " (User: " + username + "): Pausenende ohne Pausenbeginn angegeben.");
                         continue;
                     }
 
 
-                    TimeTracking timeTracking = getOrCreateRow(user, date);
+                    TimeTracking timeTracking = getOrCreateRow(user, date); // 'user' ist hier schon frisch geladen
                     timeTracking.setWorkStart(workStart);
                     timeTracking.setBreakStart(breakStart);
                     timeTracking.setBreakEnd(breakEnd);
@@ -726,7 +743,7 @@ public class TimeTrackingService {
                     timeTracking.setCorrected(true);
 
                     timeTrackingRepo.save(timeTracking);
-                    rebuildUserBalance(user);
+                    rebuildUserBalance(user); // 'user' ist hier schon frisch geladen
                     successes.add("Zeile " + rowNum + ": Eintrag für User '" + username + "' am " + dateStr + " erfolgreich importiert/aktualisiert.");
                     importedCount++;
 

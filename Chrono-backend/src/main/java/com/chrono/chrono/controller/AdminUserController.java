@@ -4,6 +4,7 @@ import com.chrono.chrono.dto.UserDTO;
 import com.chrono.chrono.entities.Company; // Import wieder hinzugefügt
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.repositories.CompanyRepository; // Import für CompanyRepository hinzugefügt
 import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.CorrectionRequestRepository;
@@ -20,10 +21,12 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map; // Fehlender Import für Map
+import java.util.Optional; // Import für Optional
 import java.util.stream.Collectors;
-// Optional wurde entfernt, da es nicht verwendet wird.
+
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -34,6 +37,9 @@ public class AdminUserController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private CompanyRepository companyRepository; // Injizieren Sie das CompanyRepository
 
     @Autowired
     private RoleRepository roleRepository;
@@ -54,13 +60,30 @@ public class AdminUserController {
     public ResponseEntity<List<UserDTO>> getAllUsers(Principal principal) {
         User admin = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("Logged in admin not found: " + principal.getName()));
-        if (admin.getCompany() == null) {
-            logger.warn("Admin {} has no company assigned.", principal.getName());
+        if (admin.getCompany() == null && !admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) { // SUPERADMIN darf auch ohne Firma alles sehen
+            logger.warn("Admin {} has no company assigned and is not SUPERADMIN. Cannot list users.", principal.getName());
+            // Für SUPERADMIN ohne Firma alle User zurückgeben, ansonsten leere Liste für regulären Admin ohne Firma
+            if (admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+                List<User> allUsersSystem = userRepository.findAll();
+                List<UserDTO> dtosSystem = allUsersSystem.stream().map(UserDTO::new).collect(Collectors.toList());
+                return ResponseEntity.ok(dtosSystem);
+            }
             return ResponseEntity.ok(List.of());
         }
 
-        Long companyId = admin.getCompany().getId();
-        List<User> users = userRepository.findByCompany_Id(companyId);
+        List<User> users;
+        if (admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) && admin.getCompany() == null) {
+            users = userRepository.findAll(); // SUPERADMIN ohne Firma sieht alle User
+        } else if (admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) && admin.getCompany() != null) {
+            // SUPERADMIN with a company might see all users or just their company's users based on policy.
+            // Assuming SUPERADMIN always sees all users regardless of their own company assignment for this example.
+            users = userRepository.findAll();
+        }
+        else { // Regular Admin
+            Long companyId = admin.getCompany().getId();
+            users = userRepository.findByCompany_Id(companyId); // Regulärer Admin sieht User seiner Firma
+        }
+
 
         List<UserDTO> dtos = users.stream()
                 .map(UserDTO::new)
@@ -74,14 +97,27 @@ public class AdminUserController {
         User admin = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("Logged-in admin not found: " + principal.getName()));
 
-        if (admin.getCompany() == null) {
-            return ResponseEntity.badRequest().body("Admin has no company assigned");
+        Company targetCompany = null;
+        // SUPERADMIN can assign a company if companyId is provided in DTO
+        if (userDTO.getCompanyId() != null && admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+            Optional<Company> companyOpt = companyRepository.findById(userDTO.getCompanyId());
+            if (companyOpt.isPresent()) {
+                targetCompany = companyOpt.get();
+            } else {
+                return ResponseEntity.badRequest().body("Specified companyId not found.");
+            }
+        } else if (admin.getCompany() != null) { // Regular admin assigns their own company
+            targetCompany = admin.getCompany();
+        } else if (!admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+            // Regular admin MUST have a company to add a user to that company.
+            return ResponseEntity.badRequest().body("Admin has no company assigned. Cannot add user.");
         }
+        // If SUPERADMIN and no companyId in DTO, and SUPERADMIN has no company, user is created without company.
+
 
         if (userRepository.existsByUsername(userDTO.getUsername())) {
             return ResponseEntity.badRequest().body("Username already exists");
         }
-        // Verwende getPassword() vom DTO, das jetzt existiert
         if (userDTO.getPassword() == null || userDTO.getPassword().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Password is required for new user");
         }
@@ -91,23 +127,46 @@ public class AdminUserController {
         newUser.setFirstName(userDTO.getFirstName());
         newUser.setLastName(userDTO.getLastName());
         newUser.setEmail(userDTO.getEmail());
-        newUser.setPassword(passwordEncoder.encode(userDTO.getPassword())); // Password aus DTO holen
-        newUser.setCompany(admin.getCompany());
+        newUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
+
+        if (targetCompany != null) {
+            newUser.setCompany(targetCompany);
+        }
+        // If targetCompany is still null here, it means either:
+        // 1. SUPERADMIN didn't provide a companyId and doesn't have one themselves.
+        // 2. Some other logic error. User will be created without a company in this case for SUPERADMIN.
+
 
         String roleNameInput = (userDTO.getRoles() != null && !userDTO.getRoles().isEmpty()) ?
-                userDTO.getRoles().get(0) :
-                "ROLE_USER";
+                userDTO.getRoles().get(0) : // Takes the first role from the list
+                "ROLE_USER"; // Default role
 
         if (!roleNameInput.startsWith("ROLE_")) {
             roleNameInput = "ROLE_" + roleNameInput.toUpperCase();
         }
         final String finalRoleName = roleNameInput;
+
+        // Security check for role assignment by non-SUPERADMIN
+        if (!admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+            if (finalRoleName.equals("ROLE_SUPERADMIN")) {
+                return ResponseEntity.status(403).body("Regular admin cannot assign SUPERADMIN role.");
+            }
+            // A regular admin cannot assign ROLE_ADMIN to a user of a different company (though targetCompany logic above should align them)
+            // or if the admin themselves is not a SUPERADMIN creating an admin in a company they don't belong to.
+            if (finalRoleName.equals("ROLE_ADMIN") && (targetCompany == null || !targetCompany.getId().equals(admin.getCompany().getId()))) {
+                if (admin.getCompany() == null || targetCompany == null || !targetCompany.getId().equals(admin.getCompany().getId())) {
+                    return ResponseEntity.status(403).body("Regular admin cannot make user an ADMIN of a different company.");
+                }
+            }
+        }
+
+
         Role userRole = roleRepository.findByRoleName(finalRoleName)
                 .orElseGet(() -> roleRepository.save(new Role(finalRoleName)));
         newUser.getRoles().add(userRole);
 
         if (finalRoleName.equals("ROLE_ADMIN") || finalRoleName.equals("ROLE_SUPERADMIN")) {
-            newUser.setAdminPassword(newUser.getPassword());
+            newUser.setAdminPassword(newUser.getPassword()); // Sets admin password same as user password
         }
 
         newUser.setTrackingBalanceInMinutes(userDTO.getTrackingBalanceInMinutes() != null ? userDTO.getTrackingBalanceInMinutes() : 0);
@@ -122,32 +181,40 @@ public class AdminUserController {
         newUser.setIsPercentage(isPercentage);
 
         if (isPercentage) {
-            newUser.setWorkPercentage(userDTO.getWorkPercentage() != null && userDTO.getWorkPercentage() > 0 && userDTO.getWorkPercentage() <=100 ? userDTO.getWorkPercentage() : 100);
+            newUser.setWorkPercentage(userDTO.getWorkPercentage() != null && userDTO.getWorkPercentage() >= 0 && userDTO.getWorkPercentage() <=100 ? userDTO.getWorkPercentage() : 100);
+            Integer days = userDTO.getExpectedWorkDays();
+            if (days == null || days < 1 || days > 7) {
+                logger.warn("Admin {} tried to create percentage user {} with invalid expectedWorkDays: {}.", principal.getName(), userDTO.getUsername(), days);
+                return ResponseEntity.badRequest().body("expectedWorkDays must be between 1 and 7 for percentage users.");
+            }
+            newUser.setExpectedWorkDays(days);
             newUser.setDailyWorkHours(null);
-            newUser.setExpectedWorkDays(null);
             newUser.setScheduleCycle(null);
-            newUser.setWeeklySchedule(null);
+            newUser.setWeeklySchedule(new ArrayList<>()); // Initialize to empty or default
             newUser.setScheduleEffectiveDate(null);
         } else if (isHourly) {
-            newUser.setWorkPercentage(100); // Oder null, je nach Logik für Stundenzettel
+            newUser.setWorkPercentage(100);
             newUser.setDailyWorkHours(userDTO.getDailyWorkHours());
             newUser.setExpectedWorkDays(null);
             newUser.setScheduleCycle(null);
-            newUser.setWeeklySchedule(null);
+            newUser.setWeeklySchedule(new ArrayList<>());
             newUser.setScheduleEffectiveDate(null);
-        } else {
-            newUser.setWorkPercentage(100); // Standard User hat 100% von seinem Schedule
+        } else { // Standard User
+            newUser.setWorkPercentage(100);
             newUser.setDailyWorkHours(userDTO.getDailyWorkHours() != null ? userDTO.getDailyWorkHours() : 8.5);
-            newUser.setExpectedWorkDays(userDTO.getExpectedWorkDays() != null ? userDTO.getExpectedWorkDays() : 5.0);
+            Integer days = userDTO.getExpectedWorkDays();
+            if (days != null && (days < 1 || days > 7)) {
+                logger.warn("Admin {} tried to create standard user {} with invalid expectedWorkDays: {}.", principal.getName(), userDTO.getUsername(), days);
+                return ResponseEntity.badRequest().body("If provided, expectedWorkDays must be between 1 and 7 for standard users.");
+            }
+            newUser.setExpectedWorkDays(days != null ? days : 5); // Default to 5 if not provided or invalid for standard user
 
             newUser.setScheduleCycle(userDTO.getScheduleCycle() != null && userDTO.getScheduleCycle() > 0 ? userDTO.getScheduleCycle() : 1);
-
             List<Map<String, Double>> schedule = userDTO.getWeeklySchedule();
             if (schedule == null || schedule.isEmpty()) {
-                // Verwende die neue statische Methode aus der User-Entität
                 schedule = List.of(User.getDefaultWeeklyScheduleMap());
             }
-            newUser.setWeeklySchedule(schedule); // Typ ist jetzt List<Map<String, Double>>
+            newUser.setWeeklySchedule(schedule);
             newUser.setScheduleEffectiveDate(userDTO.getScheduleEffectiveDate() != null ? userDTO.getScheduleEffectiveDate() : LocalDate.now());
         }
 
@@ -174,17 +241,46 @@ public class AdminUserController {
         User existingUser = userRepository.findById(userDTO.getId())
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userDTO.getId()));
 
-        // Sicherheitscheck für Company-Zugehörigkeit
-        if (adminUser.getCompany() == null || existingUser.getCompany() == null ||
-                !adminUser.getCompany().getId().equals(existingUser.getCompany().getId())) {
-            if (!adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
-                logger.warn("Admin {} attempted to update user {} from a different company.", adminUser.getUsername(), existingUser.getUsername());
-                return ResponseEntity.status(403).body("Admin cannot update user from a different company.");
+        // SUPERADMIN can edit any user. Regular admin can only edit users in their own company.
+        if (!adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+            if (adminUser.getCompany() == null) {
+                return ResponseEntity.status(403).body("Admin has no company and cannot update users.");
+            }
+            if (existingUser.getCompany() == null || !adminUser.getCompany().getId().equals(existingUser.getCompany().getId())) {
+                logger.warn("Admin {} attempted to update user {} from a different company or user with no company.", adminUser.getUsername(), existingUser.getUsername());
+                return ResponseEntity.status(403).body("Admin cannot update user from a different company or a user not assigned to any company.");
+            }
+        }
+        // SUPERADMIN specific logic for changing user's company
+        if (userDTO.getCompanyId() != null && adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+            if (existingUser.getCompany() == null || !userDTO.getCompanyId().equals(existingUser.getCompany().getId())) {
+                Company newCompany = companyRepository.findById(userDTO.getCompanyId())
+                        .orElse(null);
+                if (newCompany != null) {
+                    existingUser.setCompany(newCompany);
+                } else if (userDTO.getCompanyId() == 0L) { // Convention for unassigning company
+                    existingUser.setCompany(null);
+                }
+                else {
+                    return ResponseEntity.badRequest().body("Target companyId for user update not found.");
+                }
+            }
+        } else if (userDTO.getCompanyId() != null && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+            // Regular admin trying to change companyId - forbidden unless it's to their own company (which should match existingUser's company already)
+            if (existingUser.getCompany() == null || !userDTO.getCompanyId().equals(existingUser.getCompany().getId()) || !userDTO.getCompanyId().equals(adminUser.getCompany().getId())) {
+                return ResponseEntity.status(403).body("Regular admin cannot change the company of a user.");
             }
         }
 
-        // Basisdaten aktualisieren
-        existingUser.setUsername(userDTO.getUsername()); // Beachte: Username sollte normalerweise nicht änderbar sein oder muss gesondert geprüft werden, ob er schon existiert.
+
+        // Username change
+        if (!existingUser.getUsername().equals(userDTO.getUsername())) {
+            if (userRepository.existsByUsername(userDTO.getUsername())) {
+                return ResponseEntity.badRequest().body("New username already exists: " + userDTO.getUsername());
+            }
+            existingUser.setUsername(userDTO.getUsername());
+        }
+
         existingUser.setFirstName(userDTO.getFirstName());
         existingUser.setLastName(userDTO.getLastName());
         existingUser.setEmail(userDTO.getEmail());
@@ -194,107 +290,118 @@ public class AdminUserController {
         existingUser.setTrackingBalanceInMinutes(userDTO.getTrackingBalanceInMinutes() != null ? userDTO.getTrackingBalanceInMinutes() : existingUser.getTrackingBalanceInMinutes());
 
 
-        // Passwort aktualisieren, falls ein neues gesendet wurde
         if (newPassword != null && !newPassword.trim().isEmpty()) {
             existingUser.setPassword(passwordEncoder.encode(newPassword));
-            // Wenn der User Admin-Rollen hat, auch das Admin-Passwort synchronisieren
+            // If user is admin/superadmin, update adminPassword as well
             if (existingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"))) {
                 existingUser.setAdminPassword(existingUser.getPassword());
             }
         }
 
-        // Rollen aktualisieren
         if (userDTO.getRoles() != null && !userDTO.getRoles().isEmpty()) {
-            String roleNameInput = userDTO.getRoles().get(0);
+            String roleNameInput = userDTO.getRoles().get(0); // Assuming single role assignment for simplicity from DTO
             if (!roleNameInput.startsWith("ROLE_")) {
                 roleNameInput = "ROLE_" + roleNameInput.toUpperCase();
             }
             final String finalRoleName = roleNameInput;
+
+            if (!adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+                if (finalRoleName.equals("ROLE_SUPERADMIN")) {
+                    return ResponseEntity.status(403).body("Regular admin cannot assign SUPERADMIN role.");
+                }
+                // Prevent regular admin from escalating other users in *their own company* to ROLE_ADMIN if they aren't one themselves (edge case, typically admin role is for management)
+                // Or changing a user in another company to ADMIN (already covered by company check)
+            }
+
             Role dbRole = roleRepository.findByRoleName(finalRoleName)
                     .orElseGet(() -> roleRepository.save(new Role(finalRoleName)));
             existingUser.getRoles().clear();
             existingUser.getRoles().add(dbRole);
         }
 
-        // Arbeitsmodell-bezogene Felder aktualisieren (isHourly, isPercentage, etc.)
-        // Hier ist die angepasste Logik:
 
         Boolean dtoIsHourly = userDTO.getIsHourly();
         Boolean dtoIsPercentage = userDTO.getIsPercentage();
 
-        // Wenn isPercentage explizit im DTO gesetzt ist:
+        // Handle isPercentage first as it can affect isHourly
         if (dtoIsPercentage != null) {
             existingUser.setIsPercentage(dtoIsPercentage);
-            if (Boolean.TRUE.equals(dtoIsPercentage)) { // Wenn User zu Percentage wechselt oder Percentage bleibt
-                Integer newWorkPercentage = userDTO.getWorkPercentage();
-                // Wenn DTO null, alten Wert nehmen oder Default
-                if (newWorkPercentage == null) {
-                    newWorkPercentage = existingUser.getWorkPercentage(); // Getter liefert Default 100, wenn null
-                }
-                existingUser.setWorkPercentage(newWorkPercentage > 0 && newWorkPercentage <= 100 ? newWorkPercentage : 100); // Stellt sicher, dass es im Bereich liegt
-
-                // Explizit schedule-bezogene Felder nullen, da sie für Percentage-User nicht relevant sind
-                existingUser.setDailyWorkHours(null);
-                existingUser.setExpectedWorkDays(null);
-                existingUser.setScheduleCycle(null);
-                existingUser.setWeeklySchedule(null); // Setzt es auf eine leere Liste in der Entität, wenn `new ArrayList<>()` im Setter ist, oder null.
-                existingUser.setScheduleEffectiveDate(null);
-                existingUser.setIsHourly(false); // Percentage schließt Hourly aus
+            if (Boolean.TRUE.equals(dtoIsPercentage)) {
+                existingUser.setIsHourly(false); // Percentage users cannot be hourly
             }
         }
-
-        // Wenn isHourly explizit im DTO gesetzt ist UND der User NICHT Percentage ist/wird:
+        // Then handle isHourly, only if not a percentage user
         if (dtoIsHourly != null && !Boolean.TRUE.equals(existingUser.getIsPercentage())) {
             existingUser.setIsHourly(dtoIsHourly);
-            if (Boolean.TRUE.equals(dtoIsHourly)) { // Wenn User zu Hourly wechselt oder Hourly bleibt (und nicht Percentage ist)
-                existingUser.setWorkPercentage(100); // Stündliche sind effektiv 100% ihrer Arbeitszeit
-                existingUser.setDailyWorkHours(userDTO.getDailyWorkHours() != null ? userDTO.getDailyWorkHours() : existingUser.getDailyWorkHours()); // Behalte alten Wert oder setze neuen
-                // Explizit schedule-bezogene Felder nullen
-                existingUser.setExpectedWorkDays(null);
-                existingUser.setScheduleCycle(null);
-                existingUser.setWeeklySchedule(null);
-                existingUser.setScheduleEffectiveDate(null);
-            }
         }
 
-        // Standard-User (weder Percentage noch Hourly explizit auf true gesetzt durch DTO)
-        // Dieser Block wird ausgeführt, wenn der User explizit zu Standard gemacht wird (isPercentage=false, isHourly=false)
-        // oder wenn die Flags im DTO null sind und der User vorher schon Standard war.
-        if (!Boolean.TRUE.equals(existingUser.getIsPercentage()) && !Boolean.TRUE.equals(existingUser.getIsHourly())) {
-            existingUser.setWorkPercentage(100); // Standard User = 100% (ihres Schedules)
+
+        if (Boolean.TRUE.equals(existingUser.getIsPercentage())) {
+            Integer newWorkPercentage = userDTO.getWorkPercentage();
+            existingUser.setWorkPercentage(newWorkPercentage != null && newWorkPercentage >= 0 && newWorkPercentage <= 100 ? newWorkPercentage : (existingUser.getWorkPercentage() != null ? existingUser.getWorkPercentage() : 100));
+
+            Integer newExpectedWorkDays = userDTO.getExpectedWorkDays();
+            if (newExpectedWorkDays != null) { // Only update if provided in DTO
+                if (newExpectedWorkDays < 1 || newExpectedWorkDays > 7) {
+                    logger.warn("Admin {} tried to update percentage user {} with invalid expectedWorkDays: {}", adminUser.getUsername(), existingUser.getUsername(), newExpectedWorkDays);
+                    return ResponseEntity.badRequest().body("expectedWorkDays must be between 1 and 7 for percentage users.");
+                }
+                existingUser.setExpectedWorkDays(newExpectedWorkDays);
+            } else if (existingUser.getExpectedWorkDays() == null) { // If currently null and not provided, set a default
+                existingUser.setExpectedWorkDays(5); // Default for percentage if not set
+            }
+            // If DTO is null and existing is not null, keep existing value.
+
+            existingUser.setDailyWorkHours(null);
+            existingUser.setScheduleCycle(null);
+            existingUser.setWeeklySchedule(new ArrayList<>());
+            existingUser.setScheduleEffectiveDate(null);
+
+        } else if (Boolean.TRUE.equals(existingUser.getIsHourly())) {
+            existingUser.setWorkPercentage(100); // Hourly are effectively 100% of their worked time for pay.
+            existingUser.setDailyWorkHours(userDTO.getDailyWorkHours() != null ? userDTO.getDailyWorkHours() : existingUser.getDailyWorkHours());
+            existingUser.setExpectedWorkDays(null);
+            existingUser.setScheduleCycle(null);
+            existingUser.setWeeklySchedule(new ArrayList<>());
+            existingUser.setScheduleEffectiveDate(null);
+        } else { // Standard User
+            existingUser.setWorkPercentage(100);
             existingUser.setDailyWorkHours(userDTO.getDailyWorkHours() != null ? userDTO.getDailyWorkHours() : (existingUser.getDailyWorkHours() != null ? existingUser.getDailyWorkHours() : 8.5));
-            existingUser.setExpectedWorkDays(userDTO.getExpectedWorkDays() != null ? userDTO.getExpectedWorkDays() : (existingUser.getExpectedWorkDays() != null ? existingUser.getExpectedWorkDays() : 5.0));
+
+            Integer newExpectedWorkDays = userDTO.getExpectedWorkDays();
+            if (newExpectedWorkDays != null) { // Only update if provided
+                if (newExpectedWorkDays < 1 || newExpectedWorkDays > 7) {
+                    logger.warn("Admin {} tried to update standard user {} with invalid expectedWorkDays: {}", adminUser.getUsername(), existingUser.getUsername(), newExpectedWorkDays);
+                    return ResponseEntity.badRequest().body("If provided, expectedWorkDays must be between 1 and 7 for standard users.");
+                }
+                existingUser.setExpectedWorkDays(newExpectedWorkDays);
+            } else if (existingUser.getExpectedWorkDays() == null) { // If currently null and not provided, set a default
+                existingUser.setExpectedWorkDays(5); // Default for standard if not set
+            }
+            // If DTO is null and existing is not null, keep existing value.
+
 
             List<Map<String, Double>> schedule = userDTO.getWeeklySchedule();
             Integer cycle = userDTO.getScheduleCycle();
+            LocalDate effectiveDate = userDTO.getScheduleEffectiveDate();
 
-            // Nur aktualisieren, wenn neue Werte vom DTO kommen (nicht null und nicht leer für Liste)
-            if (schedule != null && !schedule.isEmpty()) {
-                existingUser.setWeeklySchedule(schedule);
+            if (schedule != null || cycle != null || effectiveDate != null) { // If any schedule part is in DTO
+                existingUser.setWeeklySchedule(schedule != null && !schedule.isEmpty() ? schedule : (existingUser.getWeeklySchedule() != null ? existingUser.getWeeklySchedule() : List.of(User.getDefaultWeeklyScheduleMap())));
                 existingUser.setScheduleCycle(cycle != null && cycle > 0 ? cycle : (existingUser.getScheduleCycle() != null ? existingUser.getScheduleCycle() : 1));
-                existingUser.setScheduleEffectiveDate(userDTO.getScheduleEffectiveDate() != null ? userDTO.getScheduleEffectiveDate() : (existingUser.getScheduleEffectiveDate() != null ? existingUser.getScheduleEffectiveDate() : LocalDate.now()));
-            } else if (userDTO.getWeeklySchedule() == null && schedule == null) {
-                // Explizit nullen, wenn DTO null sendet (und nicht nur eine leere Liste)
-                // Dies ist wichtig, falls ein Standard-User seinen Schedule komplett entfernen soll (was unwahrscheinlich ist, aber der Vollständigkeit halber)
-                // Oder wenn von Percentage/Hourly auf Standard gewechselt wird und keine Schedule-Daten mitkommen.
-                existingUser.setWeeklySchedule(List.of(User.getDefaultWeeklyScheduleMap())); // Setzt einen Standard-Schedule
-                existingUser.setScheduleCycle(1);
-                existingUser.setScheduleEffectiveDate(LocalDate.now());
+                existingUser.setScheduleEffectiveDate(effectiveDate != null ? effectiveDate : (existingUser.getScheduleEffectiveDate() != null ? existingUser.getScheduleEffectiveDate() : LocalDate.now()));
             }
-            // Wenn schedule im DTO eine leere Liste ist, aber nicht null, bleibt der bestehende Schedule erhalten.
+            // If schedule DTO fields are all null, the existing schedule is preserved.
         }
-
 
         User updatedUser = userRepository.save(existingUser);
 
-        // Saldo neu berechnen, falls arbeitsmodellrelevante Daten geändert wurden
         try {
             timeTrackingService.rebuildUserBalance(updatedUser);
             logger.info("User balance rebuilt for {} after update by admin {}", updatedUser.getUsername(), adminUser.getUsername());
         } catch (Exception e) {
             logger.error("Error rebuilding balance for user {} after update: {}", updatedUser.getUsername(), e.getMessage(), e);
-            // Hier könnte man überlegen, ob der vorherige Save rückgängig gemacht werden soll, aber das ist komplexer.
-            // Fürs Erste reicht ein Logging des Fehlers.
+            // Decide if this should be a critical error blocking the response or just a logged warning.
+            // For now, just log it.
         }
 
         logger.info("Admin {} updated user: {}", adminUser.getUsername(), updatedUser.getUsername());
@@ -310,32 +417,37 @@ public class AdminUserController {
         User userToDelete = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
 
-        if (adminUser.getCompany() == null || userToDelete.getCompany() == null ||
-                !adminUser.getCompany().getId().equals(userToDelete.getCompany().getId())) {
-            if (!adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+        // Check if admin is SUPERADMIN or if they belong to the same company
+        boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        if (!isSuperAdmin) {
+            if (adminUser.getCompany() == null ) {
+                return ResponseEntity.status(403).body(Map.of("message", "Admin has no company assigned and cannot delete users."));
+            }
+            if (userToDelete.getCompany() == null || !adminUser.getCompany().getId().equals(userToDelete.getCompany().getId())) {
                 logger.warn("Admin {} attempted to delete user {} from a different company.", adminUser.getUsername(), userToDelete.getUsername());
-                return ResponseEntity.status(403).body("Admin cannot delete user from a different company.");
+                return ResponseEntity.status(403).body(Map.of("message", "Admin cannot delete user from a different company."));
             }
         }
+        // Prevent self-deletion
         if (adminUser.getId().equals(userToDelete.getId())) {
             logger.warn("Admin {} attempted to delete themselves.", adminUser.getUsername());
-            return ResponseEntity.status(403).body("Admin cannot delete themselves.");
+            return ResponseEntity.status(403).body(Map.of("message", "Admin cannot delete themselves."));
         }
 
         try {
+            // Deleting associated data. Ensure services handle this gracefully if user is already partly deleted or data is missing.
             vacationService.deleteVacationsByUser(userToDelete);
             correctionRequestRepository.deleteByUser(userToDelete);
-
-            // Annahme: TimeTracking wird über Cascade gelöscht oder muss hier manuell erfolgen
-            // timeTrackingService.deleteTimeTrackingsByUser(userToDelete);
-            // (Diese Methode müsste im TimeTrackingService implementiert werden)
+            // TimeTracking entries are likely handled by cascade or a specific service method if needed.
+            // For example: timeTrackingService.deleteTimeTrackingsByUser(userToDelete);
 
             userRepository.delete(userToDelete);
             logger.info("Admin {} deleted user: {}", adminUser.getUsername(), userToDelete.getUsername());
-            return ResponseEntity.ok("User deleted successfully");
+            return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
         } catch (Exception ex) {
             logger.error("Error deleting user {} by admin {}: {}", userToDelete.getUsername(), adminUser.getUsername(), ex.getMessage(), ex);
-            return ResponseEntity.status(500).body("Error deleting user: " + ex.getMessage());
+            // Provide a more generic error message to the client.
+            return ResponseEntity.status(500).body(Map.of("message", "An error occurred while deleting the user and their associated data."));
         }
     }
 }

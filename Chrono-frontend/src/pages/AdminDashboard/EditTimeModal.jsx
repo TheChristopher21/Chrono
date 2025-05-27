@@ -1,10 +1,6 @@
-/**
- * EditTimeModal.jsx
- * Öffnet ein Modal an der Scrollposition des Users, indem wir
- * im useEffect() den window.scrollY messen und .modal-content setzen.
- */
-import React, { useEffect } from "react";
-import PropTypes from "prop-types";
+// src/pages/AdminDashboard/EditTimeModal.jsx
+import React from 'react'; // useEffect wurde entfernt, da nicht mehr benötigt
+import PropTypes from 'prop-types';
 
 const EditTimeModal = ({
                            t,
@@ -15,34 +11,15 @@ const EditTimeModal = ({
                            handleEditSubmit,
                            setEditModalVisible,
                        }) => {
-    // 1) useEffect: Wenn Modal geöffnet wird, berechnen wir die Scrollposition
-    useEffect(() => {
-        if (editModalVisible) {
-            const scrollY = window.scrollY || document.documentElement.scrollTop;
-            // Wir suchen nur innerhalb dieses Modal-Overlays nach .modal-content
-            // Falls du mehrere Modals hast, kannst du es z.B. an einer ID unterscheiden
-            const el = document.querySelector(".modal-content");
-            if (el) {
-                el.style.top = `${scrollY + 100}px`; // 100px Polster
-            }
-        }
-        // Wenn das Modal schließt, könnte man top zurücksetzen, z.B.:
-        // else {
-        //   const el = document.querySelector(".modal-content");
-        //   if (el) {
-        //     el.style.top = "0px";
-        //   }
-        // }
-    }, [editModalVisible]);
+    // Der useEffect-Hook, der window.scrollY verwendet hat, wurde entfernt.
 
-    // Falls Modal nicht sichtbar, direkt null zurückgeben
     if (!editModalVisible) return null;
 
     return (
         <div className="admin-dashboard scoped-dashboard">
-            {/**
-             * 2) WICHTIG: In deinem CSS muss .modal-overlay und .modal-content
-             *    auf position: absolute umgestellt sein, damit .style.top wirkt.
+            {/*
+             * Das CSS in AdminDashboardScoped.css (.modal-overlay)
+             * sorgt für die korrekte Zentrierung mittels position: fixed und display: flex.
              */}
             <div className="modal-overlay">
                 <div className="modal-content">

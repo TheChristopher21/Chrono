@@ -278,68 +278,48 @@ export function calculateWeeklyActualMinutes(userDayMap, weekDates) {
     return totalMinutes;
 }
 
-export function calculateWeeklyExpectedMinutes(userConfig, weekDates, defaultExpectedHours, userApprovedVacations) {
-    if (userConfig.isHourly) return 0; // Stundenlöhner haben kein Wochensoll in diesem Sinne
-    let totalExpectedMinutes = 0;
-    if (userConfig.isPercentage) { // Für prozentuale User
-        const workPercentage = userConfig.workPercentage || 100; //
-        let rawWeeklyTargetMinutes = Math.round(defaultExpectedHours * 5 * 60 * (workPercentage / 100.0)); // Annahme: defaultExpectedHours ist für 100% bei 5 Tagen
-        let vacationDeductionMinutes = 0;
-        const dailyTargetMinutesForPercentageUser = Math.round((defaultExpectedHours * (workPercentage / 100.0)) * 60); //
+export function calculateWeeklyExpectedMinutes(
+    userConfig,
+    weekDates,
+    defaultExpectedHours,
+    userApprovedVacations
+) {
+    /* Stundenlöhner: kein Wochensoll */
+    if (userConfig.isHourly) return 0;
 
+    /* -------------------------------------------------------------- */
+    /*  PROZENT-MITARBEITER                                           */
+    /* -------------------------------------------------------------- */
+    if (userConfig.isPercentage) {
+        const pct = userConfig.workPercentage ?? 100;     // %
+        const workDays = userConfig.expectedWorkDays ?? 5;       // 1-7
+        const baseWeekHours = defaultExpectedHours * 5;                  // 42.5 h
+        const pctWeekMinutes = Math.round(baseWeekHours * 60 * (pct / 100));
+        const dailyVacation = Math.round(pctWeekMinutes / workDays);
+
+        /* Urlaubstage dieser Woche abziehen */
+        let vacationDeduction = 0;
         weekDates.forEach(date => {
-            const dayOfWeek = date.getDay();
-            if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Nur Mo-Fr für Urlaubsreduktion prüfen
-                let isVacationDayThisDate = false;
-                let isHalfDayVacation = false;
-                for (const vac of userApprovedVacations) { //
-                    const vacStart = new Date(vac.startDate + "T00:00:00"); //
-                    const vacEnd = new Date(vac.endDate + "T23:59:59"); //
-                    const currentDate = new Date(date);
-                    currentDate.setHours(0, 0, 0, 0);
-                    if (currentDate >= vacStart && currentDate <= vacEnd) { //
-                        isVacationDayThisDate = true;
-                        isHalfDayVacation = vac.halfDay; //
-                        break;
-                    }
-                }
-                if (isVacationDayThisDate) {
-                    vacationDeductionMinutes += isHalfDayVacation ? (dailyTargetMinutesForPercentageUser / 2) : dailyTargetMinutesForPercentageUser; //
+            const dow = date.getDay();                     // 0=So … 6=Sa
+            if (dow >= 1 && dow <= 5) {                    // nur Mo-Fr
+                const isVac = userApprovedVacations.some(v => {
+                    const start = new Date(v.startDate + "T00:00:00");
+                    const end = new Date(v.endDate + "T23:59:59");
+                    return date >= start && date <= end;
+                });
+                if (isVac) {
+                    const vac = userApprovedVacations.find(v =>
+                        date >= new Date(v.startDate + "T00:00:00") &&
+                        date <= new Date(v.endDate + "T23:59:59")
+                    );
+                    vacationDeduction += vac?.halfDay ? dailyVacation / 2 : dailyVacation;
                 }
             }
         });
-        totalExpectedMinutes = Math.max(0, rawWeeklyTargetMinutes - vacationDeductionMinutes); //
-    } else { // Für festangestellte, nicht-prozentuale User
-        weekDates.forEach(date => {
-            let dailyExpectedMinutes = (getExpectedHoursForDay(date, userConfig, defaultExpectedHours) || 0) * 60; //
-            if (dailyExpectedMinutes > 0) { // Nur anpassen, wenn es ein erwarteter Arbeitstag war
-                let isVacationDayThisDate = false;
-                let isHalfDayVacation = false;
-                for (const vac of userApprovedVacations) { //
-                    const vacStart = new Date(vac.startDate + "T00:00:00"); //
-                    const vacEnd = new Date(vac.endDate + "T23:59:59"); //
-                    const currentDate = new Date(date);
-                    currentDate.setHours(0, 0, 0, 0);
-                    if (currentDate >= vacStart && currentDate <= vacEnd) { //
-                        isVacationDayThisDate = true;
-                        isHalfDayVacation = vac.halfDay; //
-                        break;
-                    }
-                }
-                if (isVacationDayThisDate) {
-                    if (isHalfDayVacation) { //
-                        dailyExpectedMinutes /= 2; //
-                    } else {
-                        dailyExpectedMinutes = 0; // Ganzer Urlaubstag = 0 Sollstunden
-                    }
-                }
-            }
-            totalExpectedMinutes += dailyExpectedMinutes; //
-        });
+
+        return Math.max(0, pctWeekMinutes - vacationDeduction);
     }
-    return Math.round(totalExpectedMinutes); //
 }
-
 
 export function getDetailedGlobalProblemIndicators(allUserDayMap, userApprovedVacations, userConfig, defaultExpectedHours) {
     const indicators = {
