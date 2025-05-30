@@ -159,20 +159,39 @@
     background-color: var(--ud-c-surface, #374151);
     border-color: var(--ud-c-primary-dim, #60A5FA);
 }
+.scoped-vacation .day-markers-container { /* Container für mehrere Marker pro Tag */
+    display: flex;
+    flex-direction: column; /* Marker untereinander, falls mehrere (Urlaub + Feiertag) */
+    align-items: center;
+    justify-content: center;
+    gap: 1px; /* Kleiner Abstand zwischen Markern */
+    margin-top: 4px;
+}
+
+.scoped-vacation .holiday-marker {
+    font-size: 0.7em; /* Kleinere Schrift für Feiertags-Emoji/Text */
+    padding: 1px 3px;
+    border-radius: 3px;
+    /* Beispiel für Feiertagsmarker-Styling - anpassen nach Bedarf */
+    background-color: rgba(255, 165, 0, 0.2); /* Leichter oranger Hintergrund */
+    color: orange;
+    border: 1px solid orange;
+    line-height: 1;
+}
 
 /* Urlaubs-Marker (Punkte oder Balken unter dem Datum) */
-.scoped-vacation .holiday-dot {
-    margin-top: var(--ud-gap-xs, 0.5rem);
-    width: 10px;
-    height: 10px;
+.scoped-vacation .holiday-dot { /* Bestehende Klasse für Urlaubspunkte */
+    margin-top: 0; /* Ggf. anpassen, wenn im Container */
+    width: 8px; /* Etwas kleiner, wenn mit anderem Marker kombiniert */
+    height: 8px;
     border-radius: 50%;
-    /* Schatten wird nicht mehr von der Kachelfarbe abhängig gemacht, sondern ist neutral */
-    box-shadow: 0 0 0 2px var(--ud-c-card, #ffffff); /* Ring in Kartenfarbe */
-    flex-shrink: 0; /* Verhindert Schrumpfen */
+    box-shadow: 0 0 0 1.5px var(--ud-c-card, #ffffff); /* */
+    flex-shrink: 0;
 }
-[data-theme="dark"] .scoped-vacation .holiday-dot {
-    box-shadow: 0 0 0 2px var(--ud-c-card, #1F2937);
+[data-theme="dark"] .scoped-vacation .holiday-dot { /* */
+    box-shadow: 0 0 0 1.5px var(--ud-c-card, #1F2937); /* */
 }
+
 
 /* Button zum Beantragen unter dem Kalender */
 .scoped-vacation .request-vacation-button { /* Neuer Name für Klarheit */
@@ -295,6 +314,94 @@
     .scoped-vacation .vacation-modal-content .modal-buttons button {
         width: 100%;
     }
+}
+
+/* ... bestehende .scoped-vacation Stile ... */
+
+/* ... (Stile für .holiday-marker und .holiday-dot bleiben wie zuvor) ... */
+.scoped-vacation .day-markers-container { /* Ggf. anpassen, wenn drei Marker möglich sind */
+    gap: 1px; /* Ggf. Abstand verkleinern */
+}
+
+
+.scoped-vacation .sick-leave-dot {
+    width: 8px;
+    height: 8px;
+    background-color: #FF6347; /* Tomatenrot als Standard für Krankheit */
+    border-radius: 50%;
+    box-shadow: 0 0 0 1.5px var(--ud-c-card, #ffffff);
+    flex-shrink: 0;
+}
+[data-theme="dark"] .scoped-vacation .sick-leave-dot {
+    box-shadow: 0 0 0 1.5px var(--ud-c-card, #1F2937);
+}
+
+
+/* Buttons für Urlaub und Krankheit nebeneinander */
+.scoped-vacation .calendar-action-buttons {
+    display: flex;
+    justify-content: space-around; /* Oder space-between / center */
+    align-items: center;
+    gap: 1rem; /* Abstand zwischen den Buttons */
+    margin-top: var(--ud-gap-lg, 2rem);
+}
+
+.scoped-vacation .request-vacation-button,
+.scoped-vacation .report-sick-leave-button {
+    flex-grow: 1; /* Buttons teilen sich den Platz */
+    margin-top: 0; /* Entferne individuellen margin-top, da im Flex-Container */
+}
+
+.scoped-vacation .report-sick-leave-button {
+    /* Ggf. spezifische Stile für den Krankheitsbutton, falls er sich vom Urlaubsbutton unterscheiden soll */
+    /* Standardmäßig nutzt er .button-secondary, was ok ist */
+}
+
+
+/* Spezifische Stile für das Krankheits-Modal, falls es sich vom Urlaubs-Modal unterscheiden soll */
+/* Kann ansonsten die Stile von .vacation-modal-overlay und .vacation-modal-content erben/verwenden */
+.scoped-vacation .sick-leave-modal-overlay {
+    /* Falls nötig, spezifische Overlay-Stile */
+}
+.scoped-vacation .sick-leave-modal-content {
+    /* Falls nötig, spezifische Inhalts-Stile */
+}
+.scoped-vacation .sick-leave-modal-content h3 {
+    color: var(--c-danger, #dc3545); /* Beispiel: Titel in Warnfarbe */
+}
+
+/* Layout für Checkbox und Label in einer Reihe */
+.scoped-vacation .form-group-checkbox {
+    display: flex;
+    flex-direction: row !important; /* Überschreibt ggf. .form-group flex-direction */
+    align-items: center;
+    gap: 0.5rem !important; /* Abstand zwischen Checkbox und Label */
+}
+
+.scoped-vacation .form-group-checkbox input[type="checkbox"] {
+    width: auto; /* Verhindert, dass die Checkbox die volle Breite einnimmt */
+    margin-right: 0.5rem; /* Standardabstand, falls gap nicht greift */
+}
+
+.scoped-vacation .form-group-checkbox label.checkbox-label {
+    font-weight: normal; /* Normales Gewicht für Checkbox-Labels */
+    margin-bottom: 0; /* Entfernt Standard-Margin von Labels in form-group */
+}
+
+.scoped-vacation .vacation-modal-content textarea { /* Styling für Textarea */
+    font-family: inherit;
+    border: 1px solid var(--ud-c-border, #d0d3e2);
+    border-radius: var(--ud-radius-md, 10px);
+    color: var(--ud-c-text, #1f2024);
+    background-color: var(--ud-c-card, #ffffff);
+    padding: var(--ud-gap-sm, 0.75rem) var(--ud-gap-md, 1.25rem);
+    font-size: var(--ud-fz-md, 1rem);
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 80px; /* Mindesthöhe für bessere Benutzbarkeit */
+}
+[data-theme="dark"] .scoped-vacation .vacation-modal-content textarea {
+    background-color: var(--ud-c-surface, #374151);
 }
 
 /* Reduced Motion */

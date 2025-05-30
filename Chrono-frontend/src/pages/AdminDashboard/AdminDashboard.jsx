@@ -1,11 +1,11 @@
 // AdminDashboard.jsx
-import  { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
-import { Link } from 'react-router-dom'; // Import Link
+import { Link } from 'react-router-dom';
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 import "jspdf-autotable";
@@ -15,18 +15,16 @@ import AdminVacationRequests from './AdminVacationRequests';
 import AdminCorrectionsList from './AdminCorrectionsList';
 import EditTimeModal from './EditTimeModal';
 import PrintUserTimesModal from './PrintUserTimesModal';
-
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 
 import {
     getMondayOfWeek,
     formatLocalDateYMD,
     addDays,
-    minutesToHHMM, // Hinzugefügt für PDF-Export Konsistenz
-    computeDayTotalMinutes // Hinzugefügt für PDF-Export Konsistenz
+    minutesToHHMM,
+    computeDayTotalMinutes
 } from './adminDashboardUtils';
 
-// formatDate aus date-fns für den PDF-Export, jetzt als ES6-Import
 import { formatDate as formatDateExternal } from "date-fns";
 import autoTable from "jspdf-autotable";
 
@@ -36,41 +34,29 @@ const AdminDashboard = () => {
     const { notify } = useNotification();
     const { t } = useTranslation();
 
-    // State: Zeiterfassungen, Urlaube, Korrekturen, Nutzerliste
-    const [allTracks, setAllTracks]           = useState([]);
-    const [allVacations, setAllVacations]     = useState([]);
+    const [allTracks, setAllTracks] = useState([]);
+    const [allVacations, setAllVacations] = useState([]);
     const [allCorrections, setAllCorrections] = useState([]);
-    const [users, setUsers]                   = useState([]);
+    const [users, setUsers] = useState([]);
+    const [allSickLeaves, setAllSickLeaves] = useState([]);
+    const [holidaysByCanton, setHolidaysByCanton] = useState({});
 
-    // State: Wochen-Navigation
+
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
-
-    // State: EditTimeModal
     const [editModalVisible, setEditModalVisible] = useState(false);
-    const [editDate, setEditDate]                 = useState(null);
+    const [editDate, setEditDate] = useState(null);
     const [editTargetUsername, setEditTargetUsername] = useState('');
     const [editData, setEditData] = useState({
-        workStart: '',
-        breakStart: '',
-        breakEnd: '',
-        workEnd: '',
-        adminPassword: '',
-        userPassword: ''
+        workStart: '', breakStart: '', breakEnd: '', workEnd: '', adminPassword: '', userPassword: ''
     });
-
-    // State: PrintUserTimesModal
     const [printUserModalVisible, setPrintUserModalVisible] = useState(false);
-    const [printUser, setPrintUser]                         = useState('');
-    const [printUserStartDate, setPrintUserStartDate]       = useState(formatLocalDateYMD(new Date()));
-    const [printUserEndDate,   setPrintUserEndDate]         = useState(formatLocalDateYMD(new Date()));
-
-    // Sonstige
+    const [printUser, setPrintUser] = useState('');
+    const [printUserStartDate, setPrintUserStartDate] = useState(formatLocalDateYMD(new Date()));
+    const [printUserEndDate, setPrintUserEndDate] = useState(formatLocalDateYMD(new Date()));
     const [weeklyBalances, setWeeklyBalances] = useState([]);
-    const defaultExpectedHours                = 8.5;
+    const defaultExpectedHours = 8.5;
 
-    //
-    // 1) Data Loading Callbacks
-    //
+
     const fetchUsers = useCallback(async () => {
         try {
             const res = await api.get('/api/admin/users');
@@ -123,20 +109,91 @@ const AdminDashboard = () => {
         }
     }, [users, notify, t]);
 
-    useEffect(() => {
-        fetchUsers();
+    const fetchAllSickLeavesForAdmin = useCallback(async () => {
+        try {
+            const params = {};
+            if (currentUser?.roles?.includes('ROLE_SUPERADMIN') && currentUser.companyId) {
+                // params.companyId = currentUser.companyId;
+            } else if (!currentUser?.roles?.includes('ROLE_SUPERADMIN') && currentUser?.companyId) {
+                params.companyId = currentUser.companyId;
+            }
+
+            const res = await api.get('/api/sick-leave/company', { params });
+            setAllSickLeaves(Array.isArray(res.data) ? res.data : []);
+        } catch (err) {
+            console.error('Error loading sick leaves for admin dashboard', err);
+            notify(t('errors.fetchSickLeaveErrorAdmin', 'Fehler beim Laden der Krankmeldungen für das Dashboard.'), 'error');
+        }
+    }, [currentUser, notify, t]);
+
+    const fetchHolidaysForAllRelevantCantons = useCallback(async () => {
+        const currentYear = selectedMonday.getFullYear();
+        const yearStartDate = `${currentYear}-01-01`;
+        const yearEndDate = `${currentYear}-12-31`;
+
+        const cantonsToFetch = new Set();
+        if (currentUser?.companyCantonAbbreviation) {
+            cantonsToFetch.add(currentUser.companyCantonAbbreviation);
+        }
+        users.forEach(user => {
+            if (user.companyCantonAbbreviation) {
+                cantonsToFetch.add(user.companyCantonAbbreviation);
+            }
+        });
+
+        if (cantonsToFetch.size === 0) {
+            cantonsToFetch.add('');
+        }
+
+        const newHolidaysByCantonState = { ...holidaysByCanton };
+        let fetchOccurredForNewData = false;
+
+        for (const canton of cantonsToFetch) {
+            const cantonKey = canton || 'GENERAL';
+            try {
+                const params = { year: currentYear, cantonAbbreviation: canton, startDate: yearStartDate, endDate: yearEndDate };
+                const response = await api.get('/api/holidays/details', { params });
+                newHolidaysByCantonState[cantonKey] = response.data || {};
+                fetchOccurredForNewData = true;
+            } catch (error) {
+                console.error(t('errors.fetchHolidaysErrorForCanton', `Fehler beim Laden der Feiertage für Kanton ${cantonKey}:`), error);
+                if (!newHolidaysByCantonState[cantonKey]) {
+                    newHolidaysByCantonState[cantonKey] = {};
+                }
+            }
+        }
+        if (fetchOccurredForNewData || Object.keys(newHolidaysByCantonState).length !== Object.keys(holidaysByCanton).length) {
+            setHolidaysByCanton(newHolidaysByCantonState);
+        }
+
+    }, [selectedMonday, currentUser, users, t, holidaysByCanton]);
+
+    const handleDataReloadNeeded = useCallback(() => {
         fetchAllTracks();
         fetchAllVacations();
         fetchAllCorrections();
-    }, [fetchUsers, fetchAllTracks, fetchAllVacations, fetchAllCorrections]);
+        fetchAllSickLeavesForAdmin();
+        fetchTrackingBalances();
+    }, [fetchAllTracks, fetchAllVacations, fetchAllCorrections, fetchAllSickLeavesForAdmin, fetchTrackingBalances]);
+
 
     useEffect(() => {
-        fetchTrackingBalances();
-    }, [fetchTrackingBalances]);
+        fetchUsers();
+    }, [fetchUsers]);
 
-    //
-    // 2) Week Navigation
-    //
+    useEffect(() => {
+        if (users.length > 0 || currentUser) {
+            handleDataReloadNeeded();
+        }
+    }, [users, currentUser, handleDataReloadNeeded]);
+
+    useEffect(() => {
+        if (users.length > 0 || currentUser) {
+            fetchHolidaysForAllRelevantCantons();
+        }
+    }, [selectedMonday, users, currentUser, fetchHolidaysForAllRelevantCantons]);
+
+
     function handlePrevWeek() {
         setSelectedMonday(prev => addDays(prev, -7));
     }
@@ -150,15 +207,12 @@ const AdminDashboard = () => {
         }
     }
 
-    //
-    // 3) Vacation Handlers
-    //
+
     async function handleApproveVacation(id) {
         try {
             await api.post(`/api/vacation/approve/${id}`);
             notify(t('adminDashboard.vacationApprovedMsg', 'Urlaub genehmigt.'), 'success');
-            await fetchAllVacations();
-            await fetchTrackingBalances();
+            handleDataReloadNeeded();
         } catch (err) {
             console.error('Error approving vacation', err);
             notify(t('adminDashboard.vacationApproveErrorMsg', 'Fehler beim Genehmigen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
@@ -168,23 +222,19 @@ const AdminDashboard = () => {
         try {
             await api.post(`/api/vacation/deny/${id}`);
             notify(t('adminDashboard.vacationDeniedMsg', 'Urlaub abgelehnt.'), 'success');
-            await fetchAllVacations();
+            fetchAllVacations();
         } catch (err) {
             console.error('Error denying vacation', err);
             notify(t('adminDashboard.vacationDenyErrorMsg', 'Fehler beim Ablehnen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
         }
     }
 
-    //
-    // 4) Corrections Handlers
-    //
+
     async function handleApproveCorrection(id, comment) {
         try {
             await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
             notify(t('adminDashboard.correctionApprovedMsg', 'Korrekturantrag genehmigt.'), 'success');
-            await fetchAllCorrections();
-            await fetchAllTracks();
-            await fetchTrackingBalances();
+            handleDataReloadNeeded();
         } catch (err) {
             console.error('Error approving correction', err);
             notify(t('adminDashboard.correctionApproveErrorMsg', 'Fehler beim Genehmigen der Korrektur: ') + (err.response?.data?.message || err.message), 'error');
@@ -194,16 +244,13 @@ const AdminDashboard = () => {
         try {
             await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
             notify(t('adminDashboard.correctionDeniedMsg', 'Korrekturantrag abgelehnt.'), 'success');
-            await fetchAllCorrections();
+            fetchAllCorrections();
         } catch (err) {
             console.error('Error denying correction', err);
             notify(t('adminDashboard.correctionDenyErrorMsg', 'Fehler beim Ablehnen der Korrektur: ') + (err.response?.data?.message || err.message), 'error');
         }
     }
 
-    //
-    // 5) EditTimeModal
-    //
     function openEditModal(targetUsername, dateObj, entries) {
         const entry = entries[0] || {};
         setEditTargetUsername(targetUsername);
@@ -223,12 +270,7 @@ const AdminDashboard = () => {
         setEditTargetUsername(targetUsername);
         setEditDate(dateObj);
         setEditData({
-            workStart:   '',
-            breakStart:  '',
-            breakEnd:    '',
-            workEnd:     '',
-            adminPassword: '',
-            userPassword: ''
+            workStart:   '', breakStart:  '', breakEnd:    '', workEnd:     '', adminPassword: '', userPassword: ''
         });
         setEditModalVisible(true);
     }
@@ -251,11 +293,10 @@ const AdminDashboard = () => {
             adminUsername:  currentUser.username,
         };
         try {
-            await api.put('/api/timetracking/editDay', null, { params });
+            await api.put('/api/admin/timetracking/editDay', null, { params });
             setEditModalVisible(false);
             notify(t('adminDashboard.editSuccessfulMsg', 'Zeiten erfolgreich bearbeitet.'), 'success');
-            await fetchAllTracks();
-            await fetchTrackingBalances();
+            handleDataReloadNeeded();
         } catch (err) {
             console.error('Edit failed', err);
             notify(t('adminDashboard.editFailed', "Fehler beim Bearbeiten") + ': ' + (err.response?.data?.message || err.message), 'error');
@@ -273,9 +314,7 @@ const AdminDashboard = () => {
         setEditData(prev => ({ ...prev, [name]: value }));
     }
 
-    //
-    // 6) PrintUserTimesModal
-    //
+
     function openPrintUserModal(username) {
         setPrintUser(username);
         const nowStr = formatLocalDateYMD(new Date());
@@ -303,51 +342,50 @@ const AdminDashboard = () => {
         doc.setFontSize(14);
         doc.text(`Zeitenbericht für ${printUser}`, 14, 15);
         doc.setFontSize(11);
-        doc.text(`Zeitraum: ${formatDateExternal(new Date(printUserStartDate + "T00:00:00"), 'dd-MM-yyyy')} – ${formatDateExternal(new Date(printUserEndDate + "T00:00:00"), 'dd-MM-yyyy')}`, 14, 22);
+        doc.text(`Zeitraum: ${formatDateExternal(new Date(printUserStartDate + "T00:00:00"), 'dd.MM.yyyy')} – ${formatDateExternal(new Date(printUserEndDate + "T00:00:00"), 'dd.MM.yyyy')}`, 14, 22);
 
         const tableBody = sortedEntries.map(dayData => {
-            const displayDate = formatDateExternal(new Date(dayData.dailyDate + "T00:00:00"), 'dd-MM-yyyy');
-            const workStart  = dayData.workStart  ? dayData.workStart  : "-";
-            const breakStart = dayData.breakStart ? dayData.breakStart : "-";
-            const breakEnd   = dayData.breakEnd   ? dayData.breakEnd   : "-";
-            const workEnd    = dayData.workEnd    ? dayData.workEnd    : "-";
+            const displayDate = formatDateExternal(new Date(dayData.dailyDate + "T00:00:00"), 'dd.MM.yyyy');
+            const workStart  = dayData.workStart  ? dayData.workStart.slice(0,5)  : "-";
+            const breakStart = dayData.breakStart ? dayData.breakStart.slice(0,5) : "-";
+            const breakEnd   = dayData.breakEnd   ? dayData.breakEnd.slice(0,5)   : "-";
+            const workEnd    = dayData.workEnd    ? dayData.workEnd.slice(0,5)    : "-";
 
-            const totalMins = computeDayTotalMinutes(dayData); // Assuming this util handles the structure of dayData
+            const totalMins = computeDayTotalMinutes(dayData);
             const totalStr  = totalMins > 0 ? minutesToHHMM(totalMins) : "-";
 
             return [displayDate, workStart, breakStart, breakEnd, workEnd, totalStr];
         });
 
-        // Changed from doc.autoTable to autoTable(doc, options)
         autoTable(doc, {
-            head: [["Datum", "Work-Start", "Break-Start", "Break-End", "Work-End", "Gesamt"]],
+            head: [["Datum", "Arbeitsbeginn", "Pausenbeginn", "Pausenende", "Arbeitsende", "Gesamt"]],
             body: tableBody,
             startY: 30,
             margin: { left: 14, right: 14 },
-            styles: { fontSize: 9, cellPadding: 3 },
+            styles: { fontSize: 9, cellPadding: 2.5 },
             headStyles: {
-                fillColor: [0, 123, 255],
-                textColor: 255, // Ensuring white text on blue background for header
+                fillColor: [71, 91, 255],
+                textColor: 255,
                 halign: "center",
                 fontStyle: "bold"
             },
             bodyStyles: {
                 halign: "center"
             },
+            alternateRowStyles: { fillColor: [240, 242, 254] },
             didDrawPage: (data) => {
-                doc.text(`Seite ${data.pageNumber}`, doc.internal.pageSize.getWidth() - 14, 10, {
+                doc.setFontSize(8);
+                doc.text(`Seite ${data.pageNumber} von ${doc.getNumberOfPages()}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, {
                     align: "right"
                 });
             }
         });
 
-        doc.save(`zeiten_${printUser}_${printUserStartDate}_${printUserEndDate}.pdf`);
+        doc.save(`Zeiten_${printUser}_${printUserStartDate}_bis_${printUserEndDate}.pdf`);
         setPrintUserModalVisible(false);
     }
 
-    //
-    // 7) Template
-    //
+
     return (
         <div className="admin-dashboard scoped-dashboard">
             <Navbar />
@@ -355,11 +393,11 @@ const AdminDashboard = () => {
                 <h2>{t('adminDashboard.titleWeekly')}</h2>
                 {currentUser && ( <p>{t('adminDashboard.loggedInAs')} {currentUser.username}</p> )}
             </header>
-                        <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
-                            <Link to="/admin/import-timetracking" className="button-primary" style={{ textDecoration: 'none', padding: '0.75rem 1.5rem', display: 'inline-block' }}>
-                                {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
-                            </Link>
-                        </div>
+            <div style={{ marginBottom: '1.5rem', textAlign: 'center' }}>
+                <Link to="/admin/import-timetracking" className="button-primary" style={{ textDecoration: 'none', padding: '0.75rem 1.5rem', display: 'inline-block' }}>
+                    {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
+                </Link>
+            </div>
             <div className="dashboard-content grid lg:grid-cols-3 gap-4">
                 <div className="left-column lg:col-span-2 flex flex-col gap-4">
                     <AdminWeekSection
@@ -369,22 +407,25 @@ const AdminDashboard = () => {
                         handlePrevWeek={handlePrevWeek}
                         handleNextWeek={handleNextWeek}
                         handleWeekJump={handleWeekJump}
-                        onFocusProblemWeek={focusWeekForProblem} // NEUE Prop
+                        onFocusProblemWeek={focusWeekForProblem}
                         allTracks={allTracks}
                         allVacations={allVacations}
+                        allSickLeaves={allSickLeaves}
+                        allHolidays={holidaysByCanton} // Geändert
                         users={users}
                         defaultExpectedHours={defaultExpectedHours}
                         openEditModal={openEditModal}
                         openPrintUserModal={openPrintUserModal}
                         weeklyBalances={weeklyBalances}
                         openNewEntryModal={openNewEntryModal}
+                        onDataReloadNeeded={handleDataReloadNeeded}
                     />
                     <AdminVacationRequests
                         t={t}
                         allVacations={allVacations}
                         handleApproveVacation={handleApproveVacation}
                         handleDenyVacation={handleDenyVacation}
-                        onReloadVacations={() => { fetchAllVacations(); fetchTrackingBalances(); }}
+                        onReloadVacations={handleDataReloadNeeded}
                     />
                 </div>
                 <div className="right-column flex flex-col gap-4">
@@ -400,7 +441,7 @@ const AdminDashboard = () => {
                 <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
                 <VacationCalendarAdmin
                     vacationRequests={allVacations.filter(v => v.approved)}
-                    onReloadVacations={() => { fetchAllVacations(); fetchTrackingBalances(); }}
+                    onReloadVacations={handleDataReloadNeeded}
                 />
             </div>
             <EditTimeModal

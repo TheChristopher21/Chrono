@@ -2,11 +2,36 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import "../styles/RegistrationScoped.css";
+import "../styles/RegistrationScoped.css"; // Dein CSS-File
 import { Link } from "react-router-dom";
 
-import api from "../utils/api";
-import { useNotification } from "../context/NotificationContext";
+import api from "../utils/api"; // Annahme: api util ist konfiguriert
+import { useNotification } from "../context/NotificationContext"; // Annahme: Notification Context ist konfiguriert
+
+// KONFIGURATION DER PAKETE (Training entfernt)
+const PACKAGE_CONFIG = {
+    Small: {
+        name: "Small",
+        baseMonthly: 20,
+        perEmployeeMonthly: 5,
+        support: "Standard E-Mail Support (Antwort i.d.R. innerhalb 48h)",
+        color: "#777",
+    },
+    Basic: {
+        name: "Basic",
+        baseMonthly: 60,
+        perEmployeeMonthly: 4.5,
+        support: "Priorisierter E-Mail Support (Antwort i.d.R. innerhalb 24h)",
+        color: "#007bff", // Blauton, anpassbar
+    },
+    Professional: {
+        name: "Professional",
+        baseMonthly: 160,
+        perEmployeeMonthly: 4,
+        support: "Premium E-Mail & Telefon-Support (Schnelle Reaktionszeiten), Persönlicher Ansprechpartner.",
+        color: "#28a745", // Grünton, anpassbar
+    }
+};
 
 const Registration = () => {
     const navigate = useNavigate();
@@ -20,142 +45,149 @@ const Registration = () => {
         additionalInfo: "",
     });
 
-    // Nur noch 3 Pakete (Small / Basic / Professional)
-    const [selectedPackage, setSelectedPackage] = useState("");
-    const [employeeCount, setEmployeeCount] = useState(5);
-    const [billingPeriod, setBillingPeriod] = useState("monthly"); // "monthly" oder "yearly"
+    const [selectedPackageName, setSelectedPackageName] = useState("");
+    const [employeeCount, setEmployeeCount] = useState(1);
+    const [billingPeriod, setBillingPeriod] = useState("monthly");
 
-    // Preise in CHF
     const [calculatedPrice, setCalculatedPrice] = useState(0);
+    const [priceBreakdown, setPriceBreakdown] = useState(null);
 
-    // Einmalige Installationskosten (in CHF)
     const INSTALL_FEE = 150;
+    const [includeOptionalTraining, setIncludeOptionalTraining] = useState(false);
+    const OPTIONAL_TRAINING_COST = 120;
 
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // Eingaben für das Formular (Firma, Kontakt, etc.)
     const handleChange = (e) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    // Paket auswählen
-    const handlePackageSelect = (pkg) => {
-        setSelectedPackage(pkg);
+    const handlePackageSelect = (pkgName) => {
+        setSelectedPackageName(pkgName);
     };
 
-    // Mitarbeiterzahl
     const handleEmployeeCountChange = (e) => {
-        const val = parseInt(e.target.value, 10);
-        if (!isNaN(val)) setEmployeeCount(val);
+        let val = parseInt(e.target.value, 10);
+        if (isNaN(val) || val < 1) val = 1;
+        if (val > 100) val = 100;
+        setEmployeeCount(val);
     };
 
-    // Abrechnungsmodus (monatlich / jährlich)
     const handleBillingPeriodChange = (e) => {
         setBillingPeriod(e.target.value);
     };
 
-    /**
-     * 3 Pakete in CHF:
-     *   - Small: 19 CHF/Monat, bis 5 MA, +3 CHF pro extra-MA
-     *   - Basic: 49 CHF/Monat, bis 25 MA, +2.5 CHF pro extra-MA
-     *   - Professional: 99 CHF/Monat, bis 50 MA, +2.0 CHF pro extra-MA
-     *
-     * Bei yearly: 2 Monate geschenkt => 10 * (Monatspreis).
-     */
-    function calculatePrice(pkg, empCount, period) {
-        let baseMonthly = 0;
-        let includedEmp = 0;
-        let extraPerEmp = 0;
+    const handleOptionalTrainingChange = (e) => {
+        setIncludeOptionalTraining(e.target.checked);
+    };
 
-        switch (pkg) {
-            case "Small":
-                baseMonthly = 19;
-                includedEmp = 5;
-                extraPerEmp = 3.0;
-                break;
-            case "Basic":
-                baseMonthly = 49;
-                includedEmp = 25;
-                extraPerEmp = 2.5;
-                break;
-            case "Professional":
-                baseMonthly = 99;
-                includedEmp = 50;
-                extraPerEmp = 2.0;
-                break;
-            default:
-                return 0;
+    function calculatePriceDetails(pkgName, empCount, period, trainingSelected) {
+        if (!pkgName || !PACKAGE_CONFIG[pkgName]) {
+            return { total: 0, breakdown: null };
         }
 
-        const extraMA = Math.max(0, empCount - includedEmp);
-        let monthlyCost = baseMonthly + extraMA * extraPerEmp;
+        const pkg = PACKAGE_CONFIG[pkgName];
+        const serviceFeeMonthly = pkg.baseMonthly;
+        const employeeCostMonthly = empCount * pkg.perEmployeeMonthly;
+        let packageMonthlyTotal = serviceFeeMonthly + employeeCostMonthly;
 
-        // Jährlich => 10 * monthly
+        let currentPeriodFactor = 1;
+        let periodText = "/ Monat";
         if (period === "yearly") {
-            monthlyCost = monthlyCost * 10;
+            packageMonthlyTotal *= 10;
+            currentPeriodFactor = 10;
+            periodText = "/ Jahr (entspricht 10 Monatsraten)";
         }
-        // Endpreis = Packet-Preis plus die einmalige Installationsgebühr
-        return monthlyCost + INSTALL_FEE;
+
+        const installationFee = INSTALL_FEE;
+        let optionalTrainingCostTotal = 0;
+        if (trainingSelected) {
+            optionalTrainingCostTotal = OPTIONAL_TRAINING_COST;
+        }
+
+        const totalForFirstPayment = packageMonthlyTotal + installationFee + optionalTrainingCostTotal;
+
+        return {
+            total: totalForFirstPayment,
+            breakdown: {
+                serviceFee: period === 'yearly' ? serviceFeeMonthly * currentPeriodFactor : serviceFeeMonthly,
+                employeeCost: period === 'yearly' ? employeeCostMonthly * currentPeriodFactor : employeeCostMonthly,
+                packageSubtotal: packageMonthlyTotal, // Paketpreis (Grundgebühr + MA) für den gewählten Zeitraum
+                installationFee: installationFee,
+                optionalTrainingCost: optionalTrainingCostTotal,
+                billingPeriodText: periodText,
+                isYearly: period === 'yearly',
+            }
+        };
     }
 
-    // Re-Berechnung bei Änderungen
     useEffect(() => {
-        setCalculatedPrice(calculatePrice(selectedPackage, employeeCount, billingPeriod));
-    }, [selectedPackage, employeeCount, billingPeriod]);
+        const { total, breakdown } = calculatePriceDetails(
+            selectedPackageName,
+            employeeCount,
+            billingPeriod,
+            includeOptionalTraining
+        );
+        setCalculatedPrice(total);
+        setPriceBreakdown(breakdown);
+    }, [selectedPackageName, employeeCount, billingPeriod, includeOptionalTraining]);
 
-    // Absenden
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedPackage) {
+        if (!selectedPackageName) {
             setError("Bitte wählen Sie ein Paket aus.");
             return;
         }
         setIsSubmitting(true);
+        setError("");
         try {
+            // Der Payload enthält alle Infos, die du für dein Angebot brauchst
             const payload = {
                 ...form,
-                chosenPackage: selectedPackage,
+                chosenPackage: selectedPackageName,
                 employeeCount,
                 billingPeriod,
-                calculatedPrice,
+                includeOptionalTraining,
+                optionalTrainingCost: includeOptionalTraining ? OPTIONAL_TRAINING_COST : 0,
+                totalCalculatedFirstPayment: calculatedPrice,
+                priceBreakdown: priceBreakdown,
+                installationFee: INSTALL_FEE,
+                packageBaseFeeMonthly: PACKAGE_CONFIG[selectedPackageName].baseMonthly,
+                packagePerEmployeeMonthly: PACKAGE_CONFIG[selectedPackageName].perEmployeeMonthly,
             };
-            const response = await api.post("/api/apply", payload);
-            if (response.data.success) {
-                setSuccess(true);
-                notify("Ihre Bewerbung wurde erfolgreich gesendet. Wir melden uns per E-Mail.");
-                setTimeout(() => {
-                    navigate("/login", { replace: true });
-                }, 3000);
-            } else {
-                setError(response.data.message || "Bewerbung fehlgeschlagen");
-            }
+            console.log("Sende Registrierungsanfrage:", payload); // Für Testzwecke
+            await new Promise(resolve => setTimeout(resolve, 1500)); // Simuliere Netzwerkverzögerung
+
+            setSuccess(true);
+            notify("Anfrage erfolgreich gesendet! Sie erhalten in Kürze Ihr individuelles Angebot.", "success");
         } catch (err) {
-            setError("Fehler: " + err.message);
+            setError("Fehler bei der Übermittlung: " + (err.response?.data?.message || err.message));
+            notify("Fehler bei der Übermittlung: " + (err.message), "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    // Format-Helfer, um in der Vorschau "xxx.xx CHF" auszugeben
     function formatCHF(value) {
+        if (typeof value !== 'number' || isNaN(value)) {
+            return "0,00 CHF";
+        }
         return value.toFixed(2).replace(".", ",") + " CHF";
     }
 
     return (
         <>
             <Navbar />
-
             <div className="registration-page scoped-registration">
                 <div className="registration-content">
-                    {/* Pakete + Preise */}
                     <div className="pricing-section">
-                        <h2>Unsere Preise &amp; Pakete</h2>
+                        <h2>Pakete &amp; Preisübersicht</h2>
                         <p className="pricing-intro">
-                            NFC-Stempeln, automatische Zeiterfassung und Berichte sind in jedem Paket enthalten.
-                            <br />
-                            Der Unterschied liegt vor allem in der Anzahl mitgelieferter Mitarbeiterplätze und dem Support-Level.
+                            Wählen Sie das Service-Paket, das am besten zu Ihren Bedürfnissen passt.
+                            Alle Pakete beinhalten die vollen Chrono-Funktionen. Die Preise variieren je nach Mitarbeiterzahl und Service-Level.
+                            <br /><strong>Diese Registrierung ist unverbindlich. Sie erhalten im Anschluss ein detailliertes Angebot per E-Mail.</strong>
                         </p>
 
                         <div className="billing-toggle">
@@ -167,7 +199,7 @@ const Registration = () => {
                                     checked={billingPeriod === "monthly"}
                                     onChange={handleBillingPeriodChange}
                                 />
-                                Monatlich
+                                Monatliche Zahlung
                             </label>
                             <label>
                                 <input
@@ -177,78 +209,156 @@ const Registration = () => {
                                     checked={billingPeriod === "yearly"}
                                     onChange={handleBillingPeriodChange}
                                 />
-                                Jährlich (2 Monate gratis)
+                                Jährliche Zahlung (2 Monate geschenkt!)
                             </label>
                         </div>
 
                         <div className="pricing-cards">
-                            {/* Small */}
-                            <div
-                                className={`pricing-card ${selectedPackage === "Small" ? "selected" : ""}`}
-                                onClick={() => handlePackageSelect("Small")}
-                            >
-                                <h3>Small</h3>
-                                <p className="price-line">
-                                    <strong>19 CHF / Monat*</strong><br />
-                                    <span className="yearly-hint">oder 190 CHF / Jahr</span>
-                                </p>
-                                <ul>
-                                    <li>Bis 5 Mitarbeiter inklusive</li>
-                                    <li>E-Mail-Support (Mo-Fr)</li>
-                                    <li>Alle Berichte &amp; Urlaubsverwaltung</li>
-                                </ul>
-                            </div>
+                            {Object.values(PACKAGE_CONFIG).map((pkg) => (
+                                <div
+                                    key={pkg.name}
+                                    className={`pricing-card ${selectedPackageName === pkg.name ? "selected" : ""}`}
+                                    onClick={() => handlePackageSelect(pkg.name)}
+                                    style={{ '--card-accent-color': selectedPackageName === pkg.name ? pkg.color : 'var(--c-border)' }}
+                                >
+                                    <h3 style={{ color: selectedPackageName === pkg.name ? pkg.color : 'var(--c-text-strong)' }}>{pkg.name}</h3>
+                                    <p className="price-line base-fee">
+                                        Service-Grundgebühr:<br /><strong>{formatCHF(pkg.baseMonthly)} / Monat</strong>
+                                    </p>
+                                    <p className="price-line employee-rate">
+                                        Pro Mitarbeiter:<br /><strong>+ {formatCHF(pkg.perEmployeeMonthly)} / Monat</strong>
+                                    </p>
+                                    <p className="yearly-hint-card">
+                                        Bei jährl. Zahlung: {formatCHF(pkg.baseMonthly * 10)} Grundgebühr + {formatCHF(pkg.perEmployeeMonthly * 10)} pro MA / Jahr
+                                    </p>
+                                    <ul className="features-list">
+                                        <li><strong>Support:</strong> {pkg.support}</li>
+                                        <li>Alle Chrono-App Funktionen</li>
+                                    </ul>
+                                </div>
+                            ))}
+                        </div>
 
-                            {/* Basic */}
-                            <div
-                                className={`pricing-card ${selectedPackage === "Basic" ? "selected" : ""}`}
-                                onClick={() => handlePackageSelect("Basic")}
-                            >
-                                <h3>Basic</h3>
-                                <p className="price-line">
-                                    <strong>49 CHF / Monat*</strong><br />
-                                    <span className="yearly-hint">oder 490 CHF / Jahr</span>
-                                </p>
-                                <ul>
-                                    <li>Bis 25 Mitarbeiter inklusive</li>
-                                    <li>E-Mail + Chat-Support (Mo-Fr 8-18 Uhr)</li>
-                                    <li>Alle Berichte &amp; Urlaubsverwaltung</li>
-                                </ul>
-                            </div>
+                        <div className="central-employee-input">
+                            <label htmlFor="employeeCount">Anzahl Mitarbeiter (1-100):</label>
+                            <input
+                                type="number"
+                                id="employeeCount"
+                                name="employeeCount"
+                                min="1"
+                                max="100"
+                                value={employeeCount}
+                                onChange={handleEmployeeCountChange}
+                                disabled={isSubmitting}
+                            />
+                        </div>
 
-                            {/* Professional */}
-                            <div
-                                className={`pricing-card ${selectedPackage === "Professional" ? "selected" : ""}`}
-                                onClick={() => handlePackageSelect("Professional")}
-                            >
-                                <h3>Professional</h3>
-                                <p className="price-line">
-                                    <strong>99 CHF / Monat*</strong><br />
-                                    <span className="yearly-hint">oder 990 CHF / Jahr</span>
-                                </p>
-                                <ul>
-                                    <li>Bis 50 Mitarbeiter inklusive</li>
-                                    <li>Premium-Support (E-Mail, Chat &amp; Telefon)</li>
-                                    <li>Alle Berichte &amp; Urlaubsverwaltung</li>
-                                </ul>
-                            </div>
+                        <div className="training-option-section">
+                            <h4>Optionales Add-on:</h4>
+                            <label htmlFor="includeOptionalTraining" className="training-label">
+                                <input
+                                    type="checkbox"
+                                    id="includeOptionalTraining"
+                                    name="includeOptionalTraining"
+                                    checked={includeOptionalTraining}
+                                    onChange={handleOptionalTrainingChange}
+                                />
+                                Zusätzliches Intensiv-Onboarding (1 Std. individuell) für <strong>{formatCHF(OPTIONAL_TRAINING_COST)}</strong> (einmalig) buchen.
+                            </label>
                         </div>
 
                         <p className="pricing-footnote">
-                            * Alle Preise netto zzgl. MwSt.
-                            &nbsp;|&nbsp; Bei jährlicher Zahlung nur 10 statt 12 Monatsraten.
+                            * Alle Preise zzgl. MwSt. | Bei jährlicher Zahlung nur 10 statt 12 Monatsraten für Paket- und Mitarbeiterkosten.
+                            <br />
+                            Die einmalige Installationsgebühr von {formatCHF(INSTALL_FEE)} wird bei Beauftragung fällig.
                         </p>
                     </div>
 
-                    {/* Formular */}
                     <div className="application-section">
-                        <h2>Firmen-Anmeldung</h2>
+                        <h2>Registrierungsanfrage senden</h2>
+                        {selectedPackageName && priceBreakdown && (
+                            <div className="price-preview card">
+                                <h4>Ihre Konfiguration: Paket "{selectedPackageName}"</h4>
+                                <p className="price-item">
+                                    <span className="label">Mitarbeiter:</span>
+                                    <span className="value">{employeeCount}</span>
+                                </p>
+                                <p className="price-item">
+                                    <span className="label">Zahlungsweise:</span>
+                                    <span className="value">{billingPeriod === "monthly" ? "Monatlich" : "Jährlich"}</span>
+                                </p>
+                                <hr />
+                                <p className="price-item">
+                                    <span className="label">Voraussichtliche Service-Grundgebühr:</span>
+                                    <span className="value">
+                                        {formatCHF(priceBreakdown.serviceFee)}{" "}
+                                        {priceBreakdown.billingPeriodText.replace(" (entspricht 10 Monatsraten)", "")}
+                                    </span>
+                                </p>
+                                <p className="price-item">
+                                    <span className="label">Voraussichtliche Kosten für Mitarbeiter:</span>
+                                    <span className="value">
+                                        {formatCHF(priceBreakdown.employeeCost)}{" "}
+                                        {priceBreakdown.billingPeriodText.replace(" (entspricht 10 Monatsraten)", "")}
+                                    </span>
+                                </p>
+                                <p className="price-item prominent-subtotal">
+                                    <span className="label">
+                                        Voraussichtliche Paketkosten {billingPeriod === "monthly" ? "monatlich" : "jährlich"}:
+                                    </span>
+                                    <span className="value">{formatCHF(priceBreakdown.packageSubtotal)}</span>
+                                </p>
+                                {priceBreakdown.isYearly && (
+                                    <p className="price-item sub-hint">
+                                        <span className="label">(Entspricht ca. pro Monat):</span>
+                                        <span className="value">
+                                            {formatCHF(priceBreakdown.packageSubtotal / 10)}
+                                        </span>
+                                    </p>
+                                )}
+                                <hr />
+                                <p className="price-item">
+                                    <span className="label">Einmalige Installationsgebühr:</span>
+                                    <span className="value">{formatCHF(priceBreakdown.installationFee)}</span>
+                                </p>
+                                {includeOptionalTraining && (
+                                    <p className="price-item">
+                                        <span className="label">Optionales Intensiv-Onboarding:</span>
+                                        <span className="value">{formatCHF(priceBreakdown.optionalTrainingCost)}</span>
+                                    </p>
+                                )}
+                                <hr />
+                                <div className="total-price-wrapper">
+                                    <p className="price-item total-price">
+                                        <span className="label">
+                                            Voraussichtlicher Gesamtbetrag für erste Zahlung (bei Beauftragung):
+                                        </span>
+                                        <span className="value">{formatCHF(calculatedPrice)}</span>
+                                    </p>
+                                </div>
+                                <p className="price-item sub-hint">
+                                    <span className="label">Die nachfolgenden Zahlungen für das Paket betragen:</span>
+                                    <span className="value">
+                                        {formatCHF(priceBreakdown.packageSubtotal)}{" "}
+                                        {billingPeriod === "monthly" ? "monatlich" : "jährlich"}
+                                    </span>
+                                </p>
+                            </div>
+                        )}
 
                         {error && <p className="error-message">{error}</p>}
                         {success ? (
-                            <p className="success-message">
-                                Ihre Bewerbung wurde erfolgreich gesendet. Wir melden uns in Kürze per E-Mail.
-                            </p>
+                            <div className="success-message-box">
+                                <h3>Vielen Dank für Ihre Anfrage!</h3>
+                                <p>Wir haben Ihre Konfiguration erhalten und prüfen diese.</p>
+                                <p>
+                                    Sie erhalten in Kürze (üblicherweise innerhalb von 1-2 Werktagen) ein individuelles Angebot und weitere Informationen per E-Mail an <strong>{form.email}</strong>.
+                                </p>
+                                <p>Bitte prüfen Sie auch Ihren Spam-Ordner.</p>
+                                <button onClick={() => navigate('/')} style={{ marginTop: '1rem' }}>
+                                    Zurück zur Startseite
+                                </button>
+                            </div>
                         ) : (
                             <form onSubmit={handleSubmit}>
                                 <input
@@ -264,7 +374,7 @@ const Registration = () => {
                                     name="contactName"
                                     value={form.contactName}
                                     onChange={handleChange}
-                                    placeholder="Ansprechpartner"
+                                    placeholder="Ansprechpartner*in"
                                     required
                                 />
                                 <input
@@ -282,55 +392,20 @@ const Registration = () => {
                                     onChange={handleChange}
                                     placeholder="Telefon (optional)"
                                 />
-
-                                {selectedPackage && (
-                                    <div className="emp-count-wrapper">
-                                        <label htmlFor="employeeCount">Geschätzte Mitarbeiteranzahl:</label>
-                                        <input
-                                            type="number"
-                                            id="employeeCount"
-                                            name="employeeCount"
-                                            min="1"
-                                            value={employeeCount}
-                                            onChange={handleEmployeeCountChange}
-                                        />
-                                    </div>
-                                )}
-
                                 <textarea
                                     name="additionalInfo"
                                     value={form.additionalInfo}
                                     onChange={handleChange}
-                                    placeholder="Weitere Informationen oder Fragen..."
+                                    placeholder="Weitere Informationen oder Fragen zu Ihrer Anfrage..."
                                     rows="4"
                                 />
-
-                                {selectedPackage && (
-                                    <div className="price-preview">
-                                        <strong>Voraussichtlicher Preis:</strong>&nbsp;
-                                        {calculatedPrice > 0 ? (
-                                            <>
-                                                {formatCHF(calculatedPrice)}{" "}
-                                                {billingPeriod === "monthly" ? "pro Monat (inkl. 150 CHF Installation)" : "pro Jahr (inkl. 150 CHF Installation)"}
-                                            </>
-                                        ) : (
-                                            "—"
-                                        )}
-                                        <br />
-                                        <span style={{ fontSize: "0.85rem", color: "var(--c-muted)" }}>
-                      Einmalige Installationsgebühr: {formatCHF(150)}
-                    </span>
-                                    </div>
-                                )}
-
-                                <button type="submit" disabled={isSubmitting}>
-                                    {isSubmitting ? "Wird gesendet..." : "Bewerbung absenden"}
+                                <button type="submit" disabled={isSubmitting || !selectedPackageName || calculatedPrice <= 0}>
+                                    {isSubmitting ? "Anfrage wird gesendet..." : "Registrierungsanfrage senden"}
                                 </button>
                             </form>
                         )}
                     </div>
 
-                    {/* Impressum/AGB, etc. */}
                     <div style={{ marginTop: "40px", textAlign: "center", fontSize: "0.9rem" }}>
                         <Link to="/impressum" style={{ marginRight: "1rem" }}>Impressum</Link>
                         <Link to="/agb">AGB</Link>

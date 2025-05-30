@@ -25,6 +25,10 @@ public class Company {
     private String  paymentMethod;
     private boolean canceled = false;
 
+    // NEU: Kantonskürzel für Feiertagsberechnung (z.B. "SG", "ZH")
+    @Column(name = "canton_abbreviation", length = 2)
+    private String cantonAbbreviation;
+
 
     // Beispiel: Jeder Company kann beliebig viele Users haben
     @OneToMany(mappedBy = "company")
@@ -56,6 +60,8 @@ public class Company {
     public boolean isCanceled() { return canceled; }
     public void setCanceled(boolean canceled) { this.canceled = canceled; }
 
+    public String getCantonAbbreviation() { return cantonAbbreviation; } // NEUER GETTER
+    public void setCantonAbbreviation(String cantonAbbreviation) { this.cantonAbbreviation = cantonAbbreviation; } // NEUER SETTER
 
     public Set<User> getUsers() { return users; }
     public void setUsers(Set<User> users) { this.users = users; }

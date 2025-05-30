@@ -407,6 +407,105 @@
 .modal-content .form-group-checkbox { flex-direction: row; align-items: center; }
 .modal-content .form-group-checkbox label { font-weight: normal; color: var(--c-text); }
 
+/* In AdminDashboardScoped.css */
+
+/* ... (bestehende Stile) ... */
+
+/* Stile für den Inline-Löschbutton für Krankmeldungen in der Detailansicht */
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .sick-leave-details-admin {
+    display: flex;
+    justify-content: space-between; /* Um Text und Button zu trennen */
+    align-items: center;
+    width: 100%;
+}
+
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .sick-indicator {
+    /* Bestehende Stile für den Indikator */
+    flex-grow: 1; /* Nimmt den meisten Platz ein */
+}
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .sick-comment-badge {
+    display: inline-block;
+    margin-left: 0.3rem;
+    font-size: 0.8em;
+    cursor: help; /* Zeigt an, dass es mehr Info gibt (Tooltip) */
+}
+
+
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .delete-sick-leave-button-inline {
+    background: none;
+    border: none;
+    color: var(--c-error, #EF4444); /* Fehlerfarbe für Löschen */
+    cursor: pointer;
+    padding: 0.2rem 0.4rem; /* Kleines Padding */
+    font-size: 0.9rem; /* Passende Größe zum Text */
+    border-radius: var(--u-radius-sm);
+    transition: background-color 0.2s ease, color 0.2s ease;
+    margin-left: 0.5rem; /* Abstand zum Krankheits-Text */
+}
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .delete-sick-leave-button-inline:hover {
+    background-color: color-mix(in srgb, var(--c-error, #EF4444) 15%, transparent);
+    color: color-mix(in srgb, var(--c-error, #EF4444) 80%, black);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .delete-sick-leave-button-inline {
+    color: var(--c-error, #F87171);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .delete-sick-leave-button-inline:hover {
+    background-color: color-mix(in srgb, var(--c-error, #F87171) 20%, transparent);
+    color: var(--c-error, #F87171);
+}
+
+
+/* Stile für das Lösch-Bestätigungsmodal (kann .delete-confirmation-modal aus AdminVacationRequests wiederverwenden) */
+/* Stellen Sie sicher, dass .modal-overlay und .modal-content allgemein genug sind oder spezifische Klassen verwenden */
+
+.admin-dashboard.scoped-dashboard .delete-confirmation-modal h3 { /* Titel des Löschmodals */
+    color: var(--c-error); /* Titel in Fehlerfarbe */
+}
+
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card-sick {
+    background-color: #ffebee; /* Heller Rotton für Krankheit */
+    border-left: 3px solid #f44336; /* Roter Rand */
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card-sick {
+    background-color: #5c2b2e; /* Dunkler Rotton für Krankheit im Dark Mode */
+    border-left-color: #e57373;
+}
+
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .sick-indicator {
+    font-size: 0.9rem;
+    color: #c62828; /* Dunkelrot */
+    font-weight: 500;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .sick-indicator {
+    color: #ef9a9a; /* Helleres Rot für Dark Mode */
+}
+
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card-holiday {
+    background-color: #fff9c4; /* Heller Gelbton für Feiertage */
+    border-left: 3px solid #ffeb3b; /* Gelber Rand */
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card-holiday {
+    background-color: #424242; /* Dunkler Hintergrund für Feiertage im Dark Mode */
+    border-left-color: #fff176; /* Helleres Gelb */
+}
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .holiday-indicator {
+    font-size: 0.9rem;
+    color: #f57f17; /* Oranger Text */
+    font-weight: 500;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .holiday-indicator {
+    color: #ffee58; /* Helleres Gelb-Orange */
+}
+
+/* Anpassung für die Kopfzeile der Tageskarte, um Datum und Bearbeiten-Button aufzunehmen */
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card-header-date {
+    font-weight: bold;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem; /* Kleiner Abstand zum Inhalt */
+    flex-grow: 1; /* Nimmt den meisten Platz ein */
+}
+/* Der .edit-day-button ist bereits gestylt. Sicherstellen, dass er gut in den Header passt. */
+
 
 .modal-content .modal-buttons {
     display: flex;
@@ -449,4 +548,115 @@
 }
 .modal-content .modal-buttons button.button-danger:hover {
     background-color: color-mix(in srgb, var(--c-error) 80%, black);
+}.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card .holiday-handling-select {
+     display: flex;
+     align-items: center;
+     gap: 0.5rem; /* Abstand zwischen Label und Select */
+     margin-top: 0.5rem; /* Etwas Abstand nach oben, falls nötig */
+ }
+
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card .holiday-handling-select label {
+    font-size: 0.85rem; /* Etwas kleinere Schrift für das Label */
+    color: var(--c-muted); /* Standardmäßig gedämpfte Farbe */
+    white-space: nowrap; /* Verhindert Umbruch des Labels */
+}
+
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card .holiday-handling-select select {
+    /* Basis-Styling für das Select, das auch im Light Mode greifen kann oder hier überschrieben wird */
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius-sm);
+    background-color: var(--c-card); /* Standard Hintergrund (für Light Mode) */
+    color: var(--c-text); /* Standard Textfarbe (für Light Mode) */
+    flex-grow: 1; /* Nimmt verfügbaren Platz ein, falls gewünscht */
+    min-width: 180px; /* Mindestbreite, um Optionen gut lesbar zu machen */
+}
+
+
+/* Dark Mode spezifische Stile für das Feiertagsoptionen-Dropdown */
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card .holiday-handling-select label {
+    color: var(--c-muted); /* Im Dark Mode ist c-muted heller als c-text auf dunklem Grund */
+}
+
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card .holiday-handling-select select {
+    background-color: var(--c-surface); /* Ein Hintergrund, der sich vom Kartenhintergrund abhebt */
+    color: var(--c-text); /* Helle Textfarbe für Dark Mode */
+    border-color: var(--c-border); /* Passende Randfarbe für Dark Mode */
+}
+
+/* Dark Mode: Hover-Effekt für das Select-Element */
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card .holiday-handling-select select:hover {
+    border-color: var(--c-pri-dim); /* Akzentfarbe beim Hovern, falls gewünscht */
+    background-color: var(--c-line); /* Leichte Änderung des Hintergrunds beim Hovern */
+}
+
+/* Dark Mode: Fokus-Effekt für das Select-Element */
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card .holiday-handling-select select:focus {
+    outline: 2px solid var(--c-pri); /* Standard-Fokus-Outline mit Akzentfarbe */
+    outline-offset: 1px; /* Kleiner Abstand der Outline zum Rand */
+    border-color: var(--c-pri); /* Randfarbe im Fokus anpassen */
+    background-color: var(--c-card); /* Kann auch der Kartenhintergrund sein für stärkeren Kontrast im Fokus */
+}
+
+/* Spezifisches Styling für die Tageskarte, wenn es ein Feiertag für einen prozentualen Mitarbeiter ist */
+/* Dies stellt sicher, dass die Feiertagskarte den nötigen Platz bietet */
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card.admin-day-card-holiday-percentage {
+    /* Ggf. Padding anpassen, wenn das Select mehr Platz braucht */
+    padding-bottom: 1rem; /* Beispiel: Mehr Platz unten für das Select */
+}
+
+/* Icon für ausstehende Feiertagsentscheidung (falls Sie es bereits haben oder hinzufügen möchten) */
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .holiday-pending-icon {
+    margin-left: 0.5rem;
+    color: var(--c-warn); /* Warnfarbe für "Ausstehend" */
+    font-weight: bold;
+    cursor: help;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .holiday-pending-icon {
+    color: var(--c-warn); /* Warnfarbe ist oft im Dark Mode gut sichtbar */
+}.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card.highlight-autocompleted {
+     border: 2px solid var(--c-info) !important; /* Blauton für Info */
+     box-shadow: 0 0 8px color-mix(in srgb, var(--c-info) 30%, transparent);
+     background-color: color-mix(in srgb, var(--c-bg) 90%, var(--c-info) 10%) !important;
+ }
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card.highlight-autocompleted {
+    background-color: color-mix(in srgb, var(--c-line) 90%, var(--c-info) 10%) !important;
+}
+
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card.highlight-holiday-pending {
+    border: 2px solid var(--c-warn) !important; /* Warnfarbe für ausstehend */
+    box-shadow: 0 0 8px color-mix(in srgb, var(--c-warn) 30%, transparent);
+    /* Hintergrund kann gleich bleiben oder angepasst werden */
+}
+
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card .holiday-handling-select select.highlight-select {
+    outline: 2px solid var(--c-warn) !important;
+    outline-offset: 2px;
+    border-color: var(--c-warn) !important;
+}
+
+/* Icon für ausstehende Feiertagsentscheidung (in der Tabelle) */
+.admin-dashboard.scoped-dashboard .problem-indicators-cell .holiday-pending-icon {
+    color: var(--c-warn); /* Warnfarbe */
+    cursor: pointer;
+    margin: 0 0.3rem;
+    font-size: 1.1em; /* Etwas kleiner als normale Problem-Icons, falls gewünscht */
+    display: inline-block;
+}
+.admin-dashboard.scoped-dashboard .problem-indicators-cell .holiday-pending-icon:hover {
+    opacity: 0.7;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .problem-indicators-cell .holiday-pending-icon {
+    color: var(--c-warn); /* Warnfarbe ist oft im Dark Mode gut sichtbar */
+}
+
+/* Generelles Problem-Highlighting (bereits vorhanden, ggf. anpassen) */
+.admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card.focused-problem {
+    border: 2px solid var(--c-warn) !important;
+    box-shadow: 0 0 8px color-mix(in srgb, var(--c-warn) 30%, transparent);
+    background-color: color-mix(in srgb, var(--c-bg) 90%, var(--c-warn) 10%) !important;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-week-display-detail .admin-day-card.focused-problem {
+    background-color: color-mix(in srgb, var(--c-line) 90%, var(--c-warn) 10%) !important;
 }

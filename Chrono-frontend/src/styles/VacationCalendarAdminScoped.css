@@ -157,14 +157,21 @@
     box-shadow: inset 0 0 0 2px var(--c-pri);
 }
 
-/* Urlaubsmarker unter dem Datum */
-.vacation-calendar-admin.scoped-vacation .vacation-markers {
-    margin-top: 0.45rem;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.15rem;
-    justify-content: center;
+.vacation-calendar-admin.scoped-vacation .vacation-marker { /* Bestehende Klasse für Urlaubs-Marker */
+    font-size: 0.68rem; /* */
+    padding: 0.12rem 0.28rem; /* */
+    border-radius: 4px; /* */
+    color: #fff; /* */
+    white-space: nowrap; /* */
+    font-weight: 600; /* */
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%; /* Verhindert Überlaufen */
+    width: fit-content; /* Passt sich dem Inhalt an, aber durch max-width begrenzt */
+    box-sizing: border-box;
 }
+
 .vacation-calendar-admin.scoped-vacation .vacation-marker {
     font-size: 0.68rem;
     padding: 0.12rem 0.28rem;
@@ -173,7 +180,20 @@
     white-space: nowrap;
     font-weight: 600;
 }
-
+.vacation-calendar-admin.scoped-vacation .holiday-marker-admin {
+    font-size: 0.9em; /* Etwas größer als im User-Kalender für bessere Sichtbarkeit */
+    padding: 1px 4px;
+    border-radius: 4px;
+    background-color: rgba(255, 215, 0, 0.2); /* Gold-Ton für Feiertag */
+    color: #b8860b; /* Dunkelgold */
+    border: 1px solid #b8860b;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 90%; /* Verhindert Überlaufen in der Kachel */
+}
 /* =========================================================================
    5) Range Selection (falls du Range-Funktionen verwendest)
    ========================================================================= */
@@ -359,8 +379,9 @@
 
 /* Button zum Erstellen von Urlaub außerhalb des Modals */
 .vacation-calendar-admin.scoped-vacation .create-vacation-button {
-    margin-top: 1.5rem;
-    padding: 0.7rem 1.5rem;
+    /* ... bestehende spezifische Stile ... */
+    /* Stelle sicher, dass hier kein anderes 'height' oder vertikales 'padding' steht,
+       das dem report-sick-leave-button-admin widerspricht */
     background-color: var(--c-pri);
     color: var(--c-card); /* Heller Text für dunklen Button */
     border: none;
@@ -368,9 +389,10 @@
     font-weight: 600;
     cursor: pointer;
     transition: background-color var(--u-dur) var(--u-ease), transform var(--u-dur) var(--u-ease);
-    display: block; /* Um margin auto zu ermöglichen */
-    margin-left: auto;
-    margin-right: auto;
+    /* margin-left und margin-right auto, wenn der Button nicht mehr flex-grow:1 haben soll und zentriert sein muss */
+    /* display: block; */ /* Entfernen, da jetzt display:flex ist */
+    /* margin-left: auto; */
+    /* margin-right: auto; */
 }
 [data-theme="dark"] .vacation-calendar-admin.scoped-vacation .create-vacation-button {
     color: #fff;
@@ -700,6 +722,148 @@
 }
 .admin-dashboard.scoped-dashboard .modal-content .form-group input:focus,
 .admin-dashboard.scoped-dashboard .modal-content .form-group select:focus {
+    outline: none;
+    border-color: var(--c-pri);
+    box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--c-pri) 30%, transparent);
+}
+
+/* ... bestehende Stile ... */
+
+/* Container für Marker im Admin-Kalender, falls mehrere Marker pro Tag */
+.vacation-calendar-admin.scoped-vacation .vacation-markers {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1px; /* Sehr kleiner Abstand */
+    margin-top: 2px; /* Etwas Platz über den Markern */
+    width: 100%;
+    overflow: hidden;
+    font-size: 0.6rem; /* Kleinere Schrift für Marker-Text */
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-marker,
+.vacation-calendar-admin.scoped-vacation .sick-leave-marker-admin {
+    padding: 1px 3px;
+    border-radius: 3px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 95%; /* Verhindert Überlaufen der Kachel */
+    width: fit-content;
+    box-sizing: border-box;
+    text-align: center;
+    line-height: 1.3; /* Bessere Lesbarkeit für kurze Texte */
+}
+
+.vacation-calendar-admin.scoped-vacation .sick-leave-marker-admin {
+    /* Spezifische Stile für Krankheitsmarker, falls sie sich von Urlaubsmarkern unterscheiden sollen */
+    /* Beispiel:
+    background-color: #FFDAB9; PeachPuff
+    color: #A0522D; Sienna
+    border: 1px solid #FFA07A; LightSalmon
+    */
+}
+.vacation-calendar-admin.scoped-vacation .holiday-marker-admin {
+    /* ... (bestehende Stile für Feiertagsmarker) ... */
+    margin-bottom: 1px; /* Etwas Platz, wenn mehrere Marker */
+}
+
+
+.vacation-calendar-admin.scoped-vacation .admin-calendar-actions {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 1.5rem;
+    gap: 1rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .create-vacation-button,
+.vacation-calendar-admin.scoped-vacation .report-sick-leave-button-admin {
+    flex-grow: 1;
+    padding: 0.7rem 1rem; /* Dein ursprüngliches Padding */
+    font-size: 0.9rem;
+
+    /* NEU: Explizite Höhe für beide Buttons setzen */
+    height: 48px; /* Beispielwert - passe diesen Wert an,
+                     bis er für den Button mit dem meisten Inhalt gut aussieht.
+                     Wichtig ist, dass beide Buttons denselben Wert bekommen.
+                     Alternativ: min-height, falls die Höhe variieren darf, aber mindestens X sein soll.
+                  */
+
+    /* display: flex usw. für Textzentrierung beibehalten */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1.4; /* Behalte eine konsistente Zeilenhöhe bei */
+    box-sizing: border-box;
+
+    /* Bestehende Button-spezifische Stile (Farben, Hover etc.) bleiben erhalten */
+    /* ... (z.B. background-color, color, border-radius, transition etc. für create-vacation-button) ... */
+    /* ... (z.B. background-color, color, border-radius, transition etc. für report-sick-leave-button-admin) ... */
+}
+.vacation-calendar-admin.scoped-vacation .report-sick-leave-button-admin {
+    background-color: var(--c-warn, #ffc107); /* Beispiel: Warnfarbe für Krankmeldung */
+    color: var(--c-warn-text-strong, #5d4702); /* Stärkerer Kontrast für Lesbarkeit */
+    border: 1px solid transparent;
+    border-radius: var(--u-radius);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color var(--u-dur) var(--u-ease), transform var(--u-dur) var(--u-ease);
+}
+.vacation-calendar-admin.scoped-vacation .report-sick-leave-button-admin:hover {
+    background-color: color-mix(in srgb, var(--c-warn, #ffc107) 85%, #000);
+    transform: translateY(-1px);
+}
+[data-theme="dark"] .vacation-calendar-admin.scoped-vacation .report-sick-leave-button-admin {
+    background-color: var(--c-warn, #ffc107);
+    color: var(--c-warn-text-strong, #493802); /* Ggf. anpassen für Dark Theme */
+}
+[data-theme="dark"] .vacation-calendar-admin.scoped-vacation .report-sick-leave-button-admin:hover {
+    background-color: color-mix(in srgb, var(--c-warn, #ffc107) 70%, #000);
+}
+
+
+/* Anpassung Formulargruppen für Checkboxen (aus VacationCalendar.css übernommen und angepasst) */
+.vacation-calendar-admin.scoped-vacation .modal-content .form-group-checkbox {
+    display: flex;
+    flex-direction: row !important; /* Wichtig für horizontale Anordnung */
+    align-items: center; /* Vertikal zentrieren */
+    gap: 0.5rem !important; /* Abstand zwischen Checkbox und Label */
+    margin-bottom: 1rem; /* Konsistenter Abstand nach unten */
+}
+
+.vacation-calendar-admin.scoped-vacation .modal-content .form-group-checkbox input[type="checkbox"] {
+    width: auto; /* Verhindert, dass die Checkbox die volle Breite einnimmt */
+    margin-right: 0.3rem; /* Kleiner Abstand rechts vom Kästchen */
+    height: 1em; /* An Textgröße anpassen */
+    accent-color: var(--c-pri); /* Farbe der Checkbox */
+}
+
+.vacation-calendar-admin.scoped-vacation .modal-content .form-group-checkbox label {
+    font-weight: normal; /* Normales Gewicht für Checkbox-Label */
+    margin-bottom: 0; /* Entfernt Standard-Margin von Labels */
+    cursor: pointer;
+}
+
+.vacation-calendar-admin.scoped-vacation .modal-content textarea { /* Styling für Textarea */
+    font-family: inherit;
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    color: var(--c-text);
+    background-color: var(--c-surface);
+    padding: 0.65rem 0.8rem;
+    font-size: 0.95rem;
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 70px;
+    transition: border-color var(--u-dur) var(--u-ease), box-shadow var(--u-dur) var(--u-ease);
+}
+[data-theme="dark"] .vacation-calendar-admin.scoped-vacation .modal-content textarea {
+    background: var(--c-bg);
+    border-color: var(--c-line);
+}
+.vacation-calendar-admin.scoped-vacation .modal-content textarea:focus {
     outline: none;
     border-color: var(--c-pri);
     box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--c-pri) 30%, transparent);

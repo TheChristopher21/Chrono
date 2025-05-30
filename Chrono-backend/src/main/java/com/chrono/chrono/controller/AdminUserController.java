@@ -4,10 +4,7 @@ import com.chrono.chrono.dto.UserDTO;
 import com.chrono.chrono.entities.Company; // Import wieder hinzugefügt
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
-import com.chrono.chrono.repositories.CompanyRepository; // Import für CompanyRepository hinzugefügt
-import com.chrono.chrono.repositories.RoleRepository;
-import com.chrono.chrono.repositories.UserRepository;
-import com.chrono.chrono.repositories.CorrectionRequestRepository;
+import com.chrono.chrono.repositories.*;
 import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.services.VacationService;
 import org.slf4j.Logger;
@@ -52,6 +49,9 @@ public class AdminUserController {
 
     @Autowired
     private TimeTrackingService timeTrackingService;
+
+    @Autowired
+    private SickLeaveRepository sickLeaveRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -435,19 +435,18 @@ public class AdminUserController {
         }
 
         try {
-            // Deleting associated data. Ensure services handle this gracefully if user is already partly deleted or data is missing.
-            vacationService.deleteVacationsByUser(userToDelete);
-            correctionRequestRepository.deleteByUser(userToDelete);
-            // TimeTracking entries are likely handled by cascade or a specific service method if needed.
-            // For example: timeTrackingService.deleteTimeTrackingsByUser(userToDelete);
+            // Deleting associated data.
+            vacationService.deleteVacationsByUser(userToDelete); //
+            correctionRequestRepository.deleteByUser(userToDelete); //
+            sickLeaveRepository.deleteByUser(userToDelete); // NEU: Krankmeldungen löschen
+            // timeTrackingService.deleteTimeTrackingsByUser(userToDelete); // Falls implementiert
 
-            userRepository.delete(userToDelete);
-            logger.info("Admin {} deleted user: {}", adminUser.getUsername(), userToDelete.getUsername());
-            return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
+            userRepository.delete(userToDelete); //
+            logger.info("Admin {} deleted user: {}", adminUser.getUsername(), userToDelete.getUsername()); //
+            return ResponseEntity.ok(Map.of("message", "User deleted successfully")); //
         } catch (Exception ex) {
-            logger.error("Error deleting user {} by admin {}: {}", userToDelete.getUsername(), adminUser.getUsername(), ex.getMessage(), ex);
-            // Provide a more generic error message to the client.
-            return ResponseEntity.status(500).body(Map.of("message", "An error occurred while deleting the user and their associated data."));
+            logger.error("Error deleting user {} by admin {}: {}", userToDelete.getUsername(), adminUser.getUsername(), ex.getMessage(), ex); //
+            return ResponseEntity.status(500).body(Map.of("message", "An error occurred while deleting the user and their associated data.")); //
         }
     }
 }

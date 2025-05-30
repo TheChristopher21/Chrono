@@ -14,6 +14,7 @@ const CompanyManagementPage = () => {
 
     // Neues Formular: "Nur Firma anlegen"
     const [newCompanyName, setNewCompanyName] = useState('');
+    const [newCompanyCanton, setNewCompanyCanton] = useState(''); // NEU
 
     // Alternativ: "Firma + Admin" anlegen
     const [createWithAdmin, setCreateWithAdmin] = useState({
@@ -22,20 +23,19 @@ const CompanyManagementPage = () => {
         adminPassword: '',
         adminEmail: '',
         adminFirstName: '',
-        adminLastName: ''
+        adminLastName: '',
+        companyCanton: '' // NEU
     });
 
     // Edit-Mode
-    const [editingCompany, setEditingCompany] = useState(null);
+    const [editingCompany, setEditingCompany] = useState(null); // Wird { id, name, active, cantonAbbreviation } enthalten
     const [paymentDetails, setPaymentDetails] = useState({});
     const [openPayments, setOpenPayments] = useState({});
 
-    // ------------------------------------------------------------------
-    // useEffect: Firmen laden + Intervall für automatisches Refresh
-    // ------------------------------------------------------------------
+
     useEffect(() => {
         fetchCompanies();
-        const interval = setInterval(fetchCompanies, 30000); // alle 30s aktualisieren
+        const interval = setInterval(fetchCompanies, 30000);
         return () => clearInterval(interval);
     }, []);
 
@@ -53,25 +53,26 @@ const CompanyManagementPage = () => {
         }
     }
 
-    // ------------------------------------------------------------------
-    // (1) "Nur Firma" anlegen
-    // ------------------------------------------------------------------
     async function handleCreateCompany(e) {
         e.preventDefault();
         if (!newCompanyName.trim()) return;
         try {
-            const payload = { name: newCompanyName.trim(), active: true };
+            // NEU: cantonAbbreviation im Payload
+            const payload = {
+                name: newCompanyName.trim(),
+                active: true,
+                cantonAbbreviation: newCompanyCanton.trim().toUpperCase() || null
+            };
             await api.post('/api/superadmin/companies', payload);
             setNewCompanyName('');
+            setNewCompanyCanton(''); // NEU
             fetchCompanies();
         } catch (err) {
             console.error('Error creating company:', err);
+            // Hier ggf. User-Feedback geben
         }
     }
 
-    // ------------------------------------------------------------------
-    // (2) Firma + Admin in einem Rutsch anlegen
-    // ------------------------------------------------------------------
     async function handleCreateWithAdmin(e) {
         e.preventDefault();
 
@@ -91,38 +92,46 @@ const CompanyManagementPage = () => {
                 adminPassword: createWithAdmin.adminPassword,
                 adminEmail: createWithAdmin.adminEmail,
                 adminFirstName: createWithAdmin.adminFirstName,
-                adminLastName: createWithAdmin.adminLastName
+                adminLastName: createWithAdmin.adminLastName,
+                // NEU: cantonAbbreviation im Payload
+                cantonAbbreviation: createWithAdmin.companyCanton.trim().toUpperCase() || null
             };
 
             const res = await api.post('/api/superadmin/companies/create-with-admin', payload);
             console.log('Created Company + Admin:', res.data);
 
-            // Felder zurücksetzen
             setCreateWithAdmin({
                 companyName: '',
                 adminUsername: '',
                 adminPassword: '',
                 adminEmail: '',
                 adminFirstName: '',
-                adminLastName: ''
+                adminLastName: '',
+                companyCanton: '' // NEU
             });
 
             fetchCompanies();
             alert('Firma + AdminUser wurden erfolgreich erstellt.');
         } catch (err) {
             console.error('Error create-with-admin:', err);
-            alert('Fehler beim Anlegen von Firma + Admin');
+            let backendErrorMessage = err.message; // Standard-Axios-Fehlermeldung
+            if (err.response && err.response.data) {
+                if (typeof err.response.data === 'string' && err.response.data.length > 0) {
+                    backendErrorMessage = err.response.data;
+                } else if (err.response.data.message) {
+                    backendErrorMessage = err.response.data.message;
+                }
+            }
+            alert('Fehler beim Anlegen von Firma + Admin: ' + backendErrorMessage);
         }
     }
 
-    // ------------------------------------------------------------------
-    // (3) Toggle Active
-    // ------------------------------------------------------------------
     async function toggleActive(co) {
         try {
-            const updated = {
+            const updated = { // Sende alle Felder, die das Backend erwartet, oder nur die geänderten
                 name: co.name,
-                active: !co.active
+                active: !co.active,
+                cantonAbbreviation: co.cantonAbbreviation // Behalte den Kanton bei
             };
             await api.put(`/api/superadmin/companies/${co.id}`, updated);
             fetchCompanies();
@@ -131,21 +140,21 @@ const CompanyManagementPage = () => {
         }
     }
 
-    // ------------------------------------------------------------------
-    // (4) Edit: Name / Active
-    // ------------------------------------------------------------------
     function startEdit(company) {
-        setEditingCompany({ ...company });
+        // Stelle sicher, dass cantonAbbreviation im State ist, auch wenn es null ist
+        setEditingCompany({ ...company, cantonAbbreviation: company.cantonAbbreviation || '' });
     }
 
     async function handleSaveEdit(e) {
         e.preventDefault();
-        if (!editingCompany.name.trim()) return;
+        if (!editingCompany || !editingCompany.name.trim()) return;
 
         try {
             const payload = {
                 name: editingCompany.name.trim(),
-                active: editingCompany.active
+                active: editingCompany.active,
+                // NEU: cantonAbbreviation im Payload
+                cantonAbbreviation: editingCompany.cantonAbbreviation.trim().toUpperCase() || null
             };
             await api.put(`/api/superadmin/companies/${editingCompany.id}`, payload);
             setEditingCompany(null);
@@ -155,9 +164,6 @@ const CompanyManagementPage = () => {
         }
     }
 
-    // ------------------------------------------------------------------
-    // (5) Payment Update
-    // ------------------------------------------------------------------
     async function handleUpdatePayment(co, paid, method, canceled = false) {
         try {
             const body = { paid, paymentMethod: method, canceled };
@@ -168,9 +174,6 @@ const CompanyManagementPage = () => {
         }
     }
 
-    // ------------------------------------------------------------------
-    // (6) Delete
-    // ------------------------------------------------------------------
     async function handleDeleteCompany(id) {
         if (!window.confirm('Wirklich löschen? (Company muss leer sein)')) return;
         try {
@@ -182,9 +185,6 @@ const CompanyManagementPage = () => {
         }
     }
 
-    // ------------------------------------------------------------------
-    // (7) Zahlungen einer Firma laden / toggeln
-    // ------------------------------------------------------------------
     async function fetchPayments(companyId) {
         try {
             const res = await api.get(`/api/superadmin/companies/${companyId}/payments`);
@@ -205,9 +205,6 @@ const CompanyManagementPage = () => {
         });
     }
 
-    // ===================================================================
-    // Render
-    // ===================================================================
     return (
         <div className="company-management-page scoped-company">
             <Navbar />
@@ -221,7 +218,6 @@ const CompanyManagementPage = () => {
                 <p style={{ color: 'red' }}>{error}</p>
             ) : (
                 <>
-                    {/* (A) Nur-Firma-Anlegen-Formular */}
                     <section className="cmp-section">
                         <h3>Nur Firma anlegen</h3>
                         <form onSubmit={handleCreateCompany} className="cmp-form">
@@ -230,57 +226,68 @@ const CompanyManagementPage = () => {
                                 placeholder="Firmenname"
                                 value={newCompanyName}
                                 onChange={(e) => setNewCompanyName(e.target.value)}
+                                required
+                            />
+                            {/* NEUES FELD für Kanton */}
+                            <input
+                                type="text"
+                                placeholder="Kanton (z.B. SG, ZH)"
+                                value={newCompanyCanton}
+                                onChange={(e) => setNewCompanyCanton(e.target.value)}
+                                maxLength="2"
+                                style={{ textTransform: 'uppercase' }}
                             />
                             <button type="submit">Erstellen</button>
                         </form>
                     </section>
 
-                    {/* (B) Firma + Admin anlegen */}
                     <section className="cmp-section">
                         <h3>Firma + Admin anlegen</h3>
                         <form onSubmit={handleCreateWithAdmin} className="cmp-form">
                             <input
                                 type="text"
-                                placeholder="Firmenname"
+                                placeholder="Firmenname (*)"
                                 value={createWithAdmin.companyName}
                                 onChange={(e) =>
-                                    setCreateWithAdmin({
-                                        ...createWithAdmin,
-                                        companyName: e.target.value
-                                    })
+                                    setCreateWithAdmin({ ...createWithAdmin, companyName: e.target.value })
                                 }
+                                required
+                            />
+                            {/* NEUES FELD für Kanton */}
+                            <input
+                                type="text"
+                                placeholder="Kanton Firma (z.B. SG)"
+                                value={createWithAdmin.companyCanton}
+                                onChange={(e) =>
+                                    setCreateWithAdmin({ ...createWithAdmin, companyCanton: e.target.value })
+                                }
+                                maxLength="2"
+                                style={{ textTransform: 'uppercase' }}
                             />
                             <input
                                 type="text"
-                                placeholder="Admin-Username"
+                                placeholder="Admin-Username (*)"
                                 value={createWithAdmin.adminUsername}
                                 onChange={(e) =>
-                                    setCreateWithAdmin({
-                                        ...createWithAdmin,
-                                        adminUsername: e.target.value
-                                    })
+                                    setCreateWithAdmin({ ...createWithAdmin, adminUsername: e.target.value })
                                 }
+                                required
                             />
                             <input
                                 type="password"
-                                placeholder="Admin-Passwort"
+                                placeholder="Admin-Passwort (*)"
                                 value={createWithAdmin.adminPassword}
                                 onChange={(e) =>
-                                    setCreateWithAdmin({
-                                        ...createWithAdmin,
-                                        adminPassword: e.target.value
-                                    })
+                                    setCreateWithAdmin({ ...createWithAdmin, adminPassword: e.target.value })
                                 }
+                                required
                             />
                             <input
                                 type="text"
                                 placeholder="Admin Vorname (optional)"
                                 value={createWithAdmin.adminFirstName}
                                 onChange={(e) =>
-                                    setCreateWithAdmin({
-                                        ...createWithAdmin,
-                                        adminFirstName: e.target.value
-                                    })
+                                    setCreateWithAdmin({ ...createWithAdmin, adminFirstName: e.target.value })
                                 }
                             />
                             <input
@@ -288,10 +295,7 @@ const CompanyManagementPage = () => {
                                 placeholder="Admin Nachname (optional)"
                                 value={createWithAdmin.adminLastName}
                                 onChange={(e) =>
-                                    setCreateWithAdmin({
-                                        ...createWithAdmin,
-                                        adminLastName: e.target.value
-                                    })
+                                    setCreateWithAdmin({ ...createWithAdmin, adminLastName: e.target.value })
                                 }
                             />
                             <input
@@ -299,47 +303,45 @@ const CompanyManagementPage = () => {
                                 placeholder="Admin E-Mail (optional)"
                                 value={createWithAdmin.adminEmail}
                                 onChange={(e) =>
-                                    setCreateWithAdmin({
-                                        ...createWithAdmin,
-                                        adminEmail: e.target.value
-                                    })
+                                    setCreateWithAdmin({ ...createWithAdmin, adminEmail: e.target.value })
                                 }
                             />
-
                             <button type="submit">Firma+Admin erstellen</button>
                         </form>
                     </section>
 
-                    {/* (C) Liste aller Companies */}
                     <section className="cmp-section">
                         <h3>Bestehende Firmen</h3>
                         <ul className="cmp-list">
                             {companies.map((co) => (
                                 <li key={co.id} className="cmp-item">
                                     {editingCompany && editingCompany.id === co.id ? (
-                                        // --- Edit-Form ---
                                         <form onSubmit={handleSaveEdit} className="cmp-inline-form">
                                             <input
                                                 type="text"
                                                 value={editingCompany.name}
                                                 onChange={(e) =>
-                                                    setEditingCompany({
-                                                        ...editingCompany,
-                                                        name: e.target.value
-                                                    })
+                                                    setEditingCompany({ ...editingCompany, name: e.target.value })
                                                 }
+                                                required
                                             />
-                                            <label
-                                                style={{ display: 'flex', alignItems: 'center', gap: '4px' }}
-                                            >
+                                            {/* NEUES FELD für Kanton im Edit-Modus */}
+                                            <input
+                                                type="text"
+                                                placeholder="Kanton"
+                                                value={editingCompany.cantonAbbreviation}
+                                                onChange={(e) =>
+                                                    setEditingCompany({ ...editingCompany, cantonAbbreviation: e.target.value })
+                                                }
+                                                maxLength="2"
+                                                style={{ textTransform: 'uppercase', width: '80px' }}
+                                            />
+                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <input
                                                     type="checkbox"
                                                     checked={editingCompany.active}
                                                     onChange={(e) =>
-                                                        setEditingCompany({
-                                                            ...editingCompany,
-                                                            active: e.target.checked
-                                                        })
+                                                        setEditingCompany({ ...editingCompany, active: e.target.checked })
                                                     }
                                                 />
                                                 Aktiv?
@@ -350,20 +352,21 @@ const CompanyManagementPage = () => {
                                             </button>
                                         </form>
                                     ) : (
-                                        // --- Anzeigemodus ---
                                         <>
                                             <div className="cmp-company-row">
                                                 <div className="cmp-info">
                                                     <strong>{co.name}</strong>
+                                                    {/* NEU: Anzeige Kanton */}
+                                                    {co.cantonAbbreviation && <span className="cmp-canton">({co.cantonAbbreviation})</span>}
                                                     <span className={co.active ? 'cmp-active' : 'cmp-inactive'}>
-                            {co.active ? '(Aktiv)' : '(Inaktiv)'}
-                          </span>
+                                                        {co.active ? '(Aktiv)' : '(Inaktiv)'}
+                                                    </span>
                                                     <span className="cmp-users">{co.userCount} User</span>
                                                     <span className="cmp-payment">
-                            {co.paid ? 'Bezahlt' : 'Offen'}
+                                                        {co.paid ? 'Bezahlt' : 'Offen'}
                                                         {co.paymentMethod ? ` - ${co.paymentMethod}` : ''}
                                                         {co.canceled ? ' (gekündigt)' : ''}
-                          </span>
+                                                    </span>
                                                 </div>
                                                 <div className="cmp-btns">
                                                     <button onClick={() => startEdit(co)}>Bearbeiten</button>
@@ -392,7 +395,6 @@ const CompanyManagementPage = () => {
                                                 </div>
                                             </div>
 
-                                            {/* Zahlungen (wenn geöffnet) */}
                                             {openPayments[co.id] && (
                                                 <table className="cmp-payments-table">
                                                     <thead>

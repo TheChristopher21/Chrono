@@ -72,6 +72,9 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.PUT, "/api/nfc/command/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/timetracking/punch").permitAll();
                     auth.requestMatchers("/api/nfc/read/1").permitAll();
+                    auth.requestMatchers("/api/holidays/**").authenticated(); // Oder permitAll(), falls Feiertage öffentlich sein sollen
+                    auth.requestMatchers("/api/sick-leave/**").authenticated(); // NEU
+
                     // Der Endpoint zum Schreiben von Sektor 0 bleibt öffentlich
                     auth.requestMatchers("/api/nfc/write-sector0").permitAll();
                     // Den Mail-Endpunkt öffentlich freigeben
