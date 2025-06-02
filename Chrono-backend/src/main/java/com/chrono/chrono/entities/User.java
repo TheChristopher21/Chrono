@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.List;
 import java.util.ArrayList; // Import für ArrayList
 import com.chrono.chrono.converters.WeeklyScheduleConverter;
+import com.chrono.chrono.entities.TimeTrackingEntry;
 
 @Entity
 @Table(name = "users")
@@ -56,9 +57,15 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 
+    // ERSETZT: Die alte TimeTracking Beziehung
+    // @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    // @JsonManagedReference 
+    // private Set<TimeTracking> timeTracks = new HashSet<>();
+
+    // NEU: Beziehung zu TimeTrackingEntry
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference // Verhindert Rekursion, wenn TimeTracking auch User serialisiert
-    private Set<TimeTracking> timeTracks = new HashSet<>();
+    @JsonManagedReference("user-timeTrackingEntries")
+    private List<TimeTrackingEntry> timeTrackingEntries = new ArrayList<>();
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference // Verhindert Rekursion
@@ -152,8 +159,8 @@ public class User {
     public Set<Role> getRoles() { return roles; }
     public void setRoles(Set<Role> roles) { this.roles = roles; }
 
-    public Set<TimeTracking> getTimeTracks() { return timeTracks; }
-    public void setTimeTracks(Set<TimeTracking> timeTracks) { this.timeTracks = timeTracks; }
+    public List<TimeTrackingEntry> getTimeTrackingEntries() { return timeTrackingEntries; }
+    public void setTimeTrackingEntries(List<TimeTrackingEntry> timeTrackingEntries) { this.timeTrackingEntries = timeTrackingEntries; }
 
     public Set<CorrectionRequest> getCorrectionRequests() { return correctionRequests; }
     public void setCorrectionRequests(Set<CorrectionRequest> correctionRequests) { this.correctionRequests = correctionRequests; }

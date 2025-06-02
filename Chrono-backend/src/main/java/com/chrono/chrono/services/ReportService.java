@@ -1,21 +1,29 @@
 package com.chrono.chrono.services;
 
-import com.chrono.chrono.dto.TimeTrackingResponse;
+import com.chrono.chrono.dto.DailyTimeSummaryDTO;
+import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
 import com.lowagie.text.Document;
+import com.lowagie.text.Font;
+import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
+import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfWriter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.*;
-import java.time.temporal.ChronoUnit;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.stream.Collectors;
 
 @Service
@@ -27,117 +35,143 @@ public class ReportService {
     @Autowired
     private UserRepository userRepository;
 
-    /**
-     * Erzeugt ein PDF mit den TimeTracking-Einträgen (1 pro Tag) im Zeitraum [start, end].
-     * Für stundenbasierte User summieren wir die gearbeiteten Minuten (ohne Pausensubtraktion?)
-     * oder "mit" – je nachdem, wie du es willst.
-     */
+    private static final DateTimeFormatter DATE_FORMATTER_REPORT = DateTimeFormatter.ofPattern("EEEE, dd.MM.yyyy", Locale.GERMAN);
+    private static final DateTimeFormatter TIME_FORMATTER_REPORT = DateTimeFormatter.ofPattern("HH:mm");
+
     public byte[] generatePdf(String username, LocalDate start, LocalDate end) throws IOException {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
 
-        // Hier holen wir am besten direkt getReport(...) oder getUserHistory(...) =>
-        //   getReport(username, start.toString(), end.toString())
-        //   oder wir filtern manuell:
-        List<TimeTrackingResponse> all = timeTrackingService.getUserHistory(username);
-
-        // Filter nach dailyDate
-        List<TimeTrackingResponse> filtered = all.stream()
-                .filter(tt -> {
-                    LocalDate d = tt.getDailyDate();
-                    return !d.isBefore(start) && !d.isAfter(end);
-                })
+        List<DailyTimeSummaryDTO> dailySummaries = timeTrackingService.getUserHistory(username).stream()
+                .filter(summary -> !summary.getDate().isBefore(start) && !summary.getDate().isAfter(end))
+                .sorted(java.util.Comparator.comparing(DailyTimeSummaryDTO::getDate))
                 .collect(Collectors.toList());
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        Document doc = new Document();
-        PdfWriter.getInstance(doc, baos);
-        doc.open();
+        Document document = new Document(PageSize.A4);
+        PdfWriter.getInstance(document, baos);
+        document.open();
 
-        doc.add(new Paragraph("Time Report for user: " + user.getUsername()));
-        doc.add(new Paragraph("Name: " + user.getFirstName() + " " + user.getLastName()));
-        doc.add(new Paragraph("Zeitraum: " + start + " - " + end));
-        doc.add(new Paragraph(" "));
+        Font titleFont = new Font(Font.HELVETICA, 16, Font.BOLD);
+        Font headerFont = new Font(Font.HELVETICA, 10, Font.BOLD);
+        Font regularFont = new Font(Font.HELVETICA, 9, Font.NORMAL);
+        Font smallFont = new Font(Font.HELVETICA, 8, Font.ITALIC);
 
-        // Falls stundenbasierter Mitarbeiter: Gesamtminuten summieren
-        if (Boolean.TRUE.equals(user.getIsHourly())) {
-            long totalMinutes = 0;
-            for (TimeTrackingResponse r : filtered) {
-                totalMinutes += computeWorkedMinutes(r);
+        document.add(new Paragraph("Zeitnachweis für: " + user.getFirstName() + " " + user.getLastName() + " (" + user.getUsername() + ")", titleFont));
+        document.add(new Paragraph("Zeitraum: " + start.format(DATE_FORMATTER_REPORT) + " - " + end.format(DATE_FORMATTER_REPORT), regularFont));
+        document.add(new Paragraph(" ")); 
+
+        if (dailySummaries.isEmpty()) {
+            document.add(new Paragraph("Keine Einträge für den ausgewählten Zeitraum vorhanden.", regularFont));
+            document.close();
+            return baos.toByteArray();
+        }
+
+        PdfPTable table = new PdfPTable(5);
+        table.setWidthPercentage(100);
+        table.setWidths(new float[]{2.5f, 1.5f, 1f, 4f, 3f});
+
+        PdfPCell cell = new PdfPCell(new Paragraph("Datum", headerFont));
+        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        table.addCell(cell);
+        cell = new PdfPCell(new Paragraph("Arbeitszeit", headerFont));
+        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        table.addCell(cell);
+        cell = new PdfPCell(new Paragraph("Pause", headerFont));
+        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        table.addCell(cell);
+        cell = new PdfPCell(new Paragraph("Stempelungen (START/ENDE)", headerFont));
+        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        table.addCell(cell);
+        cell = new PdfPCell(new Paragraph("Notiz / Status", headerFont));
+        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        table.addCell(cell);
+
+        long totalWorkedMinutesOverall = 0;
+
+        for (DailyTimeSummaryDTO summary : dailySummaries) {
+            table.addCell(new Paragraph(summary.getDate().format(DATE_FORMATTER_REPORT), regularFont));
+            
+            long hours = summary.getWorkedMinutes() / 60;
+            long minutes = summary.getWorkedMinutes() % 60;
+            table.addCell(new Paragraph(String.format("%02d:%02d Std.", hours, minutes), regularFont));
+            totalWorkedMinutesOverall += summary.getWorkedMinutes();
+
+            long breakH = summary.getBreakMinutes() / 60;
+            long breakM = summary.getBreakMinutes() % 60;
+            table.addCell(new Paragraph(String.format("%02d:%02d Std.", breakH, breakM), regularFont));
+
+            StringBuilder stamps = new StringBuilder();
+            if (summary.getEntries() != null) {
+                for (TimeTrackingEntryDTO entry : summary.getEntries()) {
+                    stamps.append(entry.getPunchType().toString())
+                          .append(": ")
+                          .append(entry.getEntryTimestamp().format(TIME_FORMATTER_REPORT));
+                    if (entry.getSource() == TimeTrackingEntry.PunchSource.SYSTEM_AUTO_END && !entry.isCorrectedByUser()) {
+                        stamps.append(" (Auto)");
+                    }
+                    stamps.append("\n");
+                }
             }
-            long hours = totalMinutes / 60;
-            long minutes = totalMinutes % 60;
-            doc.add(new Paragraph("Summe gearbeitete Zeit (stundenbasiert): "
-                    + hours + " Std " + minutes + " min"));
-            doc.add(new Paragraph(" "));
-        }
+            table.addCell(new Paragraph(stamps.toString().trim(), smallFont));
 
-        // Einzelne Tage auflisten
-        for (TimeTrackingResponse r : filtered) {
-            LocalDate d = r.getDailyDate();
-            String line = String.format("Tag: %s | Work: %s-%s | Break: %s-%s | Note: %s",
-                    d,
-                    (r.getWorkStart() != null ? r.getWorkStart() : "--:--"),
-                    (r.getWorkEnd()   != null ? r.getWorkEnd()   : "--:--"),
-                    (r.getBreakStart() != null ? r.getBreakStart() : "--:--"),
-                    (r.getBreakEnd()   != null ? r.getBreakEnd()   : "--:--"),
-                    (r.getDailyNote() != null ? r.getDailyNote() : "")
-            );
-            doc.add(new Paragraph(line));
+            StringBuilder noteCell = new StringBuilder();
+            if (summary.getDailyNote() != null && !summary.getDailyNote().isBlank()) {
+                 noteCell.append(summary.getDailyNote()).append("\n");
+            }
+            if (summary.isNeedsCorrection()) {
+                noteCell.append("[Korrektur erforderlich!]");
+            }
+            table.addCell(new Paragraph(noteCell.toString().trim(), regularFont));
         }
+        document.add(table);
+        document.add(new Paragraph(" "));
 
-        doc.close();
+        long totalHours = totalWorkedMinutesOverall / 60;
+        long totalMinutes = totalWorkedMinutesOverall % 60;
+        document.add(new Paragraph("Gesamte Arbeitszeit im Zeitraum: " + String.format("%d Std. %02d Min.", totalHours, totalMinutes), headerFont));
+
+        document.close();
         return baos.toByteArray();
     }
 
-    /**
-     * Erzeugt einen CSV-Report im Zeitraum [start, end].
-     */
     public byte[] generateCsv(String username, LocalDate start, LocalDate end) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
-
-        // Hole alle Einträge
-        List<TimeTrackingResponse> all = timeTrackingService.getUserHistory(username);
-        List<TimeTrackingResponse> filtered = all.stream()
-                .filter(tt -> {
-                    LocalDate d = tt.getDailyDate();
-                    return !d.isBefore(start) && !d.isAfter(end);
-                })
+        List<DailyTimeSummaryDTO> dailySummaries = timeTrackingService.getUserHistory(username).stream()
+                .filter(summary -> !summary.getDate().isBefore(start) && !summary.getDate().isAfter(end))
+                .sorted(java.util.Comparator.comparing(DailyTimeSummaryDTO::getDate))
                 .collect(Collectors.toList());
 
-        // CSV-Header
         StringBuilder sb = new StringBuilder();
-        sb.append("User;").append(user.getUsername()).append("\n");
-        sb.append("Name;").append(user.getFirstName())
-                .append(" ").append(user.getLastName()).append("\n");
-        sb.append("Date;WorkStart;BreakStart;BreakEnd;WorkEnd;DailyNote\n");
+        sb.append("Benutzer;").append(user.getFirstName()).append(" ").append(user.getLastName()).append(" (").append(user.getUsername()).append(")\n");
+        sb.append("Zeitraum;").append(start.format(DATE_FORMATTER_REPORT)).append(" - ").append(end.format(DATE_FORMATTER_REPORT)).append("\n\n");
+        sb.append("Datum;Arbeitszeit (Min);Pausenzeit (Min);Stempelungen (Typ:Zeit);Notiz;Korrektur Nötig\n");
 
-        // Zeilen
-        for (TimeTrackingResponse r : filtered) {
-            sb.append(r.getDailyDate()).append(";");
-            sb.append(r.getWorkStart() == null ? "" : r.getWorkStart()).append(";");
-            sb.append(r.getBreakStart() == null ? "" : r.getBreakStart()).append(";");
-            sb.append(r.getBreakEnd() == null ? "" : r.getBreakEnd()).append(";");
-            sb.append(r.getWorkEnd() == null ? "" : r.getWorkEnd()).append(";");
-            sb.append(r.getDailyNote() == null ? "" : r.getDailyNote()).append("\n");
+        long totalWorkedMinutesOverall = 0;
+
+        for (DailyTimeSummaryDTO summary : dailySummaries) {
+            sb.append(summary.getDate().format(DATE_FORMATTER_REPORT)).append(";");
+            sb.append(summary.getWorkedMinutes()).append(";");
+            sb.append(summary.getBreakMinutes()).append(";");
+            totalWorkedMinutesOverall += summary.getWorkedMinutes();
+
+            String stamps = summary.getEntries().stream()
+                .map(e -> e.getPunchType().toString() + ":" + e.getEntryTimestamp().format(TIME_FORMATTER_REPORT) + 
+                           (e.getSource() == TimeTrackingEntry.PunchSource.SYSTEM_AUTO_END && !e.isCorrectedByUser() ? "(Auto)" : ""))
+                .collect(Collectors.joining(" | "));
+            sb.append("\"").append(stamps).append("\"").append(";");
+
+            sb.append(summary.getDailyNote() != null ? "\"" + summary.getDailyNote().replace("\"", "\"\"") + "\"" : "").append(";");
+            sb.append(summary.isNeedsCorrection() ? "JA" : "NEIN").append("\n");
         }
+        
+        sb.append("\nGesamte Arbeitszeit (Min);").append(totalWorkedMinutesOverall).append("\n");
+        long totalHours = totalWorkedMinutesOverall / 60;
+        long totalMinutes = totalWorkedMinutesOverall % 60;
+        sb.append("Gesamte Arbeitszeit (Formatiert);").append(String.format("%d Std. %02d Min.", totalHours, totalMinutes)).append("\n");
+
 
         return sb.toString().getBytes(StandardCharsets.UTF_8);
-    }
-
-    /**
-     * worked = (workEnd - workStart) minus (breakEnd - breakStart).
-     * mind. 0
-     */
-    private long computeWorkedMinutes(TimeTrackingResponse r) {
-        if (r.getWorkStart() == null || r.getWorkEnd() == null) {
-            return 0L;
-        }
-        long total = ChronoUnit.MINUTES.between(r.getWorkStart(), r.getWorkEnd());
-        if (r.getBreakStart() != null && r.getBreakEnd() != null) {
-            total -= ChronoUnit.MINUTES.between(r.getBreakStart(), r.getBreakEnd());
-        }
-        return Math.max(total, 0L);
     }
 }

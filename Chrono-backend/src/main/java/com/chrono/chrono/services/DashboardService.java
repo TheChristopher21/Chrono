@@ -1,128 +1,96 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.DashboardResponse;
-import com.chrono.chrono.entities.TimeTracking;
-import com.chrono.chrono.entities.User; //
-import com.chrono.chrono.repositories.TimeTrackingRepository; //
-import com.chrono.chrono.repositories.UserRepository; //
-import org.springframework.beans.factory.annotation.Autowired; //
-import org.springframework.stereotype.Service; //
-
-import java.time.LocalTime; //
-import java.time.temporal.ChronoUnit; //
-import java.util.*; //
+import com.chrono.chrono.entities.User;
+import com.chrono.chrono.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 public class DashboardService {
 
     @Autowired
-    private UserRepository userRepository; //
-
+    private UserRepository userRepository;
     @Autowired
-    private TimeTrackingRepository timeTrackingRepository; //
-
-    @Autowired // HolidayService injizieren
+    private TimeTrackingService timeTrackingService;
+    @Autowired
     private HolidayService holidayService;
 
     public DashboardResponse getUserDashboard(String username) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username)); //
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        String roleName = user.getRoles().isEmpty() ? "NONE" : user.getRoles().iterator().next().getRoleName();
 
-        String roleName = user.getRoles().isEmpty()
-                ? "NONE"
-                : user.getRoles().iterator().next().getRoleName(); //
-
-        if (Boolean.TRUE.equals(user.getIsHourly())) { //
-            return buildHourlyDashboard(user, roleName); //
-
+        if (Boolean.TRUE.equals(user.getIsHourly())) {
+            return buildHourlyDashboard(user, roleName);
         } else {
-            return buildDailyDashboard(user, roleName); //
+            return buildDailyDashboard(user, roleName);
         }
     }
 
     private DashboardResponse buildHourlyDashboard(User user, String roleName) {
-        List<TimeTracking> list = timeTrackingRepository.findByUserOrderByDailyDateDesc(user); //
-        Map<String, Long> monthlyTotals = new HashMap<>(); //
-
-        for (TimeTracking tt : list) { //
-            long minutesWorked = computeWorkedMinutes(tt); //
-            String monthKey = tt.getDailyDate().getYear() //
-                    + "-"
-                    + String.format("%02d", tt.getDailyDate().getMonthValue()); //
-            monthlyTotals.put( //
-                    monthKey,
-                    monthlyTotals.getOrDefault(monthKey, 0L) + minutesWorked //
-            );
+        List<DailyTimeSummaryDTO> history = timeTrackingService.getUserHistory(user.getUsername());
+        Map<String, Long> monthlyTotals = new HashMap<>();
+        for (DailyTimeSummaryDTO summary : history) {
+            long minutesWorked = summary.getWorkedMinutes();
+            String monthKey = summary.getDate().getYear() + "-" + String.format("%02d", summary.getDate().getMonthValue());
+            monthlyTotals.put(monthKey, monthlyTotals.getOrDefault(monthKey, 0L) + minutesWorked);
         }
-        return new DashboardResponse(user.getUsername(), monthlyTotals, roleName); //
+        return new DashboardResponse(user.getUsername(), monthlyTotals, roleName);
     }
 
     private DashboardResponse buildDailyDashboard(User user, String roleName) {
-        List<TimeTracking> list = timeTrackingRepository.findByUserOrderByDailyDateDesc(user); //
-        List<String> dailyEntries = new ArrayList<>(); //
-
+        List<DailyTimeSummaryDTO> history = timeTrackingService.getUserHistory(user.getUsername());
+        List<String> dailyDisplayEntries = new ArrayList<>();
         String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEE, dd.MM.yyyy", Locale.GERMAN);
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
 
-        for (TimeTracking tt : list) { //
-            StringBuilder sb = new StringBuilder(); //
-            sb.append(tt.getDailyDate().format(dateFormatter)); // Formatierung angepasst
+        for (DailyTimeSummaryDTO summary : history) {
+            StringBuilder sb = new StringBuilder();
+            sb.append(summary.getDate().format(dateFormatter));
 
-            boolean isHoliday = holidayService.isHoliday(tt.getDailyDate(), cantonAbbreviation);
-
+            boolean isHoliday = holidayService.isHoliday(summary.getDate(), cantonAbbreviation);
             if (isHoliday) {
-                String holidayName = holidayService.getHolidayName(tt.getDailyDate(), tt.getDailyDate().getYear(), cantonAbbreviation);
-                sb.append(" (").append(holidayName).append(")");
-                // An Feiertagen normalerweise keine Arbeitszeiten anzeigen, es sei denn, es wurde explizit gestempelt.
-                // Wenn gestempelt wurde, kann man die Zeiten trotzdem anzeigen oder eine spezielle Logik implementieren.
-                // Für den Moment: Wenn Feiertag, keine Zeiten anzeigen, außer es gibt eine Notiz.
+                sb.append(" (").append(holidayService.getHolidayName(summary.getDate(), summary.getDate().getYear(), cantonAbbreviation)).append(")");
             }
 
-            // Zeiten nur anzeigen, wenn es kein Feiertag ist ODER wenn trotz Feiertag gestempelt wurde
-            // (und der Feiertag nicht als komplett arbeitsfrei im Soll berücksichtigt wurde).
-            // Da das Soll an Feiertagen 0 ist, ist eine Stempelung an einem Feiertag reine Überzeit.
-            if (!isHoliday || tt.getWorkStart() != null) { // Zeiten anzeigen, wenn gestempelt oder kein Feiertag
-                LocalTime ws = tt.getWorkStart(); //
-                LocalTime we = tt.getWorkEnd(); //
-                LocalTime bs = tt.getBreakStart(); //
-                LocalTime be = tt.getBreakEnd(); //
+            DailyTimeSummaryDTO.PrimaryTimes pt = summary.getPrimaryTimes();
+            LocalTime firstStart = pt.getFirstStartTime();
+            LocalTime lastEnd = pt.getLastEndTime();
 
-                sb.append(" ("); //
-                if (ws != null && we != null) { //
-                    sb.append(ws).append("-").append(we); //
-                } else if (ws != null) { //
-                    sb.append(ws).append("-..."); //
-                } else if (!isHoliday) { // Nur "keine Zeiten" anzeigen, wenn es kein Feiertag ist
-                    sb.append("keine Zeiten"); //
+            if (firstStart != null) {
+                sb.append(" (").append(firstStart.format(timeFormatter));
+                if (lastEnd != null) {
+                    sb.append("-").append(lastEnd.format(timeFormatter));
+                } else if (pt.isOpen()){
+                    sb.append("-OFFEN");
+                } else {
+                     sb.append("-?");
                 }
-                sb.append(")"); //
-
-                if (bs != null && be != null) { //
-                    sb.append(" Pause ").append(bs).append("-").append(be); //
-                }
+                sb.append(")");
+            } else if (!isHoliday) {
+                sb.append(" (keine Zeiten)");
+            }
+            
+            if (summary.getBreakMinutes() > 0) {
+                sb.append(" Pause ").append(summary.getBreakMinutes()).append(" min");
             }
 
-
-            if (tt.getDailyNote() != null && !tt.getDailyNote().trim().isEmpty()) { //
-                sb.append(" Notiz: ").append(tt.getDailyNote()); //
+            if (summary.isNeedsCorrection()) {
+                 sb.append(" [KORREKTUR ERFORDERLICH!]");
             }
-            dailyEntries.add(sb.toString()); //
+            
+            if (summary.getDailyNote() != null && !summary.getDailyNote().trim().isEmpty()) {
+                sb.append(" Notiz: ").append(summary.getDailyNote());
+            }
+            dailyDisplayEntries.add(sb.toString());
         }
-        return new DashboardResponse(user.getUsername(), dailyEntries, roleName); //
-    }
-
-    private long computeWorkedMinutes(TimeTracking tt) {
-        if (tt.getWorkStart() == null || tt.getWorkEnd() == null) { //
-            return 0L; //
-        }
-        long total = ChronoUnit.MINUTES.between(tt.getWorkStart(), tt.getWorkEnd()); //
-        if (tt.getBreakStart() != null && tt.getBreakEnd() != null) { //
-            total -= ChronoUnit.MINUTES.between(tt.getBreakStart(), tt.getBreakEnd()); //
-        }
-        return Math.max(total, 0L); //
+        return new DashboardResponse(user.getUsername(), dailyDisplayEntries, roleName);
     }
 }
