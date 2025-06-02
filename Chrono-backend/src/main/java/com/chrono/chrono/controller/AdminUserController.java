@@ -439,7 +439,7 @@ public class AdminUserController {
             vacationService.deleteVacationsByUser(userToDelete); //
             correctionRequestRepository.deleteByUser(userToDelete); //
             sickLeaveRepository.deleteByUser(userToDelete); // NEU: Krankmeldungen löschen
-            // timeTrackingService.deleteTimeTrackingsByUser(userToDelete); // Falls implementiert
+            timeTrackingService.deleteTimeTrackingEntriesByUser(userToDelete);
 
             userRepository.delete(userToDelete); //
             logger.info("Admin {} deleted user: {}", adminUser.getUsername(), userToDelete.getUsername()); //
