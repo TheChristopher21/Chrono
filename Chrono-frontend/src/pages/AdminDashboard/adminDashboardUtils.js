@@ -132,36 +132,25 @@ export function computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly, d
     const actualWorkedMinutes = computeDayTotalMinutesFromEntries(dayEntries);
 
     if (isHourly) {
-        return actualWorkedMinutes; // Für stündliche MA ist die Differenz = Ist-Zeit
+        return actualWorkedMinutes;
+    }
+
+    // Wenn expectedWorkHours -1 ist (Signal für kein festes Tagessoll bei prozentualen Usern),
+    // dann gibt es keine tägliche Differenz anzuzeigen.
+    if (expectedWorkHours === -1) {
+        return null; // Oder einen anderen Indikator, dass keine tägliche Differenz berechnet/angezeigt wird
     }
 
     let expectedMinutes = (expectedWorkHours || 0) * 60;
 
-    // Anpassung für prozentuale Mitarbeiter und Feiertage
-    if (userConfig?.isPercentage === true) {
-        const isoDate = formatLocalDateYMD(dailyDateObj);
-        const isHoliday = holidaysForUserCanton && holidaysForUserCanton[isoDate];
-        if (isHoliday) {
-            const holidayOption = userHolidayOptionsForWeek?.find(opt => opt.holidayDate === isoDate)?.holidayHandlingOption;
-            if (holidayOption === 'DO_NOT_DEDUCT_FROM_WEEKLY_TARGET' || holidayOption === 'PENDING_DECISION') {
-                // Soll wird für diesen Tag NICHT reduziert, also bleibt expectedMinutes wie berechnet
-                // (was den Tagesanteil des Wochensolls darstellt).
-            } else if (holidayOption === 'DEDUCT_FROM_WEEKLY_TARGET') {
-                expectedMinutes = 0; // Soll wird auf 0 gesetzt, da der Feiertag das Soll reduziert
-            }
-            // Falls keine Option explizit gesetzt ist (selten, da PENDING_DECISION der Fallback sein sollte)
-            // oder PENDING_DECISION -> keine Reduktion als Standard.
-        }
-    }
-
     if (actualWorkedMinutes === 0 && dayEntries.length === 0 && expectedMinutes > 0) {
-        return -expectedMinutes; // Wenn keine Einträge und Soll > 0, dann ist Diff = -Soll
+        return -expectedMinutes;
     }
     if (actualWorkedMinutes === 0 && dayEntries.length === 0 && expectedMinutes === 0) return 0;
 
-
     return actualWorkedMinutes - expectedMinutes;
 }
+
 
 export function computeOverallDiffForUser(allTracks, username, userConfig, defaultExpectedHours, allUserVacations, allUserSickLeaves, allHolidaysForAllCantons, allUserHolidayOptions) {
     const userEntries = allTracks.filter(e => e.username === username);
@@ -184,30 +173,33 @@ export function computeOverallDiffForUser(allTracks, username, userConfig, defau
 }
 
 export function computeDailyDiff(dayEntries, expectedWorkHours, isHourly, dailyDateObj, userConfig, holidaysForUserCanton, userHolidayOptionsForWeek) {
-    const diff = computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly, dailyDateObj, userConfig, holidaysForUserCanton, userHolidayOptionsForWeek);
+    const diffValue = computeDailyDiffValue(dayEntries, expectedWorkHours, isHourly, dailyDateObj, userConfig, holidaysForUserCanton, userHolidayOptionsForWeek);
 
-    if (isHourly) {
-        const hours = Math.floor(diff / 60);
-        const minutes = diff % 60;
-        return `${hours}h ${minutes}m`; // Zeigt die Ist-Zeit für stündliche MA
+    if (diffValue === null) { // Kein festes Tagessoll
+        return " "; // Leerer String oder "-" für die Anzeige
     }
 
-    const sign = diff >= 0 ? '+' : '-';
-    const absDiff = Math.abs(diff);
+    if (isHourly) {
+        const hours = Math.floor(diffValue / 60);
+        const minutes = diffValue % 60;
+        return `${hours}h ${minutes}m`;
+    }
+
+    const sign = diffValue >= 0 ? '+' : '-';
+    const absDiff = Math.abs(diffValue);
     const hours = Math.floor(absDiff / 60);
     const minutes = absDiff % 60;
     return `${sign}${hours}h ${minutes}m`;
 }
 
-
 export function getExpectedHoursForDay(
     dayObj,
     userConfig,
     defaultExpectedHours,
-    holidaysForUserCanton, // Objekt { "YYYY-MM-DD": "Feiertagsname", ... }
-    userApprovedVacations, // Array von Urlaubsanträgen des Users
-    userSickLeaves, // Array von Krankmeldungen des Users
-    userHolidayOptionsForWeek // Array der Feiertagsoptionen für die Woche
+    holidaysForUserCanton,
+    userApprovedVacations,
+    userSickLeaves,
+    userHolidayOptionsForWeek // Bleibt für die korrekte Berechnung des Wochensolls relevant
 ) {
     if (!dayObj || !(dayObj instanceof Date) || isNaN(dayObj.getTime())) {
         return userConfig?.isHourly ? 0 : defaultExpectedHours;
@@ -216,98 +208,138 @@ export function getExpectedHoursForDay(
     if (userConfig?.isHourly === true) return 0; // Kein Soll für stündliche
 
     const isoDate = formatLocalDateYMD(dayObj);
-    const dayOfWeek = dayObj.getDay(); // Sonntag = 0, Samstag = 6
 
-    // Prüfung auf Feiertag
+    // Prüfung auf ganztägigen Urlaub
+    const fullDayVacation = userApprovedVacations?.find(v => isoDate >= v.startDate && isoDate <= v.endDate && v.approved && !v.halfDay);
+    if (fullDayVacation) return 0;
+
+    // Prüfung auf ganztägige Krankheit
+    const fullDaySick = userSickLeaves?.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate && !sl.halfDay);
+    if (fullDaySick) return 0;
+
     const isHoliday = holidaysForUserCanton && holidaysForUserCanton[isoDate];
 
-    // Prüfung auf Urlaub
-    const vacationToday = userApprovedVacations?.find(v => isoDate >= v.startDate && isoDate <= v.endDate && v.approved);
-
-    // Prüfung auf Krankheit
-    const sickToday = userSickLeaves?.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
-
-    // Wenn prozentualer Mitarbeiter
+    // --- NEUE LOGIK FÜR PROZENTUALE MITARBEITER ---
     if (userConfig?.isPercentage === true) {
-        // Wochenenden haben kein Soll, es sei denn, es ist ein Feiertag, der speziell behandelt wird
-        if (dayOfWeek === 0 || dayOfWeek === 6) {
-            if (!isHoliday) return 0; // Kein Soll an normalen Wochenenden
+        // Für prozentuale Mitarbeiter wird im Frontend kein tägliches Soll angezeigt.
+        // Die Abrechnung erfolgt auf Wochenbasis.
+        // Wir geben -1 zurück, um dies im Frontend speziell zu behandeln.
+        // Die Feiertags-, Urlaubs- und Krankheitslogik für das *Wochensoll*
+        // wird in `calculateWeeklyExpectedMinutes` separat und korrekt gehandhabt.
+
+        // Wenn es ein Feiertag ist, der das Wochensoll reduziert (Option: DEDUCT_FROM_WEEKLY_TARGET)
+        // ODER ein halber Urlaub/Krankheitstag, könnte man hier anteilig 0 oder halbes Tagessoll *anzeigen*,
+        // aber die eigentliche Verrechnung bleibt wöchentlich.
+        // Für die Anzeige im AdminDashboard (Tagesspalte) ist es am saubersten, kein Tagessoll anzuzeigen.
+        const holidayOption = userHolidayOptionsForWeek?.find(opt => opt.holidayDate === isoDate)?.holidayHandlingOption || 'PENDING_DECISION';
+        if (isHoliday && holidayOption === 'DEDUCT_FROM_WEEKLY_TARGET') {
+            return 0; // An diesem Feiertag ist das Tagessoll effektiv 0 für die Wochenabrechnung
         }
 
-        // Basis-Tagessoll für prozentuale User (Anteil am Wochensoll)
-        const pct = userConfig.workPercentage ?? 100;
-        const workDaysInModel = userConfig.expectedWorkDays ?? 5;
-        const baseWeekHoursFullTime = defaultExpectedHours * 5; // Annahme: 5 Tage Woche für 100%
-        const userWeeklyHours = baseWeekHoursFullTime * (pct / 100.0);
-        let dailyExpectedHours = workDaysInModel > 0 ? userWeeklyHours / workDaysInModel : 0;
+        // Halbtägiger Urlaub oder Krankheit bei prozentualen Mitarbeitern
+        // Hier könnte man argumentieren, die Hälfte eines *durchschnittlichen* Tagessolls anzuzeigen,
+        // aber es bleibt irreführend. Besser ist es, dies in der Wochenübersicht zu belassen.
+        // Für die reine Anzeige des *Tagessolls* ist es für prozentuale User oft am besten, nichts oder "Flex." anzuzeigen.
+        // Wir geben -1 zurück, um "kein festes Tagessoll" zu signalisieren.
+        const halfDayVacation = userApprovedVacations?.find(v => isoDate === v.startDate && isoDate === v.endDate && v.approved && v.halfDay);
+        const halfDaySick = userSickLeaves?.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate && sl.halfDay);
 
-        if (isHoliday) {
-            const holidayOption = userHolidayOptionsForWeek?.find(opt => opt.holidayDate === isoDate)?.holidayHandlingOption;
-            if (holidayOption === 'DEDUCT_FROM_WEEKLY_TARGET') {
-                dailyExpectedHours = 0; // Feiertag reduziert Soll auf 0
-            } else if (holidayOption === 'DO_NOT_DEDUCT_FROM_WEEKLY_TARGET' || holidayOption === 'PENDING_DECISION') {
-                // Soll wird NICHT reduziert, bleibt `dailyExpectedHours`
-            } else {
-                // PENDING_DECISION oder keine Option -> Soll wird NICHT reduziert (Standard)
-            }
+        if (halfDayVacation || halfDaySick) {
+            // Potenziell könnte man hier die Hälfte des "durchschnittlichen" Tagessolls anzeigen,
+            // aber für die Anzeige ist es oft klarer, kein spezifisches Tagessoll auszuweisen.
+            // Das Wochensoll wird ja korrekt reduziert.
+            return -1; // Signal für "Flexibel / Halber Tag Abwesenheit"
         }
 
-        // Wenn Urlaub an diesem Tag (und kein Feiertag, der das Soll eh auf 0 setzt)
-        if (vacationToday && dailyExpectedHours > 0) {
-            return vacationToday.halfDay ? dailyExpectedHours / 2 : 0;
-        }
-        // Wenn krank an diesem Tag (und kein Feiertag/Urlaub, der das Soll eh auf 0 setzt)
-        if (sickToday && !vacationToday && dailyExpectedHours > 0) {
-            return sickToday.halfDay ? dailyExpectedHours / 2 : 0;
-        }
-        return dailyExpectedHours;
+        // An normalen Arbeitstagen (kein Feiertag, der Soll reduziert, kein voller/halber Urlaub/Krankheit)
+        // zeigen wir kein spezifisches Tagessoll an.
+        return -1; // Signal für "kein festes Tagessoll / flexibel"
     }
+    // --- ENDE NEUE LOGIK ---
 
     // Für Standard-Mitarbeiter (nicht prozentual, nicht stündlich)
-    if (isHoliday) return 0; // An Feiertagen ist das Soll für Standard-MA immer 0
-    if (vacationToday) { // Urlaub hat Vorrang vor Krankheit für die Soll-Reduktion
-        const baseHoursForVacationDay = getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHours);
-        return vacationToday.halfDay ? baseHoursForVacationDay / 2 : 0;
+    if (isHoliday) return 0;
+
+    const baseHoursForDay = getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHours);
+
+    const halfDayVacationStandard = userApprovedVacations?.find(v => isoDate === v.startDate && isoDate === v.endDate && v.approved && v.halfDay);
+    if (halfDayVacationStandard) {
+        return baseHoursForDay / 2;
     }
-    if (sickToday) {
-        const baseHoursForSickDay = getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHours);
-        return sickToday.halfDay ? baseHoursForSickDay / 2 : 0;
+    const halfDaySickStandard = userSickLeaves?.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate && sl.halfDay);
+    if (halfDaySickStandard) {
+        return baseHoursForDay / 2;
     }
 
-    return getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHours);
+    return baseHoursForDay;
 }
 
 // Hilfsfunktion für Standard-Mitarbeiter, um das Basis-Soll laut Plan zu bekommen
 function getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHours) {
-    const dayOfWeek = dayObj.getDay();
-    let expectedForDay = defaultExpectedHours;
+    const dayOfWeek = dayObj.getDay(); // Sonntag = 0, Samstag = 6
+    let expectedForDay;
 
+    // Zuerst prüfen, ob ein scheduleEffectiveDate gesetzt ist und ob das aktuelle Datum davor liegt
+    if (userConfig?.scheduleEffectiveDate) {
+        const effectiveDate = new Date(userConfig.scheduleEffectiveDate + "T00:00:00Z"); // explizit UTC für Vergleich
+        const comparisonDayObj = new Date(Date.UTC(dayObj.getFullYear(), dayObj.getMonth(), dayObj.getDate()));
+
+        if (comparisonDayObj < effectiveDate) {
+            // Datum liegt vor dem Gültigkeitsdatum des Wochenplans
+            if (typeof userConfig.dailyWorkHours === 'number') {
+                expectedForDay = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : userConfig.dailyWorkHours;
+            } else {
+                expectedForDay = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : defaultExpectedHours;
+            }
+            return expectedForDay;
+        }
+    }
+
+    // Logik für Wochenplan anwenden
     if (userConfig?.weeklySchedule && Array.isArray(userConfig.weeklySchedule) && userConfig.weeklySchedule.length > 0 && userConfig?.scheduleCycle > 0) {
         try {
-            const epochMonday = getMondayOfWeek(new Date(2020, 0, 6)); // Fester Referenz-Montag
-            const currentDayMonday = getMondayOfWeek(dayObj);
+            const epochMonday = getMondayOfWeek(new Date(Date.UTC(2020, 0, 6))); // Fester Referenz-Montag in UTC
+            const currentDayMonday = getMondayOfWeek(dayObj); // dayObj ist bereits ein Date-Objekt
             const weeksSinceEpoch = Math.floor(differenceInMinutes(currentDayMonday, epochMonday) / (60 * 24 * 7));
             let cycleIndex = weeksSinceEpoch % userConfig.scheduleCycle;
             if (cycleIndex < 0) cycleIndex += userConfig.scheduleCycle;
 
             const dayOfWeekName = dayObj.toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
 
-            if (userConfig.weeklySchedule[cycleIndex] && typeof userConfig.weeklySchedule[cycleIndex][dayOfWeekName] === 'number') {
-                expectedForDay = userConfig.weeklySchedule[cycleIndex][dayOfWeekName];
-            } else { // Fallback, falls im Schedule für diesen Tag nichts steht
-                expectedForDay = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : defaultExpectedHours;
+            if (cycleIndex < userConfig.weeklySchedule.length) {
+                // Die Woche ist im scheduleCycle definiert und im weeklySchedule-Array vorhanden
+                const weekData = userConfig.weeklySchedule[cycleIndex];
+                if (typeof weekData[dayOfWeekName] === 'number') {
+                    expectedForDay = weekData[dayOfWeekName];
+                } else {
+                    expectedForDay = 0;
+                }
+            } else {
+                // Woche ist im scheduleCycle definiert, ABER nicht im weeklySchedule-Array
+                if (typeof userConfig.dailyWorkHours === 'number') {
+                    expectedForDay = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : userConfig.dailyWorkHours;
+                } else {
+                    expectedForDay = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : defaultExpectedHours;
+                }
             }
         } catch (e) {
-            console.error("Error in getBaseExpectedHoursFromSchedule:", e);
+            // Genereller Fallback bei Fehler in der Zykluslogik
+            if (typeof userConfig.dailyWorkHours === 'number') {
+                expectedForDay = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : userConfig.dailyWorkHours;
+            } else {
+                expectedForDay = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : defaultExpectedHours;
+            }
+        }
+    } else {
+        // Kein detaillierter Wochenplan vorhanden (oder ungültig)
+        if (typeof userConfig.dailyWorkHours === 'number') {
+            expectedForDay = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : userConfig.dailyWorkHours;
+        } else {
             expectedForDay = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : defaultExpectedHours;
         }
-    } else { // Kein detaillierter Wochenplan, Standardwerte
-        expectedForDay = (dayOfWeek === 0 || dayOfWeek === 6) ? 0 : defaultExpectedHours;
     }
     return expectedForDay;
 }
-
-
 export function getStatusLabel(punchOrder) {
     switch (punchOrder) {
         case 1: return 'Work Start';
@@ -396,11 +428,11 @@ export function calculateWeeklyActualMinutes(userDayMap, weekDates) {
 export function calculateWeeklyExpectedMinutes(
     userConfig,
     weekDates,
-    defaultExpectedHours, // z.B. 8.5h (Tagessoll eines 100% MA bei 5 Tagen)
+    defaultExpectedHours,
     userApprovedVacations,
     userSickLeaves,
     holidaysForUserCanton,
-    userHolidayOptionsForWeek
+    userHolidayOptionsForWeek // Die Optionen für die spezifische Woche des Users
 ) {
     if (!userConfig || userConfig.isHourly === true) {
         return 0;
@@ -409,40 +441,28 @@ export function calculateWeeklyExpectedMinutes(
     let totalExpectedMinutesForWeek = 0;
 
     if (userConfig.isPercentage === true) {
-        const pct = userConfig.workPercentage ?? 100;
-
-        // KORREKTUR: Basis-Wochensoll für 100% Mitarbeiter (z.B. bei 5 Tagen à defaultExpectedHours)
-        const baseWeeklyHoursFullTimeStandard = defaultExpectedHours * 5; // z.B. 8.5 * 5 = 42.5 Stunden
-
-        // Korrektes Wochensoll des prozentualen Mitarbeiters
-        const userActualWeeklyHours = baseWeeklyHoursFullTimeStandard * (pct / 100.0); // z.B. 42.5 * 0.60 = 25.5 Stunden
-        const userWeeklyTotalExpectedMinutes = Math.round(userActualWeeklyHours * 60); // z.B. 25.5 * 60 = 1530 Minuten
+        // Basis-Wochensoll für 100% (z.B. 42.5h bei 8.5h/Tag und 5 Tagen)
+        const baseWeeklyHoursFullTimeStandard = defaultExpectedHours * 5;
+        const userActualWeeklyHours = baseWeeklyHoursFullTimeStandard * ((userConfig.workPercentage ?? 100) / 100.0);
+        const userWeeklyTotalExpectedMinutes = Math.round(userActualWeeklyHours * 60);
 
         let absenceAndHolidayDeductionMinutes = 0;
-        const workDaysInModel = userConfig.expectedWorkDays ?? 5; // z.B. 3 Tage für User "test"
-
-        // Korrekter Wert eines einzelnen Arbeitstages für diesen prozentualen Mitarbeiter
+        const workDaysInModel = userConfig.expectedWorkDays ?? 5;
         const valueOfOneUserWorkDayMinutes = workDaysInModel > 0 ? Math.round(userWeeklyTotalExpectedMinutes / workDaysInModel) : 0;
-        // z.B. 1530 Minuten / 3 Tage = 510 Minuten (8.5 Stunden) pro Arbeitstag
 
         for (const date of weekDates) {
             const isoDate = formatLocalDateYMD(date);
             const dayOfWeek = date.getDay();
 
-            // Berücksichtige die tatsächlichen Arbeitstage des Users, wenn workDaysInModel < 5
-            // (Diese Logik muss ggf. verfeinert werden, je nachdem, wie Sa/So für prozentuale MA gehandhabt werden sollen,
-            // wenn ihre <5 Tage nicht Mo-Fr sind. Aktuell: WE sind frei, außer `workDaysInModel` ist >5)
             let isPotentialWorkDayForUser = true;
-            if (workDaysInModel <= 5 && (dayOfWeek === 0 /* So */ || dayOfWeek === 6 /* Sa */)) {
+            if (workDaysInModel <= 5 && (dayOfWeek === 0 || dayOfWeek === 6)) { // Sa/So
+                isPotentialWorkDayForUser = false;
+            } else if (workDaysInModel === 6 && dayOfWeek === 0) { // Sonntag bei 6-Tage-Modell
                 isPotentialWorkDayForUser = false;
             }
-            if (workDaysInModel === 6 && dayOfWeek === 0 /* So */) { // Bei 6-Tage-Modell ist Sonntag typischerweise frei
-                isPotentialWorkDayForUser = false;
-            }
-            // Bei 7 Tagen sind alle Tage potenzielle Arbeitstage
+            // Bei 7 Tagen oder wenn Sa/So Teil des Modells sind, bleibt isPotentialWorkDayForUser true
 
-            if (!isPotentialWorkDayForUser) continue;
-
+            if (!isPotentialWorkDayForUser) continue; // Überspringe Tage, die nicht zum Arbeitsmodell passen
 
             const isHoliday = holidaysForUserCanton && holidaysForUserCanton[isoDate];
             const vacationToday = userApprovedVacations?.find(v => isoDate >= v.startDate && isoDate <= v.endDate && v.approved);
@@ -455,13 +475,13 @@ export function calculateWeeklyExpectedMinutes(
                 if (holidayOption === 'DEDUCT_FROM_WEEKLY_TARGET') {
                     absenceAndHolidayDeductionMinutes += dailyDeductionValue;
                 }
-                // Bei 'DO_NOT_DEDUCT_FROM_WEEKLY_TARGET' oder 'PENDING_DECISION' erfolgt kein Abzug für den Feiertag.
-                continue; // Feiertagslogik hat Vorrang
+                // Bei 'DO_NOT_DEDUCT_FROM_WEEKLY_TARGET' oder 'PENDING_DECISION' erfolgt kein Abzug vom Wochensoll.
+                continue; // Feiertagslogik hat Vorrang für den Abzug vom Wochensoll
             }
 
             if (vacationToday) {
                 absenceAndHolidayDeductionMinutes += vacationToday.halfDay ? Math.round(dailyDeductionValue / 2) : dailyDeductionValue;
-                continue; // Urlaub hat Vorrang vor Krankheit für denselben Tag
+                continue;
             }
             if (sickToday) {
                 absenceAndHolidayDeductionMinutes += sickToday.halfDay ? Math.round(dailyDeductionValue / 2) : dailyDeductionValue;
@@ -469,7 +489,7 @@ export function calculateWeeklyExpectedMinutes(
         }
         totalExpectedMinutesForWeek = Math.max(0, userWeeklyTotalExpectedMinutes - absenceAndHolidayDeductionMinutes);
 
-    } else {  // Standard-Mitarbeiter (nicht prozentual)
+    } else {  // Standard-Mitarbeiter
         weekDates.forEach(date => {
             const dailyExpectedHours = getExpectedHoursForDay(
                 date,
@@ -478,7 +498,7 @@ export function calculateWeeklyExpectedMinutes(
                 holidaysForUserCanton,
                 userApprovedVacations,
                 userSickLeaves,
-                null // userHolidayOptionsForWeek ist für Standard-MA nicht direkt für die Soll-Berechnung hier relevant
+                userHolidayOptionsForWeek // userHolidayOptionsForWeek ist für Standard-MA in getExpectedHoursForDay vereinfacht
             );
             totalExpectedMinutesForWeek += Math.round(dailyExpectedHours * 60);
         });

@@ -256,21 +256,14 @@ public class TimeTrackingService {
      * Die Liste der `approvedVacations` wird übergeben, um wiederholte DB-Abfragen zu vermeiden,
      * aber die Kernlogik für das Soll (inkl. Urlaub, Krankheit, Feiertag) liegt im WorkScheduleService.
      */
-    private int getAdjustedExpectedWorkMinutes(User user, LocalDate date, List<VacationRequest> approvedVacations) {
-        if (Boolean.TRUE.equals(user.getIsHourly())) {
-            return 0; // Stundenlöhner haben kein Tagessoll im Saldo
-        }
-        // WorkScheduleService.computeExpectedWorkMinutes berücksichtigt Feiertage, Wochenenden,
-        // geplante freie/halbe Tage (UserScheduleRule) UND Krankheitstage.
-        // Urlaub wird hier nicht mehr explizit übergeben, da computeExpectedWorkMinutes dies intern handhaben sollte.
-        // Die `approvedVacations` Liste ist hier also für diese Methode nicht mehr direkt relevant,
-        // da `workScheduleService.computeExpectedWorkMinutes` die Abwesenheiten selbst prüft.
-        // Der Parameter wird beibehalten, um die Signatur von `computeDailyWorkDifference` nicht zu ändern,
-        // aber die Logik sollte primär im WorkScheduleService liegen.
-        return workScheduleService.computeExpectedWorkMinutes(user, date);
+
+
+    public int getAdjustedExpectedWorkMinutes(User user, LocalDate date, List<VacationRequest> approvedVacations) {
+        // Die 'approvedVacations'-Liste wird bereits als Parameter empfangen.
+        // Wir geben sie direkt an den WorkScheduleService weiter.
+        // Stelle sicher, dass die Signatur von computeExpectedWorkMinutes in WorkScheduleService hier übereinstimmt.
+        return workScheduleService.computeExpectedWorkMinutes(user, date, approvedVacations);
     }
-
-
     public int computeDailyWorkDifference(User user, LocalDate date, List<VacationRequest> approvedVacations) {
         int workedMinutes = getWorkedMinutes(user, date);
         // `approvedVacations` wird an `getAdjustedExpectedWorkMinutes` übergeben, aber die Kernlogik
@@ -318,82 +311,140 @@ public class TimeTrackingService {
         User freshUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + user.getId()));
 
-        logger.debug("TimeTrackingService.rebuildUserBalance: Entering rebuildUserBalance for user: '{}'. Freshly loaded expectedWorkDays: {}",
-                freshUser.getUsername(), freshUser.getExpectedWorkDays());
+        // Detailliertes Logging für den Start der Methode, spezifisch für Chantale oder allgemein
+        // Dieses Logging wurde in der vorherigen Version schon hinzugefügt und ist hier beibehalten.
+        if ("Chantale".equals(freshUser.getUsername())) {
+            logger.info("[User: Chantale] Backend rebuildUserBalance: STARTE Saldo-Neuberechnung. DB-Konfig: isPercentage={}, expectedWorkDays={}, workPercentage={}, dailyWorkHours={}, scheduleCycle={}, scheduleEffectiveDate={}, weeklySchedule={}",
+                    freshUser.getIsPercentage(), freshUser.getExpectedWorkDays(), freshUser.getWorkPercentage(), freshUser.getDailyWorkHours(), freshUser.getScheduleCycle(), freshUser.getScheduleEffectiveDate(), freshUser.getWeeklySchedule());
+        } else {
+            logger.debug("TimeTrackingService.rebuildUserBalance: Entering rebuildUserBalance for user: '{}'.", freshUser.getUsername());
+        }
 
         List<TimeTracking> rows = timeTrackingRepo.findByUser(freshUser);
+        // Wichtig: Lade die genehmigten Urlaube EINMAL für den User
         List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(freshUser);
+
+        // Logging der geladenen Urlaube für den spezifischen User
+        if ("Chantale".equals(freshUser.getUsername())) { // Oder ein allgemeineres Log-Level/Bedingung
+            logger.info("[User: {}] Geladene genehmigte Urlaube für Neuberechnung: Anzahl = {}, Details = {}",
+                    freshUser.getUsername(),
+                    approvedVacations.size(),
+                    approvedVacations.stream()
+                            .map(vr -> String.format("ID: %d, Start: %s, End: %s, HalfDay: %b, UsesOvertime: %b",
+                                    vr.getId(), vr.getStartDate(), vr.getEndDate(), vr.isHalfDay(), vr.isUsesOvertime()))
+                            .collect(Collectors.toList()));
+        }
         // Krankmeldungen werden vom WorkScheduleService intern geladen, wenn `computeExpectedWorkMinutes` aufgerufen wird.
 
         if (freshUser.getIsHourly() == null) freshUser.setIsHourly(false);
         if (freshUser.getIsPercentage() == null) freshUser.setIsPercentage(false);
         if (freshUser.getTrackingBalanceInMinutes() == null) freshUser.setTrackingBalanceInMinutes(0);
 
-        logger.debug("TimeTrackingService.rebuildUserBalance: Starting balance rebuild for user: '{}'. Initial DB values: isPercentage={}, expectedWorkDays={}, workPercentage={}",
-                freshUser.getUsername(), freshUser.getIsPercentage(), freshUser.getExpectedWorkDays(), freshUser.getWorkPercentage());
-
-
-        if (rows.isEmpty() && approvedVacations.stream().noneMatch(vr -> vr.isApproved() && (vr.isUsesOvertime() || !vr.isUsesOvertime()))
-                && sickLeaveRepository.findByUser(freshUser).isEmpty() ) { // Auch prüfen, ob Krankmeldungen existieren
+        // Überprüfung, ob überhaupt Einträge oder Abwesenheiten vorhanden sind
+        if (rows.isEmpty() && approvedVacations.isEmpty() && sickLeaveRepository.findByUser(freshUser).isEmpty()) {
             freshUser.setTrackingBalanceInMinutes(0);
             userRepository.save(freshUser);
-            logger.info("Saldo für {} auf 0 gesetzt (keine Zeiteinträge, keine relevanten genehmigten Urlaube oder Krankmeldungen).", freshUser.getUsername());
+            logger.info("Saldo für {} auf 0 gesetzt (keine Zeiteinträge, keine genehmigten Urlaube oder Krankmeldungen).", freshUser.getUsername());
             return;
         }
 
-        LocalDate firstDayToConsiderInitialized = LocalDate.now(ZoneId.of("Europe/Zurich"));
-
+        // Ermittle den ersten relevanten Tag für die Berechnung
+        LocalDate firstDayToConsider;
         Optional<LocalDate> firstTrackingDayOpt = rows.stream()
                 .map(TimeTracking::getDailyDate)
                 .min(LocalDate::compareTo);
-        Optional<LocalDate> firstVacationDayOpt = approvedVacations.stream()
-                .filter(VacationRequest::isApproved)
+        Optional<LocalDate> firstVacationDayOpt = approvedVacations.stream() // Nutze die bereits geladene Liste
                 .map(VacationRequest::getStartDate)
                 .min(LocalDate::compareTo);
-        // NEU: Krankmeldungen für das Startdatum berücksichtigen
         Optional<LocalDate> firstSickLeaveDayOpt = sickLeaveRepository.findByUser(freshUser).stream()
-                .map(com.chrono.chrono.entities.SickLeave::getStartDate)
+                .map(com.chrono.chrono.entities.SickLeave::getStartDate) // Stelle sicher, dass der Import korrekt ist
                 .min(LocalDate::compareTo);
 
         List<Optional<LocalDate>> dateOpts = Arrays.asList(firstTrackingDayOpt, firstVacationDayOpt, firstSickLeaveDayOpt);
-        firstDayToConsiderInitialized = dateOpts.stream()
+        firstDayToConsider = dateOpts.stream()
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .min(LocalDate::compareTo)
-                .orElse(LocalDate.now(ZoneId.of("Europe/Zurich")));
+                .orElse(LocalDate.now(ZoneId.of("Europe/Zurich"))); // Fallback auf heute, wenn keine Einträge/Abwesenheiten
 
-        final LocalDate firstDay = firstDayToConsiderInitialized;
-        LocalDate lastDay = LocalDate.now(ZoneId.of("Europe/Zurich"));
+        final LocalDate firstDay = firstDayToConsider;
+        LocalDate lastDay = LocalDate.now(ZoneId.of("Europe/Zurich")); // Oder ein anderes sinnvolles Enddatum, z.B. das Datum des letzten Eintrags
+
+        // Wenn das letzte Stempeldatum nach heute liegt (z.B. Zukunftseinträge), das letzte Datum anpassen
+        Optional<LocalDate> lastTrackingDayOpt = rows.stream()
+                .map(TimeTracking::getDailyDate)
+                .max(LocalDate::compareTo);
+        if(lastTrackingDayOpt.isPresent() && lastTrackingDayOpt.get().isAfter(lastDay)){
+            lastDay = lastTrackingDayOpt.get();
+        }
+
+
         int totalMinutes = 0;
 
-        if (!firstDay.isAfter(lastDay) || !rows.isEmpty() || approvedVacations.stream().anyMatch(VacationRequest::isApproved) || !sickLeaveRepository.findByUser(freshUser).isEmpty()) {
-            logger.info("Saldo-Neuberechnung für {}: Zeitraum {} bis {}", freshUser.getUsername(), firstDay, lastDay);
+        if (!firstDay.isAfter(lastDay)) { // Nur berechnen, wenn der Zeitraum gültig ist
+            if ("Chantale".equals(freshUser.getUsername())) { // Oder allgemeines Logging
+                logger.info("[User: {}] Backend rebuildUserBalance: Neuberechnung für Zeitraum {} bis {}", freshUser.getUsername(), firstDay, lastDay);
+            } else {
+                logger.info("Saldo-Neuberechnung für {}: Zeitraum {} bis {}", freshUser.getUsername(), firstDay, lastDay);
+            }
 
             if (Boolean.TRUE.equals(freshUser.getIsPercentage())) {
-                logger.debug("TimeTrackingService.rebuildUserBalance: User '{}' is percentage based. Calculating weekly differences.", freshUser.getUsername());
+                if ("Chantale".equals(freshUser.getUsername())) { // Oder allgemeines Logging
+                    logger.info("[User: {}] Backend rebuildUserBalance: User ist prozentual. Berechne wöchentliche Differenzen.", freshUser.getUsername());
+                } else {
+                    logger.debug("TimeTrackingService.rebuildUserBalance: User '{}' is percentage based. Calculating weekly differences.", freshUser.getUsername());
+                }
                 LocalDate currentWeekStart = firstDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
                 while (!currentWeekStart.isAfter(lastDay)) {
-                    totalMinutes += computeWeeklyWorkDifferenceForPercentageUser(freshUser, currentWeekStart, lastDay, approvedVacations);
+                    // computeWeeklyWorkDifferenceForPercentageUser sollte `approvedVacations` verwenden,
+                    // um die korrekte Liste der Urlaube für die jeweilige Woche zu filtern.
+                    int weeklyDiff = computeWeeklyWorkDifferenceForPercentageUser(freshUser, currentWeekStart, lastDay, approvedVacations);
+                    totalMinutes += weeklyDiff;
+                    if ("Chantale".equals(freshUser.getUsername())) { // Oder allgemeines Logging
+                        logger.info("[User: {}] Backend rebuildUserBalance (Percentage): Woche ab {}, Wöchentliche Diff: {}min, Kumuliert: {}min", freshUser.getUsername(), currentWeekStart, weeklyDiff, totalMinutes);
+                    }
                     currentWeekStart = currentWeekStart.plusWeeks(1);
                 }
-            } else {
-                logger.debug("TimeTrackingService.rebuildUserBalance: User '{}' is NOT percentage based. Calculating daily differences.", freshUser.getUsername());
+            } else { // Standard-User oder stündlicher User (stündliche User haben typischerweise 0 Soll)
+                if ("Chantale".equals(freshUser.getUsername())) { // Oder allgemeines Logging
+                    logger.info("[User: {}] Backend rebuildUserBalance: User ist Standard/Stündlich. Berechne tägliche Differenzen.", freshUser.getUsername());
+                } else {
+                    logger.debug("TimeTrackingService.rebuildUserBalance: User '{}' is NOT percentage based. Calculating daily differences.", freshUser.getUsername());
+                }
                 for (LocalDate d = firstDay; !d.isAfter(lastDay); d = d.plusDays(1)) {
-                    // computeDailyWorkDifference nutzt getAdjustedExpectedWorkMinutes,
-                    // welche wiederum workScheduleService.computeExpectedWorkMinutes aufruft.
-                    // Diese Methode im WorkScheduleService berücksichtigt nun Urlaub, Krankheit und Feiertage.
-                    totalMinutes += computeDailyWorkDifference(freshUser, d, approvedVacations);
+                    // Hier wird die Liste 'approvedVacations' an computeDailyWorkDifference übergeben
+                    int dailyDifference = computeDailyWorkDifference(freshUser, d, approvedVacations);
+                    totalMinutes += dailyDifference;
+
+                    // Detailliertes Logging für den kritischen User (oder generell)
+                    if ("Chantale".equals(freshUser.getUsername()) || logger.isTraceEnabled()) { // Log für Chantale immer, oder für alle bei TRACE Level
+                        int worked = getWorkedMinutes(freshUser, d);
+                        // getAdjustedExpectedWorkMinutes ruft intern workScheduleService.computeExpectedWorkMinutes auf
+                        int expected = getAdjustedExpectedWorkMinutes(freshUser, d, approvedVacations); // Ruft die korrigierte Methode auf
+                        logger.info("[User: {}] Backend rebuildUserBalance (Standard/Hourly): Datum {}, Ist: {}min, Soll: {}min (via computeExpectedWorkMinutes), Tagesdiff: {}min, Kumuliert: {}min",
+                                freshUser.getUsername(), d, worked, expected, dailyDifference, totalMinutes);
+                    }
                 }
             }
             freshUser.setTrackingBalanceInMinutes(totalMinutes);
-            logger.info("Saldo für {} neu berechnet: {} Minuten.", freshUser.getUsername(), totalMinutes);
-        } else {
-            logger.info("Kein relevanter Zeitraum für Saldo-Neuberechnung für {}, Saldo bleibt unverändert bei: {}", freshUser.getUsername(), Optional.ofNullable(freshUser.getTrackingBalanceInMinutes()).orElse(0));
+            if ("Chantale".equals(freshUser.getUsername())) { // Oder allgemeines Logging
+                logger.info("[User: {}] Backend rebuildUserBalance: Saldo neu berechnet und wird gespeichert: {} Minuten.", freshUser.getUsername(), totalMinutes);
+            } else {
+                logger.info("Saldo für {} neu berechnet und wird gespeichert: {} Minuten.", freshUser.getUsername(), totalMinutes);
+            }
+
+        } else { // firstDay ist nach lastDay, oder es gab keine Einträge/Urlaube/Krankheit vor heute
+            if ("Chantale".equals(freshUser.getUsername())) { // Oder allgemeines Logging
+                logger.info("[User: {}] Backend rebuildUserBalance: Kein relevanter Zeitraum ({} bis {}) für Neuberechnung, Saldo bleibt unverändert bei: {}", freshUser.getUsername(), firstDay, lastDay, Optional.ofNullable(freshUser.getTrackingBalanceInMinutes()).orElse(0));
+            } else {
+                logger.info("Kein relevanter Zeitraum ({} bis {}) für Saldo-Neuberechnung für {}, Saldo bleibt unverändert bei: {}", firstDay, lastDay, freshUser.getUsername(), Optional.ofNullable(freshUser.getTrackingBalanceInMinutes()).orElse(0));
+            }
+            // Auch wenn kein Zeitraum, den aktuellen (wahrscheinlich 0 oder alten) Saldo speichern, falls Initialisierungen oben erfolgt sind.
+            // Aber wenn der Saldo 0 war und keine Einträge, wurde oben schon return gemacht.
+            // Hier geht es darum, dass wenn z.B. nur Zukunftsurlaub da ist, firstDay > lastDay sein könnte.
         }
-        userRepository.save(freshUser);
+        userRepository.save(freshUser); // Speichern des (möglicherweise aktualisierten) Users mit neuem Saldo
     }
-
-
     @Transactional
     public void rebuildAllUserBalancesOnce() {
         logger.info("Starte Saldo-Neuberechnung für alle User...");

@@ -715,8 +715,16 @@ const AdminWeekSection = ({
                                                                 <>
                                                                     <div className="admin-day-card-header">
                                                                         <div>
-                                                                            {expected !== null && !userData.userConfig.isHourly && <span className="expected-hours"> (Soll: {expected.toFixed(2)}h)</span>}
-                                                                            {!userData.userConfig.isHourly && dailyDiffStr &&
+                                                                            {/* NEU: Bedingte Anzeige des Tagessolls */}
+                                                                            {expected !== -1 && expected !== null && !userData.userConfig.isHourly && (
+                                                                                <span className="expected-hours"> ({t('adminDashboard.dailyTarget', 'Soll')}: {expected.toFixed(2)}h)</span>
+                                                                            )}
+                                                                            {userData.userConfig.isPercentage && (expected === -1 || expected === null) && (
+                                                                                <span className="expected-hours"> ({t('adminDashboard.flexibleDailyTarget', 'Flexibel')})</span>
+                                                                            )}
+                                                                            {/* Ende NEU */}
+
+                                                                            {!userData.userConfig.isHourly && dailyDiffStr && dailyDiffStr.trim() !== "" &&
                                                                                 <span className={`daily-diff ${computeDailyDiffValue([singleDayEntryObject], expected, false, d, userData.userConfig, holidaysForDayCard, currentUserHolidayOptions) < 0 ? 'negative-balance' : 'positive-balance'}`}> ({dailyDiffStr})</span>
                                                                             }
                                                                             {isAutoCompleted && <span className="auto-completed-tag">AUTO</span>}

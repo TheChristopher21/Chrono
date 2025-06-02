@@ -3,14 +3,17 @@ package com.chrono.chrono.controller;
 import com.chrono.chrono.dto.UserScheduleRuleDTO;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.UserScheduleRule;
+import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.UserScheduleRuleRepository;
+import com.chrono.chrono.repositories.VacationRequestRepository;
 import com.chrono.chrono.services.WorkScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -23,6 +26,8 @@ public class AdminScheduleRuleController {
     @Autowired
     private WorkScheduleService workScheduleService;
 
+    @Autowired
+    private VacationRequestRepository vacationRequestRepository;
 
     @Autowired
     private UserScheduleRuleRepository ruleRepository;
@@ -45,11 +50,15 @@ public class AdminScheduleRuleController {
     @GetMapping("/expected-work-minutes")
     public int getExpectedWorkMinutes(@RequestParam String username, @RequestParam String date) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
         LocalDate parsedDate = LocalDate.parse(date);
-        return workScheduleService.computeExpectedWorkMinutes(user, parsedDate);
-    }
 
+        // Genehmigte Urlaube für diesen User laden
+        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
+
+        // Die korrigierte Methode im WorkScheduleService aufrufen
+        return workScheduleService.computeExpectedWorkMinutes(user, parsedDate, approvedVacations);
+    }
     @PostMapping
     public ResponseEntity<?> createRule(@RequestBody UserScheduleRuleDTO dto) {
         Optional<User> userOpt = userRepository.findById(dto.getUserId());
