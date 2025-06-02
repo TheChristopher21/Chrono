@@ -11,7 +11,7 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface CorrectionRequestRepository extends JpaRepository<CorrectionRequest, Long> {
-    @Query("SELECT cr FROM CorrectionRequest cr LEFT JOIN FETCH cr.originalTimeTracking WHERE cr.approved = false AND cr.denied = false")
+    @Query("SELECT cr FROM CorrectionRequest cr LEFT JOIN FETCH cr.targetEntry WHERE cr.approved = false AND cr.denied = false")
     List<CorrectionRequest> findAllWithOriginalTimes();
 
     List<CorrectionRequest> findByUser(User user);

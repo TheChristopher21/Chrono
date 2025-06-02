@@ -274,56 +274,36 @@ public class WorkScheduleService {
     public boolean isDayOff(User user, LocalDate date) {
         String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
 
-        // Für prozentuale Mitarbeiter: Feiertagsbehandlung hängt von UserHolidayOption ab.
-        // Diese Methode soll nur return true, wenn es *definitiv* ein freier Tag ist (Wochenende oder Feiertag, der immer frei ist).
-        // Die Reduktion des Solls für prozentuale MA an Feiertagen wird in getExpectedWeeklyMinutesForPercentageUser und computeExpectedWorkMinutes gehandhabt.
-        if (Boolean.TRUE.equals(user.getIsPercentage())) {
-            if (holidayService.isHoliday(date, cantonAbbreviation)) {
-                // Prüfung, ob der Feiertag das Soll reduziert oder nicht, erfolgt in den Soll-Berechnungsmethoden
-                // Hier geben wir für die reine "isDayOff"-Prüfung false zurück, wenn der Feiertag das Soll NICHT reduziert,
-                // da es dann wie ein Arbeitstag behandelt wird.
+        if (holidayService.isHoliday(date, cantonAbbreviation)) {
+            if (Boolean.TRUE.equals(user.getIsPercentage())) {
                 Optional<UserHolidayOption> holidayOptionOpt = userHolidayOptionRepository.findByUserAndHolidayDate(user, date);
                 UserHolidayOption.HolidayHandlingOption handling = holidayOptionOpt
                         .map(UserHolidayOption::getHolidayHandlingOption)
                         .orElse(UserHolidayOption.HolidayHandlingOption.PENDING_DECISION);
-                if (handling == UserHolidayOption.HolidayHandlingOption.DO_NOT_DEDUCT_FROM_WEEKLY_TARGET || handling == UserHolidayOption.HolidayHandlingOption.PENDING_DECISION) {
-                    // Wenn das Soll nicht reduziert wird (oder Entscheidung ausstehend), ist es für die Saldo-Logik kein "freier Tag" in dem Sinne, dass das Soll wegfällt.
-                    // Es ist aber trotzdem ein Feiertag für die Anzeige.
-                    // Für isDayOff() in der Soll-Logik:
-                    // return false; // Damit das Tagessoll in computeExpectedWorkMinutes berechnet wird.
-                } else { // DEDUCT_FROM_WEEKLY_TARGET
-                    // return true; // Ist ein freier Tag, Soll wird reduziert.
+                if (handling == UserHolidayOption.HolidayHandlingOption.DEDUCT_FROM_WEEKLY_TARGET) {
+                    logger.debug("Date {} is a holiday and DEDUCTS from target for percentage user {}. isDayOff returns true.", date, user.getUsername());
+                    return true;
+                } else {
+                    logger.debug("Date {} is a holiday but DOES NOT DEDUCT (or PENDING) from target for percentage user {}. isDayOff returns false for soll-calculation.", date, user.getUsername());
+                    return false;
                 }
-                // Für die allgemeine Logik von isDayOff (z.B. Anzeige im Kalender) lassen wir es als Feiertag gelten:
-                // logger.debug("Date {} is a holiday for percentage user {} (Canton: {}). isDayOff based on option.", date, user.getUsername(), cantonAbbreviation);
-                // Hier müssen wir uns entscheiden: Soll `isDayOff` für prozentuale MA an Feiertagen immer true liefern,
-                // und die Logik der Soll-Reduktion passiert woanders? Oder soll `isDayOff` die Option berücksichtigen?
-                // Für die Soll-Berechnung ist es besser, wenn isDayOff die Option NICHT direkt berücksichtigt, sondern die Soll-Methoden das tun.
-                // Für reine Anzeige "Ist es ein Feiertag?" -> holidayService.isHoliday()
-                // Für "Ist es ein Tag, an dem *garantiert* kein Soll anfällt?"
-                // Die aktuelle Version von isDayOff in computeExpectedWorkMinutes für percentage user tut dies.
-                // Für die allgemeine Definition, lassen wir es hier erstmal so:
-                if (holidayService.isHoliday(date, cantonAbbreviation)) return true;
-            }
-        } else { // Für nicht-prozentuale Mitarbeiter
-            if (holidayService.isHoliday(date, cantonAbbreviation)) {
-                logger.debug("Date {} is a holiday for user {} (Canton: {}). isDayOff returns true.", date, user.getUsername(), cantonAbbreviation);
+            } else {
+                logger.debug("Date {} is a holiday for non-percentage user {}. isDayOff returns true.", date, user.getUsername());
                 return true;
             }
         }
 
         DayOfWeek day = date.getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
-            // Für Standard-User: Prüfen, ob am Wochenende ein spezifisches Soll laut Plan besteht
             if (!Boolean.TRUE.equals(user.getIsPercentage())) {
-                double expectedHoursOnWeekend = getExpectedWorkHours(user, date); // Diese Methode berücksichtigt den Wochenplan
+                double expectedHoursOnWeekend = getExpectedWorkHours(user, date);
                 if (expectedHoursOnWeekend > 0) {
                     logger.trace("Date {} is a weekend, but user {} has scheduled hours. isDayOff returns false.", date, user.getUsername());
-                    return false; // Es ist ein Wochenende, aber es gibt geplante Stunden, also kein "freier Tag" im Sinne von 0 Soll.
+                    return false;
                 }
             }
-            logger.debug("Date {} is a weekend day. isDayOff returns true.", date);
-            return true; // Generell Wochenende frei, wenn nicht explizit Arbeitsstunden geplant (für Standard MA) oder prozentualer MA (dessen WE-Logik oben ist)
+            logger.debug("Date {} is a weekend day for user {}. isDayOff returns true (or handled by percentage logic).", date, user.getUsername());
+            return true;
         }
 
         logger.trace("Date {} is not a holiday or weekend for user {}. isDayOff returns false.", date, user.getUsername());
