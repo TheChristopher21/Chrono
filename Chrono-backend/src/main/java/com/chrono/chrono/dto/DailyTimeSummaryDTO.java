@@ -5,6 +5,7 @@ import java.time.LocalTime;
 import java.util.List;
 
 public class DailyTimeSummaryDTO {
+    private String username; // NEUES FELD
     private LocalDate date;
     private int workedMinutes;
     private int breakMinutes;
@@ -28,7 +29,9 @@ public class DailyTimeSummaryDTO {
         public boolean isOpen() { return isOpen; }
     }
 
-    public DailyTimeSummaryDTO(LocalDate date, int workedMinutes, int breakMinutes, List<TimeTrackingEntryDTO> entries, String dailyNote, boolean needsCorrection, PrimaryTimes primaryTimes) {
+    // Konstruktor angepasst
+    public DailyTimeSummaryDTO(String username, LocalDate date, int workedMinutes, int breakMinutes, List<TimeTrackingEntryDTO> entries, String dailyNote, boolean needsCorrection, PrimaryTimes primaryTimes) {
+        this.username = username; // Hinzugefügt
         this.date = date;
         this.workedMinutes = workedMinutes;
         this.breakMinutes = breakMinutes;
@@ -38,6 +41,8 @@ public class DailyTimeSummaryDTO {
         this.primaryTimes = primaryTimes;
     }
 
+    // Getter
+    public String getUsername() { return username; } // Hinzugefügt
     public LocalDate getDate() { return date; }
     public int getWorkedMinutes() { return workedMinutes; }
     public int getBreakMinutes() { return breakMinutes; }

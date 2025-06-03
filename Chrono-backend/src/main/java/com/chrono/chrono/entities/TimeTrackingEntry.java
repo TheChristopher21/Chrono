@@ -2,10 +2,13 @@ package com.chrono.chrono.entities;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.time.LocalDate; // Import für getEntryDate
+import java.time.LocalTime; // Import für getEntryTime
 
 @Entity
 @Table(name = "time_tracking_entries",
         indexes = {
+                // Index für schnelle Abfragen pro User und Zeit
                 @Index(columnList = "user_id, entry_timestamp")
         })
 public class TimeTrackingEntry {
@@ -19,21 +22,21 @@ public class TimeTrackingEntry {
     private User user;
 
     @Column(name = "entry_timestamp", nullable = false)
-    private LocalDateTime entryTimestamp;
+    private LocalDateTime entryTimestamp; // Präziser Zeitstempel für das Ereignis
 
     @Enumerated(EnumType.STRING)
     @Column(name = "punch_type", nullable = false)
-    private PunchType punchType;
+    private PunchType punchType; // START oder ENDE
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "source")
+    @Column(name = "source") // Quelle des Stempels, z.B. NFC, Manuell, System
     private PunchSource source;
 
     @Column(name = "corrected_by_user", nullable = false)
     private boolean correctedByUser = false;
 
     @Column(name = "system_generated_note", length = 255)
-    private String systemGeneratedNote;
+    private String systemGeneratedNote; // z.B. "Automatischer Arbeitsende-Stempel"
 
     public enum PunchType {
         START,
@@ -41,11 +44,18 @@ public class TimeTrackingEntry {
     }
 
     public enum PunchSource {
-        NFC_SCAN,
-        MANUAL_PUNCH,
-        SYSTEM_AUTO_END,
-        ADMIN_CORRECTION,
-        USER_CORRECTION
+        NFC_SCAN,               // Stempelung via NFC-Leser
+        MANUAL_PUNCH,           // Stempelung über Frontend-Button durch den User selbst
+        SYSTEM_AUTO_END,        // Automatischer 23:20 Stempel durch den nächtlichen Job
+        ADMIN_CORRECTION,       // Ein Admin hat diesen Eintrag manuell erstellt oder korrigiert
+        USER_CORRECTION,        // Der User hat diesen Eintrag über einen Korrekturantrag erstellt/geändert
+        MANUAL_IMPORT,          // Allgemeiner Typ für importierte Daten (z.B. aus Excel)
+
+        // Spezifische Konstanten für die Altdatenmigration aus dem V1-System
+        MIGRATION_V1_WORK_START,
+        MIGRATION_V1_BREAK_START,
+        MIGRATION_V1_BREAK_END,
+        MIGRATION_V1_WORK_END
     }
 
     public TimeTrackingEntry() {
@@ -58,6 +68,7 @@ public class TimeTrackingEntry {
         this.source = source;
     }
 
+    // Getter und Setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public User getUser() { return user; }
@@ -74,12 +85,12 @@ public class TimeTrackingEntry {
     public void setSystemGeneratedNote(String systemGeneratedNote) { this.systemGeneratedNote = systemGeneratedNote; }
 
     @Transient
-    public java.time.LocalDate getEntryDate() {
+    public LocalDate getEntryDate() {
         return entryTimestamp != null ? entryTimestamp.toLocalDate() : null;
     }
 
     @Transient
-    public java.time.LocalTime getEntryTime() {
+    public LocalTime getEntryTime() {
         return entryTimestamp != null ? entryTimestamp.toLocalTime() : null;
     }
 }
