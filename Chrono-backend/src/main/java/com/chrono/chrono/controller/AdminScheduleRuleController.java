@@ -3,14 +3,17 @@ package com.chrono.chrono.controller;
 import com.chrono.chrono.dto.UserScheduleRuleDTO;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.UserScheduleRule;
+import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.UserScheduleRuleRepository;
+import com.chrono.chrono.repositories.VacationRequestRepository;
 import com.chrono.chrono.services.WorkScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -23,6 +26,8 @@ public class AdminScheduleRuleController {
     @Autowired
     private WorkScheduleService workScheduleService;
 
+    @Autowired
+    private VacationRequestRepository vacationRequestRepository;
 
     @Autowired
     private UserScheduleRuleRepository ruleRepository;
@@ -47,7 +52,9 @@ public class AdminScheduleRuleController {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         LocalDate parsedDate = LocalDate.parse(date);
-        return workScheduleService.computeExpectedWorkMinutes(user, parsedDate);
+        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
+
+        return workScheduleService.computeExpectedWorkMinutes(user, parsedDate, approvedVacations);
     }
 
     @PostMapping
