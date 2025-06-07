@@ -1,6 +1,6 @@
 /* AdminDashboardScoped.css */
 /* =========================================================================
-   AdminDashboardScoped.css · Final V2.1 (Korrekturen & Verfeinerungen)
+   AdminDashboardScoped.css · Final V2.2 (Integriert und verfeinert)
    Scope: .admin-dashboard.scoped-dashboard
    (Light + Dark Mode, Responsive, Scrollbars, neue Elemente)
    ========================================================================= */
@@ -26,6 +26,8 @@
     --u-radius:    14px;     /* Großer Radius für Hauptcontainer */
     --u-radius-md: 10px;     /* Mittlerer Radius für Karten, Modals */
     --u-radius-sm:  6px;     /* Kleiner Radius für Buttons, Badges, Inputs */
+    --u-radius-xs:  4px;     /* Sehr kleiner Radius für innere Elemente */
+
 
     --u-gap:       clamp(1.5rem, 3vw, 2.2rem); /* Großer Abstand für Sektionen */
     --u-gap-md:    clamp(1rem, 2vw, 1.5rem);   /* Mittlerer Abstand */
@@ -43,28 +45,28 @@
     background:    var(--c-bg);
     color:         var(--c-text);
     font-family:   'Poppins', system-ui, sans-serif;
-    padding:       var(--u-gap-md); /* Konsistentes Padding für die gesamte Seite */
-    font-size: 16px; /* Basis-Schriftgröße */
+    padding:       var(--u-gap-md);
+    font-size: 16px;
 
     /* Statusfarben für Hintergründe (hell) */
-    --stat-approved-bg: #dcfce7; /* hellgrün */
-    --stat-denied-bg:   #fdecea;   /* hellrot */
-    --stat-pending-bg:  #fef9c3;  /* hellyellow */
-    --stat-approved-text: #166534; /* dunkelgrün */
-    --stat-denied-text:   #991b1b;   /* dunkelrot */
-    --stat-pending-text:  #92400e;  /* dunkelyellow/braun */
+    --stat-approved-bg: #dcfce7;
+    --stat-denied-bg:   #fdecea;
+    --stat-pending-bg:  #fef9c3;
+    --stat-approved-text: #166534;
+    --stat-denied-text:   #991b1b;
+    --stat-pending-text:  #92400e;
 
 
-    --c-bg-vacation: #e0f2fe; /* Heller Blauton für Urlaub */
-    --c-text-vacation: #0c4a6e; /* Dunkelblauer Text für Urlaub */
-    --c-bg-vacation-detail: #f0f8ff; /* Sehr heller Blauton für Urlaubsdetail-Hintergrund */
+    --c-bg-vacation: #e0f2fe;
+    --c-text-vacation: #0c4a6e;
+    --c-bg-vacation-detail: #f0f8ff;
 
-    --c-bg-sick: #fee2e2; /* Hellrot für Krank */
-    --c-text-sick: #991b1b; /* Dunkelroter Text für Krank */
+    --c-bg-sick: #fee2e2;
+    --c-text-sick: #991b1b;
     --c-border-sick: #fca5a5;
 
-    --c-bg-holiday: #fffbeb; /* Helles Gelb für Feiertag */
-    --c-text-holiday: #b45309; /* Brauner Text für Feiertag */
+    --c-bg-holiday: #fffbeb;
+    --c-text-holiday: #b45309;
     --c-border-holiday: #fde68a;
 }
 
@@ -72,12 +74,12 @@
 [data-theme="dark"] .admin-dashboard.scoped-dashboard {
     --c-text:      #e5e7ec;
     --c-muted:     #a0a4b4;
-    --c-bg:        #15171c;  /* Dunkler Hintergrund */
-    --c-card:      #1f2127;  /* Dunkler Kartenhintergrund */
+    --c-bg:        #15171c;
+    --c-card:      #1f2127;
     --c-border:    #373b46;
     --c-line:      #2c2f37;
-    --c-surface:   #252830; /* Für Tabellen-Header etc. im Dark Mode */
-    --c-warn:      #f59e0b;  /* Kann gleich bleiben oder angepasst werden */
+    --c-surface:   #252830;
+    --c-warn:      #f59e0b;
     --c-info:      #60A5FA;
     --c-error:     #F87171;
     --c-success:   #4ade80;
@@ -86,17 +88,16 @@
     --u-shadow-md: 0 4px 12px rgba(0,0,0,0.35);
     --u-shadow-lg: 0 20px 34px rgba(0,0,0,0.75);
 
-    /* Statusfarben für Hintergründe (dunkler, aber noch erkennbar) */
-    --stat-approved-bg: #14532d; /* dunkelgrün */
-    --stat-denied-bg:   #7f1d1d;   /* dunkelrot */
-    --stat-pending-bg:  #7c2d12;  /* dunkelbraun */
-    --stat-approved-text: #bbf7d0; /* hellgrün text */
-    --stat-denied-text:   #fecaca;   /* hellrot text */
-    --stat-pending-text:  #fed7aa;  /* hellyellow/orange text */
+    --stat-approved-bg: #14532d;
+    --stat-denied-bg:   #7f1d1d;
+    --stat-pending-bg:  #7c2d12;
+    --stat-approved-text: #bbf7d0;
+    --stat-denied-text:   #fecaca;
+    --stat-pending-text:  #fed7aa;
 
     --c-bg-vacation: #1e3a8a;
     --c-text-vacation: #bfdbfe;
-    --c-bg-vacation-detail: #1e40af; /* Dunkleres Blau für Detail */
+    --c-bg-vacation-detail: #1e40af;
 
     --c-bg-sick: #7f1d1d;
     --c-text-sick: #fecaca;
@@ -138,7 +139,7 @@
     text-decoration: none;
     display: inline-block;
     border: 1px solid transparent;
-    line-height: 1.4; /* Für bessere vertikale Zentrierung von Text */
+    line-height: 1.4;
 }
 .admin-dashboard.scoped-dashboard .admin-action-button:hover {
     transform: translateY(-1px);
@@ -148,7 +149,7 @@
 .admin-dashboard.scoped-dashboard .button-primary,
 .admin-dashboard.scoped-dashboard .admin-action-button.button-primary {
     background-color: var(--c-pri);
-    color: #fff; /* Sicherstellen, dass Text auf Primärfarbe lesbar ist */
+    color: #fff;
     border-color: var(--c-pri);
 }
 .admin-dashboard.scoped-dashboard .button-primary:hover,
@@ -158,7 +159,7 @@
 }
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .button-primary,
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-action-button.button-primary {
-    color: #fff; /* Hält den Text weiß, auch wenn --c-text dunkel ist */
+    color: #fff;
 }
 
 .admin-dashboard.scoped-dashboard .button-secondary,
@@ -174,25 +175,25 @@
 }
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .button-secondary:hover,
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-action-button.button-secondary:hover {
-    background-color: var(--c-border); /* Dunklerer Hover für Dark Mode */
+    background-color: var(--c-border);
 }
 
 .admin-dashboard.scoped-dashboard .button-danger-plain {
     background-color: transparent;
     color: var(--c-error);
     border: 1px solid var(--c-error);
-    padding: 0.4rem 0.6rem; /* Konsistent mit anderen kleinen Aktionsbuttons */
-    font-size: 0.8rem;      /* Konsistent mit anderen kleinen Aktionsbuttons */
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
     border-radius: var(--u-radius-sm);
     cursor: pointer;
     transition: background-color var(--u-dur), color var(--u-dur), border-color var(--u-dur), transform var(--u-dur);
 }
 .admin-dashboard.scoped-dashboard .button-danger-plain:hover {
     background-color: color-mix(in srgb, var(--c-error) 10%, transparent);
-    color: color-mix(in srgb, var(--c-error) 80%, black); /* Dunkleres Rot für Hover */
+    color: color-mix(in srgb, var(--c-error) 80%, black);
 }
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .button-danger-plain {
-    color: var(--c-error); /* Bereits rot im Dark Mode */
+    color: var(--c-error);
 }
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .button-danger-plain:hover {
     background-color: color-mix(in srgb, var(--c-error) 20%, transparent);
@@ -200,16 +201,17 @@
 
 
 /* Haupt-Layout: Spalten-Grid */
-.admin-dashboard.scoped-dashboard .dashboard-content { display: grid; grid-template-columns: repeat(3, 1fr); gap: var(--u-gap); }
-.admin-dashboard.scoped-dashboard .left-column { grid-column: span 3 / span 3; } /* Default für Mobile */
-.admin-dashboard.scoped-dashboard .right-column { grid-column: span 3 / span 3; } /* Default für Mobile */
+.admin-dashboard.scoped-dashboard .dashboard-content { display: grid; grid-template-columns: 1fr; gap: var(--u-gap); } /* Standardmäßig 1 Spalte */
 
 @media (min-width: 1024px) { /* Desktop */
-    .admin-dashboard.scoped-dashboard .left-column { grid-column: span 2 / span 2; }
-    .admin-dashboard.scoped-dashboard .right-column { grid-column: span 1 / span 1; }
+    .admin-dashboard.scoped-dashboard .dashboard-content { grid-template-columns: 2fr 1fr; } /* 2/3 und 1/3 Aufteilung */
+    .admin-dashboard.scoped-dashboard .left-column { /* Nimmt 2 Teile des Grids ein */ }
+    .admin-dashboard.scoped-dashboard .right-column { /* Nimmt 1 Teil des Grids ein */ }
 }
 
-.admin-dashboard.scoped-dashboard .left-column, .admin-dashboard.scoped-dashboard .right-column { display: flex; flex-direction: column; gap: var(--u-gap); }
+.admin-dashboard.scoped-dashboard .left-column, .admin-dashboard.scoped-dashboard .right-column {
+    display: flex; flex-direction: column; gap: var(--u-gap);
+}
 
 /* Standard-Section-Styling */
 .admin-dashboard.scoped-dashboard section.content-section {
@@ -242,7 +244,7 @@
     color: var(--c-muted);
 }
 .admin-dashboard.scoped-dashboard section.content-section .section-content {
-    /* Hier kein Padding, da die Kindelemente (z.B. Listencontainer) ihr eigenes Padding haben sollten */
+    /* Kein zusätzliches Padding hier, damit Kindelemente die volle Breite nutzen können */
 }
 
 
@@ -612,48 +614,59 @@
     }
 }
 
-/* Globale Stile für Modal (EditTimeModal, PrintUserTimesModal) */
+/* Globale Stile für Modal (EditTimeModal, PrintUserTimesModal, CorrectionDecisionModal) */
 .modal-overlay {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    background: rgba(0,0,0,0.65);
+    background: rgba(0,0,0,0.75); /* Etwas dunkleres Overlay für besseren Fokus */
     z-index: 10000; display: flex; align-items: center; justify-content: center;
-    backdrop-filter: blur(3px);
+    backdrop-filter: blur(4px); /* Etwas stärkerer Blur */
     padding: var(--u-gap-sm);
 }
 .modal-content {
     background: var(--c-card); border: 1px solid var(--c-border);
     border-radius: var(--u-radius-md);
-    padding: var(--u-gap-md) var(--u-gap);
+    padding: var(--u-gap) var(--u-gap-lg); /* Mehr Padding im Modal */
     width: 95%;
-    max-width: 580px;
+    max-width: 600px; /* Standardbreite für die meisten Modals */
     box-shadow: var(--u-shadow-lg); max-height: 90vh; overflow-y: auto; position: relative;
 }
 .modal-content.edit-time-modal-content {
-    max-width: 720px;
+    max-width: 780px; /* Breiter für EditTimeModal, um mehr Platz für Zeilen zu haben */
 }
 
 .modal-content h3 {
-    margin-top: 0; margin-bottom: var(--u-gap-md);
-    font-size: 1.25rem; font-weight: 600; color: var(--c-text);
+    margin-top: 0; margin-bottom: var(--u-gap); /* Mehr Abstand unter der Überschrift */
+    font-size: 1.4rem; /* Größere Überschrift */
+    font-weight: 600; color: var(--c-text);
     border-bottom: 1px solid var(--c-line); padding-bottom: var(--u-gap-sm);
+    text-align: center; /* Zentrierte Überschrift */
 }
 .modal-content .form-group {
-    display: flex; flex-direction: column; gap: 0.4rem;
-    margin-bottom: var(--u-gap-sm);
+    display: flex; flex-direction: column; gap: 0.5rem; /* Einheitlicher kleiner Gap */
+    margin-bottom: var(--u-gap-md); /* Mehr Abstand zwischen Formulargruppen */
 }
 .modal-content .form-group label {
-    font-weight: 500; font-size: 0.85rem; color: var(--c-muted);
+    font-weight: 500; font-size: 0.9rem; color: var(--c-muted);
 }
 .modal-content .form-group input,
 .modal-content .form-group select,
 .modal-content .form-group textarea {
-    padding: 0.6rem 0.8rem;
-    font-size: 0.9rem; width: 100%; box-sizing: border-box;
+    padding: 0.7rem 0.9rem; /* Mehr Padding in Inputs */
+    font-size: 0.95rem; width: 100%; box-sizing: border-box;
     background-color: var(--c-bg);
     color: var(--c-text);
     border: 1px solid var(--c-border);
     border-radius: var(--u-radius-sm);
+    transition: border-color var(--u-dur), box-shadow var(--u-dur);
 }
+.modal-content .form-group input:focus,
+.modal-content .form-group select:focus,
+.modal-content .form-group textarea:focus {
+    border-color: var(--c-pri);
+    box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--c-pri) 25%, transparent);
+    outline: none;
+}
+
 [data-theme="dark"] .modal-content .form-group input,
 [data-theme="dark"] .modal-content .form-group select,
 [data-theme="dark"] .modal-content .form-group textarea {
@@ -664,43 +677,82 @@
 /* Styling für EditTimeModal spezifische Elemente */
 .modal-content .time-entry-edit-row {
     display: flex;
+    flex-wrap: wrap; /* Erlaubt Umbruch auf kleinen Bildschirmen */
     align-items: center;
     gap: var(--u-gap-sm);
     margin-bottom: var(--u-gap-sm);
-    padding: 0.5rem;
+    padding: var(--u-gap-sm); /* Mehr Padding für die Zeile */
     border-radius: var(--u-radius-sm);
     background-color: var(--c-surface);
+    border: 1px solid var(--c-line); /* Leichter Rand für jede Zeile */
 }
+
 [data-theme="dark"] .modal-content .time-entry-edit-row {
     background-color: var(--c-line);
+    border-color: var(--c-border);
 }
+
 .modal-content .time-entry-edit-row .punch-type-select {
-    flex-basis: 100px;
+    flex: 0 0 120px; /* Feste Breite für Typ-Auswahl, z.B. 120px */
+    min-width: 100px;
 }
 .modal-content .time-entry-edit-row .timestamp-input {
-    flex-grow: 1;
+    flex: 1 1 200px; /* Nimmt mehr Platz, aber mit Basisbreite */
+    min-width: 180px;
 }
 .modal-content .time-entry-edit-row .note-input {
-    flex-basis: 150px;
-    font-size: 0.8rem;
+    flex: 1 1 180px; /* Nimmt ebenfalls Platz, aber etwas weniger als Zeit */
+    font-size: 0.85rem; /* Kleinere Schrift für Notiz */
+    min-width: 150px;
 }
 .modal-content .time-entry-edit-row .remove-entry-button {
-    /* padding ist im button-danger-plain definiert */
+    flex-shrink: 0; /* Verhindert Schrumpfen des Buttons */
+    margin-left: auto; /* Schiebt den Button in der Zeile nach rechts, falls Platz ist */
+    /* Stile werden von .button-danger-plain geerbt */
 }
-.modal-content .modal-action-buttons {
+
+/* Responsivität innerhalb der Zeile */
+@media (max-width: 680px) { /* Enger Breakpoint für das Modal-Innere */
+    .modal-content.edit-time-modal-content .time-entry-edit-row {
+        flex-direction: column;
+        align-items: stretch; /* Elemente dehnen sich auf volle Breite */
+    }
+    .modal-content.edit-time-modal-content .time-entry-edit-row .punch-type-select,
+    .modal-content.edit-time-modal-content .time-entry-edit-row .timestamp-input,
+    .modal-content.edit-time-modal-content .time-entry-edit-row .note-input {
+        flex-basis: auto; /* Zurücksetzen für Spaltenlayout */
+        width: 100%;
+    }
+    .modal-content.edit-time-modal-content .time-entry-edit-row .remove-entry-button {
+        margin-left: 0;
+        margin-top: var(--u-gap-xs);
+        width: 100%; /* Button auf volle Breite im Spaltenlayout */
+    }
+}
+
+
+.modal-content .modal-action-buttons { /* Für "Eintrag hinzufügen" etc. */
     display: flex;
+    flex-wrap: wrap; /* Erlaubt Umbruch auf kleinen Bildschirmen */
     gap: var(--u-gap-sm);
-    margin-top: var(--u-gap-sm);
-    margin-bottom: var(--u-gap-md);
-    justify-content: flex-start;
+    margin-top: var(--u-gap-md); /* Mehr Abstand nach oben */
+    margin-bottom: var(--u-gap); /* Mehr Abstand zu Haupt-Buttons */
+    justify-content: flex-start; /* Oder center, je nach Präferenz */
 }
 .modal-content .modal-action-buttons .add-entry-button,
 .modal-content .modal-action-buttons .autofill-break-button {
-    font-size: 0.85rem;
-    padding: 0.5rem 1rem;
+    font-size: 0.9rem; /* Konsistente Button-Schriftgröße */
+    padding: 0.6rem 1.2rem; /* Konsistentes Button-Padding */
+    /* Stile werden von .button-secondary geerbt */
 }
-.modal-content .modal-buttons.main-actions {
+
+.modal-content .modal-buttons.main-actions { /* Für Speichern/Abbrechen */
     justify-content: flex-end;
+    border-top: 1px solid var(--c-line); /* Trennlinie zu den Haupt-Buttons */
+    padding-top: var(--u-gap-md); /* Abstand über den Haupt-Buttons */
+}
+[data-theme="dark"] .modal-content .modal-buttons.main-actions {
+    border-top-color: var(--c-border);
 }
 
 
@@ -747,7 +799,8 @@
     justify-content: flex-end;
 }
 .modal-content .modal-buttons button {
-    padding: 0.6rem 1.2rem; font-size: 0.9rem;
+    padding: 0.7rem 1.4rem; /* Etwas großzügigeres Padding für Haupt-Buttons */
+    font-size: 0.95rem;
     border-radius: var(--u-radius-sm);
     border: 1px solid transparent;
     cursor: pointer;
@@ -831,19 +884,19 @@
     border-color: var(--c-border);
 }
 .admin-dashboard.scoped-dashboard .correction-list-scrollable-container {
-    max-height: 550px; /* Höhe für ca. 10 Items, anpassbar */
+    max-height: 550px;
     overflow-y: auto;
     margin-top: 0.5rem;
     border: 1px solid var(--c-line);
     border-radius: var(--u-radius-sm);
-    padding: 0; /* Kein Padding hier, die Listenelemente bekommen es */
+    padding: 0;
 }
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list-scrollable-container {
     border-color: var(--c-border);
 }
 .admin-dashboard.scoped-dashboard .correction-list-scrollable-container::-webkit-scrollbar-track {
-    background: transparent; /* Macht den Track im Container unsichtbar */
-    margin: var(--u-gap-xs); /* Lässt den Scrollbalken vom Rand des Containers abrücken */
+    background: transparent;
+    margin: var(--u-gap-xs);
 }
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list-scrollable-container::-webkit-scrollbar-track {
     background: transparent;
@@ -855,61 +908,122 @@
 }
 .admin-dashboard.scoped-dashboard .correction-list li {
     padding: 1rem 1.2rem;
-    border-radius: 0; /* Keine abgerundeten Ecken für Listenelemente im Scroll-Container */
-    margin-bottom: 0; /* Kein Margin mehr, Trennung durch Border */
-    border-bottom: 1px solid var(--c-line); /* Trennlinie zwischen Elementen */
-    /* border-left, border-right, border-top werden durch den Container-Rand abgedeckt */
+    border-radius: 0;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--c-line);
     width: 100%;
     box-sizing: border-box;
 }
 .admin-dashboard.scoped-dashboard .correction-list li:last-child {
-    border-bottom: none; /* Letztes Element keine untere Border */
+    border-bottom: none;
 }
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li {
     border-bottom-color: var(--c-border);
 }
 
-/* Status-spezifische Hintergründe für die LI-Elemente */
 .admin-dashboard.scoped-dashboard .correction-list li.status-is-approved {
     background-color: var(--stat-approved-bg);
-    /* border-color: var(--stat-approved-text); -- Rand wird nun von der Trennlinie übernommen */
+    color: var(--stat-approved-text);
 }
 .admin-dashboard.scoped-dashboard .correction-list li.status-is-denied   {
     background-color: var(--stat-denied-bg);
-    /* border-color: var(--stat-denied-text); */
+    color: var(--stat-denied-text);
 }
 .admin-dashboard.scoped-dashboard .correction-list li.status-is-pending  {
     background-color: var(--stat-pending-bg);
-    /* border-color: var(--stat-pending-text); */
+    color: var(--stat-pending-text);
 }
 
-/* Textfarben für Status-Boxen im Light Theme */
-.admin-dashboard.scoped-dashboard .correction-list li.status-is-approved { color: var(--stat-approved-text); }
-.admin-dashboard.scoped-dashboard .correction-list li.status-is-denied { color: var(--stat-denied-text); }
-.admin-dashboard.scoped-dashboard .correction-list li.status-is-pending { color: var(--stat-pending-text); }
-
-/* Textfarben für Status-Boxen im Dark Theme */
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li.status-is-approved,
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li.status-is-denied,
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li.status-is-pending {
-    color: var(--c-text);
+    color: var(--c-text); /* Haupttextfarbe für bessere Lesbarkeit auf dunkleren Status-BGs */
+}
+/* Optionale Ränder für Status-Items im Dark Mode, falls gewünscht (aktuell nicht aktiv) */
+/*
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li.status-is-approved { border-color: var(--stat-approved-text); }
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li.status-is-denied { border-color: var(--stat-denied-text); }
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li.status-is-pending { border-color: var(--stat-pending-text); }
+*/
+
+.admin-dashboard.scoped-dashboard .correction-list li .correction-header-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--u-gap-xs);
+}
+.admin-dashboard.scoped-dashboard .correction-list li .correction-header-info h4 {
+    margin: 0;
+    font-size: 1.05rem;
+}
+.admin-dashboard.scoped-dashboard .correction-list li .status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.85rem;
+}
+.admin-dashboard.scoped-dashboard .correction-list li .correction-date-indicator {
+    font-size: 0.8rem;
+    color: var(--c-muted);
+    margin-bottom: var(--u-gap-sm);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li .correction-date-indicator {
+    color: var(--c-muted);
 }
 
 .admin-dashboard.scoped-dashboard .correction-list .correction-info {
     font-size: 0.85rem;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 0.4rem 1rem;
+    grid-template-columns: 1fr;
+    gap: var(--u-gap-sm);
     margin-top: 0.75rem;
 }
+.admin-dashboard.scoped-dashboard .correction-list .correction-info .correction-detail-block {
+    background-color: var(--c-surface);
+    padding: var(--u-gap-sm);
+    border-radius: var(--u-radius-xs);
+    border: 1px solid var(--c-line);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list .correction-info .correction-detail-block {
+    background-color: var(--c-card);
+    border-color: var(--c-border);
+}
+.admin-dashboard.scoped-dashboard .correction-list .correction-info .correction-detail-block p {
+    margin: 0 0 0.2rem 0;
+    line-height: 1.3;
+}
+.admin-dashboard.scoped-dashboard .correction-list .correction-info .correction-detail-block p strong {
+    display: block;
+    margin-bottom: 0.15rem;
+    font-weight: 600;
+    color: var(--c-text);
+    opacity: 1;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list .correction-info .correction-detail-block p strong {
+    color: var(--c-text);
+}
+
 .admin-dashboard.scoped-dashboard .correction-list .correction-info .reason-field,
 .admin-dashboard.scoped-dashboard .correction-list .correction-info .admin-comment-field {
     grid-column: 1 / -1;
+    margin-top: var(--u-gap-xs);
+    padding-top: var(--u-gap-xs);
+    border-top: 1px dashed var(--c-line);
+    line-height: 1.4;
 }
-.admin-dashboard.scoped-dashboard .correction-list .correction-info strong {
-    font-weight: 500;
-    opacity: 0.85;
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list .correction-info .reason-field,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list .correction-info .admin-comment-field {
+    border-top-color: var(--c-border);
 }
+.admin-dashboard.scoped-dashboard .correction-list .correction-info .admin-comment-field em {
+    color: var(--c-muted);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list .correction-info .admin-comment-field em {
+    color: var(--c-muted);
+}
+.admin-dashboard.scoped-dashboard .correction-list .text-xs { font-size: 0.75rem; }
+.admin-dashboard.scoped-dashboard .correction-list .text-muted { color: var(--c-muted); }
+
 .admin-dashboard.scoped-dashboard .correction-list .correction-buttons {
     margin-top: 1rem; display: flex; gap: 0.75rem;
 }
@@ -928,108 +1042,24 @@
     color: var(--c-muted);
     font-style: italic;
 }
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .modal-content .form-group input,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .modal-content .form-group select,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .modal-content .form-group textarea,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .modal-content .time-entry-edit-row .punch-type-select,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .modal-content .time-entry-edit-row .timestamp-input,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .modal-content .time-entry-edit-row .note-input {
+    background-color: var(--c-surface); /* Sollte ein dunklerer Ton sein, z.B. #252830 */
+    color: var(--c-text);               /* Sollte eine helle Textfarbe sein, z.B. #e5e7ec */
+    border-color: var(--c-border);      /* Sollte ein passender Rand für Darkmode sein, z.B. #373b46 */
+}
 
-/* Spezifisches Styling für den Admin-Kalender, falls er innerhalb des AdminDashboards ist */
+/* Spezifischer Style für das datetime-local Icon im Dark Mode, falls es Probleme gibt (WebKit-Browser) */
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .modal-content .time-entry-edit-row .timestamp-input::-webkit-calendar-picker-indicator {
+    filter: invert(1); /* Invertiert die Farben des Icons, oft von schwarz zu weiß */
+}
+
+/* Spezifisches Styling für den Admin-Kalender */
 .admin-dashboard.scoped-dashboard .vacation-calendar-admin.scoped-vacation {
-    margin-top: var(--u-gap); /* Abstand zum Rest des Dashboards */
-    padding: 0; /* Entferne das äußere Padding, da es bereits im Dashboard-Scope ist */
-    /* Wenn der Kalender eine eigene "Karte" sein soll, behalte Padding und Card-Styling bei,
-       sonst integriere ihn nahtloser. */
+    margin-top: var(--u-gap);
+    padding: 0;
 }
-/* AdminDashboardScoped.css */
-/* ... (bestehende Stile für .correction-list, .status-is-*, .correction-buttons etc. bleiben) ... */
-
-.admin-dashboard.scoped-dashboard .correction-list li .correction-header-info {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: var(--u-gap-xs);
-}
-
-.admin-dashboard.scoped-dashboard .correction-list li .correction-header-info h4 {
-    margin: 0; /* Entfernt Standard-Margin von h4 */
-    font-size: 1.05rem; /* Etwas größer für den Usernamen */
-}
-
-.admin-dashboard.scoped-dashboard .correction-list li .status-indicator {
-    display: flex;
-    align-items: center;
-    gap: 0.3rem; /* Kleiner Abstand zwischen Icon und Text */
-    font-size: 0.85rem;
-}
-
-
-.admin-dashboard.scoped-dashboard .correction-list li .correction-date-indicator {
-    font-size: 0.8rem;
-    color: var(--c-muted);
-    margin-bottom: var(--u-gap-sm);
-}
-[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list li .correction-date-indicator {
-    color: var(--c-muted);
-}
-
-
-.admin-dashboard.scoped-dashboard .correction-list .correction-info {
-    font-size: 0.85rem;
-    display: grid;
-    /* Ändere auf 1 Spalte, damit die Detailblöcke untereinander stehen */
-    grid-template-columns: 1fr;
-    gap: var(--u-gap-sm); /* Vertikaler Abstand zwischen den Blöcken */
-    margin-top: 0.75rem;
-}
-
-.admin-dashboard.scoped-dashboard .correction-list .correction-info .correction-detail-block {
-    background-color: var(--c-surface);
-    padding: var(--u-gap-sm);
-    border-radius: var(--u-radius-xs, 4px); /* Kleinerer Radius für innere Blöcke */
-    border: 1px solid var(--c-line);
-}
-[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list .correction-info .correction-detail-block {
-    background-color: var(--c-card); /* Im Darkmode die Kartenfarbe für die inneren Blöcke */
-    border-color: var(--c-border);
-}
-
-.admin-dashboard.scoped-dashboard .correction-list .correction-info .correction-detail-block p {
-    margin: 0 0 0.2rem 0; /* Kompakter Abstand innerhalb der Detailblöcke */
-    line-height: 1.3;
-}
-.admin-dashboard.scoped-dashboard .correction-list .correction-info .correction-detail-block p strong {
-    display: block; /* Überschrift des Blocks auf eigener Zeile */
-    margin-bottom: 0.15rem;
-    font-weight: 600; /* Etwas stärker hervorgehoben */
-    color: var(--c-text); /* Haupttextfarbe für diese Block-Überschriften */
-    opacity: 1; /* Volle Opazität */
-}
-[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list .correction-info .correction-detail-block p strong {
-    color: var(--c-text);
-}
-
-
-.admin-dashboard.scoped-dashboard .correction-list .correction-info .reason-field,
-.admin-dashboard.scoped-dashboard .correction-list .correction-info .admin-comment-field {
-    grid-column: 1 / -1;
-    margin-top: var(--u-gap-xs);
-    padding-top: var(--u-gap-xs);
-    border-top: 1px dashed var(--c-line); /* Leichte Trennung für Grund/Kommentar */
-    line-height: 1.4;
-}
-[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list .correction-info .reason-field,
-[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list .correction-info .admin-comment-field {
-    border-top-color: var(--c-border);
-}
-
-.admin-dashboard.scoped-dashboard .correction-list .correction-info .admin-comment-field em {
-    color: var(--c-muted);
-}
-[data-theme="dark"] .admin-dashboard.scoped-dashboard .correction-list .correction-info .admin-comment-field em {
-    color: var(--c-muted);
-}
-.admin-dashboard.scoped-dashboard .correction-list .text-xs {
-    font-size: 0.75rem;
-}
-.admin-dashboard.scoped-dashboard .correction-list .text-muted {
-    color: var(--c-muted);
-}
-
-
-/* ... (Rest der CSS-Datei bleibt gleich) ... */

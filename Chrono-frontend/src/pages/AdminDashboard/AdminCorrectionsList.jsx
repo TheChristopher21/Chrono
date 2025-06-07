@@ -100,9 +100,31 @@ const AdminCorrectionsList = ({
                             <div className="correction-list-scrollable-container">
                                 <ul className="correction-list">
                                     {filteredCorrections.map((corr) => {
-                                        const correctionDisplayDate = corr.requestDate
-                                            ? formatDate(new Date(corr.requestDate))
-                                            : (corr.desiredTimestamp ? formatDate(new Date(corr.desiredTimestamp)) : "-");
+                                        let correctionDisplayDate = "-";
+                                        if (corr.requestDate) {
+                                            try {
+                                                correctionDisplayDate = formatDate(new Date(corr.requestDate + "T00:00:00")); // Add time to ensure local date interpretation
+                                            } catch (e) { console.error("Error formatting requestDate", corr.requestDate, e); }
+                                        } else if (corr.desiredTimestamp) {
+                                            try {
+                                                correctionDisplayDate = formatDate(new Date(corr.desiredTimestamp));
+                                            } catch (e) { console.error("Error formatting desiredTimestamp for date", corr.desiredTimestamp, e); }
+                                        }
+
+                                        let originalTimeDisplay = "-";
+                                        if (corr.originalTimestamp) {
+                                            try {
+                                                originalTimeDisplay = formatTime(new Date(corr.originalTimestamp));
+                                            } catch (e) { console.error("Error formatting originalTimestamp", corr.originalTimestamp, e); }
+                                        }
+
+                                        let desiredTimeDisplay = "-";
+                                        if (corr.desiredTimestamp) {
+                                            try {
+                                                desiredTimeDisplay = formatTime(new Date(corr.desiredTimestamp));
+                                            } catch (e) { console.error("Error formatting desiredTimestamp for time", corr.desiredTimestamp, e); }
+                                        }
+
 
                                         let statusClass = "status-is-pending";
                                         let statusIcon = '⏳';
@@ -122,7 +144,7 @@ const AdminCorrectionsList = ({
                                             <li key={corr.id} className={statusClass}>
                                                 <div className="correction-header-info">
                                                     <h4 className="font-semibold">
-                                                        {t("adminDashboard.correctionRequestFor", "Korrekturantrag für")}: {corr.username}
+                                                        {t("adminDashboard.correctionRequestFor", "Korrekturantrag für")}: {corr.username || "Unbekannt"}
                                                     </h4>
                                                     <span className="status-indicator">
                                                         <span>{statusIcon}</span>
@@ -138,14 +160,14 @@ const AdminCorrectionsList = ({
                                                         <div className="correction-detail-block">
                                                             <p><strong>{t("correction.originalPunch", "Originale Stempelung")}</strong></p>
                                                             <p><span>{t("correction.type", "Typ")}: {corr.originalPunchType || "-"}</span></p>
-                                                            <p><span>{t("correction.time", "Zeit")}: {corr.originalTimestamp ? formatTime(new Date(corr.originalTimestamp)) : "-"}</span></p>
+                                                            <p><span>{t("correction.time", "Zeit")}: {originalTimeDisplay}</span></p>
                                                             <p><span className="text-xs text-muted">(ID: {corr.targetEntryId})</span></p>
                                                         </div>
                                                     )}
                                                     <div className="correction-detail-block">
                                                         <p><strong>{t("correction.desiredChange", "Gewünschte Änderung")}</strong></p>
                                                         <p><span>{t("correction.type", "Typ")}: {corr.desiredPunchType || "-"}</span></p>
-                                                        <p><span>{t("correction.time", "Zeit")}: {corr.desiredTimestamp ? formatTime(new Date(corr.desiredTimestamp)) : "-"}</span></p>
+                                                        <p><span>{t("correction.time", "Zeit")}: {desiredTimeDisplay}</span></p>
                                                     </div>
                                                     <p className="reason-field full-width-field"><strong>{t("reason", "Grund")}:</strong> {corr.reason || "-"}</p>
                                                     {corr.adminComment && (
@@ -186,7 +208,6 @@ const AdminCorrectionsList = ({
                 setComment={setAdminComment}
                 onSubmit={submitDecision}
                 onClose={() => setModalOpen(false)}
-                // t={t} // CorrectionDecisionModal verwendet useTranslation intern
             />
         </div>
     );
@@ -198,12 +219,12 @@ AdminCorrectionsList.propTypes = {
         PropTypes.shape({
             id: PropTypes.number.isRequired,
             username: PropTypes.string,
-            requestDate: PropTypes.string,      // ISO String "YYYY-MM-DD"
-            targetEntryId: PropTypes.number,    // ID des zu korrigierenden Eintrags (optional)
-            originalPunchType: PropTypes.string,// Ursprünglicher Typ (START/ENDE), falls targetEntryId vorhanden
-            originalTimestamp: PropTypes.string,// Ursprünglicher Zeitstempel (ISO DateTime), falls targetEntryId vorhanden
-            desiredPunchType: PropTypes.string.isRequired, // Gewünschter Typ (START/ENDE)
-            desiredTimestamp: PropTypes.string.isRequired, // Gewünschter Zeitstempel (ISO DateTime)
+            requestDate: PropTypes.string,
+            targetEntryId: PropTypes.number,
+            originalPunchType: PropTypes.string,
+            originalTimestamp: PropTypes.string,
+            desiredPunchType: PropTypes.string, // Geändert von .isRequired, da es null sein kann wenn targetEntry null ist
+            desiredTimestamp: PropTypes.string, // Geändert von .isRequired
             reason: PropTypes.string,
             approved: PropTypes.bool,
             denied: PropTypes.bool,

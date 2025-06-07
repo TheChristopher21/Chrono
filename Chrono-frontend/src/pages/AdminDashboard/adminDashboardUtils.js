@@ -14,45 +14,38 @@ export function formatDate(dateInput) {
     if (!dateInput) return "-";
     const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
     if (isNaN(date.getTime())) return "-";
-    // Verwende UTC-Methoden, um Zeitzonenprobleme bei reiner Datumsformatierung zu vermeiden
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const year = date.getUTCFullYear();
-    return `${day}.${month}.${year}`; // Deutsches Format DD.MM.YYYY
+    // Korrektur: Verwendet lokale Datumsteile
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // getMonth() ist 0-basiert
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
 }
 
-// NEU HINZUGEFÜGT/VERVOLLSTÄNDIGT: formatTime
 export function formatTime(dateInput) {
-    if (!dateInput) return "--:--";
-    // Akzeptiert sowohl Date-Objekte als auch ISO-Strings
-    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
-    if (isNaN(date.getTime())) { // Überprüft, ob das Datum gültig ist
-        // console.warn("formatTime: Invalid date input:", dateInput); // Optional: Warnung für ungültige Eingaben
+    if (!dateInput || (typeof dateInput === 'string' && dateInput.trim() === '')) {
         return "--:--";
     }
-
+    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+    if (isNaN(date.getTime())) {
+        return "--:--";
+    }
     const hours = String(date.getHours()).padStart(2, '0');
     const minutes = String(date.getMinutes()).padStart(2, '0');
     return `${hours}:${minutes}`;
 }
 
-
-export function formatLocalDateYMD(d) { // Gibt YYYY-MM-DD zurück
+export function formatLocalDateYMD(d) {
     if (!d) return "";
     let dateToFormat = d;
     if (typeof d === 'string') {
-        // Versuche, Strings als lokale Daten zu parsen, wenn sie kein 'T' oder 'Z' enthalten
-        // oder verwende parseISO für vollständige ISO-Strings.
         if (d.includes('T') || d.includes('Z')) {
             dateToFormat = parseISO(d);
         } else {
-            // Einfache YYYY-MM-DD Strings oder ähnliche ohne Zeitinformation
             const parts = d.split('-');
             if (parts.length === 3) {
-                // Stellt sicher, dass Monat und Tag als Zahlen interpretiert werden, um Zeitzonenprobleme bei new Date() zu vermeiden
                 dateToFormat = new Date(parseInt(parts[0],10), parseInt(parts[1],10) - 1, parseInt(parts[2],10));
             } else {
-                dateToFormat = new Date(d); // Fallback, könnte Zeitzonenprobleme haben
+                dateToFormat = new Date(d);
             }
         }
     }
@@ -60,7 +53,6 @@ export function formatLocalDateYMD(d) { // Gibt YYYY-MM-DD zurück
         console.warn("formatLocalDateYMD: Invalid date input after parsing:", d, dateToFormat);
         return "";
     }
-    // Behalte lokale Datums- und Zeitkomponenten bei, um Zeitzonenverschiebungen zu minimieren
     const year = dateToFormat.getFullYear();
     const month = String(dateToFormat.getMonth() + 1).padStart(2, '0');
     const day = String(dateToFormat.getDate()).padStart(2, '0');
