@@ -1063,3 +1063,220 @@
     margin-top: var(--u-gap);
     padding: 0;
 }
+/* =========================================================================
+   FINAL & PERFEKTIONIERT: Stile für Korrektur-Tabelle (Light & Dark Mode)
+   ========================================================================= */
+
+/* Filter-Sektion */
+.list-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+    align-items: center; /* Stellt sicher, dass alle Filter-Elemente vertikal zentriert sind */
+}
+
+.search-input, .date-input {
+    padding: 10px 14px; /* Etwas mehr Innenabstand für bessere Lesbarkeit */
+    border-radius: var(--ad-radius-md, 8px);
+    border: 1px solid var(--ad-c-border);
+    background-color: var(--ad-c-bg-card);
+    font-size: 0.9rem;
+    color: var(--c-text);
+    transition: all 0.2s ease-in-out;
+}
+
+.search-input {
+    flex-grow: 1;
+    min-width: 220px;
+}
+.search-input:focus, .date-input:focus {
+    border-color: var(--c-pri);
+    box-shadow: 0 0 0 3px rgba(71, 91, 255, 0.1);
+}
+
+.button-reset-filter {
+    padding: 11px 16px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background-color: var(--ad-c-bg-header);
+    border: 1px solid var(--ad-c-border);
+    color: var(--ad-c-text-muted);
+    border-radius: var(--ad-radius-md);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.button-reset-filter:hover {
+    background-color: var(--ad-c-border);
+    color: var(--ad-c-text);
+    border-color: #c9ced6;
+}
+
+
+/* Tabellen-Container (für Scrolling) */
+.corrections-list-container {
+    overflow-y: auto;
+    max-height: 70vh; /* Scrollbar erscheint bei mehr als ca. 10-12 Einträgen */
+    border: 1px solid var(--ad-c-border);
+    border-radius: var(--ad-radius-lg);
+    box-shadow: var(--ad-shadow-sm);
+    background-color: var(--ad-c-bg-card);
+}
+
+.corrections-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.corrections-table th,
+.corrections-table td {
+    padding: 14px 16px; /* Mehr vertikaler Abstand für Luftigkeit */
+    text-align: left;
+    border-bottom: 1px solid var(--ad-c-border);
+    vertical-align: middle; /* Wichtig für mehrzeilige Inhalte */
+}
+
+.corrections-table tr:last-child td {
+    border-bottom: none;
+}
+
+.corrections-table thead th {
+    background-color: var(--ad-c-bg-header, #f9fafb);
+    color: var(--ad-c-text-header, #4b5563); /* Etwas dunklerer Text für besseren Kontrast */
+    font-weight: 600;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em; /* Verleiht einen professionellen Look */
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    border-bottom-width: 2px; /* Stärkere Abgrenzung des Headers */
+}
+
+.corrections-table tbody tr:hover {
+    background-color: var(--ad-c-bg-row-hover, #f5f8ff);
+}
+
+/* Stile für gruppierte Einträge in einer Zelle */
+.corrections-table .request-detail {
+    padding: 6px 0; /* Abstand zwischen den einzelnen Korrekturen in einer Zelle */
+}
+.corrections-table .request-detail:not(:last-child) {
+    border-bottom: 1px dotted var(--ad-c-border); /* Dezenter Trenner */
+    margin-bottom: 6px;
+    padding-bottom: 10px;
+}
+.corrections-table .request-detail .original-time {
+    color: var(--ad-c-text-muted);
+}
+.corrections-table .reason-cell {
+    max-width: 250px;
+    font-size: 0.875rem; /* Etwas grösser für bessere Lesbarkeit */
+    color: var(--ad-c-text-muted);
+    line-height: 1.5;
+}
+
+.corrections-table .status-badge {
+    padding: 5px 12px;
+    border-radius: 14px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #fff;
+    display: inline-block;
+    text-align: center;
+    min-width: 75px;
+}
+.status-badge.status-pending { background-color: var(--ad-c-warn, #f59e0b); }
+.status-badge.status-approved { background-color: var(--ad-c-success, #22c55e); }
+.status-badge.status-denied { background-color: var(--ad-c-danger, #ef4444); }
+
+.corrections-table .action-buttons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+.corrections-table .action-buttons button {
+    border: none;
+    border-radius: 50%;
+    width: 34px;
+    height: 34px;
+    font-size: 1.3rem;
+    cursor: pointer;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.corrections-table .action-buttons button:hover {
+    transform: translateY(-2px) scale(1.1);
+    filter: brightness(1.15);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+.button-approve { background-color: var(--ad-c-success, #22c55e); }
+.button-deny { background-color: var(--ad-c-danger, #ef4444); }
+.corrections-table .no-entries {
+    text-align: center;
+    padding: 25px;
+    color: var(--ad-c-text-muted);
+    font-style: italic;
+}
+
+
+/* --- DARK MODE STYLES --- */
+
+[data-theme="dark"] .search-input,
+[data-theme="dark"] .date-input {
+    background-color: var(--c-surface);
+    border-color: var(--c-border);
+    color: var(--c-text);
+}
+[data-theme="dark"] .search-input:focus,
+[data-theme="dark"] .date-input:focus {
+    border-color: var(--c-pri);
+    box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.2);
+}
+
+[data-theme="dark"] .button-reset-filter {
+    background-color: var(--c-surface);
+    border-color: var(--c-border);
+    color: var(--c-muted);
+}
+[data-theme="dark"] .button-reset-filter:hover {
+    background-color: var(--c-border);
+    color: var(--c-text);
+}
+
+[data-theme="dark"] .corrections-list-container {
+    border-color: var(--c-border);
+    background-color: var(--c-card);
+}
+
+[data-theme="dark"] .corrections-table thead th {
+    background-color: #2a3441;
+    color: var(--c-text);
+    border-color: #4b5563;
+}
+
+[data-theme="dark"] .corrections-table td,
+[data-theme="dark"] .corrections-table .request-detail:not(:last-child) {
+    border-color: var(--c-border);
+}
+
+[data-theme="dark"] .corrections-table tbody tr:nth-child(even) {
+    background-color: var(--c-row-alt, #242c3b);
+}
+
+[data-theme="dark"] .corrections-table tbody tr:hover {
+    background-color: var(--c-row-hover, #374151);
+}
+
+[data-theme="dark"] .corrections-table .reason-cell,
+[data-theme="dark"] .corrections-table .request-detail .original-time {
+    color: var(--c-muted);
+}
+
+[data-theme="dark"] .corrections-table .action-buttons button:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}

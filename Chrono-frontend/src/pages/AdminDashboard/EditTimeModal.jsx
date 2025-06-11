@@ -3,6 +3,22 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { formatLocalDateYMD } from './adminDashboardUtils';
 
+/**
+ * Helper to format a Date object into a 'YYYY-MM-DDTHH:mm:ss' string respecting local time.
+ * @param {Date} date The date to format.
+ * @returns {string} Formatted date string.
+ */
+const formatToLocalISOString = (date) => {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    const seconds = String(date.getSeconds()).padStart(2, '0');
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+};
+
 const EditTimeModal = ({
                            t,
                            isVisible,
@@ -20,10 +36,10 @@ const EditTimeModal = ({
             const initialEntries = dayEntries && dayEntries.length > 0
                 ? dayEntries.map(entry => ({
                     ...entry,
-                    timestampInput: entry.entryTimestamp ? entry.entryTimestamp.substring(0, 16) : '', // YYYY-MM-DDTHH:mm
+                    timeInput: entry.entryTimestamp ? entry.entryTimestamp.substring(11, 16) : '', // Extrahiere HH:mm
                     key: entry.id || `new-${Date.now()}-${Math.random()}`
-                })).sort((a, b) => new Date(a.timestampInput || 0) - new Date(b.timestampInput || 0))
-                : []; // Start with empty if no entries or if creating new day
+                })).sort((a, b) => new Date(a.entryTimestamp || 0) - new Date(b.entryTimestamp || 0))
+                : [];
             setEditableEntries(initialEntries);
         }
     }, [isVisible, dayEntries]);
@@ -33,10 +49,11 @@ const EditTimeModal = ({
     const handleEntryChange = (index, field, value) => {
         const newEntries = [...editableEntries];
         const entryToUpdate = { ...newEntries[index] };
+        const datePart = formatLocalDateYMD(targetDate);
 
-        if (field === 'timestampInput') {
-            entryToUpdate[field] = value; // value is YYYY-MM-DDTHH:mm
-            entryToUpdate.entryTimestamp = value ? `${value}:00` : null; // Add seconds for backend
+        if (field === 'timeInput') {
+            entryToUpdate.timeInput = value; // value ist 'HH:mm'
+            entryToUpdate.entryTimestamp = value ? `${datePart}T${value}:00` : null; // Kombiniere mit Datum
         } else if (field === 'punchType') {
             entryToUpdate[field] = value;
         } else if (field === 'systemGeneratedNote') {
@@ -47,56 +64,58 @@ const EditTimeModal = ({
     };
 
     const addEntry = () => {
-        let newTimestampStr = '';
-        if (targetDate) {
-            const datePart = formatLocalDateYMD(targetDate);
-            newTimestampStr = `${datePart}T00:00`; // Default to midnight
-        }
+        const datePart = formatLocalDateYMD(targetDate);
+        let newFullTimestampStr = `${datePart}T08:00`; // Standard für den allerersten Eintrag
 
-        // Determine if the next punch should be START or ENDE based on the last entry
+        const sortedEntries = [...editableEntries]
+            .filter(e => e.entryTimestamp)
+            .sort((a, b) => new Date(a.entryTimestamp) - new Date(b.entryTimestamp));
+
         let nextPunchType = 'START';
-        if (editableEntries.length > 0) {
-            const lastEntry = editableEntries[editableEntries.length - 1];
-            if (lastEntry.punchType === 'START') {
-                nextPunchType = 'ENDE';
-                // Pre-fill time if possible
-                if (lastEntry.timestampInput) {
-                    try {
-                        const lastTime = new Date(lastEntry.entryTimestamp);
-                        lastTime.setHours(lastTime.getHours() + 1); // Default to 1 hour later
-                        newTimestampStr = lastTime.toISOString().substring(0,16);
-                    } catch(e) { /* ignore date parse error */ }
-                }
-            } else { // Last was ENDE or no entries yet
-                if (lastEntry.timestampInput) {
-                    try {
-                        const lastTime = new Date(lastEntry.entryTimestamp);
-                        lastTime.setMinutes(lastTime.getMinutes() + 15); // e.g. 15 mins after last ENDE
-                        newTimestampStr = lastTime.toISOString().substring(0,16);
-                    } catch(e) { /* ignore */ }
+        if (sortedEntries.length > 0) {
+            const lastEntry = sortedEntries[sortedEntries.length - 1];
+            nextPunchType = lastEntry.punchType === 'START' ? 'ENDE' : 'START';
+
+            if (lastEntry.entryTimestamp) {
+                try {
+                    const lastTime = new Date(lastEntry.entryTimestamp);
+                    lastTime.setHours(lastTime.getHours() + 1); // Immer eine Stunde hinzufügen
+
+                    const year = lastTime.getFullYear();
+                    const month = String(lastTime.getMonth() + 1).padStart(2, '0');
+                    const day = String(lastTime.getDate()).padStart(2, '0');
+                    const hours = String(lastTime.getHours()).padStart(2, '0');
+                    const minutes = String(lastTime.getMinutes()).padStart(2, '0');
+
+                    newFullTimestampStr = `${year}-${month}-${day}T${hours}:${minutes}`;
+                } catch (e) {
+                    console.error("Error setting new entry time:", e);
+                    newFullTimestampStr = `${datePart}T00:00`;
                 }
             }
         }
 
-
-        setEditableEntries([
+        const newEntryList = [
             ...editableEntries,
             {
                 id: null,
                 username: targetUsername,
-                timestampInput: newTimestampStr,
-                entryTimestamp: newTimestampStr ? `${newTimestampStr}:00` : null,
+                timeInput: newFullTimestampStr.substring(11, 16),
+                entryTimestamp: `${newFullTimestampStr}:00`,
                 punchType: nextPunchType,
                 source: 'ADMIN_CORRECTION',
                 correctedByUser: true,
                 systemGeneratedNote: '',
                 key: `new-${Date.now()}-${Math.random()}`
             }
-        ]);
+        ];
+
+        newEntryList.sort((a, b) => new Date(a.entryTimestamp || 0) - new Date(b.entryTimestamp || 0));
+        setEditableEntries(newEntryList);
     };
 
-    const removeEntry = (index) => {
-        setEditableEntries(editableEntries.filter((_, i) => i !== index));
+    const removeEntry = (indexToRemove) => {
+        setEditableEntries(editableEntries.filter((_, index) => index !== indexToRemove));
     };
 
     const handleSubmitLocal = (e) => {
@@ -119,8 +138,8 @@ const EditTimeModal = ({
                 alert(t('editTimeModal.errors.chronologicalOrder', 'Stempelungen müssen in chronologischer Reihenfolge sein.'));
                 isValid = false; break;
             }
-            if (entry.punchType === lastType) { // Simplified: direct same type after another is invalid
-                alert(t('editTimeModal.errors.alternateStartEnd', 'START und ENDE Stempel müssen sich abwechseln.') + ` Problem bei ${entry.punchType} um ${entry.entryTimestamp.substring(11,16)}`);
+            if (entry.punchType === lastType) {
+                alert(t('editTimeModal.errors.alternateStartEnd', 'START und ENDE Stempel müssen sich abwechseln.') + ` Problem bei ${entry.punchType} um ${entry.timeInput}`);
                 isValid = false; break;
             }
             lastType = entry.punchType;
@@ -131,30 +150,21 @@ const EditTimeModal = ({
             alert(t('editTimeModal.errors.firstMustBeStart', 'Der erste Stempel des Tages muss ein START sein.'));
             isValid = false;
         }
-        if (sortedEntries.length > 0 && sortedEntries.length % 2 !== 0 && sortedEntries[sortedEntries.length -1].punchType !== 'START' ) {
-            // Allow odd number if last is START (open day)
-            // but if last is ENDE and odd number, that's unusual (e.g. ENDE without preceding START). This is caught by type alternation.
-        }
-
 
         if (isValid) {
             const entriesToSubmit = sortedEntries.map(entry => ({
                 id: entry.id,
-                entryTimestamp: entry.entryTimestamp, // Ensure it's YYYY-MM-DDTHH:mm:ss
+                entryTimestamp: entry.entryTimestamp,
                 punchType: entry.punchType,
                 source: entry.id ? entry.source : 'ADMIN_CORRECTION',
                 correctedByUser: true,
-                systemGeneratedNote: entry.systemGeneratedNote || null // Send null if empty
+                systemGeneratedNote: entry.systemGeneratedNote || null
             }));
             onSubmit(entriesToSubmit);
         }
     };
 
     const autoFillBreaks = () => {
-        const workStartTimeStr = editableEntries.find(e => e.punchType === 'START')?.entryTimestamp;
-        let workEndTimeStr = editableEntries.find(e => e.punchType === 'ENDE' && new Date(e.entryTimestamp) > new Date(workStartTimeStr || 0))?.entryTimestamp;
-
-        // Find the last START and the first ENDE after it if multiple pairs exist
         const startEntries = editableEntries.filter(e => e.punchType === 'START').sort((a,b) => new Date(a.entryTimestamp) - new Date(b.entryTimestamp));
         const endEntries = editableEntries.filter(e => e.punchType === 'ENDE').sort((a,b) => new Date(a.entryTimestamp) - new Date(b.entryTimestamp));
 
@@ -162,9 +172,8 @@ const EditTimeModal = ({
             alert(t('editTimeModal.errors.autoBreakCondition', 'Es muss mindestens ein START und ein ENDE Stempel vorhanden sein, um eine Pause einzufügen.'));
             return;
         }
-        // Take the earliest START and latest ENDE for the main work block
         const firstWorkStartTime = new Date(startEntries[0].entryTimestamp);
-        const lastWorkEndTime = new Date(endEntries[endEntries.length -1].entryTimestamp);
+        const lastWorkEndTime = new Date(endEntries[endEntries.length - 1].entryTimestamp);
 
         if (firstWorkStartTime >= lastWorkEndTime) {
             alert(t('editTimeModal.errors.startBeforeEndForBreak', 'Arbeitsbeginn muss vor Arbeitsende liegen, um Pause einzufügen.'));
@@ -180,7 +189,6 @@ const EditTimeModal = ({
             return;
         }
 
-        // Place break somewhat in the middle, ensuring it's after the first START and before the last ENDE
         const idealBreakStartTime = new Date(firstWorkStartTime.getTime() + (totalWorkDuration / 2 - breakDurationMinutes / 2) * 60000);
         const idealBreakEndTime = new Date(idealBreakStartTime.getTime() + breakDurationMinutes * 60000);
 
@@ -189,17 +197,14 @@ const EditTimeModal = ({
             return;
         }
 
-        // Remove existing break-like punches (ENDE immediately followed by START)
         const nonBreakEntries = [];
         let i = 0;
         while (i < editableEntries.length) {
             if (i + 1 < editableEntries.length &&
                 editableEntries[i].punchType === 'ENDE' &&
                 editableEntries[i+1].punchType === 'START') {
-                // Check if it's the primary work start/end
-                if (editableEntries[i].entryTimestamp !== lastWorkEndTime.toISOString().substring(0,19) &&
-                    editableEntries[i+1].entryTimestamp !== firstWorkStartTime.toISOString().substring(0,19)) {
-                    // This looks like an existing break, skip both
+                if (new Date(editableEntries[i].entryTimestamp).getTime() !== lastWorkEndTime.getTime() &&
+                    new Date(editableEntries[i+1].entryTimestamp).getTime() !== firstWorkStartTime.getTime()) {
                     i += 2;
                     continue;
                 }
@@ -208,27 +213,30 @@ const EditTimeModal = ({
             i++;
         }
 
+        const idealBreakStartTimeFullStr = formatToLocalISOString(idealBreakStartTime);
+        const idealBreakEndTimeFullStr = formatToLocalISOString(idealBreakEndTime);
+        const lastWorkEndTimeFullStr = formatToLocalISOString(lastWorkEndTime);
 
         const newEntriesWithBreak = [
-            ...nonBreakEntries.filter(e => new Date(e.entryTimestamp) <= idealBreakStartTime && e.entryTimestamp !== lastWorkEndTime.toISOString().substring(0,19) ), // Keep entries before break, exclude final ENDE if it's too early
+            ...nonBreakEntries.filter(e => new Date(e.entryTimestamp).getTime() <= idealBreakStartTime.getTime() && e.entryTimestamp !== lastWorkEndTimeFullStr),
             {
                 id: null, username: targetUsername,
-                timestampInput: idealBreakStartTime.toISOString().substring(0, 16),
-                entryTimestamp: idealBreakStartTime.toISOString().substring(0, 19),
+                timeInput: idealBreakStartTimeFullStr.substring(11, 16),
+                entryTimestamp: idealBreakStartTimeFullStr,
                 punchType: 'ENDE', source: 'ADMIN_CORRECTION', correctedByUser: true,
                 systemGeneratedNote: t('editTimeModal.notes.autoBreakStart', 'Pause Start (Auto)'),
                 key: `new-autobreakstart-${Date.now()}`
             },
             {
                 id: null, username: targetUsername,
-                timestampInput: idealBreakEndTime.toISOString().substring(0, 16),
-                entryTimestamp: idealBreakEndTime.toISOString().substring(0, 19),
+                timeInput: idealBreakEndTimeFullStr.substring(11, 16),
+                entryTimestamp: idealBreakEndTimeFullStr,
                 punchType: 'START', source: 'ADMIN_CORRECTION', correctedByUser: true,
                 systemGeneratedNote: t('editTimeModal.notes.autoBreakEnd', 'Pause Ende (Auto)'),
                 key: `new-autobreakend-${Date.now()}`
             },
-            ...nonBreakEntries.filter(e => new Date(e.entryTimestamp) >= idealBreakEndTime || e.entryTimestamp === lastWorkEndTime.toISOString().substring(0,19) ) // Keep entries after break
-        ].filter((entry, index, self) => // Remove duplicates by key or timestamp+type
+            ...nonBreakEntries.filter(e => new Date(e.entryTimestamp).getTime() >= idealBreakEndTime.getTime() || e.entryTimestamp === lastWorkEndTimeFullStr)
+        ].filter((entry, index, self) =>
                 index === self.findIndex((t) => (
                     (t.key && entry.key && t.key === entry.key) ||
                     (t.entryTimestamp === entry.entryTimestamp && t.punchType === entry.punchType)
@@ -240,9 +248,9 @@ const EditTimeModal = ({
 
 
     return (
-        <div className="admin-dashboard scoped-dashboard"> {/* Ensure scope for CSS vars */}
+        <div className="admin-dashboard scoped-dashboard">
             <div className="modal-overlay">
-                <div className="modal-content edit-time-modal-content"> {/* Specific class for wider modal if needed */}
+                <div className="modal-content edit-time-modal-content">
                     <h3>
                         {t("adminDashboard.editTrackingTitle", "Zeiterfassung bearbeiten für")} {targetUsername} <br />
                         {t("date", "Datum")}: {targetDate?.toLocaleDateString("de-DE")}
@@ -252,7 +260,7 @@ const EditTimeModal = ({
                             <div key={entry.key} className="time-entry-edit-row">
                                 <select
                                     name="punchType"
-                                    value={entry.punchType || 'START'} // Default to START if not set
+                                    value={entry.punchType || 'START'}
                                     onChange={(e) => handleEntryChange(index, 'punchType', e.target.value)}
                                     className="punch-type-select"
                                 >
@@ -260,10 +268,10 @@ const EditTimeModal = ({
                                     <option value="ENDE">ENDE</option>
                                 </select>
                                 <input
-                                    type="datetime-local"
-                                    name="timestampInput"
-                                    value={entry.timestampInput}
-                                    onChange={(e) => handleEntryChange(index, 'timestampInput', e.target.value)}
+                                    type="time"
+                                    name="timeInput"
+                                    value={entry.timeInput}
+                                    onChange={(e) => handleEntryChange(index, 'timeInput', e.target.value)}
                                     required
                                     className="timestamp-input"
                                 />
@@ -309,7 +317,7 @@ EditTimeModal.propTypes = {
     dayEntries: PropTypes.arrayOf(
         PropTypes.shape({
             id: PropTypes.number,
-            entryTimestamp: PropTypes.string, // ISO String like "2023-10-26T08:00:00"
+            entryTimestamp: PropTypes.string,
             punchType: PropTypes.oneOf(['START', 'ENDE']),
             source: PropTypes.string,
             correctedByUser: PropTypes.bool,

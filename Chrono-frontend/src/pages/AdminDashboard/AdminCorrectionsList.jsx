@@ -1,206 +1,174 @@
-// AdminCorrectionsList.jsx
+// src/pages/AdminDashboard/AdminCorrectionsList.jsx
 import React, { useState, useMemo } from "react";
 import PropTypes from "prop-types";
-import { formatDate, formatTime } from "./adminDashboardUtils"; // Korrekter Import
+import { formatDate, formatTime } from "./adminDashboardUtils";
 import CorrectionDecisionModal from "./CorrectionDecisionModal";
 import "../../styles/AdminDashboardScoped.css";
+
+// Hilfsfunktion, um den Status aus den boolean-Werten abzuleiten
+const getStatus = (req) => {
+    if (req.approved) return 'APPROVED';
+    if (req.denied) return 'DENIED';
+    return 'PENDING';
+};
 
 const AdminCorrectionsList = ({
                                   t,
                                   allCorrections,
-                                  handleApproveCorrection,
-                                  handleDenyCorrection,
+                                  onApprove,
+                                  onDeny,
                               }) => {
     const [modalOpen, setModalOpen] = useState(false);
-    const [modalMode, setModalMode] = useState("approve"); // "approve" | "deny"
-    const [targetId, setTargetId] = useState(null);
+    const [modalMode, setModalMode] = useState("approve");
+    // Wird jetzt ein Array von IDs für die Gruppenverarbeitung halten
+    const [targetIds, setTargetIds] = useState([]);
     const [adminComment, setAdminComment] = useState("");
-
     const [isExpanded, setIsExpanded] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const [searchDate, setSearchDate] = useState('');
 
-    function toggleExpansion() {
-        setIsExpanded(!isExpanded);
-    }
-
-    function handleSearch(e) {
-        setSearchTerm(e.target.value.toLowerCase());
-    }
-
-    function openModal(id, mode) {
-        setTargetId(id);
+    const openModal = (ids, mode) => {
+        setTargetIds(ids);
         setModalMode(mode);
         setAdminComment("");
         setModalOpen(true);
-    }
+    };
 
-    async function submitDecision() {
-        if (modalMode === "approve") {
-            await handleApproveCorrection(targetId, adminComment);
-        } else {
-            await handleDenyCorrection(targetId, adminComment);
-        }
-        setModalOpen(false);
-        setAdminComment("");
-    }
-
-    const filteredCorrections = useMemo(() => {
-        if (!searchTerm) {
-            return allCorrections;
-        }
-        return allCorrections.filter(corr => {
-            const requestDateStr = corr.requestDate ? formatDate(new Date(corr.requestDate)) : "";
-            const desiredTimeStr = corr.desiredTimestamp ? formatTime(new Date(corr.desiredTimestamp)) : "";
-            const originalTimeStr = corr.originalTimestamp ? formatTime(new Date(corr.originalTimestamp)) : "";
-
-            return (
-                (corr.username || '').toLowerCase().includes(searchTerm) ||
-                requestDateStr.toLowerCase().includes(searchTerm) ||
-                desiredTimeStr.toLowerCase().includes(searchTerm) ||
-                originalTimeStr.toLowerCase().includes(searchTerm) ||
-                (corr.desiredPunchType || '').toLowerCase().includes(searchTerm) ||
-                (corr.originalPunchType || '').toLowerCase().includes(searchTerm) ||
-                (corr.reason || '').toLowerCase().includes(searchTerm) ||
-                (corr.adminComment || '').toLowerCase().includes(searchTerm)
-            );
+    const submitDecision = async () => {
+        // Sendet für jede ID in der Gruppe eine Anfrage
+        const decisionPromises = targetIds.map(id => {
+            if (modalMode === "approve") {
+                return onApprove(id, adminComment);
+            } else {
+                return onDeny(id, adminComment);
+            }
         });
-    }, [allCorrections, searchTerm]);
+        try {
+            await Promise.all(decisionPromises);
+        } finally {
+            setModalOpen(false);
+        }
+    };
 
+    // NEUE LOGIK: Gruppiert einzelne Anträge zu einer logischen Einheit
+    const groupedAndFilteredCorrections = useMemo(() => {
+        const groups = new Map();
+        const filtered = allCorrections.filter(c => {
+            const matchesUser = c.username?.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesDate = !searchDate || c.requestDate === searchDate;
+            return matchesUser && matchesDate;
+        });
+
+        for (const req of filtered) {
+            const groupKey = `${req.username}|${req.requestDate}|${req.reason}`;
+            const currentStatus = getStatus(req);
+
+            if (!groups.has(groupKey)) {
+                groups.set(groupKey, {
+                    id: req.id, // ID des ersten Eintrags als Key
+                    username: req.username,
+                    requestDate: req.requestDate,
+                    reason: req.reason,
+                    status: currentStatus,
+                    entries: [],
+                });
+            }
+
+            const group = groups.get(groupKey);
+            group.entries.push(req);
+            // Eine Gruppe ist PENDING, solange nicht alle Einträge bearbeitet sind.
+            if (currentStatus === 'PENDING') {
+                group.status = 'PENDING';
+            }
+        }
+
+        return Array.from(groups.values()).sort((a, b) => b.id - a.id);
+    }, [allCorrections, searchTerm, searchDate]);
 
     return (
-        <div className="admin-dashboard scoped-dashboard">
-            <section className="correction-section content-section">
-                <div
-                    className="section-header"
-                    onClick={toggleExpansion}
-                    role="button"
-                    tabIndex={0}
-                    onKeyPress={(e) => e.key === 'Enter' && toggleExpansion()}
-                >
-                    <h3 className="section-title">
-                        {t("adminDashboard.correctionRequestsTitle")}
-                    </h3>
-                    <span className="toggle-icon">
-                        {isExpanded ? '▲' : '▼'}
-                    </span>
-                </div>
+        <div className="content-section">
+            <header className="section-header" onClick={() => setIsExpanded(!isExpanded)}>
+                <h3 className="section-title">{t('adminDashboard.correctionsTitle')}</h3>
+                <span className="toggle-icon">{isExpanded ? '−' : '+'}</span>
+            </header>
 
-                {isExpanded && (
-                    <div className="section-content">
+            {isExpanded && (
+                <div className="section-content">
+                    <div className="list-controls">
                         <input
                             type="text"
-                            placeholder={t('adminDashboard.searchCorrectionsPlaceholder', 'Suche User, Datum, Typ, Grund...')}
+                            placeholder={t('adminDashboard.searchByUser', 'Nach Benutzer suchen...')}
                             value={searchTerm}
-                            onChange={handleSearch}
+                            onChange={(e) => setSearchTerm(e.target.value)}
                             className="search-input"
                         />
-                        {filteredCorrections.length === 0 ? (
-                            <p className="no-data-message">{t("adminDashboard.noCorrectionRequestsFound", "Keine Korrekturanträge gefunden.")}</p>
-                        ) : (
-                            <div className="correction-list-scrollable-container">
-                                <ul className="correction-list">
-                                    {filteredCorrections.map((corr) => {
-                                        let correctionDisplayDate = "-";
-                                        if (corr.requestDate) {
-                                            try {
-                                                correctionDisplayDate = formatDate(new Date(corr.requestDate + "T00:00:00")); // Add time to ensure local date interpretation
-                                            } catch (e) { console.error("Error formatting requestDate", corr.requestDate, e); }
-                                        } else if (corr.desiredTimestamp) {
-                                            try {
-                                                correctionDisplayDate = formatDate(new Date(corr.desiredTimestamp));
-                                            } catch (e) { console.error("Error formatting desiredTimestamp for date", corr.desiredTimestamp, e); }
-                                        }
-
-                                        let originalTimeDisplay = "-";
-                                        if (corr.originalTimestamp) {
-                                            try {
-                                                originalTimeDisplay = formatTime(new Date(corr.originalTimestamp));
-                                            } catch (e) { console.error("Error formatting originalTimestamp", corr.originalTimestamp, e); }
-                                        }
-
-                                        let desiredTimeDisplay = "-";
-                                        if (corr.desiredTimestamp) {
-                                            try {
-                                                desiredTimeDisplay = formatTime(new Date(corr.desiredTimestamp));
-                                            } catch (e) { console.error("Error formatting desiredTimestamp for time", corr.desiredTimestamp, e); }
-                                        }
-
-
-                                        let statusClass = "status-is-pending";
-                                        let statusIcon = '⏳';
-                                        let statusText = t('adminDashboard.pending', 'Ausstehend');
-
-                                        if (corr.approved) {
-                                            statusClass = "status-is-approved";
-                                            statusIcon = '✔️';
-                                            statusText = t('adminDashboard.approved', 'Genehmigt');
-                                        } else if (corr.denied) {
-                                            statusClass = "status-is-denied";
-                                            statusIcon = '❌';
-                                            statusText = t('adminDashboard.denied', 'Abgelehnt');
-                                        }
-
-                                        return (
-                                            <li key={corr.id} className={statusClass}>
-                                                <div className="correction-header-info">
-                                                    <h4 className="font-semibold">
-                                                        {t("adminDashboard.correctionRequestFor", "Korrekturantrag für")}: {corr.username || "Unbekannt"}
-                                                    </h4>
-                                                    <span className="status-indicator">
-                                                        <span>{statusIcon}</span>
-                                                        <span className="font-semibold">{statusText}</span>
-                                                    </span>
-                                                </div>
-                                                <p className="text-sm correction-date-indicator">
-                                                    <strong>{t("date", "Datum des Antrags")}:</strong> {correctionDisplayDate}
-                                                </p>
-
-                                                <div className="correction-info text-sm mt-2">
-                                                    {corr.targetEntryId && (
-                                                        <div className="correction-detail-block">
-                                                            <p><strong>{t("correction.originalPunch", "Originale Stempelung")}</strong></p>
-                                                            <p><span>{t("correction.type", "Typ")}: {corr.originalPunchType || "-"}</span></p>
-                                                            <p><span>{t("correction.time", "Zeit")}: {originalTimeDisplay}</span></p>
-                                                            <p><span className="text-xs text-muted">(ID: {corr.targetEntryId})</span></p>
-                                                        </div>
-                                                    )}
-                                                    <div className="correction-detail-block">
-                                                        <p><strong>{t("correction.desiredChange", "Gewünschte Änderung")}</strong></p>
-                                                        <p><span>{t("correction.type", "Typ")}: {corr.desiredPunchType || "-"}</span></p>
-                                                        <p><span>{t("correction.time", "Zeit")}: {desiredTimeDisplay}</span></p>
-                                                    </div>
-                                                    <p className="reason-field full-width-field"><strong>{t("reason", "Grund")}:</strong> {corr.reason || "-"}</p>
-                                                    {corr.adminComment && (
-                                                        <p className="admin-comment-field full-width-field"><strong>{t("adminDashboard.adminComment", "Admin-Kommentar")}:</strong> <em>{corr.adminComment}</em></p>
-                                                    )}
-                                                </div>
-
-                                                {!corr.approved && !corr.denied && (
-                                                    <div className="correction-buttons mt-2 flex gap-2">
-                                                        <button
-                                                            className="button-approve"
-                                                            onClick={() => openModal(corr.id, "approve")}
-                                                        >
-                                                            {t("adminDashboard.acceptButton", "Genehmigen")}
-                                                        </button>
-                                                        <button
-                                                            className="button-reject"
-                                                            onClick={() => openModal(corr.id, "deny")}
-                                                        >
-                                                            {t("adminDashboard.rejectButton", "Ablehnen")}
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </li>
-                                        );
-                                    })}
-                                </ul>
-                            </div>
-                        )}
+                        <input
+                            type="date"
+                            value={searchDate}
+                            onChange={(e) => setSearchDate(e.target.value)}
+                            className="date-input"
+                        />
+                        <button onClick={() => { setSearchTerm(''); setSearchDate(''); }} className="button-reset-filter">
+                            {t('adminDashboard.resetFilters', 'Filter zurücksetzen')}
+                        </button>
                     </div>
-                )}
-            </section>
-
+                    <div className="corrections-list-container">
+                        <table className="corrections-table">
+                            <thead>
+                            <tr>
+                                <th>{t('adminCorrections.header.user', 'Benutzer')}</th>
+                                <th>{t('adminCorrections.header.date', 'Antragsdatum')}</th>
+                                <th>{t('adminCorrections.header.request', 'Anfrage')}</th>
+                                <th className="reason-col">{t('adminCorrections.header.reason', 'Grund')}</th>
+                                <th>{t('adminCorrections.header.status', 'Status')}</th>
+                                <th>{t('adminCorrections.header.actions', 'Aktionen')}</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {groupedAndFilteredCorrections.length > 0 ? (
+                                groupedAndFilteredCorrections.map(group => (
+                                    <tr key={group.id}>
+                                        <td data-label={t('adminCorrections.header.user')}>{group.username}</td>
+                                        <td data-label={t('adminCorrections.header.date')}>{formatDate(group.requestDate)}</td>
+                                        <td data-label={t('adminCorrections.header.request')}>
+                                            {group.entries.map(req => (
+                                                <div className="request-detail" key={req.id}>
+                                                    {req.originalTimestamp ? (
+                                                        <span>
+                                                                <s className="original-time">{formatTime(req.originalTimestamp)} {req.originalPunchType}</s> &rarr; <strong className="desired-time">{formatTime(req.desiredTimestamp)} {req.desiredPunchType}</strong>
+                                                            </span>
+                                                    ) : (
+                                                        <strong className="desired-time">Neu: {formatTime(req.desiredTimestamp)} {req.desiredPunchType}</strong>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </td>
+                                        <td data-label={t('adminCorrections.header.reason')} className="reason-cell">{group.reason}</td>
+                                        <td data-label={t('adminCorrections.header.status')}>
+                                                <span className={`status-badge status-${group.status.toLowerCase()}`}>
+                                                    {t(`status.${group.status.toLowerCase()}`, group.status)}
+                                                </span>
+                                        </td>
+                                        <td data-label={t('adminCorrections.header.actions')}>
+                                            {group.status === 'PENDING' ? (
+                                                <div className="action-buttons">
+                                                    <button onClick={() => openModal(group.entries.map(e => e.id), 'approve')} className="button-approve" title="Genehmigen">✓</button>
+                                                    <button onClick={() => openModal(group.entries.map(e => e.id), 'deny')} className="button-deny" title="Ablehnen">×</button>
+                                                </div>
+                                            ) : 'Erledigt'}
+                                        </td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" className="no-entries">{t('adminCorrections.noRequestsFound', 'Keine Anträge gefunden.')}</td>
+                                </tr>
+                            )}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            )}
             <CorrectionDecisionModal
                 visible={modalOpen}
                 mode={modalMode}
@@ -208,6 +176,7 @@ const AdminCorrectionsList = ({
                 setComment={setAdminComment}
                 onSubmit={submitDecision}
                 onClose={() => setModalOpen(false)}
+                t={t}
             />
         </div>
     );
@@ -215,24 +184,9 @@ const AdminCorrectionsList = ({
 
 AdminCorrectionsList.propTypes = {
     t: PropTypes.func.isRequired,
-    allCorrections: PropTypes.arrayOf(
-        PropTypes.shape({
-            id: PropTypes.number.isRequired,
-            username: PropTypes.string,
-            requestDate: PropTypes.string,
-            targetEntryId: PropTypes.number,
-            originalPunchType: PropTypes.string,
-            originalTimestamp: PropTypes.string,
-            desiredPunchType: PropTypes.string, // Geändert von .isRequired, da es null sein kann wenn targetEntry null ist
-            desiredTimestamp: PropTypes.string, // Geändert von .isRequired
-            reason: PropTypes.string,
-            approved: PropTypes.bool,
-            denied: PropTypes.bool,
-            adminComment: PropTypes.string,
-        })
-    ).isRequired,
-    handleApproveCorrection: PropTypes.func.isRequired,
-    handleDenyCorrection: PropTypes.func.isRequired,
+    allCorrections: PropTypes.array.isRequired,
+    onApprove: PropTypes.func.isRequired,
+    onDeny: PropTypes.func.isRequired,
 };
 
 export default AdminCorrectionsList;

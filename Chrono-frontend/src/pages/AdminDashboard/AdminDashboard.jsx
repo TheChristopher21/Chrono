@@ -220,27 +220,27 @@ const AdminDashboard = () => {
         }
     }
 
-    async function handleApproveCorrection(id, comment) {
+    const handleApproveCorrection = async (id, comment) => {
         try {
             await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
-            notify(t('adminDashboard.correctionApprovedMsg', 'Korrekturantrag genehmigt.'), 'success');
+            notify(`Antrag #${id} genehmigt.`, "success");
             handleDataReloadNeeded();
-        } catch (err)
-        {
-            console.error('Error approving correction', err);
-            notify(t('adminDashboard.correctionApproveErrorMsg', 'Fehler beim Genehmigen der Korrektur: ') + (err.response?.data?.message || err.message), 'error');
+        } catch (error) {
+            console.error(`Fehler beim Genehmigen von Antrag #${id}:`, error);
+            notify(`Fehler bei Antrag #${id}.`, "error");
         }
-    }
-    async function handleDenyCorrection(id, comment) {
+    };
+
+    const handleDenyCorrection = async (id, comment) => {
         try {
             await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
-            notify(t('adminDashboard.correctionDeniedMsg', 'Korrekturantrag abgelehnt.'), 'success');
-            fetchAllCorrections();
-        } catch (err) {
-            console.error('Error denying correction', err);
-            notify(t('adminDashboard.correctionDenyErrorMsg', 'Fehler beim Ablehnen der Korrektur: ') + (err.response?.data?.message || err.message), 'error');
+            notify(`Antrag #${id} abgelehnt.`, "success");
+            handleDataReloadNeeded();
+        } catch (error) {
+            console.error(`Fehler beim Ablehnen von Antrag #${id}:`, error);
+            notify(`Fehler bei Antrag #${id}.`, "error");
         }
-    }
+    };
 
     function openEditModal(targetUsername, dateObj, dailySummaryForDay) {
         setEditTargetUsername(targetUsername);
@@ -397,8 +397,8 @@ const AdminDashboard = () => {
                     <AdminCorrectionsList
                         t={t}
                         allCorrections={allCorrections}
-                        handleApproveCorrection={handleApproveCorrection}
-                        handleDenyCorrection={handleDenyCorrection}
+                        onApprove={handleApproveCorrection}
+                        onDeny={handleDenyCorrection}
                     />
                 </div>
                 <div className="right-column lg:col-span-1 flex flex-col gap-4">

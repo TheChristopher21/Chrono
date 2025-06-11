@@ -11,8 +11,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,7 +51,7 @@ public class CorrectionRequestService {
         } catch (IllegalArgumentException e) {
             throw new IllegalArgumentException("Ungültiger desiredPunchType: " + desiredPunchTypeStr);
         }
-        
+
         CorrectionRequest req;
         if (targetEntry != null) {
             req = new CorrectionRequest(user, requestDate, targetEntry, desiredTimestamp, reason);
@@ -56,7 +59,7 @@ public class CorrectionRequestService {
         } else {
             req = new CorrectionRequest(user, requestDate, desiredTimestamp, desiredPunchType, reason);
         }
-        
+
         logger.info("Creating CorrectionRequest for user {}, targetEntryId {}, desiredTime {}, desiredType {}, reason {}, requestDate {}",
                 username, targetEntryId, desiredTimestamp, desiredPunchType, reason, requestDate);
         return correctionRepo.save(req);
@@ -66,16 +69,43 @@ public class CorrectionRequestService {
         return correctionRepo.findByApprovedFalseAndDeniedFalse();
     }
 
-    public List<CorrectionRequest> getAllRequests() {
-        return correctionRepo.findAll();
+    public List<CorrectionRequest> getAllRequestsForPrincipal(Principal principal) {
+        User requestingUser = userRepo.findByUsername(principal.getName())
+                .orElseThrow(() -> new RuntimeException("Anfragender Benutzer nicht gefunden: " + principal.getName()));
+
+        boolean isSuperAdmin = requestingUser.getRoles().stream()
+                .anyMatch(role -> role.getRoleName().equals("ROLE_SUPERADMIN"));
+
+        // Ein SUPERADMIN sieht alles
+        if (isSuperAdmin) {
+            return correctionRepo.findAll();
+        }
+
+        boolean isAdmin = requestingUser.getRoles().stream()
+                .anyMatch(role -> role.getRoleName().equals("ROLE_ADMIN"));
+
+        // Ein normaler ADMIN sieht nur Anträge aus der eigenen Firma
+        if (isAdmin) {
+            if (requestingUser.getCompany() == null) {
+                // Admin ohne Firma kann keine firmenbezogenen Anträge sehen.
+                return Collections.emptyList();
+            }
+            Long companyId = requestingUser.getCompany().getId();
+            return correctionRepo.findAllByCompanyId(companyId); // Hier wird die neue Repository-Methode verwendet
+        }
+
+        // Benutzer ohne Admin-Rolle sollten hier gar nicht erst hinkommen (dank @PreAuthorize),
+        // aber zur Sicherheit eine leere Liste zurückgeben.
+        return Collections.emptyList();
     }
 
     public List<CorrectionRequest> getRequestsForUser(String username) {
-        User user = userRepo.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User '" + username + "' not found"));
-        return correctionRepo.findByUser(user);
+        // Die Logik zum Finden des Benutzers bleibt gleich.
+        userRepo.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+        // RUFEN SIE STATTDESSEN DIE NEUE REPOSITORY-METHODE AUF
+        return correctionRepo.findByUserWithDetails(username);
     }
-
     @Transactional
     public CorrectionRequest approveRequest(Long requestId, String comment, String adminUsername) {
         CorrectionRequest req = correctionRepo.findById(requestId)
@@ -123,6 +153,18 @@ public class CorrectionRequestService {
         CorrectionRequest savedReq = correctionRepo.save(req);
         timeTrackingService.rebuildUserBalance(targetUser);
         return savedReq;
+    }
+
+    // Fügen Sie diese ZWEI Methoden komplett neu in die Service-Klasse ein:
+
+    public List<CorrectionRequest> getAllRequests() {
+        // Lädt alle Anfragen, ideal für Super-Admins.
+        return correctionRepo.findAll();
+    }
+
+    public List<CorrectionRequest> getRequestsByCompany(Long companyId) {
+        // Lädt alle Anfragen für eine spezifische Company-ID.
+        return correctionRepo.findAllByCompanyId(companyId);
     }
 
     @Transactional

@@ -241,28 +241,65 @@ const PercentageDashboard = () => {
         setShowCorrectionModal(true);
     }
 
-    async function handleCorrectionSubmit(correctionPayload) {
-        // ... (Logik bleibt gleich wie im UserDashboard)
-        if (!userProfile?.username) {
-            notify("Benutzerprofil nicht geladen.", "error");
+    const fetchCorrectionRequests = useCallback(async () => {
+        if (!currentUser || !currentUser.username) {
             return;
         }
         try {
-            await api.post('/api/correction/create', null, {
-                params: {
-                    username: userProfile.username,
-                    ...correctionPayload
-                }
-            });
-            notify(t("correctionSubmitSuccess", "Korrekturantrag erfolgreich gesendet."), 'success');
-            fetchDataForUser(); // Daten neu laden
-            setShowCorrectionModal(false);
-        } catch (err) {
-            console.error("Fehler beim Senden des Korrekturantrags:", err);
-            const errorMsg = err.response?.data?.message || err.message || t('errors.unknownError');
-            notify(t("correctionSubmitError", "Fehler beim Senden des Korrekturantrags:") + ` ${errorMsg}`, 'error');
+            // Die URL braucht keine Datums-Parameter mehr
+            const response = await api.get(`/api/correction/user/${currentUser.username}`);
+            setCorrectionRequests(response.data);
+        } catch (error) {
+            console.error("Fehler beim Abrufen der Korrekturanträge:", error);
+            notify("Korrekturanträge konnten nicht geladen werden.", 'error');
         }
-    }
+    }, [currentUser, notify]); // Abhängigkeiten bleiben gleich
+
+    const handleCorrectionSubmit = async (entries, reason) => {
+        // Prüfen, ob alle notwendigen Daten vorhanden sind
+        if (!correctionDate || !entries || entries.length === 0) {
+            notify('Bitte fügen Sie mindestens einen Korrektureintrag hinzu.', 'error');
+            return;
+        }
+        if (!currentUser || !currentUser.username) {
+            notify('Benutzer nicht gefunden, bitte neu anmelden.', 'error');
+            return;
+        }
+
+        // Erstellt eine Liste von Promises für jeden einzelnen Korrekturantrag
+        const correctionPromises = entries.map(entry => {
+            const desiredTimestamp = `${correctionDate}T${entry.time}:00`;
+            const desiredPunchType = entry.type;
+
+            // Alle Parameter für die URL vorbereiten, wie vom Backend jetzt verlangt
+            const params = new URLSearchParams({
+                username: currentUser.username,
+                reason: reason,
+                requestDate: correctionDate,
+                desiredTimestamp: desiredTimestamp,
+                desiredPunchType: desiredPunchType
+                // targetEntryId ist optional und wird hier weggelassen
+            });
+
+            // API-Aufruf mit leerem Body, da alle Daten in der URL sind
+            return api.post(`/api/correction/create?${params.toString()}`, null);
+        });
+
+        try {
+            // Wartet, bis alle Anfragen parallel gesendet wurden
+            await Promise.all(correctionPromises);
+
+            notify(t('userDashboard.correctionSuccess'), 'success');
+            setShowCorrectionModal(false);
+            fetchCorrectionRequests(selectedCorrectionMonday);
+
+        } catch (error) {
+            console.error('Fehler beim Absenden der Korrekturanträge:', error);
+            const errorMsg = error.response?.data?.message || 'Ein oder mehrere Anträge konnten nicht gesendet werden.';
+            notify(errorMsg, 'error');
+        }
+    };
+
 
     async function handlePrintReport() {
         // ... (Logik bleibt gleich wie im UserDashboard, ggf. Titel anpassen)

@@ -16,6 +16,11 @@ public interface CorrectionRequestRepository extends JpaRepository<CorrectionReq
 
     List<CorrectionRequest> findByUser(User user);
 
+    @Query("SELECT cr FROM CorrectionRequest cr JOIN FETCH cr.user u WHERE u.company.id = :companyId")
+    List<CorrectionRequest> findAllByCompanyId(@Param("companyId") Long companyId);
+    @Query("SELECT cr FROM CorrectionRequest cr LEFT JOIN FETCH cr.user u LEFT JOIN FETCH cr.targetEntry WHERE u.username = :username ORDER BY cr.requestDate DESC")
+    List<CorrectionRequest> findByUserWithDetails(@Param("username") String username);
+
     List<CorrectionRequest> findByApprovedFalseAndDeniedFalse();
     @Modifying
     @Transactional

@@ -1,6 +1,9 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.CorrectionRequest;
+import com.chrono.chrono.entities.User;
+import com.chrono.chrono.repositories.RoleRepository;
+import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.CorrectionRequestService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +16,7 @@ import java.security.Principal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -21,6 +25,12 @@ import java.util.Map;
 public class CorrectionRequestController {
 
     private static final Logger logger = LoggerFactory.getLogger(CorrectionRequestController.class);
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private UserRepository userRepo;
 
     @Autowired
     private CorrectionRequestService correctionRequestService;
@@ -78,12 +88,36 @@ public class CorrectionRequestController {
         }
     }
 
+
     @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<List<CorrectionRequest>> getAllRequests(Principal principal) {
-        return ResponseEntity.ok(correctionRequestService.getAllRequests());
-    }
+    public ResponseEntity<List<CorrectionRequest>> getAllPendingRequests(Principal principal) {
+        try {
+            User currentUser = userRepo.findByUsername(principal.getName())
+                    .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
 
+            List<CorrectionRequest> requests;
+
+            // KORREKTUR: Verwendet jetzt die korrekte Methode .getRoles()
+            boolean isSuperAdmin = currentUser.getRoles().stream()
+                    .anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
+
+            if (isSuperAdmin) {
+                requests = correctionRequestService.getAllRequests();
+            } else {
+                if (currentUser.getCompany() == null) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Collections.emptyList());
+                }
+                requests = correctionRequestService.getRequestsByCompany(currentUser.getCompany().getId());
+            }
+
+            return ResponseEntity.ok(requests);
+
+        } catch (Exception e) {
+            logger.error("Fehler beim Abrufen aller Korrekturanträge durch {}: {}", principal.getName(), e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
+        }
+    }
     @GetMapping("/my")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<CorrectionRequest>> getMyRequests(Principal principal) {
@@ -118,7 +152,7 @@ public class CorrectionRequestController {
             Principal principal
     ) {
          try {
-            CorrectionRequest deniedRequest = correctionRequestService.denyRequest(id, comment); 
+            CorrectionRequest deniedRequest = correctionRequestService.denyRequest(id, comment);
             return ResponseEntity.ok(deniedRequest);
         } catch (SecurityException e) {
             logger.warn("Sicherheitsverletzung beim Ablehnen des Korrekturantrags ID {} durch {}: {}", id, principal.getName(), e.getMessage());

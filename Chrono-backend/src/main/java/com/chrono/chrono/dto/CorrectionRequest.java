@@ -22,7 +22,7 @@ public class CorrectionRequest {
     private TimeTrackingEntry targetEntry;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDateTime desiredTimestamp;
 
     @Enumerated(EnumType.STRING)
@@ -42,7 +42,7 @@ public class CorrectionRequest {
     @JsonIgnore
     private User user;
     
-    @Column(nullable = false)
+    @Column(nullable = true)
     private LocalDate requestDate;
 
     @Transient

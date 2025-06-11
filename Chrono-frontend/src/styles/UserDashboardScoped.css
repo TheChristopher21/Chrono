@@ -1,21 +1,21 @@
 /* =========================================================================
-   UserDashboardScoped.css · V2.2 Modern (Juni 2025)
+   UserDashboardScoped.css · V2.2 Modern (Juni 2025) - KORRIGIERT
    Scope: .user-dashboard.scoped-dashboard
    ========================================================================= */
 
-/* --------------------------- BASIS-VARIABLEN (aus global.css geerbt & erweitert) --------------------------- */
+/* --------------------------- BASIS-VARIABLEN --------------------------- */
 .user-dashboard.scoped-dashboard {
     --ud-font-family: 'Poppins', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    --ud-fz-base: 1rem;      /* 16px */
-    --ud-fz-sm: 0.875rem;  /* 14px */
+    --ud-fz-base: 1rem;
+    --ud-fz-sm: 0.875rem;
     --ud-fz-md: 1rem;
-    --ud-fz-lg: 1.125rem;   /* 18px - Etwas größer für Sektions-Header */
-    --ud-fz-xl: 1.5rem;    /* 24px - Für Hauptüberschriften in Cards */
-    --ud-fz-xxl: 2.25rem;   /* 36px - Für die Hauptüberschrift des Dashboards */
+    --ud-fz-lg: 1.125rem;
+    --ud-fz-xl: 1.5rem;
+    --ud-fz-xxl: 2.25rem;
 
-    --ud-radius-xl: 20px; /* Stärker abgerundete große Karten */
-    --ud-radius-lg: 16px; /* Standard Kartenradius */
-    --ud-radius-md: 10px; /* Für Buttons und kleinere Elemente */
+    --ud-radius-xl: 20px;
+    --ud-radius-lg: 16px;
+    --ud-radius-md: 10px;
     --ud-radius-sm: 6px;
     --ud-radius-xs: 4px;
 
@@ -25,15 +25,13 @@
     --ud-gap-sm: 0.75rem;
     --ud-gap-xs: 0.5rem;
 
-    /* Globale Variablen aus :root werden hier für den Scope nutzbar gemacht */
-    /* Diese könnten auch direkt mit var(--c-pri) etc. verwendet werden, aber so ist es expliziter für diesen Scope */
     --ud-c-text: var(--c-text, #1f1f1f);
     --ud-c-text-muted: var(--c-muted, #60646c);
     --ud-c-bg: var(--c-bg, #ffffff);
     --ud-c-card: var(--c-card, #ffffff);
     --ud-c-border: var(--c-border, #d0d3e2);
-    --ud-c-line: var(--c-border); /* Konsistenz mit Border */
-    --ud-c-surface: var(--c-surface, #f4f6ff); /* Für leicht abgehobene Elemente innerhalb von Cards */
+    --ud-c-line: var(--c-border);
+    --ud-c-surface: var(--c-surface, #f4f6ff);
 
     --ud-c-primary: var(--c-pri, #475bff);
     --ud-c-primary-dim: var(--c-pri-dim, #6b7cff);
@@ -41,7 +39,6 @@
     --ud-c-primary-light-bg: rgba(var(--ud-c-primary-rgb), 0.08);
     --ud-c-primary-text: var(--ud-c-primary, #475bff);
 
-    /* Eigene Farbdefinitionen für UserDashboard, die globale ggf. überschreiben oder ergänzen */
     --ud-c-success: #34D399;
     --ud-c-success-dim: #10B981;
     --ud-c-success-light-bg: rgba(52, 211, 153, 0.1);
@@ -57,8 +54,8 @@
     --ud-c-warn-light-bg: rgba(251, 191, 36, 0.1);
     --ud-c-warn-text: #D97706;
 
-    --ud-c-late-time: var(--ud-c-error); /* Nutzt die definierte Fehlerfarbe */
-    --ud-c-late-time-bg: var(--ud-c-error-light-bg); /* Nutzt den definierten hellen Fehlerhintergrund */
+    --ud-c-late-time: var(--ud-c-error);
+    --ud-c-late-time-bg: var(--ud-c-error-light-bg);
 
     --ud-c-bg-vacation: #e0f2fe;
     --ud-c-text-vacation: #0c4a6e;
@@ -72,10 +69,9 @@
     --ud-c-text-holiday: #b45309;
     --ud-c-border-holiday: #fde68a;
 
-
     --ud-shadow-card: 0 8px 24px rgba(var(--ud-c-primary-rgb), 0.07);
     --ud-shadow-interactive: 0 4px 12px rgba(var(--ud-c-primary-rgb), 0.12);
-    --ud-shadow-lg: var(--u-shadow-lg); /* Globale Variable für größere Schatten */
+    --ud-shadow-lg: var(--u-shadow-lg);
 
     min-height: 100vh;
     font-family: var(--ud-font-family);
@@ -88,7 +84,6 @@
     transition: background var(--u-dur, 0.25s) var(--u-ease, ease), color var(--u-dur, 0.25s) var(--u-ease, ease);
 }
 
-/* Dark Mode Anpassungen für Dashboard-spezifische Farben */
 [data-theme="dark"] .user-dashboard.scoped-dashboard {
     --ud-c-text: #E5E7EB;
     --ud-c-text-muted: #9CA3AF;
@@ -97,35 +92,29 @@
     --ud-c-border: #374151;
     --ud-c-line: #374151;
     --ud-c-surface: #374151;
-
-    --ud-c-primary: #60A5FA; /* Helleres Blau für Dark Mode */
+    --ud-c-primary: #60A5FA;
     --ud-c-primary-dim: #3B82F6;
     --ud-c-primary-rgb: 96, 165, 250;
     --ud-c-primary-light-bg: rgba(var(--ud-c-primary-rgb), 0.15);
     --ud-c-primary-text: var(--ud-c-primary);
-
     --ud-c-success-text: #A7F3D0;
     --ud-c-error-text: #FECACA;
     --ud-c-warn-text: #FDE68A;
-
     --ud-c-bg-vacation: #1e3a8a;
     --ud-c-text-vacation: #bfdbfe;
     --ud-c-border-vacation: #3b82f6;
-
     --ud-c-bg-sick: #7f1d1d;
     --ud-c-text-sick: #fecaca;
     --ud-c-border-sick: #b91c1c;
-
     --ud-c-bg-holiday: #78350f;
     --ud-c-text-holiday: #fef3c7;
     --ud-c-border-holiday: #fbbf24;
-
     --ud-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.25);
     --ud-shadow-interactive: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 /* =========================================================================
-   Generelle Element-Styles (Inputs, Selects etc.)
+   Generelle Element-Styles
    ========================================================================= */
 .user-dashboard.scoped-dashboard input,
 .user-dashboard.scoped-dashboard select,
@@ -188,7 +177,7 @@
     border: 1px solid rgba(255,255,255,0.2); color: #fff;
 }
 .user-dashboard.scoped-dashboard .personal-info p strong { font-weight: 600; }
-.user-dashboard.scoped-dashboard .personal-info .balance-positive { color: var(--ud-c-success, #A7F3D0); } /* Im Header ist Text auf dunklem Grund, also helle Farben */
+.user-dashboard.scoped-dashboard .personal-info .balance-positive { color: var(--ud-c-success, #A7F3D0); }
 .user-dashboard.scoped-dashboard .personal-info .balance-negative { color: var(--ud-c-error, #FECACA); }
 [data-theme="dark"] .user-dashboard.scoped-dashboard .personal-info p { background-color: rgba(0,0,0,0.2); border-color: rgba(255,255,255,0.1); }
 
@@ -249,7 +238,7 @@
     background: var(--ud-c-card); border: 1px solid var(--ud-c-border); border-radius: var(--ud-radius-lg);
     padding: var(--ud-gap-lg); box-shadow: var(--ud-shadow-card); margin-bottom: var(--ud-gap-xl);
 }
-.user-dashboard.scoped-dashboard .content-section > .section-title { /* H3-Titel direkt in der Sektion */
+.user-dashboard.scoped-dashboard .content-section > .section-title {
     margin: 0 0 var(--ud-gap-lg) 0; font-size: var(--ud-fz-xl); font-weight: 600; color: var(--ud-c-primary-text);
     padding-bottom: var(--ud-gap-md); border-bottom: 1px solid var(--ud-c-line);
     display: flex; align-items: center; gap: var(--ud-gap-sm);
@@ -292,7 +281,6 @@
 .user-dashboard.scoped-dashboard .daily-diff.balance-positive { color: var(--ud-c-success-text); font-weight: 600; }
 .user-dashboard.scoped-dashboard .daily-diff.balance-negative { color: var(--ud-c-error-text); font-weight: 600; }
 
-/* Stempelungsliste in der Tageskarte */
 .user-dashboard.scoped-dashboard .day-card .time-entry-list { list-style: none; padding: 0; margin: 0 0 var(--ud-gap-md) 0; font-size: var(--ud-fz-sm); flex-grow: 1; }
 .user-dashboard.scoped-dashboard .day-card .time-entry-list li { padding: var(--ud-gap-xs) 0; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px dashed var(--ud-c-line); }
 .user-dashboard.scoped-dashboard .day-card .time-entry-list li:last-child { border-bottom: none; }
@@ -318,7 +306,6 @@
 [data-theme="dark"] .user-dashboard.scoped-dashboard .correction-button-row button { color: var(--ud-c-primary); border-color: var(--ud-c-primary); }
 [data-theme="dark"] .user-dashboard.scoped-dashboard .correction-button-row button:hover { background: var(--ud-c-primary-light-bg); color: var(--ud-c-primary-dim); border-color: var(--ud-c-primary-dim); }
 
-/* Tageskarten für Urlaub, Krankheit, Feiertag */
 .user-dashboard.scoped-dashboard .day-card.vacation-day { background-color: var(--ud-c-bg-vacation); border-left-color: var(--ud-c-border-vacation); }
 .user-dashboard.scoped-dashboard .day-card.sick-day { background-color: var(--ud-c-bg-sick); border-left-color: var(--ud-c-border-sick); }
 .user-dashboard.scoped-dashboard .day-card.holiday-day { background-color: var(--ud-c-bg-holiday); border-left-color: var(--ud-c-border-holiday); }
@@ -334,10 +321,10 @@
    6) VacationCalendar Section & Corrections Panel
    ========================================================================= */
 .user-dashboard.scoped-dashboard .vacation-calendar-section,
-.user-dashboard.scoped-dashboard .correction-panel { /* Korrekturpanel ist die Sektion */
+.user-dashboard.scoped-dashboard .correction-panel {
     /* .content-section Stile werden übernommen */
 }
-.user-dashboard.scoped-dashboard .correction-panel .section-header { /* Klickbarer Header für Korrekturpanel */
+.user-dashboard.scoped-dashboard .correction-panel .section-header {
     background: var(--ud-c-surface); color: var(--ud-c-text); font-weight: 600;
     padding: var(--ud-gap-md) var(--ud-gap-lg);
     border-radius: var(--ud-radius-lg) var(--ud-radius-lg) 0 0;
@@ -385,24 +372,27 @@
 [data-theme="dark"] .user-dashboard.scoped-dashboard .corrections-list li.status-is-approved,
 [data-theme="dark"] .user-dashboard.scoped-dashboard .corrections-list li.status-is-denied,
 [data-theme="dark"] .user-dashboard.scoped-dashboard .corrections-list li.status-is-pending {
-    color: var(--ud-c-text); /* Hellerer Text für bessere Lesbarkeit auf dunklen Status-BG */
+    color: var(--ud-c-text);
 }
 
 /* =========================================================================
    7) Modals (PrintReportModal, UserCorrectionModal)
    ========================================================================= */
-.user-dashboard.scoped-dashboard .modal-overlay {
-    /* Identisch zu AdminDashboard .modal-overlay */
+/* WICHTIGE KORREKTUR: Umbenannt von .modal-overlay zu .modal-backdrop, um mit JSX übereinzustimmen */
+.user-dashboard.scoped-dashboard .modal-backdrop {
     position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-    background: rgba(var(--c-bg-rgb, 20,20,25), 0.65); /* Fallback für --c-bg-rgb */
-    backdrop-filter: blur(8px);
+    background: rgba(var(--c-bg-rgb, 20,20,25), 0.65);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
     display: flex; align-items: center; justify-content: center;
     z-index: 10000; padding: var(--ud-gap-lg, 2rem);
-    animation: modalFadeIn var(--u-dur, 0.25s) var(--u-ease, ease);
+    animation: modalFadeIn 0.4s var(--u-ease, ease);
 }
-[data-theme="dark"] .user-dashboard.scoped-dashboard .modal-overlay {
+[data-theme="dark"] .user-dashboard.scoped-dashboard .modal-backdrop {
     background: rgba(var(--ud-c-bg-rgb, 17,24,39), 0.75);
 }
+@keyframes modalFadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modalScaleUp { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
 .user-dashboard.scoped-dashboard .modal-content {
     position: relative; width: 100%; max-width: 560px;
     max-height: 90vh; overflow-y: auto;
@@ -410,15 +400,79 @@
     border-radius: var(--ud-radius-xl); padding: var(--ud-gap-xl);
     box-shadow: var(--ud-shadow-lg); color: var(--ud-c-text);
     transform: scale(0.95); opacity: 0;
-    animation: modalScaleUp var(--u-dur, 0.25s) var(--u-ease, ease) forwards;
-}
-.user-dashboard.scoped-dashboard .user-correction-modal-content { /* Spezifische Klasse für breiteres Korrekturmodal */
-    max-width: 680px;
+    animation: modalScaleUp 0.4s 0.05s var(--u-ease, ease) forwards;
 }
 .user-dashboard.scoped-dashboard .modal-content h3 {
     margin: 0 0 var(--ud-gap-lg) 0; font-size: var(--ud-fz-xl); font-weight: 700;
     color: var(--ud-c-primary-text); padding-bottom: var(--ud-gap-md);
     border-bottom: 1px solid var(--ud-c-primary-light-bg);
+}
+
+/* =========================================================================
+   7b) Modal-interne Formular-Stile (NEU & VERBESSERT)
+   ========================================================================= */
+.user-dashboard.scoped-dashboard .modal-content .entry-row {
+    display: flex;
+    gap: var(--ud-gap-sm);
+    align-items: center;
+    margin-bottom: var(--ud-gap-md);
+    background-color: var(--ud-c-surface);
+    padding: var(--ud-gap-sm);
+    border-radius: var(--ud-radius-md);
+    border: 1px solid var(--ud-c-border);
+}
+.user-dashboard.scoped-dashboard .modal-content .entry-row input,
+.user-dashboard.scoped-dashboard .modal-content .entry-row select {
+    margin-bottom: 0; /* Überschreibt eventuelle globale Margins */
+}
+.user-dashboard.scoped-dashboard .modal-content .entry-row input[type="time"] {
+    flex-basis: 150px;
+    flex-grow: 0;
+}
+.user-dashboard.scoped-dashboard .modal-content .entry-row select {
+    flex-grow: 1;
+}
+.user-dashboard.scoped-dashboard .modal-content .button-remove {
+    flex-shrink: 0;
+    background-color: transparent;
+    color: var(--ud-c-text-muted);
+    border: 1px solid transparent;
+    border-radius: 50%; /* Rund */
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    font-size: 1.6rem; /* Grösseres 'x' */
+    line-height: 1;
+    font-weight: 300;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.user-dashboard.scoped-dashboard .modal-content .button-remove:hover {
+    background-color: var(--ud-c-error-light-bg);
+    color: var(--ud-c-error-dim);
+    border-color: transparent;
+    transform: none;
+}
+.user-dashboard.scoped-dashboard .modal-content .button-add-entry {
+    width: 100%;
+    margin-top: var(--ud-gap-sm);
+    margin-bottom: var(--ud-gap-lg);
+    padding-top: var(--ud-gap-sm);
+    padding-bottom: var(--ud-gap-sm);
+    background-color: transparent;
+    color: var(--ud-c-primary-text);
+    border: 2px dashed var(--ud-c-primary);
+    box-shadow: none;
+    font-weight: 500;
+}
+.user-dashboard.scoped-dashboard .modal-content .button-add-entry:hover {
+    background-color: var(--ud-c-primary-light-bg);
+    border-style: solid;
+    color: var(--ud-c-primary-dim);
+    transform: none;
+    box-shadow: none;
 }
 .user-dashboard.scoped-dashboard .modal-content .form-group {
     margin-bottom: var(--ud-gap-lg); display: flex; flex-direction: column; gap: var(--ud-gap-xs);
@@ -426,13 +480,11 @@
 .user-dashboard.scoped-dashboard .modal-content .form-group label {
     font-weight: 600; font-size: var(--ud-fz-sm); color: var(--ud-c-text-muted);
 }
-.user-dashboard.scoped-dashboard .modal-content .form-group input[type="time"] { max-width: 180px; }
 .user-dashboard.scoped-dashboard .modal-content .form-group textarea { min-height: 100px; resize: vertical; }
 .user-dashboard.scoped-dashboard .modal-buttons {
     display: flex; gap: var(--ud-gap-md); margin-top: var(--ud-gap-lg); justify-content: flex-end;
 }
 .user-dashboard.scoped-dashboard .modal-buttons button { padding: var(--ud-gap-sm) var(--ud-gap-lg); font-size: var(--ud-fz-md); }
-
 
 /* =========================================================================
    Print Report Container
@@ -445,10 +497,10 @@
 /* =========================================================================
    Responsive Tweaks
    ========================================================================= */
-@media (max-width: 1024px) { /* Größere Tablets */
+@media (max-width: 1024px) {
     .user-dashboard.scoped-dashboard .week-display { grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); }
 }
-@media (max-width: 768px) { /* Tablet */
+@media (max-width: 768px) {
     .user-dashboard.scoped-dashboard { padding: var(--ud-gap-md); }
     .user-dashboard.scoped-dashboard .content-section,
     .user-dashboard.scoped-dashboard .dashboard-header,
@@ -464,7 +516,7 @@
     .user-dashboard.scoped-dashboard .modal-buttons { flex-direction: column-reverse; }
     .user-dashboard.scoped-dashboard .modal-buttons button { width: 100%; }
 }
-@media (max-width: 480px) { /* Mobile */
+@media (max-width: 480px) {
     .user-dashboard.scoped-dashboard {
         padding: var(--ud-gap-md);
         --ud-fz-base: 0.95rem; --ud-fz-lg: 1.05rem; --ud-fz-xl: 1.25rem; --ud-fz-xxl: 1.6rem;
@@ -478,13 +530,20 @@
     .user-dashboard.scoped-dashboard .corrections-nav .week-label { width: 100%; text-align: center; }
 }
 
-/* Reduced Motion */
+/* Reduced Motion - KORRIGIERT */
 @media (prefers-reduced-motion: reduce) {
     .user-dashboard.scoped-dashboard *,
     .user-dashboard.scoped-dashboard *::before,
     .user-dashboard.scoped-dashboard *::after {
-        animation-duration: 0.01ms !important; animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important; scroll-behavior: auto !important; transform: none !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+        scroll-behavior: auto !important;
+    }
+    .user-dashboard.scoped-dashboard .day-card:hover,
+    .user-dashboard.scoped-dashboard button:hover,
+    .user-dashboard.scoped-dashboard .button-primary:hover {
+        transform: none !important;
     }
     .user-dashboard.scoped-dashboard .dashboard-header,
     .user-dashboard.scoped-dashboard .content-section,
@@ -492,8 +551,26 @@
     .user-dashboard.scoped-dashboard .punch-message,
     .user-dashboard.scoped-dashboard .modal-content,
     .user-dashboard.scoped-dashboard button {
-        box-shadow: var(--ud-shadow-sm) !important;
+        box-shadow: none !important;
     }
+}
+    .user-dashboard.scoped-dashboard .dashboard-header,
+    .user-dashboard.scoped-dashboard .content-section,
+    .user-dashboard.scoped-dashboard .day-card,
+    .user-dashboard.scoped-dashboard .punch-message,
+    .user-dashboard.scoped-dashboard .modal-content,
+    .user-dashboard.scoped-dashboard button {
+        box-shadow: var(--ud-shadow-sm) !important;
+        transform: none !important; /* Transform hier gezielt auf die Elemente anwenden, die es betrifft */
+    }
+    .user-dashboard.scoped-dashboard .day-card:hover {
+        transform: none !important;
+    }
+    .user-dashboard.scoped-dashboard button:hover,
+    .user-dashboard.scoped-dashboard .button-primary:hover {
+        transform: none !important;
+    }
+
     [data-theme="dark"] .user-dashboard.scoped-dashboard .dashboard-header,
     [data-theme="dark"] .user-dashboard.scoped-dashboard .content-section,
     [data-theme="dark"] .user-dashboard.scoped-dashboard .day-card,
@@ -502,4 +579,3 @@
     [data-theme="dark"] .user-dashboard.scoped-dashboard button {
         box-shadow: var(--ud-shadow-sm) !important;
     }
-}
