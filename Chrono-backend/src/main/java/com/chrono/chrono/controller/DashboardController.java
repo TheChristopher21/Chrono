@@ -12,9 +12,13 @@ public class DashboardController {
     @Autowired
     private DashboardService dashboardService;
 
-    @GetMapping("/user")
-    public DashboardResponse getUserDashboard(@RequestParam String username) {
-        // ...
-        return dashboardService.getUserDashboard(username);
+    @GetMapping("/user/{username}/week") // Changed to match the frontend call
+    public DashboardResponse getUserDashboard(
+            @PathVariable String username,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        // The DashboardService method will likely need to be updated to accept startDate and endDate
+        // For example: return dashboardService.getUserDashboardForWeek(username, startDate, endDate);
+        return dashboardService.getUserDashboard(username); // This line will need to be adapted
     }
 }

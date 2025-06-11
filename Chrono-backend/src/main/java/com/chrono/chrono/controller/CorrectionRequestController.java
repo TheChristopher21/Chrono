@@ -124,6 +124,14 @@ public class CorrectionRequestController {
         return ResponseEntity.ok(correctionRequestService.getRequestsForUser(principal.getName()));
     }
 
+    // Add this new method inside the CorrectionRequestController class
+
+    @GetMapping("/user/{username}")
+    @PreAuthorize("#username == principal.name or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<List<CorrectionRequest>> getRequestsForUser(@PathVariable String username) {
+        return ResponseEntity.ok(correctionRequestService.getRequestsForUser(username));
+    }
+
     @PostMapping("/approve/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> approveRequest(
