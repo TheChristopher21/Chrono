@@ -10,7 +10,7 @@ import {
 import api from '../utils/api';
 import { useNotification } from './NotificationContext';
 
-const AuthContext = createContext();
+export const AuthContext = createContext();
 const INACTIVITY_DURATION = 10 * 60 * 1000; // 10 min
 
 export const AuthProvider = ({ children }) => {

@@ -1,4 +1,5 @@
 // src/pages/HourlyDashboard/HourlyDashboard.jsx
+
 import { useState, useEffect, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
@@ -9,12 +10,16 @@ import 'jspdf-autotable';
 import jsPDF from 'jspdf';
 import autoTable from "jspdf-autotable";
 
+// HIER DEN LOCALE-IMPORT HINZUFÜGEN
+import { de } from 'date-fns/locale';
+
 import {
     getMondayOfWeek,
     addDays,
     formatLocalDate,
     formatDate,
     minutesToHHMM,
+    formatTime
 } from './hourDashUtils';
 
 import HourlyWeekOverview from './HourlyWeekOverview';
@@ -28,7 +33,7 @@ import '../../styles/HourlyDashboardScoped.css';
 const HourlyDashboard = () => {
     const { t } = useTranslation();
     const { notify } = useNotification();
-    // KORREKTUR: currentUser wird jetzt korrekt aus dem Auth-Kontext geholt
+    // KORREKTUR: Wir benötigen die 'punch'-Funktion aus dem AuthContext nicht.
     const { currentUser, fetchCurrentUser } = useAuth();
 
     const [userProfile, setUserProfile] = useState(null);
@@ -45,17 +50,40 @@ const HourlyDashboard = () => {
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
     const [correctionDate, setCorrectionDate] = useState(null);
     const [dailySummaryForCorrection, setDailySummaryForCorrection] = useState(null);
+    const [punchMessage, setPunchMessage] = useState('');
+    const [monthlyTotalMins, setMonthlyTotalMins] = useState(0);
+
+    // KORREKTE IMPLEMENTIERUNG: Die Funktion ruft die API direkt auf.
+    const handleManualPunch = async () => {
+        if (!currentUser?.username) {
+            notify(t('userNotLoggedIn', 'Benutzer nicht angemeldet.'), 'error');
+            return;
+        }
+        try {
+            const response = await api.post('/api/timetracking/punch', null, {
+                params: { username: currentUser.username, source: 'MANUAL_PUNCH' }
+            });
+            const newEntry = response.data;
+            setPunchMessage(`${t("manualPunchMessage", "Erfolgreich gestempelt")} ${currentUser.username} (${t('punchTypes.' + newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
+            setTimeout(() => setPunchMessage(''), 3000);
+            fetchWeeklyData(selectedMonday);
+            fetchDataForUser();
+        } catch (error) {
+            console.error('Punch Error:', error);
+            notify(error.message || t('punchError', 'Fehler beim Stempeln'), 'error');
+        }
+    };
 
     const fetchDataForUser = useCallback(async () => {
         if (!currentUser?.username) return;
         try {
             const profileResponse = await api.get(`/api/users/profile/${currentUser.username}`);
             setUserProfile(profileResponse.data);
-            const vacationResponse = await api.get(`/api/vacations/user/${currentUser.username}`);
-            setVacationRequests(vacationResponse.data);
+            const vacationResponse = await api.get(`/api/vacation/user/${currentUser.username}`);
+            setVacationRequests(vacationResponse.data || []);
         } catch (error) {
             console.error("Fehler beim Laden der Benutzerdaten:", error);
-            notify(t('errors.fetchUserData'), 'error');
+            notify(t('errors.fetchUserData', 'Fehler beim Laden der Benutzerdaten.'), 'error');
         }
     }, [currentUser, notify, t]);
 
@@ -67,10 +95,11 @@ const HourlyDashboard = () => {
             const response = await api.get(`/api/dashboard/user/${currentUser.username}/week`, {
                 params: { startDate, endDate }
             });
-            setDailySummaries(response.data.dailySummaries);
+            setDailySummaries(response.data.dailySummaries || []);
         } catch (error) {
             console.error("Fehler beim Abrufen der wöchentlichen Daten:", error);
-            notify(t('errors.fetchWeeklyData'), 'error');
+            notify(t('errors.fetchWeeklyData', 'Fehler beim Abrufen der wöchentlichen Daten.'), 'error');
+            setDailySummaries([]);
         }
     }, [currentUser, notify, t]);
 
@@ -78,7 +107,7 @@ const HourlyDashboard = () => {
         if (!currentUser || !currentUser.username) return;
         try {
             const response = await api.get(`/api/correction/user/${currentUser.username}`);
-            setCorrectionRequests(response.data);
+            setCorrectionRequests(response.data || []);
         } catch (error) {
             console.error("Fehler beim Abrufen der Korrekturanträge:", error);
             notify("Korrekturanträge konnten nicht geladen werden.", 'error');
@@ -97,8 +126,25 @@ const HourlyDashboard = () => {
         }
     }, [currentUser, selectedMonday, fetchDataForUser, fetchWeeklyData, fetchCorrectionRequests]);
 
+    useEffect(() => {
+        if (!dailySummaries || dailySummaries.length === 0) {
+            setMonthlyTotalMins(0);
+            return;
+        }
+        const currentMonth = selectedMonday.getMonth();
+        const currentYear = selectedMonday.getFullYear();
+        const monthlyMinutes = dailySummaries
+            .filter(s => {
+                const summaryDate = new Date(s.date);
+                return summaryDate.getMonth() === currentMonth && summaryDate.getFullYear() === currentYear;
+            })
+            .reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
+        setMonthlyTotalMins(monthlyMinutes);
+
+    }, [dailySummaries, selectedMonday]);
+
     const handleOpenCorrectionModal = (date, summary) => {
-        setCorrectionDate(date);
+        setCorrectionDate(formatLocalDate(date));
         setDailySummaryForCorrection(summary);
         setShowCorrectionModal(true);
     };
@@ -112,7 +158,6 @@ const HourlyDashboard = () => {
             notify('Benutzer nicht gefunden, bitte neu anmelden.', 'error');
             return;
         }
-
         const correctionPromises = entries.map(entry => {
             const params = new URLSearchParams({
                 username: currentUser.username,
@@ -123,7 +168,6 @@ const HourlyDashboard = () => {
             });
             return api.post(`/api/correction/create?${params.toString()}`, null);
         });
-
         try {
             await Promise.all(correctionPromises);
             notify(t('userDashboard.correctionSuccess'), 'success');
@@ -171,6 +215,8 @@ const HourlyDashboard = () => {
         setPrintModalVisible(false);
     };
 
+    const weeklyTotalMins = dailySummaries.reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
+
     if (!currentUser || !userProfile) {
         return <div>Wird geladen...</div>;
     }
@@ -191,6 +237,11 @@ const HourlyDashboard = () => {
                 selectedMonday={selectedMonday}
                 setSelectedMonday={setSelectedMonday}
                 openCorrectionModal={handleOpenCorrectionModal}
+                weeklyTotalMins={weeklyTotalMins}
+                monthlyTotalMins={monthlyTotalMins}
+                handleManualPunch={handleManualPunch}
+                punchMessage={punchMessage}
+                userProfile={userProfile}
             />
 
             <PrintReportModal

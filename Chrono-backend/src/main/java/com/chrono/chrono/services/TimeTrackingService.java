@@ -210,16 +210,25 @@ public class TimeTrackingService {
         );
     }
 
-    @Transactional
     public void rebuildUserBalance(User user) {
         User freshUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + user.getId()));
+
+        // KORREKTUR 1: Logik für Stundenlöhner überspringen
+        // Ein stundenbasierter Mitarbeiter hat keinen Überstundensaldo.
+        if (Boolean.TRUE.equals(freshUser.getIsHourly())) {
+            logger.info("Überspringe Saldo-Neuberechnung für stundenbasierten Mitarbeiter: {}", freshUser.getUsername());
+            return; // Methode sofort beenden
+        }
+
         logger.debug("TimeTrackingService.rebuildUserBalance: Entering rebuildUserBalance for user: '{}'. Config: isPercentage={}, isHourly={}", freshUser.getUsername(), freshUser.getIsPercentage(), freshUser.getIsHourly());
 
         List<TimeTrackingEntry> allEntriesForUser = timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(freshUser);
         List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(freshUser);
 
-        if (freshUser.getTrackingBalanceInMinutes() == null) freshUser.setTrackingBalanceInMinutes(0);
+        if (freshUser.getTrackingBalanceInMinutes() == null) {
+            freshUser.setTrackingBalanceInMinutes(0);
+        }
 
         if (allEntriesForUser.isEmpty() && approvedVacations.isEmpty() && sickLeaveRepository.findByUser(freshUser).isEmpty()) {
             if (freshUser.getTrackingBalanceInMinutes() != 0) {
@@ -260,7 +269,7 @@ public class TimeTrackingService {
                     totalMinutesBalance += computeWeeklyWorkDifferenceForPercentageUser(freshUser, currentWeekStart, lastDay, approvedVacations, entriesGroupedByDate);
                     currentWeekStart = currentWeekStart.plusWeeks(1);
                 }
-            } else {
+            } else { // Dieser Block ist für Standard-Mitarbeiter
                 for (LocalDate d = firstDayToConsider; !d.isAfter(lastDay); d = d.plusDays(1)) {
                     List<TimeTrackingEntry> entriesForDay = entriesGroupedByDate.getOrDefault(d, Collections.emptyList())
                             .stream().sorted(Comparator.comparing(TimeTrackingEntry::getEntryTimestamp)).collect(Collectors.toList());

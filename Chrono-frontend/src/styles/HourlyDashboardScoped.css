@@ -505,3 +505,77 @@
         box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
     }
 }
+/* =========================================================================
+   Verbesserte Stile für Korrektur-Modal (Juni 2025)
+   ========================================================================= */
+
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row {
+    display: flex;
+    gap: var(--ud-gap-sm);
+    align-items: center;
+    margin-bottom: var(--ud-gap-md);
+    background-color: var(--ud-c-surface);
+    padding: var(--ud-gap-sm);
+    border-radius: var(--ud-radius-md);
+    border: 1px solid var(--ud-c-border);
+}
+
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row input,
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row select {
+    margin-bottom: 0;
+}
+
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row input[type="time"] {
+    flex-basis: 150px;
+    flex-grow: 0;
+}
+
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row select {
+    flex-grow: 1;
+}
+
+.hourly-dashboard.scoped-dashboard .modal-content .button-remove {
+    flex-shrink: 0;
+    background-color: transparent;
+    color: var(--ud-c-text-muted);
+    border: 1px solid transparent;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    font-size: 1.6rem;
+    line-height: 1;
+    font-weight: 300;
+    box-shadow: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.hourly-dashboard.scoped-dashboard .modal-content .button-remove:hover {
+    background-color: var(--ud-c-error-light-bg);
+    color: var(--ud-c-error-dim);
+    border-color: transparent;
+    transform: none;
+}
+
+.hourly-dashboard.scoped-dashboard .modal-content .button-add-entry {
+    width: 100%;
+    margin-top: var(--ud-gap-sm);
+    margin-bottom: var(--ud-gap-lg);
+    padding-top: var(--ud-gap-sm);
+    padding-bottom: var(--ud-gap-sm);
+    background-color: transparent;
+    color: var(--ud-c-primary-text);
+    border: 2px dashed var(--ud-c-primary);
+    box-shadow: none;
+    font-weight: 500;
+}
+
+.hourly-dashboard.scoped-dashboard .modal-content .button-add-entry:hover {
+    background-color: var(--ud-c-primary-light-bg);
+    border-style: solid;
+    color: var(--ud-c-primary-dim);
+    transform: none;
+    box-shadow: none;
+}

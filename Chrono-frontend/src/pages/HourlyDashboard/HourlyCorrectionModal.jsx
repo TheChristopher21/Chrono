@@ -1,5 +1,5 @@
 // src/pages/HourlyDashboard/HourlyCorrectionModal.jsx
-import React, { useState, useEffect } from 'react';
+import  { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import { formatTime, formatDate } from './hourDashUtils';
 
@@ -20,7 +20,7 @@ const HourlyCorrectionModal = ({
                 setEntries(dailySummaryForCorrection.entries.map(entry => ({
                     time: formatTime(new Date(entry.entryTimestamp)),
                     type: entry.punchType,
-                    key: entry.id
+                    key: entry.id || `entry-${Math.random()}`
                 })));
             } else {
                 setEntries([
@@ -56,12 +56,13 @@ const HourlyCorrectionModal = ({
         onSubmitCorrection(entries, reason);
     };
 
-
     return (
-        <div className="modal-backdrop">
-            <div className="modal-content">
+        <div className="modal-overlay">
+            <div className="modal-content user-correction-modal-content">
                 <form onSubmit={handleSubmit}>
                     <h3>{t('correctionFor')} {formatDate(correctionDate)}</h3>
+
+                    {/* KORRIGIERTE STRUKTUR FÜR EINTRÄGE */}
                     {entries.map((entry, index) => (
                         <div key={entry.key || index} className="entry-row">
                             <input type="time" value={entry.time} onChange={(e) => handleEntryChange(index, 'time', e.target.value)} required />
@@ -74,9 +75,12 @@ const HourlyCorrectionModal = ({
                             </button>
                         </div>
                     ))}
+
+                    {/* Button zum Hinzufügen jetzt mit eigener Klasse */}
                     <button type="button" onClick={handleAddEntry} className="button-add-entry">
                         {t('addEntry', 'Eintrag hinzufügen')}
                     </button>
+
                     <div className="form-group">
                         <label htmlFor="reasonHr">{t("reason")}:</label>
                         <textarea id="reasonHr" value={reason} onChange={(e) => setReason(e.target.value)} placeholder={t('userCorrectionModal.reasonPlaceholder', 'Begründung...')} required rows="3" />

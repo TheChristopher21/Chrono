@@ -30,6 +30,11 @@ public class VacationController {
     @Autowired
     private UserService userService;
 
+    @GetMapping("/user/{username}")
+    @PreAuthorize("#username == principal.name or hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<List<VacationRequest>> getUserVacations(@PathVariable String username) {
+        return ResponseEntity.ok(vacationService.getUserVacations(username));
+    }
     @PostMapping("/create")
     public ResponseEntity<?> createVacation(@RequestParam String username,
                                             @RequestParam String startDate,
