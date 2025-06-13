@@ -1,10 +1,11 @@
-// userDashUtils.js
+// src/pages/UserDashboard/userDashUtils.js
+import { parseISO } from 'date-fns'; // parseISO wird für String-Datumskonvertierung verwendet
 
 export function getMondayOfWeek(date) {
-    const copy = new Date(date);
+    const copy = new Date(date.getFullYear(), date.getMonth(), date.getDate());
     const day = copy.getDay();
-    const diff = day === 0 ? 6 : day - 1;
-    copy.setDate(copy.getDate() - diff);
+    const diff = copy.getDate() - day + (day === 0 ? -6 : 1); // Montag ist Ziel
+    copy.setDate(diff);
     copy.setHours(0, 0, 0, 0);
     return copy;
 }
@@ -15,6 +16,7 @@ export function addDays(date, days) {
     return d;
 }
 
+// Beibehalten von parseHex16, falls es noch irgendwo verwendet wird.
 export function parseHex16(hexString) {
     if (!hexString) return null;
     const clean = hexString.replace(/\s+/g, '');
@@ -30,192 +32,166 @@ export function parseHex16(hexString) {
     return output;
 }
 
-/**
- * Wandelt die vom Backend gelieferten Tagesobjekte in die bisher
- * genutzte Event-Liste um, damit die bestehende Logik weiterhin
- * funktioniert. Jeder Tag wird in bis zu vier Einträge aufgeteilt
- * (punchOrder 1–4).
- */
-export function expandDayRows(days) {
-    const result = [];
-    days.forEach((day) => {
-        const base = day.id ? day.id * 10 : Math.floor(Math.random() * 1e6);
-        const date = day.dailyDate;
-        if (day.workStart) {
-            result.push({
-                ...day,
-                id: `${base + 1}`,
-                punchOrder: 1,
-                startTime: `${date}T${day.workStart}`,
-            });
-        }
-        if (day.breakStart) {
-            result.push({
-                ...day,
-                id: `${base + 2}`,
-                punchOrder: 2,
-                startTime: `${date}T${day.breakStart}`,
-                breakStart: day.breakStart,
-            });
-        }
-        if (day.breakEnd) {
-            result.push({
-                ...day,
-                id: `${base + 3}`,
-                punchOrder: 3,
-                startTime: `${date}T${day.breakEnd}`,
-                breakEnd: day.breakEnd,
-            });
-        }
-        if (day.workEnd) {
-            result.push({
-                ...day,
-                id: `${base + 4}`,
-                punchOrder: 4,
-                startTime: `${date}T${day.workEnd}`,
-                endTime: `${date}T${day.workEnd}`,
-                workEnd: day.workEnd,
-            });
-        }
-    });
-    return result;
-}
+// Die Funktion expandDayRows wird nicht mehr benötigt, da das Backend DailyTimeSummaryDTO liefert.
+// export function expandDayRows(days) { ... }
 
-// userDashUtils.js
-export function formatTime(dateOrTimeStr) {
-    if (!dateOrTimeStr) return '-';
+// Überarbeitete formatTime Funktion für Robustheit
+export function formatTime(dateInput) {
+    if (!dateInput) return "--:--";
 
-    const trimmed = dateOrTimeStr.trim();
-
-    /* Akzeptiere jetzt sowohl “HH:mm”   als auch “HH:mm:ss” */
-    if (/^\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) {
-        // Wir zeigen nur Stunden:Minuten an
-        return trimmed.slice(0, 5);      // → "07:40"
+    let dateToFormat;
+    if (dateInput instanceof Date) {
+        dateToFormat = dateInput;
+    } else if (typeof dateInput === 'string') {
+        const trimmed = dateInput.trim();
+        if (/^\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) { // Bereits im Format HH:mm oder HH:mm:ss
+            return trimmed.slice(0, 5);
+        }
+        dateToFormat = parseISO(trimmed); // Für ISO Strings
+    } else {
+        // Versuch, andere Typen zu konvertieren, könnte fehlschlagen
+        try {
+            dateToFormat = new Date(dateInput);
+        } catch (e) {
+            console.warn("formatTime: Could not parse dateInput", dateInput, e);
+            return "--:--";
+        }
     }
 
-    /* Fallback für ISO-Date-Strings (2025-05-23T09:17:00Z …) */
-    const d = new Date(trimmed);
-    return isNaN(d.getTime())
-        ? '-'
-        : d.toLocaleTimeString('de-DE', {
-            hour:   '2-digit',
-            minute: '2-digit',
-            timeZone: 'Europe/Berlin',
-        });
+    if (isNaN(dateToFormat.getTime())) {
+        return "--:--";
+    }
+
+    // getHours/getMinutes verwenden die lokale Zeitzone des Browsers
+    const hours = String(dateToFormat.getHours()).padStart(2, '0');
+    const minutes = String(dateToFormat.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+}
+
+// NEUE FUNKTION: formatPunchedTimeFromEntry
+export function formatPunchedTimeFromEntry(entry) {
+    if (!entry || !entry.entryTimestamp) return '-';
+    // entry.entryTimestamp sollte ein ISO String sein
+    return formatTime(entry.entryTimestamp);
 }
 
 
-export function formatLocalDate(date) {
+export function formatLocalDate(date) { // Gibt YYYY-MM-DD zurück
+    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return "";
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, '0');
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
 
-export function formatDate(dateStr) {
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '-';
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}-${month}-${year}`;
+export function formatDate(dateInput) {
+    if (!dateInput) return "-";
+    // Nimmt an, dass dateInput entweder ein Date-Objekt oder ein String ist, den new Date() parsen kann.
+    // Für Datums-Strings vom Backend (YYYY-MM-DD) ist es wichtig, wie sie zu Date-Objekten werden.
+    // new Date("2023-10-26") wird als Mitternacht UTC interpretiert, was zu Problemen bei der lokalen Anzeige führen kann.
+    // Besser: new Date("2023-10-26T00:00:00") um sicherzustellen, dass es als lokales Mitternacht behandelt wird,
+    // ODER parseISO verwenden, wenn der String ein voller ISO-String ist.
+    // Da dayObj in UserDashboard.jsx bereits ein lokales Date-Objekt ist, ist die einfache Konvertierung hier meist sicher.
+    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+
+    if (isNaN(date.getTime())) return "-";
+
+    const day = String(date.getDate()).padStart(2, '0');       // Lokaler Tag
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Lokaler Monat
+    const year = date.getFullYear();                            // Lokales Jahr
+    return `${day}.${month}.${year}`;
 }
 
 export function getMinutesSinceMidnight(datetimeStr) {
     if (!datetimeStr) return 0;
-    const d = new Date(datetimeStr);
+    const d = parseISO(datetimeStr); // parseISO ist besser für ISO Strings
+    if (isNaN(d.getTime())) return 0;
     return d.getHours() * 60 + d.getMinutes();
 }
 
-/**
- * Rechnet die tatsächlich gearbeiteten Minuten minus die erwarteten Minuten aus.
- * dayEntries = { startTime, endTime, breakStart, breakEnd, punchOrder }
- * expectedWorkHours (z.B. 8.5 => 8 Stunden 30 Min)
- */
-export function computeDailyDiffValue(dayEntries, expectedWorkHours) {
-    const entryStart = dayEntries.find(e => e.punchOrder === 1);
-    const entryBreakStart = dayEntries.find(e => e.punchOrder === 2);
-    const entryBreakEnd = dayEntries.find(e => e.punchOrder === 3);
-    const entryEnd = dayEntries.find(e => e.punchOrder === 4);
 
-    if (entryStart && entryBreakStart && entryBreakEnd && entryEnd) {
-        const workStartMins = getMinutesSinceMidnight(entryStart.startTime);
-        const workEndMins = getMinutesSinceMidnight(entryEnd.endTime);
-        const breakStartMins = entryBreakStart.breakStart
-            ? parseInt(entryBreakStart.breakStart.slice(0, 2), 10) * 60 +
-            parseInt(entryBreakStart.breakStart.slice(3, 5), 10)
-            : getMinutesSinceMidnight(entryBreakStart.startTime);
-        const breakEndMins = entryBreakEnd.breakEnd
-            ? parseInt(entryBreakEnd.breakEnd.slice(0, 2), 10) * 60 +
-            parseInt(entryBreakEnd.breakEnd.slice(3, 5), 10)
-            : getMinutesSinceMidnight(entryBreakEnd.startTime);
+// computeDailyDiffValue wird jetzt weniger benötigt, da Salden oft vom Backend kommen
+// oder direkt aus `workedMinutes` und `expectedMinutes` berechnet werden.
+// Behalte es vorerst, falls es noch für die Anzeige einer *täglichen* Differenz benötigt wird.
+export function computeDailyDiffValue(dailySummary, expectedWorkHours) {
+    if (!dailySummary || typeof dailySummary.workedMinutes !== 'number') return 0;
+    if (typeof expectedWorkHours !== 'number' || isNaN(expectedWorkHours)) return dailySummary.workedMinutes; // Wenn keine Sollzeit, dann ist Istzeit die "Differenz"
 
-        const workDuration = workEndMins - workStartMins;
-        const breakDuration = breakEndMins - breakStartMins;
-        const actualWorked = workDuration - breakDuration;
-
-        const expectedMinutes = expectedWorkHours * 60;
-        return actualWorked - expectedMinutes;
-    }
-    return 0;
+    const expectedMinutes = Math.round(expectedWorkHours * 60);
+    return dailySummary.workedMinutes - expectedMinutes;
 }
 
 export function formatDiffDecimal(diffInMinutes) {
+    if (typeof diffInMinutes !== 'number' || isNaN(diffInMinutes)) {
+        return "0.00h";
+    }
     const sign = diffInMinutes >= 0 ? '+' : '-';
     const absHours = Math.abs(diffInMinutes) / 60;
     return `${sign}${absHours.toFixed(2)}h`;
 }
 
-
-
-export function getExpectedHoursForDay(dayObj, userConfig, defaultExpectedHours) {
-    if (userConfig?.isHourly) return 0;
-
-    // 🛑 NEU: Prozentnutzer → KEIN Tages-Soll
-    if (userConfig?.isPercentage) return null;
-
-    let expectedForDay = defaultExpectedHours;
-
-    if (userConfig?.weeklySchedule && userConfig?.scheduleCycle) {
-        const epoch = new Date(2020, 0, 1);
-        const diffWeeks = Math.floor((dayObj - epoch) / (7 * 24 * 60 * 60 * 1000));
-        const cycleIndex = diffWeeks % userConfig.scheduleCycle;
-        const dayOfWeek = dayObj
-            .toLocaleDateString('en-US', { weekday: 'long' })
-            .toLowerCase();
-        const value = userConfig.weeklySchedule[cycleIndex]?.[dayOfWeek];
-        if (!isNaN(value)) expectedForDay = Number(value);
+export function minutesToHHMM(totalMinutes) {
+    if (typeof totalMinutes !== 'number' || isNaN(totalMinutes)) {
+        return "0h 0m";
     }
-
-    return expectedForDay;
+    const sign = totalMinutes < 0 ? "-" : "";
+    const absMinutes = Math.abs(totalMinutes);
+    const h = Math.floor(absMinutes / 60);
+    const m = absMinutes % 60;
+    return `${sign}${h}h ${String(m).padStart(2, '0')}m`;
 }
 
-export function getStatusLabel(punchOrder) {
-    switch (punchOrder) {
-        case 1: return 'Work Start';
-        case 2: return 'Break Start';
-        case 3: return 'Break End';
-        case 4: return 'Work End';
-        default: return '';
-    }
-}
 
-export function groupEntriesByDay(entries) {
-    const dayMap = {};
-    entries.forEach(entry => {
-        const ds = new Date(entry.startTime).toLocaleDateString('de-DE');
-        if (!dayMap[ds]) {
-            dayMap[ds] = [];
+export function getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours = 8.5) {
+    if (!userProfile || !dayObj || !(dayObj instanceof Date) || isNaN(dayObj.getTime())) {
+        return defaultExpectedHours; // Fallback
+    }
+    if (userProfile.isHourly) return 0;
+    if (userProfile.isPercentage) {
+        // Für prozentuale Mitarbeiter ist das Tagessoll oft nicht explizit, das Wochensoll ist relevanter.
+        // Hier eine vereinfachte Annahme für die Anzeige, wenn ein Tageswert gebraucht wird.
+        const workDays = userProfile.expectedWorkDays || 5;
+        const percentageFactor = (userProfile.workPercentage || 100) / 100;
+        if (workDays === 0) return 0; // Verhindert Division durch Null
+        // Nimmt an, dass `defaultExpectedHours` das Soll für einen Vollzeittag ist.
+        return (defaultExpectedHours / 5) * workDays * percentageFactor / workDays; // Vereinfacht: (defaultSollProTagImModell * Pensum)
+    }
+
+    const dayOfWeekJs = dayObj.getDay();
+    const dayOfWeekName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayOfWeekJs];
+
+    if (userProfile.weeklySchedule && Array.isArray(userProfile.weeklySchedule) && userProfile.weeklySchedule.length > 0 && userProfile.scheduleCycle > 0) {
+        try {
+            const epochMonday = getMondayOfWeek(new Date("2020-01-06T00:00:00Z"));
+            const currentDayMonday = getMondayOfWeek(dayObj);
+            const diffMillis = currentDayMonday.getTime() - epochMonday.getTime();
+            const weeksSinceEpoch = Math.floor(diffMillis / (1000 * 60 * 60 * 24 * 7));
+            let cycleIndex = weeksSinceEpoch % userProfile.scheduleCycle;
+            if (cycleIndex < 0) cycleIndex += userProfile.scheduleCycle;
+
+            if (userProfile.weeklySchedule[cycleIndex] && typeof userProfile.weeklySchedule[cycleIndex][dayOfWeekName] === 'number') {
+                return userProfile.weeklySchedule[cycleIndex][dayOfWeekName];
+            }
+        } catch (e) {
+            console.error("Error in getExpectedHoursForDay from schedule:", e);
         }
-        dayMap[ds].push(entry);
-    });
-    return dayMap;
+    }
+    return (dayOfWeekJs === 0 || dayOfWeekJs === 6) ? 0 : defaultExpectedHours;
 }
 
-// /utils/timeUtils.js
+// getStatusLabel ist obsolet, da wir entry.punchType direkt verwenden.
+// export function getStatusLabel(punchOrder) { ... }
+
+// groupEntriesByDay ist obsolet, da das Backend DailyTimeSummaryDTO liefert.
+// export function groupEntriesByDay(entries) { ... }
+
 export function isLateTime(timeString) {
-    const time = new Date(`1970-01-01T${timeString}`);
-    const lateStart = new Date('1970-01-01T22:20:00');
-    const lateEnd = new Date('1970-01-01T23:40:00');
-    return time >= lateStart && time <= lateEnd;
+    if (!timeString || typeof timeString !== 'string' || !timeString.includes(':')) return false;
+    try {
+        const [hours, minutes] = timeString.split(':').map(Number);
+        if (isNaN(hours) || isNaN(minutes)) return false;
+        return (hours === 23 && minutes >= 20 && minutes <= 25) || (hours === 22 && minutes >=55);
+    } catch (e) {
+        return false;
+    }
 }

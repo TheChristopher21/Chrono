@@ -10,7 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/user")
+@RequestMapping("/api/users") // Changed from /api/user to /api/users
 public class UserController {
     @Autowired
     private final UserService userService;
@@ -41,8 +41,8 @@ public class UserController {
         return ResponseEntity.ok("Password updated successfully");
     }
 
-    @GetMapping("/profile")
-    public UserDTO getProfile(@RequestParam String username) {
+    @GetMapping("/profile/{username}") // Changed to use PathVariable
+    public UserDTO getProfile(@PathVariable String username) { // Changed from @RequestParam to @PathVariable
         User user = userService.getUserByUsername(username);
         return convertToDTO(user);
     }

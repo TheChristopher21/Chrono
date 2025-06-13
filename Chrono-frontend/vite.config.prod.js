@@ -29,7 +29,7 @@ export default defineConfig(({ mode }) => {
 
         /**
          * Diese Zeile brennt die Variable in den finalen Bundle:
-         *  • Prod-Build → Wert aus .env.production
+         *  • Prod-Build → Wert aus .env.local
          *  • Dev-Server → Wert aus .env.local
          *  • Fallback   → https://api.chrono-logisch.ch
          */

@@ -2,7 +2,7 @@ import axios from "axios";
 
 /**
  * Basis‐URL aus den Vite-Env-Variablen.
- *  – Im Prod-Build:  .env.production  → https://api.chrono-logisch.ch
+ *  – Im Prod-Build:  .env.local  → https://api.chrono-logisch.ch
  *  – Im Dev-Server: .env.local        → http://localhost:8080
  *  – Fallback      :                 → /api  (falls du doch Reverse-Proxy „/api → backend“ nutzt)
  */
