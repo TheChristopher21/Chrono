@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface CorrectionRequestRepository extends JpaRepository<CorrectionRequest, Long> {
@@ -20,6 +21,7 @@ public interface CorrectionRequestRepository extends JpaRepository<CorrectionReq
     List<CorrectionRequest> findAllByCompanyId(@Param("companyId") Long companyId);
     @Query("SELECT cr FROM CorrectionRequest cr LEFT JOIN FETCH cr.user u LEFT JOIN FETCH cr.targetEntry WHERE u.username = :username ORDER BY cr.requestDate DESC")
     List<CorrectionRequest> findByUserWithDetails(@Param("username") String username);
+    List<CorrectionRequest> findByUserAndDesiredTimestampBetweenAndApprovedIsFalseAndDeniedIsFalse(User user, LocalDateTime start, LocalDateTime end);
 
     List<CorrectionRequest> findByApprovedFalseAndDeniedFalse();
     @Modifying

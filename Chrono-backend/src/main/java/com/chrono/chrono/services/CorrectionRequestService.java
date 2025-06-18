@@ -3,13 +3,17 @@ package com.chrono.chrono.services;
 import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.CorrectionRequestRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.Principal;
@@ -32,6 +36,9 @@ public class CorrectionRequestService {
     private TimeTrackingEntryRepository timeTrackingEntryRepo;
     @Autowired
     private TimeTrackingService timeTrackingService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     @Transactional
     public CorrectionRequest createCorrectionRequest(String username, Long targetEntryId,
@@ -106,56 +113,74 @@ public class CorrectionRequestService {
         // RUFEN SIE STATTDESSEN DIE NEUE REPOSITORY-METHODE AUF
         return correctionRepo.findByUserWithDetails(username);
     }
-    @Transactional
+
+    @Transactional(isolation = Isolation.READ_COMMITTED) // DIESE ZEILE IST DIE LÖSUNG
     public CorrectionRequest approveRequest(Long requestId, String comment, String adminUsername) {
-        CorrectionRequest req = correctionRepo.findById(requestId)
+        // Der Rest der Methode bleibt exakt gleich wie in meinem vorherigen Vorschlag.
+        // Ich füge sie hier der Vollständigkeit halber nochmals ein.
+
+        CorrectionRequest initialRequest = correctionRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found"));
 
-        if (req.isApproved() || req.isDenied()) {
-            throw new RuntimeException("Request with ID " + requestId + " has already been processed.");
+        Long userId = initialRequest.getUser().getId();
+
+        User targetUser = userRepo.findByIdForUpdate(userId)
+                .orElseThrow(() -> new UserNotFoundException("Benutzer mit ID " + userId + " nicht gefunden."));
+
+        entityManager.clear(); // Dies schadet nicht und sorgt für zusätzliche Sicherheit auf JPA-Ebene.
+
+        initialRequest = correctionRepo.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found after lock."));
+
+        if (initialRequest.isApproved() || initialRequest.isDenied()) {
+            logger.warn("Admin {}: Korrekturantrag ID {} wurde bereits von einer anderen Transaktion bearbeitet. Überspringe doppelte Genehmigung.",
+                    adminUsername, requestId);
+            return initialRequest;
         }
 
-        User targetUser = req.getUser();
-        LocalDateTime desiredTimestamp = req.getDesiredTimestamp();
-        TimeTrackingEntry.PunchType desiredPunchType = req.getDesiredPunchType();
+        LocalDate correctionDate = initialRequest.getDesiredTimestamp().toLocalDate();
+        LocalDateTime startOfDay = correctionDate.atStartOfDay();
+        LocalDateTime endOfDay = correctionDate.plusDays(1).atStartOfDay().minusNanos(1);
 
-        if (targetUser == null || desiredTimestamp == null || desiredPunchType == null) {
-            throw new IllegalStateException("CorrectionRequest ID " + requestId + " hat ungültige Daten.");
+        List<CorrectionRequest> allRequestsForDay = correctionRepo.findByUserAndDesiredTimestampBetweenAndApprovedIsFalseAndDeniedIsFalse(
+                targetUser, startOfDay, endOfDay);
+
+        if (allRequestsForDay.isEmpty()) {
+            throw new IllegalStateException("Keine gültigen Korrekturanfragen für den Tag gefunden.");
         }
 
-        TimeTrackingEntry entryToModify = req.getTargetEntry();
+        List<TimeTrackingEntry> entriesToDelete = timeTrackingEntryRepo.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(targetUser, startOfDay, endOfDay);
+        if (!entriesToDelete.isEmpty()) {
+            timeTrackingEntryRepo.deleteAll(entriesToDelete);
+            logger.info("Admin {}: {} bestehende Einträge für Benutzer {} am {} gelöscht.",
+                    adminUsername, entriesToDelete.size(), targetUser.getUsername(), correctionDate);
+        }
 
-        if (entryToModify != null) {
-            if (!entryToModify.getUser().getId().equals(targetUser.getId())) {
-                logger.error("Security violation: CorrectionRequest ID {} attempts to modify entry ID {} of another user ({}) than applicant ({}).",
-                    requestId, entryToModify.getId(), entryToModify.getUser().getUsername(), targetUser.getUsername());
-                throw new SecurityException("Correction request and target entry do not belong to the same user.");
-            }
-            entryToModify.setEntryTimestamp(desiredTimestamp);
-            entryToModify.setPunchType(desiredPunchType);
-            entryToModify.setSource(TimeTrackingEntry.PunchSource.USER_CORRECTION);
-            entryToModify.setCorrectedByUser(true);
-            entryToModify.setSystemGeneratedNote(null);
-            timeTrackingEntryRepo.save(entryToModify);
-            logger.info("Admin {}: Approved CorrectionRequest ID {}. Updated TimeTrackingEntry ID {} for User {} to: {} {}",
-                adminUsername, requestId, entryToModify.getId(), targetUser.getUsername(), desiredTimestamp, desiredPunchType);
-        } else {
-            TimeTrackingEntry newEntry = new TimeTrackingEntry(targetUser, desiredTimestamp, desiredPunchType, TimeTrackingEntry.PunchSource.USER_CORRECTION);
+        for (CorrectionRequest req : allRequestsForDay) {
+            TimeTrackingEntry newEntry = new TimeTrackingEntry(
+                    req.getUser(),
+                    req.getDesiredTimestamp(),
+                    req.getDesiredPunchType(),
+                    TimeTrackingEntry.PunchSource.USER_CORRECTION
+            );
             newEntry.setCorrectedByUser(true);
+            newEntry.setSystemGeneratedNote("Korrektur genehmigt von " + adminUsername + ".");
             timeTrackingEntryRepo.save(newEntry);
-            logger.info("Admin {}: Approved CorrectionRequest ID {}. Created new TimeTrackingEntry for User {} with: {} {}",
-                adminUsername, requestId, targetUser.getUsername(), desiredTimestamp, desiredPunchType);
+            logger.info("Admin {}: Neuen korrigierten TimeTrackingEntry für Benutzer {} erstellt: {} {}",
+                    adminUsername, targetUser.getUsername(), newEntry.getEntryTimestamp(), newEntry.getPunchType());
         }
 
-        req.setApproved(true);
-        req.setDenied(false);
-        req.setAdminComment(comment);
-        CorrectionRequest savedReq = correctionRepo.save(req);
-        timeTrackingService.rebuildUserBalance(targetUser);
-        return savedReq;
-    }
+        for (CorrectionRequest req : allRequestsForDay) {
+            req.setApproved(true);
+            req.setDenied(false);
+            req.setAdminComment(comment);
+            correctionRepo.save(req);
+        }
 
-    // Fügen Sie diese ZWEI Methoden komplett neu in die Service-Klasse ein:
+        timeTrackingService.rebuildUserBalance(targetUser);
+
+        return initialRequest;
+    }
 
     public List<CorrectionRequest> getAllRequests() {
         // Lädt alle Anfragen, ideal für Super-Admins.
