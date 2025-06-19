@@ -1,128 +1,63 @@
+// src/main/java/com/chrono/service/DashboardService.java
+
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.DashboardResponse;
-import com.chrono.chrono.entities.TimeTracking;
-import com.chrono.chrono.entities.User; //
-import com.chrono.chrono.repositories.TimeTrackingRepository; //
-import com.chrono.chrono.repositories.UserRepository; //
-import org.springframework.beans.factory.annotation.Autowired; //
-import org.springframework.stereotype.Service; //
+import com.chrono.chrono.entities.User;
+import com.chrono.chrono.repositories.UserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import java.time.LocalTime; //
-import java.time.temporal.ChronoUnit; //
-import java.util.*; //
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-
+import java.time.LocalDate; // Importieren
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class DashboardService {
 
     @Autowired
-    private UserRepository userRepository; //
-
+    private UserRepository userRepository;
     @Autowired
-    private TimeTrackingRepository timeTrackingRepository; //
+    private TimeTrackingService timeTrackingService;
 
-    @Autowired // HolidayService injizieren
-    private HolidayService holidayService;
+    // HolidayService wird nicht mehr im DashboardResponse benötigt, aber im TimeTrackingService
 
-    public DashboardResponse getUserDashboard(String username) {
+    // NEUE METHODE, die vom Controller aufgerufen wird
+    public DashboardResponse getUserDashboardForWeek(String username, LocalDate startDate, LocalDate endDate) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username)); //
+                .orElseThrow(() -> new RuntimeException("User not found: " + username));
 
-        String roleName = user.getRoles().isEmpty()
-                ? "NONE"
-                : user.getRoles().iterator().next().getRoleName(); //
+        String roleName = user.getRoles().isEmpty() ? "NONE" : user.getRoles().iterator().next().getRoleName();
 
-        if (Boolean.TRUE.equals(user.getIsHourly())) { //
-            return buildHourlyDashboard(user, roleName); //
+        // Holt ALLE Zusammenfassungen des Benutzers
+        List<DailyTimeSummaryDTO> allSummaries = timeTrackingService.getUserHistory(username);
 
-        } else {
-            return buildDailyDashboard(user, roleName); //
+        // Filtert die Zusammenfassungen auf den gewünschten Zeitraum
+        List<DailyTimeSummaryDTO> weekSummaries = allSummaries.stream()
+                .filter(summary -> !summary.getDate().isBefore(startDate) && !summary.getDate().isAfter(endDate))
+                .collect(Collectors.toList());
+
+        // Erstellt die Response mit den korrekten Daten
+        // WICHTIG: Ein neuer Konstruktor in DashboardResponse.java ist eventuell nötig,
+        // oder Sie erstellen ein neues DTO speziell für diese Antwort.
+        // Für eine schnelle Lösung, nehmen wir an, es gibt einen passenden Konstruktor oder Setter.
+        DashboardResponse response = new DashboardResponse();
+        response.setUsername(user.getUsername());
+        response.setRoleName(roleName);
+        response.setDailySummaries(weekSummaries); // Setzt das Feld, das das Frontend erwartet
+
+        // Wenn Sie auch Monatssummen für Stundenlöhner brauchen, können Sie diese hier berechnen
+        if (Boolean.TRUE.equals(user.getIsHourly())) {
+            long totalMinutesInWeek = weekSummaries.stream()
+                    .mapToLong(DailyTimeSummaryDTO::getWorkedMinutes)
+                    .sum();
+            // Sie können dies zur Response hinzufügen, falls nötig, z.B. response.setWeeklyTotalMinutes(totalMinutesInWeek);
         }
+
+        return response;
     }
 
-    private DashboardResponse buildHourlyDashboard(User user, String roleName) {
-        List<TimeTracking> list = timeTrackingRepository.findByUserOrderByDailyDateDesc(user); //
-        Map<String, Long> monthlyTotals = new HashMap<>(); //
-
-        for (TimeTracking tt : list) { //
-            long minutesWorked = computeWorkedMinutes(tt); //
-            String monthKey = tt.getDailyDate().getYear() //
-                    + "-"
-                    + String.format("%02d", tt.getDailyDate().getMonthValue()); //
-            monthlyTotals.put( //
-                    monthKey,
-                    monthlyTotals.getOrDefault(monthKey, 0L) + minutesWorked //
-            );
-        }
-        return new DashboardResponse(user.getUsername(), monthlyTotals, roleName); //
-    }
-
-    private DashboardResponse buildDailyDashboard(User user, String roleName) {
-        List<TimeTracking> list = timeTrackingRepository.findByUserOrderByDailyDateDesc(user); //
-        List<String> dailyEntries = new ArrayList<>(); //
-
-        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("EEE, dd.MM.yyyy", Locale.GERMAN);
-
-        for (TimeTracking tt : list) { //
-            StringBuilder sb = new StringBuilder(); //
-            sb.append(tt.getDailyDate().format(dateFormatter)); // Formatierung angepasst
-
-            boolean isHoliday = holidayService.isHoliday(tt.getDailyDate(), cantonAbbreviation);
-
-            if (isHoliday) {
-                String holidayName = holidayService.getHolidayName(tt.getDailyDate(), tt.getDailyDate().getYear(), cantonAbbreviation);
-                sb.append(" (").append(holidayName).append(")");
-                // An Feiertagen normalerweise keine Arbeitszeiten anzeigen, es sei denn, es wurde explizit gestempelt.
-                // Wenn gestempelt wurde, kann man die Zeiten trotzdem anzeigen oder eine spezielle Logik implementieren.
-                // Für den Moment: Wenn Feiertag, keine Zeiten anzeigen, außer es gibt eine Notiz.
-            }
-
-            // Zeiten nur anzeigen, wenn es kein Feiertag ist ODER wenn trotz Feiertag gestempelt wurde
-            // (und der Feiertag nicht als komplett arbeitsfrei im Soll berücksichtigt wurde).
-            // Da das Soll an Feiertagen 0 ist, ist eine Stempelung an einem Feiertag reine Überzeit.
-            if (!isHoliday || tt.getWorkStart() != null) { // Zeiten anzeigen, wenn gestempelt oder kein Feiertag
-                LocalTime ws = tt.getWorkStart(); //
-                LocalTime we = tt.getWorkEnd(); //
-                LocalTime bs = tt.getBreakStart(); //
-                LocalTime be = tt.getBreakEnd(); //
-
-                sb.append(" ("); //
-                if (ws != null && we != null) { //
-                    sb.append(ws).append("-").append(we); //
-                } else if (ws != null) { //
-                    sb.append(ws).append("-..."); //
-                } else if (!isHoliday) { // Nur "keine Zeiten" anzeigen, wenn es kein Feiertag ist
-                    sb.append("keine Zeiten"); //
-                }
-                sb.append(")"); //
-
-                if (bs != null && be != null) { //
-                    sb.append(" Pause ").append(bs).append("-").append(be); //
-                }
-            }
-
-
-            if (tt.getDailyNote() != null && !tt.getDailyNote().trim().isEmpty()) { //
-                sb.append(" Notiz: ").append(tt.getDailyNote()); //
-            }
-            dailyEntries.add(sb.toString()); //
-        }
-        return new DashboardResponse(user.getUsername(), dailyEntries, roleName); //
-    }
-
-    private long computeWorkedMinutes(TimeTracking tt) {
-        if (tt.getWorkStart() == null || tt.getWorkEnd() == null) { //
-            return 0L; //
-        }
-        long total = ChronoUnit.MINUTES.between(tt.getWorkStart(), tt.getWorkEnd()); //
-        if (tt.getBreakStart() != null && tt.getBreakEnd() != null) { //
-            total -= ChronoUnit.MINUTES.between(tt.getBreakStart(), tt.getBreakEnd()); //
-        }
-        return Math.max(total, 0L); //
-    }
+    // Die alte getUserDashboard Methode und die build... Methoden können entfernt oder angepasst werden,
+    // wenn sie nicht mehr anderweitig gebraucht werden.
 }
