@@ -50,15 +50,13 @@ public class AdminScheduleRuleController {
     @GetMapping("/expected-work-minutes")
     public int getExpectedWorkMinutes(@RequestParam String username, @RequestParam String date) {
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found: " + username));
+                .orElseThrow(() -> new RuntimeException("User not found"));
         LocalDate parsedDate = LocalDate.parse(date);
-
-        // Genehmigte Urlaube für diesen User laden
         List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
 
-        // Die korrigierte Methode im WorkScheduleService aufrufen
         return workScheduleService.computeExpectedWorkMinutes(user, parsedDate, approvedVacations);
     }
+
     @PostMapping
     public ResponseEntity<?> createRule(@RequestBody UserScheduleRuleDTO dto) {
         Optional<User> userOpt = userRepository.findById(dto.getUserId());

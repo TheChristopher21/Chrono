@@ -1,23 +1,27 @@
 // src/pages/PercentageDashboard/PercentageDashboard.jsx
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from "react-router-dom";
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
-import "jspdf-autotable";
-import jsPDF from "jspdf";
+import { useAuth } from "../../context/AuthContext.jsx";
+import 'jspdf-autotable';
+import jsPDF from 'jspdf';
+import { parseISO } from 'date-fns';
 
 import {
-    parseHex16,
     getMondayOfWeek,
     addDays,
-    formatISO,
-    computeDayTotalMinutes,
-    expectedDayMinutes,
-    minutesToHours // Hinzugefügt: Korrekte Funktion importieren
-} from './percentageDashUtils'; // Sicherstellen, dass es von hier kommt
-import { expandDayRows } from '../UserDashboard/userDashUtils';
+    formatLocalDate,
+    formatDate,
+    formatTime,
+    minutesToHHMM,
+    computeTotalWorkedMinutesInRange,
+    expectedDayMinutesForPercentageUser, // Spezifisch für Prozent-Nutzer
+    // parseHex16 wird im NFC-Check verwendet
+    parseHex16
+} from './percentageDashUtils';
 
 import PercentageWeekOverview from './PercentageWeekOverview';
 import PercentageVacationSection from './PercentageVacationSection';
@@ -26,351 +30,389 @@ import PercentageCorrectionModal from './PercentageCorrectionModal';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 
 import '../../styles/PercentageDashboardScoped.css';
-// Entfernen Sie den falschen Import, falls vorhanden, oder stellen Sie sicher, dass er nicht existiert:
-// import {minutesToHours} from "date-fns"; // DIESE ZEILE ENTFERNEN ODER AUSKOMMENTIEREN
+import autoTable from "jspdf-autotable";
+
 
 const PercentageDashboard = () => {
     const { t } = useTranslation();
     const { notify } = useNotification();
-    useNavigate(); // Hook wird aufgerufen, Rückgabewert muss nicht unbedingt verwendet werden, wenn nur für Navigationseffekte
+    const { currentUser, fetchCurrentUser } = useAuth();
+    const navigate = useNavigate();
 
-    const [profile, setProfile] = useState(null);
-    const [entries, setEntries] = useState([]);
-    const [monday, setMonday] = useState(getMondayOfWeek(new Date()));
-    const [punchMsg, setPunchMsg] = useState('');
-    const lastPunch = useRef(0);
+    const [userProfile, setUserProfile] = useState(null);
+    const [dailySummaries, setDailySummaries] = useState([]);
+    const [punchMessage, setPunchMessage] = useState('');
+    const lastPunchTimeRef = useRef(0);
 
-    // Urlaub
+    const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
+
+    const [printModalVisible, setPrintModalVisible] = useState(false);
+    const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)));
+    const [printEndDate, setPrintEndDate] = useState(formatLocalDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)));
+
     const [vacationRequests, setVacationRequests] = useState([]);
-
-    // Korrekturen
     const [correctionRequests, setCorrectionRequests] = useState([]);
+    const [sickLeaves, setSickLeaves] = useState([]); // NEU für Krankmeldungen
+    const [holidaysForUserCanton, setHolidaysForUserCanton] = useState({ data: {}, year: null, canton: null }); // NEU für Feiertage
+
+
     const [showCorrectionsPanel, setShowCorrectionsPanel] = useState(false);
     const [showAllCorrections, setShowAllCorrections] = useState(false);
     const [selectedCorrectionMonday, setSelectedCorrectionMonday] = useState(getMondayOfWeek(new Date()));
 
-    // CorrectionModal
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
-    const [correctionDate, setCorrectionDate] = useState("");
-    const [correctionData, setCorrectionData] = useState({
-        workStart: "",
-        breakStart: "",
-        breakEnd: "",
-        workEnd: "",
-        reason: ""
-    });
+    const [correctionDate, setCorrectionDate] = useState('');
+    const [dailySummaryForCorrection, setDailySummaryForCorrection] = useState(null);
 
-    // Print
-    const [printModalVisible, setPrintModalVisible] = useState(false);
-    const [printStartDate, setPrintStartDate] = useState(formatISO(new Date()));
-    const [printEndDate, setPrintEndDate] = useState(formatISO(new Date()));
-
-    const loadProfile = useCallback(() => {
-        api.get('/api/auth/me')
-            .then(res => {
-                const p = res.data;
-                if (p.isPercentage) {
-                    if (p.workPercentage == null) p.workPercentage = 100;
-                    if (p.annualVacationDays == null) p.annualVacationDays = 25;
-                    if (p.trackingBalanceInMinutes == null) p.trackingBalanceInMinutes = 0;
+    const loadProfileAndInitialData = useCallback(async () => {
+        try {
+            const profile = await fetchCurrentUser();
+            if (profile && Object.keys(profile).length > 0) {
+                if (profile.isPercentage) {
+                    profile.workPercentage = profile.workPercentage ?? 100;
+                    profile.annualVacationDays = profile.annualVacationDays ?? 25;
+                    profile.trackingBalanceInMinutes = profile.trackingBalanceInMinutes ?? 0;
+                    profile.expectedWorkDays = profile.expectedWorkDays ?? 5;
                 }
-                setProfile(p);
-            })
-            .catch(err => {
-                console.error('Profil-Fehler', err);
-                notify("Fehler beim Laden des Nutzerprofils");
-            });
-    }, [notify]); // notify als Abhängigkeit hinzugefügt
-
-    // Profil laden
-    useEffect(() => {
-        loadProfile();
-    }, [loadProfile]);
-
-    // Einträge laden
-    const loadEntries = useCallback(() => {
-        if (!profile) return;
-        api.get(`/api/timetracking/history?username=${profile.username}`)
-            .then(r => {
-                const expanded = expandDayRows(r.data || []);
-                const data = expanded.filter(e => [1,2,3,4].includes(e.punchOrder));
-                setEntries(data);
-            })
-            .catch(err => console.error('Eintrags‑Fehler', err));
-    }, [profile]);
+                if (!profile.weeklySchedule || !Array.isArray(profile.weeklySchedule) || profile.weeklySchedule.length === 0) {
+                    profile.weeklySchedule = [{ monday: 8.5, tuesday: 8.5, wednesday: 8.5, thursday: 8.5, friday: 8.5, saturday: 0, sunday: 0 }];
+                    profile.scheduleCycle = 1;
+                }
+                setUserProfile(profile);
+            } else {
+                throw new Error("User profile could not be loaded.");
+            }
+        } catch (err) {
+            console.error(t('personalData.errorLoading'), err);
+            notify(t('errors.fetchProfileError', 'Fehler beim Laden des Profils.'), 'error');
+        }
+    }, [fetchCurrentUser, t, notify]);
 
     useEffect(() => {
-        loadEntries();
-    }, [loadEntries]);
+        loadProfileAndInitialData();
+    }, [loadProfileAndInitialData]);
 
-    // NFC Polling
+    const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
+        const cantonKey = cantonAbbreviation || 'GENERAL';
+        if (holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
+            return;
+        }
+        try {
+            const params = { year, cantonAbbreviation: cantonAbbreviation || '', startDate: `${year}-01-01`, endDate: `${year}-12-31` };
+            const response = await api.get('/api/holidays/details', { params });
+            setHolidaysForUserCanton({ data: response.data || {}, year, canton: cantonKey });
+        } catch (error) {
+            console.error(t('errors.fetchHolidaysError', 'Fehler beim Laden der Feiertage:'), error);
+            setHolidaysForUserCanton({ data: {}, year, canton: cantonKey });
+        }
+    }, [t, holidaysForUserCanton]);
+
+    const fetchDataForUser = useCallback(async () => {
+        if (!userProfile?.username) return;
+        try {
+            const [resSummaries, resVacation, resCorr, resSick] = await Promise.all([
+                api.get(`/api/timetracking/history?username=${userProfile.username}`),
+                api.get('/api/vacation/my'),
+                api.get(`/api/correction/my?username=${userProfile.username}`),
+                api.get('/api/sick-leave/my') // Endpunkt für eigene Krankmeldungen
+            ]);
+            setDailySummaries(Array.isArray(resSummaries.data) ? resSummaries.data : []);
+            setVacationRequests(Array.isArray(resVacation.data) ? resVacation.data : []);
+            setCorrectionRequests(Array.isArray(resCorr.data) ? resCorr.data : []);
+            setSickLeaves(Array.isArray(resSick.data) ? resSick.data : []);
+        } catch (err) {
+            console.error("Fehler beim Laden der Benutzerdaten (Percentage):", err);
+            notify(t('errors.fetchUserDataError', 'Fehler beim Laden der Benutzerdaten.'), 'error');
+        }
+    }, [userProfile, notify, t]);
+
     useEffect(() => {
-        const iv = setInterval(() => doNfcCheck(), 2000);
-        return () => clearInterval(iv);
-    }, []); // Leeres Abhängigkeitsarray, da doNfcCheck keine Props/State verwendet, die sich ändern und einen Neurestart des Intervalls erfordern
+        if (userProfile) {
+            fetchDataForUser();
+            const cantonAbbr = userProfile.company?.cantonAbbreviation || userProfile.companyCantonAbbreviation;
+            fetchHolidaysForUser(selectedMonday.getFullYear(), cantonAbbr || '');
+        }
+    }, [userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
+
+    useEffect(() => {
+        if (userProfile) {
+            const cantonAbbr = userProfile.company?.cantonAbbreviation || userProfile.companyCantonAbbreviation;
+            fetchHolidaysForUser(selectedMonday.getFullYear(), cantonAbbr || '');
+        }
+    }, [selectedMonday, userProfile, fetchHolidaysForUser]);
+
+
+    useEffect(() => {
+        const interval = setInterval(doNfcCheck, 2000);
+        return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     async function doNfcCheck() {
         try {
-            const res = await fetch(process.env.APIURL + '/api/nfc/read/1');
-            if (!res.ok) return;
-            const json = await res.json();
-            if (json.status !== 'success') return;
-
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`);
+            if (!response.ok) return;
+            const json = await response.json();
+            if (json.status !== 'success' || !json.data) return;
             const cardUser = parseHex16(json.data);
             if (!cardUser) return;
 
-            const now = Date.now();
-            if (now - lastPunch.current < 60000) return;
-            lastPunch.current = now;
+            if (Date.now() - lastPunchTimeRef.current < 5000) return;
+            lastPunchTimeRef.current = Date.now();
 
-            setPunchMsg(`Eingestempelt: ${cardUser}`); // Direktes Feedback für den User
-            setTimeout(() => setPunchMsg(''), 3000);
-
-            await api.post('/api/timetracking/punch', null, { params: { username: cardUser } });
-            // Daten neu laden nach erfolgreichem Punch
-            loadEntries();
-            loadProfile();
+            showPunchMessage(`${t('login.stamped', 'Eingestempelt')}: ${cardUser}`);
+            await api.post('/api/timetracking/punch', null, { params: { username: cardUser, source: 'NFC_SCAN' } });
+            if (currentUser && cardUser === currentUser.username) { // Prüfe gegen currentUser
+                fetchDataForUser();
+                loadProfileAndInitialData();
+            }
         } catch (err) {
-            console.error('NFC‑Fehler', err);
-            // Optional: User-Benachrichtigung bei NFC-Fehler
+            console.error('NFC error', err);
         }
     }
-
-    // Manuelles Stempeln
+    function showPunchMessage(msg) {
+        setPunchMessage(msg);
+        setTimeout(() => setPunchMessage(''), 3000);
+    }
     async function handleManualPunch() {
-        if (!profile) return;
+        if (!userProfile) return;
         try {
-            await api.post('/api/timetracking/punch', null, { params: { username: profile.username } });
-            setPunchMsg(`Manuell gestempelt: ${profile.username}`);
-            setTimeout(() => setPunchMsg(''), 3000);
-            loadEntries();
-            loadProfile();
+            const response = await api.post('/api/timetracking/punch', null, {
+                params: { username: userProfile.username, source: 'MANUAL_PUNCH' }
+            });
+            const newEntry = response.data;
+            showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.'+newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
+            fetchDataForUser();
+            loadProfileAndInitialData();
         } catch (e) {
             console.error('Punch‑Fehler', e);
-            notify('Fehler beim Stempeln');
+            notify(t("manualPunchError", "Fehler beim manuellen Stempeln."), 'error');
         }
     }
 
-    // Summen-Logik
-    const weeklyWorked = Array.from({ length: 5 }, (_, i) => {
-        const isoDay = formatISO(addDays(monday, i));
-        const dayEntries = entries.filter(e => e.startTime && e.startTime.slice(0, 10) === isoDay);
-        return computeDayTotalMinutes(dayEntries);
-    }).reduce((a, b) => a + b, 0);
+    const weekDatesForOverview = Array.from({ length: 5 }, (_, i) => addDays(selectedMonday, i)); // Mo-Fr
+    const weeklyWorked = computeTotalWorkedMinutesInRange(dailySummaries, selectedMonday, addDays(selectedMonday, 4)); // Mo-Fr für %
 
-    const weeklyExpected = profile ? (5 * expectedDayMinutes(profile)) : 0; // Sicherstellen, dass profile existiert
+    const weeklyExpected = weekDatesForOverview.reduce((sum, dayObj) => {
+        const isoDate = formatLocalDate(dayObj);
+        const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
+        const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
+        const isHoliday = holidaysForUserCanton?.data && holidaysForUserCanton.data[isoDate];
+        let daySoll = expectedDayMinutesForPercentageUser(userProfile);
+
+        // Für Prozent-Nutzer: Abwesenheiten reduzieren das Wochensoll anteilig
+        if (isHoliday) {
+            // Annahme: Feiertage reduzieren das Soll für Prozent-Nutzer (kann konfiguriert werden)
+            // Im Backend wird dies über UserHolidayOption genauer gehandhabt
+            daySoll = 0;
+        }
+        if (vacationToday) {
+            daySoll = vacationToday.halfDay ? daySoll / 2 : 0;
+        }
+        if (sickToday) {
+            daySoll = sickToday.halfDay ? daySoll / 2 : 0;
+        }
+        return sum + daySoll;
+    }, 0);
     const weeklyDiff = weeklyWorked - weeklyExpected;
 
-    // Urlaub laden
-    const fetchVacations = useCallback(async () => { // useCallback für Konsistenz
-        if (!profile) return;
-        try {
-            const res = await api.get('/api/vacation/my');
-            setVacationRequests(res.data || []);
-        } catch (err) {
-            console.error("Fehler beim Laden der Urlaube:", err);
-            notify("Fehler beim Laden der Urlaubsanträge."); // Notify User
-        }
-    }, [profile, notify]); // notify als Abhängigkeit
+    const firstOfMonth = new Date(selectedMonday.getFullYear(), selectedMonday.getMonth(), 1);
+    const lastOfMonth = new Date(selectedMonday.getFullYear(), selectedMonday.getMonth() + 1, 0);
+    const monthlyTotalMins = computeTotalWorkedMinutesInRange(dailySummaries, firstOfMonth, lastOfMonth);
+    const overtimeBalanceStr = minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0);
 
-    useEffect(() => {
-        fetchVacations();
-    }, [fetchVacations]);
-
-    // Korrekturen laden
-    const fetchCorrections = useCallback(async () => { // useCallback für Konsistenz
-        if (!profile) return;
-        try {
-            const res = await api.get(`/api/correction/my?username=${profile.username}`);
-            setCorrectionRequests(res.data || []);
-        } catch (err) {
-            console.error('Fehler beim Laden der Korrekturanträge', err);
-            notify("Fehler beim Laden der Korrekturanträge."); // Notify User
-        }
-    }, [profile, notify]); // notify als Abhängigkeit
-
-    useEffect(() => {
-        fetchCorrections();
-    }, [fetchCorrections]);
-
-
-    // Korrektur-Modal öffnen
-    function openCorrectionModal(dateStr) {
-        setCorrectionDate(dateStr);
-        // Logik zum Vorbelegen der Zeiten basierend auf 'entries' für 'dateStr'
-        const dayEntriesForModal = entries.filter(e => e.startTime && e.startTime.slice(0, 10) === dateStr)
-            .sort((a,b) => a.punchOrder - b.punchOrder);
-
-        const workStartEntry = dayEntriesForModal.find(e => e.punchOrder === 1);
-        const breakStartEntry = dayEntriesForModal.find(e => e.punchOrder === 2);
-        const breakEndEntry = dayEntriesForModal.find(e => e.punchOrder === 3);
-        const workEndEntry = dayEntriesForModal.find(e => e.punchOrder === 4);
-
-        setCorrectionData({
-            workStart: workStartEntry ? (workStartEntry.workStart || workStartEntry.startTime.slice(11,16)) : "",
-            breakStart: breakStartEntry ? (breakStartEntry.breakStart || breakStartEntry.startTime.slice(11,16)) : "",
-            breakEnd: breakEndEntry ? (breakEndEntry.breakEnd || breakEndEntry.startTime.slice(11,16)) : "",
-            workEnd: workEndEntry ? (workEndEntry.workEnd || workEndEntry.endTime?.slice(11,16) || workEndEntry.startTime.slice(11,16)) : "",
-            reason: ""
+    const sortedCorrections = (showAllCorrections ? correctionRequests : correctionRequests.filter(req => {
+        if (!req.requestDate) return false;
+        const reqDate = parseISO(req.requestDate);
+        return reqDate >= selectedCorrectionMonday && reqDate < addDays(selectedCorrectionMonday, 7);
+    }))
+        .slice()
+        .sort((a, b) => {
+            const dateA = a.requestDate ? parseISO(a.requestDate) : 0;
+            const dateB = b.requestDate ? parseISO(b.requestDate) : 0;
+            return dateB - dateA;
         });
+
+    function openCorrectionModalForDay(dateObj) {
+        const isoDate = formatLocalDate(dateObj);
+        setCorrectionDate(isoDate);
+        const summaryForDay = dailySummaries.find(s => s.date === isoDate);
+        setDailySummaryForCorrection(summaryForDay || { date: isoDate, entries: [] });
         setShowCorrectionModal(true);
     }
 
-    async function handleCorrectionSubmit(e) {
-        e.preventDefault();
-        const { workStart, breakStart, breakEnd, workEnd, reason } = correctionData;
-        // Validierung: workStart und workEnd müssen ausgefüllt sein
-        if (!workStart || !workEnd) {
-            notify("Bitte Arbeitsbeginn und Arbeitsende für die Korrektur angeben.");
+    const fetchCorrectionRequests = useCallback(async () => {
+        if (!currentUser || !currentUser.username) {
             return;
         }
-        const desiredStart = `${correctionDate}T${workStart}`;
-        const desiredEnd   = `${correctionDate}T${workEnd}`;
+        try {
+            // Die URL braucht keine Datums-Parameter mehr
+            const response = await api.get(`/api/correction/user/${currentUser.username}`);
+            setCorrectionRequests(response.data);
+        } catch (error) {
+            console.error("Fehler beim Abrufen der Korrekturanträge:", error);
+            notify("Korrekturanträge konnten nicht geladen werden.", 'error');
+        }
+    }, [currentUser, notify]); // Abhängigkeiten bleiben gleich
+
+    const handleCorrectionSubmit = async (entries, reason) => {
+        // Prüfen, ob alle notwendigen Daten vorhanden sind
+        if (!correctionDate || !entries || entries.length === 0) {
+            notify('Bitte fügen Sie mindestens einen Korrektureintrag hinzu.', 'error');
+            return;
+        }
+        if (!currentUser || !currentUser.username) {
+            notify('Benutzer nicht gefunden, bitte neu anmelden.', 'error');
+            return;
+        }
+
+        // Erstellt eine Liste von Promises für jeden einzelnen Korrekturantrag
+        const correctionPromises = entries.map(entry => {
+            const desiredTimestamp = `${correctionDate}T${entry.time}:00`;
+            const desiredPunchType = entry.type;
+
+            // Alle Parameter für die URL vorbereiten, wie vom Backend jetzt verlangt
+            const params = new URLSearchParams({
+                username: currentUser.username,
+                reason: reason,
+                requestDate: correctionDate,
+                desiredTimestamp: desiredTimestamp,
+                desiredPunchType: desiredPunchType
+                // targetEntryId ist optional und wird hier weggelassen
+            });
+
+            // API-Aufruf mit leerem Body, da alle Daten in der URL sind
+            return api.post(`/api/correction/create?${params.toString()}`, null);
+        });
 
         try {
-            await api.post('/api/correction/create-full', null, {
-                params: {
-                    username: profile.username,
-                    date: correctionDate,
-                    workStart,
-                    breakStart: breakStart || null, // Send null if empty
-                    breakEnd: breakEnd || null,     // Send null if empty
-                    workEnd,
-                    reason,
-                    desiredStart, // Ist für Backend-Logik, auch wenn es hier redundant wirkt
-                    desiredEnd    // Ist für Backend-Logik, auch wenn es hier redundant wirkt
-                }
-            });
-            notify("Korrekturantrag erfolgreich gestellt.");
-            fetchCorrections(); // Korrekturen neu laden
-            setShowCorrectionModal(false);
-        } catch (err) {
-            console.error("Fehler beim Absenden des Korrekturantrags:", err);
-            const errorMsg = err.response?.data?.message || err.message || "Unbekannter Fehler";
-            notify(`Fehler beim Absenden: ${errorMsg}`);
-        }
-    }
+            // Wartet, bis alle Anfragen parallel gesendet wurden
+            await Promise.all(correctionPromises);
 
-    // Druck / PDF
+            notify(t('userDashboard.correctionSuccess'), 'success');
+            setShowCorrectionModal(false);
+            fetchCorrectionRequests(selectedCorrectionMonday);
+
+        } catch (error) {
+            console.error('Fehler beim Absenden der Korrekturanträge:', error);
+            const errorMsg = error.response?.data?.message || 'Ein oder mehrere Anträge konnten nicht gesendet werden.';
+            notify(errorMsg, 'error');
+        }
+    };
+
+
     async function handlePrintReport() {
-        if (!printStartDate || !printEndDate) {
-            notify("Zeitraum fehlt");
+        // ... (Logik bleibt gleich wie im UserDashboard, ggf. Titel anpassen)
+        if (!printStartDate || !printEndDate || !userProfile) {
+            notify(t("missingDateRange", "Zeitraum oder Benutzerprofil fehlt."), 'error');
             return;
         }
         setPrintModalVisible(false);
 
-        try {
-            const { data } = await api.get("/api/timetracking/report", {
-                params: {
-                    username: profile.username,
-                    startDate: printStartDate,
-                    endDate:   printEndDate,
-                },
-            });
+        const summariesToPrint = dailySummaries.filter(summary =>
+            summary.date >= printStartDate && summary.date <= printEndDate
+        ).sort((a,b) => parseISO(a.date) - parseISO(b.date));
 
-            const doc = new jsPDF("p", "mm", "a4");
-            doc.setFontSize(14);
-            doc.text(`Zeitenbericht für ${profile.firstName} ${profile.lastName}`, 14, 15);
-            doc.setFontSize(11);
-            doc.text(`Zeitraum: ${formatISO(new Date(printStartDate))} – ${formatISO(new Date(printEndDate))}`, 14, 22); // formatISO für konsistente Anzeige
+        const doc = new jsPDF("p", "mm", "a4");
+        doc.setFontSize(14);
+        doc.text(`Zeitenbericht für ${userProfile.firstName} ${userProfile.lastName} (${userProfile.username}) - ${userProfile.workPercentage}%`, 14, 15);
+        doc.setFontSize(11);
+        doc.text(`Zeitraum: ${formatDate(printStartDate)} – ${formatDate(printEndDate)}`, 14, 22);
 
-            const rows = (data || []).map(e => [
-                formatISO(new Date(e.date)), // Datum formatieren
-                e.workStart || "-",
-                e.breakStart || "-",
-                e.breakEnd || "-",
-                e.workEnd || "-"
-            ]);
-
-            doc.autoTable({
-                head: [["Datum", "Work-Start", "Break-Start", "Break-End", "Work-End"]],
-                body: rows,
-                startY: 30,
-                margin: { left: 14, right: 14 },
-                styles: { fontSize: 9, cellPadding: 2 },
-                headStyles: { fillColor: [71, 91, 255], textColor: 255, halign: "center" }, // Primärfarbe für Header
-                didDrawPage: (dataHooks) => { // data umbenannt zu dataHooks um Kollision zu vermeiden
-                    doc.text(`Seite ${dataHooks.pageNumber}`, doc.internal.pageSize.getWidth() - 14, 10, { align: "right" });
-                },
-            });
-            doc.save(`zeitenbericht_${profile.username}_${printStartDate}_${printEndDate}.pdf`);
-        } catch (err) {
-            console.error("Fehler beim Generieren des PDF-Berichts:", err);
-            notify("Fehler beim Erstellen des PDF-Berichts.");
-        }
+        const tableBody = summariesToPrint.map(summary => {
+            const displayDate = formatDate(summary.date);
+            const primary = summary.primaryTimes || { firstStartTime: null, lastEndTime: null, isOpen: false};
+            const workStart  = primary.firstStartTime ? primary.firstStartTime.substring(0,5) : "-";
+            const workEnd    = primary.lastEndTime ? primary.lastEndTime.substring(0,5) : (primary.isOpen ? "OFFEN" : "-");
+            const breakTimeStr = minutesToHHMM(summary.breakMinutes);
+            const totalWorkedStr = minutesToHHMM(summary.workedMinutes);
+            const punches = summary.entries.map(e => `${t('punchTypes.'+e.punchType, e.punchType).substring(0,1)}:${formatTime(e.entryTimestamp)}${e.source === 'SYSTEM_AUTO_END' && !e.correctedByUser ? '(A)' : ''}`).join(' | ');
+            return [displayDate, workStart, workEnd, breakTimeStr, totalWorkedStr, punches, summary.dailyNote || ""];
+        });
+        autoTable(doc, {
+            head: [["Datum", "Start", "Ende", "Pause", "Arbeit", "Stempelungen", "Notiz"]],
+            body: tableBody, startY: 30, margin: { left: 10, right: 10 }, styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
+            headStyles: { fillColor: [71, 91, 255], textColor: 255, fontStyle: "bold", halign: "center" },
+            columnStyles: { 5: { cellWidth: 'auto'}, 6: { cellWidth: 40 } },
+            didDrawPage: (dataHooks) => {
+                doc.setFontSize(8);
+                doc.text(`Seite ${dataHooks.pageNumber} von ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.getWidth() - 10, doc.internal.pageSize.getHeight() - 10, { align: "right" });
+            }
+        });
+        doc.save(`Zeitenbericht_Prozent_${userProfile.username}_${printStartDate}_bis_${printEndDate}.pdf`);
     }
 
-    // Falls Profil noch nicht geladen:
-    if (!profile) {
-        return (
-            <div className="percentage-dashboard scoped-dashboard"> {/* Scope-Klasse hier hinzugefügt */}
-                <Navbar />
-                <p style={{textAlign: 'center', marginTop: '2rem'}}>{t("loading", "Lade...")}</p> {/* Einfache Ladeanzeige */}
-            </div>
-        );
+    if (!userProfile) {
+        return ( <div className="percentage-dashboard scoped-dashboard"><Navbar /><p className="loading-message">{t("loading", "Lade Benutzerprofil...")}</p></div> );
     }
+    if (userProfile.isHourly) { // Sicherstellen, dass nur Stundenlöhner hier landen
+        navigate("/user", { replace: true });
+        return null;
+    }
+    if (!userProfile.isPercentage) { // Wenn kein Prozent-Nutzer, zum Standard-Dashboard
+        navigate("/user", { replace: true });
+        return null;
+    }
+
 
     return (
-        <div className="percentage-dashboard scoped-dashboard">
-            <Navbar />
-
-            <header className="dashboard-header">
-                <h2>{profile.isPercentage ? t("percentageDashboard.title", "Percentage-Dashboard") : t("title", "Mein Dashboard")}</h2>
+        <> {/* React Fragment oder ein neutrales <div> als äußeren Container nutzen */}
+            <Navbar /> {/* NAVBAR IST JETZT AUSSERHALB DES SCOPED-DASHBOARD DIVS */}
+            <div className="percentage-dashboard scoped-dashboard">
+                <header className="dashboard-header">
+                <h2>{t("percentageDashboard.title", "Prozent-Dashboard")}</h2>
                 <div className="personal-info">
-                    <p>
-                        <strong>{t('usernameLabel')}:</strong> {profile.username}
-                    </p>
-                    {profile.isPercentage && (
-                        <p>
-                            <strong>{t('percentageDashboard.workPercentageLabel', 'Arbeits-%')}:</strong> {profile.workPercentage}%
-                        </p>
-                    )}
-                    <p>
-
+                    <p><strong>{t('usernameLabel')}:</strong> {userProfile.username}</p>
+                    <p><strong>{t('percentageDashboard.workPercentageLabel', 'Arbeits-%')}:</strong> {userProfile.workPercentage}%</p>
+                    <p><strong>{t('weekBalance')}:</strong>
                         <span className={(weeklyDiff ?? 0) < 0 ? 'balance-negative' : 'balance-positive'}>
-                            {minutesToHours(weeklyDiff)}
+                            {minutesToHHMM(weeklyDiff)}
                         </span>
                     </p>
-                    {profile.trackingBalanceInMinutes != null && (
-                        <p className="overtime-info">
-                            <strong>{t('overtimeBalance')}:</strong> {minutesToHours(profile.trackingBalanceInMinutes)}
-                            <span className="tooltip-wrapper">
-                <span className="tooltip-icon">ℹ️</span>
-                <span className="tooltip-box">
-                  {t('percentageDashboard.overtimeTooltip', 'Überstunden entstehen, wenn du mehr als dein Tagessoll arbeitest. Du kannst sie später als „Überstundenfrei“ nutzen.')}
-                </span>
-              </span>
-                        </p>
-                    )}
+                    <p className="overtime-info">
+                        <strong>{t('overtimeBalance')}:</strong> {overtimeBalanceStr}
+                        <span className="tooltip-wrapper">
+                            <span className="tooltip-icon">ℹ️</span>
+                            <span className="tooltip-box">
+                              {t('percentageDashboard.overtimeTooltip', 'Überstunden entstehen, wenn du mehr als dein Wochensoll arbeitest. Du kannst sie später als „Überstundenfrei“ nutzen.')}
+                            </span>
+                        </span>
+                    </p>
                 </div>
-
                 <div className="print-report-container">
                     <button onClick={() => setPrintModalVisible(true)} className="button-primary">
-                        {t("printReportButton")}
+                        {t("printReportButton", "Bericht drucken")}
                     </button>
                 </div>
             </header>
 
-            {punchMsg && <div className="punch-message">{punchMsg}</div>}
+            {punchMessage && <div className="punch-message">{punchMessage}</div>}
 
             <PercentageWeekOverview
-                // user={profile} // 'user' prop wird nicht verwendet in PercentageWeekOverview
-                entries={entries}
-                monday={monday}
-                setMonday={setMonday}
+                t={t}
+                dailySummaries={dailySummaries.filter(s => {
+                    const isoDate = s.date;
+                    return isoDate >= formatLocalDate(selectedMonday) && isoDate <= formatLocalDate(addDays(selectedMonday, 6)); // Mo-So Daten übergeben
+                })}
+                monday={selectedMonday}
+                setMonday={setSelectedMonday}
                 weeklyWorked={weeklyWorked}
                 weeklyExpected={weeklyExpected}
                 weeklyDiff={weeklyDiff}
                 handleManualPunch={handleManualPunch}
-                punchMessage={punchMsg}
-                openCorrectionModal={openCorrectionModal}
+                punchMessage={punchMessage}
+                openCorrectionModal={openCorrectionModalForDay}
+                userProfile={userProfile}
+                vacationRequests={vacationRequests} // NEU
+                sickLeaves={sickLeaves} // NEU
+                holidaysForUserCanton={holidaysForUserCanton?.data} // NEU
             />
 
             <PercentageVacationSection
                 t={t}
-                userProfile={profile}
+                userProfile={userProfile}
                 vacationRequests={vacationRequests}
-                onRefreshVacations={fetchVacations}
+                onRefreshVacations={fetchDataForUser}
             />
 
             <PercentageCorrectionsPanel
@@ -399,15 +441,13 @@ const PercentageDashboard = () => {
             <PercentageCorrectionModal
                 visible={showCorrectionModal}
                 correctionDate={correctionDate}
-                correctionData={correctionData}
-                handleCorrectionInputChange={(e) =>
-                    setCorrectionData({ ...correctionData, [e.target.name]: e.target.value })
-                }
-                handleCorrectionSubmit={handleCorrectionSubmit}
+                dailySummaryForCorrection={dailySummaryForCorrection}
+                onSubmitCorrection={handleCorrectionSubmit}
                 onClose={() => setShowCorrectionModal(false)}
                 t={t}
             />
         </div>
+        </>
     );
 };
 

@@ -2,7 +2,7 @@
 import React, { createContext, useState, useContext } from 'react';
 import "../styles/Notification.css"; // Pfad anpassen
 
-const NotificationContext = createContext({
+export const NotificationContext = createContext({
     notify: () => {},
 });
 

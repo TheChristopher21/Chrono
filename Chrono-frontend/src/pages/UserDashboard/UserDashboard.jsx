@@ -1,172 +1,175 @@
 // src/pages/UserDashboard/UserDashboard.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
 import VacationCalendar from '../../components/VacationCalendar';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
+import { parseISO } from 'date-fns';
 
 import '../../styles/global.css';
-import '../../styles/UserDashboardScoped.css';  // Wichtig: Gescoptes Dashboard-CSS
-import "jspdf-autotable";
-import fileDownload from "js-file-download";
-import jsPDF from "jspdf";
+import '../../styles/UserDashboardScoped.css';
+import "jspdf-autotable"; // Für PDF Export
+import jsPDF from "jspdf"; // Für PDF Export
+import autoTable from "jspdf-autotable"; // Importiere autoTable explizit
 
-import HourlyDashboard from '../../pages/HourlyDashboard/HourlyDashboard.jsx';
+import HourlyDashboard from '../../pages/HourlyDashboard/HourlyDashboard.jsx'; // Für den Fall, dass ein User stündlich ist
 
 import {
     getMondayOfWeek,
     addDays,
-    parseHex16,
-    formatTime,
     formatLocalDate,
-    computeDailyDiffValue,
-    formatDiffDecimal,
+    formatDate,
+    formatTime,
+    minutesToHHMM,
     getExpectedHoursForDay,
-    getStatusLabel,
-    groupEntriesByDay,
-    expandDayRows,
-    isLateTime
+    isLateTime,
+    formatPunchedTimeFromEntry,
 } from './userDashUtils';
-import { minutesToHours } from '../PercentageDashboard/percentageDashUtils';
 
 import UserCorrectionModal from './UserCorrectionModal';
 import UserCorrectionsPanel from './UserCorrectionsPanel';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 
 function UserDashboard() {
-    const { currentUser } = useAuth();
+    const { currentUser, fetchCurrentUser } = useAuth();
     const { notify } = useNotification();
     const { t } = useTranslation();
 
     const [userProfile, setUserProfile] = useState(null);
-    const [allEntries, setAllEntries] = useState([]);
+    const [dailySummaries, setDailySummaries] = useState([]);
     const [vacationRequests, setVacationRequests] = useState([]);
     const [correctionRequests, setCorrectionRequests] = useState([]);
+    const [sickLeaves, setSickLeaves] = useState([]);
+    const [holidaysForUserCanton, setHolidaysForUserCanton] = useState({ data: {}, year: null, canton: null });
 
-    // Punch
     const [punchMessage, setPunchMessage] = useState('');
     const lastPunchTimeRef = useRef(0);
 
-    // Weekly
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
 
-    // Corrections
     const [showCorrectionsPanel, setShowCorrectionsPanel] = useState(false);
     const [showAllCorrections, setShowAllCorrections] = useState(false);
     const [selectedCorrectionMonday, setSelectedCorrectionMonday] = useState(getMondayOfWeek(new Date()));
 
-    // Print
     const [printModalVisible, setPrintModalVisible] = useState(false);
-    const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date()));
-    const [printEndDate, setPrintEndDate] = useState(formatLocalDate(new Date()));
+    const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)));
+    const [printEndDate, setPrintEndDate] = useState(formatLocalDate(new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)));
 
-    // CorrectionModal
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
     const [correctionDate, setCorrectionDate] = useState("");
-    const [correctionData, setCorrectionData] = useState({
-        workStart: "",
-        breakStart: "",
-        breakEnd: "",
-        workEnd: "",
-        reason: ""
-    });
+    const [dailySummaryForCorrection, setDailySummaryForCorrection] = useState(null);
 
-    // Summen
-    const [weeklyDiff, setWeeklyDiff] = useState(0);
-    const [monthlyDiff, setMonthlyDiff] = useState(0);
-    const [overallDiff, setOverallDiff] = useState(0);
-    const [monthlyDiffAll, setMonthlyDiffAll] = useState({});
+    const defaultExpectedHours = userProfile?.dailyWorkHours ?? 8.5;
 
-    const defaultExpectedHours = userProfile
-        ? Number(userProfile.dailyWorkHours || 8)
-        : 8;
-
-    async function loadProfile() {
+    const loadProfileAndInitialData = useCallback(async () => {
         try {
-            const res = await api.get('/api/auth/me');
-            const profile = res.data;
-
-            // WeeklySchedule fix
-            if (profile.weeklySchedule && !Array.isArray(profile.weeklySchedule)) {
-                profile.weeklySchedule = [profile.weeklySchedule];
+            const profile = await fetchCurrentUser();
+            if (profile && Object.keys(profile).length > 0) {
+                if (profile.weeklySchedule && !Array.isArray(profile.weeklySchedule)) {
+                    profile.weeklySchedule = [profile.weeklySchedule];
+                }
+                if (!profile.weeklySchedule || profile.weeklySchedule.length === 0) {
+                    profile.weeklySchedule = [{ monday: 8.5, tuesday: 8.5, wednesday: 8.5, thursday: 8.5, friday: 8.5, saturday: 0, sunday: 0 }];
+                    profile.scheduleCycle = 1;
+                }
+                setUserProfile(profile);
+            } else {
+                throw new Error("User profile could not be loaded.");
             }
-            if (!profile.weeklySchedule) {
-                profile.weeklySchedule = [
-                    { monday: 8, tuesday: 8, wednesday: 8, thursday: 8, friday: 8, saturday: 0, sunday: 0 }
-                ];
-                profile.scheduleCycle = 1;
-            }
-            setUserProfile(profile);
         } catch (err) {
             console.error(t('personalData.errorLoading'), err);
+            notify(t('errors.fetchProfileError', 'Fehler beim Laden des Profils.'), 'error');
         }
-    }
+    }, [fetchCurrentUser, t, notify]);
 
-    // 1) Profil laden
     useEffect(() => {
-        loadProfile();
-    }, [t, currentUser]);
+        loadProfileAndInitialData();
+    }, [loadProfileAndInitialData]);
 
-    // 2) Daten laden
+    const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
+        const cantonKey = cantonAbbreviation || 'GENERAL';
+        if (holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
+            return; // Bereits für dieses Jahr und Kanton geladen
+        }
+        try {
+            const params = { year, cantonAbbreviation: cantonAbbreviation || '', startDate: `${year}-01-01`, endDate: `${year}-12-31` };
+            const response = await api.get('/api/holidays/details', { params });
+            setHolidaysForUserCanton({ data: response.data || {}, year, canton: cantonKey });
+        } catch (error) {
+            console.error(t('errors.fetchHolidaysError', 'Fehler beim Laden der Feiertage:'), error);
+            setHolidaysForUserCanton({ data: {}, year, canton: cantonKey });
+        }
+    }, [t, holidaysForUserCanton]);
+
+    const fetchDataForUser = useCallback(async () => {
+        if (!userProfile?.username) return;
+        try {
+            const [resSummaries, resVacation, resCorr, resSick] = await Promise.all([
+                api.get(`/api/timetracking/history?username=${userProfile.username}`),
+                api.get('/api/vacation/my'),
+                api.get(`/api/correction/my?username=${userProfile.username}`),
+                api.get('/api/sick-leave/my')
+            ]);
+            setDailySummaries(Array.isArray(resSummaries.data) ? resSummaries.data : []);
+            setVacationRequests(Array.isArray(resVacation.data) ? resVacation.data : []);
+            setCorrectionRequests(Array.isArray(resCorr.data) ? resCorr.data : []);
+            setSickLeaves(Array.isArray(resSick.data) ? resSick.data : []);
+        } catch (err) {
+            console.error("Fehler beim Laden der Benutzerdaten (UserDashboard):", err);
+            notify(t('errors.fetchUserDataError', 'Fehler beim Laden der Benutzerdaten.'), 'error');
+        }
+    }, [userProfile, notify, t]);
+
     useEffect(() => {
-        if (!userProfile) return;
-
-        async function fetchAllData() {
-            try {
-                // Einträge
-                const resEntries = await api.get(`/api/timetracking/history?username=${userProfile.username}`);
-                const expanded = expandDayRows(resEntries.data || []);
-                const validEntries = expanded.filter(e => [1, 2, 3, 4].includes(e.punchOrder));
-                setAllEntries(validEntries);
-
-                // Urlaub
-                const resVacation = await api.get('/api/vacation/my');
-                setVacationRequests(resVacation.data || []);
-
-                // Korrekturen
-                const resCorr = await api.get(`/api/correction/my?username=${userProfile.username}`);
-                setCorrectionRequests(resCorr.data || []);
-            } catch (err) {
-                console.error("Fehler beim Laden der Daten:", err);
+        if (userProfile) {
+            fetchDataForUser();
+            // Feiertage laden basierend auf dem Kanton des Users, falls vorhanden
+            const cantonAbbr = userProfile.company?.cantonAbbreviation || userProfile.companyCantonAbbreviation;
+            if (cantonAbbr) {
+                fetchHolidaysForUser(selectedMonday.getFullYear(), cantonAbbr);
+            } else {
+                fetchHolidaysForUser(selectedMonday.getFullYear(), ''); // Fallback für allgemeine Feiertage
             }
         }
-        fetchAllData();
-    }, [userProfile]);
+    }, [userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
 
-    // 3) NFC-Abfrage per Intervall
+    // Feiertage neu laden, wenn sich das Jahr des selectedMonday ändert
     useEffect(() => {
-        const interval = setInterval(() => doNfcCheck(), 2000);
+        if (userProfile) {
+            const cantonAbbr = userProfile.company?.cantonAbbreviation || userProfile.companyCantonAbbreviation;
+            fetchHolidaysForUser(selectedMonday.getFullYear(), cantonAbbr || '');
+        }
+    }, [selectedMonday, userProfile, fetchHolidaysForUser]);
+
+
+    useEffect(() => {
+        const interval = setInterval(doNfcCheck, 2000);
         return () => clearInterval(interval);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     async function doNfcCheck() {
         try {
-            const response = await fetch(process.env.APIURL + '/api/nfc/read/1');
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`);
             if (!response.ok) return;
             const json = await response.json();
-            if (json.status === 'no-card' || json.status === 'error') return;
-            if (json.status === 'success') {
-                const cardUser = parseHex16(json.data);
-                if (cardUser) {
-                    const now = Date.now();
-                    if (now - lastPunchTimeRef.current < 5000) return;
-                    lastPunchTimeRef.current = now;
+            if (json.status !== 'success' || !json.data) return;
+            const cardUser = json.data;
+            if (!cardUser) return;
 
-                    showPunchMessage(`Eingestempelt: ${cardUser}`);
-                    try {
-                        await api.post('/api/timetracking/punch', null, {
-                            params: { username: cardUser }
-                        });
-                        loadProfile();
-                    } catch (err) {
-                        console.error("Punch-Fehler:", err);
-                    }
-                }
+            if (Date.now() - lastPunchTimeRef.current < 5000) return;
+            lastPunchTimeRef.current = Date.now();
+
+            showPunchMessage(`${t('login.stamped', 'Eingestempelt')}: ${cardUser}`);
+            await api.post('/api/timetracking/punch', null, { params: { username: cardUser, source: 'NFC_SCAN' } });
+            if (userProfile && cardUser === userProfile.username) {
+                fetchDataForUser();
+                loadProfileAndInitialData();
             }
         } catch (err) {
-            console.error("NFC fetch error:", err);
+            console.error('NFC error', err);
         }
     }
 
@@ -178,458 +181,336 @@ function UserDashboard() {
     async function handleManualPunch() {
         if (!userProfile) return;
         try {
-            await api.post('/api/timetracking/punch', null, {
-                params: { username: userProfile.username }
+            const response = await api.post('/api/timetracking/punch', null, {
+                params: { username: userProfile.username, source: 'MANUAL_PUNCH' }
             });
-            showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username}`);
-
-            const resEntries = await api.get(`/api/timetracking/history?username=${userProfile.username}`);
-            const expanded = expandDayRows(resEntries.data || []);
-            const validEntries = expanded.filter(e => [1, 2, 3, 4].includes(e.punchOrder));
-            setAllEntries(validEntries);
-            loadProfile();
+            const newEntry = response.data;
+            showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.' + newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
+            fetchDataForUser();
+            loadProfileAndInitialData();
         } catch (err) {
             console.error('Punch-Fehler:', err);
-            notify(t("manualPunchError"));
+            notify(t("manualPunchError", "Fehler beim manuellen Stempeln."), 'error');
         }
     }
 
-    // 4) Summenberechnungen
-    useEffect(() => {
-        if (!userProfile || userProfile.isHourly) {
-            setWeeklyDiff(0);
-            return;
-        }
-        const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
-        const dateStrings = weekDates.map(d => d.toLocaleDateString());
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
 
-        const weeklyEntries = allEntries.filter(e =>
-            dateStrings.includes(new Date(e.startTime).toLocaleDateString())
+    const weeklyExpectedMins = weekDates.reduce((sum, d) => {
+        const expHours = getExpectedHoursForDay(
+            d,
+            userProfile,
+            defaultExpectedHours,
+            holidaysForUserCanton?.data,
+            vacationRequests,
+            sickLeaves
         );
+        return sum + Math.round((expHours || 0) * 60);
+    }, 0);
+    const weeklyExpectedStr = minutesToHHMM(weeklyExpectedMins);
 
-        const grouped = {};
-        weeklyEntries.forEach(entry => {
-            const ds = new Date(entry.startTime).toLocaleDateString('de-DE');
-            if (!grouped[ds]) grouped[ds] = [];
-            grouped[ds].push(entry);
+    const weeklyActualWorkedMinutes = weekDates.reduce((acc, date) => {
+        const isoDate = formatLocalDate(date);
+        const summaryForDay = dailySummaries.find(s => s.date === isoDate);
+        return acc + (summaryForDay?.workedMinutes || 0);
+    },0);
+    const weeklyDiffStr = minutesToHHMM(weeklyActualWorkedMinutes - weeklyExpectedMins);
+    const overtimeBalanceStr = minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0);
+
+    const sortedCorrections = (showAllCorrections ? correctionRequests : correctionRequests.filter(req => {
+        if (!req.requestDate) return false;
+        const reqDate = parseISO(req.requestDate);
+        return reqDate >= selectedMonday && reqDate < addDays(selectedMonday, 7);
+    }))
+        .slice()
+        .sort((a, b) => {
+            const dateA = a.requestDate ? parseISO(a.requestDate) : 0;
+            const dateB = b.requestDate ? parseISO(b.requestDate) : 0;
+            return dateB - dateA;
         });
 
-        let sumMins = 0;
-        Object.keys(grouped).forEach(ds => {
-            const dayEntries = grouped[ds];
-            if (dayEntries.length > 0) {
-                const dateObj = new Date(dayEntries[0].startTime);
-                const expected = getExpectedHoursForDay(dateObj, userProfile, defaultExpectedHours);
-                sumMins += computeDailyDiffValue(dayEntries, expected);
-            }
-        });
-        setWeeklyDiff(sumMins);
-    }, [allEntries, userProfile, selectedMonday]);
-
-    useEffect(() => {
-        if (!userProfile || userProfile.isHourly) {
-            setMonthlyDiff(0);
-            return;
-        }
-        const year = selectedMonday.getFullYear();
-        const month = selectedMonday.getMonth();
-
-        const monthlyEntries = allEntries.filter(e => {
-            const d = new Date(e.startTime);
-            return d.getFullYear() === year && d.getMonth() === month;
-        });
-
-        const grouped = {};
-        monthlyEntries.forEach(entry => {
-            const ds = new Date(entry.startTime).toLocaleDateString('de-DE');
-            if (!grouped[ds]) grouped[ds] = [];
-            grouped[ds].push(entry);
-        });
-
-        let sumMins = 0;
-        for (const ds in grouped) {
-            const dayEntries = grouped[ds];
-            if (dayEntries.length > 0) {
-                const dateObj = new Date(dayEntries[0].startTime);
-                const expected = getExpectedHoursForDay(dateObj, userProfile, defaultExpectedHours);
-                sumMins += computeDailyDiffValue(dayEntries, expected);
-            }
-        }
-        setMonthlyDiff(sumMins);
-    }, [allEntries, userProfile, selectedMonday]);
-
-    useEffect(() => {
-        if (!userProfile || userProfile.isHourly) {
-            setOverallDiff(0);
-            return;
-        }
-        const dayMap = groupEntriesByDay(allEntries);
-        let sumMins = 0;
-        for (const ds in dayMap) {
-            const dayEntries = dayMap[ds];
-            if (dayEntries.length > 0) {
-                const dateObj = new Date(dayEntries[0].startTime);
-                const expected = getExpectedHoursForDay(dateObj, userProfile, defaultExpectedHours);
-                sumMins += computeDailyDiffValue(dayEntries, expected);
-            }
-        }
-        setOverallDiff(sumMins);
-    }, [allEntries, userProfile]);
-
-    useEffect(() => {
-        if (!userProfile || userProfile.isHourly) {
-            setMonthlyDiffAll({});
-            return;
-        }
-        const monthlyGroups = {};
-        allEntries.forEach(entry => {
-            const d = new Date(entry.startTime);
-            const monthKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-            if (!monthlyGroups[monthKey]) monthlyGroups[monthKey] = {};
-            const ds = d.toLocaleDateString('de-DE');
-            if (!monthlyGroups[monthKey][ds]) monthlyGroups[monthKey][ds] = [];
-            monthlyGroups[monthKey][ds].push(entry);
-        });
-
-        const diffs = {};
-        for (const monthKey in monthlyGroups) {
-            let sumMonth = 0;
-            const dayGroup = monthlyGroups[monthKey];
-            for (const ds in dayGroup) {
-                const dayEntries = dayGroup[ds];
-                if (dayEntries.length > 0) {
-                    const dateObj = new Date(dayEntries[0].startTime);
-                    const expected = getExpectedHoursForDay(dateObj, userProfile, defaultExpectedHours);
-                    sumMonth += computeDailyDiffValue(dayEntries, expected);
-                }
-            }
-            diffs[monthKey] = sumMonth;
-        }
-        setMonthlyDiffAll(diffs);
-    }, [allEntries, userProfile]);
-
-    // 5) Falls isHourly
-    if (userProfile && userProfile.isHourly) {
-        return <HourlyDashboard />;
+    function openCorrectionModalForDay(dateObj) {
+        const isoDate = formatLocalDate(dateObj);
+        setCorrectionDate(isoDate);
+        const summaryForDay = dailySummaries.find(s => s.date === isoDate);
+        setDailySummaryForCorrection(summaryForDay || { date: isoDate, entries: [] });
+        setShowCorrectionModal(true);
     }
 
-    // 7) Print
+    const fetchCorrectionRequests = useCallback(async () => {
+        if (!currentUser || !currentUser.username) {
+            return;
+        }
+        try {
+            // Die URL braucht keine Datums-Parameter mehr
+            const response = await api.get(`/api/correction/user/${currentUser.username}`);
+            setCorrectionRequests(response.data);
+        } catch (error) {
+            console.error("Fehler beim Abrufen der Korrekturanträge:", error);
+            notify("Korrekturanträge konnten nicht geladen werden.", 'error');
+        }
+    }, [currentUser, notify]); // Abhängigkeiten bleiben gleich
+
+    const handleCorrectionSubmit = async (entries, reason) => {
+        // Prüfen, ob alle notwendigen Daten vorhanden sind
+        if (!correctionDate || !entries || entries.length === 0) {
+            notify('Bitte fügen Sie mindestens einen Korrektureintrag hinzu.', 'error');
+            return;
+        }
+        if (!currentUser || !currentUser.username) {
+            notify('Benutzer nicht gefunden, bitte neu anmelden.', 'error');
+            return;
+        }
+
+        // Erstellt eine Liste von Promises für jeden einzelnen Korrekturantrag
+        const correctionPromises = entries.map(entry => {
+            const desiredTimestamp = `${correctionDate}T${entry.time}:00`;
+            const desiredPunchType = entry.type;
+
+            // Alle Parameter für die URL vorbereiten, wie vom Backend jetzt verlangt
+            const params = new URLSearchParams({
+                username: currentUser.username,
+                reason: reason,
+                requestDate: correctionDate,
+                desiredTimestamp: desiredTimestamp,
+                desiredPunchType: desiredPunchType
+                // targetEntryId ist optional und wird hier weggelassen
+            });
+
+            // API-Aufruf mit leerem Body, da alle Daten in der URL sind
+            return api.post(`/api/correction/create?${params.toString()}`, null);
+        });
+
+        try {
+            // Wartet, bis alle Anfragen parallel gesendet wurden
+            await Promise.all(correctionPromises);
+
+            notify(t('userDashboard.correctionSuccess'), 'success');
+            setShowCorrectionModal(false);
+            fetchCorrectionRequests(selectedCorrectionMonday);
+
+        } catch (error) {
+            console.error('Fehler beim Absenden der Korrekturanträge:', error);
+            const errorMsg = error.response?.data?.message || 'Ein oder mehrere Anträge konnten nicht gesendet werden.';
+            notify(errorMsg, 'error');
+        }
+    };
+
+
     async function handlePrintReport() {
-        if (!printStartDate || !printEndDate) {
-            notify(t("missingDateRange") || "Zeitraum fehlt");
+        if (!printStartDate || !printEndDate || !userProfile) {
+            notify(t("missingDateRange", "Zeitraum oder Benutzerprofil fehlt."), 'error');
             return;
         }
         setPrintModalVisible(false);
 
-        try {
-            const { data } = await api.get("/api/timetracking/report", {
-                params: {
-                    username: userProfile.username,
-                    startDate: printStartDate,
-                    endDate:   printEndDate,
-                },
-            });
+        const summariesToPrint = dailySummaries.filter(summary =>
+            summary.date >= printStartDate && summary.date <= printEndDate
+        ).sort((a,b) => parseISO(a.date) - parseISO(b.date));
 
-            const doc = new jsPDF("p", "mm", "a4");
-            doc.setFontSize(14);
-            doc.text(`Zeitenbericht für ${userProfile.firstName} ${userProfile.lastName}`, 14, 15);
-            doc.setFontSize(11);
-            doc.text(`Zeitraum: ${printStartDate} – ${printEndDate}`, 14, 22);
+        const doc = new jsPDF("p", "mm", "a4");
+        doc.setFontSize(14);
+        doc.text(`Zeitenbericht für ${userProfile.firstName} ${userProfile.lastName} (${userProfile.username})`, 14, 15);
+        doc.setFontSize(11);
+        doc.text(`Zeitraum: ${formatDate(printStartDate)} – ${formatDate(printEndDate)}`, 14, 22);
 
-            const rows = (data || []).map(e => [
-                e.date,
-                e.workStart  || "-",
-                e.breakStart || "-",
-                e.breakEnd   || "-",
-                e.workEnd    || "-"
-            ]);
+        const tableBody = summariesToPrint.map(summary => {
+            const displayDate = formatDate(summary.date);
+            const primary = summary.primaryTimes || { firstStartTime: null, lastEndTime: null, isOpen: false};
+            const workStart  = primary.firstStartTime ? primary.firstStartTime.substring(0,5) : "-";
+            const workEnd    = primary.lastEndTime ? primary.lastEndTime.substring(0,5) : (primary.isOpen ? "OFFEN" : "-");
+            const breakTimeStr = minutesToHHMM(summary.breakMinutes);
+            const totalWorkedStr = minutesToHHMM(summary.workedMinutes);
+            const punches = summary.entries.map(e => `${t('punchTypes.'+e.punchType, e.punchType).substring(0,1)}:${formatTime(e.entryTimestamp)}${e.source === 'SYSTEM_AUTO_END' && !e.correctedByUser ? '(A)' : ''}`).join(' | ');
 
-            doc.autoTable({
-                head: [["Datum", "Work-Start", "Break-Start", "Break-End", "Work-End"]],
-                body: rows,
-                startY: 30,
-                margin: { left: 14, right: 14 },
-                styles: { fontSize: 9, cellPadding: 2 },
-                headStyles: { fillColor: [0, 123, 255], halign: "center" },
-                didDrawPage: (data) => {
-                    const page = `${doc.internal.getNumberOfPages()}`;
-                    doc.text(`Seite ${data.pageNumber}`, doc.internal.pageSize.getWidth() - 14, 10, { align: "right" });
-                },
-            });
-            doc.save(`timesheet_${userProfile.username}_${printStartDate}_${printEndDate}.pdf`);
-        } catch (err) {
-            console.error("Fehler beim Generieren", err);
-            notify(t("printReportError") || "PDF-Fehler");
-        }
-    }
-
-    // 8) Correction Modal
-    function openCorrectionModal(dateObj) {
-        const localDate = dateObj.toLocaleDateString();
-        const dayEntries = allEntries.filter(e =>
-            new Date(e.startTime).toLocaleDateString() === localDate
-        );
-
-        const formatToInputTime = dateStr => {
-            if (!dateStr) return '';
-            const dd = new Date(dateStr);
-            if (isNaN(dd.getTime())) return '';
-            return dd.toISOString().slice(11, 16);
-        };
-        setCorrectionDate(formatLocalDate(dateObj));
-
-        const wStart = dayEntries.find(e => e.punchOrder === 1);
-        const bStart = dayEntries.find(e => e.punchOrder === 2);
-        const bEnd   = dayEntries.find(e => e.punchOrder === 3);
-        const wEnd   = dayEntries.find(e => e.punchOrder === 4);
-
-        setCorrectionData({
-            workStart:  formatToInputTime(wStart?.startTime),
-            breakStart: bStart
-                ? (bStart.breakStart ? bStart.breakStart.slice(0, 5) : formatToInputTime(bStart.startTime))
-                : "",
-            breakEnd:   bEnd
-                ? (bEnd.breakEnd ? bEnd.breakEnd.slice(0, 5) : formatToInputTime(bEnd.startTime))
-                : "",
-            workEnd:    formatToInputTime(wEnd?.endTime),
-            reason:     ""
+            return [displayDate, workStart, workEnd, breakTimeStr, totalWorkedStr, punches, summary.dailyNote || ""];
         });
-        setShowCorrectionModal(true);
+
+        autoTable(doc, {
+            head: [["Datum", "Start", "Ende", "Pause", "Arbeit", "Stempelungen", "Notiz"]],
+            body: tableBody,
+            startY: 30,
+            margin: { left: 10, right: 10 },
+            styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
+            headStyles: { fillColor: [71, 91, 255], textColor: 255, fontStyle: "bold", halign: "center" },
+            columnStyles: {
+                0: { cellWidth: 18 }, 1: { cellWidth: 12 }, 2: { cellWidth: 12 },
+                3: { cellWidth: 15 }, 4: { cellWidth: 15 }, 5: { cellWidth: 'auto'},
+                6: { cellWidth: 40 }
+            },
+            didDrawPage: (dataHooks) => {
+                doc.setFontSize(8);
+                doc.text(`Seite ${dataHooks.pageNumber} von ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.getWidth() - 10, doc.internal.pageSize.getHeight() - 10, { align: "right" });
+            }
+        });
+        doc.save(`Zeitenbericht_${userProfile.username}_${printStartDate}_bis_${printEndDate}.pdf`);
     }
 
-    function handleCorrectionInputChange(e) {
-        const { name, value } = e.target;
-        setCorrectionData(prev => ({ ...prev, [name]: value }));
-    }
-
-    async function handleCorrectionSubmit(e) {
-        e.preventDefault();
-        if (!correctionData.workStart || !correctionData.workEnd) {
-            notify("Bitte Work Start und Work End ausfüllen.");
-            return;
-        }
-        const desiredStart = `${correctionDate}T${correctionData.workStart}`;
-        const desiredEnd   = `${correctionDate}T${correctionData.workEnd}`;
-
-        try {
-            await api.post('/api/correction/create-full', null, {
-                params: {
-                    username: userProfile.username,
-                    date: correctionDate,
-                    workStart:  correctionData.workStart,
-                    breakStart: correctionData.breakStart,
-                    breakEnd:   correctionData.breakEnd,
-                    workEnd:    correctionData.workEnd,
-                    reason:     correctionData.reason,
-                    desiredStart,
-                    desiredEnd
-                }
-            });
-            notify(t("correctionSubmitSuccess") || "Korrekturantrag erfolgreich gestellt.");
-
-            const resCorr = await api.get(`/api/correction/my?username=${userProfile.username}`);
-            setCorrectionRequests(resCorr.data || []);
-
-            setShowCorrectionModal(false);
-        } catch (err) {
-            console.error("Fehler beim Absenden des Korrekturantrags:", err);
-            notify(t("correctionSubmitError") || "Fehler beim Absenden des Korrekturantrags.");
-        }
-    }
-
-    // 9) UI
-    const weeklyDiffStr   = formatDiffDecimal(weeklyDiff);
-    const monthlyDiffStr  = formatDiffDecimal(monthlyDiff);
-    const overallDiffStr  = formatDiffDecimal(overallDiff);
-    const overtimeBalanceStr = formatDiffDecimal(userProfile?.trackingBalanceInMinutes || 0);
-
-    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
-    const weeklyExpectedMins = weekDates.reduce((sum, d) => {
-        const exp = getExpectedHoursForDay(d, userProfile, defaultExpectedHours);
-        return sum + (exp ?? 0) * 60;
-    }, 0);
-    const weeklyExpectedStr = minutesToHours(weeklyExpectedMins);
-
-    // Korrekturen
-    const correctionsForWeek = correctionRequests.filter(req => {
-        const reqDate = new Date(req.desiredStart);
-        return reqDate >= selectedCorrectionMonday && reqDate < addDays(selectedCorrectionMonday, 7);
-    });
-    const sortedCorrections = (showAllCorrections ? correctionRequests : correctionsForWeek)
-        .slice()
-        .sort((a, b) => new Date(b.desiredStart) - new Date(a.desiredStart));
-
-    async function fetchVacations() {
-        try {
-            const resVacation = await api.get('/api/vacation/my');
-            setVacationRequests(resVacation.data || []);
-        } catch (err) {
-            console.error("Fehler beim Nachladen der Urlaube:", err);
-            notify("Fehler beim Laden der Urlaube.");
-        }
-    }
-    function refreshVacations() {
-        fetchVacations();
-    }
-
-    // Falls userProfile nicht existiert -> Laden
     if (!userProfile) {
         return (
             <div className="user-dashboard scoped-dashboard">
                 <Navbar />
-                <p>Lädt Benutzerprofil…</p>
+                <p className="loading-message">{t("loading", "Lade Benutzerprofil...")}</p>
             </div>
         );
     }
+    if (userProfile.isHourly) {
+        return <HourlyDashboard />;
+    }
+    if (userProfile.isPercentage) {
+        // Annahme: Es gibt eine PercentageDashboard Komponente
+        // import PercentageDashboard from '../PercentageDashboard/PercentageDashboard';
+        // return <PercentageDashboard />;
+        // Für dieses Beispiel leite auf eine dedizierte Route weiter oder zeige Nachricht
+        // Da das PercentageDashboard eigene Logik hat, ist eine eigene Komponente/Route besser
+        // return <Navigate to="/percentage-dashboard" replace />; // Besser wäre, es direkt hier zu rendern
+    }
 
     return (
-        <div className="user-dashboard scoped-dashboard">
-            <Navbar />
-
-            <header className="dashboard-header">
+        <> {/* React Fragment oder ein neutrales <div> als äußeren Container nutzen */}
+            <Navbar /> {/* NAVBAR IST JETZT AUSSERHALB DES SCOPED-DASHBOARD DIVS */}
+            <div className="user-dashboard scoped-dashboard">
+                <header className="dashboard-header">
                 <h2>{t("title")}</h2>
                 <div className="personal-info">
-                    <p><strong>{t("usernameLabel")}:</strong> {userProfile?.username || t("notLoggedIn")}</p>
-                    <p>
-                        <strong>{t('expected')}:</strong> {weeklyExpectedStr}
-                    </p>
-                    <p>
-                        <strong>{t('overtimeBalance')}:</strong> {overtimeBalanceStr}
-                    </p>
+                    <p><strong>{t("usernameLabel")}:</strong> {userProfile.username}</p>
+                    <p><strong>{t('expected')}:</strong> {weeklyExpectedStr}</p>
+                    <p><strong>{t('overtimeBalance')}:</strong> <span className={userProfile.trackingBalanceInMinutes < 0 ? 'balance-negative': 'balance-positive'}>{overtimeBalanceStr}</span></p>
                 </div>
             </header>
 
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
 
-            {/* Manuelles Stempeln */}
-            <section className="punch-section">
+            <section className="punch-section content-section">
                 <h3>{t("manualPunchTitle")}</h3>
-                <button onClick={handleManualPunch}>{t("manualPunchButton")}</button>
+                <button onClick={handleManualPunch} className="button-primary">
+                    {t("manualPunchButton")}
+                </button>
             </section>
 
-            {/* Wochenübersicht */}
-            <section className="time-tracking-section">
-                <h3>{t("weeklyOverview")}</h3>
+            <section className="time-tracking-section content-section">
+                <h3 className="section-title">{t("weeklyOverview")}</h3>
                 <div className="week-navigation">
-                    <button onClick={() => setSelectedMonday(prev => addDays(prev, -7))}>
+                    <button onClick={() => setSelectedMonday(prev => addDays(prev, -7))} className="button-secondary">
                         ← {t("prevWeek")}
                     </button>
                     <input
                         type="date"
-                        value={selectedMonday.toISOString().slice(0, 10)}
+                        value={formatLocalDate(selectedMonday)}
                         onChange={(e) => {
-                            const picked = new Date(e.target.value);
-                            if (!isNaN(picked.getTime())) {
-                                setSelectedMonday(getMondayOfWeek(picked));
+                            const pickedDate = e.target.value ? parseISO(e.target.value) : null;
+                            if (pickedDate && !isNaN(pickedDate.getTime())) {
+                                setSelectedMonday(getMondayOfWeek(pickedDate));
                             }
                         }}
                     />
-                    <button onClick={() => setSelectedMonday(prev => addDays(prev, 7))}>
+                    <button onClick={() => setSelectedMonday(prev => addDays(prev, 7))} className="button-secondary">
                         {t("nextWeek")} →
                     </button>
                 </div>
+                <div className="weekly-summary">
+                    <p><strong>{t('actualTime')}:</strong> {minutesToHHMM(weeklyActualWorkedMinutes)}</p>
+                    <p><strong>{t('expected')}:</strong> {weeklyExpectedStr}</p>
+                    <p>
+                        <strong>{t('weekBalance')}:</strong>
+                        <span className={weeklyActualWorkedMinutes - weeklyExpectedMins < 0 ? 'balance-negative' : 'balance-positive'}>
+                            {weeklyDiffStr}
+                        </span>
+                    </p>
+                </div>
 
-                {/* (Evtl. Alt-Liste, kann man entfernen, falls nicht benötigt) */}
-                <ul className="time-entry-list" style={{ display: 'none' }}>
-                    {allEntries
-                        .filter(e =>
-                            new Date(e.startTime).toLocaleDateString() === selectedMonday.toLocaleDateString()
-                        )
-                        .map((e, idx) => (
-                            <li
-                                key={idx}
-                                className={`time-entry ${isLateTime(e.time) ? 'late-time' : ''}`}
-                            >
-                                <span className="entry-label">{e.label}</span>: {e.time}
-                            </li>
-                        ))}
-                </ul>
-
-                {/* Day-Cards */}
                 <div className="week-display">
-                    {weekDates.map((dayObj, idx) => {
-                        const ds = dayObj.toLocaleDateString();
-                        const dayEntries = allEntries.filter(e =>
-                            new Date(e.startTime).toLocaleDateString() === ds
-                        );
+                    {weekDates.map((dayObj) => {
+                        const isoDate = formatLocalDate(dayObj);
+                        const summary = dailySummaries.find(s => s.date === isoDate);
+                        const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
+                        const formattedDisplayDate = formatDate(dayObj);
 
-                        const expectedForDay = getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours);
-                        let diffVal = 0;
-                        if (dayEntries.length >= 4) {
-                            diffVal = computeDailyDiffValue(dayEntries, expectedForDay);
-                        }
-                        const dailyDiffStr = dayEntries.length >= 4 ? formatDiffDecimal(diffVal) : '';
+                        const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
+                        const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
+                        const isHolidayToday = holidaysForUserCanton?.data && holidaysForUserCanton.data[isoDate];
+
+                        const expectedMinsToday = userProfile.isPercentage ? 0 : Math.round(getExpectedHoursForDay(
+                            dayObj,
+                            userProfile,
+                            defaultExpectedHours,
+                            holidaysForUserCanton?.data,
+                            vacationRequests,
+                            sickLeaves
+                        ) * 60);
+                        const dailyDiffMinutes = summary ? summary.workedMinutes - expectedMinsToday : (isHolidayToday || vacationToday || sickToday ? 0 : 0 - expectedMinsToday) ;
+
 
                         return (
-                            <div key={idx} className="day-card">
+                            <div key={isoDate}
+                                 className={`day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''} ${vacationToday ? 'vacation-day' : ''} ${sickToday ? 'sick-day' : ''} ${isHolidayToday ? 'holiday-day' : ''}`}>
                                 <div className="day-card-header">
-                                    <h4>
-                                        {dayObj.toLocaleDateString('de-DE', { weekday: 'long' })}, {ds}
-                                        <span className="expected-hours">
-  {` (${t("expectedWorkHours")}: ${(expectedForDay ?? 0).toFixed(2)}h)`}
-</span>
-
-                                    </h4>
-                                    {dailyDiffStr && (
-                                        <span className="daily-diff">({dailyDiffStr})</span>
-                                    )}
+                                    <h4>{dayName}, {formattedDisplayDate}</h4>
+                                    <div className="day-card-meta">
+                                        {!userProfile.isPercentage && <span className="expected-hours">({t("expectedWorkHours")}: {minutesToHHMM(expectedMinsToday)})</span>}
+                                        {summary && !userProfile.isPercentage && <span className={`daily-diff ${dailyDiffMinutes < 0 ? 'balance-negative' : 'balance-positive'}`}>({t("diffToday")}: {minutesToHHMM(dailyDiffMinutes)})</span>}
+                                    </div>
                                 </div>
 
-                                {dayEntries.length === 0 ? (
+                                {isHolidayToday ? (
+                                    <div className="holiday-indicator day-card-info">
+                                        <span role="img" aria-label="Feiertag">🎉</span> {holidaysForUserCanton.data[isoDate]}
+                                    </div>
+                                ) : vacationToday ? (
+                                    <div className="vacation-indicator day-card-info">
+                                        <span role="img" aria-label="Urlaub">🏖️</span> {t('onVacation', 'Im Urlaub')}
+                                        {vacationToday.halfDay && ` (${t('halfDayShort', '½ Tag')})`}
+                                        {vacationToday.usesOvertime && ` (${t('overtimeVacationShort', 'ÜS')})`}
+                                    </div>
+                                ) : sickToday ? (
+                                    <div className="sick-leave-indicator day-card-info">
+                                        <span role="img" aria-label="Krank">⚕️</span> {t('sickLeave.sick', 'Krank')}
+                                        {sickToday.halfDay && ` (${t('halfDayShort', '½ Tag')})`}
+                                        {sickToday.comment && <span className="info-badge" title={sickToday.comment}>📝</span>}
+                                    </div>
+                                ) : (!summary || summary.entries.length === 0) ? (
                                     <p className="no-entries">{t("noEntries")}</p>
                                 ) : (
-                                    <ul className="time-entry-list">
-                                        {dayEntries
-                                            .sort((a, b) => a.punchOrder - b.punchOrder)
-                                            .map(e => {
-                                                let displayTime = '-';
-                                                if (e.punchOrder === 1) {
-                                                    displayTime = e.workStart ? formatTime(e.workStart) : '-';
-                                                } else if (e.punchOrder === 2) {
-                                                    displayTime = e.breakStart ? formatTime(e.breakStart) : '-';
-                                                } else if (e.punchOrder === 3) {
-                                                    displayTime = e.breakEnd ? formatTime(e.breakEnd) : '-';
-                                                } else if (e.punchOrder === 4) {
-                                                    displayTime = e.workEnd   ? formatTime(e.workEnd)   : '-';
-                                                }
-                                                return (
-                                                    <li key={`${e.dailyDate}-${e.punchOrder}`}>
-        <span className="entry-label">
-          {getStatusLabel(e.punchOrder)}:
-        </span>{" "}
-                                                        <span className={isLateTime(displayTime) ? 'late-time' : ''}>
-          {displayTime}
-        </span>
-                                                    </li>
-                                                );
-                                            })}
-                                    </ul>
+                                    <>
+                                        <ul className="time-entry-list">
+                                            {summary.entries.map(entry => (
+                                                <li key={entry.id || entry.entryTimestamp}>
+                                                    <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
+                                                    <span className={`entry-time ${isLateTime(formatTime(entry.entryTimestamp)) ? 'late-time' : ''}`}>
+                                                        {formatPunchedTimeFromEntry(entry)}
+                                                        {entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser && <span className="auto-end-indicator" title={t('messages.autoEndedTooltip', 'Automatisch beendet')}> (A)</span>}
+                                                    </span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        <div className="daily-summary-times">
+                                            <p><strong>{t('actualTime')}:</strong> {minutesToHHMM(summary.workedMinutes)}</p>
+                                            <p><strong>{t('breakTime')}:</strong> {minutesToHHMM(summary.breakMinutes)}</p>
+                                        </div>
+                                    </>
                                 )}
-
-                                {/* Korrekturantrag */}
-                                <button
-                                    className="correction-button"
-                                    onClick={() => openCorrectionModal(dayObj)}
-                                >
-                                    Korrekturantrag stellen
-                                </button>
+                                {summary?.needsCorrection && !vacationToday && !sickToday && !isHolidayToday && (
+                                    <p className="needs-correction-text">{t('messages.correctionNeeded', 'Bitte korrigieren!')}</p>
+                                )}
+                                {!vacationToday && !sickToday && !isHolidayToday && (
+                                    <div className="correction-button-row">
+                                        <button onClick={() => openCorrectionModalForDay(dayObj)} className="button-secondary">
+                                            {t("submitCorrectionRequest")}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
                         );
                     })}
                 </div>
             </section>
 
-            {/* Urlaub */}
-            <section className="vacation-calendar-section">
-                <h3>{t("vacationTitle")}</h3>
-                <VacationCalendar
-                    vacationRequests={vacationRequests}
-                    userProfile={userProfile}
-                    onRefreshVacations={refreshVacations}
-                />
-            </section>
+            <VacationCalendar
+                vacationRequests={vacationRequests}
+                userProfile={userProfile}
+                onRefreshVacations={fetchDataForUser}
+            />
 
-            {/* Korrekturen */}
             <UserCorrectionsPanel
                 t={t}
                 showCorrectionsPanel={showCorrectionsPanel}
@@ -641,40 +522,12 @@ function UserDashboard() {
                 sortedCorrections={sortedCorrections}
             />
 
-            {/* Monatliche Übersicht */}
-            <section className="monthly-all">
-                <h3>{t("allMonths")}</h3>
-                {Object.keys(monthlyDiffAll).length === 0 ? (
-                    <p>{t("noEntries")}</p>
-                ) : (
-                    <table className="daily-summary-table">
-                        <thead>
-                        <tr>
-                            <th>{t("month")}</th>
-                            <th>{t("diffToday")}</th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {Object.entries(monthlyDiffAll)
-                            .sort(([a], [b]) => a.localeCompare(b))
-                            .map(([monthKey, diffVal]) => (
-                                <tr key={monthKey}>
-                                    <td>{monthKey}</td>
-                                    <td>{formatDiffDecimal(diffVal)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-            </section>
-
             <div className="print-report-container">
-                <button onClick={() => setPrintModalVisible(true)}>
+                <button onClick={() => setPrintModalVisible(true)} className="button-primary">
                     {t("printReportButton")}
                 </button>
             </div>
 
-            {/* Print Modal */}
             <PrintReportModal
                 t={t}
                 visible={printModalVisible}
@@ -687,17 +540,16 @@ function UserDashboard() {
                 cssScope="user"
             />
 
-            {/* Correction Modal */}
             <UserCorrectionModal
                 visible={showCorrectionModal}
                 correctionDate={correctionDate}
-                correctionData={correctionData}
-                handleCorrectionInputChange={handleCorrectionInputChange}
-                handleCorrectionSubmit={handleCorrectionSubmit}
+                dailySummaryForCorrection={dailySummaryForCorrection}
+                onSubmitCorrection={handleCorrectionSubmit}
                 onClose={() => setShowCorrectionModal(false)}
-                t={t} // <-- HIER ergänzen!
+                t={t}
             />
         </div>
+        </>
     );
 }
 
