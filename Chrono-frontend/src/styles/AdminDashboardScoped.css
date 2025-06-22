@@ -616,9 +616,13 @@
 
 /* Globale Stile für Modal (EditTimeModal, PrintUserTimesModal, CorrectionDecisionModal) */
 .modal-overlay {
-    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    position: fixed;
+    inset: 0; /* zentriert unabhängig von der Scrollposition */
     background: rgba(0,0,0,0.75); /* Etwas dunkleres Overlay für besseren Fokus */
-    z-index: 10000; display: flex; align-items: center; justify-content: center;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     backdrop-filter: blur(4px); /* Etwas stärkerer Blur */
     padding: var(--u-gap-sm);
 }
