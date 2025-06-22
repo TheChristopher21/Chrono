@@ -247,7 +247,6 @@ const translations = {
         expected: "Soll",
         remainingVacation: "Verbleibender Urlaub",
         daysLabel: "Tage",
-        vacationType: "Urlaubsart",
         fullDay: "Ganztags",
         halfDay: "Halbtags",
         days: {
@@ -711,7 +710,6 @@ const translations = {
         expected: "Expected",
         remainingVacation: "Remaining Vacation",
         daysLabel: "days",
-        vacationType: "Vacation Type",
         fullDay: "Full Day",
         halfDay: "Half Day",
         days: {
