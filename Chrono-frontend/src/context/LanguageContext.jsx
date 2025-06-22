@@ -476,10 +476,8 @@ const translations = {
         notFound: {
             pageNotFound: "404 - Seite nicht gefunden",
         },
-        hourlyDashboard: {
-            addEntryFirst: "Bitte fügen Sie mindestens einen Korrektureintrag hinzu.",
-            userNotFound: "Benutzer nicht gefunden, bitte neu anmelden.",
-        },
+
+
     },
 
     // =============== ENGLISCH ===============
@@ -737,10 +735,7 @@ const translations = {
             saturday: "Saturday",
             sunday: "Sunday",
         },
-        hourlyDashboard: {
-            title: "Hourly Dashboard",
-            mode: "Hourly",
-        },
+
         dailyNotePlaceholder: "Daily note",
         printReportError: "Error generating report",
         loading: "Loading...",
