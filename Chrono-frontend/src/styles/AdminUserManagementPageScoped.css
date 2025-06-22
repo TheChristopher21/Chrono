@@ -475,10 +475,7 @@
 /* --------------------------- Modals (DeleteConfirmModal) --------------------------- */
 .modal-overlay {
     position: fixed; /* Wichtig: positioniert relativ zum Viewport */
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0; /* sorgt für zentrierte Platzierung im sichtbaren Bereich */
     background: rgba(0,0,0,0.65); /* Oder eine CSS-Variable wie var(--c-overlay-bg) */
     z-index: 10000; /* Oder eine passende z-index Variable */
     display: flex;
