@@ -1,7 +1,7 @@
 import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 
-// ➊  Lese alle `.env.*`-Variablen ein
+// ➊  Lese alle `.env.production.*`-Variablen ein
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), "");
 
@@ -29,8 +29,8 @@ export default defineConfig(({ mode }) => {
 
         /**
          * Diese Zeile brennt die Variable in den finalen Bundle:
-         *  • Prod-Build → Wert aus .env.local
-         *  • Dev-Server → Wert aus .env.local
+         *  • Prod-Build → Wert aus .env.production.development
+         *  • Dev-Server → Wert aus .env.production.development
          *  • Fallback   → https://api.chrono-logisch.ch
          */
         define: {
