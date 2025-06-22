@@ -2,9 +2,11 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import ReactMarkdown from 'react-markdown';
-import '../styles/Changelog.css'; // Wir verwenden dieselbe CSS-Datei
+import '../styles/Changelog.css';
+import { useTranslation } from '../context/LanguageContext';
 
 const WhatsNewPage = () => {
+    const { t } = useTranslation();
     const [changelogs, setChangelogs] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -26,9 +28,9 @@ const WhatsNewPage = () => {
         <div>
             <Navbar />
             <div className="page-container">
-                <h1>Alle Änderungen und Updates</h1>
+                <h1>{t('whatsNewPage.title')}</h1>
                 {loading ? (
-                    <p>Lade Verlauf...</p>
+                    <p>{t('whatsNewPage.loading')}</p>
                 ) : (
                     <div className="changelog-history">
                         {changelogs.map(log => (
