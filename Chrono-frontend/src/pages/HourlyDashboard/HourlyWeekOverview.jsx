@@ -1,40 +1,40 @@
 // src/pages/HourlyDashboard/HourlyWeekOverview.jsx
-import React from 'react';
+import React, { useState } from 'react'; // 'useState' hinzugefügt für die Bearbeitungslogik
 import PropTypes from 'prop-types';
 import {
     addDays,
     formatLocalDate,
     formatDate,
-    formatTime, // Wird für die Anzeige von Zeitstempeln aus Einträgen benötigt
+    formatTime,
     getMondayOfWeek,
-    minutesToHHMM, // Für die Anzeige von Gesamtminuten
-    isLateTime, // Beibehalten für UI-Hervorhebungen
-    formatPunchedTimeFromEntry // Zum Formatieren der einzelnen Stempelzeiten
+    minutesToHHMM,
+    isLateTime,
+    formatPunchedTimeFromEntry
 } from './hourDashUtils';
 import '../../styles/HourlyDashboardScoped.css';
-import api from "../../utils/api.js"; // Stellt sicher, dass die Styles hier auch referenziert werden
-
+import api from "../../utils/api.js";
 
 const HourlyWeekOverview = ({
                                 t,
-                                dailySummaries, // Ersetzt allEntries, erwartet Array von DailyTimeSummaryDTO
-                                // dailyNotes, // Annahme: dailyNote ist jetzt Teil von DailyTimeSummaryDTO
-                                // noteEditVisibility, // Logik für Notizen muss ggf. angepasst werden
-                                // setDailyNotes,
-                                // setNoteEditVisibility,
-                                // handleSaveNote, // Logik für Notizen muss ggf. angepasst werden
-                                openCorrectionModal, // Funktion zum Öffnen des Korrekturmodals
+                                dailySummaries,
+                                openCorrectionModal,
                                 selectedMonday,
                                 setSelectedMonday,
-                                weeklyTotalMins, // Wird weiterhin für die Wochenübersicht verwendet
-                                monthlyTotalMins, // Wird weiterhin für die Monatsübersicht verwendet
+                                weeklyTotalMins,
+                                monthlyTotalMins,
                                 handleManualPunch,
                                 punchMessage,
-                                userProfile, // Wird für Notiz-Speicherung und Korrekturen benötigt
+                                userProfile,
+                                // Diese Props müssten vom HourlyDashboard kommen, um Speichern & Benachrichtigungen zu ermöglichen:
+                                // notify,
+                                // fetchDataForUser,
                             }) => {
 
+    const [editingNote, setEditingNote] = useState(null); // Speichert das Datum des Tages, dessen Notiz bearbeitet wird
+    const [noteContent, setNoteContent] = useState('');   // Speichert den Inhalt der Notiz während der Bearbeitung
+
     const weekDates = selectedMonday
-        ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i)) // Mo-So anzeigen
+        ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
         : [];
 
     function handlePrevWeek() {
@@ -44,71 +44,69 @@ const HourlyWeekOverview = ({
         setSelectedMonday(prev => addDays(prev, 7));
     }
     function handleWeekJump(e) {
-        const picked = new Date(e.target.value + "T00:00:00"); // Sicherstellen, dass es als lokales Datum geparst wird
+        const picked = new Date(e.target.value + "T00:00:00");
         if (!isNaN(picked.getTime())) {
             setSelectedMonday(getMondayOfWeek(picked));
         }
     }
 
-    // Beispielhafte Funktion für Notizen, falls noch benötigt und nicht im AdminDashboard gehandhabt
-    const handleNoteToggle = (isoDate) => {
-        // Hier müsste die Logik für das Anzeigen/Verstecken des Notiz-Textareas implementiert werden,
-        // z.B. über einen lokalen State in dieser Komponente oder über Props.
-        console.log("Toggle note for", isoDate);
-    };
-    const handleNoteSave = async (isoDate, noteContent) => {
+    const handleNoteSave = async (isoDate, content) => {
         if (!userProfile?.username) return;
         try {
-            await api.post('/api/timetracking/daily-note', null, { // Dieser Endpunkt ist veraltet, Anpassung nötig
+            // HINWEIS: Dieser API-Endpunkt muss im Backend existieren
+            await api.post('/api/timetracking/daily-note', { note: content }, {
                 params: {
                     username: userProfile.username,
-                    date: isoDate,
-                    note: noteContent || ''
+                    date: isoDate
                 }
             });
-            // notify(t("dailyNoteSaved")); // Notify-Funktion müsste als Prop übergeben werden
-            // fetchDataForUser(); // Funktion zum Neuladen der Daten müsste als Prop übergeben werden
+            // Benachrichtigung anzeigen (müsste als Prop kommen)
+            // notify(t("dailyNoteSaved"));
+            // Daten neu laden, um die Ansicht zu aktualisieren (müsste als Prop kommen)
+            // fetchDataForUser();
         } catch (err) {
             console.error('Fehler beim Speichern der Tagesnotiz:', err);
+            // Fehler-Benachrichtigung (müsste als Prop kommen)
             // notify(t("dailyNoteError"));
+        } finally {
+            // Bearbeitungsmodus beenden, egal ob erfolgreich oder nicht
+            setEditingNote(null);
         }
     };
 
 
     return (
         <section className="weekly-overview content-section">
+            {/* Dein bestehender Header bleibt unverändert */}
             <h3 className="section-title">{t("weeklyOverview", "Wochenübersicht")}</h3>
-
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
-
-            <div className="punch-section"> {/* Kann auch außerhalb der weekly-overview section sein, je nach Layout */}
+            <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
                 <button onClick={handleManualPunch} className="button-primary">
                     {t("manualPunchButton", "Jetzt stempeln")}
                 </button>
             </div>
-
             <div className="week-navigation">
                 <button onClick={handlePrevWeek} className="button-secondary">← {t("prevWeek", "Vorige Woche")}</button>
                 <input
                     type="date"
                     onChange={handleWeekJump}
-                    value={formatLocalDate(selectedMonday)} // Benötigt formatLocalDate
+                    value={formatLocalDate(selectedMonday)}
                 />
                 <button onClick={handleNextWeek} className="button-secondary">{t("nextWeek", "Nächste Woche")} →</button>
             </div>
-
             <div className="weekly-monthly-totals">
                 <p><strong>{t("weeklyHours", "Ges. Std. (Woche)")}:</strong> {minutesToHHMM(weeklyTotalMins)}</p>
                 <p><strong>{t("monthlyHours", "Ges. Std. (Monat)")}:</strong> {minutesToHHMM(monthlyTotalMins)}</p>
             </div>
 
+            {/* Deine bestehende Wochenanzeige bleibt unverändert */}
             <div className="week-display">
                 {weekDates.map((dayObj) => {
                     const isoDate = formatLocalDate(dayObj);
                     const summary = dailySummaries.find(s => s.date === isoDate);
                     const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
-                    const formattedDisplayDate = formatDate(dayObj); // Für benutzerfreundliche Anzeige
+                    const formattedDisplayDate = formatDate(dayObj);
 
                     return (
                         <div key={isoDate} className={`week-day-card day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''}`}>
@@ -122,10 +120,11 @@ const HourlyWeekOverview = ({
                                 ) : (
                                     <>
                                         <ul className="time-entry-list">
+                                            {/* ... (deine Listeneinträge bleiben unverändert) ... */}
                                             {summary.entries.map(entry => (
                                                 <li key={entry.id || entry.entryTimestamp}>
                                                     <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
-                                                    <span className={`entry-time ${isLateTime(formatTime(entry.entryTimestamp)) ? 'late-time' : ''}`}>
+                                                    <span className={`entry-time ${isLateTime(formatTime(new Date(entry.entryTimestamp))) ? 'late-time' : ''}`}>
                                                         {formatPunchedTimeFromEntry(entry)}
                                                         {entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser &&
                                                             <span className="auto-end-indicator" title={t('messages.autoEndedTooltip', 'Automatisch beendet')}> (A)</span>
@@ -138,12 +137,45 @@ const HourlyWeekOverview = ({
                                             <p><strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(summary.workedMinutes)}</p>
                                             <p><strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(summary.breakMinutes)}</p>
                                         </div>
-                                        {summary.dailyNote && (
-                                            <div className="daily-note-display">
-                                                <strong>{t('dailyNoteTitle', 'Notiz')}:</strong>
-                                                <p>{summary.dailyNote}</p>
-                                            </div>
-                                        )}
+
+                                        {/* === HIER BEGINNT DIE NEUE NOTIZ-LOGIK === */}
+                                        <div className="daily-note-container">
+                                            {editingNote === isoDate ? (
+                                                // Ansicht im Bearbeitungsmodus
+                                                <>
+                                                    <textarea
+                                                        className="daily-note-editor"
+                                                        value={noteContent}
+                                                        onChange={(e) => setNoteContent(e.target.value)}
+                                                        rows="4"
+                                                        placeholder="Notiz eingeben..."
+                                                    />
+                                                    <div className="note-buttons">
+                                                        <button className="button-primary" onClick={() => handleNoteSave(isoDate, noteContent)}>{t('save', 'Speichern')}</button>
+                                                        <button className="button-secondary" onClick={() => setEditingNote(null)}>{t('cancel', 'Abbrechen')}</button>
+                                                    </div>
+                                                </>
+                                            ) : (
+                                                // Normale Anzeige
+                                                <div className="daily-note-display">
+                                                    <div className="note-content">
+                                                        <strong>{t('dailyNoteTitle', 'Notiz')}:</strong>
+                                                        <p>{summary?.dailyNote || t('noNotePlaceholder', 'Keine Notiz.')}</p>
+                                                    </div>
+                                                    <button
+                                                        className="button-edit-note"
+                                                        title={t('editNote', 'Notiz bearbeiten')}
+                                                        onClick={() => {
+                                                            setEditingNote(isoDate);
+                                                            setNoteContent(summary?.dailyNote || '');
+                                                        }}
+                                                    >
+                                                        ✏️
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {/* === ENDE DER NOTIZ-LOGIK === */}
                                     </>
                                 )}
                             </div>
@@ -163,6 +195,7 @@ const HourlyWeekOverview = ({
     );
 };
 
+// Deine PropTypes bleiben unverändert
 HourlyWeekOverview.propTypes = {
     t: PropTypes.func.isRequired,
     dailySummaries: PropTypes.arrayOf(PropTypes.shape({
@@ -178,7 +211,7 @@ HourlyWeekOverview.propTypes = {
         })).isRequired,
         dailyNote: PropTypes.string,
         needsCorrection: PropTypes.bool,
-        primaryTimes: PropTypes.object // Struktur von primaryTimes genauer definieren, falls verwendet
+        primaryTimes: PropTypes.object
     })).isRequired,
     selectedMonday: PropTypes.instanceOf(Date).isRequired,
     setSelectedMonday: PropTypes.func.isRequired,
@@ -187,8 +220,7 @@ HourlyWeekOverview.propTypes = {
     handleManualPunch: PropTypes.func.isRequired,
     punchMessage: PropTypes.string,
     openCorrectionModal: PropTypes.func.isRequired,
-    userProfile: PropTypes.object // Für Notiz-Speicher-Funktion, falls noch verwendet
-    // Veraltete Props für Notizen entfernt, da Notiz jetzt in dailySummary ist
+    userProfile: PropTypes.object
 };
 
 export default HourlyWeekOverview;

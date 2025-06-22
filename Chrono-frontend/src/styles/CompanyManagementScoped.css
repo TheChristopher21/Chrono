@@ -1,14 +1,15 @@
 /* =========================================================================
-   CompanyManagementScoped.css
+   CompanyManagementScoped.css (Überarbeitet für Lesbarkeit)
    Scope: .company-management-page.scoped-company
    ========================================================================= */
 
-/* 1) LIGHT Mode Variablen */
+/* 1) LIGHT Mode Variablen (unverändert) */
 .company-management-page.scoped-company {
     --c-text:   #1e1f22;
     --c-bg:     #f4f6ff;
     --c-card:   #ffffff;
     --c-border: #d5d8e5;
+    --c-input-bg: #fdfdff; /* Etwas vom Kartenhintergrund abgehoben */
 
     --c-primary:   #475bff;
     --c-primary-dim:#6b7cff;
@@ -18,7 +19,7 @@
     --u-radius: 14px;
     --u-shadow: 0 4px 12px rgba(0,0,0,0.08);
 
-    font-family: 'Poppins',sans-serif;
+    font-family: 'Poppins', sans-serif;
     background: var(--c-bg);
     color: var(--c-text);
     padding: 1.5rem;
@@ -26,165 +27,190 @@
     box-sizing: border-box;
 }
 
-/* 2) DARK Mode Variablen */
+/* 2) DARK Mode Variablen (unverändert) */
 [data-theme="dark"] .company-management-page.scoped-company {
     --c-text:   #e5e7ec;
     --c-bg:     #15171c;
-    --c-card:   #1f2127;
-    --c-border: #373b46;
-    --c-muted:  #a1a4b4;
-    --c-danger: #e74c3c;
+    --c-card:   #212429;
+    --c-border: #3a3f4b;
+    --c-input-bg: #2a2d33; /* Etwas vom Kartenhintergrund abgehoben */
+
+    --c-primary:   #5a6aff;
+    --c-primary-dim:#7d8aff;
+    --c-muted:     #8f96a3;
+    --c-danger:    #ff5252;
 }
 
-/* ----------------------------------------------------
-   3) Allgemeines Layout + Abstände
-   ---------------------------------------------------- */
+/* =========================================================================
+   Struktur & Layout
+   ========================================================================= */
+
+/* Seitentitel */
 .company-management-page.scoped-company .cmp-title {
-    text-align: center;
-    margin-bottom: 2rem;
     font-size: 1.8rem;
-}
-
-/* 4) Sektionen + Cards */
-.company-management-page.scoped-company .cmp-section {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    padding: 1.5rem;
-    margin-bottom: 1.2rem;
-    box-shadow: var(--u-shadow);
-}
-
-.company-management-page.scoped-company .cmp-form,
-.company-management-page.scoped-company .cmp-inline-form {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-}
-
-.company-management-page.scoped-company .cmp-form input,
-.company-management-page.scoped-company .cmp-inline-form input {
-    padding: 0.5rem 0.8rem;
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    background: var(--c-card);
+    font-weight: 600;
+    margin-bottom: 2rem;
     color: var(--c-text);
 }
-.company-management-page.scoped-company .cmp-form button,
-.company-management-page.scoped-company .cmp-inline-form button {
-    background: var(--c-primary);
-    color: #fff;
-    border: none;
+
+/* Alle Sektionen bekommen mehr Abstand und einheitliches Styling */
+.company-management-page.scoped-company .cmp-section {
+    background: var(--c-card);
     border-radius: var(--u-radius);
-    padding: 0.5rem 1rem;
+    box-shadow: var(--u-shadow);
+    padding: 1.5rem 2rem;
+    margin-bottom: 2rem;
+    border: 1px solid var(--c-border);
+}
+
+.company-management-page.scoped-company .cmp-section h3 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid var(--c-border);
+    padding-bottom: 0.75rem;
+    font-size: 1.2rem;
+    font-weight: 500;
+}
+
+/* =========================================================================
+   Formular-Styling (inkl. Changelog)
+   ========================================================================= */
+
+.company-management-page.scoped-company .cmp-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+/* Gilt für alle Eingabefelder, inkl. textarea */
+.company-management-page.scoped-company .cmp-form input[type="text"],
+.company-management-page.scoped-company .cmp-form input[type="password"],
+.company-management-page.scoped-company .cmp-form input[type="email"],
+.company-management-page.scoped-company .cmp-form textarea {
+    width: 100%;
+    padding: 0.8rem 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--c-border);
+    background: var(--c-input-bg);
+    color: var(--c-text);
+    font-size: 1rem;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.company-management-page.scoped-company .cmp-form input:focus,
+.company-management-page.scoped-company .cmp-form textarea:focus {
+    outline: none;
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 3px var(--c-primary-dim-trans, rgba(90, 106, 255, 0.2));
+}
+
+.company-management-page.scoped-company .cmp-form button {
+    align-self: flex-start; /* Button nicht über die volle Breite */
+    padding: 0.8rem 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    border-radius: 8px;
+    border: none;
+    background: var(--c-primary);
+    color: white;
     cursor: pointer;
-    transition: background 0.2s, transform 0.2s;
+    transition: background-color 0.2s ease;
 }
-.company-management-page.scoped-company .cmp-form button:hover,
-.company-management-page.scoped-company .cmp-inline-form button:hover {
+
+.company-management-page.scoped-company .cmp-form button:hover {
     background: var(--c-primary-dim);
-    transform: translateY(-2px);
 }
+
+/* Speziell für das Changelog-Formular, falls nötig */
+.company-management-page.scoped-company .changelog-form-section .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.company-management-page.scoped-company .changelog-form-section label {
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+
+/* =========================================================================
+   Listen-Styling (Firmen)
+   ========================================================================= */
 
 .company-management-page.scoped-company .cmp-list {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem; /* Abstand zwischen den Firmen */
 }
 
-/* Einzelnes Firmen-Item */
 .company-management-page.scoped-company .cmp-item {
-    background: var(--c-card);
+    background: var(--c-card); /* Eigener Hintergrund für bessere Trennung */
+    border-radius: 10px;
     border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    margin-bottom: 0.8rem;
-    padding: 1rem;
-    box-shadow: var(--u-shadow);
+    padding: 1.5rem;
+    transition: box-shadow 0.2s ease;
 }
+
+.company-management-page.scoped-company .cmp-item:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.07);
+}
+[data-theme="dark"] .company-management-page.scoped-company .cmp-item:hover {
+    border-color: #4a5061;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+}
+
 .company-management-page.scoped-company .cmp-company-row {
     display: flex;
     justify-content: space-between;
+    align-items: center;
     flex-wrap: wrap;
     gap: 1rem;
-    align-items: center;
 }
+
 .company-management-page.scoped-company .cmp-info {
     display: flex;
+    align-items: center;
+    gap: 1rem;
     flex-wrap: wrap;
-    gap: 0.5rem;
 }
+
 .company-management-page.scoped-company .cmp-info strong {
-    font-weight: 700;
-    font-size: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
 }
+
+.company-management-page.scoped-company .cmp-canton,
+.company-management-page.scoped-company .cmp-users,
+.company-management-page.scoped-company .cmp-payment,
+.company-management-page.scoped-company .cmp-active,
+.company-management-page.scoped-company .cmp-inactive {
+    font-size: 0.9rem;
+    color: var(--c-muted);
+    background-color: var(--c-bg); /* Hintergrund für bessere Lesbarkeit */
+    padding: 0.2rem 0.6rem;
+    border-radius: 10px;
+}
+
 .company-management-page.scoped-company .cmp-active {
-    color: green;
-    font-size: 0.88rem;
-    font-weight: 500;
+    color: #27ae60;
+    background-color: rgba(39, 174, 96, 0.1);
 }
 .company-management-page.scoped-company .cmp-inactive {
-    color: #bdc3c7;
-    font-size: 0.88rem;
-    font-weight: 500;
-}
-.company-management-page.scoped-company .cmp-users {
-    font-size: 0.85rem;
-    color: var(--c-muted);
+    color: #c0392b;
+    background-color: rgba(192, 57, 43, 0.1);
 }
 
-.company-management-page.scoped-company .cmp-payment {
-    font-size: 0.85rem;
-    color: var(--c-muted);
-}
-
-/* Tabelle mit Zahlungen pro Firma */
-.company-management-page.scoped-company .cmp-payments-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 0.5rem;
-}
-.company-management-page.scoped-company .cmp-payments-table th,
-.company-management-page.scoped-company .cmp-payments-table td {
-    border: 1px solid var(--c-border);
-    padding: 0.4rem 0.6rem;
-    text-align: left;
-}
-.company-management-page.scoped-company .cmp-payments-table th {
-    background: var(--c-card);
-}
-
-/* Button-Gruppe */
 .company-management-page.scoped-company .cmp-btns {
     display: flex;
     gap: 0.5rem;
+    flex-wrap: wrap;
 }
+
 .company-management-page.scoped-company .cmp-btns button {
     padding: 0.4rem 0.8rem;
-}
-.company-management-page.scoped-company .cmp-btns .danger {
-    background: var(--c-danger);
-}
-.company-management-page.scoped-company .cmp-btns .danger:hover {
-    background: #ff6b6b;
-}
-
-/* Fehler-Text */
-.company-management-page.scoped-company .cmp-error {
-    color: red;
-    font-weight: 600;
-    text-align: center;
-    margin-top: 1rem;
-}
-
-/* ----------------------------------------------------
-   5) Responsive
-   ---------------------------------------------------- */
-@media(max-width: 600px) {
-    .company-management-page.scoped-company .cmp-company-row {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .company-management-page.scoped-company .cmp-btns {
-        margin-top: 0.5rem;
-    }
+    font-size: 0.85rem;
 }

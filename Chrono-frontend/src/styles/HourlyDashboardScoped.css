@@ -578,4 +578,80 @@
     color: var(--ud-c-primary-dim);
     transform: none;
     box-shadow: none;
+}/* =========================================================================
+   Minimale Ergänzung für bearbeitbare Notizen (Dez. 2025)
+   ========================================================================= */
+
+/* Container für den gesamten Notizbereich */
+.daily-note-container {
+    margin-top: 15px; /* Etwas Abstand zu den Zeitangaben darüber */
+    padding-top: 10px;
+    border-top: 1px solid var(--ud-c-border-subtle);
+}
+
+/* Container für die reine Anzeige (Text + Bearbeiten-Button) */
+.daily-note-display {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.daily-note-display .note-content {
+    flex-grow: 1; /* Nimmt den meisten Platz ein */
+}
+
+.daily-note-display p {
+    margin: 0;
+    font-size: var(--ud-fz-sm);
+    color: var(--ud-c-text-secondary);
+    white-space: pre-wrap; /* Zeilenumbrüche in der Notiz werden angezeigt */
+    word-break: break-word;
+}
+.daily-note-display strong {
+    font-weight: 500;
+}
+
+
+/* Der kleine Bearbeiten-Button */
+.button-edit-note {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    line-height: 1;
+    font-size: 1.2rem;
+    flex-shrink: 0; /* Verhindert, dass der Button schrumpft */
+    transition: background-color 0.2s;
+}
+
+.button-edit-note:hover {
+    background-color: var(--ud-c-bg-hover);
+}
+
+/* Das Textfeld für die Bearbeitung */
+.daily-note-editor {
+    width: 100%;
+    box-sizing: border-box;
+    padding: var(--ud-gap-sm);
+    border-radius: var(--ud-radius-md);
+    border: 1px solid var(--ud-c-border);
+    background-color: var(--ud-c-bg-input);
+    color: var(--ud-c-text-primary);
+    font-family: inherit;
+    font-size: var(--ud-fz-sm);
+    resize: vertical;
+    margin-bottom: 10px;
+}
+.daily-note-editor:focus {
+    outline: none;
+    border-color: var(--ud-c-primary);
+}
+
+
+/* Container für Speichern/Abbrechen-Buttons */
+.note-buttons {
+    display: flex;
+    gap: 10px;
 }

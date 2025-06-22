@@ -3,11 +3,12 @@ import api from '../utils/api';
 import { useTranslation } from '../context/LanguageContext';
 import Navbar from '../components/Navbar';
 import '../styles/CompanyManagementScoped.css'; // Scoped CSS für Light/Dark etc.
+import { useAuth } from '../context/AuthContext'; // Importieren, falls noch nicht geschehen
 
 const CompanyManagementPage = () => {
     const { t } = useTranslation();
-
-    // Firmenliste
+    const { currentUser } = useAuth();
+        // Firmenliste
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -32,6 +33,9 @@ const CompanyManagementPage = () => {
     const [paymentDetails, setPaymentDetails] = useState({});
     const [openPayments, setOpenPayments] = useState({});
 
+    const [changelogVersion, setChangelogVersion] = useState('');
+    const [changelogTitle, setChangelogTitle] = useState('');
+    const [changelogContent, setChangelogContent] = useState('');
 
     useEffect(() => {
         fetchCompanies();
@@ -140,6 +144,24 @@ const CompanyManagementPage = () => {
         }
     }
 
+    const handlePublishChangelog = async (e) => {
+        e.preventDefault();
+        try {
+            await api.post('/api/changelog', {
+                version: changelogVersion,
+                title: changelogTitle,
+                content: changelogContent
+            });
+            alert('Changelog erfolgreich veröffentlicht!');
+            // Formular zurücksetzen
+            setChangelogVersion('');
+            setChangelogTitle('');
+            setChangelogContent('');
+        } catch (error) {
+            console.error('Fehler beim Veröffentlichen des Changelogs:', error);
+            alert('Fehler: Konnte Changelog nicht veröffentlichen.');
+        }
+    };
     function startEdit(company) {
         // Stelle sicher, dass cantonAbbreviation im State ist, auch wenn es null ist
         setEditingCompany({ ...company, cantonAbbreviation: company.cantonAbbreviation || '' });
@@ -317,6 +339,7 @@ const CompanyManagementPage = () => {
                                 <li key={co.id} className="cmp-item">
                                     {editingCompany && editingCompany.id === co.id ? (
                                         <form onSubmit={handleSaveEdit} className="cmp-inline-form">
+                                            {/* ... Ihr Code für das Bearbeitungs-Formular ... */}
                                             <input
                                                 type="text"
                                                 value={editingCompany.name}
@@ -325,7 +348,6 @@ const CompanyManagementPage = () => {
                                                 }
                                                 required
                                             />
-                                            {/* NEUES FELD für Kanton im Edit-Modus */}
                                             <input
                                                 type="text"
                                                 placeholder="Kanton"
@@ -356,17 +378,16 @@ const CompanyManagementPage = () => {
                                             <div className="cmp-company-row">
                                                 <div className="cmp-info">
                                                     <strong>{co.name}</strong>
-                                                    {/* NEU: Anzeige Kanton */}
                                                     {co.cantonAbbreviation && <span className="cmp-canton">({co.cantonAbbreviation})</span>}
                                                     <span className={co.active ? 'cmp-active' : 'cmp-inactive'}>
-                                                        {co.active ? '(Aktiv)' : '(Inaktiv)'}
-                                                    </span>
+                        {co.active ? '(Aktiv)' : '(Inaktiv)'}
+                    </span>
                                                     <span className="cmp-users">{co.userCount} User</span>
                                                     <span className="cmp-payment">
-                                                        {co.paid ? 'Bezahlt' : 'Offen'}
+                        {co.paid ? 'Bezahlt' : 'Offen'}
                                                         {co.paymentMethod ? ` - ${co.paymentMethod}` : ''}
                                                         {co.canceled ? ' (gekündigt)' : ''}
-                                                    </span>
+                    </span>
                                                 </div>
                                                 <div className="cmp-btns">
                                                     <button onClick={() => startEdit(co)}>Bearbeiten</button>
@@ -427,6 +448,47 @@ const CompanyManagementPage = () => {
                                 </li>
                             ))}
                         </ul>
+                        {currentUser?.roles?.includes('ROLE_SUPERADMIN') && (
+                            <section className="cmp-section">
+                                <h2>Release Notes / Changelog erstellen</h2>
+                                <form onSubmit={handlePublishChangelog} className="cmp-form">
+                                    <div className="form-group">
+                                        <label htmlFor="version">Version (z.B. v1.1.0)</label>
+                                        <input
+                                            id="version"
+                                            type="text"
+                                            value={changelogVersion}
+                                            onChange={(e) => setChangelogVersion(e.target.value)}
+                                            required
+                                            placeholder="v1.1.0"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="title">Titel</label>
+                                        <input
+                                            id="title"
+                                            type="text"
+                                            value={changelogTitle}
+                                            onChange={(e) => setChangelogTitle(e.target.value)}
+                                            required
+                                            placeholder="Neue Funktionen im Dashboard"
+                                        />
+                                    </div>
+                                    <div className="form-group">
+                                        <label htmlFor="content">Änderungen (Markdown wird unterstützt)</label>
+                                        <textarea
+                                            id="content"
+                                            rows="10"
+                                            value={changelogContent}
+                                            onChange={(e) => setChangelogContent(e.target.value)}
+                                            required
+                                            placeholder="- Neues Feature: ...\n- Bugfix: ..."
+                                        ></textarea>
+                                    </div>
+                                    <button type="submit" className="button">Veröffentlichen</button>
+                                </form>
+                            </section>
+                        )}
                     </section>
                 </>
             )}

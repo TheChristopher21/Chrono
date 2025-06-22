@@ -127,7 +127,25 @@ a:hover {
     white-space: nowrap;
     border: 0;
 }
+/* Innerhalb Ihres Light-Theme Blocks */
+html[data-theme='light'] {
+    /* ... Ihre bestehenden Variablen ... */
+    --modal-backdrop-color: rgba(30, 30, 30, 0.6);
+    --shadow-color: rgba(0, 0, 0, 0.2);
+    --text-color-secondary: #555;
+    --subtle-bg-color: #f7f9fc; /* Ein sehr helles, fast weißes Grau/Blau */
 
+}
+
+/* Innerhalb Ihres Dark-Theme Blocks */
+html[data-theme='dark'] {
+    /* ... Ihre bestehenden Variablen ... */
+    --modal-backdrop-color: rgba(0, 0, 0, 0.8);
+    --shadow-color: rgba(0, 0, 0, 0.5);
+    --text-color-secondary: #aaa;
+    --subtle-bg-color: #2c2c34; /* Ein dunkles Grau, das sich vom Hintergrund abhebt */
+
+}
 /* ---------- 5)  Reduced-Motion ---------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
     * {

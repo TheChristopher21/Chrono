@@ -1,5 +1,6 @@
 // src/pages/HourlyDashboard/HourlyDashboard.jsx
-
+//was hat man gemacht / kategorie / pro Stunde? / popup für den tag
+//Events im UrlaubsKalender per Admin
 import { useState, useEffect, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';

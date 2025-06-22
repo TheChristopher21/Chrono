@@ -276,7 +276,21 @@
 [data-theme="dark"] .scoped-navbar .brightness-control input[type="range"]::-moz-range-thumb {
     border-color: var(--nav-bg);
 }
+.changelog-link {
+    position: relative;
+    display: inline-block;
+}
 
+.notification-badge {
+    position: absolute;
+    top: 2px;
+    right: -12px;
+    width: 9px;
+    height: 9px;
+    background-color: #e53935; /* Ein leuchtendes Rot */
+    border-radius: 50%;
+    border: 2px solid var(--navbar-bg-color); /* Hebt sich vom Hintergrund ab */
+}
 /* -------------- Mobile Navigation (Hamburger-Menü) -------------- */
 @media (max-width: 992px) { /* Breiterer Breakpoint für früheres Umklappen */
     .scoped-navbar .nav-toggle-label {

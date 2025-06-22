@@ -57,6 +57,8 @@ public class SecurityConfig {
         return authProvider;
     }
 
+// Pfad: src/main/java/com/chrono/chrono/config/SecurityConfig.java
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -73,7 +75,10 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.POST, "/api/timetracking/punch").permitAll();
                     auth.requestMatchers("/api/nfc/read/1").permitAll();
                     auth.requestMatchers("/api/holidays/**").authenticated(); // Oder permitAll(), falls Feiertage öffentlich sein sollen
-                    auth.requestMatchers("/api/sick-leave/**").authenticated(); // NEU
+                    auth.requestMatchers("/api/sick-leave/**").authenticated();
+
+                    // NEU: Zugriff auf Changelog für alle eingeloggten User erlauben
+                    auth.requestMatchers("/api/changelog/**").authenticated();
 
                     // Der Endpoint zum Schreiben von Sektor 0 bleibt öffentlich
                     auth.requestMatchers("/api/nfc/write-sector0").permitAll();
