@@ -464,6 +464,22 @@ const translations = {
         lightMode: "Light Mode",
         impressum: "Impressum",
         agb: "AGB",
+        changelogModal: {
+            whatsNew: "Was ist neu in Version",
+            published: "Veröffentlicht am",
+            close: "Schließen",
+        },
+        whatsNewPage: {
+            title: "Alle Änderungen und Updates",
+            loading: "Lade Verlauf...",
+        },
+        notFound: {
+            pageNotFound: "404 - Seite nicht gefunden",
+        },
+        hourlyDashboard: {
+            addEntryFirst: "Bitte fügen Sie mindestens einen Korrektureintrag hinzu.",
+            userNotFound: "Benutzer nicht gefunden, bitte neu anmelden.",
+        },
     },
 
     // =============== ENGLISCH ===============
@@ -927,6 +943,22 @@ const translations = {
         lightMode: "Light Mode",
         impressum: "Impressum",
         agb: "Terms",
+        changelogModal: {
+            whatsNew: "What's new in version",
+            published: "Published on",
+            close: "Close",
+        },
+        whatsNewPage: {
+            title: "All changes and updates",
+            loading: "Loading history...",
+        },
+        notFound: {
+            pageNotFound: "404 - Page not found",
+        },
+        hourlyDashboard: {
+            addEntryFirst: "Please add at least one correction entry.",
+            userNotFound: "User not found, please log in again.",
+        },
     },
 };
 

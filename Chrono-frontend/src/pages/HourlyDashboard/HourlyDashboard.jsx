@@ -152,11 +152,11 @@ const HourlyDashboard = () => {
 
     const handleCorrectionSubmit = async (entries, reason) => {
         if (!correctionDate || !entries || entries.length === 0) {
-            notify('Bitte fügen Sie mindestens einen Korrektureintrag hinzu.', 'error');
+            notify(t('hourlyDashboard.addEntryFirst'), 'error');
             return;
         }
         if (!currentUser || !currentUser.username) {
-            notify('Benutzer nicht gefunden, bitte neu anmelden.', 'error');
+            notify(t('hourlyDashboard.userNotFound'), 'error');
             return;
         }
         const correctionPromises = entries.map(entry => {
