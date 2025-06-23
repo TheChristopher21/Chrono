@@ -49,7 +49,22 @@ public class WorkScheduleService {
         return hours;
     }
 
+    // Bitte DIESE komplette Methode kopieren und die bestehende Methode ersetzen
+
     public double getExpectedWorkHours(User user, LocalDate date) {
+        // ====================== START DEBUG-CODE ======================
+        // Dieser Block schreibt bei jedem Aufruf eine Log-Nachricht.
+        logger.info("[CHRONO-DEBUG] getExpectedWorkHours wird aufgerufen für Benutzer: '{}', isHourly: {}, für Datum: {}",
+                user.getUsername(), user.getIsHourly(), date.toString());
+        // ======================= ENDE DEBUG-CODE =======================
+
+        // Der eigentliche Fix: Prüft, ob der Benutzer auf Stundenbasis arbeitet.
+        if (Boolean.TRUE.equals(user.getIsHourly())) {
+            logger.info("[CHRONO-DEBUG] Benutzer '{}' ist 'isHourly'. Erwartete Stunden werden auf 0.0 gesetzt.", user.getUsername());
+            return 0.0;
+        }
+
+        // Unveränderte, bestehende Logik für alle anderen Benutzertypen
         double baseHours;
         if (user.getScheduleEffectiveDate() != null && date.isBefore(user.getScheduleEffectiveDate())) {
             baseHours = (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.5;
@@ -85,9 +100,13 @@ public class WorkScheduleService {
                 baseHours = (user.getDailyWorkHours() != null) ? user.getDailyWorkHours() : 8.5;
             }
         }
+
+        // ====================== START DEBUG-CODE ======================
+        logger.info("[CHRONO-DEBUG] Für Benutzer: '{}', Datum: {}, berechnete Soll-Stunden: {}", user.getUsername(), date.toString(), baseHours);
+        // ======================= ENDE DEBUG-CODE =======================
+
         return applyPercentage(user, baseHours);
     }
-
     public int getExpectedWeeklyMinutesForPercentageUser(User user, LocalDate dateInWeek, List<VacationRequest> approvedVacationsInWeek) {
         if (!Boolean.TRUE.equals(user.getIsPercentage()) || user.getWorkPercentage() == null) {
             logger.warn("getExpectedWeeklyMinutesForPercentageUser called for non-percentage user {} or user with no workPercentage.", user.getUsername());

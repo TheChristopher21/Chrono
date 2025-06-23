@@ -29,6 +29,7 @@ public interface TimeTrackingEntryRepository extends JpaRepository<TimeTrackingE
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime
     );
+    List<TimeTrackingEntry> findByUserOrderByEntryTimestampAsc(User user);
 
     List<TimeTrackingEntry> findByUserOrderByEntryTimestampDesc(User user);
 

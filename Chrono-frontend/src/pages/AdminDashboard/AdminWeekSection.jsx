@@ -9,6 +9,7 @@ import { useNotification } from "../../context/NotificationContext"; // Assuming
 import {
     formatLocalDateYMD,
     formatDate, // Your existing formatDate
+    formatTime, // <--- HIER HINZUFÜGEN
     getExpectedHoursForDay,
     computeDailyDiff,
     minutesToHHMM,
@@ -19,29 +20,6 @@ import {
     getMondayOfWeek,
 } from "./adminDashboardUtils"; // Ensure this path is correct
 import {parseISO} from "date-fns"; // Make sure date-fns is installed
-
-// Helper to format individual punch entries for display
-const formatTimeEntryForDisplay = (entry, t) => {
-    if (!entry || !entry.entryTimestamp || !entry.punchType) return "N/A";
-    const time = entry.entryTimestamp.substring(11, 16); // HH:mm
-    let typeLabel = entry.punchType;
-    try { // Attempt to translate punchType
-        typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
-    } catch (e) {/* ignore if t or key not found, fallback to raw type */
-    }
-
-    let sourceIndicator = '';
-    if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
-        sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
-    } else if (entry.source === 'ADMIN_CORRECTION') {
-        sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
-    } else if (entry.source === 'USER_CORRECTION') {
-        sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
-    } else if (entry.source === 'MANUAL_IMPORT') {
-        sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
-    }
-    return `${typeLabel}: ${time}${sourceIndicator}`;
-};
 
 
 const AdminWeekSection = ({
@@ -620,11 +598,30 @@ const AdminWeekSection = ({
                                                                             </button>
                                                                         </div>
                                                                         <ul className="time-entry-list-condensed text-xs">
-                                                                            {dailySummary.entries.map(entry => ( // entry is TimeTrackingEntryDTO
-                                                                                <li key={entry.id || entry.key} className="py-0.5">
-                                                                                    {formatTimeEntryForDisplay(entry, t)}
-                                                                                </li>
-                                                                            ))}
+                                                                            {dailySummary.entries.map(entry => {
+                                                                                let typeLabel = entry.punchType;
+                                                                                try {
+                                                                                    typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
+                                                                                } catch (e) { /* Fallback */ }
+
+                                                                                let sourceIndicator = '';
+                                                                                if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
+                                                                                } else if (entry.source === 'ADMIN_CORRECTION') {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
+                                                                                } else if (entry.source === 'USER_CORRECTION') {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
+                                                                                } else if (entry.source === 'MANUAL_IMPORT') {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
+                                                                                }
+
+                                                                                return (
+                                                                                    <li key={entry.id || entry.key} className="py-0.5">
+                                                                                        {/* Hier wird die korrekte formatTime-Funktion aufgerufen */}
+                                                                                        {`${typeLabel}: ${formatTime(entry.entryTimestamp)}${sourceIndicator}`}
+                                                                                    </li>
+                                                                                );
+                                                                            })}
                                                                         </ul>
                                                                         <p className="text-xs mt-1">
                                                                             <strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(actualMinsToday)} | <strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(dailySummary.breakMinutes)}

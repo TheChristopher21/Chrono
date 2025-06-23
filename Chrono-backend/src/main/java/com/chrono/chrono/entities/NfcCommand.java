@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Entity
 @Table(name = "nfc_commands")
@@ -26,7 +27,7 @@ public class NfcCommand {
     private LocalDateTime processedAt;
 
     public NfcCommand() {
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = LocalDateTime.now(ZoneOffset.UTC);
         this.status = "pending";
     }
 

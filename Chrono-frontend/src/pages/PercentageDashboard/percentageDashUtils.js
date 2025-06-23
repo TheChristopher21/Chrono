@@ -23,7 +23,6 @@ export function formatLocalDate(date) { // Gibt YYYY-MM-DD zurück
     const day = String(date.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
 }
-// formatISO ist ein Alias für formatLocalDate für interne Konsistenz, falls noch verwendet
 export const formatISO = formatLocalDate;
 
 export function formatDate(dateInput) { // Gibt DD.MM.YYYY zurück
@@ -37,31 +36,21 @@ export function formatDate(dateInput) { // Gibt DD.MM.YYYY zurück
 }
 
 export function formatTime(dateInput) {
-    if (!dateInput) return "--:--";
-    let dateToFormat;
-    if (dateInput instanceof Date) {
-        dateToFormat = dateInput;
-    } else if (typeof dateInput === 'string') {
-        const trimmed = dateInput.trim();
-        if (/^\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) {
-            return trimmed.slice(0, 5);
-        }
-        dateToFormat = parseISO(trimmed);
-    } else {
-        try {
-            dateToFormat = new Date(dateInput);
-        } catch (e) {
-            console.warn("formatTime: Could not parse dateInput", dateInput, e);
-            return "--:--";
-        }
-    }
-
-    if (isNaN(dateToFormat.getTime())) {
+    if (!dateInput) {
         return "--:--";
     }
-    const hours = String(dateToFormat.getHours()).padStart(2, '0');
-    const minutes = String(dateToFormat.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
+    try {
+        const date = new Date(dateInput);
+        if (isNaN(date.getTime())) {
+            return "--:--";
+        }
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+    } catch (error) {
+        console.error("Fehler beim Formatieren der Zeit:", dateInput, error);
+        return "--:--";
+    }
 }
 
 export function minutesToHHMM(totalMinutes) {
@@ -74,7 +63,6 @@ export function minutesToHHMM(totalMinutes) {
     const m = absMinutes % 60;
     return `${sign}${h}h ${String(m).padStart(2, '0')}m`;
 }
-// minutesToHours ist ein Alias für minutesToHHMM
 export const minutesToHours = minutesToHHMM;
 
 export function formatPunchedTimeFromEntry(entry) {
@@ -124,8 +112,6 @@ export function isLateTime(timeString) {
     }
 }
 
-// parseHex16 wird im PercentageDashboard nicht direkt verwendet, aber falls es von einer
-// importierten Komponente benötigt wird, kann es hier bleiben oder entfernt werden.
 export function parseHex16(hexString) {
     if (!hexString) return null;
     const clean = hexString.replace(/\s+/g, '');

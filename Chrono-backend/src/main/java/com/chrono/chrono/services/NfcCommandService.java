@@ -6,6 +6,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.Optional;
 import org.slf4j.Logger;
 
@@ -28,7 +29,7 @@ public class NfcCommandService {
         command.setType(type);
         command.setData(data);
         command.setStatus("pending");
-        command.setCreatedAt(LocalDateTime.now());
+        command.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC));
         return nfcCommandRepository.save(command);
     }
 
@@ -46,7 +47,7 @@ public class NfcCommandService {
         if (commandOpt.isPresent()) {
             NfcCommand cmd = commandOpt.get();
             cmd.setStatus("done");
-            cmd.setProcessedAt(LocalDateTime.now());
+            cmd.setProcessedAt(LocalDateTime.now(ZoneOffset.UTC));
             return nfcCommandRepository.save(cmd);
         } else {
             throw new RuntimeException("Command not found");

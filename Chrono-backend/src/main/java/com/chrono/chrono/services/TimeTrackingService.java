@@ -210,17 +210,47 @@ public class TimeTrackingService {
         );
     }
 
+    @Transactional
     public void rebuildUserBalance(User user) {
+        // Holt den frischesten Benutzerstatus aus der DB
         User freshUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + user.getId()));
 
-        // KORREKTUR 1: Logik für Stundenlöhner überspringen
-        // Ein stundenbasierter Mitarbeiter hat keinen Überstundensaldo.
+        // ====================== FINALE KORREKTUR FÜR STUNDENLÖHNER ======================
         if (Boolean.TRUE.equals(freshUser.getIsHourly())) {
-            logger.info("Überspringe Saldo-Neuberechnung für stundenbasierten Mitarbeiter: {}", freshUser.getUsername());
-            return; // Methode sofort beenden
-        }
+            logger.info("Führe dedizierte Saldo-Neuberechnung für stundenbasierten Mitarbeiter {} durch.", freshUser.getUsername());
 
+            List<TimeTrackingEntry> allEntries = timeTrackingEntryRepository.findByUserOrderByEntryTimestampAsc(freshUser);
+
+            if (allEntries.isEmpty()) {
+                freshUser.setTrackingBalanceInMinutes(0);
+                userRepository.save(freshUser);
+                logger.info("Keine Einträge für Stundenlöhner {}, Saldo auf 0 gesetzt.", freshUser.getUsername());
+                return;
+            }
+
+            long totalWorkedMinutes = 0;
+            LocalDateTime punchInTime = null;
+            for (TimeTrackingEntry entry : allEntries) {
+                // KORREKTUR: Enum-Vergleich anstelle von String-Vergleich
+                if (TimeTrackingEntry.PunchType.START.equals(entry.getPunchType()) && punchInTime == null) {
+                    punchInTime = entry.getEntryTimestamp();
+                } else if (TimeTrackingEntry.PunchType.ENDE.equals(entry.getPunchType()) && punchInTime != null) {
+                    Duration duration = Duration.between(punchInTime, entry.getEntryTimestamp());
+                    totalWorkedMinutes += duration.toMinutes();
+                    punchInTime = null;
+                }
+            }
+
+            freshUser.setTrackingBalanceInMinutes((int) totalWorkedMinutes);
+            userRepository.save(freshUser);
+            logger.info("Saldo für Stundenlöhner {} auf die Summe der gearbeiteten Zeit aktualisiert: {} Minuten.", freshUser.getUsername(), totalWorkedMinutes);
+            return;
+        }
+        // ====================== ENDE DER FINALEN KORREKTUR ======================
+
+
+        // Bestehende Logik für prozentuale und festangestellte Mitarbeiter (unverändert)
         logger.debug("TimeTrackingService.rebuildUserBalance: Entering rebuildUserBalance for user: '{}'. Config: isPercentage={}, isHourly={}", freshUser.getUsername(), freshUser.getIsPercentage(), freshUser.getIsHourly());
 
         List<TimeTrackingEntry> allEntriesForUser = timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(freshUser);

@@ -1,5 +1,5 @@
 // src/pages/AdminDashboard/adminDashboardUtils.js
-import { differenceInMinutes, parseISO, format as formatDateFns } from "date-fns";
+import { parseISO, format as formatDateFns } from "date-fns"; // Import muss oben in der Datei sein
 
 export function getMondayOfWeek(date) {
     const copy = new Date(date);
@@ -20,20 +20,24 @@ export function formatDate(dateInput) {
     const year = date.getFullYear();
     return `${day}.${month}.${year}`;
 }
-
 export function formatTime(dateInput) {
-    if (!dateInput || (typeof dateInput === 'string' && dateInput.trim() === '')) {
+    if (!dateInput) {
         return "--:--";
     }
-    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
-    if (isNaN(date.getTime())) {
+    try {
+        // new Date() konvertiert einen ISO-String korrekt in die lokale Zeitzone des Browsers.
+        const date = new Date(dateInput);
+        if (isNaN(date.getTime())) {
+            return "--:--";
+        }
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+    } catch (error) {
+        console.error("Fehler beim Formatieren der Zeit:", dateInput, error);
         return "--:--";
     }
-    const hours = String(date.getHours()).padStart(2, '0');
-    const minutes = String(date.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
 }
-
 export function formatLocalDateYMD(d) {
     if (!d) return "";
     let dateToFormat = d;

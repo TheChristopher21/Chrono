@@ -16,7 +16,6 @@ export function addDays(date, days) {
     return d;
 }
 
-// Beibehalten von parseHex16, falls es noch irgendwo verwendet wird.
 export function parseHex16(hexString) {
     if (!hexString) return null;
     const clean = hexString.replace(/\s+/g, '');
@@ -32,46 +31,25 @@ export function parseHex16(hexString) {
     return output;
 }
 
-// Die Funktion expandDayRows wird nicht mehr benötigt, da das Backend DailyTimeSummaryDTO liefert.
-// export function expandDayRows(days) { ... }
-
-// Überarbeitete formatTime Funktion für Robustheit
 export function formatTime(dateInput) {
-    if (!dateInput) return "--:--";
-
-    let dateToFormat;
-    if (dateInput instanceof Date) {
-        dateToFormat = dateInput;
-    } else if (typeof dateInput === 'string') {
-        const trimmed = dateInput.trim();
-        if (/^\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) { // Bereits im Format HH:mm oder HH:mm:ss
-            return trimmed.slice(0, 5);
-        }
-        dateToFormat = parseISO(trimmed); // Für ISO Strings
-    } else {
-        // Versuch, andere Typen zu konvertieren, könnte fehlschlagen
-        try {
-            dateToFormat = new Date(dateInput);
-        } catch (e) {
-            console.warn("formatTime: Could not parse dateInput", dateInput, e);
-            return "--:--";
-        }
-    }
-
-    if (isNaN(dateToFormat.getTime())) {
+    if (!dateInput) {
         return "--:--";
     }
-
-    // getHours/getMinutes verwenden die lokale Zeitzone des Browsers
-    const hours = String(dateToFormat.getHours()).padStart(2, '0');
-    const minutes = String(dateToFormat.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
+    try {
+        const date = new Date(dateInput);
+        if (isNaN(date.getTime())) {
+            return "--:--";
+        }
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${hours}:${minutes}`;
+    } catch (error) {
+        console.error("Fehler beim Formatieren der Zeit:", dateInput, error);
+        return "--:--";
+    }
 }
-
-// NEUE FUNKTION: formatPunchedTimeFromEntry
 export function formatPunchedTimeFromEntry(entry) {
     if (!entry || !entry.entryTimestamp) return '-';
-    // entry.entryTimestamp sollte ein ISO String sein
     return formatTime(entry.entryTimestamp);
 }
 
@@ -86,36 +64,27 @@ export function formatLocalDate(date) { // Gibt YYYY-MM-DD zurück
 
 export function formatDate(dateInput) {
     if (!dateInput) return "-";
-    // Nimmt an, dass dateInput entweder ein Date-Objekt oder ein String ist, den new Date() parsen kann.
-    // Für Datums-Strings vom Backend (YYYY-MM-DD) ist es wichtig, wie sie zu Date-Objekten werden.
-    // new Date("2023-10-26") wird als Mitternacht UTC interpretiert, was zu Problemen bei der lokalen Anzeige führen kann.
-    // Besser: new Date("2023-10-26T00:00:00") um sicherzustellen, dass es als lokales Mitternacht behandelt wird,
-    // ODER parseISO verwenden, wenn der String ein voller ISO-String ist.
-    // Da dayObj in UserDashboard.jsx bereits ein lokales Date-Objekt ist, ist die einfache Konvertierung hier meist sicher.
     const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
 
     if (isNaN(date.getTime())) return "-";
 
-    const day = String(date.getDate()).padStart(2, '0');       // Lokaler Tag
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Lokaler Monat
-    const year = date.getFullYear();                            // Lokales Jahr
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
     return `${day}.${month}.${year}`;
 }
 
 export function getMinutesSinceMidnight(datetimeStr) {
     if (!datetimeStr) return 0;
-    const d = parseISO(datetimeStr); // parseISO ist besser für ISO Strings
+    const d = parseISO(datetimeStr);
     if (isNaN(d.getTime())) return 0;
     return d.getHours() * 60 + d.getMinutes();
 }
 
 
-// computeDailyDiffValue wird jetzt weniger benötigt, da Salden oft vom Backend kommen
-// oder direkt aus `workedMinutes` und `expectedMinutes` berechnet werden.
-// Behalte es vorerst, falls es noch für die Anzeige einer *täglichen* Differenz benötigt wird.
 export function computeDailyDiffValue(dailySummary, expectedWorkHours) {
     if (!dailySummary || typeof dailySummary.workedMinutes !== 'number') return 0;
-    if (typeof expectedWorkHours !== 'number' || isNaN(expectedWorkHours)) return dailySummary.workedMinutes; // Wenn keine Sollzeit, dann ist Istzeit die "Differenz"
+    if (typeof expectedWorkHours !== 'number' || isNaN(expectedWorkHours)) return dailySummary.workedMinutes;
 
     const expectedMinutes = Math.round(expectedWorkHours * 60);
     return dailySummary.workedMinutes - expectedMinutes;
@@ -144,17 +113,14 @@ export function minutesToHHMM(totalMinutes) {
 
 export function getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours = 8.5) {
     if (!userProfile || !dayObj || !(dayObj instanceof Date) || isNaN(dayObj.getTime())) {
-        return defaultExpectedHours; // Fallback
+        return defaultExpectedHours;
     }
     if (userProfile.isHourly) return 0;
     if (userProfile.isPercentage) {
-        // Für prozentuale Mitarbeiter ist das Tagessoll oft nicht explizit, das Wochensoll ist relevanter.
-        // Hier eine vereinfachte Annahme für die Anzeige, wenn ein Tageswert gebraucht wird.
         const workDays = userProfile.expectedWorkDays || 5;
         const percentageFactor = (userProfile.workPercentage || 100) / 100;
-        if (workDays === 0) return 0; // Verhindert Division durch Null
-        // Nimmt an, dass `defaultExpectedHours` das Soll für einen Vollzeittag ist.
-        return (defaultExpectedHours / 5) * workDays * percentageFactor / workDays; // Vereinfacht: (defaultSollProTagImModell * Pensum)
+        if (workDays === 0) return 0;
+        return (defaultExpectedHours / 5) * workDays * percentageFactor / workDays;
     }
 
     const dayOfWeekJs = dayObj.getDay();
@@ -178,12 +144,6 @@ export function getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours
     }
     return (dayOfWeekJs === 0 || dayOfWeekJs === 6) ? 0 : defaultExpectedHours;
 }
-
-// getStatusLabel ist obsolet, da wir entry.punchType direkt verwenden.
-// export function getStatusLabel(punchOrder) { ... }
-
-// groupEntriesByDay ist obsolet, da das Backend DailyTimeSummaryDTO liefert.
-// export function groupEntriesByDay(entries) { ... }
 
 export function isLateTime(timeString) {
     if (!timeString || typeof timeString !== 'string' || !timeString.includes(':')) return false;

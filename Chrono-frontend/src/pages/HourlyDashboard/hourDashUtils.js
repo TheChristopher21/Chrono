@@ -1,4 +1,4 @@
-// src/pages/PercentageDashboard/percentageDashUtils.js
+// src/pages/HourlyDashboard/hourDashUtils.js
 import { parseISO } from 'date-fns';
 
 export function getMondayOfWeek(date) {
@@ -31,43 +31,32 @@ export const formatISO = (d) => formatLocalDate(d);
 // Formatiert ein Datumsobjekt oder einen ISO-String zu "DD.MM.YYYY" für die Anzeige
 export function formatDate(dateInput) {
     if (!dateInput) return "-";
-    const date = (dateInput instanceof Date) ? dateInput : parseISO(dateInput);
+    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
     if (isNaN(date.getTime())) return "-";
-    const day = String(date.getUTCDate()).padStart(2, '0');
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-    const year = date.getUTCFullYear();
+    // KORREKTUR: Lokale Datums-Methoden verwenden
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
     return `${day}.${month}.${year}`;
 }
 
-// Formatiert ein Datumsobjekt oder einen ISO-String zu "HH:mm" für die Anzeige
 export function formatTime(dateInput) {
-    if (!dateInput) return "--:--";
-    let dateToFormat;
-    if (dateInput instanceof Date) {
-        dateToFormat = dateInput;
-    } else if (typeof dateInput === 'string') {
-        const trimmed = dateInput.trim();
-        if (/^\d{2}:\d{2}(:\d{2})?$/.test(trimmed)) { // Already HH:mm or HH:mm:ss
-            return trimmed.slice(0, 5);
-        }
-        dateToFormat = parseISO(trimmed);
-    } else {
-        try {
-            dateToFormat = new Date(dateInput);
-        } catch (e) {
-            console.warn("formatTime: Could not parse dateInput", dateInput, e);
-            return "--:--";
-        }
-    }
-
-    if (isNaN(dateToFormat.getTime())) {
+    // Stellt sicher, dass der Input ein gültiger String ist (z.B. "2025-05-19T10:00:00")
+    if (!dateInput || typeof dateInput !== 'string' || dateInput.length < 16) {
+        // Falls kein gültiger Zeitstempel vorhanden ist, gib "--:--" zurück.
         return "--:--";
     }
-    const hours = String(dateToFormat.getHours()).padStart(2, '0');
-    const minutes = String(dateToFormat.getMinutes()).padStart(2, '0');
-    return `${hours}:${minutes}`;
-}
 
+    // Extrahiert den Zeit-Teil "HH:mm" direkt aus dem String.
+    // Dies verhindert, dass der Browser eine Zeitzonen-Konvertierung durchführt.
+    try {
+        const timePart = dateInput.substring(11, 16);
+        return timePart;
+    } catch (error) {
+        console.error("Fehler beim Extrahieren der Zeit:", dateInput, error);
+        return "--:--";
+    }
+}
 // Konvertiert Minuten in "Xh YYm" Format
 export function minutesToHHMM(totalMinutes) {
     if (typeof totalMinutes !== 'number' || isNaN(totalMinutes)) {
@@ -139,6 +128,3 @@ export function isLateTime(timeString) {
         return false;
     }
 }
-
-// parseHex16 und pickTime sind hier nicht mehr relevant, da sie für die alte Datenstruktur waren.
-// computeDayTotalMinutes (alte Version) wird durch getWorkedMinutesFromSummary ersetzt.
