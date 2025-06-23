@@ -152,10 +152,10 @@ const AdminCorrectionsList = ({
                                         <td data-label={t('adminCorrections.header.actions')}>
                                             {group.status === 'PENDING' ? (
                                                 <div className="action-buttons">
-                                                    <button onClick={() => openModal(group.entries.map(e => e.id), 'approve')} className="button-approve" title="Genehmigen">✓</button>
-                                                    <button onClick={() => openModal(group.entries.map(e => e.id), 'deny')} className="button-deny" title="Ablehnen">×</button>
+                                                    <button onClick={() => openModal(group.entries.map(e => e.id), 'approve')} className="button-approve" title={t('adminDashboard.acceptButton')}>✓</button>
+                                                    <button onClick={() => openModal(group.entries.map(e => e.id), 'deny')} className="button-deny" title={t('adminDashboard.rejectButton')}>×</button>
                                                 </div>
-                                            ) : 'Erledigt'}
+                                            ) : t('done', 'Erledigt')}
                                         </td>
                                     </tr>
                                 ))

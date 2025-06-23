@@ -1,5 +1,6 @@
 // src/context/NotificationContext.jsx
 import React, { createContext, useState, useContext } from 'react';
+import { useTranslation } from './LanguageContext';
 import "../styles/Notification.css"; // Pfad anpassen
 
 export const NotificationContext = createContext({
@@ -9,6 +10,7 @@ export const NotificationContext = createContext({
 export function NotificationProvider({ children }) {
     const [message, setMessage] = useState('');
     const [visible, setVisible] = useState(false);
+    const { t } = useTranslation();
 
     function notify(msg) {
         setMessage(msg);
@@ -28,7 +30,7 @@ export function NotificationProvider({ children }) {
                 <div className="notification-overlay">
                     <div className="notification-modal">
                         <p>{message}</p>
-                        <button onClick={closeNotification}>OK</button>
+                        <button onClick={closeNotification}>{t('ok')}</button>
                     </div>
                 </div>
             )}

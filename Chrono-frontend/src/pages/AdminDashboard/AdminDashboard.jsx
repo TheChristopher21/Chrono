@@ -223,22 +223,22 @@ const AdminDashboard = () => {
     const handleApproveCorrection = async (id, comment) => {
         try {
             await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
-            notify(`Antrag #${id} genehmigt.`, "success");
+            notify(`${t('adminDashboard.correctionApprovedMsg')} #${id}`, "success");
             handleDataReloadNeeded();
         } catch (error) {
             console.error(`Fehler beim Genehmigen von Antrag #${id}:`, error);
-            notify(`Fehler bei Antrag #${id}.`, "error");
+            notify(`${t('adminDashboard.correctionErrorMsg')} #${id}`, "error");
         }
     };
 
     const handleDenyCorrection = async (id, comment) => {
         try {
             await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
-            notify(`Antrag #${id} abgelehnt.`, "success");
+            notify(`${t('adminDashboard.correctionDeniedMsg')} #${id}`, "success");
             handleDataReloadNeeded();
         } catch (error) {
             console.error(`Fehler beim Ablehnen von Antrag #${id}:`, error);
-            notify(`Fehler bei Antrag #${id}.`, "error");
+            notify(`${t('adminDashboard.correctionErrorMsg')} #${id}`, "error");
         }
     };
 
@@ -309,15 +309,15 @@ const AdminDashboard = () => {
         const userNameDisplay = userDetails ? `${userDetails.firstName} ${userDetails.lastName} (${printUser})` : printUser;
 
         doc.setFontSize(14);
-        doc.text(`Zeitenbericht für ${userNameDisplay}`, 14, 15);
+        doc.text(`${t('printReport.title')} ${t('for')} ${userNameDisplay}`, 14, 15);
         doc.setFontSize(11);
-        doc.text(`Zeitraum: ${formatDate(new Date(printUserStartDate + "T00:00:00Z"))} – ${formatDate(new Date(printUserEndDate + "T00:00:00Z"))}`, 14, 22);
+        doc.text(`${t('printReport.periodLabel')}: ${formatDate(new Date(printUserStartDate + "T00:00:00Z"))} – ${formatDate(new Date(printUserEndDate + "T00:00:00Z"))}`, 14, 22);
 
         const tableBody = sortedSummaries.map(summary => {
             const displayDate = formatDate(new Date(summary.date + "T00:00:00Z"));
             const primary = summary.primaryTimes;
             const workStart  = primary.firstStartTime ? primary.firstStartTime.substring(0,5) : "-";
-            const workEnd    = primary.lastEndTime ? primary.lastEndTime.substring(0,5) : (primary.isOpen ? "OFFEN" : "-");
+            const workEnd    = primary.lastEndTime ? primary.lastEndTime.substring(0,5) : (primary.isOpen ? t('printReport.open') : "-");
 
             let breakTimes = "-";
             if (summary.breakMinutes > 0) {
@@ -331,7 +331,7 @@ const AdminDashboard = () => {
         });
 
         autoTable(doc, {
-            head: [["Datum", "Start", "Pause", "Ende", "Arbeit", "Stempelungen", "Notiz"]],
+            head: [[t('printReport.date'), t('printReport.workStart'), t('printReport.pause'), t('printReport.workEnd'), t('printReport.total'), t('printReport.punches'), t('printReport.note')]],
             body: tableBody,
             startY: 30,
             margin: { left: 14, right: 14 },
@@ -341,7 +341,7 @@ const AdminDashboard = () => {
             alternateRowStyles: { fillColor: [240, 242, 254] },
             didDrawPage: (data) => {
                 doc.setFontSize(8);
-                doc.text(`Seite ${data.pageNumber} von ${doc.getNumberOfPages()}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: "right" });
+                doc.text(`${t('page')} ${data.pageNumber} ${t('of')} ${doc.getNumberOfPages()}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: "right" });
             }
         });
 
