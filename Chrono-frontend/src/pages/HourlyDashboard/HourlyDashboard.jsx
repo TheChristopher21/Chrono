@@ -111,7 +111,7 @@ const HourlyDashboard = () => {
             setCorrectionRequests(response.data || []);
         } catch (error) {
             console.error("Fehler beim Abrufen der Korrekturanträge:", error);
-            notify("Korrekturanträge konnten nicht geladen werden.", 'error');
+            notify(t('userManagement.errorLoadingCorrections'), 'error');
         }
     }, [currentUser, notify]);
 

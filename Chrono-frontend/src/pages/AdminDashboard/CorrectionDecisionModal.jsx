@@ -27,7 +27,6 @@ const CorrectionDecisionModal = ({
                 <h3>{header}</h3>
 
                 <div className="form-group">
-                    <label>Kommentar für den Nutzer:</label>
                     <label>{t('adminDashboard.correctionModal.commentLabel')}</label>
                     <textarea
                         rows={4}
@@ -39,10 +38,7 @@ const CorrectionDecisionModal = ({
 
                 <div className="modal-buttons">
                     <button onClick={onSubmit}>{btnLabel}</button>
-                    <button onClick={onClose} className="secondary">
-                        Abbrechen
-                        {t('cancel')}
-                    </button>
+                    <button onClick={onClose} className="secondary">{t('cancel')}</button>
                 </div>
             </div>
         </div>

@@ -251,7 +251,7 @@ const PercentageDashboard = () => {
             setCorrectionRequests(response.data);
         } catch (error) {
             console.error("Fehler beim Abrufen der Korrekturanträge:", error);
-            notify("Korrekturanträge konnten nicht geladen werden.", 'error');
+            notify(t('userManagement.errorLoadingCorrections'), 'error');
         }
     }, [currentUser, notify]); // Abhängigkeiten bleiben gleich
 
@@ -315,28 +315,28 @@ const PercentageDashboard = () => {
 
         const doc = new jsPDF("p", "mm", "a4");
         doc.setFontSize(14);
-        doc.text(`Zeitenbericht für ${userProfile.firstName} ${userProfile.lastName} (${userProfile.username}) - ${userProfile.workPercentage}%`, 14, 15);
+        doc.text(`${t('printReport.title')} ${t('for')} ${userProfile.firstName} ${userProfile.lastName} (${userProfile.username}) - ${userProfile.workPercentage}%`, 14, 15);
         doc.setFontSize(11);
-        doc.text(`Zeitraum: ${formatDate(printStartDate)} – ${formatDate(printEndDate)}`, 14, 22);
+        doc.text(`${t('printReport.periodLabel')}: ${formatDate(printStartDate)} – ${formatDate(printEndDate)}`, 14, 22);
 
         const tableBody = summariesToPrint.map(summary => {
             const displayDate = formatDate(summary.date);
             const primary = summary.primaryTimes || { firstStartTime: null, lastEndTime: null, isOpen: false};
             const workStart  = primary.firstStartTime ? primary.firstStartTime.substring(0,5) : "-";
-            const workEnd    = primary.lastEndTime ? primary.lastEndTime.substring(0,5) : (primary.isOpen ? "OFFEN" : "-");
+            const workEnd    = primary.lastEndTime ? primary.lastEndTime.substring(0,5) : (primary.isOpen ? t('printReport.open') : "-");
             const breakTimeStr = minutesToHHMM(summary.breakMinutes);
             const totalWorkedStr = minutesToHHMM(summary.workedMinutes);
             const punches = summary.entries.map(e => `${t('punchTypes.'+e.punchType, e.punchType).substring(0,1)}:${formatTime(e.entryTimestamp)}${e.source === 'SYSTEM_AUTO_END' && !e.correctedByUser ? '(A)' : ''}`).join(' | ');
             return [displayDate, workStart, workEnd, breakTimeStr, totalWorkedStr, punches, summary.dailyNote || ""];
         });
         autoTable(doc, {
-            head: [["Datum", "Start", "Ende", "Pause", "Arbeit", "Stempelungen", "Notiz"]],
+            head: [[t('printReport.date'), t('printReport.workStart'), t('printReport.workEnd'), t('printReport.pause'), t('printReport.total'), t('printReport.punches'), t('printReport.note')]],
             body: tableBody, startY: 30, margin: { left: 10, right: 10 }, styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
             headStyles: { fillColor: [71, 91, 255], textColor: 255, fontStyle: "bold", halign: "center" },
             columnStyles: { 5: { cellWidth: 'auto'}, 6: { cellWidth: 40 } },
             didDrawPage: (dataHooks) => {
                 doc.setFontSize(8);
-                doc.text(`Seite ${dataHooks.pageNumber} von ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.getWidth() - 10, doc.internal.pageSize.getHeight() - 10, { align: "right" });
+                doc.text(`${t('page')} ${dataHooks.pageNumber} ${t('of')} ${doc.internal.getNumberOfPages()}`, doc.internal.pageSize.getWidth() - 10, doc.internal.pageSize.getHeight() - 10, { align: "right" });
             }
         });
         doc.save(`Zeitenbericht_Prozent_${userProfile.username}_${printStartDate}_bis_${printEndDate}.pdf`);

@@ -9,12 +9,14 @@ import {
 } from 'react';
 import api from '../utils/api';
 import { useNotification } from './NotificationContext';
+import { useTranslation } from './LanguageContext';
 
 export const AuthContext = createContext();
 const INACTIVITY_DURATION = 10 * 60 * 1000; // 10 min
 
 export const AuthProvider = ({ children }) => {
     const { notify } = useNotification();
+    const { t } = useTranslation();
     const [authToken, setAuthToken] = useState(null);
     const [currentUser, setCurrentUser] = useState(null);
 
@@ -61,7 +63,7 @@ export const AuthProvider = ({ children }) => {
         clearTimeout(timerRef.current);
         timerRef.current = setTimeout(() => {
             logout();
-            notify('Session expired. Please log in again.');
+            notify(t('sessionExpired'));
         }, INACTIVITY_DURATION);
     }, [logout, notify]); // notify und logout sind Abhängigkeiten
 
