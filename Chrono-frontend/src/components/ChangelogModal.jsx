@@ -1,4 +1,5 @@
 import React from 'react';
+import ModalOverlay from './ModalOverlay';
 import ReactMarkdown from 'react-markdown';
 import '../styles/Changelog.css';
 import { useTranslation } from '../context/LanguageContext';
@@ -14,7 +15,7 @@ const ChangelogModal = ({ changelog, onClose }) => {
     };
 
     return (
-        <div className="changelog-backdrop" onClick={handleBackdropClick}>
+        <ModalOverlay visible className="changelog-backdrop" onClick={handleBackdropClick}>
             <div className="changelog-modal">
                 <div className="changelog-header">
                     <h2>{t('changelogModal.whatsNew')} {changelog.version}?</h2>
@@ -33,7 +34,7 @@ const ChangelogModal = ({ changelog, onClose }) => {
                     <button onClick={onClose}>{t('changelogModal.close')}</button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 

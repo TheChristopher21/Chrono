@@ -1,4 +1,5 @@
-import 'react';
+import React from 'react';
+import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from "prop-types";
 
 const PrintUserTimesModal = ({
@@ -16,7 +17,7 @@ const PrintUserTimesModal = ({
 
     return (
         <div className="admin-dashboard scoped-dashboard">
-            <div className="modal-overlay">
+            <ModalOverlay visible={printUserModalVisible}>
                 <div className="modal-content">
                     <h3>{t('adminDashboard.printUserTimesTitle', 'Zeiten drucken für')} {printUser}</h3>
                     <div className="form-group">
@@ -44,7 +45,7 @@ const PrintUserTimesModal = ({
                         </button>
                     </div>
                 </div>
-            </div>
+            </ModalOverlay>
         </div>
     );
 };

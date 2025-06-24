@@ -1,5 +1,6 @@
 // src/pages/AdminDashboard/EditTimeModal.jsx
 import React, { useState, useEffect } from 'react';
+import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
 import { formatLocalDateYMD } from './adminDashboardUtils';
 
@@ -249,7 +250,7 @@ const EditTimeModal = ({
 
     return (
         <div className="admin-dashboard scoped-dashboard">
-            <div className="modal-overlay">
+            <ModalOverlay visible={visible}>
                 <div className="modal-content edit-time-modal-content">
                     <h3>
                         {t("adminDashboard.editTrackingTitle", "Zeiterfassung bearbeiten für")} {targetUsername} <br />
@@ -305,7 +306,7 @@ const EditTimeModal = ({
                         </div>
                     </form>
                 </div>
-            </div>
+            </ModalOverlay>
         </div>
     );
 };

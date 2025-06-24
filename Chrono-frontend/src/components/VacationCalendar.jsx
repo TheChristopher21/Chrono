@@ -1,5 +1,6 @@
 // src/components/VacationCalendar.jsx
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import ModalOverlay from './ModalOverlay';
 import PropTypes from 'prop-types';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -334,7 +335,7 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
             </div>
 
             {showVacationModal && (
-                <div className="vacation-modal-overlay">
+                <ModalOverlay visible className="vacation-modal-overlay">
                     <div className="vacation-modal-content">
                         <h3>{t('vacationModalTitle', 'Urlaubsantrag stellen')}</h3>
                         <form onSubmit={handleVacationSubmit}>
@@ -383,11 +384,11 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
                             </div>
                         </form>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
 
             {showSickLeaveModal && (
-                <div className="vacation-modal-overlay sick-leave-modal-overlay">
+                <ModalOverlay visible className="vacation-modal-overlay sick-leave-modal-overlay">
                     <div className="vacation-modal-content sick-leave-modal-content">
                         <h3>{t('sickLeave.modalTitle', 'Krankheit melden')}</h3>
                         <form onSubmit={handleSickLeaveSubmit}>
@@ -413,7 +414,7 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
                             </div>
                         </form>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
         </div>
     );

@@ -1,4 +1,5 @@
 import React from 'react';
+import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
 import { useTranslation } from '../../context/LanguageContext';
 
@@ -19,7 +20,7 @@ function DeleteConfirmModal({
     if (!visible) return null;
 
     return (
-        <div className="modal-overlay">
+        <ModalOverlay visible={visible}>
             <div className="modal-content delete-confirm-modal">
                 <h3>{title}</h3>
                 <p>
@@ -47,7 +48,7 @@ function DeleteConfirmModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 }
 

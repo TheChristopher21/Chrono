@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ModalOverlay from './ModalOverlay';
 import PropTypes from 'prop-types';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
@@ -425,7 +426,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             </div>
 
             {showVacationModal && (
-                <div className="modal-overlay">
+                <ModalOverlay visible>
                     <div className="modal-content">
                         <h3>{t('adminVacation.modalTitle', 'Neuen Urlaub für Mitarbeiter anlegen')}</h3>
                         <form onSubmit={(e) => { e.preventDefault(); handleCreateVacation(); }}>
@@ -465,11 +466,11 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                             </div>
                         </form>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
 
             {showSickLeaveModal && (
-                <div className="modal-overlay">
+                <ModalOverlay visible>
                     <div className="modal-content">
                         <h3>{t('adminSickLeave.modalTitle', 'Krankheit für Benutzer melden')}</h3>
                         <form onSubmit={(e) => { e.preventDefault(); handleReportSickLeave(); }}>
@@ -502,7 +503,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                             </div>
                         </form>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
         </div>
     );

@@ -1,5 +1,6 @@
 // src/pages/AdminDashboard/AdminWeekSection.jsx
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from "prop-types";
 import "../../styles/AdminDashboardScoped.css";
 import api from "../../utils/api"; // Assuming api is configured
@@ -660,7 +661,7 @@ const AdminWeekSection = ({
             </section>
             {/* Modal for deleting sick leave */}
             {showDeleteSickLeaveModal && sickLeaveToDelete && (
-                <div className="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <ModalOverlay visible className="bg-black bg-opacity-50">
                     <div className="modal-content delete-confirmation-modal bg-white p-6 rounded-lg shadow-xl max-w-md w-full">
                         <h3 className="text-lg font-semibold mb-4">{t('adminDashboard.deleteSickLeaveConfirmTitle', 'Krankmeldung löschen bestätigen')}</h3>
                         <p className="mb-4 text-sm">
@@ -679,7 +680,7 @@ const AdminWeekSection = ({
                             </button>
                         </div>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
         </div>
     );

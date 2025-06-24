@@ -1,5 +1,6 @@
 // src/pages/PercentageDashboard/PercentageCorrectionModal.jsx
 import React, { useState, useEffect } from 'react';
+import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
 import { formatTime, formatDate } from './percentageDashUtils';
 
@@ -57,7 +58,7 @@ const PercentageCorrectionModal = ({
     };
 
     return (
-        <div className="modal-backdrop">
+        <ModalOverlay visible={visible} className="modal-backdrop">
             <div className="modal-content">
                 <form onSubmit={handleSubmit}>
                     <h3>{t('correctionFor')} {formatDate(correctionDate)}</h3>
@@ -86,7 +87,7 @@ const PercentageCorrectionModal = ({
                     </div>
                 </form>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 PercentageCorrectionModal.propTypes = {
