@@ -30,6 +30,20 @@ textarea {
   color: inherit;
 }
 
+/* Grundlegende Placeholder- und Fokus-Styles */
+::placeholder {
+  color: var(--c-muted);
+  opacity: 1;
+}
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--c-pri);
+  outline-offset: 2px;
+}
+
 /* ---------- 1)  Grundtokens (Light-Default) --------------------------- */
 :root {
   /* Primärfarben + optionales RGB für semitransparente Hintergründe */
