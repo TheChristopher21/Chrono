@@ -1,5 +1,6 @@
 // src/context/NotificationContext.jsx
 import React, { createContext, useState, useContext } from 'react';
+import ModalOverlay from '../components/ModalOverlay';
 import { useTranslation } from './LanguageContext';
 import "../styles/Notification.css"; // Pfad anpassen
 
@@ -27,12 +28,12 @@ export function NotificationProvider({ children }) {
             {children}
 
             {visible && (
-                <div className="notification-overlay">
+                <ModalOverlay visible className="notification-overlay">
                     <div className="notification-modal">
                         <p>{message}</p>
                         <button onClick={closeNotification}>{t('ok')}</button>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
         </NotificationContext.Provider>
     );

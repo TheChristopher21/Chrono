@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
 import { formatDate } from './adminDashboardUtils';
 import api from '../../utils/api';
@@ -165,7 +166,7 @@ const AdminVacationRequests = ({
 
             {/* Modal zum Bestätigen des Löschens */}
             {showDeleteModal && vacationToDelete && (
-                <div className="modal-overlay"> {/* Wiederverwendung aus VacationCalendarAdmin */}
+                <ModalOverlay visible className="">
                     <div className="modal-content delete-confirmation-modal"> {/* Eigene Klasse für spezifisches Styling */}
                         <h3>{t('adminVacation.delete.confirmTitle', 'Urlaub löschen bestätigen')}</h3>
                         <p>
@@ -195,7 +196,7 @@ const AdminVacationRequests = ({
                             </button>
                         </div>
                     </div>
-                </div>
+                </ModalOverlay>
             )}
         </div>
     );

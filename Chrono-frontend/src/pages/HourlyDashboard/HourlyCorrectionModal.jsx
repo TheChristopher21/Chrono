@@ -1,5 +1,6 @@
 // src/pages/HourlyDashboard/HourlyCorrectionModal.jsx
 import  { useState, useEffect } from 'react';
+import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
 import { formatTime, formatDate } from './hourDashUtils';
 
@@ -57,7 +58,7 @@ const HourlyCorrectionModal = ({
     };
 
     return (
-        <div className="modal-overlay">
+        <ModalOverlay visible={visible}>
             <div className="modal-content user-correction-modal-content">
                 <form onSubmit={handleSubmit}>
                     <h3>{t('correctionFor')} {formatDate(correctionDate)}</h3>
@@ -91,7 +92,7 @@ const HourlyCorrectionModal = ({
                     </div>
                 </form>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 

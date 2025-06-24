@@ -1,5 +1,6 @@
 // src/components/PrintReportModal.jsx
-import "react";
+import React from "react";
+import ModalOverlay from './ModalOverlay';
 import PropTypes from "prop-types";
 import "../styles/PrintReportScoped.css";          // optional – Styles für alle Dashboards
 
@@ -19,7 +20,7 @@ const PrintReportModal = ({
     const cls = cssScope ? ` ${cssScope}-print-modal` : "";
 
     return (
-        <div className={`modal-overlay${cls}`}>
+        <ModalOverlay visible={visible} className={cls.trim()}>
             <div className="modal-content">
                 <h3>{t("selectPeriod")}</h3>
 
@@ -46,7 +47,7 @@ const PrintReportModal = ({
                     <button onClick={onClose}>{t("cancel")}</button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 

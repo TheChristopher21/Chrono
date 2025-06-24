@@ -1,5 +1,6 @@
 // src/pages/UserDashboard/UserCorrectionModal.jsx
 import React, { useState, useEffect } from 'react';
+import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
 import { formatTime, formatDate } from './userDashUtils';
 
@@ -57,7 +58,7 @@ const UserCorrectionModal = ({
     };
 
     return (
-        <div className="modal-backdrop">
+        <ModalOverlay visible={visible} className="modal-backdrop">
             <div className="modal-content">
                 <form onSubmit={handleSubmit}>
                     <h3>{t('correctionFor')} {formatDate(correctionDate)}</h3>
@@ -86,7 +87,7 @@ const UserCorrectionModal = ({
                     </div>
                 </form>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 

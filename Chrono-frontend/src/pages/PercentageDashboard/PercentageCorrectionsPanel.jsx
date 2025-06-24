@@ -1,5 +1,6 @@
 // src/pages/PercentageDashboard/PercentageCorrectionModal.jsx
 import React, { useState, useEffect } from 'react';
+import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
 import { formatLocalDate, formatTime } from './percentageDashUtils'; // Eigene Utils verwenden
 
@@ -79,7 +80,7 @@ const PercentageCorrectionModal = ({
     };
 
     return (
-        <div className="modal-overlay percentage-dashboard scoped-dashboard"> {/* Scope hinzugefügt */}
+        <ModalOverlay visible={visible} className="percentage-dashboard scoped-dashboard">
             <div className="modal-content user-correction-modal-content"> {/* Klasse für konsistentes Styling */}
                 <h3>
                     {t("userCorrectionModal.title", "Korrekturantrag für")} {formatDate(correctionDate)}
@@ -150,7 +151,7 @@ const PercentageCorrectionModal = ({
                     </div>
                 </form>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 

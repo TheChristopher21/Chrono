@@ -1,4 +1,5 @@
 import React from "react";
+import ModalOverlay from '../../components/ModalOverlay';
 import { useTranslation } from "../../context/LanguageContext";
 import PropTypes from "prop-types";
 import "../../styles/AdminDashboardScoped.css";
@@ -22,7 +23,7 @@ const CorrectionDecisionModal = ({
     const btnLabel = isApprove ? t('adminDashboard.acceptButton') : t('adminDashboard.rejectButton');
 
     return (
-        <div className="modal-overlay">
+        <ModalOverlay visible={visible}>
             <div className="modal-content">
                 <h3>{header}</h3>
 
@@ -41,7 +42,7 @@ const CorrectionDecisionModal = ({
                     <button onClick={onClose} className="secondary">{t('cancel')}</button>
                 </div>
             </div>
-        </div>
+        </ModalOverlay>
     );
 };
 
