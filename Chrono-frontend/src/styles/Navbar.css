@@ -5,393 +5,457 @@
 
 /* --------------------------- Basisvariablen (aus global.css geerbt & erweitert) --------------------------- */
 .scoped-navbar {
-    /* Farb-Aliase für Navbar-spezifische Elemente, die globale Variablen nutzen */
-    --nav-bg: var(--c-card, #ffffff); /* Hintergrund der Navbar */
-    --nav-bg-transparent: rgba(var(--c-bg-rgb, 255,255,255), 0.75); /* Für den Blur-Effekt, falls c-bg-rgb definiert ist */
-    --nav-text: var(--c-text, #1f1f1f);
-    --nav-text-muted: var(--c-muted, #545863);
-    --nav-border: var(--c-border, #d1d4e2);
-    --nav-link-hover-bg: var(--c-pri, #475bff);
-    --nav-link-hover-text: #fff; /* Textfarbe für Links bei Hover (meistens weiß) */
-    --nav-button-bg: var(--c-pri, #475bff);
-    --nav-button-text: #fff;
-    --nav-button-hover-bg: var(--c-pri-dim, #6b7cff);
-    --nav-logout-bg: var(--c-danger, #ed5757);
-    --nav-logout-hover-bg: color-mix(in srgb, var(--c-danger, #ed5757) 85%, black);
+  /* Farb-Aliase für Navbar-spezifische Elemente, die globale Variablen nutzen */
+  --nav-bg: var(--c-card, #ffffff); /* Hintergrund der Navbar */
+  --nav-bg-transparent: rgba(
+    var(--c-bg-rgb, 255, 255, 255),
+    0.75
+  ); /* Für den Blur-Effekt, falls c-bg-rgb definiert ist */
+  --nav-text: var(--c-text, #1f1f1f);
+  --nav-text-muted: var(--c-muted, #545863);
+  --nav-border: var(--c-border, #d1d4e2);
+  --nav-link-hover-bg: var(--c-pri, #475bff);
+  --nav-link-hover-text: #fff; /* Textfarbe für Links bei Hover (meistens weiß) */
+  --nav-button-bg: var(--c-pri, #475bff);
+  --nav-button-text: #fff;
+  --nav-button-hover-bg: var(--c-pri-dim, #6b7cff);
+  --nav-logout-bg: var(--c-danger, #ed5757);
+  --nav-logout-hover-bg: color-mix(
+    in srgb,
+    var(--c-danger, #ed5757) 85%,
+    black
+  );
 
-    /* UI-Elemente */
-    --nav-height: 65px; /* Standardhöhe der Navbar */
-    --nav-padding-x: clamp(1rem, 4vw, 2rem); /* Responsive horizontales Padding */
-    --nav-padding-y: 0.75rem;
-    --nav-radius: var(--u-radius-md, 10px); /* Konsistenter Radius mit anderen Elementen */
-    --nav-shadow: var(--u-shadow-md, 0 5px 15px rgba(0,0,0,0.08)); /* Subtiler Schatten */
-    --nav-transition: var(--u-dur, 0.25s) var(--u-ease, cubic-bezier(0.4, 0.2, 0.2, 1));
+  /* UI-Elemente */
+  --nav-height: 65px; /* Standardhöhe der Navbar */
+  --nav-padding-x: clamp(1rem, 4vw, 2rem); /* Responsive horizontales Padding */
+  --nav-padding-y: 0.75rem;
+  --nav-radius: var(
+    --u-radius-md,
+    10px
+  ); /* Konsistenter Radius mit anderen Elementen */
+  --nav-shadow: var(
+    --u-shadow-md,
+    0 5px 15px rgba(0, 0, 0, 0.08)
+  ); /* Subtiler Schatten */
+  --nav-transition: var(--u-dur, 0.25s)
+    var(--u-ease, cubic-bezier(0.4, 0.2, 0.2, 1));
 
-    font-family: var(--ud-font-family, 'Poppins', system-ui, sans-serif); /* Erbt von Dashboard-Font */
+  font-family: var(
+    --ud-font-family,
+    "Poppins",
+    system-ui,
+    sans-serif
+  ); /* Erbt von Dashboard-Font */
 }
 
 [data-theme="dark"] .scoped-navbar {
-    --nav-bg: var(--c-card, #1f2127);
-    --nav-bg-transparent: rgba(var(--c-bg-rgb, 24,25,26), 0.75); /* Dunkler transparenter Hintergrund */
-    --nav-text: var(--c-text, #e4e6eb);
-    --nav-text-muted: var(--c-muted, #9da1b2);
-    --nav-border: var(--c-border, #363a46);
-    --nav-link-hover-bg: var(--c-pri, #475bff); /* Kann im Dark Mode heller sein, wenn Primärfarbe dunkler ist */
-    --nav-link-hover-text: #fff;
-    --nav-button-bg: var(--c-pri, #475bff);
-    --nav-button-text: #fff;
-    --nav-button-hover-bg: var(--c-pri-dim, #6b7cff);
-    --nav-logout-bg: var(--c-danger, #ed5757);
-    --nav-logout-hover-bg: color-mix(in srgb, var(--c-danger, #ed5757) 85%, black);
+  --nav-bg: var(--c-card, #1f2127);
+  --nav-bg-transparent: rgba(
+    var(--c-bg-rgb, 24, 25, 26),
+    0.75
+  ); /* Dunkler transparenter Hintergrund */
+  --nav-text: var(--c-text, #e4e6eb);
+  --nav-text-muted: var(--c-muted, #9da1b2);
+  --nav-border: var(--c-border, #363a46);
+  --nav-link-hover-bg: var(
+    --c-pri,
+    #475bff
+  ); /* Kann im Dark Mode heller sein, wenn Primärfarbe dunkler ist */
+  --nav-link-hover-text: #fff;
+  --nav-button-bg: var(--c-pri, #475bff);
+  --nav-button-text: #fff;
+  --nav-button-hover-bg: var(--c-pri-dim, #6b7cff);
+  --nav-logout-bg: var(--c-danger, #ed5757);
+  --nav-logout-hover-bg: color-mix(
+    in srgb,
+    var(--c-danger, #ed5757) 85%,
+    black
+  );
 }
 
 /* ----------------------------- Navbar-Grundlayout ----------------------------- */
 .scoped-navbar .navbar {
-    position: sticky;
-    top: 0;
-    left: 0;
-    width: 100%;
-    z-index: 1000;
+  position: sticky;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
 
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: var(--nav-height);
-    padding: var(--nav-padding-y) var(--nav-padding-x);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--nav-height);
+  padding: var(--nav-padding-y) var(--nav-padding-x);
 
-    background: var(--nav-bg-transparent);
-    backdrop-filter: saturate(180%) blur(12px); /* Glassmorphism-Effekt */
-    -webkit-backdrop-filter: saturate(180%) blur(12px);
+  background: var(--nav-bg-transparent);
+  backdrop-filter: saturate(180%) blur(12px); /* Glassmorphism-Effekt */
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
 
-    border-bottom: 1px solid var(--nav-border);
-    box-shadow: var(--nav-shadow);
+  border-bottom: 1px solid var(--nav-border);
+  box-shadow: var(--nav-shadow);
 
-    transition: background var(--nav-transition),
+  transition:
+    background var(--nav-transition),
     box-shadow var(--nav-transition),
     border-color var(--nav-transition);
 }
 
 /* Logo */
 .scoped-navbar .navbar-brand {
-    flex-shrink: 0; /* Verhindert Schrumpfen des Logos */
+  flex-shrink: 0; /* Verhindert Schrumpfen des Logos */
 }
 .scoped-navbar .navbar-logo {
-    font-weight: 700;
-    font-size: clamp(1.3rem, 3.5vw, 1.6rem);
-    color: var(--nav-link-hover-bg); /* Nutzt Primärfarbe für Logo */
-    text-decoration: none;
-    letter-spacing: -0.3px;
-    transition: color var(--nav-transition);
-    display: flex;
-    align-items: center;
+  font-weight: 700;
+  font-size: clamp(1.3rem, 3.5vw, 1.6rem);
+  color: var(--nav-link-hover-bg); /* Nutzt Primärfarbe für Logo */
+  text-decoration: none;
+  letter-spacing: -0.3px;
+  transition: color var(--nav-transition);
+  display: flex;
+  align-items: center;
 }
 .scoped-navbar .navbar-logo:hover {
-    color: var(--nav-button-hover-bg); /* Leichter Hover-Effekt für Logo */
+  color: var(--nav-button-hover-bg); /* Leichter Hover-Effekt für Logo */
 }
 
 /* -------------- Hamburger Toggle (Mobile) -------------- */
 .scoped-navbar .nav-toggle {
-    display: none; /* Wird nur im Media Query sichtbar */
+  display: none; /* Wird nur im Media Query sichtbar */
 }
 .scoped-navbar .nav-toggle-label {
-    display: none; /* Standardmäßig versteckt */
-    width: 28px; /* Etwas größer für bessere Klickbarkeit */
-    height: 22px;
-    cursor: pointer;
-    position: relative;
-    z-index: 1001; /* Über den Links im Mobile-Menü */
+  display: none; /* Standardmäßig versteckt */
+  width: 28px; /* Etwas größer für bessere Klickbarkeit */
+  height: 22px;
+  cursor: pointer;
+  position: relative;
+  z-index: 1001; /* Über den Links im Mobile-Menü */
 }
 .scoped-navbar .nav-toggle-label span {
-    position: absolute;
-    left: 0;
-    width: 100%;
-    height: 3px; /* Dickere Linien */
-    background: var(--nav-text);
-    border-radius: 2px;
-    transition: transform 0.3s var(--u-ease, ease),
+  position: absolute;
+  left: 0;
+  width: 100%;
+  height: 3px; /* Dickere Linien */
+  background: var(--nav-text);
+  border-radius: 2px;
+  transition:
+    transform 0.3s var(--u-ease, ease),
     opacity 0.3s var(--u-ease, ease),
     top 0.3s var(--u-ease, ease);
 }
-.scoped-navbar .nav-toggle-label span:nth-child(1) { top: 0; }
-.scoped-navbar .nav-toggle-label span:nth-child(2) { top: 50%; transform: translateY(-50%); }
-.scoped-navbar .nav-toggle-label span:nth-child(3) { bottom: 0; top: auto; }
+.scoped-navbar .nav-toggle-label span:nth-child(1) {
+  top: 0;
+}
+.scoped-navbar .nav-toggle-label span:nth-child(2) {
+  top: 50%;
+  transform: translateY(-50%);
+}
+.scoped-navbar .nav-toggle-label span:nth-child(3) {
+  bottom: 0;
+  top: auto;
+}
 
 /* Animation für Hamburger -> X */
 .scoped-navbar .nav-toggle:checked + .nav-toggle-label span:nth-child(1) {
-    transform: rotate(45deg);
-    top: 50%;
-    transform-origin: center;
+  transform: rotate(45deg);
+  top: 50%;
+  transform-origin: center;
 }
 .scoped-navbar .nav-toggle:checked + .nav-toggle-label span:nth-child(2) {
-    opacity: 0;
-    transform: translateX(-100%);
+  opacity: 0;
+  transform: translateX(-100%);
 }
 .scoped-navbar .nav-toggle:checked + .nav-toggle-label span:nth-child(3) {
-    transform: rotate(-45deg);
-    top: 50%;
-    transform-origin: center;
+  transform: rotate(-45deg);
+  top: 50%;
+  transform-origin: center;
 }
 
 /* -------------- Links-Container & Styling -------------- */
 .scoped-navbar .navbar-links {
-    display: flex;
-    align-items: center; /* Vertikale Zentrierung der Listenelemente */
-    gap: var(--ud-gap-sm, 0.75rem); /* Konsistenter Abstand */
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  display: flex;
+  align-items: center; /* Vertikale Zentrierung der Listenelemente */
+  gap: var(--ud-gap-sm, 0.75rem); /* Konsistenter Abstand */
+  list-style: none;
+  margin: 0;
+  padding: 0;
 }
 .scoped-navbar .navbar-links li {
-    display: flex; /* Stellt sicher, dass Inhalt innerhalb von <li> zentriert ist */
-    align-items: center;
+  display: flex; /* Stellt sicher, dass Inhalt innerhalb von <li> zentriert ist */
+  align-items: center;
 }
 
 /* Navigationslinks (<a> Tags) */
 .scoped-navbar .navbar-links a {
-    padding: 0.6rem 1rem; /* Angepasstes Padding */
-    border-radius: var(--nav-radius);
-    color: var(--nav-text);
-    font-weight: 500;
-    font-size: 0.95rem; /* Etwas größere Schrift */
-    text-decoration: none;
-    transition: background-color var(--nav-transition), color var(--nav-transition);
-    white-space: nowrap; /* Verhindert Umbruch von Links */
+  padding: 0.6rem 1rem; /* Angepasstes Padding */
+  border-radius: var(--nav-radius);
+  color: var(--nav-text);
+  font-weight: 500;
+  font-size: 0.95rem; /* Etwas größere Schrift */
+  text-decoration: none;
+  transition:
+    background-color var(--nav-transition),
+    color var(--nav-transition);
+  white-space: nowrap; /* Verhindert Umbruch von Links */
 }
 .scoped-navbar .navbar-links a:hover,
-.scoped-navbar .navbar-links a.active { /* Aktiver Link (falls implementiert) */
-    background-color: var(--nav-link-hover-bg);
-    color: var(--nav-link-hover-text);
+.scoped-navbar .navbar-links a.active {
+  /* Aktiver Link (falls implementiert) */
+  background-color: var(--nav-link-hover-bg);
+  color: var(--nav-link-hover-text);
 }
 
 /* Buttons in der Navbar (Login, Registrieren, Logout etc.) */
 .scoped-navbar .navbar-links button {
-    border: none;
-    border-radius: var(--nav-radius);
-    cursor: pointer;
-    font-size: 0.9rem;
-    font-weight: 600;
-    padding: 0.65rem 1.1rem; /* Etwas mehr Padding für Buttons */
-    transition: background-color var(--nav-transition), transform var(--u-dur, 0.25s) var(--u-ease, ease);
-    white-space: nowrap;
+  border: none;
+  border-radius: var(--nav-radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding: 0.65rem 1.1rem; /* Etwas mehr Padding für Buttons */
+  transition:
+    background-color var(--nav-transition),
+    transform var(--u-dur, 0.25s) var(--u-ease, ease);
+  white-space: nowrap;
 }
-.scoped-navbar .navbar-links button.navbar-login-register { /* Spezifische Klasse für Login/Register, falls nötig */
-    background-color: var(--nav-button-bg);
-    color: var(--nav-button-text);
+.scoped-navbar .navbar-links button.navbar-login-register {
+  /* Spezifische Klasse für Login/Register, falls nötig */
+  background-color: var(--nav-button-bg);
+  color: var(--nav-button-text);
 }
 .scoped-navbar .navbar-links button.navbar-login-register:hover {
-    background-color: var(--nav-button-hover-bg);
-    transform: translateY(-2px);
+  background-color: var(--nav-button-hover-bg);
+  transform: translateY(-2px);
 }
 .scoped-navbar .navbar-links button.navbar-logout {
-    background-color: var(--nav-logout-bg);
-    color: var(--nav-button-text); /* Normalerweise weiß */
+  background-color: var(--nav-logout-bg);
+  color: var(--nav-button-text); /* Normalerweise weiß */
 }
 .scoped-navbar .navbar-links button.navbar-logout:hover {
-    background-color: var(--nav-logout-hover-bg);
-    transform: translateY(-2px);
+  background-color: var(--nav-logout-hover-bg);
+  transform: translateY(-2px);
 }
 [data-theme="dark"] .scoped-navbar .navbar-links button.navbar-logout {
-    color: #fff; /* Sicherstellen, dass Logout-Button-Text hell ist */
+  color: #fff; /* Sicherstellen, dass Logout-Button-Text hell ist */
 }
-
 
 /* Username-Anzeige */
 .scoped-navbar .navbar-username {
-    color: var(--nav-text-muted);
-    font-weight: 500; /* Etwas weniger fett als Links */
-    font-size: 0.9rem;
-    padding: 0 var(--ud-gap-sm, 0.75rem);
-    white-space: nowrap;
+  color: var(--nav-text-muted);
+  font-weight: 500; /* Etwas weniger fett als Links */
+  font-size: 0.9rem;
+  padding: 0 var(--ud-gap-sm, 0.75rem);
+  white-space: nowrap;
 }
 
 /* Helligkeits- und Theme-Controls */
 .scoped-navbar .brightness-control,
-.scoped-navbar .theme-toggle-button { /* Falls du einen Theme-Button hinzufügst */
-    display: flex;
-    align-items: center;
-    gap: var(--ud-gap-xs, 0.5rem);
+.scoped-navbar .theme-toggle-button {
+  /* Falls du einen Theme-Button hinzufügst */
+  display: flex;
+  align-items: center;
+  gap: var(--ud-gap-xs, 0.5rem);
 }
 .scoped-navbar .brightness-control label {
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: var(--nav-text-muted);
-    line-height: 1;
-    white-space: nowrap;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--nav-text-muted);
+  line-height: 1;
+  white-space: nowrap;
 }
 .scoped-navbar .brightness-control input[type="range"] {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 80px; /* Etwas kürzer */
-    height: 5px;
-    border-radius: 3px;
-    background: var(--nav-border);
-    outline: none;
-    cursor: pointer;
-    transition: background var(--nav-transition);
+  -webkit-appearance: none;
+  appearance: none;
+  width: 80px; /* Etwas kürzer */
+  height: 5px;
+  border-radius: 3px;
+  background: var(--nav-border);
+  outline: none;
+  cursor: pointer;
+  transition: background var(--nav-transition);
 }
 .scoped-navbar .brightness-control input[type="range"]::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 14px; /* Etwas größerer Thumb */
-    height: 14px;
-    border-radius: 50%;
-    background: var(--nav-button-bg); /* Passend zu Button-Farbe */
-    border: 2px solid var(--nav-bg); /* Ring in Hintergrundfarbe */
-    cursor: pointer;
-    transition: background var(--nav-transition);
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px; /* Etwas größerer Thumb */
+  height: 14px;
+  border-radius: 50%;
+  background: var(--nav-button-bg); /* Passend zu Button-Farbe */
+  border: 2px solid var(--nav-bg); /* Ring in Hintergrundfarbe */
+  cursor: pointer;
+  transition: background var(--nav-transition);
 }
 .scoped-navbar .brightness-control input[type="range"]::-moz-range-thumb {
-    width: 14px;
-    height: 14px;
-    border-radius: 50%;
-    background: var(--nav-button-bg);
-    border: 2px solid var(--nav-bg);
-    cursor: pointer;
-    transition: background var(--nav-transition);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--nav-button-bg);
+  border: 2px solid var(--nav-bg);
+  cursor: pointer;
+  transition: background var(--nav-transition);
 }
-.scoped-navbar .brightness-control span { /* Prozentanzeige */
-    font-size: 0.85rem;
-    color: var(--nav-text-muted);
-    min-width: 30px; /* Platz für "100%" */
-    text-align: right;
+.scoped-navbar .brightness-control span {
+  /* Prozentanzeige */
+  font-size: 0.85rem;
+  color: var(--nav-text-muted);
+  min-width: 30px; /* Platz für "100%" */
+  text-align: right;
 }
-.scoped-navbar .navbar-links button.theme-toggle { /* Button für Theme-Wechsel */
-    background-color: transparent;
-    color: var(--nav-text);
-    padding: 0.5rem; /* Quadratischer machen */
-    border: 1px solid var(--nav-border);
-    font-size: 1.1rem; /* Für Icon-Größe */
+.scoped-navbar .navbar-links button.theme-toggle {
+  /* Button für Theme-Wechsel */
+  background-color: transparent;
+  color: var(--nav-text);
+  padding: 0.5rem; /* Quadratischer machen */
+  border: 1px solid var(--nav-border);
+  font-size: 1.1rem; /* Für Icon-Größe */
 }
 .scoped-navbar .navbar-links button.theme-toggle:hover {
-    background-color: var(--nav-bg-transparent); /* Leichter Hover auf Button */
-    border-color: var(--nav-text-muted);
-    transform: none; /* Kein Y-Transform für diesen Button */
+  background-color: var(--nav-bg-transparent); /* Leichter Hover auf Button */
+  border-color: var(--nav-text-muted);
+  transform: none; /* Kein Y-Transform für diesen Button */
 }
 [data-theme="dark"] .scoped-navbar .brightness-control input[type="range"] {
-    background: var(--nav-text-muted);
+  background: var(--nav-text-muted);
 }
-[data-theme="dark"] .scoped-navbar .brightness-control input[type="range"]::-webkit-slider-thumb {
-    border-color: var(--nav-bg);
+[data-theme="dark"]
+  .scoped-navbar
+  .brightness-control
+  input[type="range"]::-webkit-slider-thumb {
+  border-color: var(--nav-bg);
 }
-[data-theme="dark"] .scoped-navbar .brightness-control input[type="range"]::-moz-range-thumb {
-    border-color: var(--nav-bg);
+[data-theme="dark"]
+  .scoped-navbar
+  .brightness-control
+  input[type="range"]::-moz-range-thumb {
+  border-color: var(--nav-bg);
 }
 .changelog-link {
-    position: relative;
-    display: inline-block;
+  position: relative;
+  display: inline-block;
 }
 
 .notification-badge {
-    position: absolute;
-    top: 2px;
-    right: -12px;
-    width: 9px;
-    height: 9px;
-    background-color: #e53935; /* Ein leuchtendes Rot */
-    border-radius: 50%;
-    border: 2px solid var(--navbar-bg-color); /* Hebt sich vom Hintergrund ab */
+  position: absolute;
+  top: 2px;
+  right: -12px;
+  width: 9px;
+  height: 9px;
+  background-color: #e53935; /* Ein leuchtendes Rot */
+  border-radius: 50%;
+  border: 2px solid var(--navbar-bg-color); /* Hebt sich vom Hintergrund ab */
 }
 /* -------------- Mobile Navigation (Hamburger-Menü) -------------- */
-@media (max-width: 992px) { /* Breiterer Breakpoint für früheres Umklappen */
-    .scoped-navbar .nav-toggle-label {
-        display: flex; /* Sicherstellen, dass es ein Flex-Container für span-Zentrierung ist */
-        align-items: center;
-        justify-content: center;
-    }
-    .scoped-navbar .navbar-links {
-        display: none; /* Standardmäßig versteckt */
-        position: absolute;
-        top: calc(var(--nav-height) - 1px); /* Direkt unter der Navbar-Border */
-        left: 0;
-        right: 0;
-        width: 100%;
-        flex-direction: column;
-        align-items: stretch; /* Links nehmen volle Breite ein */
-        gap: 0; /* Kein Gap, da Listenelemente Padding haben */
-        background: var(--nav-bg); /* Solider Hintergrund für das Dropdown */
-        border-bottom: 1px solid var(--nav-border);
-        box-shadow: var(--nav-shadow);
-        padding: var(--ud-gap-sm, 0.75rem) 0; /* Vertikales Padding, kein horizontales */
-        max-height: calc(100vh - var(--nav-height)); /* Verhindert Überlaufen */
-        overflow-y: auto; /* Scrollbar bei vielen Links */
-    }
-    .scoped-navbar .nav-toggle:checked + .nav-toggle-label + .navbar-links {
-        display: flex; /* Sichtbar, wenn Hamburger aktiv */
-    }
+@media (max-width: 992px) {
+  /* Breiterer Breakpoint für früheres Umklappen */
+  .scoped-navbar .nav-toggle-label {
+    display: flex; /* Sicherstellen, dass es ein Flex-Container für span-Zentrierung ist */
+    align-items: center;
+    justify-content: center;
+  }
+  .scoped-navbar .navbar-links {
+    display: none; /* Standardmäßig versteckt */
+    position: absolute;
+    top: calc(var(--nav-height) - 1px); /* Direkt unter der Navbar-Border */
+    left: 0;
+    right: 0;
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch; /* Links nehmen volle Breite ein */
+    gap: 0; /* Kein Gap, da Listenelemente Padding haben */
+    background: var(--nav-bg); /* Solider Hintergrund für das Dropdown */
+    border-bottom: 1px solid var(--nav-border);
+    box-shadow: var(--nav-shadow);
+    padding: var(--ud-gap-sm, 0.75rem) 0; /* Vertikales Padding, kein horizontales */
+    max-height: calc(100vh - var(--nav-height)); /* Verhindert Überlaufen */
+    overflow-y: auto; /* Scrollbar bei vielen Links */
+  }
+  .scoped-navbar .nav-toggle:checked + .nav-toggle-label + .navbar-links {
+    display: flex; /* Sichtbar, wenn Hamburger aktiv */
+  }
 
-    .scoped-navbar .navbar-links li {
-        width: 100%;
-        margin: 0;
-        border-bottom: 1px solid var(--nav-border); /* Trennlinien zwischen Links */
-    }
-    .scoped-navbar .navbar-links li:last-child {
-        border-bottom: none;
-    }
-    .scoped-navbar .navbar-links a,
-    .scoped-navbar .navbar-links button {
-        width: 100%;
-        text-align: left;
-        padding: var(--ud-gap-md, 1.25rem) var(--nav-padding-x); /* Konsistentes Padding mit Navbar */
-        border-radius: 0; /* Keine abgerundeten Ecken für Dropdown-Elemente */
-        font-size: 1rem; /* Etwas größer für bessere Lesbarkeit im Dropdown */
-    }
-    .scoped-navbar .navbar-links a:hover,
-    .scoped-navbar .navbar-links button:hover {
-        background-color: var(--nav-link-hover-bg); /* Einheitlicher Hover für alle Elemente */
-        color: var(--nav-link-hover-text);
-        transform: none; /* Kein Transform im Dropdown */
-    }
-    .scoped-navbar .navbar-links button.navbar-logout:hover {
-        background-color: var(--nav-logout-hover-bg);
-    }
-    .scoped-navbar .navbar-username {
-        padding: var(--ud-gap-md, 1.25rem) var(--nav-padding-x);
-        font-size: 0.95rem;
-        text-align: left;
-        width: 100%;
-    }
-    .scoped-navbar .brightness-control {
-        padding: var(--ud-gap-md, 1.25rem) var(--nav-padding-x);
-        width: 100%;
-        justify-content: space-between; /* Elemente im Brightness Control verteilen */
-    }
-    .scoped-navbar .brightness-control input[type="range"] {
-        flex-grow: 1; /* Slider nimmt verfügbaren Platz ein */
-        margin: 0 var(--ud-gap-sm, 0.75rem);
-        max-width: 150px;
-    }
-    .scoped-navbar .navbar-links button.theme-toggle {
-        width: 100%;
-        text-align: left;
-        padding: var(--ud-gap-md, 1.25rem) var(--nav-padding-x);
-        border-radius: 0;
-        border: none; /* Kein extra Rand im Dropdown */
-        background-color: transparent;
-    }
-    .scoped-navbar .navbar-links button.theme-toggle:hover {
-        background-color: var(--nav-link-hover-bg);
-        color: var(--nav-link-hover-text);
-    }
+  .scoped-navbar .navbar-links li {
+    width: 100%;
+    margin: 0;
+    border-bottom: 1px solid var(--nav-border); /* Trennlinien zwischen Links */
+  }
+  .scoped-navbar .navbar-links li:last-child {
+    border-bottom: none;
+  }
+  .scoped-navbar .navbar-links a,
+  .scoped-navbar .navbar-links button {
+    width: 100%;
+    text-align: left;
+    padding: var(--ud-gap-md, 1.25rem) var(--nav-padding-x); /* Konsistentes Padding mit Navbar */
+    border-radius: 0; /* Keine abgerundeten Ecken für Dropdown-Elemente */
+    font-size: 1rem; /* Etwas größer für bessere Lesbarkeit im Dropdown */
+  }
+  .scoped-navbar .navbar-links a:hover,
+  .scoped-navbar .navbar-links button:hover {
+    background-color: var(
+      --nav-link-hover-bg
+    ); /* Einheitlicher Hover für alle Elemente */
+    color: var(--nav-link-hover-text);
+    transform: none; /* Kein Transform im Dropdown */
+  }
+  .scoped-navbar .navbar-links button.navbar-logout:hover {
+    background-color: var(--nav-logout-hover-bg);
+  }
+  .scoped-navbar .navbar-username {
+    padding: var(--ud-gap-md, 1.25rem) var(--nav-padding-x);
+    font-size: 0.95rem;
+    text-align: left;
+    width: 100%;
+  }
+  .scoped-navbar .brightness-control {
+    padding: var(--ud-gap-md, 1.25rem) var(--nav-padding-x);
+    width: 100%;
+    justify-content: space-between; /* Elemente im Brightness Control verteilen */
+  }
+  .scoped-navbar .brightness-control input[type="range"] {
+    flex-grow: 1; /* Slider nimmt verfügbaren Platz ein */
+    margin: 0 var(--ud-gap-sm, 0.75rem);
+    max-width: 150px;
+  }
+  .scoped-navbar .navbar-links button.theme-toggle {
+    width: 100%;
+    text-align: left;
+    padding: var(--ud-gap-md, 1.25rem) var(--nav-padding-x);
+    border-radius: 0;
+    border: none; /* Kein extra Rand im Dropdown */
+    background-color: transparent;
+  }
+  .scoped-navbar .navbar-links button.theme-toggle:hover {
+    background-color: var(--nav-link-hover-bg);
+    color: var(--nav-link-hover-text);
+  }
 }
 
-@media (max-width: 480px) { /* Kleinere Anpassungen für sehr kleine Bildschirme */
-    .scoped-navbar .navbar {
-        --nav-padding-x: clamp(0.75rem, 3vw, 1.5rem); /* Weniger horizontales Padding */
-    }
-    .scoped-navbar .navbar-logo {
-        font-size: clamp(1.2rem, 5vw, 1.4rem);
-    }
-    .scoped-navbar .nav-toggle-label {
-        width: 26px; height: 20px;
-    }
-    .scoped-navbar .nav-toggle-label span { height: 2.5px; }
+@media (max-width: 480px) {
+  /* Kleinere Anpassungen für sehr kleine Bildschirme */
+  .scoped-navbar .navbar {
+    --nav-padding-x: clamp(
+      0.75rem,
+      3vw,
+      1.5rem
+    ); /* Weniger horizontales Padding */
+  }
+  .scoped-navbar .navbar-logo {
+    font-size: clamp(1.2rem, 5vw, 1.4rem);
+  }
+  .scoped-navbar .nav-toggle-label {
+    width: 26px;
+    height: 20px;
+  }
+  .scoped-navbar .nav-toggle-label span {
+    height: 2.5px;
+  }
 }
 
 /* -------------- Reduced Motion Präferenz -------------- */
 @media (prefers-reduced-motion: reduce) {
-    .scoped-navbar * {
-        transition: none !important;
-        animation: none !important;
-        transform: none !important;
-    }
+  .scoped-navbar * {
+    transition: none !important;
+    animation: none !important;
+    transform: none !important;
+  }
 }

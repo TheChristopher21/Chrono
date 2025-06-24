@@ -5,566 +5,585 @@
 
 /* Haupt-Container */
 .registration-page.scoped-registration {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: var(--c-bg);
-    color: var(--c-text);
-    font-family: 'Poppins', system-ui, sans-serif;
-    min-height: 100vh;
-    padding-bottom: 4rem; /* Platz unten für Footer-Links etc. */
-    transition:
-            background var(--u-dur) var(--u-ease),
-            color      var(--u-dur) var(--u-ease);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: "Poppins", system-ui, sans-serif;
+  min-height: 100vh;
+  padding-bottom: 4rem; /* Platz unten für Footer-Links etc. */
+  transition:
+    background var(--u-dur) var(--u-ease),
+    color var(--u-dur) var(--u-ease);
 }
 
 /* Innerer Wrapper */
 .registration-page.scoped-registration .registration-content {
-    width: 100%;
-    max-width: 1200px;
-    padding: 2rem 1.5rem;
-    margin: 0 auto;
+  width: 100%;
+  max-width: 1200px;
+  padding: 2rem 1.5rem;
+  margin: 0 auto;
 }
 
 /* Überschriften + Introtexte */
 .registration-page.scoped-registration .registration-content h2 {
-    font-size: clamp(1.6rem, 2.5vw, 1.8rem);
-    margin-bottom: 1.2rem;
-    text-align: center;
-    font-weight: 700;
-    color: var(--c-heading, var(--c-text-strong));
+  font-size: clamp(1.6rem, 2.5vw, 1.8rem);
+  margin-bottom: 1.2rem;
+  text-align: center;
+  font-weight: 700;
+  color: var(--c-heading, var(--c-text-strong));
 }
 
 /* -------------------- Pricing-Section -------------------- */
 .pricing-section {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius-lg);
-    box-shadow: var(--u-shadow-md);
-    padding: clamp(1.5rem, 3vw, 2.5rem);
-    margin-bottom: 2.5rem;
-    text-align: center;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-lg);
+  box-shadow: var(--u-shadow-md);
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  margin-bottom: 2.5rem;
+  text-align: center;
 }
 .pricing-section h2 {
-    font-size: clamp(1.5rem, 2.2vw, 1.7rem);
-    margin-bottom: 1rem;
+  font-size: clamp(1.5rem, 2.2vw, 1.7rem);
+  margin-bottom: 1rem;
 }
 .pricing-intro {
-    font-size: clamp(0.9rem, 1.5vw, 0.95rem);
-    line-height: 1.65;
-    max-width: 800px;
-    margin: 0.5rem auto 2.5rem;
-    color: var(--c-text-soft);
+  font-size: clamp(0.9rem, 1.5vw, 0.95rem);
+  line-height: 1.65;
+  max-width: 800px;
+  margin: 0.5rem auto 2.5rem;
+  color: var(--c-text-soft);
 }
 .pricing-intro strong {
-    color: var(--c-primary);
-    font-weight: 600;
+  color: var(--c-primary);
+  font-weight: 600;
 }
 
 /* Abrechnung (Monat/Jahr) Toggle */
 .billing-toggle {
-    display: flex;
-    justify-content: center;
-    gap: 0.8rem;
-    margin-bottom: 2.5rem;
-    flex-wrap: wrap;
+  display: flex;
+  justify-content: center;
+  gap: 0.8rem;
+  margin-bottom: 2.5rem;
+  flex-wrap: wrap;
 }
 .billing-toggle label {
-    font-size: clamp(0.9rem, 1.5vw, 0.95rem);
-    cursor: pointer;
-    padding: 0.6rem 1.2rem;
-    border: 1px solid var(--c-border-light);
-    border-radius: var(--u-radius-sm);
-    transition: background-color 0.2s, color 0.2s, border-color 0.2s;
-    color: var(--c-text-soft);
+  font-size: clamp(0.9rem, 1.5vw, 0.95rem);
+  cursor: pointer;
+  padding: 0.6rem 1.2rem;
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--u-radius-sm);
+  transition:
+    background-color 0.2s,
+    color 0.2s,
+    border-color 0.2s;
+  color: var(--c-text-soft);
 }
 .billing-toggle input[type="radio"] {
-    display: none;
+  display: none;
 }
 .billing-toggle input[type="radio"]:checked + label {
-    background-color: var(--c-primary-light);
-    color: var(--c-primary);
-    border-color: var(--c-primary);
-    font-weight: 600;
-    box-shadow: 0 0 10px -3px var(--c-primary-light);
+  background-color: var(--c-primary-light);
+  color: var(--c-primary);
+  border-color: var(--c-primary);
+  font-weight: 600;
+  box-shadow: 0 0 10px -3px var(--c-primary-light);
 }
 .billing-toggle label:not(:has(input[type="radio"]:checked)):hover {
-    border-color: var(--c-text-soft);
-    color: var(--c-text);
+  border-color: var(--c-text-soft);
+  color: var(--c-text);
 }
 
 /* Pakete (Cards) */
 .pricing-cards {
-    display: flex;
-    flex-wrap: wrap;
-    gap: clamp(1.2rem, 2vw, 1.8rem);
-    justify-content: center;
-    margin-bottom: 2.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(1.2rem, 2vw, 1.8rem);
+  justify-content: center;
+  margin-bottom: 2.5rem;
 }
 .pricing-card {
-    background: var(--c-card-alt, var(--c-card));
-    border: 2px solid var(--card-accent-color, var(--c-border));
-    border-radius: var(--u-radius-md);
-    box-shadow: var(--u-shadow-sm);
-    flex: 1 1 300px;
-    max-width: 350px;
-    padding: clamp(1.2rem, 2vw, 1.8rem);
-    cursor: pointer;
-    transition: transform 0.25s ease-out, box-shadow 0.25s ease-out, border-color 0.25s ease-out, background-color 0.25s ease-out;
-    text-align: left;
+  background: var(--c-card-alt, var(--c-card));
+  border: 2px solid var(--card-accent-color, var(--c-border));
+  border-radius: var(--u-radius-md);
+  box-shadow: var(--u-shadow-sm);
+  flex: 1 1 300px;
+  max-width: 350px;
+  padding: clamp(1.2rem, 2vw, 1.8rem);
+  cursor: pointer;
+  transition:
+    transform 0.25s ease-out,
+    box-shadow 0.25s ease-out,
+    border-color 0.25s ease-out,
+    background-color 0.25s ease-out;
+  text-align: left;
 }
 .pricing-card:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--u-shadow-lg);
+  transform: translateY(-4px);
+  box-shadow: var(--u-shadow-lg);
 }
 .pricing-card.selected {
-    box-shadow: 0 0 0 3px var(--card-accent-color, var(--c-primary)), var(--u-shadow-lg);
-    transform: scale(1.03) translateY(-2px);
-    background-color: color-mix(in srgb, var(--c-card-alt, var(--c-card)) 92%, var(--card-accent-color, var(--c-primary)) 8%);
+  box-shadow:
+    0 0 0 3px var(--card-accent-color, var(--c-primary)),
+    var(--u-shadow-lg);
+  transform: scale(1.03) translateY(-2px);
+  background-color: color-mix(
+    in srgb,
+    var(--c-card-alt, var(--c-card)) 92%,
+    var(--card-accent-color, var(--c-primary)) 8%
+  );
 }
 .pricing-card h3 {
-    margin: 0 0 1.2rem;
-    font-size: clamp(1.3rem, 1.8vw, 1.5rem);
-    text-align: center;
-    font-weight: 700;
-    color: var(--card-accent-color, var(--c-text-strong));
+  margin: 0 0 1.2rem;
+  font-size: clamp(1.3rem, 1.8vw, 1.5rem);
+  text-align: center;
+  font-weight: 700;
+  color: var(--card-accent-color, var(--c-text-strong));
 }
 .price-line {
-    font-size: 1rem;
-    margin-bottom: 0.6rem;
-    line-height: 1.4;
-    text-align: center;
+  font-size: 1rem;
+  margin-bottom: 0.6rem;
+  line-height: 1.4;
+  text-align: center;
 }
 .price-line.base-fee strong,
 .price-line.employee-rate strong {
-    font-size: clamp(1.2em, 2vw, 1.4em);
-    font-weight: 700;
-    color: var(--c-text-emphasis, var(--c-text-strong));
-    display: block;
-    margin-top: 0.2em;
+  font-size: clamp(1.2em, 2vw, 1.4em);
+  font-weight: 700;
+  color: var(--c-text-emphasis, var(--c-text-strong));
+  display: block;
+  margin-top: 0.2em;
 }
 .yearly-hint-card {
-    font-size: 0.8rem;
-    color: var(--c-muted);
-    text-align: center;
-    margin-bottom: 1.2rem;
-    min-height: 2.5em;
-    line-height: 1.3;
+  font-size: 0.8rem;
+  color: var(--c-muted);
+  text-align: center;
+  margin-bottom: 1.2rem;
+  min-height: 2.5em;
+  line-height: 1.3;
 }
 .features-list {
-    list-style: none;
-    padding: 0;
-    font-size: clamp(0.85rem, 1.3vw, 0.9rem);
-    line-height: 1.6;
-    margin-top: 1.2rem;
-    margin-bottom: 0.8rem;
-    text-align: left;
+  list-style: none;
+  padding: 0;
+  font-size: clamp(0.85rem, 1.3vw, 0.9rem);
+  line-height: 1.6;
+  margin-top: 1.2rem;
+  margin-bottom: 0.8rem;
+  text-align: left;
 }
 .features-list li {
-    margin-bottom: 0.7rem;
-    padding-left: 1.4em;
-    position: relative;
-    color: var(--c-text-soft);
+  margin-bottom: 0.7rem;
+  padding-left: 1.4em;
+  position: relative;
+  color: var(--c-text-soft);
 }
 .features-list li strong {
-    color: var(--c-text);
-    font-weight: 500;
+  color: var(--c-text);
+  font-weight: 500;
 }
 .features-list li::before {
-    content: '✓';
-    position: absolute;
-    left: 0;
-    color: var(--c-primary);
-    font-weight: bold;
-    font-size: 1.1em;
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--c-primary);
+  font-weight: bold;
+  font-size: 1.1em;
 }
 
 /* Zentraler Mitarbeiterzähler */
 .central-employee-input {
-    margin: 2.5rem auto;
-    padding: 1.8rem 2rem;
-    background-color: var(--c-bg-soft);
-    border: 1px solid var(--c-border-light);
-    border-radius: var(--u-radius-md);
-    max-width: 400px;
-    text-align: center;
-    box-shadow: var(--u-shadow-xs);
+  margin: 2.5rem auto;
+  padding: 1.8rem 2rem;
+  background-color: var(--c-bg-soft);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--u-radius-md);
+  max-width: 400px;
+  text-align: center;
+  box-shadow: var(--u-shadow-xs);
 }
 .central-employee-input label {
-    display: block;
-    margin-bottom: 1.2rem;
-    font-weight: 600;
-    font-size: clamp(1.05rem, 1.7vw, 1.15em);
-    color: var(--c-text-strong);
+  display: block;
+  margin-bottom: 1.2rem;
+  font-weight: 600;
+  font-size: clamp(1.05rem, 1.7vw, 1.15em);
+  color: var(--c-text-strong);
 }
 .central-employee-input input[type="number"] {
-    width: 150px;
-    padding: 0.9rem;
-    font-size: 1.3em;
-    text-align: center;
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius-sm);
-    background: var(--c-bg-input, var(--c-bg));
-    color: var(--c-text);
-    transition: border-color 0.2s, box-shadow 0.2s;
+  width: 150px;
+  padding: 0.9rem;
+  font-size: 1.3em;
+  text-align: center;
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-sm);
+  background: var(--c-bg-input, var(--c-bg));
+  color: var(--c-text);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 .central-employee-input input[type="number"]:focus {
-    border-color: var(--c-primary);
-    box-shadow: 0 0 8px -2px var(--c-primary-light);
-    outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 8px -2px var(--c-primary-light);
+  outline: none;
 }
 
 /* Optionale Trainingssektion */
 .training-option-section {
-    margin: 2.5rem auto;
-    padding: 1.8rem 2rem;
-    background-color: var(--c-bg-soft);
-    border: 1px solid var(--c-border-light);
-    border-radius: var(--u-radius-md);
-    max-width: 580px;
-    text-align: center;
+  margin: 2.5rem auto;
+  padding: 1.8rem 2rem;
+  background-color: var(--c-bg-soft);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--u-radius-md);
+  max-width: 580px;
+  text-align: center;
 }
 .training-option-section h4 {
-    margin-top: 0;
-    margin-bottom: 1.2rem;
-    font-size: clamp(1.05rem, 1.7vw, 1.15em);
-    color: var(--c-text-strong);
-    font-weight: 600;
+  margin-top: 0;
+  margin-bottom: 1.2rem;
+  font-size: clamp(1.05rem, 1.7vw, 1.15em);
+  color: var(--c-text-strong);
+  font-weight: 600;
 }
 
 /* Nur eine Zeile für das Checkbox-Label */
 .training-label {
-    display: inline-flex;
-    align-items: center;
-    justify-content: flex-start;
-    font-size: clamp(0.9rem, 1.5vw, 0.95rem);
-    color: var(--c-text);
-    cursor: pointer;
-    line-height: 1.6;
-    text-align: left;
-    gap: 0.8rem;
-    white-space: nowrap; /* Damit alles in einer Zeile bleibt */
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  font-size: clamp(0.9rem, 1.5vw, 0.95rem);
+  color: var(--c-text);
+  cursor: pointer;
+  line-height: 1.6;
+  text-align: left;
+  gap: 0.8rem;
+  white-space: nowrap; /* Damit alles in einer Zeile bleibt */
 }
 .training-label input[type="checkbox"] {
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
-    width: 20px;
-    height: 20px;
-    background-color: var(--c-bg-input, var(--c-bg));
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius-xs, 4px);
-    flex-shrink: 0;
-    margin-top: 0.2em;
-    position: relative;
-    cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s;
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  width: 20px;
+  height: 20px;
+  background-color: var(--c-bg-input, var(--c-bg));
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-xs, 4px);
+  flex-shrink: 0;
+  margin-top: 0.2em;
+  position: relative;
+  cursor: pointer;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s;
 }
 .training-label input[type="checkbox"]:checked::before {
-    content: '✓';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    font-size: 14px;
-    color: var(--c-primary-text, #fff);
-    font-weight: bold;
-    line-height: 1;
+  content: "✓";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  color: var(--c-primary-text, #fff);
+  font-weight: bold;
+  line-height: 1;
 }
 .training-label input[type="checkbox"]:checked {
-    background-color: var(--c-primary);
-    border-color: var(--c-primary);
+  background-color: var(--c-primary);
+  border-color: var(--c-primary);
 }
 .training-label input[type="checkbox"]:focus-visible {
-    outline: 2px solid var(--c-primary-light);
-    outline-offset: 2px;
+  outline: 2px solid var(--c-primary-light);
+  outline-offset: 2px;
 }
 .training-label strong {
-    color: var(--c-primary);
-    font-weight: 600;
+  color: var(--c-primary);
+  font-weight: 600;
 }
 
 .pricing-footnote {
-    font-size: clamp(0.8rem, 1.2vw, 0.85rem);
-    color: var(--c-muted);
-    margin-top: 1.8rem;
-    line-height: 1.55;
+  font-size: clamp(0.8rem, 1.2vw, 0.85rem);
+  color: var(--c-muted);
+  margin-top: 1.8rem;
+  line-height: 1.55;
 }
 
 /* -------------------- Formular-Abschnitt -------------------- */
 .application-section {
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius-lg);
-    box-shadow: var(--u-shadow-md);
-    padding: clamp(1.5rem, 3vw, 2.5rem);
-    margin: 0 auto 2rem;
-    max-width: 780px;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-lg);
+  box-shadow: var(--u-shadow-md);
+  padding: clamp(1.5rem, 3vw, 2.5rem);
+  margin: 0 auto 2rem;
+  max-width: 780px;
 }
 .application-section h2 {
-    font-size: clamp(1.5rem, 2.2vw, 1.7rem);
-    margin-bottom: 1.8rem;
-    text-align: center;
+  font-size: clamp(1.5rem, 2.2vw, 1.7rem);
+  margin-bottom: 1.8rem;
+  text-align: center;
 }
 .application-section form {
-    display: flex;
-    flex-direction: column;
-    gap: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
 }
 .application-section form input,
 .application-section form textarea {
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius-sm);
-    padding: 0.9rem 1.1rem;
-    font: inherit;
-    font-size: 0.95rem;
-    color: var(--c-text);
-    background: var(--c-bg-input, var(--c-bg));
-    transition:
-            border-color var(--u-dur) var(--u-ease),
-            background   var(--u-dur) var(--u-ease),
-            box-shadow   var(--u-dur) var(--u-ease);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-sm);
+  padding: 0.9rem 1.1rem;
+  font: inherit;
+  font-size: 0.95rem;
+  color: var(--c-text);
+  background: var(--c-bg-input, var(--c-bg));
+  transition:
+    border-color var(--u-dur) var(--u-ease),
+    background var(--u-dur) var(--u-ease),
+    box-shadow var(--u-dur) var(--u-ease);
 }
 .application-section form input:focus,
 .application-section form textarea:focus {
-    border-color: var(--c-primary);
-    background: var(--c-bg-input-focus, var(--c-bg-soft));
-    outline: none;
-    box-shadow: 0 0 8px -2px var(--c-primary-light);
+  border-color: var(--c-primary);
+  background: var(--c-bg-input-focus, var(--c-bg-soft));
+  outline: none;
+  box-shadow: 0 0 8px -2px var(--c-primary-light);
 }
 .application-section form textarea {
-    min-height: 100px;
-    resize: vertical;
+  min-height: 100px;
+  resize: vertical;
 }
 
 /* Preisvorschau im Formularbereich */
 .application-section .price-preview.card {
-    background-color: var(--c-bg-soft);
-    border: 1px solid var(--c-border-light);
-    border-radius: var(--u-radius-md);
-    padding: clamp(1.2rem, 2vw, 1.8rem);
-    margin-bottom: 2rem;
-    box-shadow: var(--u-shadow-xs);
+  background-color: var(--c-bg-soft);
+  border: 1px solid var(--c-border-light);
+  border-radius: var(--u-radius-md);
+  padding: clamp(1.2rem, 2vw, 1.8rem);
+  margin-bottom: 2rem;
+  box-shadow: var(--u-shadow-xs);
 }
 .application-section .price-preview.card h4 {
-    margin-top: 0;
-    color: var(--c-text-strong);
-    font-size: clamp(1.15rem, 1.8vw, 1.3em);
-    border-bottom: 1px solid var(--c-border-light);
-    padding-bottom: 0.9rem;
-    margin-bottom: 1.2rem;
-    font-weight: 600;
+  margin-top: 0;
+  color: var(--c-text-strong);
+  font-size: clamp(1.15rem, 1.8vw, 1.3em);
+  border-bottom: 1px solid var(--c-border-light);
+  padding-bottom: 0.9rem;
+  margin-bottom: 1.2rem;
+  font-weight: 600;
 }
 .application-section .price-preview.card p.price-item {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin: 0.7rem 0;
-    font-size: clamp(0.9rem, 1.4vw, 0.95rem);
-    color: var(--c-text);
-    line-height: 1.5;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin: 0.7rem 0;
+  font-size: clamp(0.9rem, 1.4vw, 0.95rem);
+  color: var(--c-text);
+  line-height: 1.5;
 }
 .application-section .price-preview.card p.price-item .label {
-    flex-basis: 65%;
-    padding-right: 1rem;
-    color: var(--c-text-soft);
+  flex-basis: 65%;
+  padding-right: 1rem;
+  color: var(--c-text-soft);
 }
 .application-section .price-preview.card p.price-item .value {
-    flex-basis: 35%;
-    text-align: right;
-    font-weight: 600;
-    color: var(--c-text-strong);
+  flex-basis: 35%;
+  text-align: right;
+  font-weight: 600;
+  color: var(--c-text-strong);
 }
 .application-section .price-preview.card p.prominent-subtotal .value {
-    font-weight: 700;
-    font-size: 1.05em;
+  font-weight: 700;
+  font-size: 1.05em;
 }
 .application-section .price-preview.card hr {
-    border: 0;
-    border-top: 1px solid var(--c-border-extralight);
-    margin: 1.2rem 0;
+  border: 0;
+  border-top: 1px solid var(--c-border-extralight);
+  margin: 1.2rem 0;
 }
 .application-section .price-preview.card .total-price-wrapper {
-    background-color: var(--c-primary-bg-subtle, var(--c-bg));
-    margin: 1rem -1.8rem;
-    padding: 1rem 1.8rem;
-    border-top: 1px solid var(--c-border-light);
-    border-bottom: 1px solid var(--c-border-light);
+  background-color: var(--c-primary-bg-subtle, var(--c-bg));
+  margin: 1rem -1.8rem;
+  padding: 1rem 1.8rem;
+  border-top: 1px solid var(--c-border-light);
+  border-bottom: 1px solid var(--c-border-light);
 }
 .application-section .price-preview.card p.total-price .label {
-    color: var(--c-primary);
-    font-weight: 600;
+  color: var(--c-primary);
+  font-weight: 600;
 }
 .application-section .price-preview.card p.total-price .value {
-    font-size: clamp(1.3em, 2.2vw, 1.5em);
-    color: var(--c-primary);
-    font-weight: 700;
+  font-size: clamp(1.3em, 2.2vw, 1.5em);
+  color: var(--c-primary);
+  font-weight: 700;
 }
 .application-section .price-preview.card p.sub-hint {
-    font-size: clamp(0.8rem, 1.2vw, 0.85rem);
+  font-size: clamp(0.8rem, 1.2vw, 0.85rem);
 }
 .application-section .price-preview.card p.sub-hint .label {
-    color: var(--c-muted);
+  color: var(--c-muted);
 }
 .application-section .price-preview.card p.sub-hint .value {
-    color: var(--c-muted-strong, var(--c-muted));
-    font-weight: 500;
+  color: var(--c-muted-strong, var(--c-muted));
+  font-weight: 500;
 }
 
 /* Submit-Button */
 .application-section form button[type="submit"] {
-    align-self: center;
-    background: var(--c-primary);
-    color: var(--c-primary-text, #fff);
-    font-weight: 600;
-    font-size: clamp(1rem, 1.6vw, 1.1em);
-    border: none;
-    border-radius: var(--u-radius-sm);
-    padding: 0.9rem 2rem;
-    cursor: pointer;
-    transition:
-            background var(--u-dur) var(--u-ease),
-            transform  var(--u-dur) var(--u-ease),
-            box-shadow var(--u-dur) var(--u-ease);
-    box-shadow: var(--u-shadow-sm);
-    min-width: 280px;
+  align-self: center;
+  background: var(--c-primary);
+  color: var(--c-primary-text, #fff);
+  font-weight: 600;
+  font-size: clamp(1rem, 1.6vw, 1.1em);
+  border: none;
+  border-radius: var(--u-radius-sm);
+  padding: 0.9rem 2rem;
+  cursor: pointer;
+  transition:
+    background var(--u-dur) var(--u-ease),
+    transform var(--u-dur) var(--u-ease),
+    box-shadow var(--u-dur) var(--u-ease);
+  box-shadow: var(--u-shadow-sm);
+  min-width: 280px;
 }
 .application-section form button[type="submit"]:hover:not(:disabled) {
-    background: var(--c-primary-hover);
-    transform: translateY(-2px) scale(1.02);
-    box-shadow: var(--u-shadow-md);
+  background: var(--c-primary-hover);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: var(--u-shadow-md);
 }
 .application-section form button[type="submit"]:disabled {
-    background: var(--c-muted-bg, var(--c-muted));
-    color: var(--c-muted-text, #aaa);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+  background: var(--c-muted-bg, var(--c-muted));
+  color: var(--c-muted-text, #aaa);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
 }
 
 /* Fehlermeldung / Erfolgsmeldung */
 .error-message {
-    color: var(--c-error-text, var(--c-error));
-    background-color: var(--c-error-bg);
-    border: 1px solid var(--c-error);
-    padding: 0.9rem 1.2rem;
-    border-radius: var(--u-radius-sm);
-    margin-bottom: 1.2rem;
-    font-size: 0.9rem;
-    font-weight: 500;
-    text-align: left;
-    line-height: 1.5;
+  color: var(--c-error-text, var(--c-error));
+  background-color: var(--c-error-bg);
+  border: 1px solid var(--c-error);
+  padding: 0.9rem 1.2rem;
+  border-radius: var(--u-radius-sm);
+  margin-bottom: 1.2rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-align: left;
+  line-height: 1.5;
 }
 .success-message-box {
-    background-color: var(--c-success-bg-soft, var(--c-success-bg));
-    border: 1px solid var(--c-success-border, var(--c-success));
-    color: var(--c-success-text-strong, var(--c-success-text));
-    padding: clamp(1.2rem, 2vw, 2rem);
-    border-radius: var(--u-radius-md);
-    text-align: center;
-    box-shadow: var(--u-shadow-sm);
+  background-color: var(--c-success-bg-soft, var(--c-success-bg));
+  border: 1px solid var(--c-success-border, var(--c-success));
+  color: var(--c-success-text-strong, var(--c-success-text));
+  padding: clamp(1.2rem, 2vw, 2rem);
+  border-radius: var(--u-radius-md);
+  text-align: center;
+  box-shadow: var(--u-shadow-sm);
 }
 .success-message-box h3 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    font-size: clamp(1.25rem, 1.9vw, 1.4em);
-    font-weight: 600;
-    color: var(--c-success-text-strong, var(--c-success));
+  margin-top: 0;
+  margin-bottom: 1rem;
+  font-size: clamp(1.25rem, 1.9vw, 1.4em);
+  font-weight: 600;
+  color: var(--c-success-text-strong, var(--c-success));
 }
 .success-message-box p {
-    margin-bottom: 0.8rem;
-    font-size: clamp(0.9rem, 1.5vw, 1rem);
-    line-height: 1.6;
-    color: var(--c-success-text, var(--c-text-soft));
+  margin-bottom: 0.8rem;
+  font-size: clamp(0.9rem, 1.5vw, 1rem);
+  line-height: 1.6;
+  color: var(--c-success-text, var(--c-text-soft));
 }
 .success-message-box p strong {
-    color: var(--c-success-text-emphasis, var(--c-success));
-    font-weight: 600;
+  color: var(--c-success-text-emphasis, var(--c-success));
+  font-weight: 600;
 }
 .success-message-box button {
-    background: var(--c-primary);
-    color: var(--c-primary-text, #fff);
-    font-weight: 600;
-    border: none;
-    border-radius: var(--u-radius-sm);
-    padding: 0.8rem 1.5rem;
-    cursor: pointer;
-    transition: background var(--u-dur) var(--u-ease), transform 0.15s ease-out;
-    margin-top: 1rem;
+  background: var(--c-primary);
+  color: var(--c-primary-text, #fff);
+  font-weight: 600;
+  border: none;
+  border-radius: var(--u-radius-sm);
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  transition:
+    background var(--u-dur) var(--u-ease),
+    transform 0.15s ease-out;
+  margin-top: 1rem;
 }
 .success-message-box button:hover {
-    background: var(--c-primary-hover);
-    transform: scale(1.03);
+  background: var(--c-primary-hover);
+  transform: scale(1.03);
 }
 
 /* Footer Links */
 .registration-content > div:last-child {
-    margin-top: 3rem;
-    padding-top: 1.5rem;
-    border-top: 1px solid var(--c-border-extralight);
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--c-border-extralight);
 }
 .registration-content > div:last-child a {
-    color: var(--c-muted-strong, var(--c-muted));
-    text-decoration: none;
-    transition: color 0.2s;
+  color: var(--c-muted-strong, var(--c-muted));
+  text-decoration: none;
+  transition: color 0.2s;
 }
 .registration-content > div:last-child a:hover {
-    color: var(--c-primary);
-    text-decoration: underline;
+  color: var(--c-primary);
+  text-decoration: underline;
 }
 
 @media (max-width: 768px) {
-    .pricing-card {
-        flex-basis: calc(50% - 1rem);
-    }
-    .application-section .price-preview.card p.price-item {
-        flex-direction: column;
-        align-items: flex-start;
-    }
-    .application-section .price-preview.card p.price-item .value {
-        text-align: left;
-        margin-top: 0.2rem;
-        flex-basis: auto;
-    }
-    .application-section .price-preview.card .total-price-wrapper {
-        margin-left: -1.2rem;
-        margin-right: -1.2rem;
-        padding-left: 1.2rem;
-        padding-right: 1.2rem;
-    }
-    .application-section form button[type="submit"] {
-        min-width: auto;
-        width: 100%;
-    }
+  .pricing-card {
+    flex-basis: calc(50% - 1rem);
+  }
+  .application-section .price-preview.card p.price-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .application-section .price-preview.card p.price-item .value {
+    text-align: left;
+    margin-top: 0.2rem;
+    flex-basis: auto;
+  }
+  .application-section .price-preview.card .total-price-wrapper {
+    margin-left: -1.2rem;
+    margin-right: -1.2rem;
+    padding-left: 1.2rem;
+    padding-right: 1.2rem;
+  }
+  .application-section form button[type="submit"] {
+    min-width: auto;
+    width: 100%;
+  }
 }
 
 @media (max-width: 600px) {
-    .registration-page.scoped-registration .registration-content {
-        padding: 1.5rem 1rem;
-    }
-    .pricing-card {
-        flex-basis: 100%;
-    }
-    .billing-toggle {
-        gap: 0.6rem;
-    }
-    .billing-toggle label {
-        flex-grow: 1;
-        text-align: center;
-    }
-    .application-section {
-        padding: 1.5rem 1.2rem;
-    }
-    .application-section form button[type="submit"] {
-        padding: 1rem;
-    }
-    .application-section .price-preview.card {
-        padding: 1.2rem;
-    }
-    .application-section .price-preview.card .total-price-wrapper {
-        margin-left: -1.2rem;
-        margin-right: -1.2rem;
-        padding-left: 1.2rem;
-        padding-right: 1.2rem;
-    }
+  .registration-page.scoped-registration .registration-content {
+    padding: 1.5rem 1rem;
+  }
+  .pricing-card {
+    flex-basis: 100%;
+  }
+  .billing-toggle {
+    gap: 0.6rem;
+  }
+  .billing-toggle label {
+    flex-grow: 1;
+    text-align: center;
+  }
+  .application-section {
+    padding: 1.5rem 1.2rem;
+  }
+  .application-section form button[type="submit"] {
+    padding: 1rem;
+  }
+  .application-section .price-preview.card {
+    padding: 1.2rem;
+  }
+  .application-section .price-preview.card .total-price-wrapper {
+    margin-left: -1.2rem;
+    margin-right: -1.2rem;
+    padding-left: 1.2rem;
+    padding-right: 1.2rem;
+  }
 }

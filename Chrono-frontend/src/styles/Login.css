@@ -10,219 +10,225 @@
 
 /* --------------------------- Variablen für LIGHT --------------------------- */
 .scoped-login {
-    --c-text:           #1f1f1f;
-    --c-bg:             #f7f8fa;
-    --c-card:           #ffffff;
-    --c-border:         #d1d4e2;
-    --c-muted:          #545863;
+  --c-text: #1f1f1f;
+  --c-bg: #f7f8fa;
+  --c-card: #ffffff;
+  --c-border: #d1d4e2;
+  --c-muted: #545863;
 
-    --c-primary:        #475bff;
-    --c-primary-hover:  #6b7cff;
-    --c-danger:         #ed5757;
-    --c-secondary:      #48bb78; /* z.B. für Punch-Messages */
+  --c-primary: #475bff;
+  --c-primary-hover: #6b7cff;
+  --c-danger: #ed5757;
+  --c-secondary: #48bb78; /* z.B. für Punch-Messages */
 
-    --radius:           8px;
-    --transition:       0.3s;
-    --font-family:      'Poppins', system-ui, sans-serif;
+  --radius: 8px;
+  --transition: 0.3s;
+  --font-family: "Poppins", system-ui, sans-serif;
 
-    /* Du kannst hier für Light Mode ein "transparentes" Overlay definieren,
+  /* Du kannst hier für Light Mode ein "transparentes" Overlay definieren,
        wenn du z.B. "rgba(255,255,255,0.7)" brauchst, dann setze --c-bg-rgb etc. */
 }
 
 /* --------------------------- Variablen für DARK --------------------------- */
 [data-theme="dark"] .scoped-login {
-    --c-text:          #e4e6eb;
-    --c-bg:            #18191a;
-    --c-card:          #242526;
-    --c-border:        #484A4D;
-    --c-muted:         #9da1b2;
+  --c-text: #e4e6eb;
+  --c-bg: #18191a;
+  --c-card: #242526;
+  --c-border: #484a4d;
+  --c-muted: #9da1b2;
 
-    --c-primary:       #475bff;
-    --c-primary-hover: #6b7cff;
-    --c-danger:        #ed5757;
-    --c-secondary:     #48bb78;
+  --c-primary: #475bff;
+  --c-primary-hover: #6b7cff;
+  --c-danger: #ed5757;
+  --c-secondary: #48bb78;
 
-    --radius:          8px;
-    --transition:      0.3s;
-    /* Font-Family bleibt gleich */
+  --radius: 8px;
+  --transition: 0.3s;
+  /* Font-Family bleibt gleich */
 }
 
 /* --------------------------- Grund-Layout --------------------------- */
 .scoped-login .login-page-2col {
-    display: flex;
-    min-height: 100vh;
-    background-color: var(--c-bg);
-    font-family: var(--font-family);
-    transition: background-color var(--transition) ease;
+  display: flex;
+  min-height: 100vh;
+  background-color: var(--c-bg);
+  font-family: var(--font-family);
+  transition: background-color var(--transition) ease;
 }
 
 /* -------------------------------- */
 /* Linke Spalte: Login-Formular     */
 /* -------------------------------- */
 .scoped-login .login-left {
-    flex: 1 1 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 2rem;
-    background-color: var(--c-card);
-    transition: background-color var(--transition) ease;
+  flex: 1 1 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background-color: var(--c-card);
+  transition: background-color var(--transition) ease;
 }
 
 .scoped-login .login-left-content {
-    width: 100%;
-    max-width: 350px;
+  width: 100%;
+  max-width: 350px;
 }
 
 .scoped-login .login-left-content h1 {
-    color: var(--c-text);
-    margin-bottom: 0.75rem;
-    font-size: 1.8rem;
+  color: var(--c-text);
+  margin-bottom: 0.75rem;
+  font-size: 1.8rem;
 }
 
 .scoped-login .login-left-content p {
-    color: var(--c-text);
-    margin-bottom: 1.5rem;
-    font-size: 0.95rem;
+  color: var(--c-text);
+  margin-bottom: 1.5rem;
+  font-size: 0.95rem;
 }
 
 /* Formular-Layout */
 .scoped-login .login-left-content form {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .scoped-login .login-left-content form label {
-    color: var(--c-text);
-    font-weight: 500;
-    margin-bottom: 0.2rem;
+  color: var(--c-text);
+  font-weight: 500;
+  margin-bottom: 0.2rem;
 }
 
 /* Inputs */
 .scoped-login .login-left-content input {
-    padding: 0.75rem;
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius);
-    font-size: 1rem;
-    outline: none;
-    color: var(--c-text);
-    background-color: #fff; /* im Dark Mode überschreiben wir das */
-    transition: border-color var(--transition), box-shadow var(--transition);
+  padding: 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  outline: none;
+  color: var(--c-text);
+  background-color: #fff; /* im Dark Mode überschreiben wir das */
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 .scoped-login .login-left-content input:focus {
-    border-color: var(--c-primary);
-    box-shadow: 0 0 4px rgba(90, 103, 216, 0.3);
+  border-color: var(--c-primary);
+  box-shadow: 0 0 4px rgba(90, 103, 216, 0.3);
 }
 
 /* Button */
 .scoped-login .login-left-content button {
-    padding: 0.75rem;
-    border: none;
-    border-radius: var(--radius);
-    background-color: var(--c-primary);
-    color: #fff;
-    font-size: 1rem;
-    font-weight: 600;
-    cursor: pointer;
-    transition: background-color var(--transition), transform 0.2s;
+  padding: 0.75rem;
+  border: none;
+  border-radius: var(--radius);
+  background-color: var(--c-primary);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--transition),
+    transform 0.2s;
 }
 .scoped-login .login-left-content button:hover {
-    background-color: var(--c-primary-hover);
-    transform: translateY(-2px);
+  background-color: var(--c-primary-hover);
+  transform: translateY(-2px);
 }
 
 /* Sprache-Selector */
 .scoped-login .language-switch {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
 }
 
 .scoped-login .language-switch label {
-    margin-right: 0.75rem;
-    font-weight: bold;
-    color: var(--c-text);
+  margin-right: 0.75rem;
+  font-weight: bold;
+  color: var(--c-text);
 }
 
 .scoped-login .language-switch select {
-    padding: 0.5rem 0.75rem;
-    border: 1px solid var(--c-border);
-    border-radius: var(--radius);
-    font-size: 1rem;
-    color: var(--c-text);
-    background-color: #fff; /* wird im Dark Mode überschrieben */
-    transition: border-color 0.2s, box-shadow 0.2s;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--radius);
+  font-size: 1rem;
+  color: var(--c-text);
+  background-color: #fff; /* wird im Dark Mode überschrieben */
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 .scoped-login .language-switch select:focus {
-    border-color: var(--c-primary);
-    box-shadow: 0 0 5px rgba(90, 103, 216, 0.5);
+  border-color: var(--c-primary);
+  box-shadow: 0 0 5px rgba(90, 103, 216, 0.5);
 }
 
 /* Meldungen (Fehler/Punch) */
 .scoped-login .error-message {
-    color: var(--c-danger);
-    text-align: center;
-    margin-bottom: 1rem;
+  color: var(--c-danger);
+  text-align: center;
+  margin-bottom: 1rem;
 }
 
 .scoped-login .punch-message {
-    background-color: rgba(72, 187, 120, 0.1);
-    border: 1px solid var(--c-secondary);
-    padding: 1rem;
-    margin-bottom: 1rem;
-    text-align: center;
-    border-radius: var(--radius);
-    color: var(--c-secondary);
+  background-color: rgba(72, 187, 120, 0.1);
+  border: 1px solid var(--c-secondary);
+  padding: 1rem;
+  margin-bottom: 1rem;
+  text-align: center;
+  border-radius: var(--radius);
+  color: var(--c-secondary);
 }
 
 /* Registrieren-CTA */
 .scoped-login .register-cta {
-    margin-top: 1.5rem;
-    font-size: 0.9rem;
-    color: var(--c-text);
-    text-align: center;
+  margin-top: 1.5rem;
+  font-size: 0.9rem;
+  color: var(--c-text);
+  text-align: center;
 }
 
 .scoped-login .register-cta a {
-    color: var(--c-primary);
-    text-decoration: none;
-    font-weight: 500;
-    margin-left: 0.25rem;
+  color: var(--c-primary);
+  text-decoration: none;
+  font-weight: 500;
+  margin-left: 0.25rem;
 }
 .scoped-login .register-cta a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 /* -------------------------------- */
 /* Rechte Spalte: Hintergrundbild   */
 /* -------------------------------- */
 .scoped-login .login-right {
-    flex: 1 1 50%;
-    position: relative;
-    padding: 2rem;
-    background: #152037 url('/public/img/komplettesLogo.png')
-    no-repeat center center;
-    background-size: cover;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color var(--transition) ease;
-    color: #fff;
+  flex: 1 1 50%;
+  position: relative;
+  padding: 2rem;
+  background: #152037 url("/public/img/komplettesLogo.png") no-repeat center
+    center;
+  background-size: cover;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background-color var(--transition) ease;
+  color: #fff;
 }
 
 .scoped-login .colorful-area {
-    text-align: center;
-    max-width: 80%;
-    margin: 0 auto;
+  text-align: center;
+  max-width: 80%;
+  margin: 0 auto;
 }
 
 /* -------------------------------- */
 /* Dark Mode Overrides              */
 /* -------------------------------- */
 [data-theme="dark"] .scoped-login .login-left {
-    background-color: var(--c-card);
+  background-color: var(--c-card);
 }
 
 [data-theme="dark"] .scoped-login .login-left-content h1,
@@ -232,31 +238,31 @@
 [data-theme="dark"] .scoped-login .register-cta,
 [data-theme="dark"] .scoped-login .error-message,
 [data-theme="dark"] .scoped-login .punch-message {
-    color: var(--c-text);
+  color: var(--c-text);
 }
 
 [data-theme="dark"] .scoped-login .login-left-content input {
-    background-color: #3A3B3C;
-    border: 1px solid var(--c-border);
-    color: #f0f0f0;
+  background-color: #3a3b3c;
+  border: 1px solid var(--c-border);
+  color: #f0f0f0;
 }
 [data-theme="dark"] .scoped-login .login-left-content input::placeholder {
-    color: #bcbcbc;
+  color: #bcbcbc;
 }
 
 [data-theme="dark"] .scoped-login .language-switch select {
-    background-color: #3A3B3C;
-    border: 1px solid var(--c-border);
-    color: #f0f0f0;
+  background-color: #3a3b3c;
+  border: 1px solid var(--c-border);
+  color: #f0f0f0;
 }
 
 /* Rechte Spalte im Dark Mode -> dunklere Overlay */
 [data-theme="dark"] .scoped-login .login-right {
-    background:
-            linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-            url('/public/img/komplettesLogo.png') no-repeat center center;
-    background-size: cover;
-    color: #f0f0f0;
+  background:
+    linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
+    url("/public/img/komplettesLogo.png") no-repeat center center;
+  background-size: cover;
+  color: #f0f0f0;
 }
 
 /* =========================================================================
@@ -265,118 +271,117 @@
    ========================================================================= */
 
 @media (max-width: 480px) {
-    /* Vertikale Anordnung statt 2 Spalten */
-    .scoped-login .login-page-2col {
-        flex-direction: column;
-    }
+  /* Vertikale Anordnung statt 2 Spalten */
+  .scoped-login .login-page-2col {
+    flex-direction: column;
+  }
 
-    .scoped-login .login-left,
-    .scoped-login .login-right {
-        width: 100%;
-        flex: none;
-        min-height: auto;
-        padding: 1rem;
-    }
+  .scoped-login .login-left,
+  .scoped-login .login-right {
+    width: 100%;
+    flex: none;
+    min-height: auto;
+    padding: 1rem;
+  }
 
-    /* Linke Spalte (Formular) etwas kompakter */
-    .scoped-login .login-left-content {
-        max-width: 300px;
-    }
-    .scoped-login .login-left-content h1 {
-        font-size: 1.4rem;
-        margin-bottom: 0.5rem;
-    }
-    .scoped-login .login-left-content p {
-        font-size: 0.9rem;
-        margin-bottom: 1rem;
-    }
+  /* Linke Spalte (Formular) etwas kompakter */
+  .scoped-login .login-left-content {
+    max-width: 300px;
+  }
+  .scoped-login .login-left-content h1 {
+    font-size: 1.4rem;
+    margin-bottom: 0.5rem;
+  }
+  .scoped-login .login-left-content p {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
 
-    /* Inputs & Button enger gesetzt */
-    .scoped-login .login-left-content input {
-        font-size: 0.95rem;
-        padding: 0.6rem;
-    }
-    .scoped-login .login-left-content button {
-        width: 100%;
-        font-size: 0.95rem;
-        padding: 0.7rem;
-    }
+  /* Inputs & Button enger gesetzt */
+  .scoped-login .login-left-content input {
+    font-size: 0.95rem;
+    padding: 0.6rem;
+  }
+  .scoped-login .login-left-content button {
+    width: 100%;
+    font-size: 0.95rem;
+    padding: 0.7rem;
+  }
 
-    /* Sprache-Switch in eine Zeile, minimal kleiner */
-    .scoped-login .language-switch {
-        justify-content: center;
-        margin-bottom: 1rem;
-    }
-    .scoped-login .language-switch label {
-        font-size: 0.85rem;
-        margin-right: 0.5rem;
-    }
-    .scoped-login .language-switch select {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.7rem;
-    }
+  /* Sprache-Switch in eine Zeile, minimal kleiner */
+  .scoped-login .language-switch {
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+  .scoped-login .language-switch label {
+    font-size: 0.85rem;
+    margin-right: 0.5rem;
+  }
+  .scoped-login .language-switch select {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.7rem;
+  }
 
-    /* Registrierungshinweis + Error kompakter */
-    .scoped-login .register-cta,
-    .scoped-login .error-message,
-    .scoped-login .punch-message {
-        margin-top: 0.8rem;
-        font-size: 0.85rem;
-    }
+  /* Registrierungshinweis + Error kompakter */
+  .scoped-login .register-cta,
+  .scoped-login .error-message,
+  .scoped-login .punch-message {
+    margin-top: 0.8rem;
+    font-size: 0.85rem;
+  }
 
-    /* Rechte Spalte (Bild) wird minimal */
-    .scoped-login .login-right {
-        min-height: 180px;
-        background-position: center;
-        background-size: cover;
-    }
+  /* Rechte Spalte (Bild) wird minimal */
+  .scoped-login .login-right {
+    min-height: 180px;
+    background-position: center;
+    background-size: cover;
+  }
 
-    .scoped-login .colorful-area {
-        max-width: 90%;
-    }
-    /* Umfassender Wrapper in Spaltenrichtung, füllt ganze Höhe */
-    .scoped-login {
-        display: flex;
-        flex-direction: column;
-        min-height: 100vh;            /* Wichtiger Trick: Seite spannt volle Höhe */
-        background-color: var(--c-bg);
-        font-family: var(--font-family);
-        transition: background-color var(--transition) ease;
-    }
+  .scoped-login .colorful-area {
+    max-width: 90%;
+  }
+  /* Umfassender Wrapper in Spaltenrichtung, füllt ganze Höhe */
+  .scoped-login {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh; /* Wichtiger Trick: Seite spannt volle Höhe */
+    background-color: var(--c-bg);
+    font-family: var(--font-family);
+    transition: background-color var(--transition) ease;
+  }
 
-    /* .login-page-2col füllt den Platz aus, den sie bekommt */
-    .scoped-login .login-page-2col {
-        flex: 1;                      /* Nimmt den gesamten verbleibenden Platz */
-        display: flex;
-        /* min-height kann entfernt werden, da wir min-height nun auf .scoped-login haben */
-    }
+  /* .login-page-2col füllt den Platz aus, den sie bekommt */
+  .scoped-login .login-page-2col {
+    flex: 1; /* Nimmt den gesamten verbleibenden Platz */
+    display: flex;
+    /* min-height kann entfernt werden, da wir min-height nun auf .scoped-login haben */
+  }
 
-    /* Footer am Seitenende */
-    .scoped-login .impressum-agb-footer {
-        text-align: center;
-        padding: 10px 0;
-        background-color: #f5f5f5;
-    }
+  /* Footer am Seitenende */
+  .scoped-login .impressum-agb-footer {
+    text-align: center;
+    padding: 10px 0;
+    background-color: #f5f5f5;
+  }
 
-    /* Links styling */
-    .scoped-login .impressum-agb-footer a {
-        display: inline-block;
-        margin: 0 1rem;
-        color: var(--c-text);
-        text-decoration: none;
-        font-weight: 500;
-        transition: color 0.2s;
-    }
-    .scoped-login .impressum-agb-footer a:hover {
-        text-decoration: underline;
-    }
+  /* Links styling */
+  .scoped-login .impressum-agb-footer a {
+    display: inline-block;
+    margin: 0 1rem;
+    color: var(--c-text);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+  .scoped-login .impressum-agb-footer a:hover {
+    text-decoration: underline;
+  }
 
-    /* Dark Mode Override */
-    [data-theme="dark"] .scoped-login .impressum-agb-footer {
-        background-color: var(--c-card); /* oder #242526, wenn du magst */
-    }
-    [data-theme="dark"] .scoped-login .impressum-agb-footer a {
-        color: var(--c-text);
-    }
-
+  /* Dark Mode Override */
+  [data-theme="dark"] .scoped-login .impressum-agb-footer {
+    background-color: var(--c-card); /* oder #242526, wenn du magst */
+  }
+  [data-theme="dark"] .scoped-login .impressum-agb-footer a {
+    color: var(--c-text);
+  }
 }
