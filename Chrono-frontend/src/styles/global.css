@@ -7,125 +7,125 @@
 *,
 *::before,
 *::after {
-    box-sizing: border-box;
+  box-sizing: border-box;
 }
 html,
 body {
-    margin: 0;
-    padding: 0;
+  margin: 0;
+  padding: 0;
 }
 img,
 picture,
 video,
 canvas,
 svg {
-    display: block;
-    max-width: 100%;
+  display: block;
+  max-width: 100%;
 }
 button,
 input,
 select,
 textarea {
-    font: inherit;
-    color: inherit;
+  font: inherit;
+  color: inherit;
 }
 
 /* ---------- 1)  Grundtokens (Light-Default) --------------------------- */
 :root {
-    /* Primärfarben + optionales RGB für semitransparente Hintergründe */
-    --c-pri:       #475bff;
-    --c-pri-dim:   #6b7cff;
-    --c-pri-rgb:   71, 91, 255;
+  /* Primärfarben + optionales RGB für semitransparente Hintergründe */
+  --c-pri: #475bff;
+  --c-pri-dim: #6b7cff;
+  --c-pri-rgb: 71, 91, 255;
 
-    --c-danger:    #ed5757;
+  --c-danger: #ed5757;
 
-    /* Grundfarben (Light) */
-    --c-text:      #1f1f1f;
-    --c-muted:     #60646c;
-    --c-bg:        #ffffff;
-    --c-surface:   #f4f6ff;
-    --c-card:      #ffffff;
-    --c-border:    #d0d3e2;
+  /* Grundfarben (Light) */
+  --c-text: #1f1f1f;
+  --c-muted: #60646c;
+  --c-bg: #ffffff;
+  --c-surface: #f4f6ff;
+  --c-card: #ffffff;
+  --c-border: #d0d3e2;
 
-    /* Radius + Schatten */
-    --u-radius:    12px;
-    --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
-    --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.12);
+  /* Radius + Schatten */
+  --u-radius: 12px;
+  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
+  --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.12);
 
-    /* Motion */
-    --u-dur:       0.25s;
-    --u-ease:      cubic-bezier(0.4, 0.2, 0.2, 1);
+  /* Motion */
+  --u-dur: 0.25s;
+  --u-ease: cubic-bezier(0.4, 0.2, 0.2, 1);
 
-    /* Globale Brightness-Skala (z. B. via Navbar-Slider) */
-    --app-brightness: 1;
+  /* Globale Brightness-Skala (z. B. via Navbar-Slider) */
+  --app-brightness: 1;
 }
 
 /* ---------- 2)  Basis-Typografie -------------------------------------- */
 html {
-    font-family: 'Poppins', system-ui, sans-serif;
-    font-size: 16px;
-    line-height: 1.45;
+  font-family: "Poppins", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.45;
 }
 body {
-    background: var(--c-bg);
-    color: var(--c-text);
-    -webkit-font-smoothing: antialiased;
-    filter: brightness(var(--app-brightness));
-    transition:
-            background var(--u-dur) var(--u-ease),
-            color      var(--u-dur) var(--u-ease);
+  background: var(--c-bg);
+  color: var(--c-text);
+  -webkit-font-smoothing: antialiased;
+  filter: brightness(var(--app-brightness));
+  transition:
+    background var(--u-dur) var(--u-ease),
+    color var(--u-dur) var(--u-ease);
 }
 
 /* Links */
 a {
-    color: var(--c-pri);
-    text-decoration: none;
+  color: var(--c-pri);
+  text-decoration: none;
 }
 a:hover {
-    text-decoration: underline;
+  text-decoration: underline;
 }
 
 /* ---------- 3)  Dark-Mode-Overrides ----------------------------------- */
 [data-theme="dark"] {
-    --c-text:    #e4e6eb;
-    --c-muted:   #9ea3b0;
-    --c-bg:      #18191a;
-    --c-surface: #202328;
-    --c-card:    #1e1f23;
-    --c-border:  #3d4048;
+  --c-text: #e4e6eb;
+  --c-muted: #9ea3b0;
+  --c-bg: #18191a;
+  --c-surface: #202328;
+  --c-card: #1e1f23;
+  --c-border: #3d4048;
 
-    --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.40);
-    --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
+  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
+  --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
 }
 
 /* Fallback für Nutzer mit prefers-color-scheme: dark,
    wenn noch kein data-theme="light" oder data-theme="dark" gesetzt ist: */
 @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-        --c-text:    #e4e6eb;
-        --c-muted:   #9ea3b0;
-        --c-bg:      #18191a;
-        --c-surface: #202328;
-        --c-card:    #1e1f23;
-        --c-border:  #3d4048;
+  :root:not([data-theme="light"]) {
+    --c-text: #e4e6eb;
+    --c-muted: #9ea3b0;
+    --c-bg: #18191a;
+    --c-surface: #202328;
+    --c-card: #1e1f23;
+    --c-border: #3d4048;
 
-        --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.40);
-        --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
-    }
+    --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
+    --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
+  }
 }
 
 /* ---------- 4)  Accessibility / Helpers ------------------------------- */
 /* Screenreader-only content */
 .visually-hidden {
-    position: absolute !important;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0 0 0 0);
-    white-space: nowrap;
-    border: 0;
+  position: absolute !important;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---------- 4.1) Popup Overlay Helper ------------------------------- */
@@ -140,41 +140,39 @@ a:hover {
 .vacation-modal-overlay,
 .sick-leave-modal-overlay,
 .changelog-backdrop {
-    position: fixed;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000; /* Popup immer über dem Seiteninhalt */
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000; /* Popup immer über dem Seiteninhalt */
 }
 /* Innerhalb Ihres Light-Theme Blocks */
-html[data-theme='light'] {
-    /* ... Ihre bestehenden Variablen ... */
-    --modal-backdrop-color: rgba(30, 30, 30, 0.6);
-    --shadow-color: rgba(0, 0, 0, 0.2);
-    --text-color-secondary: #555;
-    --subtle-bg-color: #f7f9fc; /* Ein sehr helles, fast weißes Grau/Blau */
-
+html[data-theme="light"] {
+  /* ... Ihre bestehenden Variablen ... */
+  --modal-backdrop-color: rgba(30, 30, 30, 0.6);
+  --shadow-color: rgba(0, 0, 0, 0.2);
+  --text-color-secondary: #555;
+  --subtle-bg-color: #f7f9fc; /* Ein sehr helles, fast weißes Grau/Blau */
 }
 
 /* Innerhalb Ihres Dark-Theme Blocks */
-html[data-theme='dark'] {
-    /* ... Ihre bestehenden Variablen ... */
-    --modal-backdrop-color: rgba(0, 0, 0, 0.8);
-    --shadow-color: rgba(0, 0, 0, 0.5);
-    --text-color-secondary: #aaa;
-    --subtle-bg-color: #2c2c34; /* Ein dunkles Grau, das sich vom Hintergrund abhebt */
-
+html[data-theme="dark"] {
+  /* ... Ihre bestehenden Variablen ... */
+  --modal-backdrop-color: rgba(0, 0, 0, 0.8);
+  --shadow-color: rgba(0, 0, 0, 0.5);
+  --text-color-secondary: #aaa;
+  --subtle-bg-color: #2c2c34; /* Ein dunkles Grau, das sich vom Hintergrund abhebt */
 }
 /* ---------- 5)  Reduced-Motion ---------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
-    * {
-        animation: none !important;
-        transition: none !important;
-    }
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 @media (max-width: 480px) {
-    html {
-        font-size: 15px; /* oder 14px, je nach Geschmack */
-    }
+  html {
+    font-size: 15px; /* oder 14px, je nach Geschmack */
+  }
 }

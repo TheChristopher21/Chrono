@@ -5,167 +5,168 @@
 
 /* --- Styling für das Modal-Backdrop --- */
 .changelog-backdrop {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    /* Diese Variable haben wir in global.css definiert, sie ist korrekt */
-    background-color: var(--modal-backdrop-color, rgba(0, 0, 0, 0.8));
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 1000;
-    padding: 1rem;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  /* Diese Variable haben wir in global.css definiert, sie ist korrekt */
+  background-color: var(--modal-backdrop-color, rgba(0, 0, 0, 0.8));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 1rem;
 }
 
 /* --- Styling für das Modal selbst --- */
 .changelog-modal {
-    /* KORREKTUR: --c-card und --c-text statt --card-bg-color und --text-color */
-    background: var(--c-card);
-    color: var(--c-text);
-    padding: 0;
-    border-radius: 12px;
-    width: 90%;
-    max-width: 650px;
-    /* KORREKTUR: --u-shadow-lg für einen passenden Schatten */
-    box-shadow: var(--u-shadow-lg);
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+  /* KORREKTUR: --c-card und --c-text statt --card-bg-color und --text-color */
+  background: var(--c-card);
+  color: var(--c-text);
+  padding: 0;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 650px;
+  /* KORREKTUR: --u-shadow-lg für einen passenden Schatten */
+  box-shadow: var(--u-shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 /* --- Header für Modal & Verlauf --- */
 .changelog-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1rem 1.5rem;
-    /* KORREKTUR: --c-surface als subtiler Hintergrund */
-    background-color: var(--c-surface);
-    /* KORREKTUR: --c-border für die Trennlinie */
-    border-bottom: 1px solid var(--c-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  /* KORREKTUR: --c-surface als subtiler Hintergrund */
+  background-color: var(--c-surface);
+  /* KORREKTUR: --c-border für die Trennlinie */
+  border-bottom: 1px solid var(--c-border);
 }
 
 .changelog-header h2 {
-    margin: 0;
-    font-size: 1.25rem;
+  margin: 0;
+  font-size: 1.25rem;
 }
 
 .changelog-close-btn {
-    background: none;
-    border: none;
-    font-size: 2rem;
-    line-height: 1;
-    cursor: pointer;
-    /* KORREKTUR: --c-muted für die sekundäre Farbe */
-    color: var(--c-muted);
-    transition: color 0.2s ease;
+  background: none;
+  border: none;
+  font-size: 2rem;
+  line-height: 1;
+  cursor: pointer;
+  /* KORREKTUR: --c-muted für die sekundäre Farbe */
+  color: var(--c-muted);
+  transition: color 0.2s ease;
 }
 .changelog-close-btn:hover {
-    color: var(--c-text);
+  color: var(--c-text);
 }
 
 /* --- Hauptinhalt des Modals --- */
 .changelog-content {
-    padding: 1.5rem;
-    max-height: 70vh;
-    overflow-y: auto;
+  padding: 1.5rem;
+  max-height: 70vh;
+  overflow-y: auto;
 }
 
 .changelog-content h3 {
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-    font-size: 1.5rem;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-size: 1.5rem;
 }
 
 .changelog-date {
-    font-size: 0.9rem;
-    /* KORREKTUR: --c-muted für die sekundäre Farbe */
-    color: var(--c-muted);
-    margin-bottom: 1.5rem;
-    display: block;
+  font-size: 0.9rem;
+  /* KORREKTUR: --c-muted für die sekundäre Farbe */
+  color: var(--c-muted);
+  margin-bottom: 1.5rem;
+  display: block;
 }
 
 /* --- Formatierung für den Markdown-Textkörper --- */
 .changelog-body {
-    line-height: 1.7;
-    font-size: 1rem;
+  line-height: 1.7;
+  font-size: 1rem;
 }
 
 .changelog-body p,
 .changelog-body ul,
 .changelog-body ol {
-    margin-bottom: 1rem;
+  margin-bottom: 1rem;
 }
 
-.changelog-body ul, .changelog-body ol {
-    padding-left: 25px;
+.changelog-body ul,
+.changelog-body ol {
+  padding-left: 25px;
 }
 
 .changelog-body li {
-    margin-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 .changelog-body strong {
-    font-weight: 600;
-    color: var(--c-text);
+  font-weight: 600;
+  color: var(--c-text);
 }
-
 
 /* --- Footer für das Modal --- */
 .changelog-footer {
-    padding: 1rem 1.5rem;
-    text-align: right;
-    /* KORREKTUR: --c-surface als subtiler Hintergrund */
-    background-color: var(--c-surface);
-    /* KORREKTUR: --c-border für die Trennlinie */
-    border-top: 1px solid var(--c-border);
+  padding: 1rem 1.5rem;
+  text-align: right;
+  /* KORREKTUR: --c-surface als subtiler Hintergrund */
+  background-color: var(--c-surface);
+  /* KORREKTUR: --c-border für die Trennlinie */
+  border-top: 1px solid var(--c-border);
 }
-
 
 /* --- Styling für die Verlaufs-Seite --- */
 .page-container {
-    padding: 1rem 2rem;
+  padding: 1rem 2rem;
 }
 
 .changelog-history {
-    max-width: 900px;
-    margin: 0 auto;
+  max-width: 900px;
+  margin: 0 auto;
 }
 
 .changelog-history-item {
-    /* KORREKTUR: --c-card und --c-border */
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: 12px;
-    margin-bottom: 2rem;
-    overflow: hidden;
-    /* KORREKTUR: --u-shadow-sm für einen passenden Schatten */
-    box-shadow: var(--u-shadow-sm);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  /* KORREKTUR: --c-card und --c-border */
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+  overflow: hidden;
+  /* KORREKTUR: --u-shadow-sm für einen passenden Schatten */
+  box-shadow: var(--u-shadow-sm);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .changelog-history-item:hover {
-    transform: translateY(-4px);
-    box-shadow: var(--u-shadow-lg);
+  transform: translateY(-4px);
+  box-shadow: var(--u-shadow-lg);
 }
 
 /* In der Verlaufs-Seite hat der Header einen anderen Look */
 .changelog-history-item .changelog-header {
-    background-color: var(--c-surface);
-    border-bottom: 1px solid var(--c-border);
+  background-color: var(--c-surface);
+  border-bottom: 1px solid var(--c-border);
 }
 
 .changelog-history-item .changelog-header h2 {
-    font-size: 1.1rem;
+  font-size: 1.1rem;
 }
 
 .changelog-history-item .changelog-date {
-    font-size: 0.8rem;
-    margin-bottom: 0;
+  font-size: 0.8rem;
+  margin-bottom: 0;
 }
 
 .changelog-history-item .changelog-body {
-    padding: 1.5rem;
+  padding: 1.5rem;
 }

@@ -1,44 +1,44 @@
 /* Notification.css oder global */
 .notification-overlay {
-    position: fixed;
-    /* Füllt den ganzen Viewport */
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
+  position: fixed;
+  /* Füllt den ganzen Viewport */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
 
-    /* zentriert den Inhalt */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* zentriert den Inhalt */
+  display: flex;
+  align-items: center;
+  justify-content: center;
 
-    /* Dimmer-Hintergrund */
-    background: rgba(0, 0, 0, 0.4);
+  /* Dimmer-Hintergrund */
+  background: rgba(0, 0, 0, 0.4);
 
-    /* Ganz oben */
-    z-index: 9999;
+  /* Ganz oben */
+  z-index: 9999;
 }
 
 .notification-modal {
-    background: #fff;
-    color: #000;
-    padding: 1.5rem 2rem;
-    border-radius: 12px;
-    max-width: 400px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    text-align: center;
+  background: #fff;
+  color: #000;
+  padding: 1.5rem 2rem;
+  border-radius: 12px;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  text-align: center;
 }
 
 /* Button anpassen */
 .notification-modal button {
-    margin-top: 1rem;
-    background: #475bff;
-    color: #fff;
-    padding: 0.6rem 1.2rem;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
+  margin-top: 1rem;
+  background: #475bff;
+  color: #fff;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
 }
 .notification-modal button:hover {
-    background: #6b7cff;
+  background: #6b7cff;
 }
