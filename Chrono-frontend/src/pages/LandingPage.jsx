@@ -1,4 +1,4 @@
-// src/pages/LandingPage.jsx  ·  Features aktualisiert (2025-06)
+// src/pages/LandingPage.jsx · Features aktualisiert (2025-06)
 import "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -66,6 +66,21 @@ const LandingPage = () => {
             title: t("landingPage.featureOvertimeTitle"),
             text: t("landingPage.featureOvertimeText"),
         },
+        {
+            icon: "💳",
+            title: t("landingPage.featureNfcTitle"),
+            text: t("landingPage.featureNfcText"),
+        },
+        {
+            icon: "📄",
+            title: t("landingPage.featureReportsTitle"),
+            text: t("landingPage.featureReportsText"),
+        },
+        {
+            icon: "🌴",
+            title: t("landingPage.featureVacationTitle"),
+            text: t("landingPage.featureVacationText"),
+        },
     ];
 
     const steps = [
@@ -91,76 +106,76 @@ const LandingPage = () => {
             <Navbar />
             <main>
 
-            {/* HERO *********************************************************** */}
-            <header className="landing-hero site-section lg" id="home">
-                <div className="section-inner">
-                    <h1>{t("landingPage.headline", "Zeiterfassung, die Projekte vereinfacht")}</h1>
+                {/* HERO *********************************************************** */}
+                <header className="landing-hero site-section lg" id="home">
+                    <div className="section-inner">
+                        <h1>{t("landingPage.headline", "Zeiterfassung, die Projekte vereinfacht")}</h1>
 
-                    <div className="cta-buttons">
-                        <Link to="/register" className="btn primary">
-                            {t("landingPage.ctaPrimary", "Kostenlos registrieren")}
-                        </Link>
+                        <div className="cta-buttons">
+                            <Link to="/register" className="btn primary">
+                                {t("landingPage.ctaPrimary", "Kostenlos registrieren")}
+                            </Link>
+                        </div>
                     </div>
-                </div>
-            </header>
+                </header>
 
-            {/* INFO *********************************************************** */}
-            <section className="info-section site-section">
-                <div className="section-inner">
-                    <h2 className="section-title accent">{t("landingPage.whyTitle")}</h2>
+                {/* INFO *********************************************************** */}
+                <section className="info-section site-section">
+                    <div className="section-inner">
+                        <h2 className="section-title accent">{t("landingPage.whyTitle")}</h2>
 
-                    {/* Glass-Card */}
-                    <div className="info-box">
-                        <p>{t('landingPage.infoText')}</p>
+                        {/* Glass-Card */}
+                        <div className="info-box">
+                            <p>{t('landingPage.infoText')}</p>
 
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
 
-            {/* FEATURES ******************************************************* */}
-            <section className="features-section site-section" id="features">
-                <div className="section-inner">
-                    <h2>{t("landingPage.featuresTitle", "Alle Funktionen im Überblick")}</h2>
-                    <p>
-                        {t(
-                            "lp.featuresSub",
-                            "Keine Gimmicks – nur Features, die deinen Alltag wirklich erleichtern."
-                        )}
-                    </p>
+                {/* FEATURES ******************************************************* */}
+                <section className="features-section site-section" id="features">
+                    <div className="section-inner">
+                        <h2>{t("landingPage.featuresTitle", "Alle Funktionen im Überblick")}</h2>
+                        <p>
+                            {t(
+                                "lp.featuresSub",
+                                "Keine Gimmicks – nur Features, die deinen Alltag wirklich erleichtern."
+                            )}
+                        </p>
 
-                    <div className="features-grid">
-                        {features.map((f, idx) => (
-                            <FeatureCard key={idx} icon={f.icon} title={f.title} text={f.text} />
-                        ))}
+                        <div className="features-grid">
+                            {features.map((f, idx) => (
+                                <FeatureCard key={idx} icon={f.icon} title={f.title} text={f.text} />
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            {/* STEPS ********************************************************** */}
-            <section className="steps-section site-section">
-                <div className="section-inner">
-                    <h2>{t("lp.stepsTitle", "In 3 Schritten startklar")}</h2>
-                    <div className="steps-grid">
-                        {steps.map((s, idx) => (
-                            <StepCard key={idx} n={s.n} title={s.title} text={s.text} />
-                        ))}
+                {/* STEPS ********************************************************** */}
+                <section className="steps-section site-section">
+                    <div className="section-inner">
+                        <h2>{t("lp.stepsTitle", "In 3 Schritten startklar")}</h2>
+                        <div className="steps-grid">
+                            {steps.map((s, idx) => (
+                                <StepCard key={idx} n={s.n} title={s.title} text={s.text} />
+                            ))}
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
 
-            <section className="newsletter-section site-section">
-                <div className="section-inner">
-                    <h3>{t("landingPage.newsTitle", "Bleib informiert!")}</h3>
-                    <p>{t("landingPage.newsSub", "Updates & Tipps direkt in dein Postfach.")}</p>
-                    <br/>
-                    <form className="newsletter-form">
-                        <input type="email" placeholder={t("landingPage.newsletterPlaceholder")} />
-                        <button className="btn primary">{t("landingPage.newsletterButton")}</button>
-                    </form>
-                </div>
-            </section>
+                <section className="newsletter-section site-section">
+                    <div className="section-inner">
+                        <h3>{t("landingPage.newsTitle", "Bleib informiert!")}</h3>
+                        <p>{t("landingPage.newsSub", "Updates & Tipps direkt in dein Postfach.")}</p>
+                        <br/>
+                        <form className="newsletter-form">
+                            <input type="email" placeholder={t("landingPage.newsletterPlaceholder")} />
+                            <button className="btn primary">{t("landingPage.newsletterButton")}</button>
+                        </form>
+                    </div>
+                </section>
             </main>
 
             {/* FOOTER ********************************************************* */}
