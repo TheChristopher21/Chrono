@@ -3,10 +3,9 @@
 #             https://www.jetbrains.com/help/qodana/qodana-yaml.html            #
 #-------------------------------------------------------------------------------#
 version: "1.0"
-
-#Specify inspection profile for code analysis
 profile:
-  name: qodana.starter
+  name: qodana.recommended
+jdk: "17"
 
 #Enable inspections
 #include:
