@@ -6,7 +6,8 @@ version: "1.0"
 profile:
   name: qodana.recommended
 jdk: "17"
-
+bootstrap:
+  - mvn install -Dmaven.test.skip=true
 #Enable inspections
 #include:
 #  - name: <SomeEnabledInspectionId>
