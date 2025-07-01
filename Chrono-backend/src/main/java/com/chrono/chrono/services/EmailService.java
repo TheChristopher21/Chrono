@@ -36,6 +36,10 @@ public class EmailService {
             mailText += "Geschätzter Preis: " + data.getCalculatedPrice() + " €\n";
         }
 
+        if (Boolean.TRUE.equals(data.getIncludeOptionalTraining())) {
+            mailText += "Optionales Intensiv-Onboarding: " + data.getOptionalTrainingCost() + " CHF\n";
+        }
+
         mailText += "\nWeitere Infos:\n" + data.getAdditionalInfo();
 
         message.setText(mailText);

@@ -151,14 +151,14 @@ const Registration = () => {
                 billingPeriod,
                 includeOptionalTraining,
                 optionalTrainingCost: includeOptionalTraining ? OPTIONAL_TRAINING_COST : 0,
-                totalCalculatedFirstPayment: calculatedPrice,
+                calculatedPrice,
                 priceBreakdown: priceBreakdown,
                 installationFee: INSTALL_FEE,
                 packageBaseFeeMonthly: PACKAGE_CONFIG[selectedPackageName].baseMonthly,
                 packagePerEmployeeMonthly: PACKAGE_CONFIG[selectedPackageName].perEmployeeMonthly,
             };
             console.log("Sende Registrierungsanfrage:", payload); // Für Testzwecke
-            await new Promise(resolve => setTimeout(resolve, 1500)); // Simuliere Netzwerkverzögerung
+            await api.post("/api/apply", payload);
 
             setSuccess(true);
             notify("Anfrage erfolgreich gesendet! Sie erhalten in Kürze Ihr individuelles Angebot.", "success");
