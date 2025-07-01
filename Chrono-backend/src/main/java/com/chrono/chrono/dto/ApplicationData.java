@@ -17,5 +17,9 @@ public class ApplicationData {
     private String billingPeriod;     // "monthly" / "yearly"
     private Double calculatedPrice;   // z. B. 99.00
 
+    // Optionales Intensiv-Onboarding
+    private Boolean includeOptionalTraining;
+    private Double optionalTrainingCost;  // 120.00 CHF, wenn ausgewählt
+
 
 }
