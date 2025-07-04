@@ -4,8 +4,11 @@ import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.repositories.VacationRequestRepository;
+import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.lowagie.text.Document;
 import com.lowagie.text.Font;
 import com.lowagie.text.PageSize;
@@ -21,10 +24,14 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
+import java.util.UUID;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,6 +42,12 @@ public class ReportService {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private VacationRequestRepository vacationRequestRepository;
+
+    @Autowired
+    private TimeTrackingEntryRepository timeTrackingEntryRepository;
 
     private static final DateTimeFormatter DATE_FORMATTER_REPORT = DateTimeFormatter.ofPattern("EEEE, dd.MM.yyyy", Locale.GERMAN);
     private static final DateTimeFormatter TIME_FORMATTER_REPORT = DateTimeFormatter.ofPattern("HH:mm");
@@ -174,5 +187,60 @@ public class ReportService {
 
 
         return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    public String generateIcs(String username, LocalDate start, LocalDate end) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+        List<DailyTimeSummaryDTO> dailySummaries = timeTrackingService.getUserHistory(username).stream()
+                .filter(summary -> !summary.getDate().isBefore(start) && !summary.getDate().isAfter(end))
+                .collect(Collectors.toList());
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
+        StringBuilder sb = new StringBuilder();
+        sb.append("BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Chrono//EN\r\n");
+        for (DailyTimeSummaryDTO summary : dailySummaries) {
+            if (summary.getPrimaryTimes() == null) continue;
+            LocalTime startT = summary.getPrimaryTimes().getFirstStartTime();
+            LocalTime endT = summary.getPrimaryTimes().getLastEndTime();
+            if (startT == null || endT == null) continue;
+            sb.append("BEGIN:VEVENT\r\n");
+            sb.append("UID:").append(UUID.randomUUID()).append("@chrono\r\n");
+            sb.append("DTSTAMP:").append(LocalDateTime.now().format(fmt)).append("\r\n");
+            sb.append("DTSTART:").append(LocalDateTime.of(summary.getDate(), startT).format(fmt)).append("\r\n");
+            sb.append("DTEND:").append(LocalDateTime.of(summary.getDate(), endT).format(fmt)).append("\r\n");
+            sb.append("SUMMARY:Arbeitszeit ").append(user.getUsername()).append("\r\n");
+            sb.append("END:VEVENT\r\n");
+        }
+        sb.append("END:VCALENDAR\r\n");
+        return sb.toString();
+    }
+
+    public java.util.List<java.util.Map<String, Object>> getWorkTrend(String username, LocalDate start, LocalDate end) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+        List<DailyTimeSummaryDTO> all = timeTrackingService.getUserHistory(username);
+        List<VacationRequest> vacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
+
+        Map<LocalDate, List<TimeTrackingEntry>> entriesByDate = timeTrackingEntryRepository
+                .findByUserOrderByEntryTimestampAsc(user).stream()
+                .filter(e -> e.getEntryDate() != null)
+                .collect(Collectors.groupingBy(TimeTrackingEntry::getEntryDate));
+
+        List<java.util.Map<String, Object>> result = new java.util.ArrayList<>();
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            List<TimeTrackingEntry> entries = entriesByDate.getOrDefault(d, java.util.Collections.emptyList())
+                    .stream().sorted(Comparator.comparing(TimeTrackingEntry::getEntryTimestamp))
+                    .toList();
+            int worked = entries.isEmpty() ? 0 : timeTrackingService.calculateDailySummaryFromEntries(entries, user, d).getWorkedMinutes();
+            int diff = timeTrackingService.computeDailyWorkDifference(user, d, vacations, entries);
+            boolean absent = vacations.stream().anyMatch(v -> !d.isBefore(v.getStartDate()) && !d.isAfter(v.getEndDate()));
+            result.add(java.util.Map.of(
+                    "date", d.toString(),
+                    "workedMinutes", worked,
+                    "overtimeMinutes", diff,
+                    "absent", absent));
+        }
+        return result;
     }
 }

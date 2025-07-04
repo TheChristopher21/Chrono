@@ -5,6 +5,8 @@ import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.TimeTrackingService;
+import com.chrono.chrono.services.ImportProgressService;
+import com.chrono.chrono.dto.ImportStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,6 +30,8 @@ public class AdminTimeTrackingController {
     private UserRepository userRepository;
     @Autowired
     private TimeTrackingService timeTrackingService;
+    @Autowired
+    private ImportProgressService importProgressService;
 
     @GetMapping("/all-summaries")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
@@ -75,6 +79,23 @@ public class AdminTimeTrackingController {
             logger.error("Fehler beim Import der Stempelzeiten: " + e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Fehler beim Import: " + e.getMessage()));
         }
+    }
+
+    @PostMapping("/import-async")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<?> importTimestampsAsync(@RequestParam("file") MultipartFile file, Principal principal) throws Exception {
+        String importId = importProgressService.startImport(file, principal);
+        return ResponseEntity.accepted().body(Map.of("importId", importId));
+    }
+
+    @GetMapping("/import-status/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<?> getImportStatus(@PathVariable String id) {
+        ImportStatus status = importProgressService.getStatus(id);
+        if (status == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(status);
     }
 
     @PostMapping("/rebuild-balances")

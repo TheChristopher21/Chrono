@@ -1,0 +1,3 @@
+.progress-container { margin-top: 10px; }
+.progress-bar { height: 10px; background: #eee; border-radius: 4px; }
+.progress-bar-inner { height: 100%; background: #007bff; border-radius: 4px; }

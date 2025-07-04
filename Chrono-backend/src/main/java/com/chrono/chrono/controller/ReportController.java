@@ -54,4 +54,15 @@ public class ReportController {
 
         return new ResponseEntity<>(csv, headers, HttpStatus.OK);
     }
+
+    @GetMapping("/worktrend")
+    public ResponseEntity<?> getWorkTrend(
+            @RequestParam String username,
+            @RequestParam String startDate,
+            @RequestParam String endDate) {
+        return ResponseEntity.ok(
+                reportService.getWorkTrend(username,
+                        LocalDate.parse(startDate),
+                        LocalDate.parse(endDate)));
+    }
 }

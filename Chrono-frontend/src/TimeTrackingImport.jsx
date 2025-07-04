@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import api from './utils/api'; // Geändert: Importiere die globale api-Instanz
+import './styles/ImportProgress.css';
 // Stelle sicher, dass der Pfad zu 'api.js' korrekt ist,
 // ausgehend von der aktuellen Position von TimeTrackingImport.jsx.
 // Wenn TimeTrackingImport.jsx im Root-Verzeichnis (gleiche Ebene wie src/) liegt,
@@ -11,13 +12,32 @@ import api from './utils/api'; // Geändert: Importiere die globale api-Instanz
 // entweder die VITE_API_BASE_URL ist (z.B. http://localhost:8080)
 // oder "/api". In beiden Fällen ist der folgende Pfad korrekt, um
 // auf /api/admin/timetracking/import zu zielen.
-const API_ENDPOINT_PATH = '/api/admin/timetracking/import';
+const API_ENDPOINT_PATH = '/api/admin/timetracking/import-async';
 
 function TimeTrackingImport() {
     const [selectedFile, setSelectedFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadResponse, setUploadResponse] = useState(null);
     const [error, setError] = useState('');
+    const [progress, setProgress] = useState(null);
+    const [importId, setImportId] = useState(null);
+    useEffect(() => {
+        if (!importId) return;
+        const interval = setInterval(() => {
+            api.get(`/api/admin/timetracking/import-status/${importId}`)
+                .then(res => {
+                    setProgress({ processedRows: res.data.processedRows, totalRows: res.data.totalRows });
+                    if (res.data.completed) {
+                        setUploadResponse(res.data);
+                        clearInterval(interval);
+                        setIsUploading(false);
+                        setImportId(null);
+                    }
+                })
+                .catch(() => {});
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [importId]);
     // const fileInputRef = useRef(null); // EINKOMMENTIEREN, falls benötigt
 
     const handleFileChange = (event) => {
@@ -41,25 +61,10 @@ function TimeTrackingImport() {
         formData.append('file', selectedFile);
 
         try {
-            // Der Authorization-Header wird jetzt automatisch durch den Interceptor
-            // in der globalen api-Instanz hinzugefügt.
-            // Die manuelle Token-Abfrage und -Hinzufügung ist nicht mehr nötig.
-
-            const response = await api.post(API_ENDPOINT_PATH, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    // 'Authorization'-Header wird von der api-Instanz gehandhabt
-                },
-            });
-
-            setUploadResponse(response.data);
-            if (response.status === 200 || response.status === 201) {
-                setSelectedFile(null);
-                // if (fileInputRef.current) { // EINKOMMENTIEREN, falls benötigt
-                //     fileInputRef.current.value = null;
-                // }
-            }
-
+            const res = await api.post(API_ENDPOINT_PATH, formData, { headers: { "Content-Type": "multipart/form-data" } });
+            setImportId(res.data.importId);
+            setProgress({ processedRows: 0, totalRows: 0 });
+            setSelectedFile(null);
         } catch (err) {
             console.error('Upload error:', err);
             if (err.response) {
@@ -147,6 +152,14 @@ function TimeTrackingImport() {
                 </button>
             </form>
             {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
+            {progress && (
+                <div className="progress-container">
+                    <div className="progress-bar">
+                        <div className="progress-bar-inner" style={{ width: `${progress.totalRows ? (progress.processedRows / progress.totalRows) * 100 : 0}%` }}></div>
+                    </div>
+                    <small>{progress.processedRows}/{progress.totalRows}</small>
+                </div>
+            )}
             {renderFeedback()}
             <div style={{marginTop: '20px', fontSize: '0.9em', color: '#555'}}>
                 <p><strong>Hinweis zum Excel-Format:</strong></p>
