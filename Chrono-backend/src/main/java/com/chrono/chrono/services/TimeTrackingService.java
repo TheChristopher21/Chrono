@@ -691,6 +691,7 @@ public class TimeTrackingService {
         List<String> successes = new ArrayList<>();
         List<Map<String, String>> invalidRows = new ArrayList<>();
         int importedCount = 0;
+        Set<User> affectedUsers = new HashSet<>();
 
         int rowNum = 1;
         for (TimeTrackingImportRowDTO row : rows) {
@@ -806,10 +807,7 @@ public class TimeTrackingService {
             rowNum++;
         }
 
-        for (User user : rows.stream()
-                .map(r -> userRepository.findByUsername(r.getUsername()).orElse(null))
-                .filter(Objects::nonNull)
-                .collect(Collectors.toSet())) {
+        for (User user : affectedUsers) {
             rebuildUserBalance(user);
         }
 
