@@ -5,17 +5,8 @@
 
 /* --- Styling für das Modal-Backdrop --- */
 .changelog-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  /* Diese Variable haben wir in global.css definiert, sie ist korrekt */
+  /* Grundlayout über global.css */
   background-color: var(--modal-backdrop-color, rgba(0, 0, 0, 0.8));
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
   padding: 1rem;
 }
 

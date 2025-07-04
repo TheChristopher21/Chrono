@@ -755,22 +755,9 @@
 
 /* --------------------------- Modals (DeleteConfirmModal) --------------------------- */
 .modal-overlay {
-  position: fixed; /* Wichtig: positioniert relativ zum Viewport */
-  inset: 0; /* sorgt für zentrierte Platzierung im sichtbaren Bereich */
-  background: rgba(
-    0,
-    0,
-    0,
-    0.65
-  ); /* Oder eine CSS-Variable wie var(--c-overlay-bg) */
-  z-index: 10000; /* Oder eine passende z-index Variable */
-  display: flex;
-  align-items: center; /* Vertikale Zentrierung */
-  justify-content: center; /* Horizontale Zentrierung */
-  /* Optional: backdrop-filter für Glassmorphism-Effekt */
-}
-[data-theme="dark"] .modal-overlay {
-  background: rgba(15, 17, 22, 0.85);
+  /* Basis-Positionierung aus global.css */
+  background: var(--modal-backdrop-color);
+  backdrop-filter: blur(4px);
 }
 
 .modal-content {

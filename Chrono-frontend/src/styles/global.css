@@ -164,6 +164,7 @@ a:hover {
   justify-content: center;
   z-index: 1000; /* Popup immer über dem Seiteninhalt */
   overflow-y: auto; /* Bei sehr hohen Inhalten scrollen */
+  background: var(--modal-backdrop-color);
 }
 
 body.modal-open {

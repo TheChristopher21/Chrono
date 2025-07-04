@@ -227,12 +227,8 @@
    6) Modal Overlays & Content
    ========================================================================= */
 .vacation-calendar-admin.scoped-vacation .modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.65); /* Etwas dunkler für besseren Fokus */
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  /* Grundlayout über global.css */
+  background: var(--modal-backdrop-color);
   z-index: 4000;
   padding: 1rem; /* Abstand für kleine Bildschirme */
 }
