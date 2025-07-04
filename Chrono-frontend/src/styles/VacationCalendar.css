@@ -253,21 +253,9 @@
 /* Modal Styles (konsistent mit Dashboard-Modals) */
 .scoped-vacation .vacation-modal-overlay,
 .scoped-vacation .sick-leave-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(
-    var(--ud-c-bg-rgb, 14, 16, 28),
-    0.75
-  ); /* Konsistenter Overlay-Effekt */
+  background: var(--modal-backdrop-color);
   backdrop-filter: blur(10px) saturate(150%);
   -webkit-backdrop-filter: blur(10px) saturate(150%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
   padding: var(--ud-gap-md, 1rem);
   animation: modalFadeIn 0.3s ease-out;
 }
