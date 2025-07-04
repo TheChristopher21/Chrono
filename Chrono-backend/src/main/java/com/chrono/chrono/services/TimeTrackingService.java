@@ -3,6 +3,7 @@ package com.chrono.chrono.services;
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.TimeReportDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
+import com.chrono.chrono.dto.ImportStatusDTO;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.VacationRequest;
@@ -642,5 +643,126 @@ public class TimeTrackingService {
         result.put("successMessages", successes);
         result.put("errorMessages", errors);
         return result;
+    }
+
+    public void importTimeTrackingFromExcelWithProgress(Workbook workbook, Long adminCompanyId, ImportStatusDTO status) {
+        List<String> errors = status.getErrorMessages();
+        List<String> successes = status.getSuccessMessages();
+        int importedCount = 0;
+        Set<User> affectedUsers = new HashSet<>();
+
+        Sheet sheet = workbook.getSheetAt(0);
+        Iterator<Row> rowIterator = sheet.iterator();
+        if (rowIterator.hasNext()) {
+            rowIterator.next();
+        }
+        int rowNum = 1;
+        while (rowIterator.hasNext()) {
+            Row row = rowIterator.next();
+            rowNum++;
+            try {
+                String username = getCellValueAsString(row.getCell(0));
+                String timestampStr = getCellValueAsString(row.getCell(1));
+                String punchTypeStr = getCellValueAsString(row.getCell(2));
+                String sourceStr = getCellValueAsString(row.getCell(3));
+                String note = getCellValueAsString(row.getCell(4));
+
+                if (username == null || username.trim().isEmpty()) {
+                    errors.add("Zeile " + rowNum + ": Username fehlt.");
+                    continue;
+                }
+                Optional<User> userOpt = userRepository.findByUsername(username);
+                if (userOpt.isEmpty()) {
+                    errors.add("Zeile " + rowNum + ": User '" + username + "' nicht gefunden.");
+                    continue;
+                }
+                User user = userOpt.get();
+                if (adminCompanyId != null) {
+                    User importingAdmin = userRepository.findAll().stream()
+                            .filter(u -> u.getCompany() != null && u.getCompany().getId().equals(adminCompanyId)
+                                    && u.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN")))
+                            .findFirst().orElse(null);
+                    boolean isSuperAdmin = importingAdmin != null && importingAdmin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+                    if (!isSuperAdmin && (user.getCompany() == null || !user.getCompany().getId().equals(adminCompanyId))) {
+                        errors.add("Zeile " + rowNum + ": User '" + username + "' gehört nicht zur Firma des importierenden Admins oder Admin ist keiner Firma zugeordnet.");
+                        continue;
+                    }
+                }
+
+                LocalDateTime entryTimestamp = parseTimestampSafe(timestampStr, rowNum, username, errors);
+                if (entryTimestamp == null) {
+                    continue;
+                }
+
+                if (punchTypeStr == null || punchTypeStr.trim().isEmpty()) {
+                    errors.add("Zeile " + rowNum + " (User: " + username + "): PunchType fehlt.");
+                    continue;
+                }
+                TimeTrackingEntry.PunchType punchType;
+                try {
+                    punchType = TimeTrackingEntry.PunchType.valueOf(punchTypeStr.trim().toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiger PunchType '" + punchTypeStr + "'. Erwartet: START oder ENDE.");
+                    continue;
+                }
+
+                TimeTrackingEntry.PunchSource source = TimeTrackingEntry.PunchSource.MANUAL_IMPORT;
+                if (sourceStr != null && !sourceStr.trim().isEmpty()) {
+                    try {
+                        source = TimeTrackingEntry.PunchSource.valueOf(sourceStr.trim().toUpperCase());
+                    } catch (IllegalArgumentException e) {
+                        errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültige Source '" + sourceStr + "'. Wird auf MANUAL_IMPORT gesetzt.");
+                    }
+                }
+
+                TimeTrackingEntry newEntry = new TimeTrackingEntry(user, entryTimestamp, punchType, source);
+                if (note != null && !note.trim().isEmpty()) {
+                    newEntry.setSystemGeneratedNote(note);
+                }
+                newEntry.setCorrectedByUser(true);
+                timeTrackingEntryRepository.save(newEntry);
+                affectedUsers.add(user);
+                successes.add("Zeile " + rowNum + ": Eintrag für User '" + username + "' am " + entryTimestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + " (" + punchType + ") importiert.");
+                importedCount++;
+            } catch (Exception e) {
+                logger.error("Fehler beim Verarbeiten der Excel-Zeile {}: {}", rowNum, e.getMessage(), e);
+                errors.add("Zeile " + rowNum + ": Unerwarteter Fehler - " + e.getMessage());
+            } finally {
+                status.setProcessedRows(rowNum - 1);
+            }
+        }
+
+        for (User user : affectedUsers) {
+            rebuildUserBalance(user);
+        }
+
+        status.setMessage("Import beendet");
+    }
+
+    public String generateIcs(String username, LocalDate start, LocalDate end) {
+        List<DailyTimeSummaryDTO> summaries = getUserHistory(username).stream()
+                .filter(s -> !s.getDate().isBefore(start) && !s.getDate().isAfter(end))
+                .collect(Collectors.toList());
+        DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
+        StringBuilder sb = new StringBuilder();
+        sb.append("BEGIN:VCALENDAR\n");
+        sb.append("VERSION:2.0\n");
+        sb.append("PRODID:-//Chrono//EN\n");
+        for (DailyTimeSummaryDTO summary : summaries) {
+            if (summary.getEntries() == null) continue;
+            for (TimeTrackingEntryDTO entry : summary.getEntries()) {
+                String ts = entry.getEntryTimestamp().format(dtf);
+                sb.append("BEGIN:VEVENT\n");
+                sb.append("UID:" + UUID.randomUUID() + "\n");
+                sb.append("DTSTAMP:" + ts + "Z\n");
+                sb.append("SUMMARY:" + entry.getPunchType() + "\n");
+                sb.append("DESCRIPTION:" + entry.getPunchType() + "\n");
+                sb.append("DTSTART:" + ts + "Z\n");
+                sb.append("DTEND:" + ts + "Z\n");
+                sb.append("END:VEVENT\n");
+            }
+        }
+        sb.append("END:VCALENDAR\n");
+        return sb.toString();
     }
 }

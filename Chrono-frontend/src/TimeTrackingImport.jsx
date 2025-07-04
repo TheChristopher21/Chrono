@@ -11,12 +11,13 @@ import api from './utils/api'; // Geändert: Importiere die globale api-Instanz
 // entweder die VITE_API_BASE_URL ist (z.B. http://localhost:8080)
 // oder "/api". In beiden Fällen ist der folgende Pfad korrekt, um
 // auf /api/admin/timetracking/import zu zielen.
-const API_ENDPOINT_PATH = '/api/admin/timetracking/import';
+const API_ENDPOINT_PATH = '/api/admin/timetracking/import-async';
 
 function TimeTrackingImport() {
     const [selectedFile, setSelectedFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadResponse, setUploadResponse] = useState(null);
+    const [progress, setProgress] = useState(null);
     const [error, setError] = useState('');
     // const fileInputRef = useRef(null); // EINKOMMENTIEREN, falls benötigt
 
@@ -41,24 +42,26 @@ function TimeTrackingImport() {
         formData.append('file', selectedFile);
 
         try {
-            // Der Authorization-Header wird jetzt automatisch durch den Interceptor
-            // in der globalen api-Instanz hinzugefügt.
-            // Die manuelle Token-Abfrage und -Hinzufügung ist nicht mehr nötig.
-
-            const response = await api.post(API_ENDPOINT_PATH, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    // 'Authorization'-Header wird von der api-Instanz gehandhabt
-                },
+            const res = await api.post(API_ENDPOINT_PATH, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
             });
-
-            setUploadResponse(response.data);
-            if (response.status === 200 || response.status === 201) {
-                setSelectedFile(null);
-                // if (fileInputRef.current) { // EINKOMMENTIEREN, falls benötigt
-                //     fileInputRef.current.value = null;
-                // }
-            }
+            const { importId } = res.data;
+            setProgress({ processedRows: 0, totalRows: 0 });
+            const interval = setInterval(async () => {
+                try {
+                    const statusRes = await api.get(`/api/admin/timetracking/import-status/${importId}`);
+                    setProgress({ processedRows: statusRes.data.processedRows, totalRows: statusRes.data.totalRows });
+                    if (statusRes.data.completed) {
+                        clearInterval(interval);
+                        setUploadResponse(statusRes.data);
+                        setIsUploading(false);
+                        setSelectedFile(null);
+                    }
+                } catch (e) {
+                    clearInterval(interval);
+                    setIsUploading(false);
+                }
+            }, 1000);
 
         } catch (err) {
             console.error('Upload error:', err);
@@ -148,6 +151,14 @@ function TimeTrackingImport() {
             </form>
             {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
             {renderFeedback()}
+            {progress && !uploadResponse && (
+                <div style={{ marginTop: '10px' }}>
+                    <div style={{ height: '8px', background: '#eee', borderRadius: '4px' }}>
+                        <div style={{ width: `${progress.totalRows ? (progress.processedRows / progress.totalRows) * 100 : 0}%`, height: '100%', background: '#007bff', borderRadius: '4px' }} />
+                    </div>
+                    <small>{progress.processedRows}/{progress.totalRows} verarbeitet</small>
+                </div>
+            )}
             <div style={{marginTop: '20px', fontSize: '0.9em', color: '#555'}}>
                 <p><strong>Hinweis zum Excel-Format:</strong></p>
                 <ul>
