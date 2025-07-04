@@ -3,6 +3,7 @@ package com.chrono.chrono.services;
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.TimeReportDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
+import com.chrono.chrono.dto.TimeTrackingImportRowDTO;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.VacationRequest;
@@ -28,6 +29,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.Objects;
 
 
 @Service
@@ -363,6 +365,10 @@ public class TimeTrackingService {
         logger.info("✅ Saldo-Neuberechnung für alle User abgeschlossen.");
     }
 
+    public List<TimeTrackingEntry> getEntriesForUser(User user, LocalDateTime start, LocalDateTime end) {
+        return timeTrackingEntryRepository.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(user, start, end);
+    }
+
     public int getWeeklyBalance(User user, LocalDate monday) {
         User freshUser = userRepository.findById(user.getId()).orElseThrow(() -> new UserNotFoundException("User not found: " + user.getUsername()));
         List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(freshUser);
@@ -539,6 +545,7 @@ public class TimeTrackingService {
         Map<String, Object> result = new HashMap<>();
         List<String> errors = new ArrayList<>();
         List<String> successes = new ArrayList<>();
+        List<Map<String, String>> invalidRows = new ArrayList<>();
         int importedCount = 0;
         Set<User> affectedUsers = new HashSet<>();
 
@@ -555,6 +562,8 @@ public class TimeTrackingService {
                 Row row = rowIterator.next();
                 rowNum++;
 
+                Map<String, String> rowData = new LinkedHashMap<>();
+
                 try {
                     String username = getCellValueAsString(row.getCell(0));
                     String timestampStr = getCellValueAsString(row.getCell(1));
@@ -562,13 +571,26 @@ public class TimeTrackingService {
                     String sourceStr = getCellValueAsString(row.getCell(3));
                     String note = getCellValueAsString(row.getCell(4));
 
+                    rowData.put("rowNumber", String.valueOf(rowNum));
+                    rowData.put("username", username);
+                    rowData.put("timestamp", timestampStr);
+                    rowData.put("punchType", punchTypeStr);
+                    rowData.put("source", sourceStr);
+                    rowData.put("note", note);
+
                     if (username == null || username.trim().isEmpty()) {
-                        errors.add("Zeile " + rowNum + ": Username fehlt.");
+                        String msg = "Zeile " + rowNum + ": Username fehlt.";
+                        errors.add(msg);
+                        rowData.put("error", msg);
+                        invalidRows.add(rowData);
                         continue;
                     }
                     Optional<User> userOpt = userRepository.findByUsername(username);
                     if (userOpt.isEmpty()) {
-                        errors.add("Zeile " + rowNum + ": User '" + username + "' nicht gefunden.");
+                        String msg = "Zeile " + rowNum + ": User '" + username + "' nicht gefunden.";
+                        errors.add(msg);
+                        rowData.put("error", msg);
+                        invalidRows.add(rowData);
                         continue;
                     }
                     User user = userOpt.get();
@@ -580,7 +602,10 @@ public class TimeTrackingService {
                         boolean isSuperAdmin = importingAdmin != null && importingAdmin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
 
                         if (!isSuperAdmin && (user.getCompany() == null || !user.getCompany().getId().equals(adminCompanyId))) {
-                            errors.add("Zeile " + rowNum + ": User '" + username + "' gehört nicht zur Firma des importierenden Admins oder Admin ist keiner Firma zugeordnet.");
+                            String msg = "Zeile " + rowNum + ": User '" + username + "' gehört nicht zur Firma des importierenden Admins oder Admin ist keiner Firma zugeordnet.";
+                            errors.add(msg);
+                            rowData.put("error", msg);
+                            invalidRows.add(rowData);
                             continue;
                         }
                     }
@@ -588,18 +613,26 @@ public class TimeTrackingService {
 
                     LocalDateTime entryTimestamp = parseTimestampSafe(timestampStr, rowNum, username, errors);
                     if (entryTimestamp == null) {
+                        rowData.putIfAbsent("error", errors.get(errors.size() - 1));
+                        invalidRows.add(rowData);
                         continue;
                     }
 
                     if (punchTypeStr == null || punchTypeStr.trim().isEmpty()) {
-                        errors.add("Zeile " + rowNum + " (User: " + username + "): PunchType fehlt.");
+                        String msg = "Zeile " + rowNum + " (User: " + username + "): PunchType fehlt.";
+                        errors.add(msg);
+                        rowData.put("error", msg);
+                        invalidRows.add(rowData);
                         continue;
                     }
                     TimeTrackingEntry.PunchType punchType;
                     try {
                         punchType = TimeTrackingEntry.PunchType.valueOf(punchTypeStr.trim().toUpperCase());
                     } catch (IllegalArgumentException e) {
-                        errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültiger PunchType '" + punchTypeStr + "'. Erwartet: START oder ENDE.");
+                        String msg = "Zeile " + rowNum + " (User: " + username + "): Ungültiger PunchType '" + punchTypeStr + "'. Erwartet: START oder ENDE.";
+                        errors.add(msg);
+                        rowData.put("error", msg);
+                        invalidRows.add(rowData);
                         continue;
                     }
 
@@ -608,8 +641,11 @@ public class TimeTrackingService {
                         try {
                             source = TimeTrackingEntry.PunchSource.valueOf(sourceStr.trim().toUpperCase());
                         } catch (IllegalArgumentException e) {
-                            errors.add("Zeile " + rowNum + " (User: " + username + "): Ungültige Source '" + sourceStr + "'. Wird auf MANUAL_IMPORT gesetzt.");
-                        }
+                            String msg = "Zeile " + rowNum + " (User: " + username + "): Ungültige Source '" + sourceStr + "'. Wird auf MANUAL_IMPORT gesetzt.";
+                            errors.add(msg);
+                            rowData.put("error", msg);
+                            invalidRows.add(rowData);
+                            }
                     }
 
                     TimeTrackingEntry newEntry = new TimeTrackingEntry(user, entryTimestamp, punchType, source);
@@ -625,7 +661,10 @@ public class TimeTrackingService {
 
                 } catch (Exception e) {
                     logger.error("Fehler beim Verarbeiten der Excel-Zeile {}: {}", rowNum, e.getMessage(), e);
-                    errors.add("Zeile " + rowNum + ": Unerwarteter Fehler - " + e.getMessage());
+                    String msg = "Zeile " + rowNum + ": Unerwarteter Fehler - " + e.getMessage();
+                    errors.add(msg);
+                    rowData.put("error", msg);
+                    invalidRows.add(rowData);
                 }
             }
 
@@ -641,6 +680,141 @@ public class TimeTrackingService {
         result.put("importedCount", importedCount);
         result.put("successMessages", successes);
         result.put("errorMessages", errors);
+        result.put("invalidRows", invalidRows);
+        return result;
+    }
+
+    @Transactional
+    public Map<String, Object> importTimeTrackingFromRows(List<TimeTrackingImportRowDTO> rows, Long adminCompanyId) {
+        Map<String, Object> result = new HashMap<>();
+        List<String> errors = new ArrayList<>();
+        List<String> successes = new ArrayList<>();
+        List<Map<String, String>> invalidRows = new ArrayList<>();
+        int importedCount = 0;
+        Set<User> affectedUsers = new HashSet<>();
+
+        int rowNum = 1;
+        for (TimeTrackingImportRowDTO row : rows) {
+            Map<String, String> rowData = new LinkedHashMap<>();
+            String username = row.getUsername();
+            String timestampStr = row.getTimestamp();
+            String punchTypeStr = row.getPunchType();
+            String sourceStr = row.getSource();
+            String note = row.getNote();
+
+            rowData.put("rowNumber", String.valueOf(rowNum));
+            rowData.put("username", username);
+            rowData.put("timestamp", timestampStr);
+            rowData.put("punchType", punchTypeStr);
+            rowData.put("source", sourceStr);
+            rowData.put("note", note);
+
+            if (username == null || username.trim().isEmpty()) {
+                String msg = "Zeile " + rowNum + ": Username fehlt.";
+                errors.add(msg);
+                rowData.put("error", msg);
+                invalidRows.add(rowData);
+                rowNum++;
+                continue;
+            }
+
+            Optional<User> userOpt = userRepository.findByUsername(username);
+            if (userOpt.isEmpty()) {
+                String msg = "Zeile " + rowNum + ": User '" + username + "' nicht gefunden.";
+                errors.add(msg);
+                rowData.put("error", msg);
+                invalidRows.add(rowData);
+                rowNum++;
+                continue;
+            }
+            User user = userOpt.get();
+
+            if (adminCompanyId != null) {
+                User importingAdmin = userRepository.findAll().stream()
+                        .filter(u -> u.getCompany() != null && u.getCompany().getId().equals(adminCompanyId)
+                                && u.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN")))
+                        .findFirst().orElse(null);
+                boolean isSuperAdmin = importingAdmin != null && importingAdmin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+
+                if (!isSuperAdmin && (user.getCompany() == null || !user.getCompany().getId().equals(adminCompanyId))) {
+                    String msg = "Zeile " + rowNum + ": User '" + username + "' gehört nicht zur Firma des importierenden Admins oder Admin ist keiner Firma zugeordnet.";
+                    errors.add(msg);
+                    rowData.put("error", msg);
+                    invalidRows.add(rowData);
+                    rowNum++;
+                    continue;
+                }
+            }
+
+            LocalDateTime entryTimestamp = parseTimestampSafe(timestampStr, rowNum, username, errors);
+            if (entryTimestamp == null) {
+                rowData.putIfAbsent("error", errors.get(errors.size() - 1));
+                invalidRows.add(rowData);
+                rowNum++;
+                continue;
+            }
+
+            if (punchTypeStr == null || punchTypeStr.trim().isEmpty()) {
+                String msg = "Zeile " + rowNum + " (User: " + username + "): PunchType fehlt.";
+                errors.add(msg);
+                rowData.put("error", msg);
+                invalidRows.add(rowData);
+                rowNum++;
+                continue;
+            }
+
+            TimeTrackingEntry.PunchType punchType;
+            try {
+                punchType = TimeTrackingEntry.PunchType.valueOf(punchTypeStr.trim().toUpperCase());
+            } catch (IllegalArgumentException e) {
+                String msg = "Zeile " + rowNum + " (User: " + username + "): Ungültiger PunchType '" + punchTypeStr + "'. Erwartet: START oder ENDE.";
+                errors.add(msg);
+                rowData.put("error", msg);
+                invalidRows.add(rowData);
+                rowNum++;
+                continue;
+            }
+
+            TimeTrackingEntry.PunchSource source = TimeTrackingEntry.PunchSource.MANUAL_IMPORT;
+            if (sourceStr != null && !sourceStr.trim().isEmpty()) {
+                try {
+                    source = TimeTrackingEntry.PunchSource.valueOf(sourceStr.trim().toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    String msg = "Zeile " + rowNum + " (User: " + username + "): Ungültige Source '" + sourceStr + "'. Wird auf MANUAL_IMPORT gesetzt.";
+                    errors.add(msg);
+                    rowData.put("error", msg);
+                    invalidRows.add(rowData);
+                }
+            }
+
+            try {
+                TimeTrackingEntry newEntry = new TimeTrackingEntry(user, entryTimestamp, punchType, source);
+                if (note != null && !note.trim().isEmpty()) {
+                    newEntry.setSystemGeneratedNote(note);
+                }
+                newEntry.setCorrectedByUser(true);
+                timeTrackingEntryRepository.save(newEntry);
+                affectedUsers.add(user);
+                successes.add("Zeile " + rowNum + ": Eintrag für User '" + username + "' am " + entryTimestamp.format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + " (" + punchType + ") importiert.");
+                importedCount++;
+            } catch (Exception e) {
+                String msg = "Zeile " + rowNum + ": Unerwarteter Fehler - " + e.getMessage();
+                errors.add(msg);
+                rowData.put("error", msg);
+                invalidRows.add(rowData);
+            }
+
+            rowNum++;
+        }
+
+        for (User user : affectedUsers) {
+            rebuildUserBalance(user);
+        }
+
+        result.put("importedCount", importedCount);
+        result.put("successMessages", successes);
+        result.put("errorMessages", errors);
+        result.put("invalidRows", invalidRows);
         return result;
     }
 }

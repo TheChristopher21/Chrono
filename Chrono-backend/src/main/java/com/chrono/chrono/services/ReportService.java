@@ -20,8 +20,7 @@ import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.LocalTime;
+import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
@@ -173,6 +172,40 @@ public class ReportService {
         sb.append("Gesamte Arbeitszeit (Formatiert);").append(String.format("%d Std. %02d Min.", totalHours, totalMinutes)).append("\n");
 
 
+        return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    public byte[] generateIcs(String username, LocalDate start, LocalDate end) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+
+        List<TimeTrackingEntry> entries = timeTrackingService.getEntriesForUser(user,
+                start.atStartOfDay(), end.plusDays(1).atStartOfDay());
+
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
+        StringBuilder sb = new StringBuilder();
+        sb.append("BEGIN:VCALENDAR\r\n");
+        sb.append("VERSION:2.0\r\n");
+        sb.append("PRODID:-//Chrono//Time Tracking//EN\r\n");
+
+        for (int i = 0; i < entries.size(); i++) {
+            TimeTrackingEntry startEntry = entries.get(i);
+            if (startEntry.getPunchType() != TimeTrackingEntry.PunchType.START) continue;
+            if (i + 1 >= entries.size()) break;
+            TimeTrackingEntry endEntry = entries.get(i + 1);
+            if (endEntry.getPunchType() != TimeTrackingEntry.PunchType.ENDE) continue;
+
+            sb.append("BEGIN:VEVENT\r\n");
+            sb.append("UID:").append(startEntry.getId()).append("-").append(endEntry.getId()).append("@chrono\r\n");
+            sb.append("DTSTAMP:").append(fmt.format(Instant.now())).append("\r\n");
+            sb.append("DTSTART:").append(fmt.format(startEntry.getEntryTimestamp().toInstant(ZoneOffset.UTC))).append("\r\n");
+            sb.append("DTEND:").append(fmt.format(endEntry.getEntryTimestamp().toInstant(ZoneOffset.UTC))).append("\r\n");
+            sb.append("SUMMARY:Work\r\n");
+            sb.append("END:VEVENT\r\n");
+            i++; // skip paired end entry
+        }
+
+        sb.append("END:VCALENDAR\r\n");
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 }
