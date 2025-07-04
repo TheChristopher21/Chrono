@@ -2,6 +2,7 @@ package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
+import com.chrono.chrono.dto.TimeTrackingImportRowDTO;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.TimeTrackingService;
@@ -73,6 +74,28 @@ public class AdminTimeTrackingController {
             return ResponseEntity.ok(importResult);
         } catch (Exception e) {
             logger.error("Fehler beim Import der Stempelzeiten: " + e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Fehler beim Import: " + e.getMessage()));
+        }
+    }
+
+    @PostMapping("/import/json")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<?> importTimestampsJson(@RequestBody List<TimeTrackingImportRowDTO> rows, Principal principal) {
+        try {
+            User currentUser = userRepository.findByUsername(principal.getName())
+                    .orElseThrow(() -> new RuntimeException("Admin user not found: " + principal.getName()));
+            Long companyIdForImport = (currentUser.getCompany() != null) ? currentUser.getCompany().getId() : null;
+            Map<String, Object> importResult = timeTrackingService.importTimeTrackingFromRows(rows, companyIdForImport);
+
+            List<?> errors = (List<?>) importResult.getOrDefault("errorMessages", Collections.emptyList());
+            if (!errors.isEmpty()) {
+                importResult.put("message", "Import mit Fehlern abgeschlossen.");
+                return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(importResult);
+            }
+            importResult.put("message", "Stempelzeiten erfolgreich importiert/aktualisiert.");
+            return ResponseEntity.ok(importResult);
+        } catch (Exception e) {
+            logger.error("Fehler beim JSON-Import der Stempelzeiten: " + e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", "Fehler beim Import: " + e.getMessage()));
         }
     }

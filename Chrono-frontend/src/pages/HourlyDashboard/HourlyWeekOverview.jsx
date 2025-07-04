@@ -13,6 +13,7 @@ import {
 } from './hourDashUtils';
 import '../../styles/HourlyDashboardScoped.css';
 import api from "../../utils/api.js";
+import TrendChart from '../../components/TrendChart';
 
 const HourlyWeekOverview = ({
                                 t,
@@ -36,6 +37,12 @@ const HourlyWeekOverview = ({
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
         : [];
+
+    const chartData = weekDates.map(d => {
+        const iso = formatLocalDate(d);
+        const summary = dailySummaries.find(s => s.date === iso);
+        return { date: iso, workedMinutes: summary ? summary.workedMinutes : 0 };
+    });
 
     function handlePrevWeek() {
         setSelectedMonday(prev => addDays(prev, -7));
@@ -99,6 +106,7 @@ const HourlyWeekOverview = ({
                 <p><strong>{t("weeklyHours", "Ges. Std. (Woche)")}:</strong> {minutesToHHMM(weeklyTotalMins)}</p>
                 <p><strong>{t("monthlyHours", "Ges. Std. (Monat)")}:</strong> {minutesToHHMM(monthlyTotalMins)}</p>
             </div>
+            <TrendChart data={chartData} />
 
             {/* Deine bestehende Wochenanzeige bleibt unverändert */}
             <div className="week-display">
