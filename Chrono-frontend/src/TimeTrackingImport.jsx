@@ -11,26 +11,19 @@ import api from './utils/api'; // Geändert: Importiere die globale api-Instanz
 // entweder die VITE_API_BASE_URL ist (z.B. http://localhost:8080)
 // oder "/api". In beiden Fällen ist der folgende Pfad korrekt, um
 // auf /api/admin/timetracking/import zu zielen.
-import './styles/TimeTrackingImport.css';
 const API_ENDPOINT_PATH = '/api/admin/timetracking/import';
 
 function TimeTrackingImport() {
     const [selectedFile, setSelectedFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
-    const [progress, setProgress] = useState(0);
     const [uploadResponse, setUploadResponse] = useState(null);
     const [error, setError] = useState('');
-    const [invalidRows, setInvalidRows] = useState([]);
-    const [isReimporting, setIsReimporting] = useState(false);
-    const [reimportProgress, setReimportProgress] = useState(0);
     // const fileInputRef = useRef(null); // EINKOMMENTIEREN, falls benötigt
 
     const handleFileChange = (event) => {
         setSelectedFile(event.target.files[0]);
         setUploadResponse(null); // Reset previous response
         setError('');
-        setProgress(0);
-        setInvalidRows([]);
     };
 
     const handleSubmit = async (event) => {
@@ -43,7 +36,6 @@ function TimeTrackingImport() {
         setIsUploading(true);
         setError('');
         setUploadResponse(null);
-        setProgress(0);
 
         const formData = new FormData();
         formData.append('file', selectedFile);
@@ -56,12 +48,8 @@ function TimeTrackingImport() {
             const response = await api.post(API_ENDPOINT_PATH, formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
+                    // 'Authorization'-Header wird von der api-Instanz gehandhabt
                 },
-                onUploadProgress: (e) => {
-                    if (e.total) {
-                        setProgress(Math.round((e.loaded * 100) / e.total));
-                    }
-                }
             });
 
             setUploadResponse(response.data);
@@ -83,7 +71,6 @@ function TimeTrackingImport() {
                 } else {
                     setUploadResponse({ errors: [backendError], importedCount: 0, successMessages: []});
                 }
-                setInvalidRows(err.response.data?.invalidRows || []);
             } else if (err.request) {
                 setError('Keine Antwort vom Server erhalten. Bitte Netzwerk überprüfen.');
             } else {
@@ -91,36 +78,6 @@ function TimeTrackingImport() {
             }
         } finally {
             setIsUploading(false);
-            setProgress(0);
-        }
-    };
-
-    const handleRowChange = (index, field, value) => {
-        const rows = [...invalidRows];
-        rows[index][field] = value;
-        setInvalidRows(rows);
-    };
-
-    const handleReimport = async () => {
-        if (invalidRows.length === 0) return;
-        setIsReimporting(true);
-        setReimportProgress(0);
-        try {
-            const res = await api.post('/api/admin/timetracking/import/json', invalidRows, {
-                onUploadProgress: (e) => {
-                    if (e.total) {
-                        setReimportProgress(Math.round((e.loaded * 100) / e.total));
-                    }
-                }
-            });
-            setUploadResponse(res.data);
-            setInvalidRows(res.data.invalidRows || []);
-        } catch (err) {
-            console.error('Reimport error', err);
-            setError(err.response?.data?.error || 'Fehler beim Reimport');
-        } finally {
-            setIsReimporting(false);
-            setReimportProgress(0);
         }
     };
 
@@ -156,41 +113,6 @@ function TimeTrackingImport() {
                         </ul>
                     </div>
                 )}
-                {invalidRows.length > 0 && (
-                    <div style={{ marginTop: '10px' }}>
-                        <h5>Korrigierbare Zeilen:</h5>
-                        <table className="invalid-table">
-                            <thead>
-                                <tr>
-                                    <th>Nr</th>
-                                    <th>User</th>
-                                    <th>Timestamp</th>
-                                    <th>Type</th>
-                                    <th>Source</th>
-                                    <th>Note</th>
-                                    <th>Fehler</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {invalidRows.map((row, idx) => (
-                                    <tr key={idx}>
-                                        <td>{row.rowNumber}</td>
-                                        <td><input value={row.username || ''} onChange={e => handleRowChange(idx, 'username', e.target.value)} /></td>
-                                        <td><input value={row.timestamp || ''} onChange={e => handleRowChange(idx, 'timestamp', e.target.value)} /></td>
-                                        <td><input value={row.punchType || ''} onChange={e => handleRowChange(idx, 'punchType', e.target.value)} /></td>
-                                        <td><input value={row.source || ''} onChange={e => handleRowChange(idx, 'source', e.target.value)} /></td>
-                                        <td><input value={row.note || ''} onChange={e => handleRowChange(idx, 'note', e.target.value)} /></td>
-                                        <td style={{color:'red'}}>{row.error}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        <button onClick={handleReimport} disabled={isReimporting} style={{marginTop:'10px'}}>
-                            {isReimporting ? 'Importiere...' : 'Korrigierte Zeilen importieren'}
-                        </button>
-                        {isReimporting && <div className="import-progress"><div className="import-progress-bar" style={{width: `${reimportProgress}%`}}/></div>}
-                    </div>
-                )}
             </div>
         );
     };
@@ -223,7 +145,6 @@ function TimeTrackingImport() {
                 >
                     {isUploading ? 'Wird hochgeladen...' : 'Importieren'}
                 </button>
-                {isUploading && <div className="import-progress" style={{marginTop:'8px'}}><div className="import-progress-bar" style={{width:`${progress}%`}} /></div>}
             </form>
             {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
             {renderFeedback()}

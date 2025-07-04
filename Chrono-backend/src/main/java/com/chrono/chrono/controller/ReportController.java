@@ -54,22 +54,4 @@ public class ReportController {
 
         return new ResponseEntity<>(csv, headers, HttpStatus.OK);
     }
-
-    @GetMapping("/timesheet/ics")
-    public ResponseEntity<byte[]> downloadIcs(
-            @RequestParam String username,
-            @RequestParam String startDate,
-            @RequestParam String endDate
-    ) {
-        byte[] ics = reportService.generateIcs(
-                username,
-                LocalDate.parse(startDate),
-                LocalDate.parse(endDate));
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.parseMediaType("text/calendar"));
-        headers.setContentDisposition(ContentDisposition.attachment().filename("timesheet.ics").build());
-
-        return new ResponseEntity<>(ics, headers, HttpStatus.OK);
-    }
 }
