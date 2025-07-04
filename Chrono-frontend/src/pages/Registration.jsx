@@ -151,7 +151,7 @@ const Registration = () => {
                 billingPeriod,
                 includeOptionalTraining,
                 optionalTrainingCost: includeOptionalTraining ? OPTIONAL_TRAINING_COST : 0,
-                calculatedPrice,
+                totalCalculatedFirstPayment: calculatedPrice,
                 priceBreakdown: priceBreakdown,
                 installationFee: INSTALL_FEE,
                 packageBaseFeeMonthly: PACKAGE_CONFIG[selectedPackageName].baseMonthly,
@@ -352,9 +352,10 @@ const Registration = () => {
                                 <h3>Vielen Dank für Ihre Anfrage!</h3>
                                 <p>Wir haben Ihre Konfiguration erhalten und prüfen diese.</p>
                                 <p>
-                                    Sie erhalten in Kürze (üblicherweise innerhalb von 1-2 Werktagen) ein individuelles Angebot und weitere Informationen per E-Mail an <strong>{form.email}</strong>.
+                                    Sie erhalten in Kürze (üblicherweise innerhalb von 1-2 Werktagen) ein individuelles Angebot und weitere Informationen per E-Mail an siefertchristopher@chrono-logisch.ch.
+                                    <br />
+                                    Bitte prüfen Sie auch Ihren Spam-Ordner.
                                 </p>
-                                <p>Bitte prüfen Sie auch Ihren Spam-Ordner.</p>
                                 <button onClick={() => navigate('/')} style={{ marginTop: '1rem' }}>
                                     Zurück zur Startseite
                                 </button>
