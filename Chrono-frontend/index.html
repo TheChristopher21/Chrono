@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="de">
+<html lang="de" data-theme="light">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -13,6 +13,16 @@
   <script src="https://cdn.tailwindcss.com"></script>
 
   <!-- (weitere Meta-Tags, CSS etc.) -->
+  <script>
+    (function() {
+      const theme = localStorage.getItem('theme') || 'light';
+      document.documentElement.setAttribute('data-theme', theme);
+      const brightness = localStorage.getItem('appBrightness');
+      if (brightness) {
+        document.documentElement.style.setProperty('--app-brightness', brightness);
+      }
+    })();
+  </script>
 </head>
 <body>
 <div id="root"></div>
