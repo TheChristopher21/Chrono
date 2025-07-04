@@ -1,0 +1,25 @@
+.import-progress {
+  width: 100%;
+  height: 8px;
+  background: #eee;
+  border-radius: 4px;
+  overflow: hidden;
+}
+.import-progress-bar {
+  height: 100%;
+  background: #007bff;
+  width: 0;
+  transition: width 0.3s;
+}
+.invalid-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.invalid-table th, .invalid-table td {
+  border: 1px solid #ccc;
+  padding: 4px;
+  font-size: 0.8rem;
+}
+.invalid-table input {
+  width: 100%;
+}
