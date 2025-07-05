@@ -79,6 +79,7 @@ html {
   font-family: "Poppins", system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.45;
+  scroll-behavior: smooth; /* sanftes Scrollen auf der gesamten Seite */
 }
 body {
   background: var(--c-bg);
@@ -163,6 +164,9 @@ a:hover {
   align-items: center;
   justify-content: center;
   z-index: 1000; /* Popup immer über dem Seiteninhalt */
+  background-color: var(--modal-backdrop-color, rgba(0, 0, 0, 0.6));
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   overflow-y: auto; /* Bei sehr hohen Inhalten scrollen */
 }
 
