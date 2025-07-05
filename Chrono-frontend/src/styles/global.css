@@ -155,10 +155,7 @@ a:hover {
 .sick-leave-modal-overlay,
 .changelog-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0; /* stellt top, right, bottom, left sicher */
   display: flex;
   align-items: center;
   justify-content: center;
