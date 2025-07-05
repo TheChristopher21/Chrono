@@ -1,44 +1,27 @@
 /* Notification.css oder global */
-.notification-overlay {
-  position: fixed;
-  /* Füllt den ganzen Viewport */
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
 
-  /* zentriert den Inhalt */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  /* Dimmer-Hintergrund */
-  background: rgba(0, 0, 0, 0.4);
-
-  /* Ganz oben */
-  z-index: 9999;
-}
 
 .notification-modal {
-  background: #fff;
-  color: #000;
+  background: var(--c-card);
+  color: var(--c-text);
   padding: 1.5rem 2rem;
   border-radius: 12px;
   max-width: 400px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--u-shadow-lg);
   text-align: center;
 }
 
 /* Button anpassen */
 .notification-modal button {
   margin-top: 1rem;
-  background: #475bff;
+  background: var(--c-pri);
   color: #fff;
   padding: 0.6rem 1.2rem;
   border: none;
   border-radius: 8px;
   cursor: pointer;
+  transition: background var(--u-dur) var(--u-ease);
 }
 .notification-modal button:hover {
-  background: #6b7cff;
+  background: var(--c-pri-dim);
 }
