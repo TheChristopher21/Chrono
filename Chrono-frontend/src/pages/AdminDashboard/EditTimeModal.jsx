@@ -250,7 +250,7 @@ const EditTimeModal = ({
 
     return (
         <div className="admin-dashboard scoped-dashboard">
-            <ModalOverlay visible={visible}>
+            <ModalOverlay visible={isVisible}>
                 <div className="modal-content edit-time-modal-content">
                     <h3>
                         {t("adminDashboard.editTrackingTitle", "Zeiterfassung bearbeiten für")} {targetUsername} <br />
