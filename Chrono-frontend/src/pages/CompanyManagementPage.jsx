@@ -257,7 +257,7 @@ const CompanyManagementPage = () => {
                                 value={newCompanyCanton}
                                 onChange={(e) => setNewCompanyCanton(e.target.value)}
                                 maxLength="2"
-                                style={{ textTransform: 'uppercase' }}
+                                className="text-uppercase"
                             />
                             <button type="submit">Erstellen</button>
                         </form>
@@ -284,7 +284,7 @@ const CompanyManagementPage = () => {
                                     setCreateWithAdmin({ ...createWithAdmin, companyCanton: e.target.value })
                                 }
                                 maxLength="2"
-                                style={{ textTransform: 'uppercase' }}
+                                className="text-uppercase"
                             />
                             <input
                                 type="text"
@@ -356,7 +356,8 @@ const CompanyManagementPage = () => {
                                                     setEditingCompany({ ...editingCompany, cantonAbbreviation: e.target.value })
                                                 }
                                                 maxLength="2"
-                                                style={{ textTransform: 'uppercase', width: '80px' }}
+                                                className="text-uppercase"
+                                                style={{ width: '80px' }}
                                             />
                                             <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <input

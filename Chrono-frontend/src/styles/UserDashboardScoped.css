@@ -217,68 +217,7 @@
   border-color: rgba(255, 255, 255, 0.1);
 }
 
-/* =========================================================================
-   2) Global Button Styles
-   ========================================================================= */
-.user-dashboard.scoped-dashboard button,
-.user-dashboard.scoped-dashboard .button-primary {
-  border: none;
-  border-radius: var(--ud-radius-md);
-  cursor: pointer;
-  font-weight: 600;
-  transition:
-    background-color var(--u-dur),
-    transform var(--u-dur),
-    box-shadow var(--u-dur);
-  font-size: var(--ud-fz-md);
-  padding: var(--ud-gap-sm) var(--ud-gap-lg);
-  background: var(--ud-c-primary);
-  color: #fff;
-  text-align: center;
-  box-shadow: var(--ud-shadow-interactive);
-  line-height: 1.5;
-}
-.user-dashboard.scoped-dashboard button:hover,
-.user-dashboard.scoped-dashboard .button-primary:hover {
-  background: var(--ud-c-primary-dim);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(var(--ud-c-primary-rgb), 0.2);
-}
-.user-dashboard.scoped-dashboard button:active,
-.user-dashboard.scoped-dashboard .button-primary:active {
-  transform: translateY(-1px);
-  box-shadow: var(--ud-shadow-interactive);
-}
-.user-dashboard.scoped-dashboard button:focus-visible,
-.user-dashboard.scoped-dashboard .button-primary:focus-visible {
-  outline: 3px solid var(--ud-c-primary-light-bg);
-  outline-offset: 2px;
-}
 
-.user-dashboard.scoped-dashboard button.button-secondary {
-  background: var(--ud-c-surface);
-  color: var(--ud-c-primary-text);
-  border: 1px solid var(--ud-c-primary);
-  box-shadow: none;
-}
-.user-dashboard.scoped-dashboard button.button-secondary:hover {
-  background: var(--ud-c-primary-light-bg);
-  border-color: var(--ud-c-primary-dim);
-  color: var(--ud-c-primary-dim);
-  transform: translateY(-1px);
-}
-[data-theme="dark"] .user-dashboard.scoped-dashboard button.button-secondary {
-  background: var(--ud-c-surface);
-  color: var(--ud-c-primary);
-  border-color: var(--ud-c-primary);
-}
-[data-theme="dark"]
-  .user-dashboard.scoped-dashboard
-  button.button-secondary:hover {
-  background: var(--ud-c-primary-light-bg);
-  color: var(--ud-c-primary-dim);
-  border-color: var(--ud-c-primary-dim);
-}
 
 /* =========================================================================
    3) Punch-Message (Popup)

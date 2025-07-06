@@ -44,35 +44,8 @@ a:focus-visible {
   outline-offset: 2px;
 }
 
-/* ---------- 1)  Grundtokens (Light-Default) --------------------------- */
-:root {
-  /* Primärfarben + optionales RGB für semitransparente Hintergründe */
-  --c-pri: #475bff;
-  --c-pri-dim: #6b7cff;
-  --c-pri-rgb: 71, 91, 255;
-
-  --c-danger: #ed5757;
-
-  /* Grundfarben (Light) */
-  --c-text: #1f1f1f;
-  --c-muted: #60646c;
-  --c-bg: #ffffff;
-  --c-surface: #f4f6ff;
-  --c-card: #ffffff;
-  --c-border: #d0d3e2;
-
-  /* Radius + Schatten */
-  --u-radius: 12px;
-  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
-  --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.12);
-
-  /* Motion */
-  --u-dur: 0.25s;
-  --u-ease: cubic-bezier(0.4, 0.2, 0.2, 1);
-
-  /* Globale Brightness-Skala (z. B. via Navbar-Slider) */
-  --app-brightness: 1;
-}
+/* ---------- 1)  Design Tokens --------------------------------------- */
+@import "./tokens/design-tokens.css";
 
 /* ---------- 2)  Basis-Typografie -------------------------------------- */
 html {
@@ -101,33 +74,7 @@ a:hover {
 }
 
 /* ---------- 3)  Dark-Mode-Overrides ----------------------------------- */
-[data-theme="dark"] {
-  --c-text: #e4e6eb;
-  --c-muted: #9ea3b0;
-  --c-bg: #18191a;
-  --c-surface: #202328;
-  --c-card: #1e1f23;
-  --c-border: #3d4048;
-
-  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
-  --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
-}
-
-/* Fallback für Nutzer mit prefers-color-scheme: dark,
-   wenn noch kein data-theme="light" oder data-theme="dark" gesetzt ist: */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --c-text: #e4e6eb;
-    --c-muted: #9ea3b0;
-    --c-bg: #18191a;
-    --c-surface: #202328;
-    --c-card: #1e1f23;
-    --c-border: #3d4048;
-
-    --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
-    --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
-  }
-}
+/* tokens for dark mode are defined in design-tokens.css */
 
 /* ---------- 4)  Accessibility / Helpers ------------------------------- */
 /* Screenreader-only content */
@@ -189,6 +136,11 @@ html[data-theme="dark"] {
   --shadow-color: rgba(0, 0, 0, 0.5);
   --text-color-secondary: #aaa;
   --subtle-bg-color: #2c2c34; /* Ein dunkles Grau, das sich vom Hintergrund abhebt */
+}
+
+/* Utility classes */
+.text-uppercase {
+  text-transform: uppercase;
 }
 /* ---------- 5)  Reduced-Motion ---------------------------------------- */
 @media (prefers-reduced-motion: reduce) {

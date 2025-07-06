@@ -228,65 +228,7 @@
 /* =========================================================================
    Globale Button Styles - Übernahme von UserDashboard
    ========================================================================= */
-.hourly-dashboard.scoped-dashboard button,
-.hourly-dashboard.scoped-dashboard .button-primary {
-  border: none;
-  border-radius: var(--ud-radius-md);
-  cursor: pointer;
-  font-weight: 600;
-  transition:
-    background-color 0.2s,
-    transform 0.15s,
-    box-shadow 0.2s;
-  font-size: var(--ud-fz-md);
-  padding: var(--ud-gap-sm) var(--ud-gap-lg);
-  background: var(--ud-c-primary);
-  color: #fff;
-  text-align: center;
-  box-shadow: var(--ud-shadow-interactive);
-  line-height: 1.5;
-}
-.hourly-dashboard.scoped-dashboard button:hover,
-.hourly-dashboard.scoped-dashboard .button-primary:hover {
-  background: var(--ud-c-primary-dim);
-  transform: translateY(-2px);
-  box-shadow: 0 8px 20px rgba(var(--ud-c-primary-rgb), 0.2);
-}
-.hourly-dashboard.scoped-dashboard button:active,
-.hourly-dashboard.scoped-dashboard .button-primary:active {
-  transform: translateY(-1px);
-  box-shadow: var(--ud-shadow-interactive);
-}
-.hourly-dashboard.scoped-dashboard button:focus-visible,
-.hourly-dashboard.scoped-dashboard .button-primary:focus-visible {
-  outline: 3px solid var(--ud-c-primary-light-bg);
-  outline-offset: 2px;
-}
 
-.hourly-dashboard.scoped-dashboard button.button-secondary {
-  background: var(--ud-c-surface);
-  color: var(--ud-c-primary-text);
-  border: 1px solid var(--ud-c-primary);
-  box-shadow: none;
-}
-.hourly-dashboard.scoped-dashboard button.button-secondary:hover {
-  background: var(--ud-c-primary-light-bg);
-  border-color: var(--ud-c-primary-dim);
-  color: var(--ud-c-primary-dim);
-  transform: translateY(-1px);
-}
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard button.button-secondary {
-  background: var(--ud-c-surface);
-  color: var(--ud-c-primary);
-  border-color: var(--ud-c-primary);
-}
-[data-theme="dark"]
-  .hourly-dashboard.scoped-dashboard
-  button.button-secondary:hover {
-  background: var(--ud-c-primary-light-bg);
-  color: var(--ud-c-primary-dim);
-  border-color: var(--ud-c-primary-dim);
-}
 
 /* =========================================================================
    Punch-Message (Popup) - Übernahme von UserDashboard
