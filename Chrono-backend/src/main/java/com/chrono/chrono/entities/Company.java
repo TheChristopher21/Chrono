@@ -25,6 +25,14 @@ public class Company {
     private String  paymentMethod;
     private boolean canceled = false;
 
+    // Webhook URLs für externe Benachrichtigungen
+    private String slackWebhookUrl;
+    private String teamsWebhookUrl;
+
+    // Einstellungen, welche Benachrichtigungen gesendet werden sollen
+    private Boolean notifyVacation;
+    private Boolean notifyOvertime;
+
     // NEU: Kantonskürzel für Feiertagsberechnung (z.B. "SG", "ZH")
     @Column(name = "canton_abbreviation", length = 2)
     private String cantonAbbreviation;
@@ -65,4 +73,16 @@ public class Company {
 
     public Set<User> getUsers() { return users; }
     public void setUsers(Set<User> users) { this.users = users; }
+
+    public String getSlackWebhookUrl() { return slackWebhookUrl; }
+    public void setSlackWebhookUrl(String slackWebhookUrl) { this.slackWebhookUrl = slackWebhookUrl; }
+
+    public String getTeamsWebhookUrl() { return teamsWebhookUrl; }
+    public void setTeamsWebhookUrl(String teamsWebhookUrl) { this.teamsWebhookUrl = teamsWebhookUrl; }
+
+    public Boolean getNotifyVacation() { return notifyVacation; }
+    public void setNotifyVacation(Boolean notifyVacation) { this.notifyVacation = notifyVacation; }
+
+    public Boolean getNotifyOvertime() { return notifyOvertime; }
+    public void setNotifyOvertime(Boolean notifyOvertime) { this.notifyOvertime = notifyOvertime; }
 }

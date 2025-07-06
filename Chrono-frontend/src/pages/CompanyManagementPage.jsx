@@ -16,6 +16,10 @@ const CompanyManagementPage = () => {
     // Neues Formular: "Nur Firma anlegen"
     const [newCompanyName, setNewCompanyName] = useState('');
     const [newCompanyCanton, setNewCompanyCanton] = useState(''); // NEU
+    const [newSlackWebhook, setNewSlackWebhook] = useState('');
+    const [newTeamsWebhook, setNewTeamsWebhook] = useState('');
+    const [newNotifyVacation, setNewNotifyVacation] = useState(false);
+    const [newNotifyOvertime, setNewNotifyOvertime] = useState(false);
 
     // Alternativ: "Firma + Admin" anlegen
     const [createWithAdmin, setCreateWithAdmin] = useState({
@@ -26,6 +30,11 @@ const CompanyManagementPage = () => {
         adminFirstName: '',
         adminLastName: '',
         companyCanton: '' // NEU
+        ,
+        slackWebhookUrl: '',
+        teamsWebhookUrl: '',
+        notifyVacation: false,
+        notifyOvertime: false
     });
 
     // Edit-Mode
@@ -65,11 +74,19 @@ const CompanyManagementPage = () => {
             const payload = {
                 name: newCompanyName.trim(),
                 active: true,
-                cantonAbbreviation: newCompanyCanton.trim().toUpperCase() || null
+                cantonAbbreviation: newCompanyCanton.trim().toUpperCase() || null,
+                slackWebhookUrl: newSlackWebhook || null,
+                teamsWebhookUrl: newTeamsWebhook || null,
+                notifyVacation: newNotifyVacation,
+                notifyOvertime: newNotifyOvertime
             };
             await api.post('/api/superadmin/companies', payload);
             setNewCompanyName('');
             setNewCompanyCanton(''); // NEU
+            setNewSlackWebhook('');
+            setNewTeamsWebhook('');
+            setNewNotifyVacation(false);
+            setNewNotifyOvertime(false);
             fetchCompanies();
         } catch (err) {
             console.error('Error creating company:', err);
@@ -98,7 +115,11 @@ const CompanyManagementPage = () => {
                 adminFirstName: createWithAdmin.adminFirstName,
                 adminLastName: createWithAdmin.adminLastName,
                 // NEU: cantonAbbreviation im Payload
-                cantonAbbreviation: createWithAdmin.companyCanton.trim().toUpperCase() || null
+                cantonAbbreviation: createWithAdmin.companyCanton.trim().toUpperCase() || null,
+                slackWebhookUrl: createWithAdmin.slackWebhookUrl || null,
+                teamsWebhookUrl: createWithAdmin.teamsWebhookUrl || null,
+                notifyVacation: createWithAdmin.notifyVacation,
+                notifyOvertime: createWithAdmin.notifyOvertime
             };
 
             const res = await api.post('/api/superadmin/companies/create-with-admin', payload);
@@ -111,7 +132,11 @@ const CompanyManagementPage = () => {
                 adminEmail: '',
                 adminFirstName: '',
                 adminLastName: '',
-                companyCanton: '' // NEU
+                companyCanton: '', // NEU
+                slackWebhookUrl: '',
+                teamsWebhookUrl: '',
+                notifyVacation: false,
+                notifyOvertime: false
             });
 
             fetchCompanies();
@@ -164,7 +189,14 @@ const CompanyManagementPage = () => {
     };
     function startEdit(company) {
         // Stelle sicher, dass cantonAbbreviation im State ist, auch wenn es null ist
-        setEditingCompany({ ...company, cantonAbbreviation: company.cantonAbbreviation || '' });
+        setEditingCompany({
+            ...company,
+            cantonAbbreviation: company.cantonAbbreviation || '',
+            slackWebhookUrl: company.slackWebhookUrl || '',
+            teamsWebhookUrl: company.teamsWebhookUrl || '',
+            notifyVacation: company.notifyVacation || false,
+            notifyOvertime: company.notifyOvertime || false
+        });
     }
 
     async function handleSaveEdit(e) {
@@ -176,7 +208,11 @@ const CompanyManagementPage = () => {
                 name: editingCompany.name.trim(),
                 active: editingCompany.active,
                 // NEU: cantonAbbreviation im Payload
-                cantonAbbreviation: editingCompany.cantonAbbreviation.trim().toUpperCase() || null
+                cantonAbbreviation: editingCompany.cantonAbbreviation.trim().toUpperCase() || null,
+                slackWebhookUrl: editingCompany.slackWebhookUrl,
+                teamsWebhookUrl: editingCompany.teamsWebhookUrl,
+                notifyVacation: editingCompany.notifyVacation,
+                notifyOvertime: editingCompany.notifyOvertime
             };
             await api.put(`/api/superadmin/companies/${editingCompany.id}`, payload);
             setEditingCompany(null);
@@ -259,6 +295,34 @@ const CompanyManagementPage = () => {
                                 maxLength="2"
                                 className="text-uppercase"
                             />
+                            <input
+                                type="text"
+                                placeholder="Slack Webhook URL"
+                                value={newSlackWebhook}
+                                onChange={(e) => setNewSlackWebhook(e.target.value)}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Teams Webhook URL"
+                                value={newTeamsWebhook}
+                                onChange={(e) => setNewTeamsWebhook(e.target.value)}
+                            />
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={newNotifyVacation}
+                                    onChange={(e) => setNewNotifyVacation(e.target.checked)}
+                                />
+                                Urlaub-Benachrichtigungen
+                            </label>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={newNotifyOvertime}
+                                    onChange={(e) => setNewNotifyOvertime(e.target.checked)}
+                                />
+                                Überstundenwarnungen
+                            </label>
                             <button type="submit">Erstellen</button>
                         </form>
                     </section>
@@ -286,6 +350,34 @@ const CompanyManagementPage = () => {
                                 maxLength="2"
                                 className="text-uppercase"
                             />
+                            <input
+                                type="text"
+                                placeholder="Slack Webhook URL"
+                                value={createWithAdmin.slackWebhookUrl}
+                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, slackWebhookUrl: e.target.value })}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Teams Webhook URL"
+                                value={createWithAdmin.teamsWebhookUrl}
+                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, teamsWebhookUrl: e.target.value })}
+                            />
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={createWithAdmin.notifyVacation}
+                                    onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, notifyVacation: e.target.checked })}
+                                />
+                                Urlaub-Benachrichtigungen
+                            </label>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={createWithAdmin.notifyOvertime}
+                                    onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, notifyOvertime: e.target.checked })}
+                                />
+                                Überstundenwarnungen
+                            </label>
                             <input
                                 type="text"
                                 placeholder="Admin-Username (*)"
@@ -351,15 +443,43 @@ const CompanyManagementPage = () => {
                                             <input
                                                 type="text"
                                                 placeholder="Kanton"
-                                                value={editingCompany.cantonAbbreviation}
-                                                onChange={(e) =>
-                                                    setEditingCompany({ ...editingCompany, cantonAbbreviation: e.target.value })
-                                                }
-                                                maxLength="2"
-                                                className="text-uppercase"
-                                                style={{ width: '80px' }}
+                                            value={editingCompany.cantonAbbreviation}
+                                            onChange={(e) =>
+                                                setEditingCompany({ ...editingCompany, cantonAbbreviation: e.target.value })
+                                            }
+                                            maxLength="2"
+                                            className="text-uppercase"
+                                            style={{ width: '80px' }}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Slack Webhook URL"
+                                            value={editingCompany.slackWebhookUrl}
+                                            onChange={(e) => setEditingCompany({ ...editingCompany, slackWebhookUrl: e.target.value })}
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Teams Webhook URL"
+                                            value={editingCompany.teamsWebhookUrl}
+                                            onChange={(e) => setEditingCompany({ ...editingCompany, teamsWebhookUrl: e.target.value })}
+                                        />
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={editingCompany.notifyVacation}
+                                                onChange={(e) => setEditingCompany({ ...editingCompany, notifyVacation: e.target.checked })}
                                             />
-                                            <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                            Urlaub-Benachrichtigungen
+                                        </label>
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={editingCompany.notifyOvertime}
+                                                onChange={(e) => setEditingCompany({ ...editingCompany, notifyOvertime: e.target.checked })}
+                                            />
+                                            Überstundenwarnungen
+                                        </label>
+                                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <input
                                                     type="checkbox"
                                                     checked={editingCompany.active}
