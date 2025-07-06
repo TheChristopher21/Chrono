@@ -3,6 +3,11 @@
 import { useEffect, useState, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../utils/api";
+import {
+    formatDate,
+    formatTime,
+    minutesToHHMM,
+} from "./HourlyDashboard/hourDashUtils";
 
 import jsPDF from "jspdf";
 // Stelle sicher, dass jspdf-autotable korrekt importiert wird und sich selbst an jsPDF bindet.
@@ -32,14 +37,50 @@ export default function PrintReport() {
     useEffect(() => {
         if (!username || !startDate || !endDate) return;
         api
-            .get("/api/timetracking/report", {
-                params: { username, startDate, endDate },
-            })
+            .get("/api/timetracking/history", { params: { username } })
             .then((res) => {
-                setRows(res.data ?? []);
+                const filtered = (res.data || [])
+                    .filter((r) => r.date >= startDate && r.date <= endDate)
+                    .sort((a, b) => a.date.localeCompare(b.date));
+
+                const mapped = filtered.map((r) => {
+                    const pt = r.primaryTimes || {};
+                    const workStart = pt.firstStartTime
+                        ? pt.firstStartTime.substring(0, 5)
+                        : "-";
+                    const workEnd = pt.lastEndTime
+                        ? pt.lastEndTime.substring(0, 5)
+                        : pt.isOpen
+                          ? t("printReport.open")
+                          : "-";
+
+                    const punches = (r.entries || [])
+                        .map((e) =>
+                            `${e.punchType.substring(0, 1)}:${formatTime(
+                                e.entryTimestamp
+                            )}${
+                                e.source === "SYSTEM_AUTO_END" && !e.correctedByUser
+                                    ? "(A)"
+                                    : ""
+                            }`
+                        )
+                        .join(" | ");
+
+                    return {
+                        date: r.date,
+                        workStart,
+                        workEnd,
+                        pause: minutesToHHMM(r.breakMinutes),
+                        total: minutesToHHMM(r.workedMinutes),
+                        punches,
+                        note: r.dailyNote || "",
+                    };
+                });
+
+                setRows(mapped);
             })
             .catch((err) => console.error("Report-Fehler:", err));
-    }, [username, startDate, endDate]);
+    }, [username, startDate, endDate, t]);
 
     // PDF-Export
     function handlePdf() {
@@ -56,11 +97,13 @@ export default function PrintReport() {
         );
 
         const body = rows.map((r) => [
-            r.date,
-            r.workStart || "-",
-            r.breakStart || "-",
-            r.breakEnd || "-",
-            r.workEnd || "-",
+            formatDate(r.date),
+            r.workStart,
+            r.workEnd,
+            r.pause,
+            r.total,
+            r.punches,
+            r.note,
         ]);
 
         // **ÄNDERUNG HIER:**
@@ -71,11 +114,13 @@ export default function PrintReport() {
         if (typeof doc.autoTable === 'function') {
             doc.autoTable({
                 head: [[
-                    t("printReport.date", "Datum"),
-                    t("printReport.workStart", "Work-Start"),
-                    t("printReport.breakStart", "Break-Start"),
-                    t("printReport.breakEnd", "Break-End"),
-                    t("printReport.workEnd", "Work-End"),
+                    t("printReport.date"),
+                    t("printReport.workStart"),
+                    t("printReport.workEnd"),
+                    t("printReport.pause"),
+                    t("printReport.total"),
+                    t("printReport.punches"),
+                    t("printReport.note"),
                 ]],
                 body,
                 startY: 28,
@@ -113,28 +158,32 @@ export default function PrintReport() {
             <table ref={tableRef}>
                 <thead>
                 <tr>
-                    <th>{t("printReport.date", "Datum")}</th>
-                    <th>{t("printReport.workStart", "Work-Start")}</th>
-                    <th>{t("printReport.breakStart", "Break-Start")}</th>
-                    <th>{t("printReport.breakEnd", "Break-End")}</th>
-                    <th>{t("printReport.workEnd", "Work-End")}</th>
+                    <th>{t("printReport.date")}</th>
+                    <th>{t("printReport.workStart")}</th>
+                    <th>{t("printReport.workEnd")}</th>
+                    <th>{t("printReport.pause")}</th>
+                    <th>{t("printReport.total")}</th>
+                    <th>{t("printReport.punches")}</th>
+                    <th>{t("printReport.note")}</th>
                 </tr>
                 </thead>
                 <tbody>
                 {rows.length === 0 ? (
                     <tr>
-                        <td colSpan={5} className="noRows">
+                        <td colSpan={7} className="noRows">
                             {t("printReport.noEntries", "Keine Einträge")}
                         </td>
                     </tr>
                 ) : (
                     rows.map((r, i) => (
                         <tr key={i}>
-                            <td>{r.date}</td>
-                            <td>{r.workStart || "-"}</td>
-                            <td>{r.breakStart || "-"}</td>
-                            <td>{r.breakEnd || "-"}</td>
-                            <td>{r.workEnd || "-"}</td>
+                            <td>{formatDate(r.date)}</td>
+                            <td>{r.workStart}</td>
+                            <td>{r.workEnd}</td>
+                            <td>{r.pause}</td>
+                            <td>{r.total}</td>
+                            <td>{r.punches}</td>
+                            <td>{r.note}</td>
                         </tr>
                     ))
                 )}
