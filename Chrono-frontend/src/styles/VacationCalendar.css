@@ -275,6 +275,7 @@
   max-width: 520px; /* Etwas schmaler für User-Anträge */
   max-height: 90vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--ud-c-card, #ffffff);
   border: 1px solid var(--ud-c-border, #dee2e6);
   border-radius: var(--ud-radius-xl, 24px);

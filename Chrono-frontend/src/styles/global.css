@@ -118,6 +118,17 @@ a:hover {
   background: var(--modal-backdrop-color);
 }
 
+/* Grundlegende Einstellungen für alle Modal-Inhalte */
+.modal-content,
+.vacation-modal-content,
+.sick-leave-modal-content,
+.changelog-modal,
+.notification-modal {
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch; /* Sanfteres Scrollen auf iOS */
+}
+
 body.modal-open {
   overflow: hidden;
 }

@@ -709,6 +709,7 @@
   max-width: 580px;
   max-height: 90vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background: var(--ud-c-card);
   border: 1px solid var(--ud-c-border);
   border-radius: var(--ud-radius-xl);

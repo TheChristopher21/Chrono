@@ -775,6 +775,7 @@
   box-shadow: var(--u-shadow-lg); /* Ihre Theme-Variable für Schatten */
   max-height: 90vh; /* Verhindert, dass das Modal größer als der Viewport wird */
   overflow-y: auto; /* Ermöglicht Scrollen innerhalb des Modals bei viel Inhalt */
+  -webkit-overflow-scrolling: touch;
   position: relative; /* OK, stört Flex-Zentrierung nicht und nützlich für interne Positionierung */
 }
 /* Spezifisch für DeleteConfirmModal, falls eine andere Breite gewünscht ist */

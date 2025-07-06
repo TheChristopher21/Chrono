@@ -23,7 +23,8 @@
   box-shadow: var(--u-shadow-lg);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 /* --- Header für Modal & Verlauf --- */

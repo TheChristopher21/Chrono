@@ -7,6 +7,9 @@
   padding: 1.5rem 2rem;
   border-radius: 12px;
   max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   box-shadow: var(--u-shadow-lg);
   text-align: center;
 }
