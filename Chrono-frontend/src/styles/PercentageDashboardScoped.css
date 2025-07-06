@@ -537,25 +537,10 @@
    Modals (Korrektur, Drucken)
    ========================================================================= */
 .percentage-dashboard.scoped-dashboard .modal-overlay {
-  position: fixed;
-  inset: 0; /* Vollständige Überdeckung des Viewports */
-  background: rgba(
-    var(--ud-c-bg-rgb, 20, 20, 25),
-    0.65
-  ); /* Verwendet --ud-c-bg-rgb falls definiert, sonst Fallback */
+  background: var(--modal-backdrop-color);
   backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
   padding: var(--ud-gap-lg, 2rem);
   animation: modalFadeIn var(--u-dur, 0.25s) var(--u-ease, ease);
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .modal-overlay {
-  background: rgba(
-    var(--ud-c-bg-rgb, 17, 24, 39),
-    0.75
-  ); /* Angepasstes RGB für Dark Mode BG */
 }
 
 .percentage-dashboard.scoped-dashboard .modal-content {

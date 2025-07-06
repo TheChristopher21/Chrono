@@ -357,7 +357,7 @@ const AdminDashboard = () => {
                 {currentUser && ( <p>{t('adminDashboard.loggedInAs')} {currentUser.username}</p> )}
             </header>
             <div className="admin-action-buttons-container">
-                <Link to="/admin/import-timetracking" className="admin-action-button button-primary">
+                <Link to="/admin/import-times" className="admin-action-button button-primary">
                     {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
                 </Link>
                 <button onClick={handleDataReloadNeeded} className="admin-action-button button-secondary">

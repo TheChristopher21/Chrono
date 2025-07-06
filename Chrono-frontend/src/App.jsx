@@ -29,6 +29,7 @@ import PrivateRoute            from "./components/PrivateRoute";
 
 // NEU: Importieren Sie die WhatsNewPage
 import WhatsNewPage            from "./pages/WhatsNewPage.jsx";
+import TimeTrackingImport      from "./TimeTrackingImport.jsx"; // HINZUGEFÜGT
 
 
 function App() {
@@ -99,6 +100,15 @@ function App() {
                     element={
                         <PrivateRoute requiredRole="ROLE_ADMIN">
                             <AdminChangePassword />
+                        </PrivateRoute>
+                    }
+                />
+                {/* NEU: Route für den Zeitimport (als Admin-Route) */}
+                <Route
+                    path="/admin/import-times" // Du kannst diesen Pfad bei Bedarf ändern
+                    element={
+                        <PrivateRoute requiredRole="ROLE_ADMIN">
+                            <TimeTrackingImport />
                         </PrivateRoute>
                     }
                 />

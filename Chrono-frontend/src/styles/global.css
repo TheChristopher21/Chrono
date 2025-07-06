@@ -115,6 +115,7 @@ a:hover {
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   overflow-y: auto; /* Bei sehr hohen Inhalten scrollen */
+  background: var(--modal-backdrop-color);
 }
 
 body.modal-open {
