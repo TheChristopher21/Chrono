@@ -741,7 +741,6 @@
 .user-dashboard.scoped-dashboard .modal-backdrop {
   position: fixed;
   inset: 0; /* Overlay über den gesamten Viewport */
-  background: rgba(var(--c-bg-rgb, 20, 20, 25), 0.65);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   display: flex;
@@ -750,9 +749,7 @@
   z-index: 10000;
   padding: var(--ud-gap-lg, 2rem);
   animation: modalFadeIn 0.4s var(--u-ease, ease);
-}
-[data-theme="dark"] .user-dashboard.scoped-dashboard .modal-backdrop {
-  background: rgba(var(--ud-c-bg-rgb, 17, 24, 39), 0.75);
+  background-color: var(--modal-backdrop-color);
 }
 @keyframes modalFadeIn {
   from {

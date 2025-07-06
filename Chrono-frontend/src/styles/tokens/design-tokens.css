@@ -25,6 +25,8 @@
   --u-ease: cubic-bezier(0.4, 0.2, 0.2, 1);
 
   --app-brightness: 1;
+  /* Default backdrop color for modal overlays (light mode) */
+  --modal-backdrop-color: rgba(30, 30, 30, 0.6);
 }
 
 [data-theme="dark"] {
@@ -38,10 +40,13 @@
 
   --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
   --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
+
+  /* Dark mode backdrop color for modal overlays */
+  --modal-backdrop-color: rgba(0, 0, 0, 0.8);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
     --c-text: #e4e6eb;
     --c-muted: #9ea3b0;
     --c-bg: #18191a;
@@ -50,7 +55,8 @@
     --c-card: #1e1f23;
     --c-border: #3d4048;
 
-    --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
-    --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
+      --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
+      --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
+      --modal-backdrop-color: rgba(0, 0, 0, 0.8);
+    }
   }
-}
