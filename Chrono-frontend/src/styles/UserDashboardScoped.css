@@ -739,12 +739,17 @@
    ========================================================================= */
 /* WICHTIGE KORREKTUR: Umbenannt von .modal-overlay zu .modal-backdrop, um mit JSX übereinzustimmen */
 .user-dashboard.scoped-dashboard .modal-backdrop {
-  /* Grundpositionierung in global.css */
-  background: var(--modal-backdrop-color);
+  position: fixed;
+  inset: 0; /* Overlay über den gesamten Viewport */
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
   padding: var(--ud-gap-lg, 2rem);
   animation: modalFadeIn 0.4s var(--u-ease, ease);
+  background-color: var(--modal-backdrop-color);
 }
 @keyframes modalFadeIn {
   from {

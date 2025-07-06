@@ -537,10 +537,16 @@
    Modals (Korrektur, Drucken)
    ========================================================================= */
 .percentage-dashboard.scoped-dashboard .modal-overlay {
-  background: var(--modal-backdrop-color);
+  position: fixed;
+  inset: 0; /* Vollständige Überdeckung des Viewports */
   backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
   padding: var(--ud-gap-lg, 2rem);
   animation: modalFadeIn var(--u-dur, 0.25s) var(--u-ease, ease);
+  background-color: var(--modal-backdrop-color);
 }
 
 .percentage-dashboard.scoped-dashboard .modal-content {

@@ -691,12 +691,17 @@
    Modals (PrintReportModal, HourlyCorrectionModal) - Übernahme von UserDashboard
    ========================================================================= */
 .hourly-dashboard.scoped-dashboard .modal-overlay {
-  /* Grundposition aus global.css */
-  background: var(--modal-backdrop-color);
+  position: fixed;
+  inset: 0; /* Fixierte Platzierung im gesamten Viewport */
   backdrop-filter: blur(10px) saturate(150%);
   -webkit-backdrop-filter: blur(10px) saturate(150%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
   padding: var(--ud-gap-md);
   animation: modalFadeIn 0.3s ease-out;
+  background-color: var(--modal-backdrop-color);
 }
 .hourly-dashboard.scoped-dashboard .modal-content {
   position: relative;

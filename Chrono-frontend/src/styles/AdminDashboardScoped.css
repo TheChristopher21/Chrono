@@ -1071,10 +1071,15 @@
 
 /* Globale Stile für Modal (EditTimeModal, PrintUserTimesModal, CorrectionDecisionModal) */
 .modal-overlay {
-  /* Position, Größe und Flex-Verhalten kommen aus global.css */
-  background: var(--modal-backdrop-color);
-  backdrop-filter: blur(4px);
+  position: fixed;
+  inset: 0; /* zentriert unabhängig von der Scrollposition */
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px); /* Etwas stärkerer Blur */
   padding: var(--u-gap-sm);
+  background-color: var(--modal-backdrop-color);
 }
 .modal-content {
   background: var(--c-card);
