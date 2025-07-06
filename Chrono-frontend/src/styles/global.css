@@ -131,6 +131,9 @@ a:hover {
 
 body.modal-open {
   overflow: hidden;
+  /* Entfernt den Filter, damit position: fixed Elemente nicht innerhalb des
+     gefilterten Body-Elements relativ positioniert werden */
+  filter: none;
 }
 /* Innerhalb Ihres Light-Theme Blocks */
 html[data-theme="light"] {
