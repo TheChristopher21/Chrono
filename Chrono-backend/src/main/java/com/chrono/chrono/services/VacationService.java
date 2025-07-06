@@ -40,6 +40,23 @@ public class VacationService {
     @Autowired // NEU: HolidayService injizieren
     private HolidayService holidayService;
 
+    @Autowired
+    private ExternalNotificationService externalNotificationService;
+
+    private boolean isConflicting(User user, LocalDate start, LocalDate end) {
+        if (user == null || user.getCompany() == null) return false;
+        List<VacationRequest> approved = vacationRepo
+                .findByUser_Company_IdAndApprovedTrue(user.getCompany().getId());
+        for (VacationRequest existing : approved) {
+            if (existing.getUser().getId().equals(user.getId())) continue;
+            LocalDate s = existing.getStartDate();
+            LocalDate e = existing.getEndDate();
+            boolean overlap = !(end.isBefore(s) || start.isAfter(e));
+            if (overlap) return true;
+        }
+        return false;
+    }
+
 
     public VacationRequest createVacationRequest(String username, LocalDate start, LocalDate end,
                                                  boolean halfDay, boolean usesOvertime,
@@ -52,6 +69,14 @@ public class VacationService {
         }
         if (halfDay && !start.isEqual(end)) { //
             throw new IllegalArgumentException("Halbtags Urlaub kann nur für einen einzelnen Tag beantragt werden."); //
+        }
+
+        if (isConflicting(targetUser, start, end)) {
+            throw new IllegalArgumentException("Urlaub kollidiert mit bestehenden genehmigten Anträgen.");
+        }
+
+        if (isConflicting(user, start, end)) {
+            throw new IllegalArgumentException("Urlaubsantrag steht im Konflikt mit bestehenden genehmigten Anträgen.");
         }
 
         VacationRequest vr = new VacationRequest(); //
@@ -78,6 +103,7 @@ public class VacationService {
         VacationRequest saved = vacationRepo.save(vr); //
         logger.info("VacationService: VacationRequest (ID: {}) für User '{}' von {} bis {} erstellt (usesOvertime={}, halfDay={}, overtimeDeductionMinutes={}).",
                 saved.getId(), username, start, end, usesOvertime, halfDay, vr.getOvertimeDeductionMinutes()); //
+        externalNotificationService.sendVacationNotification(saved, "Neuer Urlaubsantrag von " + username);
         return saved; //
     }
 
@@ -133,6 +159,8 @@ public class VacationService {
             applyOvertimeDeduction(savedVr); //
         }
 
+        externalNotificationService.sendVacationNotification(savedVr, "Urlaub für " + targetUsername + " erstellt und genehmigt");
+
         logger.info("VacationService: Admin '{}' hat VacationRequest ID {} für '{}' erstellt und genehmigt (usesOvertime={}, deductionMinutes={}).",
                 adminUsername, savedVr.getId(), targetUsername, usesOvertime, savedVr.getOvertimeDeductionMinutes()); //
         return savedVr; //
@@ -171,6 +199,7 @@ public class VacationService {
 
         VacationRequest updated = vacationRepo.save(vr); //
         logger.info("VacationService: VacationRequest ID {} genehmigt von Admin '{}'.", vacationId, adminName); //
+        externalNotificationService.sendVacationNotification(updated, "Urlaub von " + user.getUsername() + " genehmigt");
         return updated; //
     }
 
@@ -274,6 +303,7 @@ public class VacationService {
         vr.setDenied(true); //
         VacationRequest updated = vacationRepo.save(vr); //
         logger.info("VacationService: VacationRequest ID {} abgelehnt von Admin '{}'.", vacationId, adminName); //
+        externalNotificationService.sendVacationNotification(updated, "Urlaub von " + user.getUsername() + " abgelehnt");
         return updated; //
     }
 

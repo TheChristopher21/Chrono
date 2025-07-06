@@ -23,4 +23,6 @@ public interface VacationRequestRepository extends JpaRepository<VacationRequest
 
     List<VacationRequest> findByUser_Company_Id(Long companyId);
 
+    List<VacationRequest> findByUser_Company_IdAndApprovedTrue(Long companyId);
+
 }

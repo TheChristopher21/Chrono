@@ -66,6 +66,10 @@ public class CompanyManagementController {
         } else {
             company.setCantonAbbreviation(null);
         }
+        company.setSlackWebhookUrl(body.getSlackWebhookUrl());
+        company.setTeamsWebhookUrl(body.getTeamsWebhookUrl());
+        company.setNotifyVacation(body.getNotifyVacation());
+        company.setNotifyOvertime(body.getNotifyOvertime());
         // Weitere Standardwerte für neue Firmen
         company.setPaid(false);
         company.setCanceled(false);
@@ -112,6 +116,10 @@ public class CompanyManagementController {
         } else {
             company.setCantonAbbreviation(null);
         }
+        company.setSlackWebhookUrl(companyDTO.getSlackWebhookUrl());
+        company.setTeamsWebhookUrl(companyDTO.getTeamsWebhookUrl());
+        company.setNotifyVacation(companyDTO.getNotifyVacation());
+        company.setNotifyOvertime(companyDTO.getNotifyOvertime());
 
         Company saved = companyRepository.save(company);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -132,6 +140,14 @@ public class CompanyManagementController {
                         String canton = companyDTO.getCantonAbbreviation().trim().toUpperCase();
                         existingCompany.setCantonAbbreviation(canton.isEmpty() ? null : canton);
                     }
+                    if (companyDTO.getSlackWebhookUrl() != null)
+                        existingCompany.setSlackWebhookUrl(companyDTO.getSlackWebhookUrl());
+                    if (companyDTO.getTeamsWebhookUrl() != null)
+                        existingCompany.setTeamsWebhookUrl(companyDTO.getTeamsWebhookUrl());
+                    if (companyDTO.getNotifyVacation() != null)
+                        existingCompany.setNotifyVacation(companyDTO.getNotifyVacation());
+                    if (companyDTO.getNotifyOvertime() != null)
+                        existingCompany.setNotifyOvertime(companyDTO.getNotifyOvertime());
                     // Zahlungsstatus sollte über /payment aktualisiert werden, um die Logik getrennt zu halten
                     // existingCompany.setPaid(companyDTO.isPaid());
                     // existingCompany.setPaymentMethod(companyDTO.getPaymentMethod());
@@ -195,6 +211,10 @@ public class CompanyManagementController {
         private String  paymentMethod;
         private boolean canceled;
         private String cantonAbbreviation; // NEU
+        private String slackWebhookUrl;
+        private String teamsWebhookUrl;
+        private Boolean notifyVacation;
+        private Boolean notifyOvertime;
 
         public static CompanyDTO fromEntity(Company co) {
             CompanyDTO dto = new CompanyDTO();
@@ -206,6 +226,10 @@ public class CompanyManagementController {
             dto.paymentMethod = co.getPaymentMethod();
             dto.canceled = co.isCanceled();
             dto.cantonAbbreviation = co.getCantonAbbreviation(); // NEU
+            dto.slackWebhookUrl = co.getSlackWebhookUrl();
+            dto.teamsWebhookUrl = co.getTeamsWebhookUrl();
+            dto.notifyVacation = co.getNotifyVacation();
+            dto.notifyOvertime = co.getNotifyOvertime();
             return dto;
         }
 
@@ -218,6 +242,10 @@ public class CompanyManagementController {
         public String getPaymentMethod() { return paymentMethod; }
         public boolean isCanceled() { return canceled; }
         public String getCantonAbbreviation() { return cantonAbbreviation; } // NEU
+        public String getSlackWebhookUrl() { return slackWebhookUrl; }
+        public String getTeamsWebhookUrl() { return teamsWebhookUrl; }
+        public Boolean getNotifyVacation() { return notifyVacation; }
+        public Boolean getNotifyOvertime() { return notifyOvertime; }
 
         // Setter (wichtig für @RequestBody)
         public void setId(Long id) { this.id = id; }
@@ -228,6 +256,10 @@ public class CompanyManagementController {
         public void setPaymentMethod(String paymentMethod) { this.paymentMethod = paymentMethod; }
         public void setCanceled(boolean canceled) { this.canceled = canceled; }
         public void setCantonAbbreviation(String cantonAbbreviation) { this.cantonAbbreviation = cantonAbbreviation; } // NEU
+        public void setSlackWebhookUrl(String slackWebhookUrl) { this.slackWebhookUrl = slackWebhookUrl; }
+        public void setTeamsWebhookUrl(String teamsWebhookUrl) { this.teamsWebhookUrl = teamsWebhookUrl; }
+        public void setNotifyVacation(Boolean notifyVacation) { this.notifyVacation = notifyVacation; }
+        public void setNotifyOvertime(Boolean notifyOvertime) { this.notifyOvertime = notifyOvertime; }
     }
 
     public static class CreateCompanyWithAdminDTO {
@@ -238,6 +270,10 @@ public class CompanyManagementController {
         private String adminLastName;
         private String adminEmail;
         private String cantonAbbreviation; // NEU
+        private String slackWebhookUrl;
+        private String teamsWebhookUrl;
+        private Boolean notifyVacation;
+        private Boolean notifyOvertime;
 
         // Getter/Setter
         public String getCompanyName() { return companyName; }
@@ -254,6 +290,14 @@ public class CompanyManagementController {
         public void setAdminEmail(String adminEmail) { this.adminEmail = adminEmail; }
         public String getCantonAbbreviation() { return cantonAbbreviation; } // NEU
         public void setCantonAbbreviation(String cantonAbbreviation) { this.cantonAbbreviation = cantonAbbreviation; } // NEU
+        public String getSlackWebhookUrl() { return slackWebhookUrl; }
+        public void setSlackWebhookUrl(String slackWebhookUrl) { this.slackWebhookUrl = slackWebhookUrl; }
+        public String getTeamsWebhookUrl() { return teamsWebhookUrl; }
+        public void setTeamsWebhookUrl(String teamsWebhookUrl) { this.teamsWebhookUrl = teamsWebhookUrl; }
+        public Boolean getNotifyVacation() { return notifyVacation; }
+        public void setNotifyVacation(Boolean notifyVacation) { this.notifyVacation = notifyVacation; }
+        public Boolean getNotifyOvertime() { return notifyOvertime; }
+        public void setNotifyOvertime(Boolean notifyOvertime) { this.notifyOvertime = notifyOvertime; }
     }
 
     public static class PaymentUpdateDTO {
