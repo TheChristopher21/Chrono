@@ -119,6 +119,10 @@ const translations = {
             newEntryButton: "Zeiten Eintragen",
             expandAll: "Alle aufklappen",
             collapseAll: "Alle zuklappen",
+            correctionApprovedMsg: "Korrektur genehmigt",
+            correctionDeniedMsg: "Korrektur abgelehnt",
+            correctionErrorMsg: "Fehler bei Korrektur",
+            correctionsTitle: "Korrekturanträge",
             correctionModal: {
                 approveTitle: "Korrektur genehmigen",
                 denyTitle: "Korrektur ablehnen",
@@ -258,10 +262,6 @@ const translations = {
             saturday: "Samstag",
             sunday: "Sonntag",
         },
-        hourlyDashboard: {
-            title: "Stundenbasierte Ansicht",
-            mode: "Stundenbasiert",
-        },
         dailyNotePlaceholder: "Tagesnotiz",
         printReportError: "Fehler beim Erstellen des Berichts",
         loading: "Lade...",
@@ -292,6 +292,40 @@ const translations = {
         editNotes: "Notizen bearbeiten",
         addNotes: "Notizen hinzufügen",
         fillWorkTimesError: "Bitte Work Start und Work End ausfüllen",
+
+        // fehlende Übersetzungen
+        actualTime: "Ist",
+        breakTime: "Pause",
+        start: "Start",
+        end: "Ende",
+        worked: "Geleistet",
+        pause: "Pause",
+        overtime: "Überstunden",
+        total: "Gesamt",
+        period: "Zeitraum",
+        timeReportFor: "Zeitbericht für",
+        correctionFor: "Korrektur für",
+        welcome: "Willkommen",
+        "errors.reportError": "Fehler beim Generieren des Berichts",
+        userDashboard: {
+            correctionSuccess: "Korrekturantrag erfolgreich eingereicht.",
+        },
+        adminCorrections: {
+            header: {
+                user: "Benutzer",
+                date: "Antragsdatum",
+                request: "Anfrage",
+                reason: "Grund",
+                status: "Status",
+                actions: "Aktionen",
+            },
+        },
+        hourlyDashboard: {
+            title: "Stundenbasierte Ansicht",
+            mode: "Stundenbasiert",
+            addEntryFirst: "Bitte mindestens einen Korrektureintrag hinzufügen.",
+            userNotFound: "Benutzer nicht gefunden, bitte erneut anmelden.",
+        },
 
         // ----------------------------------------------------------------------
         // AdminVacation (admin kalendar)
@@ -608,6 +642,10 @@ const translations = {
             newEntryButton: "Add Times",
             expandAll: "Expand All",
             collapseAll: "Collapse All",
+            correctionApprovedMsg: "Correction approved",
+            correctionDeniedMsg: "Correction denied",
+            correctionErrorMsg: "Error during correction",
+            correctionsTitle: "Correction Requests",
             correctionModal: {
                 approveTitle: "Approve Correction",
                 denyTitle: "Deny Correction",
@@ -777,6 +815,34 @@ const translations = {
         editNotes: "Edit notes",
         addNotes: "Add notes",
         fillWorkTimesError: "Please fill in Work Start and Work End",
+
+        // missing translations
+        actualTime: "Actual",
+        breakTime: "Break Time",
+        start: "Start",
+        end: "End",
+        worked: "Worked",
+        pause: "Break",
+        overtime: "Overtime",
+        total: "Total",
+        period: "Period",
+        timeReportFor: "Time report for",
+        correctionFor: "Correction for",
+        welcome: "Welcome",
+        "errors.reportError": "Error generating report",
+        userDashboard: {
+            correctionSuccess: "Correction request submitted successfully.",
+        },
+        adminCorrections: {
+            header: {
+                user: "User",
+                date: "Request Date",
+                request: "Request",
+                reason: "Reason",
+                status: "Status",
+                actions: "Actions",
+            },
+        },
 
         // ----------------------------------------------------------------------
         // AdminVacation
