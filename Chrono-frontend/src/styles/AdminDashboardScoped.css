@@ -1091,6 +1091,7 @@
   box-shadow: var(--u-shadow-lg);
   max-height: 90vh;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   position: relative;
 }
 .modal-content.edit-time-modal-content {

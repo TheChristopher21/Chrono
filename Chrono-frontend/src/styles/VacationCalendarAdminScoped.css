@@ -248,6 +248,7 @@
   color: var(--c-text); /* Stellt sicher, dass Textfarbe vom Theme kommt */
   max-height: 90vh; /* Verhindert Überlaufen auf kleinen Bildschirmen */
   overflow-y: auto; /* Scrollbar bei Bedarf */
+  -webkit-overflow-scrolling: touch;
 }
 
 .vacation-calendar-admin.scoped-vacation .modal-content h3 {
