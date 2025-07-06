@@ -53,7 +53,7 @@ public class ReportService {
         document.open();
 
         Font titleFont = new Font(Font.HELVETICA, 16, Font.BOLD);
-        Font headerFont = new Font(Font.HELVETICA, 10, Font.BOLD);
+        Font headerFont = new Font(Font.HELVETICA, 10, Font.BOLD, Color.WHITE);
         Font regularFont = new Font(Font.HELVETICA, 9, Font.NORMAL);
         Font smallFont = new Font(Font.HELVETICA, 8, Font.ITALIC);
 
@@ -71,35 +71,62 @@ public class ReportService {
         table.setWidthPercentage(100);
         table.setWidths(new float[]{2.5f, 1.5f, 1f, 4f, 3f});
 
+        Color headerBg = new Color(71, 91, 255);
+
         PdfPCell cell = new PdfPCell(new Paragraph("Datum", headerFont));
-        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        cell.setBackgroundColor(headerBg);
+        cell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        cell.setPadding(5);
         table.addCell(cell);
         cell = new PdfPCell(new Paragraph("Arbeitszeit", headerFont));
-        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        cell.setBackgroundColor(headerBg);
+        cell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        cell.setPadding(5);
         table.addCell(cell);
         cell = new PdfPCell(new Paragraph("Pause", headerFont));
-        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        cell.setBackgroundColor(headerBg);
+        cell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        cell.setPadding(5);
         table.addCell(cell);
         cell = new PdfPCell(new Paragraph("Stempelungen (START/ENDE)", headerFont));
-        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        cell.setBackgroundColor(headerBg);
+        cell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        cell.setPadding(5);
         table.addCell(cell);
         cell = new PdfPCell(new Paragraph("Notiz / Status", headerFont));
-        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        cell.setBackgroundColor(headerBg);
+        cell.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+        cell.setPadding(5);
         table.addCell(cell);
 
         long totalWorkedMinutesOverall = 0;
+        boolean odd = false;
 
         for (DailyTimeSummaryDTO summary : dailySummaries) {
-            table.addCell(new Paragraph(summary.getDate().format(DATE_FORMATTER_REPORT), regularFont));
-            
+            odd = !odd;
+            Color rowColor = odd ? new Color(245, 245, 245) : Color.WHITE;
+
+            PdfPCell c1 = new PdfPCell(new Paragraph(summary.getDate().format(DATE_FORMATTER_REPORT), regularFont));
+            c1.setBackgroundColor(rowColor);
+            c1.setPadding(4);
+            table.addCell(c1);
+
             long hours = summary.getWorkedMinutes() / 60;
             long minutes = summary.getWorkedMinutes() % 60;
-            table.addCell(new Paragraph(String.format("%02d:%02d Std.", hours, minutes), regularFont));
+            PdfPCell c2 = new PdfPCell(new Paragraph(String.format("%02d:%02d Std.", hours, minutes), regularFont));
+            c2.setBackgroundColor(rowColor);
+            c2.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+            c2.setPadding(4);
+            table.addCell(c2);
             totalWorkedMinutesOverall += summary.getWorkedMinutes();
 
             long breakH = summary.getBreakMinutes() / 60;
             long breakM = summary.getBreakMinutes() % 60;
-            table.addCell(new Paragraph(String.format("%02d:%02d Std.", breakH, breakM), regularFont));
+            PdfPCell c3 = new PdfPCell(new Paragraph(String.format("%02d:%02d Std.", breakH, breakM), regularFont));
+            c3.setBackgroundColor(rowColor);
+            c3.setHorizontalAlignment(PdfPCell.ALIGN_CENTER);
+            c3.setPadding(4);
+            table.addCell(c3);
 
             StringBuilder stamps = new StringBuilder();
             if (summary.getEntries() != null) {
@@ -113,7 +140,10 @@ public class ReportService {
                     stamps.append("\n");
                 }
             }
-            table.addCell(new Paragraph(stamps.toString().trim(), smallFont));
+            PdfPCell c4 = new PdfPCell(new Paragraph(stamps.toString().trim(), smallFont));
+            c4.setBackgroundColor(rowColor);
+            c4.setPadding(4);
+            table.addCell(c4);
 
             StringBuilder noteCell = new StringBuilder();
             if (summary.getDailyNote() != null && !summary.getDailyNote().isBlank()) {
@@ -122,7 +152,10 @@ public class ReportService {
             if (summary.isNeedsCorrection()) {
                 noteCell.append("[Korrektur erforderlich!]");
             }
-            table.addCell(new Paragraph(noteCell.toString().trim(), regularFont));
+            PdfPCell c5 = new PdfPCell(new Paragraph(noteCell.toString().trim(), regularFont));
+            c5.setBackgroundColor(rowColor);
+            c5.setPadding(4);
+            table.addCell(c5);
         }
         document.add(table);
         document.add(new Paragraph(" "));
