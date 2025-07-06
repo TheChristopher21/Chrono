@@ -110,7 +110,9 @@ a:hover {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000; /* Popup immer über dem Seiteninhalt */
+  /* z-index auf 10000 angehoben, damit Modals stets 
+     oberhalb aller Inhalte (z.B. Navbar mit z-index 1000) liegen */
+  z-index: 10000;
   background-color: var(--modal-backdrop-color, rgba(0, 0, 0, 0.6));
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
