@@ -83,16 +83,21 @@ export default function PrintReport() {
                 startY: 28,
                 margin: { left: 14, right: 14 },
                 styles: { fontSize: 9, cellPadding: 2 },
-                headStyles: { fillColor: [0, 123, 255], halign: "center", textColor: 255 }, // textColor für Header hinzugefügt
+                headStyles: { fillColor: [0, 123, 255], halign: "center", textColor: 255 },
+                bodyStyles: { halign: "center" },
+                alternateRowStyles: { fillColor: [249, 249, 249] },
                 didDrawPage: (data) => {
-                    const pageCount = doc.internal.getNumberOfPages ? doc.internal.getNumberOfPages() : null; // Sicherer Zugriff
+                    const pageCount = doc.internal.getNumberOfPages ? doc.internal.getNumberOfPages() : null;
                     const pageStr = pageCount ? `${data.pageNumber} / ${pageCount}` : `${data.pageNumber}`;
 
                     const pageWidth = doc.internal.pageSize.getWidth
                         ? doc.internal.pageSize.getWidth()
                         : doc.internal.pageSize.width;
+                    const pageHeight = doc.internal.pageSize.getHeight
+                        ? doc.internal.pageSize.getHeight()
+                        : doc.internal.pageSize.height;
 
-                    doc.text(pageStr, pageWidth - 14, 10, { align: "right" });
+                    doc.text(pageStr, pageWidth - 14, pageHeight - 10, { align: "right" });
                 },
             });
         } else {
