@@ -70,30 +70,25 @@ export default function PrintReport() {
         // sollte `doc.autoTable` verfügbar sein.
         if (typeof doc.autoTable === 'function') {
             doc.autoTable({
-                head: [
-                    [
-                        t("printReport.date", "Datum"),
-                        t("printReport.workStart", "Work-Start"),
-                        t("printReport.breakStart", "Break-Start"),
-                        t("printReport.breakEnd", "Break-End"),
-                        t("printReport.workEnd", "Work-End"),
-                    ],
-                ],
+                head: [[
+                    t("printReport.date", "Datum"),
+                    t("printReport.workStart", "Work-Start"),
+                    t("printReport.breakStart", "Break-Start"),
+                    t("printReport.breakEnd", "Break-End"),
+                    t("printReport.workEnd", "Work-End"),
+                ]],
                 body,
                 startY: 28,
                 margin: { left: 14, right: 14 },
-                styles: { fontSize: 9, cellPadding: 2 },
-                headStyles: { fillColor: [0, 123, 255], halign: "center", textColor: 255 }, // textColor für Header hinzugefügt
+                styles: { fontSize: 9, cellPadding: 2, halign: "center" },
+                headStyles: { fillColor: [71, 91, 255], textColor: 255, halign: "center", fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
                 didDrawPage: (data) => {
-                    const pageCount = doc.internal.getNumberOfPages ? doc.internal.getNumberOfPages() : null; // Sicherer Zugriff
+                    const pageCount = doc.internal.getNumberOfPages ? doc.internal.getNumberOfPages() : null;
                     const pageStr = pageCount ? `${data.pageNumber} / ${pageCount}` : `${data.pageNumber}`;
-
-                    const pageWidth = doc.internal.pageSize.getWidth
-                        ? doc.internal.pageSize.getWidth()
-                        : doc.internal.pageSize.width;
-
+                    const pageWidth = doc.internal.pageSize.getWidth ? doc.internal.pageSize.getWidth() : doc.internal.pageSize.width;
                     doc.text(pageStr, pageWidth - 14, 10, { align: "right" });
-                },
+                }
             });
         } else {
             console.error("jspdf-autotable ist nicht korrekt als Funktion auf der jsPDF Instanz registriert.");
