@@ -693,7 +693,6 @@
 .hourly-dashboard.scoped-dashboard .modal-overlay {
   position: fixed;
   inset: 0; /* Fixierte Platzierung im gesamten Viewport */
-  background: rgba(var(--ud-c-bg-rgb, 14, 16, 28), 0.75);
   backdrop-filter: blur(10px) saturate(150%);
   -webkit-backdrop-filter: blur(10px) saturate(150%);
   display: flex;
@@ -702,6 +701,7 @@
   z-index: 10000;
   padding: var(--ud-gap-md);
   animation: modalFadeIn 0.3s ease-out;
+  background-color: var(--modal-backdrop-color);
 }
 .hourly-dashboard.scoped-dashboard .modal-content {
   position: relative;
