@@ -478,9 +478,7 @@
 }
 .hourly-dashboard.scoped-dashboard .correction-button-row button {
   width: 100%;
-  font-size: var(
-    --ud-fz-sm
-  ); /* Nutzt .button-secondary Stil über Klasse im JSX */
+  font-size: var(--ud-fz-sm); /* Nutzt .button-secondary Stil über Klasse im JSX */
 }
 
 /* Tageskarten für Urlaub, Krankheit, Feiertag (Übernahme von UserDashboard) */

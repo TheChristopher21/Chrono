@@ -1499,9 +1499,7 @@
   .admin-dashboard.scoped-dashboard
   .correction-list
   li.status-is-pending {
-  color: var(
-    --c-text
-  ); /* Haupttextfarbe für bessere Lesbarkeit auf dunkleren Status-BGs */
+  color: var(--c-text); /* Haupttextfarbe für bessere Lesbarkeit auf dunkleren Status-BGs */
 }
 /* Optionale Ränder für Status-Items im Dark Mode, falls gewünscht (aktuell nicht aktiv) */
 /*
@@ -1724,13 +1722,9 @@
   .modal-content
   .time-entry-edit-row
   .note-input {
-  background-color: var(
-    --c-surface
-  ); /* Sollte ein dunklerer Ton sein, z.B. #252830 */
+  background-color: var(--c-surface); /* Sollte ein dunklerer Ton sein, z.B. #252830 */
   color: var(--c-text); /* Sollte eine helle Textfarbe sein, z.B. #e5e7ec */
-  border-color: var(
-    --c-border
-  ); /* Sollte ein passender Rand für Darkmode sein, z.B. #373b46 */
+  border-color: var(--c-border); /* Sollte ein passender Rand für Darkmode sein, z.B. #373b46 */
 }
 
 /* Spezifischer Style für das datetime-local Icon im Dark Mode, falls es Probleme gibt (WebKit-Browser) */
@@ -1829,10 +1823,7 @@
 
 .corrections-table thead th {
   background-color: var(--ad-c-bg-header, #f9fafb);
-  color: var(
-    --ad-c-text-header,
-    #4b5563
-  ); /* Etwas dunklerer Text für besseren Kontrast */
+  color: var(--ad-c-text-header, #4b5563); /* Etwas dunklerer Text für besseren Kontrast */
   font-weight: 600;
   font-size: 0.75rem;
   text-transform: uppercase;

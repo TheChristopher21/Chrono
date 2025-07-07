@@ -13,10 +13,7 @@
   color: var(--ud-c-text, #212529);
   padding: var(--ud-gap-lg, 1.5rem); /* Konsistent mit Dashboard Sektionen */
   background-color: var(--ud-c-card, #ffffff);
-  border-radius: var(
-    --ud-radius-xl,
-    24px
-  ); /* Größerer Radius für modernen Look */
+  border-radius: var(--ud-radius-xl, 24px); /* Größerer Radius für modernen Look */
   border: 1px solid var(--ud-c-border, #dee2e6);
   box-shadow: var(--ud-shadow-card, 0 10px 30px rgba(0, 0, 0, 0.07));
 }
@@ -193,10 +190,7 @@
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background-color: var(
-    --ud-c-primary,
-    var(--c-pri)
-  ); /* Standard-Urlaubsfarbe */
+  background-color: var(--ud-c-primary, var(--c-pri)); /* Standard-Urlaubsfarbe */
   /* box-shadow: 0 0 0 1.5px var(--ud-c-card, #ffffff); Optional, wenn auf Kachelhintergrund besser aussieht */
   flex-shrink: 0;
 }
@@ -227,10 +221,7 @@
   /* Styles werden von .button-primary und .button-secondary (im JSX) übernommen */
 }
 .scoped-vacation .report-sick-leave-button {
-  background-color: var(
-    --ud-c-warn,
-    #ffc107
-  ); /* Warnfarbe für "Krank melden" */
+  background-color: var(--ud-c-warn, #ffc107); /* Warnfarbe für "Krank melden" */
   color: #212529; /* Dunkler Text für guten Kontrast auf Gelb */
   border-color: var(--ud-c-warn, #ffc107);
 }
@@ -296,10 +287,7 @@
   border-bottom: 1px solid var(--ud-c-line, #dee2e6);
 }
 .scoped-vacation .sick-leave-modal-content h3 {
-  color: var(
-    --ud-c-warn-text,
-    #856404
-  ); /* Spezifische Farbe für Krank-Modal Titel */
+  color: var(--ud-c-warn-text, #856404); /* Spezifische Farbe für Krank-Modal Titel */
 }
 [data-theme="dark"] .scoped-vacation .sick-leave-modal-content h3 {
   color: var(--ud-c-warn, #fab005);
@@ -324,10 +312,7 @@
   border: 1px solid var(--ud-c-border, #dee2e6);
   border-radius: var(--ud-radius-md, 12px); /* Konsistenter Radius */
   color: var(--ud-c-text, #212529);
-  background-color: var(
-    --ud-c-surface,
-    #e9ecef
-  ); /* Leichter Hintergrund für Inputs */
+  background-color: var(--ud-c-surface, #e9ecef); /* Leichter Hintergrund für Inputs */
   padding: var(--ud-gap-sm, 0.6rem) var(--ud-gap-md, 1rem);
   font-size: var(--ud-fz-md, 1rem);
   width: 100%;
