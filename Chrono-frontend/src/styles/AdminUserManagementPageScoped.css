@@ -36,7 +36,9 @@
 
   --u-dur: 0.26s;
   --u-ease: cubic-bezier(0.4, 0.2, 0.2, 1);
-
+  min-height: 100vh; /* Dies ist entscheidend */
+  display: flex; /* Oder grid, um den Inhalt korrekt zu verteilen */
+  flex-direction: column; /* Wenn display: flex verwendet wird */
   background: var(--c-bg);
   color: var(--c-text);
   font-family:

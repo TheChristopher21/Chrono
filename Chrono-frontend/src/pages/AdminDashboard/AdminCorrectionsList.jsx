@@ -88,7 +88,7 @@ const AdminCorrectionsList = ({
     return (
         <div className="content-section">
             <header className="section-header" onClick={() => setIsExpanded(!isExpanded)}>
-                <h3 className="section-title">{t('adminDashboard.correctionsTitle')}</h3>
+                <h3 className="section-title">{t('Kurrektur Anträge')}</h3>
                 <span className="toggle-icon">{isExpanded ? '−' : '+'}</span>
             </header>
 

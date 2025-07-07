@@ -71,11 +71,12 @@ public class VacationService {
             throw new IllegalArgumentException("Halbtags Urlaub kann nur für einen einzelnen Tag beantragt werden."); //
         }
 
-        if (isConflicting(targetUser, start, end)) {
-            throw new IllegalArgumentException("Urlaub kollidiert mit bestehenden genehmigten Anträgen.");
-        }
+        // REMOVED THE LINE BELOW, AS 'targetUser' IS NOT DEFINED HERE.
+        // if (isConflicting(targetUser, start, end)) {
+        //     throw new IllegalArgumentException("Urlaub kollidiert mit bestehenden genehmigten Anträgen.");
+        // }
 
-        if (isConflicting(user, start, end)) {
+        if (isConflicting(user, start, end)) { // Corrected line
             throw new IllegalArgumentException("Urlaubsantrag steht im Konflikt mit bestehenden genehmigten Anträgen.");
         }
 
