@@ -60,12 +60,8 @@
   --ud-c-warn-light-bg: rgba(251, 191, 36, 0.15);
   --ud-c-warn-text: #fde68a;
 
-  --ud-c-late-time: var(
-    --ud-c-error
-  ); /* Verwendet die definierte Fehlerfarbe */
-  --ud-c-late-time-bg: var(
-    --ud-c-error-light-bg
-  ); /* Verwendet den hellen Fehlerhintergrund */
+  --ud-c-late-time: var(--ud-c-error); /* Verwendet die definierte Fehlerfarbe */
+  --ud-c-late-time-bg: var(--ud-c-error-light-bg); /* Verwendet den hellen Fehlerhintergrund */
 
   --ud-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.25);
   --ud-shadow-interactive: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -208,10 +204,7 @@
 }
 /* Dark Mode für Punch-Message wird durch Neudefinition von --ud-c-success und --ud-c-text (implizit für #fff) abgedeckt */
 [data-theme="dark"] .percentage-dashboard.scoped-dashboard .punch-message {
-  background-color: var(
-    --ud-c-success-dim,
-    #10b981
-  ); /* Dunkleres Grün für Dark Mode */
+  background-color: var(--ud-c-success-dim, #10b981); /* Dunkleres Grün für Dark Mode */
   color: var(--ud-c-text, #e5e7eb); /* Heller Text auf dunklem Grün */
 }
 
@@ -272,12 +265,9 @@
 }
 [data-theme="dark"]
   .percentage-dashboard.scoped-dashboard
-  .week-navigation
-  input[type="date"] {
+  .week-navigation input[type="date"] {
   border-color: var(--ud-c-border); /* Nutzt Dark Mode Border Variable */
-  background-color: var(
-    --ud-c-surface
-  ); /* Nutzt Dark Mode Surface Variable für Inputs */
+  background-color: var(--ud-c-surface); /* Nutzt Dark Mode Surface Variable für Inputs */
   color: var(--ud-c-text); /* Nutzt Dark Mode Text Variable */
 }
 /* Dark Mode für week-navigation Hintergrund ist bereits oben in der Haupt-Dark-Mode-Regel für --ud-c-surface und --ud-c-card definiert. */
@@ -700,10 +690,7 @@
   .percentage-dashboard.scoped-dashboard .punch-message,
   .percentage-dashboard.scoped-dashboard .modal-content,
   .percentage-dashboard.scoped-dashboard button {
-    box-shadow: var(
-      --ud-shadow-sm,
-      0 2px 6px rgba(0, 0, 0, 0.05)
-    ) !important; /* Fallback für --ud-shadow-sm */
+    box-shadow: var(--ud-shadow-sm, 0 2px 6px rgba(0, 0, 0, 0.05)) !important; /* Fallback für --ud-shadow-sm */
   }
   [data-theme="dark"] .percentage-dashboard.scoped-dashboard .dashboard-header,
   [data-theme="dark"] .percentage-dashboard.scoped-dashboard .weekly-overview,
@@ -711,9 +698,6 @@
   [data-theme="dark"] .percentage-dashboard.scoped-dashboard .punch-message,
   [data-theme="dark"] .percentage-dashboard.scoped-dashboard .modal-content,
   [data-theme="dark"] .percentage-dashboard.scoped-dashboard button {
-    box-shadow: var(
-      --ud-shadow-sm,
-      0 2px 6px rgba(0, 0, 0, 0.25)
-    ) !important; /* Fallback für --ud-shadow-sm im Dark Mode */
+    box-shadow: var(--ud-shadow-sm, 0 2px 6px rgba(0, 0, 0, 0.25)) !important; /* Fallback für --ud-shadow-sm im Dark Mode */
   }
 }

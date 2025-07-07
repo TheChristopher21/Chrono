@@ -20,33 +20,18 @@
   --nav-button-text: #fff;
   --nav-button-hover-bg: var(--c-pri-dim, #6b7cff);
   --nav-logout-bg: var(--c-danger, #ed5757);
-  --nav-logout-hover-bg: color-mix(
-    in srgb,
-    var(--c-danger, #ed5757) 85%,
-    black
-  );
+  --nav-logout-hover-bg: color-mix(in srgb, var(--c-danger, #ed5757) 85%, black);
 
   /* UI-Elemente */
   --nav-height: 65px; /* Standardhöhe der Navbar */
   --nav-padding-x: clamp(1rem, 4vw, 2rem); /* Responsive horizontales Padding */
   --nav-padding-y: 0.75rem;
-  --nav-radius: var(
-    --u-radius-md,
-    10px
-  ); /* Konsistenter Radius mit anderen Elementen */
-  --nav-shadow: var(
-    --u-shadow-md,
-    0 5px 15px rgba(0, 0, 0, 0.08)
-  ); /* Subtiler Schatten */
+  --nav-radius: var(--u-radius-md, 10px); /* Konsistenter Radius mit anderen Elementen */
+  --nav-shadow: var(--u-shadow-md, 0 5px 15px rgba(0, 0, 0, 0.08)); /* Subtiler Schatten */
   --nav-transition: var(--u-dur, 0.25s)
     var(--u-ease, cubic-bezier(0.4, 0.2, 0.2, 1));
 
-  font-family: var(
-    --ud-font-family,
-    "Poppins",
-    system-ui,
-    sans-serif
-  ); /* Erbt von Dashboard-Font */
+  font-family: var(--ud-font-family, "Poppins", system-ui, sans-serif); /* Erbt von Dashboard-Font */
 }
 
 [data-theme="dark"] .scoped-navbar {
@@ -58,20 +43,13 @@
   --nav-text: var(--c-text, #e4e6eb);
   --nav-text-muted: var(--c-muted, #9da1b2);
   --nav-border: var(--c-border, #363a46);
-  --nav-link-hover-bg: var(
-    --c-pri,
-    #475bff
-  ); /* Kann im Dark Mode heller sein, wenn Primärfarbe dunkler ist */
+  --nav-link-hover-bg: var(--c-pri, #475bff); /* Kann im Dark Mode heller sein, wenn Primärfarbe dunkler ist */
   --nav-link-hover-text: #fff;
   --nav-button-bg: var(--c-pri, #475bff);
   --nav-button-text: #fff;
   --nav-button-hover-bg: var(--c-pri-dim, #6b7cff);
   --nav-logout-bg: var(--c-danger, #ed5757);
-  --nav-logout-hover-bg: color-mix(
-    in srgb,
-    var(--c-danger, #ed5757) 85%,
-    black
-  );
+  --nav-logout-hover-bg: color-mix(in srgb, var(--c-danger, #ed5757) 85%, black);
 }
 
 /* ----------------------------- Navbar-Grundlayout ----------------------------- */
@@ -391,9 +369,7 @@
   }
   .scoped-navbar .navbar-links a:hover,
   .scoped-navbar .navbar-links button:hover {
-    background-color: var(
-      --nav-link-hover-bg
-    ); /* Einheitlicher Hover für alle Elemente */
+    background-color: var(--nav-link-hover-bg); /* Einheitlicher Hover für alle Elemente */
     color: var(--nav-link-hover-text);
     transform: none; /* Kein Transform im Dropdown */
   }

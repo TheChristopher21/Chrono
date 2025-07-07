@@ -930,14 +930,8 @@
   /* ... (z.B. background-color, color, border-radius, transition etc. für report-sick-leave-button-admin) ... */
 }
 .vacation-calendar-admin.scoped-vacation .report-sick-leave-button-admin {
-  background-color: var(
-    --c-warn,
-    #ffc107
-  ); /* Beispiel: Warnfarbe für Krankmeldung */
-  color: var(
-    --c-warn-text-strong,
-    #5d4702
-  ); /* Stärkerer Kontrast für Lesbarkeit */
+  background-color: var(--c-warn, #ffc107); /* Beispiel: Warnfarbe für Krankmeldung */
+  color: var(--c-warn-text-strong, #5d4702); /* Stärkerer Kontrast für Lesbarkeit */
   border: 1px solid transparent;
   border-radius: var(--u-radius);
   font-weight: 600;
