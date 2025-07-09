@@ -11,13 +11,14 @@
 
 html {
   scroll-behavior: smooth;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-base);
+  color-scheme: light dark;
 }
 
 body {
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-base);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   transition:
@@ -36,7 +37,7 @@ a:hover {
 }
 
 h1, h2, h3, h4, h5, h6 {
-  font-family: 'Orbitron', sans-serif;
+  font-family: var(--font-heading);
   margin-block: 1rem 0.5rem;
   line-height: 1.2;
 }
@@ -231,6 +232,35 @@ select:focus {
 .btnRow {
   display: flex;
   gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Generic forms */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+}
+.form-group:last-child {
+  margin-bottom: 0;
+}
+
+.page-header {
+  margin-block: 2rem 1rem;
+  text-align: center;
+}
+
+.error-message {
+  color: var(--color-danger);
+  margin-top: 0.25rem;
+}
+
+.success-message-box {
+  background: var(--color-success);
+  color: #fff;
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius);
   margin-top: 1rem;
 }
 
