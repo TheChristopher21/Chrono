@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import ReactMarkdown from 'react-markdown';
-import '../styles/Changelog.css';
 import { useTranslation } from '../context/LanguageContext';
 
 const WhatsNewPage = () => {

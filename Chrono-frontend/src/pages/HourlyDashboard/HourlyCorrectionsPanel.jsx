@@ -2,7 +2,6 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { addDays, formatDate, formatTime } from "./hourDashUtils"; // Stelle sicher, dass formatTime hier verfügbar ist
-import "../../styles/HourlyDashboardScoped.css"; // Stellt sicher, dass die Styles hier auch referenziert werden
 
 const HourlyCorrectionsPanel = ({
                                     t,

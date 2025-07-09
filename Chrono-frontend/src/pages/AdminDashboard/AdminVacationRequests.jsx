@@ -7,7 +7,6 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 // Stelle sicher, dass die AdminDashboardScoped.css importiert wird, wenn sie hier benötigt wird,
 // oder dass die Styles global oder von AdminDashboard.jsx geerbt werden.
-// import '../../styles/AdminDashboardScoped.css'; // Ist typischerweise in AdminDashboard.jsx
 
 const AdminVacationRequests = ({
                                    t,

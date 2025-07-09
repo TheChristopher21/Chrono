@@ -2,7 +2,6 @@
 import React, { createContext, useState, useContext } from 'react';
 import ModalOverlay from '../components/ModalOverlay';
 import { useTranslation } from './LanguageContext';
-import "../styles/Notification.css"; // Pfad anpassen
 
 export const NotificationContext = createContext({
     notify: () => {},

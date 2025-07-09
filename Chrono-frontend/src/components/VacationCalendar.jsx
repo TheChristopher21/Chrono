@@ -3,8 +3,6 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import ModalOverlay from './ModalOverlay';
 import PropTypes from 'prop-types';
 import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import '../styles/VacationCalendar.css';
 
 import api from '../utils/api';
 import { useNotification } from '../context/NotificationContext';

@@ -2,7 +2,6 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { addDays, formatDate, formatTime } from "./userDashUtils"; // formatTime hinzugefügt
-import "../../styles/UserDashboardScoped.css"; // Stellt sicher, dass die Styles hier auch referenziert werden
 
 const UserCorrectionsPanel = ({
                                   t,

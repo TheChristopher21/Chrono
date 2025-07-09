@@ -2,7 +2,6 @@
 import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from "prop-types";
-import "../../styles/AdminDashboardScoped.css";
 import api from "../../utils/api"; // Assuming api is configured
 import { useAuth } from "../../context/AuthContext"; // Assuming useAuth is available
 import { useNotification } from "../../context/NotificationContext"; // Assuming useNotification is available

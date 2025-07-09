@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import ModalOverlay from './ModalOverlay';
 import PropTypes from 'prop-types';
 import Calendar from 'react-calendar';
-import 'react-calendar/dist/Calendar.css';
-import '../styles/VacationCalendarAdminScoped.css';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';

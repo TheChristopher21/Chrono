@@ -4,7 +4,6 @@ import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
-import '../styles/AdminChangePassword.css';
 
 const AdminChangePassword = () => {
     const { currentUser } = useAuth();

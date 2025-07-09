@@ -7,7 +7,6 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 
 // Importiere dein CSS:
-import '../styles/Navbar.css';
 
 // NEU START: Import für die neuen Komponenten und API
 import api from '../utils/api';

@@ -3,7 +3,6 @@ import React, { useState, useMemo } from "react";
 import PropTypes from "prop-types";
 import { formatDate, formatTime } from "./adminDashboardUtils";
 import CorrectionDecisionModal from "./CorrectionDecisionModal";
-import "../../styles/AdminDashboardScoped.css";
 
 // Hilfsfunktion, um den Status aus den boolean-Werten abzuleiten
 const getStatus = (req) => {

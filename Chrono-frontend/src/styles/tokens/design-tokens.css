@@ -1,62 +1,56 @@
-/* Central design tokens for colors, typography and spacing */
+/* design tokens */
 :root {
-  /* Primary colors */
-  --c-pri: #00e5ff;
-  --c-pri-dim: #66f7ff;
-  --c-pri-rgb: 0, 229, 255;
-  --c-danger: #ff007a;
+  --color-text: #1f2937;
+  --color-muted: #6b7280;
+  --color-bg: #f5f7fa;
+  --color-surface: #ffffff;
+  --color-border: #d1d5db;
 
-  /* Base colors (light) */
-  --c-text: #202225;
-  --c-muted: #6b7280;
-  --c-bg: #f3f4f6;
-  --c-bg-rgb: 243, 244, 246;
-  --c-surface: #ffffff;
-  --c-card: #ffffff;
-  --c-border: #e5e7eb;
+  --color-primary: #3b82f6;
+  --color-primary-hover: #2563eb;
+  --color-primary-rgb: 59, 130, 246;
+  --color-danger: #dc2626;
 
-  /* Radius & shadow */
-  --u-radius: 12px;
-  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
-  --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.12);
+  --radius: 8px;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.1);
 
-  /* Motion */
-  --u-dur: 0.25s;
-  --u-ease: cubic-bezier(0.4, 0.2, 0.2, 1);
-
+  --transition-fast: 0.2s ease-out;
   --app-brightness: 1;
-  /* Default backdrop color for modal overlays (light mode) */
-  --modal-backdrop-color: rgba(30, 30, 30, 0.6);
+
+  /* aliases for legacy variable names */
+  --c-text: var(--color-text);
+  --c-muted: var(--color-muted);
+  --c-bg: var(--color-bg);
+  --c-pri: var(--color-primary);
+  --c-pri-dim: var(--color-primary-hover);
+  --c-pri-rgb: var(--color-primary-rgb);
+  --c-border: var(--color-border);
+  --c-text-strong: var(--color-text);
 }
 
-[data-theme="dark"] {
-  --c-text: #e5e7eb;
-  --c-muted: #9ca3af;
-  --c-bg: #0f172a;
-  --c-bg-rgb: 15, 23, 42;
-  --c-surface: #1e293b;
-  --c-card: #1a2234;
-  --c-border: #334155;
+[data-theme='dark'] {
+  --color-text: #f3f4f6;
+  --color-muted: #9ca3af;
+  --color-bg: #1e293b;
+  --color-surface: #273447;
+  --color-border: #334155;
 
-  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.6);
-  --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.8);
+  --color-primary: #60a5fa;
+  --color-primary-hover: #3b82f6;
+  --color-primary-rgb: 96, 165, 250;
+  --color-danger: #f87171;
 
-  /* Dark mode backdrop color for modal overlays */
-  --modal-backdrop-color: rgba(0, 0, 0, 0.8);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.5);
+
+  /* legacy aliases */
+  --c-text: var(--color-text);
+  --c-muted: var(--color-muted);
+  --c-bg: var(--color-bg);
+  --c-pri: var(--color-primary);
+  --c-pri-dim: var(--color-primary-hover);
+  --c-pri-rgb: var(--color-primary-rgb);
+  --c-border: var(--color-border);
+  --c-text-strong: var(--color-text);
 }
-
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-    --c-text: #e5e7eb;
-    --c-muted: #9ca3af;
-    --c-bg: #0f172a;
-    --c-bg-rgb: 15, 23, 42;
-    --c-surface: #1e293b;
-    --c-card: #1a2234;
-    --c-border: #334155;
-
-      --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.6);
-      --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.8);
-      --modal-backdrop-color: rgba(0, 0, 0, 0.8);
-    }
-  }

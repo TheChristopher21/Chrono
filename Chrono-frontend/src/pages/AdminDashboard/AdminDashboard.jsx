@@ -5,7 +5,6 @@ import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
 import { Link } from 'react-router-dom';
-import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 

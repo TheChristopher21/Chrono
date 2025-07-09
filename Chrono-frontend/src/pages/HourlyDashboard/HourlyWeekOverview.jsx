@@ -11,7 +11,6 @@ import {
     isLateTime,
     formatPunchedTimeFromEntry
 } from './hourDashUtils';
-import '../../styles/HourlyDashboardScoped.css';
 import api from "../../utils/api.js";
 import TrendChart from '../../components/TrendChart';
 

@@ -1,7 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import VacationCalendar from '../../components/VacationCalendar'; // Stellt die Kalenderlogik bereit
-import '../../styles/HourlyDashboardScoped.css'; // Stellt sicher, dass die Styles hier auch referenziert werden
 
 const HourlyVacationSection = ({
                                    t,

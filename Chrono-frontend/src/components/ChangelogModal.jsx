@@ -1,7 +1,6 @@
 import React from 'react';
 import ModalOverlay from './ModalOverlay';
 import ReactMarkdown from 'react-markdown';
-import '../styles/Changelog.css';
 import { useTranslation } from '../context/LanguageContext';
 
 const ChangelogModal = ({ changelog, onClose }) => {
