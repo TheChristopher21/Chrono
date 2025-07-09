@@ -2,7 +2,6 @@ import React from "react";
 import ModalOverlay from '../../components/ModalOverlay';
 import { useTranslation } from "../../context/LanguageContext";
 import PropTypes from "prop-types";
-import "../../styles/AdminDashboardScoped.css";
 
 const CorrectionDecisionModal = ({
                                      visible,

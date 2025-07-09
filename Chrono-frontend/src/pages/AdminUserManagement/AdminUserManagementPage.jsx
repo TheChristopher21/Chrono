@@ -5,7 +5,6 @@ import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
 
-import '../../styles/AdminUserManagementPageScoped.css';
 
 import AdminUserList from './AdminUserList';
 import AdminUserForm from './AdminUserForm';

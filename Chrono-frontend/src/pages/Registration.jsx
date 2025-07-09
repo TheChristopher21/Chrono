@@ -2,7 +2,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import "../styles/RegistrationScoped.css"; // Dein CSS-File
 import { Link } from "react-router-dom";
 
 import api from "../utils/api"; // Annahme: api util ist konfiguriert

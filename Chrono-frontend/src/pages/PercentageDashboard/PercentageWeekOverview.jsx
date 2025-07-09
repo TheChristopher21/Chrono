@@ -14,7 +14,6 @@ import {
     expectedDayMinutesForPercentageUser, // Spezifisch für %-User
     getMondayOfWeek // Wird für die Datums-Input-Navigation benötigt
 } from './percentageDashUtils';
-import '../../styles/PercentageDashboardScoped.css'; // Stellt sicher, dass die Styles hier auch referenziert werden
 import api from "../../utils/api.js";
 
 const PercentageWeekOverview = ({

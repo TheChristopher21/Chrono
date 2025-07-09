@@ -11,7 +11,6 @@ import api from './utils/api'; // Geändert: Importiere die globale api-Instanz
 // entweder die VITE_API_BASE_URL ist (z.B. http://localhost:8080)
 // oder "/api". In beiden Fällen ist der folgende Pfad korrekt, um
 // auf /api/admin/timetracking/import zu zielen.
-import './styles/TimeTrackingImport.css';
 const API_ENDPOINT_PATH = '/api/admin/timetracking/import';
 
 function TimeTrackingImport() {

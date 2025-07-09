@@ -2,7 +2,6 @@ import React, { useEffect, useState } from 'react';
 import api from '../utils/api';
 import { useTranslation } from '../context/LanguageContext';
 import Navbar from '../components/Navbar';
-import '../styles/CompanyManagementScoped.css'; // Scoped CSS für Light/Dark etc.
 import { useAuth } from '../context/AuthContext'; // Importieren, falls noch nicht geschehen
 
 const CompanyManagementPage = () => {

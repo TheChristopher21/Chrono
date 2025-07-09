@@ -8,8 +8,6 @@ import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
 import { parseISO } from 'date-fns';
 
-import '../../styles/global.css';
-import '../../styles/UserDashboardScoped.css';
 import "jspdf-autotable"; // Für PDF Export
 import jsPDF from "jspdf"; // Für PDF Export
 import autoTable from "jspdf-autotable"; // Importiere autoTable explizit

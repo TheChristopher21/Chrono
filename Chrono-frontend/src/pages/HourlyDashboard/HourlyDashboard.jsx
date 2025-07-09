@@ -29,7 +29,6 @@ import HourlyCorrectionsPanel from './HourlyCorrectionsPanel';
 import HourlyCorrectionModal from './HourlyCorrectionModal';
 import PrintReportModal from '../../components/PrintReportModal.jsx';
 
-import '../../styles/HourlyDashboardScoped.css';
 
 const HourlyDashboard = () => {
     const { t } = useTranslation();

@@ -3,7 +3,6 @@ import { useState, useEffect, useRef, useContext } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
-import '../styles/Login.css';
 import api from '../utils/api';
 import { LanguageContext, useTranslation } from '../context/LanguageContext';
 import { Howl } from 'howler';

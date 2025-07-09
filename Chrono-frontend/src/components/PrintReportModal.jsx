@@ -2,7 +2,6 @@
 import React from "react";
 import ModalOverlay from './ModalOverlay';
 import PropTypes from "prop-types";
-import "../styles/PrintReportScoped.css";          // optional – Styles für alle Dashboards
 
 const PrintReportModal = ({
                               t,

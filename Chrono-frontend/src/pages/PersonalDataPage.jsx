@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
-import '../styles/PersonalDataPageScoped.css';
 
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';

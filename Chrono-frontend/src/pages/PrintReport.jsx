@@ -16,7 +16,6 @@ import 'jspdf-autotable'; // Oft reicht dieser Import, damit es sich global an j
 // ODER, falls das nicht geht und du eine spezifische Funktion brauchst:
 // import autoTable from 'jspdf-autotable'; // Behalte diesen Import bei
 
-import "../styles/PrintReportScoped.css";
 import { useTranslation } from "../context/LanguageContext";
 
 function useQuery() {

@@ -2,7 +2,6 @@
 import "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import "../styles/LandingPageScoped.css";
 import { useTranslation } from "../context/LanguageContext";
 
 /* ---------- Sub-Components ------------------------------------------ */

@@ -29,7 +29,6 @@ import PercentageCorrectionsPanel from './PercentageCorrectionsPanel';
 import PercentageCorrectionModal from './PercentageCorrectionModal';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 
-import '../../styles/PercentageDashboardScoped.css';
 import autoTable from "jspdf-autotable";
 
 

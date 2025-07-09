@@ -1,5 +1,4 @@
 import PropTypes from 'prop-types';
-import '../styles/TrendChart.css';
 
 function TrendChart({ data }) {
   const max = Math.max(...data.map(d => d.workedMinutes), 1);
