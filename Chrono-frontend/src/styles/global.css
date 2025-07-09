@@ -155,6 +155,31 @@ select:focus {
   display: none;
 }
 
+/* Additional navbar elements */
+.navbar-brand {
+  font-family: var(--font-heading);
+  font-size: 1.25rem;
+}
+.navbar-logo {
+  color: var(--color-primary);
+  font-weight: bold;
+}
+.navbar-logout {
+  background: transparent;
+  color: var(--color-text);
+}
+.navbar-username {
+  font-weight: 600;
+}
+.brightness-control {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.changelog-link {
+  position: relative;
+}
+
 /* Utility */
 .visually-hidden {
   position: absolute !important;

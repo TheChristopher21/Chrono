@@ -7,6 +7,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import "./styles/global.css";
+import "./styles/chrono-theme.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
@@ -21,5 +22,4 @@ root.render(
                 </NotificationProvider>
             </AuthProvider>
         </LanguageProvider>
-    </HashRouter>
-);
+    </HashRouter>);
