@@ -6,10 +6,18 @@
   --color-surface: #ffffff;
   --color-border: #d1d5db;
 
+  --color-bg-alt: #e5e7eb;
+
   --color-primary: #3b82f6;
   --color-primary-hover: #2563eb;
   --color-primary-rgb: 59, 130, 246;
   --color-danger: #dc2626;
+
+  --color-success: #10b981;
+  --color-warn: #d97706;
+
+  --font-base: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Orbitron', sans-serif;
 
   --radius: 8px;
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
@@ -36,10 +44,17 @@
   --color-surface: #273447;
   --color-border: #334155;
 
+  --color-bg-alt: #334155;
+
   --color-primary: #60a5fa;
   --color-primary-hover: #3b82f6;
   --color-primary-rgb: 96, 165, 250;
   --color-danger: #f87171;
+  --color-success: #34d399;
+  --color-warn: #fbbf24;
+
+  --font-base: 'Inter', system-ui, sans-serif;
+  --font-heading: 'Orbitron', sans-serif;
 
   --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 8px 20px rgba(0, 0, 0, 0.5);
