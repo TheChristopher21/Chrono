@@ -1,19 +1,19 @@
 /* Central design tokens for colors, typography and spacing */
 :root {
   /* Primary colors */
-  --c-pri: #475bff;
-  --c-pri-dim: #6b7cff;
-  --c-pri-rgb: 71, 91, 255;
-  --c-danger: #ed5757;
+  --c-pri: #00e5ff;
+  --c-pri-dim: #66f7ff;
+  --c-pri-rgb: 0, 229, 255;
+  --c-danger: #ff007a;
 
   /* Base colors (light) */
-  --c-text: #1f1f1f;
-  --c-muted: #60646c;
-  --c-bg: #ffffff;
-  --c-bg-rgb: 255, 255, 255;
-  --c-surface: #f4f6ff;
+  --c-text: #202225;
+  --c-muted: #6b7280;
+  --c-bg: #f3f4f6;
+  --c-bg-rgb: 243, 244, 246;
+  --c-surface: #ffffff;
   --c-card: #ffffff;
-  --c-border: #d0d3e2;
+  --c-border: #e5e7eb;
 
   /* Radius & shadow */
   --u-radius: 12px;
@@ -30,16 +30,16 @@
 }
 
 [data-theme="dark"] {
-  --c-text: #e4e6eb;
-  --c-muted: #9ea3b0;
-  --c-bg: #18191a;
-  --c-bg-rgb: 24, 25, 26;
-  --c-surface: #202328;
-  --c-card: #1e1f23;
-  --c-border: #3d4048;
+  --c-text: #e5e7eb;
+  --c-muted: #9ca3af;
+  --c-bg: #0f172a;
+  --c-bg-rgb: 15, 23, 42;
+  --c-surface: #1e293b;
+  --c-card: #1a2234;
+  --c-border: #334155;
 
-  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
-  --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
+  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.6);
+  --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.8);
 
   /* Dark mode backdrop color for modal overlays */
   --modal-backdrop-color: rgba(0, 0, 0, 0.8);
@@ -47,16 +47,16 @@
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-    --c-text: #e4e6eb;
-    --c-muted: #9ea3b0;
-    --c-bg: #18191a;
-    --c-bg-rgb: 24, 25, 26;
-    --c-surface: #202328;
-    --c-card: #1e1f23;
-    --c-border: #3d4048;
+    --c-text: #e5e7eb;
+    --c-muted: #9ca3af;
+    --c-bg: #0f172a;
+    --c-bg-rgb: 15, 23, 42;
+    --c-surface: #1e293b;
+    --c-card: #1a2234;
+    --c-border: #334155;
 
-      --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
-      --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
+      --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.6);
+      --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.8);
       --modal-backdrop-color: rgba(0, 0, 0, 0.8);
     }
   }
