@@ -37,11 +37,7 @@ const Navbar = () => {
     }, [brightness]);
 
     // Theme-Logik (Light / Dark)
-    const [theme, setTheme] = useState(() => {
-        const saved = localStorage.getItem('theme');
-        if (saved) return saved;
-        return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-    });
+    const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
