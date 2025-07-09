@@ -6,6 +6,8 @@
   --color-surface: #ffffff;
   --color-border: #d1d5db;
 
+  --color-bg-alt: #e5e7eb;
+
   --color-primary: #3b82f6;
   --color-primary-hover: #2563eb;
   --color-primary-rgb: 59, 130, 246;
@@ -35,6 +37,8 @@
   --color-bg: #1e293b;
   --color-surface: #273447;
   --color-border: #334155;
+
+  --color-bg-alt: #334155;
 
   --color-primary: #60a5fa;
   --color-primary-hover: #3b82f6;
