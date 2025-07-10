@@ -14,6 +14,7 @@ import AdminCorrectionsList from './AdminCorrectionsList';
 import EditTimeModal from './EditTimeModal';
 import PrintUserTimesModal from './PrintUserTimesModal';
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
+import './AdminDashboard.css';
 
 import {
     getMondayOfWeek,
