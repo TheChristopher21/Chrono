@@ -1,0 +1,126 @@
+/* Styles scoped to the admin dashboard */
+.admin-dashboard {
+  padding: 1rem;
+  color: var(--color-text);
+}
+
+.admin-dashboard .dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-dashboard .admin-action-buttons-container {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.admin-dashboard .admin-action-button {
+  padding: 0.5rem 1rem;
+  border-radius: var(--radius);
+  color: #fff;
+  background: var(--color-primary);
+  transition: background var(--transition-fast);
+}
+
+.admin-dashboard .admin-action-button.button-secondary {
+  background: var(--color-muted);
+}
+
+.admin-dashboard .admin-action-button:hover {
+  background: var(--color-primary-hover);
+}
+
+/* Generic section styling */
+.admin-dashboard .content-section {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.admin-dashboard .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-dashboard .section-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.admin-dashboard .toggle-icon {
+  font-size: 0.875rem;
+}
+
+.admin-dashboard .item-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.admin-dashboard .list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-dashboard .item-info span {
+  margin-right: 0.25rem;
+}
+
+.admin-dashboard .item-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.admin-dashboard .button-confirm-small,
+.admin-dashboard .button-deny-small,
+.admin-dashboard .button-delete-small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  border-radius: var(--radius);
+  color: #fff;
+}
+
+.admin-dashboard .button-confirm-small { background: var(--color-success); }
+.admin-dashboard .button-deny-small { background: var(--color-danger); }
+.admin-dashboard .button-delete-small { background: var(--color-danger); }
+
+.admin-dashboard table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-dashboard th,
+.admin-dashboard td {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--color-border);
+  text-align: left;
+}
+.admin-dashboard th {
+  background: var(--color-bg-alt);
+}
+
+.admin-dashboard .modal-content {
+  background: var(--color-surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-lg);
+  padding: 1rem;
+}
+
+.admin-dashboard .modal-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
