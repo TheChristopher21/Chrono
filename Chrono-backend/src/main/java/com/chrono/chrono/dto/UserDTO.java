@@ -38,6 +38,8 @@ public class UserDTO {
     private Integer workPercentage;
     private Long companyId;
     private String companyCantonAbbreviation;
+    private Long lastCustomerId;
+    private String lastCustomerName;
 
     public UserDTO() {
         // Initialisiere Listen, um NullPointerExceptions zu vermeiden, falls keine Daten vom Frontend kommen
@@ -70,7 +72,10 @@ public class UserDTO {
         this.workPercentage = user.getWorkPercentage(); // Verwendet Getter der Entität (gibt 100 bei null)
         this.companyId = (user.getCompany() != null) ? user.getCompany().getId() : null;
         // ----- NEUE ZUWEISUNG -----
-        this.companyCantonAbbreviation = (user.getCompany() != null) ? user.getCompany().getCantonAbbreviation() : null;    }
+        this.companyCantonAbbreviation = (user.getCompany() != null) ? user.getCompany().getCantonAbbreviation() : null;
+        this.lastCustomerId = user.getLastCustomer() != null ? user.getLastCustomer().getId() : null;
+        this.lastCustomerName = user.getLastCustomer() != null ? user.getLastCustomer().getName() : null;
+    }
 
     // All-Args-Konstruktor (falls benötigt, z.B. für Tests oder manuelle Erstellung)
     public UserDTO(Long id, String username, String password, String firstName, String lastName, String email, List<String> roles,
@@ -122,6 +127,8 @@ public class UserDTO {
     public Boolean getIsPercentage() { return isPercentage; }
     public Integer getWorkPercentage() { return workPercentage; }
     public Long getCompanyId() { return companyId; }
+    public Long getLastCustomerId() { return lastCustomerId; }
+    public String getLastCustomerName() { return lastCustomerName; }
 
 
     // ----- Setters -----
@@ -145,6 +152,8 @@ public class UserDTO {
     public void setIsPercentage(Boolean isPercentage) { this.isPercentage = isPercentage; }
     public void setWorkPercentage(Integer workPercentage) { this.workPercentage = workPercentage; }
     public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public void setLastCustomerId(Long lastCustomerId) { this.lastCustomerId = lastCustomerId; }
+    public void setLastCustomerName(String lastCustomerName) { this.lastCustomerName = lastCustomerName; }
 
     public String getCompanyCantonAbbreviation() {
         return companyCantonAbbreviation;

@@ -53,6 +53,9 @@ const HourlyDashboard = () => {
     const [dailySummaryForCorrection, setDailySummaryForCorrection] = useState(null);
     const [punchMessage, setPunchMessage] = useState('');
     const [monthlyTotalMins, setMonthlyTotalMins] = useState(0);
+    const [customers, setCustomers] = useState([]);
+    const [recentCustomers, setRecentCustomers] = useState([]);
+    const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
     // KORREKTE IMPLEMENTIERUNG: Die Funktion ruft die API direkt auf.
     const handleManualPunch = async () => {
@@ -61,9 +64,11 @@ const HourlyDashboard = () => {
             return;
         }
         try {
-            const response = await api.post('/api/timetracking/punch', null, {
-                params: { username: currentUser.username, source: 'MANUAL_PUNCH' }
-            });
+            const params = { username: currentUser.username, source: 'MANUAL_PUNCH' };
+            if (currentUser.company?.customerTrackingEnabled && selectedCustomerId) {
+                params.customerId = selectedCustomerId;
+            }
+            const response = await api.post('/api/timetracking/punch', null, { params });
             const newEntry = response.data;
             setPunchMessage(`${t("manualPunchMessage", "Erfolgreich gestempelt")} ${currentUser.username} (${t('punchTypes.' + newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
             setTimeout(() => setPunchMessage(''), 3000);
@@ -72,6 +77,26 @@ const HourlyDashboard = () => {
         } catch (error) {
             console.error('Punch Error:', error);
             notify(error.message || t('punchError', 'Fehler beim Stempeln'), 'error');
+        }
+    };
+
+    const handleEntryCustomerChange = async (entryId, newCustomerId) => {
+        try {
+            if (typeof entryId === 'string' && entryId.startsWith('day-')) {
+                const date = entryId.substring(4);
+                await api.put('/api/timetracking/day/customer', null, { params: { username: currentUser.username, date, customerId: newCustomerId || '' } });
+                fetchWeeklyData(selectedMonday);
+            } else {
+                await api.put(`/api/timetracking/entry/${entryId}/customer`, null, { params: { customerId: newCustomerId || '' } });
+                setDailySummaries(prev => prev.map(day => ({
+                    ...day,
+                    entries: day.entries.map(e => e.id === entryId ? { ...e, customerId: newCustomerId ? Number(newCustomerId) : null, customerName: newCustomerId ? (customers.find(c => c.id === Number(newCustomerId)) || {}).name : null } : e)
+                })));
+            }
+            notify(t('customerSaved'), 'success');
+        } catch (err) {
+            console.error('Error saving customer', err);
+            notify(t('customerSaveError'), 'error');
         }
     };
 
@@ -118,6 +143,26 @@ const HourlyDashboard = () => {
     useEffect(() => {
         fetchCurrentUser();
     }, [fetchCurrentUser]);
+
+    useEffect(() => {
+        if (currentUser?.company?.customerTrackingEnabled) {
+            api.get('/api/customers')
+                .then(res => setCustomers(Array.isArray(res.data) ? res.data : []))
+                .catch(err => console.error('Error loading customers', err));
+            api.get('/api/customers/recent')
+                .then(res => setRecentCustomers(Array.isArray(res.data) ? res.data : []))
+                .catch(err => console.error('Error loading recent customers', err));
+        } else {
+            setCustomers([]);
+            setRecentCustomers([]);
+        }
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (userProfile && !selectedCustomerId && userProfile.lastCustomerId) {
+            setSelectedCustomerId(String(userProfile.lastCustomerId));
+        }
+    }, [userProfile, selectedCustomerId]);
 
     useEffect(() => {
         if (currentUser) {
@@ -243,6 +288,11 @@ const HourlyDashboard = () => {
                 handleManualPunch={handleManualPunch}
                 punchMessage={punchMessage}
                 userProfile={userProfile}
+                customers={customers}
+                recentCustomers={recentCustomers}
+                selectedCustomerId={selectedCustomerId}
+                setSelectedCustomerId={setSelectedCustomerId}
+                onEntryCustomerChange={handleEntryCustomerChange}
             />
 
             <PrintReportModal

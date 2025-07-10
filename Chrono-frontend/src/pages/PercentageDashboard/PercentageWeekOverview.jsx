@@ -29,6 +29,10 @@ const PercentageWeekOverview = ({
                                     punchMessage,
                                     openCorrectionModal,
                                     userProfile,
+                                    customers,
+                                    selectedCustomerId,
+                                    setSelectedCustomerId,
+                                    onEntryCustomerChange,
                                     vacationRequests,
                                     sickLeaves,
                                     holidaysForUserCanton
@@ -61,6 +65,17 @@ const PercentageWeekOverview = ({
 
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
+                {userProfile?.company?.customerTrackingEnabled && (
+                    <select
+                        value={selectedCustomerId}
+                        onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    >
+                        <option value="">{t('noCustomer', 'Kein Kunde')}</option>
+                        {customers.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                )}
                 <button onClick={handleManualPunch} className="button-primary">
                     {t("manualPunchButton", "Jetzt stempeln")}
                 </button>
@@ -161,6 +176,17 @@ const PercentageWeekOverview = ({
                                                             <span className="auto-end-indicator" title={t('messages.autoEndedTooltip', 'Automatisch beendet')}> (A)</span>
                                                         }
                                                     </span>
+                                                    {userProfile?.company?.customerTrackingEnabled && (
+                                                        <select
+                                                            value={entry.customerId || ''}
+                                                            onChange={(e) => onEntryCustomerChange(entry.id, e.target.value)}
+                                                        >
+                                                            <option value="">{t('noCustomer', 'Kein Kunde')}</option>
+                                                            {customers.map(c => (
+                                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    )}
                                                 </li>
                                             ))}
                                         </ul>
@@ -215,6 +241,10 @@ PercentageWeekOverview.propTypes = {
     punchMessage: PropTypes.string,
     openCorrectionModal: PropTypes.func.isRequired,
     userProfile: PropTypes.object.isRequired,
+    customers: PropTypes.array,
+    selectedCustomerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    setSelectedCustomerId: PropTypes.func,
+    onEntryCustomerChange: PropTypes.func,
     vacationRequests: PropTypes.array.isRequired,
     sickLeaves: PropTypes.array.isRequired,
     holidaysForUserCanton: PropTypes.object,

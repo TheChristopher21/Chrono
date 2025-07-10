@@ -116,6 +116,7 @@ const Navbar = () => {
                                 <>
                                     <li><Link to="/admin">{t('navbar.adminStart', 'Admin‑Start')}</Link></li>
                                     <li><Link to="/admin/users">{t('navbar.userManagement', 'Benutzerverwaltung')}</Link></li>
+                                    <li><Link to="/admin/customers">{t('navbar.customerManagement', 'Kunden')}</Link></li>
                                     <li><Link to="/admin/change-password">{t('admin.changePasswordTitle', 'Passwort ändern')}</Link></li>
                                 </>
                             ) : (

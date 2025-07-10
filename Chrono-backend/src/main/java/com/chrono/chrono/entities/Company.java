@@ -33,6 +33,10 @@ public class Company {
     private Boolean notifyVacation;
     private Boolean notifyOvertime;
 
+    // Feature-Flag: Kundenbasierte Zeiterfassung
+    @Column(name = "customer_tracking_enabled")
+    private Boolean customerTrackingEnabled;
+
     // NEU: Kantonskürzel für Feiertagsberechnung (z.B. "SG", "ZH")
     @Column(name = "canton_abbreviation", length = 2)
     private String cantonAbbreviation;
@@ -85,4 +89,7 @@ public class Company {
 
     public Boolean getNotifyOvertime() { return notifyOvertime; }
     public void setNotifyOvertime(Boolean notifyOvertime) { this.notifyOvertime = notifyOvertime; }
+
+    public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; }
+    public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; }
 }

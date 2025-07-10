@@ -63,6 +63,8 @@ const PercentageDashboard = () => {
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
     const [correctionDate, setCorrectionDate] = useState('');
     const [dailySummaryForCorrection, setDailySummaryForCorrection] = useState(null);
+    const [customers, setCustomers] = useState([]);
+    const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
     const loadProfileAndInitialData = useCallback(async () => {
         try {
@@ -91,6 +93,16 @@ const PercentageDashboard = () => {
     useEffect(() => {
         loadProfileAndInitialData();
     }, [loadProfileAndInitialData]);
+
+    useEffect(() => {
+        if (userProfile?.company?.customerTrackingEnabled) {
+            api.get('/api/customers')
+                .then(res => setCustomers(Array.isArray(res.data) ? res.data : []))
+                .catch(err => console.error('Error loading customers', err));
+        } else {
+            setCustomers([]);
+        }
+    }, [userProfile]);
 
     const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
@@ -177,9 +189,11 @@ const PercentageDashboard = () => {
     async function handleManualPunch() {
         if (!userProfile) return;
         try {
-            const response = await api.post('/api/timetracking/punch', null, {
-                params: { username: userProfile.username, source: 'MANUAL_PUNCH' }
-            });
+            const params = { username: userProfile.username, source: 'MANUAL_PUNCH' };
+            if (userProfile.company?.customerTrackingEnabled && selectedCustomerId) {
+                params.customerId = selectedCustomerId;
+            }
+            const response = await api.post('/api/timetracking/punch', null, { params });
             const newEntry = response.data;
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.'+newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
             fetchDataForUser();
@@ -187,6 +201,20 @@ const PercentageDashboard = () => {
         } catch (e) {
             console.error('Punch‑Fehler', e);
             notify(t("manualPunchError", "Fehler beim manuellen Stempeln."), 'error');
+        }
+    }
+
+    async function handleEntryCustomerChange(entryId, newCustomerId) {
+        try {
+            await api.put(`/api/timetracking/entry/${entryId}/customer`, null, { params: { customerId: newCustomerId || '' } });
+            setDailySummaries(prev => prev.map(d => ({
+                ...d,
+                entries: d.entries.map(e => e.id === entryId ? { ...e, customerId: newCustomerId ? Number(newCustomerId) : null, customerName: newCustomerId ? (customers.find(c => c.id === Number(newCustomerId)) || {}).name : null } : e)
+            })));
+            notify(t('customerSaved'), 'success');
+        } catch (err) {
+            console.error('Error saving customer', err);
+            notify(t('customerSaveError'), 'error');
         }
     }
 
@@ -403,6 +431,10 @@ const PercentageDashboard = () => {
                 punchMessage={punchMessage}
                 openCorrectionModal={openCorrectionModalForDay}
                 userProfile={userProfile}
+                customers={customers}
+                selectedCustomerId={selectedCustomerId}
+                setSelectedCustomerId={setSelectedCustomerId}
+                onEntryCustomerChange={handleEntryCustomerChange}
                 vacationRequests={vacationRequests} // NEU
                 sickLeaves={sickLeaves} // NEU
                 holidaysForUserCanton={holidaysForUserCanton?.data} // NEU

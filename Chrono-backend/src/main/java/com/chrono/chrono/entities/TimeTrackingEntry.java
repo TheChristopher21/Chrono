@@ -1,6 +1,9 @@
 package com.chrono.chrono.entities;
 
 import jakarta.persistence.*;
+
+import com.chrono.chrono.entities.Customer;
+import com.chrono.chrono.entities.Project;
 import java.time.LocalDateTime;
 import java.time.LocalDate; // Import für getEntryDate
 import java.time.LocalTime; // Import für getEntryTime
@@ -20,6 +23,14 @@ public class TimeTrackingEntry {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_id")
+    private Customer customer;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "project_id")
+    private Project project;
 
     @Column(name = "entry_timestamp", nullable = false)
     private LocalDateTime entryTimestamp; // Präziser Zeitstempel für das Ereignis
@@ -68,11 +79,32 @@ public class TimeTrackingEntry {
         this.source = source;
     }
 
+    public TimeTrackingEntry(User user, Customer customer, LocalDateTime entryTimestamp, PunchType punchType, PunchSource source) {
+        this.user = user;
+        this.customer = customer;
+        this.entryTimestamp = entryTimestamp;
+        this.punchType = punchType;
+        this.source = source;
+    }
+
+    public TimeTrackingEntry(User user, Customer customer, Project project, LocalDateTime entryTimestamp, PunchType punchType, PunchSource source) {
+        this.user = user;
+        this.customer = customer;
+        this.project = project;
+        this.entryTimestamp = entryTimestamp;
+        this.punchType = punchType;
+        this.source = source;
+    }
+
     // Getter und Setter
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    public Customer getCustomer() { return customer; }
+    public void setCustomer(Customer customer) { this.customer = customer; }
+    public Project getProject() { return project; }
+    public void setProject(Project project) { this.project = project; }
     public LocalDateTime getEntryTimestamp() { return entryTimestamp; }
     public void setEntryTimestamp(LocalDateTime entryTimestamp) { this.entryTimestamp = entryTimestamp; }
     public PunchType getPunchType() { return punchType; }
