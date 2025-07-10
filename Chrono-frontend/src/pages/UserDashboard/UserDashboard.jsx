@@ -59,7 +59,10 @@ function UserDashboard() {
 
     const [showCorrectionModal, setShowCorrectionModal] = useState(false);
     const [correctionDate, setCorrectionDate] = useState("");
-    const [dailySummaryForCorrection, setDailySummaryForCorrection] = useState(null);
+const [dailySummaryForCorrection, setDailySummaryForCorrection] = useState(null);
+
+    const [customers, setCustomers] = useState([]);
+    const [selectedCustomerId, setSelectedCustomerId] = useState('');
 
     const defaultExpectedHours = userProfile?.dailyWorkHours ?? 8.5;
 
@@ -135,6 +138,16 @@ function UserDashboard() {
         }
     }, [userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
 
+    useEffect(() => {
+        if (userProfile?.company?.customerTrackingEnabled) {
+            api.get('/api/customers')
+                .then(res => setCustomers(Array.isArray(res.data) ? res.data : []))
+                .catch(err => console.error('Error loading customers', err));
+        } else {
+            setCustomers([]);
+        }
+    }, [userProfile]);
+
     // Feiertage neu laden, wenn sich das Jahr des selectedMonday ändert
     useEffect(() => {
         if (userProfile) {
@@ -181,9 +194,11 @@ function UserDashboard() {
     async function handleManualPunch() {
         if (!userProfile) return;
         try {
-            const response = await api.post('/api/timetracking/punch', null, {
-                params: { username: userProfile.username, source: 'MANUAL_PUNCH' }
-            });
+            const params = { username: userProfile.username, source: 'MANUAL_PUNCH' };
+            if (userProfile.company?.customerTrackingEnabled && selectedCustomerId) {
+                params.customerId = selectedCustomerId;
+            }
+            const response = await api.post('/api/timetracking/punch', null, { params });
             const newEntry = response.data;
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.' + newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
             fetchDataForUser();
@@ -383,6 +398,17 @@ function UserDashboard() {
 
             <section className="punch-section content-section">
                 <h3>{t("manualPunchTitle")}</h3>
+                {userProfile.company?.customerTrackingEnabled && (
+                    <select
+                        value={selectedCustomerId}
+                        onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    >
+                        <option value="">{t('noCustomer', 'Kein Kunde')}</option>
+                        {customers.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                )}
                 <button onClick={handleManualPunch} className="button-primary">
                     {t("manualPunchButton")}
                 </button>
@@ -480,6 +506,7 @@ function UserDashboard() {
                                                         {formatPunchedTimeFromEntry(entry)}
                                                         {entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser && <span className="auto-end-indicator" title={t('messages.autoEndedTooltip', 'Automatisch beendet')}> (A)</span>}
                                                     </span>
+                                                    {entry.customerName && <span className="customer-name"> [{entry.customerName}]</span>}
                                                 </li>
                                             ))}
                                         </ul>

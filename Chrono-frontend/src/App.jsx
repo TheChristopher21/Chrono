@@ -21,6 +21,7 @@ import PersonalDataPage        from "./pages/PersonalDataPage.jsx";
 import AdminDashboard          from "./pages/AdminDashboard/AdminDashboard.jsx";
 import AdminUserManagementPage from "./pages/AdminUserManagement/AdminUserManagementPage.jsx";
 import AdminChangePassword     from "./pages/AdminChangePassword.jsx";
+import AdminCustomersPage      from "./pages/AdminCustomers/AdminCustomersPage.jsx";
 import CompanyManagementPage   from "./pages/CompanyManagementPage.jsx";
 import PrintReport             from "./pages/PrintReport.jsx";
 import Impressum               from "./pages/Impressum.jsx";
@@ -92,6 +93,14 @@ function App() {
                     element={
                         <PrivateRoute requiredRole="ROLE_ADMIN">
                             <AdminUserManagementPage />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/customers"
+                    element={
+                        <PrivateRoute requiredRole="ROLE_ADMIN">
+                            <AdminCustomersPage />
                         </PrivateRoute>
                     }
                 />

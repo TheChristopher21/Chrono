@@ -26,6 +26,11 @@ const HourlyWeekOverview = ({
                                 handleManualPunch,
                                 punchMessage,
                                 userProfile,
+                                customers,
+                                recentCustomers,
+                                selectedCustomerId,
+                                setSelectedCustomerId,
+                                onEntryCustomerChange,
                                 // Diese Props müssten vom HourlyDashboard kommen, um Speichern & Benachrichtigungen zu ermöglichen:
                                 // notify,
                                 // fetchDataForUser,
@@ -89,6 +94,24 @@ const HourlyWeekOverview = ({
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
+                {userProfile?.company?.customerTrackingEnabled && (
+                    <select
+                        value={selectedCustomerId}
+                        onChange={(e) => setSelectedCustomerId(e.target.value)}
+                    >
+                        <option value="">{t('noCustomer', 'Kein Kunde')}</option>
+                        {recentCustomers.length > 0 && (
+                            <optgroup label={t('recentCustomers', 'Zuletzt verwendet')}>
+                                {recentCustomers.map(c => (
+                                    <option key={'r'+c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </optgroup>
+                        )}
+                        {customers.map(c => (
+                            <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                    </select>
+                )}
                 <button onClick={handleManualPunch} className="button-primary">
                     {t("manualPunchButton", "Jetzt stempeln")}
                 </button>
@@ -120,6 +143,9 @@ const HourlyWeekOverview = ({
                         <div key={isoDate} className={`week-day-card day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''}`}>
                             <div className="week-day-header day-card-header">
                                 <h4>{dayName}, {formattedDisplayDate}</h4>
+                                {userProfile?.company?.customerTrackingEnabled && (
+                                    <button className="button-secondary" onClick={() => onEntryCustomerChange(`day-${isoDate}`, selectedCustomerId)}>{t('applyForDay', 'Auf Tag anwenden')}</button>
+                                )}
                             </div>
 
                             <div className="week-day-content day-card-content">
@@ -130,7 +156,7 @@ const HourlyWeekOverview = ({
                                         <ul className="time-entry-list">
                                             {/* ... (deine Listeneinträge bleiben unverändert) ... */}
                                             {summary.entries.map(entry => (
-                                                <li key={entry.id || entry.entryTimestamp}>
+                                                <li key={entry.id || entry.entryTimestamp} style={{backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57)%360},70%,90%)` : 'transparent'}}>
                                                     <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
                                                     <span className={`entry-time ${isLateTime(formatTime(new Date(entry.entryTimestamp))) ? 'late-time' : ''}`}>
                                                         {formatPunchedTimeFromEntry(entry)}
@@ -138,6 +164,17 @@ const HourlyWeekOverview = ({
                                                             <span className="auto-end-indicator" title={t('messages.autoEndedTooltip', 'Automatisch beendet')}> (A)</span>
                                                         }
                                                     </span>
+                                                    {userProfile?.company?.customerTrackingEnabled && (
+                                                        <select
+                                                            value={entry.customerId || ''}
+                                                            onChange={(e) => onEntryCustomerChange(entry.id, e.target.value)}
+                                                        >
+                                                            <option value="">{t('noCustomer', 'Kein Kunde')}</option>
+                                                            {customers.map(c => (
+                                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                                            ))}
+                                                        </select>
+                                                    )}
                                                 </li>
                                             ))}
                                         </ul>
@@ -228,7 +265,12 @@ HourlyWeekOverview.propTypes = {
     handleManualPunch: PropTypes.func.isRequired,
     punchMessage: PropTypes.string,
     openCorrectionModal: PropTypes.func.isRequired,
-    userProfile: PropTypes.object
+    userProfile: PropTypes.object,
+    customers: PropTypes.array,
+    recentCustomers: PropTypes.array,
+    selectedCustomerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    setSelectedCustomerId: PropTypes.func,
+    onEntryCustomerChange: PropTypes.func
 };
 
 export default HourlyWeekOverview;
