@@ -43,7 +43,7 @@ public class Company {
 
     // Beispiel: Jeder Company kann beliebig viele Users haben
     @OneToMany(mappedBy = "company")
-    @JsonManagedReference
+    @JsonManagedReference("company-users")
     private Set<User> users = new HashSet<>();
 
     public Company() {}
