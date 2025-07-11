@@ -1,6 +1,7 @@
 package com.chrono.chrono.entities;
 
 import com.chrono.chrono.entities.Company; // Import hinzufügen
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -16,6 +17,7 @@ public class Customer {
     // NEU: Beziehung zur Firma hinzufügen
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
+    @JsonIgnore
     private Company company;
 
 
