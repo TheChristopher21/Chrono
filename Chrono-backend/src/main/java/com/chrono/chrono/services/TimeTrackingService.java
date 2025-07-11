@@ -878,6 +878,15 @@ public class TimeTrackingService {
         }
         entry.setCustomer(customer);
         TimeTrackingEntry saved = timeTrackingEntryRepository.save(entry);
+
+        // update last customer if this was the most recent entry
+        List<TimeTrackingEntry> latestEntries = timeTrackingEntryRepository
+                .findByUserOrderByEntryTimestampDesc(entryUser);
+        if (!latestEntries.isEmpty() && Objects.equals(latestEntries.get(0).getId(), saved.getId())) {
+            entryUser.setLastCustomer(saved.getCustomer());
+            userRepository.save(entryUser);
+        }
+
         return TimeTrackingEntryDTO.fromEntity(saved);
     }
 
@@ -926,6 +935,15 @@ public class TimeTrackingService {
             e.setCustomer(customer);
         }
         timeTrackingEntryRepository.saveAll(entries);
+
+        // update last customer if latest entry falls on this day
+        TimeTrackingEntry latest = timeTrackingEntryRepository
+                .findByUserOrderByEntryTimestampDesc(user)
+                .stream().findFirst().orElse(null);
+        if (latest != null && date.equals(latest.getEntryDate())) {
+            user.setLastCustomer(customer);
+            userRepository.save(user);
+        }
     }
 
     @Transactional
