@@ -6,6 +6,7 @@ import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import { useAuth } from "../../context/AuthContext.jsx";
+import { useCustomers } from '../../context/CustomerContext';
 import 'jspdf-autotable';
 import jsPDF from 'jspdf';
 import { parseISO } from 'date-fns';
@@ -41,7 +42,7 @@ const PercentageDashboard = () => {
 
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
-    const [customers, setCustomers] = useState([]);
+    const { customers, fetchCustomers } = useCustomers();
     const [recentCustomers, setRecentCustomers] = useState([]);
     const [projects, setProjects] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -102,10 +103,7 @@ const PercentageDashboard = () => {
 
     useEffect(() => {
         if (userProfile?.customerTrackingEnabled) {
-
-            api.get('/api/customers')
-                .then(res => setCustomers(Array.isArray(res.data) ? res.data : []))
-                .catch(err => console.error('Error loading customers', err));
+            fetchCustomers();
             api.get('/api/customers/recent')
                 .then(res => setRecentCustomers(Array.isArray(res.data) ? res.data : []))
                 .catch(err => console.error('Error loading customers', err));
@@ -113,11 +111,10 @@ const PercentageDashboard = () => {
                 .then(res => setProjects(Array.isArray(res.data) ? res.data : []))
                 .catch(err => console.error('Error loading projects', err));
         } else {
-            setCustomers([]);
             setRecentCustomers([]);
             setProjects([]);
         }
-    }, [userProfile]);
+    }, [userProfile, fetchCustomers]);
 
     const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
