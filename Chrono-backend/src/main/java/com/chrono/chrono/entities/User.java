@@ -46,7 +46,7 @@ public class User {
 
     @ManyToOne(fetch = FetchType.LAZY) // Lazy Fetching für Company ist oft sinnvoll
     @JoinColumn(name = "company_id")
-    @JsonBackReference // Verhindert Rekursion mit Company
+    @JsonBackReference("company-users")
     private Company company;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -64,6 +64,7 @@ public class User {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "last_customer_id")
+
     private Customer lastCustomer;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
