@@ -1,38 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Navbar from '../../components/Navbar';
-import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
+import { useCustomers } from '../../context/CustomerContext';
 import '../../styles/AdminCustomersPageScoped.css';
 
 const AdminCustomersPage = () => {
     const { notify } = useNotification();
     const { t } = useTranslation();
 
-    const [customers, setCustomers] = useState([]);
+    const { customers, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
     const [newName, setNewName] = useState('');
     // State for editing
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState('');
 
-    const fetchCustomers = async () => {
-        try {
-            const res = await api.get('/api/customers');
-            setCustomers(Array.isArray(res.data) ? res.data : []);
-        } catch (err) {
-            console.error('Error loading customers', err);
-            notify('Fehler beim Laden der Kunden', 'error');
-        }
-    };
-
-    useEffect(() => { fetchCustomers(); }, []);
 
     const handleCreate = async (e) => {
         e.preventDefault();
         if (!newName.trim()) return;
         try {
-            const res = await api.post('/api/customers', { name: newName.trim() });
-            setCustomers(prev => [...prev, res.data]);
+            await createCustomer(newName);
             setNewName('');
         } catch (err) {
             console.error('Error creating customer', err);
@@ -43,8 +31,7 @@ const AdminCustomersPage = () => {
     const handleUpdate = async (e) => {
         e.preventDefault();
         try {
-            const res = await api.put(`/api/customers/${editingId}`, { name: editingName.trim() });
-            setCustomers(prev => prev.map(c => c.id === editingId ? res.data : c));
+            await updateCustomer(editingId, editingName);
             setEditingId(null);
             setEditingName('');
         } catch (err) {
@@ -56,8 +43,7 @@ const AdminCustomersPage = () => {
     const handleDelete = async (id) => {
         if (!window.confirm('Löschen?')) return;
         try {
-            await api.delete(`/api/customers/${id}`);
-            setCustomers(prev => prev.filter(c => c.id !== id));
+            await deleteCustomer(id);
         } catch (err) {
             console.error('Error deleting customer', err);
             notify('Fehler beim Löschen', 'error');

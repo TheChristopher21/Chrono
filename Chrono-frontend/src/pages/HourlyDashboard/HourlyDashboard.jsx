@@ -7,6 +7,7 @@ import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import { useAuth } from "../../context/AuthContext.jsx";
+import { useCustomers } from '../../context/CustomerContext';
 import 'jspdf-autotable';
 import jsPDF from 'jspdf';
 import autoTable from "jspdf-autotable";
@@ -39,7 +40,7 @@ const HourlyDashboard = () => {
 
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
-    const [customers, setCustomers] = useState([]);
+    const { customers, fetchCustomers } = useCustomers();
     const [recentCustomers, setRecentCustomers] = useState([]);
     const [projects, setProjects] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
@@ -152,9 +153,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
 
     useEffect(() => {
         if (currentUser?.customerTrackingEnabled) {
-            api.get('/api/customers')
-                .then(res => setCustomers(Array.isArray(res.data) ? res.data : []))
-                .catch(err => console.error('Error loading customers', err));
+            fetchCustomers();
             api.get('/api/customers/recent')
                 .then(res => setRecentCustomers(Array.isArray(res.data) ? res.data : []))
                 .catch(err => console.error('Error loading customers', err));
@@ -162,11 +161,10 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 .then(res => setProjects(Array.isArray(res.data) ? res.data : []))
                 .catch(err => console.error('Error loading projects', err));
         } else {
-            setCustomers([]);
             setRecentCustomers([]);
             setProjects([]);
         }
-    }, [currentUser]);
+    }, [currentUser, fetchCustomers]);
 
     useEffect(() => {
         if (currentUser) {

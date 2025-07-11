@@ -6,6 +6,7 @@ import App from "./App";
 import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { LanguageProvider } from "./context/LanguageContext";
+import { CustomerProvider } from "./context/CustomerContext";
 import "./styles/global.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
@@ -14,11 +15,13 @@ root.render(
         {/* LanguageProvider muss die Provider umschließen, die useTranslation() verwenden */}
         <LanguageProvider>
             <AuthProvider>
-                <NotificationProvider>
-                    <React.StrictMode>
-                        <App />
-                    </React.StrictMode>
-                </NotificationProvider>
+                <CustomerProvider>
+                    <NotificationProvider>
+                        <React.StrictMode>
+                            <App />
+                        </React.StrictMode>
+                    </NotificationProvider>
+                </CustomerProvider>
             </AuthProvider>
         </LanguageProvider>
     </HashRouter>
