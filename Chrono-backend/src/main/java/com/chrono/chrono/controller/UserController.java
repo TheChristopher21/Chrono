@@ -58,6 +58,13 @@ public class UserController {
         dto.setAnnualVacationDays(user.getAnnualVacationDays());
         dto.setWorkPercentage(user.getWorkPercentage());
         dto.setTrackingBalanceInMinutes(user.getTrackingBalanceInMinutes());
+        if (user.getLastCustomer() != null) {
+            dto.setLastCustomerId(user.getLastCustomer().getId());
+            dto.setLastCustomerName(user.getLastCustomer().getName());
+        }
+        if (user.getCompany() != null) {
+            dto.setCustomerTrackingEnabled(user.getCompany().getCustomerTrackingEnabled());
+        }
 
         return dto;
     }

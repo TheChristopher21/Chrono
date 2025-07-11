@@ -38,6 +38,9 @@ public class UserDTO {
     private Integer workPercentage;
     private Long companyId;
     private String companyCantonAbbreviation;
+    private Boolean customerTrackingEnabled;
+    private Long lastCustomerId;
+    private String lastCustomerName;
 
     public UserDTO() {
         // Initialisiere Listen, um NullPointerExceptions zu vermeiden, falls keine Daten vom Frontend kommen
@@ -70,7 +73,11 @@ public class UserDTO {
         this.workPercentage = user.getWorkPercentage(); // Verwendet Getter der Entität (gibt 100 bei null)
         this.companyId = (user.getCompany() != null) ? user.getCompany().getId() : null;
         // ----- NEUE ZUWEISUNG -----
-        this.companyCantonAbbreviation = (user.getCompany() != null) ? user.getCompany().getCantonAbbreviation() : null;    }
+        this.companyCantonAbbreviation = (user.getCompany() != null) ? user.getCompany().getCantonAbbreviation() : null;
+        this.lastCustomerId = user.getLastCustomer() != null ? user.getLastCustomer().getId() : null;
+        this.lastCustomerName = user.getLastCustomer() != null ? user.getLastCustomer().getName() : null;
+        this.customerTrackingEnabled = (user.getCompany() != null) ? user.getCompany().getCustomerTrackingEnabled() : null;
+    }
 
     // All-Args-Konstruktor (falls benötigt, z.B. für Tests oder manuelle Erstellung)
     public UserDTO(Long id, String username, String password, String firstName, String lastName, String email, List<String> roles,
@@ -78,7 +85,8 @@ public class UserDTO {
                    Double dailyWorkHours, Integer breakDuration, String color,
                    Integer scheduleCycle, List<Map<String, Double>> weeklySchedule, LocalDate scheduleEffectiveDate,
                    Boolean isHourly, Integer annualVacationDays, Integer trackingBalanceInMinutes,
-                   Boolean isPercentage, Integer workPercentage, Long companyId) {
+                   Boolean isPercentage, Integer workPercentage, Long companyId,
+                   Long lastCustomerId, String lastCustomerName, Boolean customerTrackingEnabled) {
         this.id = id;
         this.username = username;
         this.password = password;
@@ -99,6 +107,9 @@ public class UserDTO {
         this.isPercentage = isPercentage != null ? isPercentage : false;
         this.workPercentage = workPercentage != null ? workPercentage : 100;
         this.companyId = companyId;
+        this.lastCustomerId = lastCustomerId;
+        this.lastCustomerName = lastCustomerName;
+        this.customerTrackingEnabled = customerTrackingEnabled;
     }
 
     // ----- Getters -----
@@ -122,6 +133,9 @@ public class UserDTO {
     public Boolean getIsPercentage() { return isPercentage; }
     public Integer getWorkPercentage() { return workPercentage; }
     public Long getCompanyId() { return companyId; }
+    public Long getLastCustomerId() { return lastCustomerId; }
+    public String getLastCustomerName() { return lastCustomerName; }
+    public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; }
 
 
     // ----- Setters -----
@@ -145,6 +159,9 @@ public class UserDTO {
     public void setIsPercentage(Boolean isPercentage) { this.isPercentage = isPercentage; }
     public void setWorkPercentage(Integer workPercentage) { this.workPercentage = workPercentage; }
     public void setCompanyId(Long companyId) { this.companyId = companyId; }
+    public void setLastCustomerId(Long lastCustomerId) { this.lastCustomerId = lastCustomerId; }
+    public void setLastCustomerName(String lastCustomerName) { this.lastCustomerName = lastCustomerName; }
+    public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; }
 
     public String getCompanyCantonAbbreviation() {
         return companyCantonAbbreviation;
