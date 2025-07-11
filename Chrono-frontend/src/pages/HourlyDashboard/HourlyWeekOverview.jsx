@@ -26,6 +26,15 @@ const HourlyWeekOverview = ({
                                 handleManualPunch,
                                 punchMessage,
                                 userProfile,
+                                customers,
+                                recentCustomers,
+                                projects,
+                                selectedCustomerId,
+                                setSelectedCustomerId,
+                                selectedProjectId,
+                                setSelectedProjectId,
+                                assignCustomerForDay,
+                                assignProjectForDay,
                                 // Diese Props müssten vom HourlyDashboard kommen, um Speichern & Benachrichtigungen zu ermöglichen:
                                 // notify,
                                 // fetchDataForUser,
@@ -33,6 +42,8 @@ const HourlyWeekOverview = ({
 
     const [editingNote, setEditingNote] = useState(null); // Speichert das Datum des Tages, dessen Notiz bearbeitet wird
     const [noteContent, setNoteContent] = useState('');   // Speichert den Inhalt der Notiz während der Bearbeitung
+    const [selectedCustomers, setSelectedCustomers] = useState({});
+    const [selectedProjects, setSelectedProjects] = useState({});
 
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
@@ -89,6 +100,29 @@ const HourlyWeekOverview = ({
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
+                {userProfile?.company?.customerTrackingEnabled && (
+                    <>
+                        <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
+                            <option value="">{t('noCustomer')}</option>
+                            {recentCustomers.length > 0 && (
+                                <optgroup label={t('recentCustomers')}>
+                                    {recentCustomers.map(c => (
+                                        <option key={'r'+c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </optgroup>
+                            )}
+                            {customers.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                        <select value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}>
+                            <option value="">{t('noProject','Kein Projekt')}</option>
+                            {projects.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                    </>
+                )}
                 <button onClick={handleManualPunch} className="button-primary">
                     {t("manualPunchButton", "Jetzt stempeln")}
                 </button>
@@ -118,8 +152,38 @@ const HourlyWeekOverview = ({
 
                     return (
                         <div key={isoDate} className={`week-day-card day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''}`}>
-                            <div className="week-day-header day-card-header">
+                        <div className="week-day-header day-card-header">
                                 <h4>{dayName}, {formattedDisplayDate}</h4>
+                                {userProfile?.company?.customerTrackingEnabled && (
+                                    <div className="day-customer-select">
+                                        <select
+                                            value={selectedCustomers[isoDate] || ''}
+                                            onChange={e => setSelectedCustomers(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        >
+                                            <option value="">{t('noCustomer')}</option>
+                                            {recentCustomers.length > 0 && (
+                                                <optgroup label={t('recentCustomers')}>
+                                                    {recentCustomers.map(c => (
+                                                        <option key={'r'+c.id} value={c.id}>{c.name}</option>
+                                                    ))}
+                                                </optgroup>
+                                            )}
+                                            {customers.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={selectedProjects[isoDate] || ''}
+                                            onChange={e => setSelectedProjects(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        >
+                                            <option value="">{t('noProject','Kein Projekt')}</option>
+                                            {projects.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                        <button className="button-secondary" onClick={() => {assignCustomerForDay(isoDate, selectedCustomers[isoDate]);assignProjectForDay(isoDate, selectedProjects[isoDate]);}}>{t('applyForDay')}</button>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="week-day-content day-card-content">
@@ -130,7 +194,7 @@ const HourlyWeekOverview = ({
                                         <ul className="time-entry-list">
                                             {/* ... (deine Listeneinträge bleiben unverändert) ... */}
                                             {summary.entries.map(entry => (
-                                                <li key={entry.id || entry.entryTimestamp}>
+                                                <li key={entry.id || entry.entryTimestamp} style={{backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57)%360},70%,90%)` : 'transparent'}}>
                                                     <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
                                                     <span className={`entry-time ${isLateTime(formatTime(new Date(entry.entryTimestamp))) ? 'late-time' : ''}`}>
                                                         {formatPunchedTimeFromEntry(entry)}
@@ -228,7 +292,16 @@ HourlyWeekOverview.propTypes = {
     handleManualPunch: PropTypes.func.isRequired,
     punchMessage: PropTypes.string,
     openCorrectionModal: PropTypes.func.isRequired,
-    userProfile: PropTypes.object
+    userProfile: PropTypes.object,
+    customers: PropTypes.array,
+    recentCustomers: PropTypes.array,
+    projects: PropTypes.array,
+    selectedCustomerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    setSelectedCustomerId: PropTypes.func,
+    selectedProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    setSelectedProjectId: PropTypes.func,
+    assignCustomerForDay: PropTypes.func,
+    assignProjectForDay: PropTypes.func
 };
 
 export default HourlyWeekOverview;

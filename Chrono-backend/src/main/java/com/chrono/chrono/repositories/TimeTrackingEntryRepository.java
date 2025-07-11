@@ -40,4 +40,7 @@ public interface TimeTrackingEntryRepository extends JpaRepository<TimeTrackingE
     List<User> findUsersWithLastEntryAsStartOnDate(@Param("date") LocalDate date);
     
     void deleteByUser(User user);
+
+    @Query("SELECT DISTINCT t.customer.id FROM TimeTrackingEntry t WHERE t.user.id = :userId AND t.customer IS NOT NULL ORDER BY t.entryTimestamp DESC")
+    List<Long> findRecentCustomerIds(@Param("userId") Long userId, org.springframework.data.domain.Pageable pageable);
 }
