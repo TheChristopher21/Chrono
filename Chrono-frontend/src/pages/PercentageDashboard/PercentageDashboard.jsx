@@ -101,7 +101,7 @@ const PercentageDashboard = () => {
     }, [loadProfileAndInitialData]);
 
     useEffect(() => {
-        if (userProfile?.company?.customerTrackingEnabled) {
+        if (userProfile?.customerTrackingEnabled) {
 
             api.get('/api/customers')
                 .then(res => setCustomers(Array.isArray(res.data) ? res.data : []))
