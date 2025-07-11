@@ -166,7 +166,7 @@ public class TimeTrackingController {
         int difference = timeTrackingService.computeDailyWorkDifference(targetUser, parsedDate, approvedVacations, entriesForDay);
         return ResponseEntity.ok(Map.of("dailyDifferenceMinutes", difference));
     }
-}
+
 
     @PutMapping("/entry/{id}/customer")
     public ResponseEntity<TimeTrackingEntryDTO> updateEntryCustomer(
@@ -229,3 +229,4 @@ public class TimeTrackingController {
             return ResponseEntity.badRequest().build();
         }
     }
+}
