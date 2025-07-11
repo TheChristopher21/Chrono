@@ -11,6 +11,7 @@ const AdminCustomersPage = () => {
 
     const [customers, setCustomers] = useState([]);
     const [newName, setNewName] = useState('');
+    // State for editing
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState('');
 
@@ -102,8 +103,10 @@ const AdminCustomersPage = () => {
                             ) : (
                                 <>
                                     <span>{c.name}</span>
-                                    <button onClick={() => startEdit(c)}>{t('edit', 'Bearbeiten')}</button>
-                                    <button onClick={() => handleDelete(c.id)}>{t('delete', 'Löschen')}</button>
+                                    <div>
+                                      <button onClick={() => startEdit(c)}>{t('edit', 'Bearbeiten')}</button>
+                                      <button onClick={() => handleDelete(c.id)}>{t('delete', 'Löschen')}</button>
+                                    </div>
                                 </>
                             )}
                         </li>

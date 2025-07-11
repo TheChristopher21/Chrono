@@ -151,7 +151,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
     }, [fetchCurrentUser]);
 
     useEffect(() => {
-        if (currentUser?.customerTrackingEnabled) {
+        if (currentUser?.company?.customerTrackingEnabled) {
             api.get('/api/customers')
                 .then(res => setCustomers(Array.isArray(res.data) ? res.data : []))
                 .catch(err => console.error('Error loading customers', err));

@@ -100,7 +100,7 @@ const HourlyWeekOverview = ({
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
-                {userProfile?.customerTrackingEnabled && (
+                {userProfile?.company?.customerTrackingEnabled && (
                     <>
                         <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                             <option value="">{t('noCustomer')}</option>
@@ -154,7 +154,9 @@ const HourlyWeekOverview = ({
                         <div key={isoDate} className={`week-day-card day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''}`}>
                         <div className="week-day-header day-card-header">
                                 <h4>{dayName}, {formattedDisplayDate}</h4>
-                                {userProfile?.customerTrackingEnabled && (
+
+                                {userProfile?.company?.customerTrackingEnabled && (
+
                                     <div className="day-customer-select">
                                         <select
                                             value={selectedCustomers[isoDate] || ''}

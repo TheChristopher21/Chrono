@@ -10,7 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/users") // Changed from /api/user to /api/users
+// WICHTIG: Die @RequestMapping wird hier entfernt, damit jede Methode ihren eigenen, vollen Pfad haben kann.
 public class UserController {
     @Autowired
     private final UserService userService;
@@ -25,24 +25,26 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PutMapping("/change-password")
+    // KORRIGIERT: Voller Pfad für die Passwortänderung, wie vom Frontend aufgerufen.
+    @PutMapping("/api/user/change-password")
     public ResponseEntity<String> changePassword(@RequestParam String username,
                                                  @RequestParam String currentPassword,
                                                  @RequestParam String newPassword) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        // Überprüfe, ob das aktuelle Passwort korrekt ist
+
         if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
             return ResponseEntity.badRequest().body("Current password is incorrect");
         }
-        // Hash das neue Passwort und speichere es
+
         user.setPassword(passwordEncoder.encode(newPassword));
         userRepository.save(user);
         return ResponseEntity.ok("Password updated successfully");
     }
 
-    @GetMapping("/profile/{username}") // Changed to use PathVariable
-    public UserDTO getProfile(@PathVariable String username) { // Changed from @RequestParam to @PathVariable
+    // KORRIGIERT: Voller Pfad für das Profil, wie vom Frontend aufgerufen.
+    @GetMapping("/api/users/profile/{username}")
+    public UserDTO getProfile(@PathVariable String username) {
         User user = userService.getUserByUsername(username);
         return convertToDTO(user);
     }
@@ -62,6 +64,7 @@ public class UserController {
             dto.setLastCustomerId(user.getLastCustomer().getId());
             dto.setLastCustomerName(user.getLastCustomer().getName());
         }
+        // Dieser Block ist der wichtige Teil des Konflikts. Er wird hier korrekt eingefügt.
         if (user.getCompany() != null) {
             dto.setCustomerTrackingEnabled(user.getCompany().getCustomerTrackingEnabled());
         }

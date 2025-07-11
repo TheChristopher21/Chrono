@@ -3,7 +3,7 @@ package com.chrono.chrono.controller;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.services.CustomerService;
 import com.chrono.chrono.services.UserService;
-import com.chrono.chrono.services.TimeTrackingService;
+import com.chrono.chrono.services.TimeTrackingService; // Behalten
 import com.chrono.chrono.entities.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -21,7 +21,7 @@ public class CustomerController {
     @Autowired
     private UserService userService;
     @Autowired
-    private TimeTrackingService timeTrackingService;
+    private TimeTrackingService timeTrackingService; // Behalten
 
     private boolean featureEnabled(Principal principal) {
         if (principal == null) return false;
@@ -35,12 +35,14 @@ public class CustomerController {
         return ResponseEntity.ok(customerService.findAll());
     }
 
+    // Die neue, funktionale Version von /recent
     @GetMapping("/recent")
     public ResponseEntity<List<Customer>> getRecent(Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
         return ResponseEntity.ok(timeTrackingService.getRecentCustomers(principal.getName()));
     }
 
+    // Der neue GET-Endpunkt
     @GetMapping("/{id}")
     public ResponseEntity<Customer> getById(@PathVariable Long id, Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
@@ -55,6 +57,7 @@ public class CustomerController {
         return ResponseEntity.ok(customerService.save(customer));
     }
 
+    // Der neue PUT-Endpunkt
     @PutMapping("/{id}")
     public ResponseEntity<Customer> update(@PathVariable Long id, @RequestBody Customer customer, Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
@@ -66,6 +69,7 @@ public class CustomerController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    // Der neue DELETE-Endpunkt
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable Long id, Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();

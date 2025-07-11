@@ -72,7 +72,7 @@ const [selectedProjects, setSelectedProjects] = useState({});
 
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
-                {userProfile?.customerTrackingEnabled && (
+                {userProfile?.company?.customerTrackingEnabled && (
                     <>
                         <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                             <option value="">{t('noCustomer')}</option>
@@ -162,7 +162,7 @@ const [selectedProjects, setSelectedProjects] = useState({});
                                     <span className="expected-hours">({t("expectedWorkHours", "Soll")}: {minutesToHHMM(displayDailyExpectedMins)})</span>
                                     {summary && <span className={`daily-diff ${dailyDiffMinutes < 0 ? 'balance-negative' : 'balance-positive'}`}>({t("diffToday")}: {minutesToHHMM(dailyDiffMinutes)})</span>}
                                 </div>
-                                {userProfile?.customerTrackingEnabled && (
+                                {userProfile?.company?.customerTrackingEnabled && (
                                     <div className="day-customer-select">
                                         <select
                                             value={selectedCustomers[isoDate] || ''}
