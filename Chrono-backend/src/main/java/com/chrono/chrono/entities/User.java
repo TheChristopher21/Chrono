@@ -62,6 +62,10 @@ public class User {
     @JsonManagedReference("user-timeTrackingEntries")
     private List<TimeTrackingEntry> timeTrackingEntries = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "last_customer_id")
+    private Customer lastCustomer;
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference // Verhindert Rekursion
     private Set<CorrectionRequest> correctionRequests = new HashSet<>();
@@ -156,6 +160,8 @@ public class User {
 
     public List<TimeTrackingEntry> getTimeTrackingEntries() { return timeTrackingEntries; }
     public void setTimeTrackingEntries(List<TimeTrackingEntry> timeTrackingEntries) { this.timeTrackingEntries = timeTrackingEntries; }
+    public Customer getLastCustomer() { return lastCustomer; }
+    public void setLastCustomer(Customer lastCustomer) { this.lastCustomer = lastCustomer; }
 
     public Set<CorrectionRequest> getCorrectionRequests() { return correctionRequests; }
     public void setCorrectionRequests(Set<CorrectionRequest> correctionRequests) { this.correctionRequests = correctionRequests; }
