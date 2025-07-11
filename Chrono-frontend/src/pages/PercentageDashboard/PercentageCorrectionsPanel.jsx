@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
-import { formatLocalDate, formatTime } from './percentageDashUtils'; // Eigene Utils verwenden
+import { formatLocalDate, formatTime, formatDate } from './percentageDashUtils'; // Eigene Utils verwenden
 
 const PercentageCorrectionModal = ({
                                        visible,
