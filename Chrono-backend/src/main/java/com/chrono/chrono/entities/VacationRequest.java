@@ -1,7 +1,7 @@
 package com.chrono.chrono.entities;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 
 import java.time.LocalDate;
@@ -25,7 +25,7 @@ public class VacationRequest {
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    @JsonIgnore
+    @JsonBackReference("user-vacationRequests")
     private User user;
 
     public VacationRequest() {}

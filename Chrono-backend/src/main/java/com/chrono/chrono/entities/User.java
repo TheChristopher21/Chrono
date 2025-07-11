@@ -41,7 +41,7 @@ public class User {
     private Integer trackingBalanceInMinutes = 0; // Default-Wert direkt hier
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference // Verhindert Rekursion, wenn VacationRequest auch User serialisiert
+    @JsonManagedReference("user-vacationRequests") // Verhindert Rekursion
     private Set<VacationRequest> vacationRequests = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY) // Lazy Fetching für Company ist oft sinnvoll
@@ -67,7 +67,7 @@ public class User {
     private Customer lastCustomer;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference // Verhindert Rekursion
+    @JsonManagedReference("user-correctionRequests") // Verhindert Rekursion
     private Set<CorrectionRequest> correctionRequests = new HashSet<>();
 
     @Column(name = "expected_work_days")

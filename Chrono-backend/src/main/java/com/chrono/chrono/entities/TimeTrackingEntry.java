@@ -1,6 +1,7 @@
 package com.chrono.chrono.entities;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import java.time.LocalDateTime;
 import java.time.LocalDate; // Import für getEntryDate
 import java.time.LocalTime; // Import für getEntryTime
@@ -22,6 +23,7 @@ public class TimeTrackingEntry {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
+    @JsonBackReference("user-timeTrackingEntries")
     private User user;
 
     @ManyToOne(fetch = FetchType.LAZY)
