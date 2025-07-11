@@ -220,7 +220,6 @@ public class CompanyManagementController {
         private Boolean notifyVacation;
         private Boolean notifyOvertime;
         private Boolean customerTrackingEnabled;
-        private Boolean customerTrackingEnabled;
 
         public static CompanyDTO fromEntity(Company co) {
             CompanyDTO dto = new CompanyDTO();
@@ -283,6 +282,7 @@ public class CompanyManagementController {
         private String teamsWebhookUrl;
         private Boolean notifyVacation;
         private Boolean notifyOvertime;
+        private Boolean customerTrackingEnabled;
 
         // Getter/Setter
         public String getCompanyName() { return companyName; }
