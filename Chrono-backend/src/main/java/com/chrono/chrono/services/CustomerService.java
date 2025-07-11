@@ -12,7 +12,9 @@ import java.util.Optional;
 public class CustomerService {
     @Autowired
     private CustomerRepository customerRepository;
-
+    public List<Customer> findAllByCompanyId(Long companyId) {
+        return customerRepository.findByCompanyId(companyId);
+    }
     public List<Customer> findAll() {
         return customerRepository.findAll();
     }
