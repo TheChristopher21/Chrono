@@ -64,6 +64,10 @@ public class UserController {
             dto.setLastCustomerId(user.getLastCustomer().getId());
             dto.setLastCustomerName(user.getLastCustomer().getName());
         }
+        // Dieser Block ist der wichtige Teil des Konflikts. Er wird hier korrekt eingefügt.
+        if (user.getCompany() != null) {
+            dto.setCustomerTrackingEnabled(user.getCompany().getCustomerTrackingEnabled());
+        }
 
         return dto;
     }

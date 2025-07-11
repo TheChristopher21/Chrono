@@ -11,6 +11,9 @@ const AdminCustomersPage = () => {
 
     const [customers, setCustomers] = useState([]);
     const [newName, setNewName] = useState('');
+    // State for editing
+    const [editingId, setEditingId] = useState(null);
+    const [editingName, setEditingName] = useState('');
 
     const fetchCustomers = async () => {
         try {
@@ -32,8 +35,38 @@ const AdminCustomersPage = () => {
             setCustomers(prev => [...prev, res.data]);
             setNewName('');
         } catch (err) {
+            console.error('Error creating customer', err);
             notify('Fehler beim Anlegen', 'error');
         }
+    };
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        try {
+            const res = await api.put(`/api/customers/${editingId}`, { name: editingName.trim() });
+            setCustomers(prev => prev.map(c => c.id === editingId ? res.data : c));
+            setEditingId(null);
+            setEditingName('');
+        } catch (err) {
+            console.error('Error updating customer', err);
+            notify('Fehler beim Speichern', 'error');
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Löschen?')) return;
+        try {
+            await api.delete(`/api/customers/${id}`);
+            setCustomers(prev => prev.filter(c => c.id !== id));
+        } catch (err) {
+            console.error('Error deleting customer', err);
+            notify('Fehler beim Löschen', 'error');
+        }
+    };
+
+    const startEdit = (c) => {
+        setEditingId(c.id);
+        setEditingName(c.name);
     };
 
     return (
@@ -44,18 +77,39 @@ const AdminCustomersPage = () => {
                 <form onSubmit={handleCreate} className="cmp-form">
                     <input
                         type="text"
-                        placeholder="Name"
+                        placeholder="Kundenname"
                         value={newName}
                         onChange={(e) => setNewName(e.target.value)}
                         required
                     />
-                    <button type="submit">{t('create','Anlegen')}</button>
+                    <button type="submit">{t('create', 'Anlegen')}</button>
                 </form>
             </section>
             <section className="cmp-section">
                 <ul className="customer-list">
                     {customers.map(c => (
-                        <li key={c.id}>{c.name}</li>
+                        <li key={c.id}>
+                            {editingId === c.id ? (
+                                <form onSubmit={handleUpdate} className="inline-form">
+                                    <input
+                                        type="text"
+                                        value={editingName}
+                                        onChange={(e) => setEditingName(e.target.value)}
+                                        required
+                                    />
+                                    <button type="submit">{t('save', 'Speichern')}</button>
+                                    <button type="button" onClick={() => { setEditingId(null); setEditingName(''); }}>{t('cancel', 'Abbruch')}</button>
+                                </form>
+                            ) : (
+                                <>
+                                    <span>{c.name}</span>
+                                    <div>
+                                      <button onClick={() => startEdit(c)}>{t('edit', 'Bearbeiten')}</button>
+                                      <button onClick={() => handleDelete(c.id)}>{t('delete', 'Löschen')}</button>
+                                    </div>
+                                </>
+                            )}
+                        </li>
                     ))}
                 </ul>
             </section>
