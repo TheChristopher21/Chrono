@@ -11,6 +11,7 @@ export const CustomerProvider = ({ children }) => {
     const { t } = useTranslation();
 
     const fetchCustomers = useCallback(async () => {
+
         try {
             const res = await api.get('/api/customers');
             setCustomers(Array.isArray(res.data) ? res.data : []);
@@ -21,6 +22,7 @@ export const CustomerProvider = ({ children }) => {
     }, [notify, t]);
 
     const createCustomer = useCallback(async (name) => {
+
         try {
             const res = await api.post('/api/customers', { name: name.trim() });
             setCustomers(prev => [...prev, res.data]);
@@ -33,6 +35,7 @@ export const CustomerProvider = ({ children }) => {
     }, [notify, t]);
 
     const updateCustomer = useCallback(async (id, name) => {
+
         try {
             const res = await api.put(`/api/customers/${id}`, { name: name.trim() });
             setCustomers(prev => prev.map(c => c.id === id ? res.data : c));
@@ -45,6 +48,7 @@ export const CustomerProvider = ({ children }) => {
     }, [notify, t]);
 
     const deleteCustomer = useCallback(async (id) => {
+
         try {
             await api.delete(`/api/customers/${id}`);
             setCustomers(prev => prev.filter(c => c.id !== id));
@@ -56,6 +60,7 @@ export const CustomerProvider = ({ children }) => {
     }, [notify, t]);
 
     useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+
 
     return (
         <CustomerContext.Provider value={{ customers, fetchCustomers, createCustomer, updateCustomer, deleteCustomer }}>
