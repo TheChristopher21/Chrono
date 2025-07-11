@@ -70,7 +70,6 @@ public class CompanyManagementController {
         company.setTeamsWebhookUrl(body.getTeamsWebhookUrl());
         company.setNotifyVacation(body.getNotifyVacation());
         company.setNotifyOvertime(body.getNotifyOvertime());
-        company.setCustomerTrackingEnabled(body.getCustomerTrackingEnabled());
         // Weitere Standardwerte für neue Firmen
         company.setPaid(false);
         company.setCanceled(false);
@@ -121,7 +120,6 @@ public class CompanyManagementController {
         company.setTeamsWebhookUrl(companyDTO.getTeamsWebhookUrl());
         company.setNotifyVacation(companyDTO.getNotifyVacation());
         company.setNotifyOvertime(companyDTO.getNotifyOvertime());
-        company.setCustomerTrackingEnabled(companyDTO.getCustomerTrackingEnabled());
 
         Company saved = companyRepository.save(company);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -150,8 +148,6 @@ public class CompanyManagementController {
                         existingCompany.setNotifyVacation(companyDTO.getNotifyVacation());
                     if (companyDTO.getNotifyOvertime() != null)
                         existingCompany.setNotifyOvertime(companyDTO.getNotifyOvertime());
-                    if (companyDTO.getCustomerTrackingEnabled() != null)
-                        existingCompany.setCustomerTrackingEnabled(companyDTO.getCustomerTrackingEnabled());
                     // Zahlungsstatus sollte über /payment aktualisiert werden, um die Logik getrennt zu halten
                     // existingCompany.setPaid(companyDTO.isPaid());
                     // existingCompany.setPaymentMethod(companyDTO.getPaymentMethod());
@@ -219,8 +215,6 @@ public class CompanyManagementController {
         private String teamsWebhookUrl;
         private Boolean notifyVacation;
         private Boolean notifyOvertime;
-        private Boolean customerTrackingEnabled;
-        private Boolean customerTrackingEnabled;
 
         public static CompanyDTO fromEntity(Company co) {
             CompanyDTO dto = new CompanyDTO();
@@ -236,7 +230,6 @@ public class CompanyManagementController {
             dto.teamsWebhookUrl = co.getTeamsWebhookUrl();
             dto.notifyVacation = co.getNotifyVacation();
             dto.notifyOvertime = co.getNotifyOvertime();
-            dto.customerTrackingEnabled = co.getCustomerTrackingEnabled();
             return dto;
         }
 
@@ -253,7 +246,6 @@ public class CompanyManagementController {
         public String getTeamsWebhookUrl() { return teamsWebhookUrl; }
         public Boolean getNotifyVacation() { return notifyVacation; }
         public Boolean getNotifyOvertime() { return notifyOvertime; }
-        public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; }
 
         // Setter (wichtig für @RequestBody)
         public void setId(Long id) { this.id = id; }
@@ -268,7 +260,6 @@ public class CompanyManagementController {
         public void setTeamsWebhookUrl(String teamsWebhookUrl) { this.teamsWebhookUrl = teamsWebhookUrl; }
         public void setNotifyVacation(Boolean notifyVacation) { this.notifyVacation = notifyVacation; }
         public void setNotifyOvertime(Boolean notifyOvertime) { this.notifyOvertime = notifyOvertime; }
-        public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; }
     }
 
     public static class CreateCompanyWithAdminDTO {
@@ -307,8 +298,6 @@ public class CompanyManagementController {
         public void setNotifyVacation(Boolean notifyVacation) { this.notifyVacation = notifyVacation; }
         public Boolean getNotifyOvertime() { return notifyOvertime; }
         public void setNotifyOvertime(Boolean notifyOvertime) { this.notifyOvertime = notifyOvertime; }
-        public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; }
-        public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; }
     }
 
     public static class PaymentUpdateDTO {
