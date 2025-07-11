@@ -100,7 +100,7 @@ const HourlyWeekOverview = ({
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
-                {userProfile?.company?.customerTrackingEnabled && (
+                {userProfile?.customerTrackingEnabled && (
                     <>
                         <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                             <option value="">{t('noCustomer')}</option>
@@ -155,7 +155,7 @@ const HourlyWeekOverview = ({
                         <div className="week-day-header day-card-header">
                                 <h4>{dayName}, {formattedDisplayDate}</h4>
 
-                                {userProfile?.company?.customerTrackingEnabled && (
+                                {userProfile?.customerTrackingEnabled && (
 
                                     <div className="day-customer-select">
                                         <select
