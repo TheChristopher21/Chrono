@@ -1,5 +1,6 @@
 package com.chrono.chrono.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -11,6 +12,7 @@ public class Project {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_id")
+    @JsonIgnore // Verhindert Rekursion bei der Serialisierung
     private Customer customer;
 
     @Column(nullable = false)
