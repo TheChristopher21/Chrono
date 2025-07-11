@@ -9,7 +9,6 @@ public class CompanyDTO {
     private boolean paid;
     private String  paymentMethod;
     private boolean canceled;
-    private Boolean customerTrackingEnabled;
 
     public CompanyDTO() {}
 
@@ -22,7 +21,6 @@ public class CompanyDTO {
         this.paid          = paid;
         this.paymentMethod = paymentMethod;
         this.canceled      = canceled;
-        this.customerTrackingEnabled = null;
     }
 
     /* ---------- Getter / Setter ---------- */
@@ -46,11 +44,9 @@ public class CompanyDTO {
 
     public boolean isCanceled() { return canceled; }
     public void setCanceled(boolean canceled) { this.canceled = canceled; }
-    public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; }
-    public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; }
 
     public static CompanyDTO fromEntity(com.chrono.chrono.entities.Company co) {
-        CompanyDTO dto = new CompanyDTO(
+        return new CompanyDTO(
                 co.getId(),
                 co.getName(),
                 co.isActive(),
@@ -59,7 +55,5 @@ public class CompanyDTO {
                 co.getPaymentMethod(),
                 co.isCanceled()
         );
-        dto.setCustomerTrackingEnabled(co.getCustomerTrackingEnabled());
-        return dto;
     }
 }
