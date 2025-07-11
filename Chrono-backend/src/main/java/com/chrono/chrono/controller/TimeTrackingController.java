@@ -38,6 +38,8 @@ public class TimeTrackingController {
     @PostMapping("/punch")
     public ResponseEntity<TimeTrackingEntryDTO> punch(
         @RequestParam String username,
+        @RequestParam(value = "customerId", required = false) Long customerId,
+        @RequestParam(value = "projectId", required = false) Long projectId,
         Principal principal,
         @RequestHeader(value = "X-NFC-Agent-Request", required = false) String nfcAgentHeader,
         @RequestParam(value = "source", required = false) String sourceStr
@@ -84,7 +86,7 @@ public class TimeTrackingController {
         }
 
         try {
-            TimeTrackingEntryDTO newEntry = timeTrackingService.handlePunch(username, punchSource);
+            TimeTrackingEntryDTO newEntry = timeTrackingService.handlePunch(username, punchSource, customerId, projectId);
             return ResponseEntity.ok(newEntry);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
@@ -163,5 +165,68 @@ public class TimeTrackingController {
         List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(targetUser);
         int difference = timeTrackingService.computeDailyWorkDifference(targetUser, parsedDate, approvedVacations, entriesForDay);
         return ResponseEntity.ok(Map.of("dailyDifferenceMinutes", difference));
+    }
+
+
+    @PutMapping("/entry/{id}/customer")
+    public ResponseEntity<TimeTrackingEntryDTO> updateEntryCustomer(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long customerId,
+            Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            TimeTrackingEntryDTO dto = timeTrackingService.updateEntryCustomer(id, customerId, principal.getName());
+            return ResponseEntity.ok(dto);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/day/customer")
+    public ResponseEntity<Void> assignCustomerForDay(
+            @RequestParam String username,
+            @RequestParam String date,
+            @RequestParam(required = false) Long customerId,
+            Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            timeTrackingService.assignCustomerForDay(username, LocalDate.parse(date), customerId);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/entry/{id}/project")
+    public ResponseEntity<TimeTrackingEntryDTO> updateEntryProject(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long projectId,
+            Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            TimeTrackingEntryDTO dto = timeTrackingService.updateEntryProject(id, projectId, principal.getName());
+            return ResponseEntity.ok(dto);
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/day/project")
+    public ResponseEntity<Void> assignProjectForDay(
+            @RequestParam String username,
+            @RequestParam String date,
+            @RequestParam(required = false) Long projectId,
+            Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            timeTrackingService.assignProjectForDay(username, LocalDate.parse(date), projectId);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 }

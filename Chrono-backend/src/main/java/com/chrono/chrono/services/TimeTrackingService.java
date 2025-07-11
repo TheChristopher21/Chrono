@@ -6,12 +6,16 @@ import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.dto.TimeTrackingImportRowDTO;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.entities.Customer;
+import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.SickLeaveRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.VacationRequestRepository;
+import com.chrono.chrono.repositories.CustomerRepository;
+import com.chrono.chrono.repositories.ProjectRepository;
 import org.apache.poi.ss.usermodel.*; // Für Excel-Verarbeitung
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +50,10 @@ public class TimeTrackingService {
     private VacationRequestRepository vacationRequestRepository;
     @Autowired
     private SickLeaveRepository sickLeaveRepository;
+    @Autowired
+    private CustomerRepository customerRepository;
+    @Autowired
+    private ProjectRepository projectRepository;
 
     private User loadUserByUsername(String username) {
         return userRepository.findByUsername(username)
@@ -53,8 +61,16 @@ public class TimeTrackingService {
     }
 
     @Transactional
-    public TimeTrackingEntryDTO handlePunch(String username, TimeTrackingEntry.PunchSource source) {
+    public TimeTrackingEntryDTO handlePunch(String username, TimeTrackingEntry.PunchSource source, Long customerId, Long projectId) {
         User user = loadUserByUsername(username);
+        Customer customer = null;
+        if (customerId != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+            customer = customerRepository.findById(customerId).orElse(null);
+        }
+        Project project = null;
+        if (projectId != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+            project = projectRepository.findById(projectId).orElse(null);
+        }
         LocalDate today = LocalDate.now(ZoneId.of("Europe/Zurich"));
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Europe/Zurich")).truncatedTo(ChronoUnit.MINUTES);
 
@@ -68,12 +84,29 @@ public class TimeTrackingService {
                     TimeTrackingEntry.PunchType.ENDE : TimeTrackingEntry.PunchType.START;
         }
 
-        TimeTrackingEntry newEntry = new TimeTrackingEntry(user, now, nextPunchType, source);
+        if (nextPunchType == TimeTrackingEntry.PunchType.START && customer == null) {
+            if (user.getLastCustomer() != null) {
+                customer = user.getLastCustomer();
+            }
+        }
+
+        if (nextPunchType == TimeTrackingEntry.PunchType.ENDE && customer == null && lastEntryOpt.isPresent()) {
+            customer = lastEntryOpt.get().getCustomer();
+        }
+        if (nextPunchType == TimeTrackingEntry.PunchType.ENDE && project == null && lastEntryOpt.isPresent()) {
+            project = lastEntryOpt.get().getProject();
+        }
+
+        TimeTrackingEntry newEntry = new TimeTrackingEntry(user, customer, project, now, nextPunchType, source);
         if (nextPunchType == TimeTrackingEntry.PunchType.ENDE && source == TimeTrackingEntry.PunchSource.SYSTEM_AUTO_END) {
             newEntry.setSystemGeneratedNote("Automatischer Arbeitsende-Stempel. Bitte korrigieren.");
         }
 
         TimeTrackingEntry savedEntry = timeTrackingEntryRepository.save(newEntry);
+        if (savedEntry.getCustomer() != null) {
+            user.setLastCustomer(savedEntry.getCustomer());
+            userRepository.save(user);
+        }
         logger.info("User '{}' punched {}. Timestamp: {}, Source: {}", username, nextPunchType, now, source);
         rebuildUserBalance(user); // Saldo nach jedem Stempel neu berechnen
         return TimeTrackingEntryDTO.fromEntity(savedEntry);
@@ -816,5 +849,92 @@ public class TimeTrackingService {
         result.put("errorMessages", errors);
         result.put("invalidRows", invalidRows);
         return result;
+    }
+
+    @Transactional
+    public TimeTrackingEntryDTO updateEntryCustomer(Long id, Long customerId, String requestingUser) {
+        User requester = loadUserByUsername(requestingUser);
+        TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Entry not found: " + id));
+        User entryUser = entry.getUser();
+        boolean allowed = requester.getId().equals(entryUser.getId()) ||
+                requester.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
+                (requester.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
+                        requester.getCompany() != null && entryUser.getCompany() != null &&
+                        requester.getCompany().getId().equals(entryUser.getCompany().getId()));
+        if (!allowed) {
+            throw new SecurityException("Not allowed");
+        }
+        if (entryUser.getCompany() == null || !Boolean.TRUE.equals(entryUser.getCompany().getCustomerTrackingEnabled())) {
+            throw new IllegalStateException("Feature disabled");
+        }
+        Customer customer = null;
+        if (customerId != null) {
+            customer = customerRepository.findById(customerId).orElse(null);
+        }
+        entry.setCustomer(customer);
+        TimeTrackingEntry saved = timeTrackingEntryRepository.save(entry);
+        return TimeTrackingEntryDTO.fromEntity(saved);
+    }
+
+    @Transactional
+    public TimeTrackingEntryDTO updateEntryProject(Long id, Long projectId, String requestingUser) {
+        User requester = loadUserByUsername(requestingUser);
+        TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Entry not found: " + id));
+        User entryUser = entry.getUser();
+        boolean allowed = requester.getId().equals(entryUser.getId()) ||
+                requester.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
+                (requester.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
+                        requester.getCompany() != null && entryUser.getCompany() != null &&
+                        requester.getCompany().getId().equals(entryUser.getCompany().getId()));
+        if (!allowed) {
+            throw new SecurityException("Not allowed");
+        }
+        if (entryUser.getCompany() == null || !Boolean.TRUE.equals(entryUser.getCompany().getCustomerTrackingEnabled())) {
+            throw new IllegalStateException("Feature disabled");
+        }
+        Project project = null;
+        if (projectId != null) {
+            project = projectRepository.findById(projectId).orElse(null);
+        }
+        entry.setProject(project);
+        TimeTrackingEntry saved = timeTrackingEntryRepository.save(entry);
+        return TimeTrackingEntryDTO.fromEntity(saved);
+    }
+
+    public List<Customer> getRecentCustomers(String username) {
+        User user = loadUserByUsername(username);
+        List<Long> ids = timeTrackingEntryRepository.findRecentCustomerIds(user.getId(), org.springframework.data.domain.PageRequest.of(0,5));
+        if (ids.isEmpty()) return Collections.emptyList();
+        return customerRepository.findAllById(ids);
+    }
+
+    @Transactional
+    public void assignCustomerForDay(String username, LocalDate date, Long customerId) {
+        User user = loadUserByUsername(username);
+        if (user.getCompany() == null || !Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+            throw new IllegalStateException("Feature disabled");
+        }
+        Customer customer = customerId != null ? customerRepository.findById(customerId).orElse(null) : null;
+        List<TimeTrackingEntry> entries = timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date);
+        for (TimeTrackingEntry e : entries) {
+            e.setCustomer(customer);
+        }
+        timeTrackingEntryRepository.saveAll(entries);
+    }
+
+    @Transactional
+    public void assignProjectForDay(String username, LocalDate date, Long projectId) {
+        User user = loadUserByUsername(username);
+        if (user.getCompany() == null || !Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+            throw new IllegalStateException("Feature disabled");
+        }
+        Project project = projectId != null ? projectRepository.findById(projectId).orElse(null) : null;
+        List<TimeTrackingEntry> entries = timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date);
+        for (TimeTrackingEntry e : entries) {
+            e.setProject(project);
+        }
+        timeTrackingEntryRepository.saveAll(entries);
     }
 }

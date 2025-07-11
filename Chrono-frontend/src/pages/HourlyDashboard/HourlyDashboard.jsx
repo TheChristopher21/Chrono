@@ -39,6 +39,11 @@ const HourlyDashboard = () => {
 
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
+    const [customers, setCustomers] = useState([]);
+    const [recentCustomers, setRecentCustomers] = useState([]);
+    const [projects, setProjects] = useState([]);
+    const [selectedCustomerId, setSelectedCustomerId] = useState('');
+    const [selectedProjectId, setSelectedProjectId] = useState('');
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
     const [vacationRequests, setVacationRequests] = useState([]);
     const [correctionRequests, setCorrectionRequests] = useState([]);
@@ -61,9 +66,10 @@ const HourlyDashboard = () => {
             return;
         }
         try {
-            const response = await api.post('/api/timetracking/punch', null, {
-                params: { username: currentUser.username, source: 'MANUAL_PUNCH' }
-            });
+            const params = { username: currentUser.username, source: 'MANUAL_PUNCH' };
+            if (selectedCustomerId) params.customerId = selectedCustomerId;
+            if (selectedProjectId) params.projectId = selectedProjectId;
+            const response = await api.post('/api/timetracking/punch', null, { params });
             const newEntry = response.data;
             setPunchMessage(`${t("manualPunchMessage", "Erfolgreich gestempelt")} ${currentUser.username} (${t('punchTypes.' + newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
             setTimeout(() => setPunchMessage(''), 3000);
@@ -75,11 +81,36 @@ const HourlyDashboard = () => {
         }
     };
 
+const assignCustomerForDay = async (isoDate, customerId) => {
+        try {
+            await api.put('/api/timetracking/day/customer', null, { params: { username: currentUser.username, date: isoDate, customerId: customerId || '' } });
+            fetchWeeklyData(selectedMonday);
+            notify(t('customerSaved'), 'success');
+        } catch (err) {
+            console.error('Error saving customer', err);
+            notify(t('customerSaveError'), 'error');
+        }
+    };
+
+    const assignProjectForDay = async (isoDate, projectId) => {
+        try {
+            await api.put('/api/timetracking/day/project', null, { params: { username: currentUser.username, date: isoDate, projectId: projectId || '' } });
+            fetchWeeklyData(selectedMonday);
+            notify(t('customerSaved'), 'success');
+        } catch (err) {
+            console.error('Error saving project', err);
+            notify(t('customerSaveError'), 'error');
+        }
+    };
+
     const fetchDataForUser = useCallback(async () => {
         if (!currentUser?.username) return;
         try {
             const profileResponse = await api.get(`/api/users/profile/${currentUser.username}`);
             setUserProfile(profileResponse.data);
+            if (profileResponse.data.lastCustomerId && !selectedCustomerId) {
+                setSelectedCustomerId(String(profileResponse.data.lastCustomerId));
+            }
             const vacationResponse = await api.get(`/api/vacation/user/${currentUser.username}`);
             setVacationRequests(vacationResponse.data || []);
         } catch (error) {
@@ -118,6 +149,24 @@ const HourlyDashboard = () => {
     useEffect(() => {
         fetchCurrentUser();
     }, [fetchCurrentUser]);
+
+    useEffect(() => {
+        if (currentUser?.customerTrackingEnabled) {
+            api.get('/api/customers')
+                .then(res => setCustomers(Array.isArray(res.data) ? res.data : []))
+                .catch(err => console.error('Error loading customers', err));
+            api.get('/api/customers/recent')
+                .then(res => setRecentCustomers(Array.isArray(res.data) ? res.data : []))
+                .catch(err => console.error('Error loading customers', err));
+            api.get('/api/projects')
+                .then(res => setProjects(Array.isArray(res.data) ? res.data : []))
+                .catch(err => console.error('Error loading projects', err));
+        } else {
+            setCustomers([]);
+            setRecentCustomers([]);
+            setProjects([]);
+        }
+    }, [currentUser]);
 
     useEffect(() => {
         if (currentUser) {
@@ -243,6 +292,15 @@ const HourlyDashboard = () => {
                 handleManualPunch={handleManualPunch}
                 punchMessage={punchMessage}
                 userProfile={userProfile}
+                customers={customers}
+                recentCustomers={recentCustomers}
+                projects={projects}
+                selectedCustomerId={selectedCustomerId}
+                setSelectedCustomerId={setSelectedCustomerId}
+                selectedProjectId={selectedProjectId}
+                setSelectedProjectId={setSelectedProjectId}
+                assignCustomerForDay={assignCustomerForDay}
+                assignProjectForDay={assignProjectForDay}
             />
 
             <PrintReportModal

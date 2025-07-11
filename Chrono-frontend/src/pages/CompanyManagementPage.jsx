@@ -20,6 +20,7 @@ const CompanyManagementPage = () => {
     const [newTeamsWebhook, setNewTeamsWebhook] = useState('');
     const [newNotifyVacation, setNewNotifyVacation] = useState(false);
     const [newNotifyOvertime, setNewNotifyOvertime] = useState(false);
+    const [newCustomerTrackingEnabled, setNewCustomerTrackingEnabled] = useState(false);
 
     // Alternativ: "Firma + Admin" anlegen
     const [createWithAdmin, setCreateWithAdmin] = useState({
@@ -34,7 +35,8 @@ const CompanyManagementPage = () => {
         slackWebhookUrl: '',
         teamsWebhookUrl: '',
         notifyVacation: false,
-        notifyOvertime: false
+        notifyOvertime: false,
+        customerTrackingEnabled: false
     });
 
     // Edit-Mode
@@ -78,7 +80,8 @@ const CompanyManagementPage = () => {
                 slackWebhookUrl: newSlackWebhook || null,
                 teamsWebhookUrl: newTeamsWebhook || null,
                 notifyVacation: newNotifyVacation,
-                notifyOvertime: newNotifyOvertime
+                notifyOvertime: newNotifyOvertime,
+                customerTrackingEnabled: newCustomerTrackingEnabled
             };
             await api.post('/api/superadmin/companies', payload);
             setNewCompanyName('');
@@ -87,6 +90,7 @@ const CompanyManagementPage = () => {
             setNewTeamsWebhook('');
             setNewNotifyVacation(false);
             setNewNotifyOvertime(false);
+            setNewCustomerTrackingEnabled(false);
             fetchCompanies();
         } catch (err) {
             console.error('Error creating company:', err);
@@ -119,7 +123,8 @@ const CompanyManagementPage = () => {
                 slackWebhookUrl: createWithAdmin.slackWebhookUrl || null,
                 teamsWebhookUrl: createWithAdmin.teamsWebhookUrl || null,
                 notifyVacation: createWithAdmin.notifyVacation,
-                notifyOvertime: createWithAdmin.notifyOvertime
+                notifyOvertime: createWithAdmin.notifyOvertime,
+                customerTrackingEnabled: createWithAdmin.customerTrackingEnabled
             };
 
             const res = await api.post('/api/superadmin/companies/create-with-admin', payload);
@@ -136,7 +141,8 @@ const CompanyManagementPage = () => {
                 slackWebhookUrl: '',
                 teamsWebhookUrl: '',
                 notifyVacation: false,
-                notifyOvertime: false
+                notifyOvertime: false,
+                customerTrackingEnabled: false
             });
 
             fetchCompanies();
@@ -195,7 +201,8 @@ const CompanyManagementPage = () => {
             slackWebhookUrl: company.slackWebhookUrl || '',
             teamsWebhookUrl: company.teamsWebhookUrl || '',
             notifyVacation: company.notifyVacation || false,
-            notifyOvertime: company.notifyOvertime || false
+            notifyOvertime: company.notifyOvertime || false,
+            customerTrackingEnabled: company.customerTrackingEnabled || false
         });
     }
 
@@ -212,7 +219,8 @@ const CompanyManagementPage = () => {
                 slackWebhookUrl: editingCompany.slackWebhookUrl,
                 teamsWebhookUrl: editingCompany.teamsWebhookUrl,
                 notifyVacation: editingCompany.notifyVacation,
-                notifyOvertime: editingCompany.notifyOvertime
+                notifyOvertime: editingCompany.notifyOvertime,
+                customerTrackingEnabled: editingCompany.customerTrackingEnabled
             };
             await api.put(`/api/superadmin/companies/${editingCompany.id}`, payload);
             setEditingCompany(null);
@@ -323,6 +331,14 @@ const CompanyManagementPage = () => {
                                 />
                                 Überstundenwarnungen
                             </label>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={newCustomerTrackingEnabled}
+                                    onChange={(e) => setNewCustomerTrackingEnabled(e.target.checked)}
+                                />
+                                Kunden-Zeiterfassung aktivieren
+                            </label>
                             <button type="submit">Erstellen</button>
                         </form>
                     </section>
@@ -377,6 +393,14 @@ const CompanyManagementPage = () => {
                                     onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, notifyOvertime: e.target.checked })}
                                 />
                                 Überstundenwarnungen
+                            </label>
+                            <label>
+                                <input
+                                    type="checkbox"
+                                    checked={createWithAdmin.customerTrackingEnabled}
+                                    onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, customerTrackingEnabled: e.target.checked })}
+                                />
+                                Kunden-Zeiterfassung aktivieren
                             </label>
                             <input
                                 type="text"
@@ -478,6 +502,14 @@ const CompanyManagementPage = () => {
                                                 onChange={(e) => setEditingCompany({ ...editingCompany, notifyOvertime: e.target.checked })}
                                             />
                                             Überstundenwarnungen
+                                        </label>
+                                        <label>
+                                            <input
+                                                type="checkbox"
+                                                checked={editingCompany.customerTrackingEnabled}
+                                                onChange={(e) => setEditingCompany({ ...editingCompany, customerTrackingEnabled: e.target.checked })}
+                                            />
+                                            Kunden-Zeiterfassung aktivieren
                                         </label>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <input

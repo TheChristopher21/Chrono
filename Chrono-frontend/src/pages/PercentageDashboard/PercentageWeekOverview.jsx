@@ -1,5 +1,5 @@
 // src/pages/PercentageDashboard/PercentageWeekOverview.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 // Removed: import { useTranslation } from '../../context/LanguageContext'; // t wird als Prop übergeben
 
@@ -29,6 +29,15 @@ const PercentageWeekOverview = ({
                                     punchMessage,
                                     openCorrectionModal,
                                     userProfile,
+                                    customers,
+                                    recentCustomers,
+                                    projects,
+                                    selectedCustomerId,
+                                    setSelectedCustomerId,
+                                    selectedProjectId,
+                                    setSelectedProjectId,
+                                    assignCustomerForDay,
+                                    assignProjectForDay,
                                     vacationRequests,
                                     sickLeaves,
                                     holidaysForUserCanton
@@ -36,6 +45,8 @@ const PercentageWeekOverview = ({
 
     // Immer 7 Tage für eine volle Wochenansicht (Mo-So)
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i)); //
+const [selectedCustomers, setSelectedCustomers] = useState({});
+const [selectedProjects, setSelectedProjects] = useState({});
 
     function handlePrevWeek() {
         setMonday(prev => addDays(prev, -7));
@@ -61,6 +72,29 @@ const PercentageWeekOverview = ({
 
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
+                {userProfile?.customerTrackingEnabled && (
+                    <>
+                        <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
+                            <option value="">{t('noCustomer')}</option>
+                            {recentCustomers.length > 0 && (
+                                <optgroup label={t('recentCustomers')}>
+                                    {recentCustomers.map(c => (
+                                        <option key={'r'+c.id} value={c.id}>{c.name}</option>
+                                    ))}
+                                </optgroup>
+                            )}
+                            {customers.map(c => (
+                                <option key={c.id} value={c.id}>{c.name}</option>
+                            ))}
+                        </select>
+                        <select value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}>
+                            <option value="">{t('noProject','Kein Projekt')}</option>
+                            {projects.map(p => (
+                                <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                    </>
+                )}
                 <button onClick={handleManualPunch} className="button-primary">
                     {t("manualPunchButton", "Jetzt stempeln")}
                 </button>
@@ -128,6 +162,36 @@ const PercentageWeekOverview = ({
                                     <span className="expected-hours">({t("expectedWorkHours", "Soll")}: {minutesToHHMM(displayDailyExpectedMins)})</span>
                                     {summary && <span className={`daily-diff ${dailyDiffMinutes < 0 ? 'balance-negative' : 'balance-positive'}`}>({t("diffToday")}: {minutesToHHMM(dailyDiffMinutes)})</span>}
                                 </div>
+                                {userProfile?.customerTrackingEnabled && (
+                                    <div className="day-customer-select">
+                                        <select
+                                            value={selectedCustomers[isoDate] || ''}
+                                            onChange={e => setSelectedCustomers(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        >
+                                            <option value="">{t('noCustomer')}</option>
+                                            {recentCustomers.length > 0 && (
+                                                <optgroup label={t('recentCustomers')}>
+                                                    {recentCustomers.map(c => (
+                                                        <option key={'r'+c.id} value={c.id}>{c.name}</option>
+                                                    ))}
+                                                </optgroup>
+                                            )}
+                                            {customers.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                        <select
+                                            value={selectedProjects[isoDate] || ''}
+                                            onChange={e => setSelectedProjects(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        >
+                                            <option value="">{t('noProject','Kein Projekt')}</option>
+                                            {projects.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                        <button className="button-secondary" onClick={() => {assignCustomerForDay(isoDate, selectedCustomers[isoDate]);assignProjectForDay(isoDate, selectedProjects[isoDate]);}}>{t('applyForDay')}</button>
+                                    </div>
+                                )}
                             </div>
 
                             <div className="week-day-content day-card-content">
@@ -153,7 +217,7 @@ const PercentageWeekOverview = ({
                                     <>
                                         <ul className="time-entry-list">
                                             {summary.entries.map(entry => (
-                                                <li key={entry.id || entry.entryTimestamp}>
+                                                <li key={entry.id || entry.entryTimestamp} style={{backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57)%360},70%,90%)` : 'transparent'}}>
                                                     <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
                                                     <span className={`entry-time ${isLateTime(formatTime(entry.entryTimestamp)) ? 'late-time' : ''}`}>
                                                         {formatPunchedTimeFromEntry(entry)}
@@ -215,6 +279,15 @@ PercentageWeekOverview.propTypes = {
     punchMessage: PropTypes.string,
     openCorrectionModal: PropTypes.func.isRequired,
     userProfile: PropTypes.object.isRequired,
+    customers: PropTypes.array,
+    recentCustomers: PropTypes.array,
+    projects: PropTypes.array,
+    selectedCustomerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    setSelectedCustomerId: PropTypes.func,
+    selectedProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    setSelectedProjectId: PropTypes.func,
+    assignCustomerForDay: PropTypes.func,
+    assignProjectForDay: PropTypes.func,
     vacationRequests: PropTypes.array.isRequired,
     sickLeaves: PropTypes.array.isRequired,
     holidaysForUserCanton: PropTypes.object,
