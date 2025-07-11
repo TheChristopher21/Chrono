@@ -227,4 +227,21 @@ public class TimeTrackingController {
             return ResponseEntity.badRequest().build();
         }
     }
+
+    @PostMapping("/daily-note")
+    public ResponseEntity<Void> saveDailyNote(
+            @RequestParam String username,
+            @RequestParam String date,
+            @RequestBody Map<String, String> body,
+            Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        String note = body.get("note");
+        if (note == null) note = "";
+        try {
+            timeTrackingService.saveDailyNote(username, LocalDate.parse(date), note);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
 }

@@ -32,3 +32,12 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS last_customer_id BIGINT;
 ALTER TABLE users ADD CONSTRAINT fk_last_customer FOREIGN KEY (last_customer_id) REFERENCES customers(id);
 ALTER TABLE time_tracking_entries ADD COLUMN IF NOT EXISTS project_id BIGINT;
 ALTER TABLE time_tracking_entries ADD CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES projects(id);
+
+CREATE TABLE IF NOT EXISTS daily_notes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    note_date DATE NOT NULL,
+    content VARCHAR(2000),
+    CONSTRAINT fk_daily_note_user FOREIGN KEY (user_id) REFERENCES users(id),
+    CONSTRAINT uc_daily_note UNIQUE (user_id, note_date)
+);

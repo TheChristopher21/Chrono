@@ -9,6 +9,7 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.VacationRequest;
+import com.chrono.chrono.entities.DailyNote;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.SickLeaveRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
@@ -16,6 +17,7 @@ import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.VacationRequestRepository;
 import com.chrono.chrono.repositories.CustomerRepository;
 import com.chrono.chrono.repositories.ProjectRepository;
+import com.chrono.chrono.repositories.DailyNoteRepository;
 import org.apache.poi.ss.usermodel.*; // Für Excel-Verarbeitung
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +56,8 @@ public class TimeTrackingService {
     private CustomerRepository customerRepository;
     @Autowired
     private ProjectRepository projectRepository;
+    @Autowired
+    private DailyNoteRepository dailyNoteRepository;
 
     private User loadUserByUsername(String username) {
         return userRepository.findByUsername(username)
@@ -207,7 +211,7 @@ public class TimeTrackingService {
         List<TimeTrackingEntryDTO> entryDTOs = entries.stream()
                 .map(TimeTrackingEntryDTO::fromEntity)
                 .collect(Collectors.toList());
-        String dailyNoteContent = null;
+        String dailyNoteContent = getDailyNoteContent(user, date);
 
         for (TimeTrackingEntry entry : entries) {
             if (entry.getPunchType() == TimeTrackingEntry.PunchType.START) {
@@ -936,5 +940,24 @@ public class TimeTrackingService {
             e.setProject(project);
         }
         timeTrackingEntryRepository.saveAll(entries);
+    }
+
+    @Transactional
+    public void saveDailyNote(String username, LocalDate date, String note) {
+        User user = loadUserByUsername(username);
+        DailyNote dailyNote = dailyNoteRepository.findByUserAndNoteDate(user, date).orElse(null);
+        if (dailyNote == null) {
+            dailyNote = new DailyNote();
+            dailyNote.setUser(user);
+            dailyNote.setNoteDate(date);
+        }
+        dailyNote.setContent(note);
+        dailyNoteRepository.save(dailyNote);
+    }
+
+    public String getDailyNoteContent(User user, LocalDate date) {
+        return dailyNoteRepository.findByUserAndNoteDate(user, date)
+                .map(DailyNote::getContent)
+                .orElse(null);
     }
 }
