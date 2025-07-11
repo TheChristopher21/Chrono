@@ -21,13 +21,11 @@ import PersonalDataPage        from "./pages/PersonalDataPage.jsx";
 import AdminDashboard          from "./pages/AdminDashboard/AdminDashboard.jsx";
 import AdminUserManagementPage from "./pages/AdminUserManagement/AdminUserManagementPage.jsx";
 import AdminChangePassword     from "./pages/AdminChangePassword.jsx";
-import AdminCustomersPage      from "./pages/AdminCustomers/AdminCustomersPage.jsx";
 import CompanyManagementPage   from "./pages/CompanyManagementPage.jsx";
 import PrintReport             from "./pages/PrintReport.jsx";
 import Impressum               from "./pages/Impressum.jsx";
 import AGB                     from "./pages/AGB.jsx";
 import PrivateRoute            from "./components/PrivateRoute";
-import { useAuth } from "./context/AuthContext";
 
 // NEU: Importieren Sie die WhatsNewPage
 import WhatsNewPage            from "./pages/WhatsNewPage.jsx";
@@ -35,7 +33,6 @@ import TimeTrackingImport      from "./TimeTrackingImport.jsx"; // HINZUGEFÜGT
 
 
 function App() {
-    const { currentUser } = useAuth();
 
     return (
         <div className="App">
@@ -95,18 +92,6 @@ function App() {
                     element={
                         <PrivateRoute requiredRole="ROLE_ADMIN">
                             <AdminUserManagementPage />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/admin/customers"
-                    element={
-                        <PrivateRoute requiredRole="ROLE_ADMIN">
-                            {currentUser?.company?.customerTrackingEnabled ? (
-                                <AdminCustomersPage />
-                            ) : (
-                                <Navigate to="/admin" replace />
-                            )}
                         </PrivateRoute>
                     }
                 />

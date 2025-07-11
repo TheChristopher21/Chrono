@@ -41,11 +41,6 @@ const PercentageDashboard = () => {
 
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
-    const [customers, setCustomers] = useState([]);
-    const [recentCustomers, setRecentCustomers] = useState([]);
-    const [projects, setProjects] = useState([]);
-    const [selectedCustomerId, setSelectedCustomerId] = useState('');
-    const [selectedProjectId, setSelectedProjectId] = useState('');
     const [punchMessage, setPunchMessage] = useState('');
     const lastPunchTimeRef = useRef(0);
 
@@ -84,9 +79,6 @@ const PercentageDashboard = () => {
                     profile.scheduleCycle = 1;
                 }
                 setUserProfile(profile);
-                if (profile.lastCustomerId && !selectedCustomerId) {
-                    setSelectedCustomerId(String(profile.lastCustomerId));
-                }
             } else {
                 throw new Error("User profile could not be loaded.");
             }
@@ -99,24 +91,6 @@ const PercentageDashboard = () => {
     useEffect(() => {
         loadProfileAndInitialData();
     }, [loadProfileAndInitialData]);
-
-    useEffect(() => {
-        if (userProfile?.company?.customerTrackingEnabled) {
-            api.get('/api/customers')
-                .then(res => setCustomers(Array.isArray(res.data) ? res.data : []))
-                .catch(err => console.error('Error loading customers', err));
-            api.get('/api/customers/recent')
-                .then(res => setRecentCustomers(Array.isArray(res.data) ? res.data : []))
-                .catch(err => console.error('Error loading customers', err));
-            api.get('/api/projects')
-                .then(res => setProjects(Array.isArray(res.data) ? res.data : []))
-                .catch(err => console.error('Error loading projects', err));
-        } else {
-            setCustomers([]);
-            setRecentCustomers([]);
-            setProjects([]);
-        }
-    }, [userProfile]);
 
     const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
@@ -203,10 +177,9 @@ const PercentageDashboard = () => {
     async function handleManualPunch() {
         if (!userProfile) return;
         try {
-            const params = { username: userProfile.username, source: 'MANUAL_PUNCH' };
-            if (selectedCustomerId) params.customerId = selectedCustomerId;
-            if (selectedProjectId) params.projectId = selectedProjectId;
-            const response = await api.post('/api/timetracking/punch', null, { params });
+            const response = await api.post('/api/timetracking/punch', null, {
+                params: { username: userProfile.username, source: 'MANUAL_PUNCH' }
+            });
             const newEntry = response.data;
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.'+newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
             fetchDataForUser();
@@ -216,28 +189,6 @@ const PercentageDashboard = () => {
             notify(t("manualPunchError", "Fehler beim manuellen Stempeln."), 'error');
         }
     }
-
-    const assignCustomerForDay = async (isoDate, customerId) => {
-        try {
-            await api.put('/api/timetracking/day/customer', null, { params: { username: userProfile.username, date: isoDate, customerId: customerId || '' } });
-            fetchDataForUser();
-            notify(t('customerSaved'), 'success');
-        } catch (err) {
-            console.error('Error saving customer', err);
-            notify(t('customerSaveError'), 'error');
-        }
-    };
-
-    const assignProjectForDay = async (isoDate, projectId) => {
-        try {
-            await api.put('/api/timetracking/day/project', null, { params: { username: userProfile.username, date: isoDate, projectId: projectId || '' } });
-            fetchDataForUser();
-            notify(t('customerSaved'), 'success');
-        } catch (err) {
-            console.error('Error saving project', err);
-            notify(t('customerSaveError'), 'error');
-        }
-    };
 
     const weekDatesForOverview = Array.from({ length: 5 }, (_, i) => addDays(selectedMonday, i)); // Mo-Fr
     const weeklyWorked = computeTotalWorkedMinutesInRange(dailySummaries, selectedMonday, addDays(selectedMonday, 4)); // Mo-Fr für %
@@ -452,15 +403,6 @@ const PercentageDashboard = () => {
                 punchMessage={punchMessage}
                 openCorrectionModal={openCorrectionModalForDay}
                 userProfile={userProfile}
-                customers={customers}
-                recentCustomers={recentCustomers}
-                projects={projects}
-                selectedCustomerId={selectedCustomerId}
-                setSelectedCustomerId={setSelectedCustomerId}
-                selectedProjectId={selectedProjectId}
-                setSelectedProjectId={setSelectedProjectId}
-                assignCustomerForDay={assignCustomerForDay}
-                assignProjectForDay={assignProjectForDay}
                 vacationRequests={vacationRequests} // NEU
                 sickLeaves={sickLeaves} // NEU
                 holidaysForUserCanton={holidaysForUserCanton?.data} // NEU
