@@ -52,6 +52,7 @@ const PercentageWeekOverview = ({
     const [endTimes, setEndTimes] = useState({});
     const [customerRanges, setCustomerRanges] = useState({});
 
+
     function handlePrevWeek() {
         setMonday(prev => addDays(prev, -7));
     }
@@ -255,6 +256,7 @@ const PercentageWeekOverview = ({
                                             </div>
                                         ))}
                                         <button className="button-secondary" onClick={() => addCustomerRange(isoDate)}>{t('addRange','Zeitraum hinzufügen')}</button>
+
                                     </div>
                                 )}
                             </div>

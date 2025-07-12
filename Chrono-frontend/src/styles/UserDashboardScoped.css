@@ -397,6 +397,7 @@
   align-items: center;
   margin-top: var(--ud-gap-xs);
 }
+
 .user-dashboard.scoped-dashboard .expected-hours strong,
 .user-dashboard.scoped-dashboard .daily-diff strong {
   color: var(--ud-c-text);
@@ -992,6 +993,7 @@
     flex-direction: column;
     align-items: stretch;
   }
+
 }
 @media (max-width: 480px) {
   .user-dashboard.scoped-dashboard {

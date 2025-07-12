@@ -48,6 +48,7 @@ const HourlyWeekOverview = ({
     const [endTimes, setEndTimes] = useState({});
     const [customerRanges, setCustomerRanges] = useState({});
 
+
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
         : [];
@@ -248,6 +249,7 @@ const HourlyWeekOverview = ({
                                             </div>
                                         ))}
                                         <button className="button-secondary" onClick={() => addCustomerRange(isoDate)}>{t('addRange','Zeitraum hinzufügen')}</button>
+
                                     </div>
                                 )}
                             </div>
