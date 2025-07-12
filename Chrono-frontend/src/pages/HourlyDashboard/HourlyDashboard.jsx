@@ -30,6 +30,7 @@ import HourlyCorrectionsPanel from './HourlyCorrectionsPanel';
 import HourlyCorrectionModal from './HourlyCorrectionModal';
 import PrintReportModal from '../../components/PrintReportModal.jsx';
 
+import '../../styles/UserDashboardScoped.css';
 import '../../styles/HourlyDashboardScoped.css';
 
 const HourlyDashboard = () => {
@@ -84,7 +85,9 @@ const HourlyDashboard = () => {
 
 const assignCustomerForDay = async (isoDate, customerId) => {
         try {
-            await api.put('/api/timetracking/day/customer', null, { params: { username: currentUser.username, date: isoDate, customerId: customerId || '' } });
+            const params = { username: currentUser.username, date: isoDate };
+            if (customerId) params.customerId = customerId;
+            await api.put('/api/timetracking/day/customer', null, { params });
             fetchWeeklyData(selectedMonday);
             notify(t('customerSaved'), 'success');
         } catch (err) {
@@ -95,7 +98,9 @@ const assignCustomerForDay = async (isoDate, customerId) => {
 
     const assignProjectForDay = async (isoDate, projectId) => {
         try {
-            await api.put('/api/timetracking/day/project', null, { params: { username: currentUser.username, date: isoDate, projectId: projectId || '' } });
+            const params = { username: currentUser.username, date: isoDate };
+            if (projectId) params.projectId = projectId;
+            await api.put('/api/timetracking/day/project', null, { params });
             fetchWeeklyData(selectedMonday);
             notify(t('customerSaved'), 'success');
         } catch (err) {

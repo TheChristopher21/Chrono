@@ -30,6 +30,7 @@ import PercentageCorrectionsPanel from './PercentageCorrectionsPanel';
 import PercentageCorrectionModal from './PercentageCorrectionModal';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 
+import '../../styles/UserDashboardScoped.css';
 import '../../styles/PercentageDashboardScoped.css';
 import autoTable from "jspdf-autotable";
 
@@ -217,7 +218,9 @@ const PercentageDashboard = () => {
 
     const assignCustomerForDay = async (isoDate, customerId) => {
         try {
-            await api.put('/api/timetracking/day/customer', null, { params: { username: userProfile.username, date: isoDate, customerId: customerId || '' } });
+            const params = { username: userProfile.username, date: isoDate };
+            if (customerId) params.customerId = customerId;
+            await api.put('/api/timetracking/day/customer', null, { params });
             fetchDataForUser();
             notify(t('customerSaved'), 'success');
         } catch (err) {
@@ -228,7 +231,9 @@ const PercentageDashboard = () => {
 
     const assignProjectForDay = async (isoDate, projectId) => {
         try {
-            await api.put('/api/timetracking/day/project', null, { params: { username: userProfile.username, date: isoDate, projectId: projectId || '' } });
+            const params = { username: userProfile.username, date: isoDate };
+            if (projectId) params.projectId = projectId;
+            await api.put('/api/timetracking/day/project', null, { params });
             fetchDataForUser();
             notify(t('customerSaved'), 'success');
         } catch (err) {
