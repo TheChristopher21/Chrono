@@ -83,6 +83,9 @@ const HourlyWeekOverview = ({
         setCustomerRanges(existingRanges);
     }, [dailySummaries]);
 
+  
+  
+
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
         : [];
@@ -290,6 +293,12 @@ const HourlyWeekOverview = ({
                                                     {customers.map(c => (
                                                         <option key={c.id} value={c.id}>{c.name}</option>
                                                     ))}
+
+
+
+
+
+
                                                 </select>
                                                 <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
                                                 <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
