@@ -370,6 +370,51 @@
   color: var(--ud-c-text-muted);
   margin-bottom: var(--ud-gap-sm);
 }
+
+.scoped-dashboard .day-customer-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ud-gap-xs);
+  align-items: center;
+  margin-bottom: var(--ud-gap-sm);
+}
+.scoped-dashboard .day-customer-select label {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+.scoped-dashboard .day-customer-select label span {
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+  margin-bottom: 2px;
+}
+
+.scoped-dashboard .day-customer-select select,
+.scoped-dashboard .day-customer-select button,
+.scoped-dashboard .day-customer-select input[type="time"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.scoped-dashboard .day-customer-select button {
+  max-width: 160px;
+}
+
+.scoped-dashboard .customer-range-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ud-gap-xs);
+  align-items: center;
+  margin-top: var(--ud-gap-xs);
+}
+
+.scoped-dashboard .saved-range-list {
+  margin-top: var(--ud-gap-xs);
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+  padding-left: 1rem;
+}
 .user-dashboard.scoped-dashboard .expected-hours strong,
 .user-dashboard.scoped-dashboard .daily-diff strong {
   color: var(--ud-c-text);
@@ -408,6 +453,11 @@
 .user-dashboard.scoped-dashboard .day-card .entry-time {
   font-weight: 500;
   color: var(--ud-c-text);
+}
+.user-dashboard.scoped-dashboard .day-card .entry-meta {
+  margin-left: var(--ud-gap-sm);
+  color: var(--ud-c-text-muted);
+  font-size: var(--ud-fz-sm);
 }
 .user-dashboard.scoped-dashboard .late-time {
   color: var(--ud-c-late-time);
@@ -950,6 +1000,26 @@
   }
   .user-dashboard.scoped-dashboard .modal-buttons button {
     width: 100%;
+  }
+
+  .scoped-dashboard .day-customer-select {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .scoped-dashboard .day-customer-select label {
+    width: 100%;
+  }
+  .scoped-dashboard .day-customer-select select,
+  .scoped-dashboard .day-customer-select button,
+  .scoped-dashboard .day-customer-select input[type="time"] {
+    width: 100%;
+  }
+  .scoped-dashboard .customer-range-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .scoped-dashboard .saved-range-list {
+    padding-left: 0;
   }
 }
 @media (max-width: 480px) {

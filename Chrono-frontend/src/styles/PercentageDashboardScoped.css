@@ -329,6 +329,7 @@
   padding-bottom: var(--ud-gap-sm, 0.75rem);
   border-bottom: 1px solid var(--ud-c-line, #e2e8f0);
 }
+
 .percentage-dashboard.scoped-dashboard .week-day-content {
   font-size: var(--ud-fz-sm, 0.875rem);
   flex-grow: 1;
@@ -655,6 +656,7 @@
   .percentage-dashboard.scoped-dashboard .modal-buttons button {
     width: 100%;
   }
+
 }
 @media (max-width: 480px) {
   /* Mobile */
