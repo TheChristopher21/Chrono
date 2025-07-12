@@ -46,6 +46,8 @@ const HourlyWeekOverview = ({
     const [selectedProjects, setSelectedProjects] = useState({});
     const [startTimes, setStartTimes] = useState({});
     const [endTimes, setEndTimes] = useState({});
+    const [customerRanges, setCustomerRanges] = useState({});
+
 
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
@@ -92,6 +94,32 @@ const HourlyWeekOverview = ({
             // Bearbeitungsmodus beenden, egal ob erfolgreich oder nicht
             setEditingNote(null);
         }
+    };
+
+    const addCustomerRange = iso => {
+        setCustomerRanges(prev => ({
+            ...prev,
+            [iso]: [...(prev[iso] || []), { customerId: '', start: '', end: '' }]
+        }));
+    };
+
+    const updateCustomerRange = (iso, idx, field, value) => {
+        setCustomerRanges(prev => {
+            const ranges = [...(prev[iso] || [])];
+            ranges[idx] = { ...ranges[idx], [field]: value };
+            return { ...prev, [iso]: ranges };
+        });
+    };
+
+    const saveCustomerRange = async (iso, idx) => {
+        const range = (customerRanges[iso] || [])[idx];
+        if (!range || !range.start || !range.end) return;
+        await assignCustomerForRange(iso, range.start, range.end, range.customerId);
+        setCustomerRanges(prev => {
+            const ranges = [...(prev[iso] || [])];
+            ranges.splice(idx, 1);
+            return { ...prev, [iso]: ranges };
+        });
     };
 
 
@@ -203,6 +231,25 @@ const HourlyWeekOverview = ({
                                             }
                                             assignProjectForDay(isoDate, selectedProjects[isoDate]);
                                         }}>{t('applyForDay')}</button>
+
+                                        {(customerRanges[isoDate] || []).map((r, idx) => (
+                                            <div key={idx} className="customer-range-row">
+                                                <select
+                                                    value={r.customerId}
+                                                    onChange={e => updateCustomerRange(isoDate, idx, 'customerId', e.target.value)}
+                                                >
+                                                    <option value="">{t('noCustomer')}</option>
+                                                    {customers.map(c => (
+                                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                                    ))}
+                                                </select>
+                                                <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
+                                                <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
+                                                <button className="button-secondary" onClick={() => saveCustomerRange(isoDate, idx)}>{t('save','Speichern')}</button>
+                                            </div>
+                                        ))}
+                                        <button className="button-secondary" onClick={() => addCustomerRange(isoDate)}>{t('addRange','Zeitraum hinzufügen')}</button>
+
                                     </div>
                                 )}
                             </div>

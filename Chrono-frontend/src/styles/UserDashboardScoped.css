@@ -382,7 +382,6 @@
 .scoped-dashboard .day-customer-select select,
 .scoped-dashboard .day-customer-select button,
 .scoped-dashboard .day-customer-select input[type="time"] {
-
   flex: 1 1 auto;
   min-width: 0;
 }
@@ -390,6 +389,15 @@
 .scoped-dashboard .day-customer-select button {
   max-width: 160px;
 }
+
+.scoped-dashboard .customer-range-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ud-gap-xs);
+  align-items: center;
+  margin-top: var(--ud-gap-xs);
+}
+
 .user-dashboard.scoped-dashboard .expected-hours strong,
 .user-dashboard.scoped-dashboard .daily-diff strong {
   color: var(--ud-c-text);
@@ -979,9 +987,13 @@
   .scoped-dashboard .day-customer-select select,
   .scoped-dashboard .day-customer-select button,
   .scoped-dashboard .day-customer-select input[type="time"] {
-
     width: 100%;
   }
+  .scoped-dashboard .customer-range-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
 }
 @media (max-width: 480px) {
   .user-dashboard.scoped-dashboard {
