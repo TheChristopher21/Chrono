@@ -44,6 +44,8 @@ const HourlyWeekOverview = ({
     const [noteContent, setNoteContent] = useState('');   // Speichert den Inhalt der Notiz während der Bearbeitung
     const [selectedCustomers, setSelectedCustomers] = useState({});
     const [selectedProjects, setSelectedProjects] = useState({});
+    const [startTimes, setStartTimes] = useState({});
+    const [endTimes, setEndTimes] = useState({});
 
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
@@ -183,7 +185,24 @@ const HourlyWeekOverview = ({
                                                 <option key={p.id} value={p.id}>{p.name}</option>
                                             ))}
                                         </select>
-                                        <button className="button-secondary" onClick={() => {assignCustomerForDay(isoDate, selectedCustomers[isoDate]);assignProjectForDay(isoDate, selectedProjects[isoDate]);}}>{t('applyForDay')}</button>
+                                        <input
+                                            type="time"
+                                            value={startTimes[isoDate] || ''}
+                                            onChange={e => setStartTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        />
+                                        <input
+                                            type="time"
+                                            value={endTimes[isoDate] || ''}
+                                            onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        />
+                                        <button className="button-secondary" onClick={() => {
+                                            if (startTimes[isoDate] && endTimes[isoDate]) {
+                                                assignCustomerForRange(isoDate, startTimes[isoDate], endTimes[isoDate], selectedCustomers[isoDate]);
+                                            } else {
+                                                assignCustomerForDay(isoDate, selectedCustomers[isoDate]);
+                                            }
+                                            assignProjectForDay(isoDate, selectedProjects[isoDate]);
+                                        }}>{t('applyForDay')}</button>
                                     </div>
                                 )}
                             </div>
@@ -303,6 +322,7 @@ HourlyWeekOverview.propTypes = {
     selectedProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     setSelectedProjectId: PropTypes.func,
     assignCustomerForDay: PropTypes.func,
+    assignCustomerForRange: PropTypes.func,
     assignProjectForDay: PropTypes.func
 };
 

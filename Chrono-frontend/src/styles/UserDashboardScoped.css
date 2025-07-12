@@ -370,6 +370,25 @@
   color: var(--ud-c-text-muted);
   margin-bottom: var(--ud-gap-sm);
 }
+
+.scoped-dashboard .day-customer-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ud-gap-xs);
+  align-items: center;
+  margin-bottom: var(--ud-gap-sm);
+}
+
+.scoped-dashboard .day-customer-select select,
+.scoped-dashboard .day-customer-select button,
+.scoped-dashboard .day-customer-select input[type="time"] {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.scoped-dashboard .day-customer-select button {
+  max-width: 160px;
+}
 .user-dashboard.scoped-dashboard .expected-hours strong,
 .user-dashboard.scoped-dashboard .daily-diff strong {
   color: var(--ud-c-text);
@@ -949,6 +968,16 @@
     flex-direction: column-reverse;
   }
   .user-dashboard.scoped-dashboard .modal-buttons button {
+    width: 100%;
+  }
+
+  .scoped-dashboard .day-customer-select {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .scoped-dashboard .day-customer-select select,
+  .scoped-dashboard .day-customer-select button,
+  .scoped-dashboard .day-customer-select input[type="time"] {
     width: 100%;
   }
 }
