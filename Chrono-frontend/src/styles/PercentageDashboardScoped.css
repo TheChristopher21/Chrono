@@ -329,6 +329,22 @@
   padding-bottom: var(--ud-gap-sm, 0.75rem);
   border-bottom: 1px solid var(--ud-c-line, #e2e8f0);
 }
+
+.percentage-dashboard.scoped-dashboard .day-customer-select {
+  display: flex;
+  gap: var(--ud-gap-xs, 0.5rem);
+  align-items: center;
+  margin-bottom: var(--ud-gap-sm, 0.75rem);
+}
+
+.percentage-dashboard.scoped-dashboard .day-customer-select select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.percentage-dashboard.scoped-dashboard .day-customer-select button {
+  flex-shrink: 0;
+}
 .percentage-dashboard.scoped-dashboard .week-day-content {
   font-size: var(--ud-fz-sm, 0.875rem);
   flex-grow: 1;
