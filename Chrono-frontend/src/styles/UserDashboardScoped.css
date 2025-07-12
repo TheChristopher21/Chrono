@@ -391,9 +391,6 @@
 }
 
 
-
-
-
 .scoped-dashboard .day-customer-select select,
 .scoped-dashboard .day-customer-select button,
 .scoped-dashboard .day-customer-select input[type="time"] {
@@ -450,6 +447,11 @@
 .user-dashboard.scoped-dashboard .day-card .entry-time {
   font-weight: 500;
   color: var(--ud-c-text);
+}
+.user-dashboard.scoped-dashboard .day-card .entry-meta {
+  margin-left: var(--ud-gap-sm);
+  color: var(--ud-c-text-muted);
+  font-size: var(--ud-fz-sm);
 }
 .user-dashboard.scoped-dashboard .late-time {
   color: var(--ud-c-late-time);
@@ -1001,9 +1003,6 @@
   .scoped-dashboard .day-customer-select label {
     width: 100%;
   }
-
-  
-  
   .scoped-dashboard .day-customer-select select,
   .scoped-dashboard .day-customer-select button,
   .scoped-dashboard .day-customer-select input[type="time"] {

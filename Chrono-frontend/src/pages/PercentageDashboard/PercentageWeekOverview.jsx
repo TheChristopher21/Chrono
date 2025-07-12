@@ -85,7 +85,8 @@ const PercentageWeekOverview = ({
         setSelectedCustomers(initialCustomers);
         setCustomerRanges(existingRanges);
     }, [dailySummaries]);
-
+  
+  
 
     function handlePrevWeek() {
         setMonday(prev => addDays(prev, -7));
@@ -301,6 +302,9 @@ const PercentageWeekOverview = ({
 
 
 
+
+
+
                                                 </select>
                                                 <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
                                                 <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
@@ -343,6 +347,11 @@ const PercentageWeekOverview = ({
                                                             <span className="auto-end-indicator" title={t('messages.autoEndedTooltip', 'Automatisch beendet')}> (A)</span>
                                                         }
                                                     </span>
+                                                    {(entry.customerName || entry.projectName) && (
+                                                        <span className="entry-meta">
+                                                            {entry.customerName || ''}{entry.projectName ? ` / ${entry.projectName}` : ''}
+                                                        </span>
+                                                    )}
                                                 </li>
                                             ))}
                                         </ul>

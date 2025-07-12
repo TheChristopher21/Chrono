@@ -83,6 +83,8 @@ const HourlyWeekOverview = ({
         setCustomerRanges(existingRanges);
     }, [dailySummaries]);
 
+  
+  
 
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
@@ -294,6 +296,9 @@ const HourlyWeekOverview = ({
 
 
 
+
+
+
                                                 </select>
                                                 <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
                                                 <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
@@ -321,6 +326,11 @@ const HourlyWeekOverview = ({
                                                             <span className="auto-end-indicator" title={t('messages.autoEndedTooltip', 'Automatisch beendet')}> (A)</span>
                                                         }
                                                     </span>
+                                                    {(entry.customerName || entry.projectName) && (
+                                                        <span className="entry-meta">
+                                                            {entry.customerName || ''}{entry.projectName ? ` / ${entry.projectName}` : ''}
+                                                        </span>
+                                                    )}
                                                 </li>
                                             ))}
                                         </ul>
