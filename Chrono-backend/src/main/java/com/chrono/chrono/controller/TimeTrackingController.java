@@ -16,6 +16,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
@@ -191,6 +192,28 @@ public class TimeTrackingController {
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         try {
             timeTrackingService.assignCustomerForDay(username, LocalDate.parse(date), customerId);
+            return ResponseEntity.ok().build();
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @PutMapping("/range/customer")
+    public ResponseEntity<Void> assignCustomerForRange(
+            @RequestParam String username,
+            @RequestParam String date,
+            @RequestParam String startTime,
+            @RequestParam String endTime,
+            @RequestParam(required = false) Long customerId,
+            Principal principal) {
+        if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        try {
+            timeTrackingService.assignCustomerForTimeRange(
+                    username,
+                    LocalDate.parse(date),
+                    LocalTime.parse(startTime),
+                    LocalTime.parse(endTime),
+                    customerId);
             return ResponseEntity.ok().build();
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
