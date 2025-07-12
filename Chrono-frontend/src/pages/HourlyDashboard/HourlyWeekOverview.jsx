@@ -48,6 +48,7 @@ const HourlyWeekOverview = ({
     const [startTimes, setStartTimes] = useState({});
     const [endTimes, setEndTimes] = useState({});
     const [customerRanges, setCustomerRanges] = useState({});
+
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
         : [];
@@ -187,41 +188,55 @@ const HourlyWeekOverview = ({
                                 {userProfile?.customerTrackingEnabled && (
 
                                     <div className="day-customer-select">
-                                        <select
-                                            value={selectedCustomers[isoDate] || ''}
-                                            onChange={e => setSelectedCustomers(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                        >
-                                            <option value="">{t('noCustomer')}</option>
-                                            {recentCustomers.length > 0 && (
-                                                <optgroup label={t('recentCustomers')}>
-                                                    {recentCustomers.map(c => (
-                                                        <option key={'r'+c.id} value={c.id}>{c.name}</option>
-                                                    ))}
-                                                </optgroup>
-                                            )}
-                                            {customers.map(c => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                        <select
-                                            value={selectedProjects[isoDate] || ''}
-                                            onChange={e => setSelectedProjects(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                        >
-                                            <option value="">{t('noProject','Kein Projekt')}</option>
-                                            {projects.map(p => (
-                                                <option key={p.id} value={p.id}>{p.name}</option>
-                                            ))}
-                                        </select>
-                                        <input
-                                            type="time"
-                                            value={startTimes[isoDate] || ''}
-                                            onChange={e => setStartTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                        />
-                                        <input
-                                            type="time"
-                                            value={endTimes[isoDate] || ''}
-                                            onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                        />
+                                        <label>
+                                            <span>{t('customerLabel', 'Kunde')}</span>
+                                            <select
+                                                value={selectedCustomers[isoDate] || ''}
+                                                onChange={e => setSelectedCustomers(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                            >
+                                                <option value="">{t('noCustomer')}</option>
+                                                {recentCustomers.length > 0 && (
+                                                    <optgroup label={t('recentCustomers')}>
+                                                        {recentCustomers.map(c => (
+                                                            <option key={'r'+c.id} value={c.id}>{c.name}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                )}
+                                                {customers.map(c => (
+                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        </label>
+                                        <label>
+                                            <span>{t('projectLabel', 'Projekt')}</span>
+                                            <select
+                                                value={selectedProjects[isoDate] || ''}
+                                                onChange={e => setSelectedProjects(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                            >
+                                                <option value="">{t('noProject','Kein Projekt')}</option>
+                                                {projects.map(p => (
+                                                    <option key={p.id} value={p.id}>{p.name}</option>
+                                                ))}
+                                            </select>
+                                        </label>
+                                        <label>
+                                            <span>{t('start')}</span>
+                                            <input
+                                                type="time"
+                                                placeholder="HH:MM"
+                                                value={startTimes[isoDate] || ''}
+                                                onChange={e => setStartTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                            />
+                                        </label>
+                                        <label>
+                                            <span>{t('end')}</span>
+                                            <input
+                                                type="time"
+                                                placeholder="HH:MM"
+                                                value={endTimes[isoDate] || ''}
+                                                onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                            />
+                                        </label>
                                         <button className="button-secondary" onClick={() => {
                                             if (startTimes[isoDate] && endTimes[isoDate]) {
                                                 assignCustomerForRange(isoDate, startTimes[isoDate], endTimes[isoDate], selectedCustomers[isoDate]);
@@ -241,6 +256,7 @@ const HourlyWeekOverview = ({
                                                     {customers.map(c => (
                                                         <option key={c.id} value={c.id}>{c.name}</option>
                                                     ))}
+
                                                 </select>
                                                 <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
                                                 <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />

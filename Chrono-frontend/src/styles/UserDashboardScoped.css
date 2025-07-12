@@ -378,6 +378,18 @@
   align-items: center;
   margin-bottom: var(--ud-gap-sm);
 }
+.scoped-dashboard .day-customer-select label {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 140px;
+  min-width: 120px;
+}
+.scoped-dashboard .day-customer-select label span {
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+  margin-bottom: 2px;
+}
+
 
 .scoped-dashboard .day-customer-select select,
 .scoped-dashboard .day-customer-select button,
@@ -983,6 +995,10 @@
     flex-direction: column;
     align-items: stretch;
   }
+  .scoped-dashboard .day-customer-select label {
+    width: 100%;
+  }
+
   .scoped-dashboard .day-customer-select select,
   .scoped-dashboard .day-customer-select button,
   .scoped-dashboard .day-customer-select input[type="time"] {
