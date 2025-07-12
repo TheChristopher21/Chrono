@@ -96,6 +96,19 @@ const assignCustomerForDay = async (isoDate, customerId) => {
         }
     };
 
+    const assignCustomerForRange = async (isoDate, startTime, endTime, customerId) => {
+        try {
+            const params = { username: currentUser.username, date: isoDate, startTime, endTime };
+            if (customerId) params.customerId = customerId;
+            await api.put('/api/timetracking/range/customer', null, { params });
+            fetchWeeklyData(selectedMonday);
+            notify(t('customerSaved'), 'success');
+        } catch (err) {
+            console.error('Error saving customer range', err);
+            notify(t('customerSaveError'), 'error');
+        }
+    };
+
     const assignProjectForDay = async (isoDate, projectId) => {
         try {
             const params = { username: currentUser.username, date: isoDate };
@@ -303,6 +316,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 selectedProjectId={selectedProjectId}
                 setSelectedProjectId={setSelectedProjectId}
                 assignCustomerForDay={assignCustomerForDay}
+                assignCustomerForRange={assignCustomerForRange}
                 assignProjectForDay={assignProjectForDay}
             />
 

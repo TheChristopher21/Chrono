@@ -37,6 +37,7 @@ const PercentageWeekOverview = ({
                                     selectedProjectId,
                                     setSelectedProjectId,
                                     assignCustomerForDay,
+                                    assignCustomerForRange,
                                     assignProjectForDay,
                                     vacationRequests,
                                     sickLeaves,
@@ -44,9 +45,11 @@ const PercentageWeekOverview = ({
                                 }) => {
 
     // Immer 7 Tage für eine volle Wochenansicht (Mo-So)
-    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i)); //
-const [selectedCustomers, setSelectedCustomers] = useState({});
-const [selectedProjects, setSelectedProjects] = useState({});
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i)); // Mo-So
+    const [selectedCustomers, setSelectedCustomers] = useState({});
+    const [selectedProjects, setSelectedProjects] = useState({});
+    const [startTimes, setStartTimes] = useState({});
+    const [endTimes, setEndTimes] = useState({});
 
     function handlePrevWeek() {
         setMonday(prev => addDays(prev, -7));
@@ -189,7 +192,24 @@ const [selectedProjects, setSelectedProjects] = useState({});
                                                 <option key={p.id} value={p.id}>{p.name}</option>
                                             ))}
                                         </select>
-                                        <button className="button-secondary" onClick={() => {assignCustomerForDay(isoDate, selectedCustomers[isoDate]);assignProjectForDay(isoDate, selectedProjects[isoDate]);}}>{t('applyForDay')}</button>
+                                        <input
+                                            type="time"
+                                            value={startTimes[isoDate] || ''}
+                                            onChange={e => setStartTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        />
+                                        <input
+                                            type="time"
+                                            value={endTimes[isoDate] || ''}
+                                            onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        />
+                                        <button className="button-secondary" onClick={() => {
+                                            if (startTimes[isoDate] && endTimes[isoDate]) {
+                                                assignCustomerForRange(isoDate, startTimes[isoDate], endTimes[isoDate], selectedCustomers[isoDate]);
+                                            } else {
+                                                assignCustomerForDay(isoDate, selectedCustomers[isoDate]);
+                                            }
+                                            assignProjectForDay(isoDate, selectedProjects[isoDate]);
+                                        }}>{t('applyForDay')}</button>
                                     </div>
                                 )}
                             </div>
@@ -287,6 +307,7 @@ PercentageWeekOverview.propTypes = {
     selectedProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     setSelectedProjectId: PropTypes.func,
     assignCustomerForDay: PropTypes.func,
+    assignCustomerForRange: PropTypes.func,
     assignProjectForDay: PropTypes.func,
     vacationRequests: PropTypes.array.isRequired,
     sickLeaves: PropTypes.array.isRequired,
