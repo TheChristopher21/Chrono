@@ -392,18 +392,22 @@
 
 .hourly-dashboard.scoped-dashboard .day-customer-select {
   display: flex;
+  flex-wrap: wrap;
+
   gap: var(--ud-gap-xs);
   align-items: center;
   margin-bottom: var(--ud-gap-sm);
 }
 
-.hourly-dashboard.scoped-dashboard .day-customer-select select {
+.hourly-dashboard.scoped-dashboard .day-customer-select select,
+.hourly-dashboard.scoped-dashboard .day-customer-select button {
+
   flex: 1 1 auto;
   min-width: 0;
 }
 
 .hourly-dashboard.scoped-dashboard .day-customer-select button {
-  flex-shrink: 0;
+  max-width: 160px;
 }
 
 .hourly-dashboard.scoped-dashboard .week-day-content .time-entry-list {
@@ -824,6 +828,15 @@
     flex-direction: column-reverse;
   }
   .hourly-dashboard.scoped-dashboard .modal-buttons button {
+    width: 100%;
+  }
+
+  .hourly-dashboard.scoped-dashboard .day-customer-select {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .hourly-dashboard.scoped-dashboard .day-customer-select select,
+  .hourly-dashboard.scoped-dashboard .day-customer-select button {
     width: 100%;
   }
 }
