@@ -961,6 +961,39 @@ public class TimeTrackingService {
     }
 
     @Transactional
+    public void assignCustomerForTimeRange(String username, LocalDate date, LocalTime startTime, LocalTime endTime, Long customerId) {
+        User user = loadUserByUsername(username);
+        if (user.getCompany() == null || !Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+            throw new IllegalStateException("Feature disabled");
+        }
+        if (startTime == null || endTime == null) {
+            throw new IllegalArgumentException("startTime and endTime required");
+        }
+        if (endTime.isBefore(startTime)) {
+            LocalTime tmp = startTime;
+            startTime = endTime;
+            endTime = tmp;
+        }
+        Customer customer = customerId != null ? customerRepository.findById(customerId).orElse(null) : null;
+        LocalDateTime startDt = LocalDateTime.of(date, startTime);
+        LocalDateTime endDt = LocalDateTime.of(date, endTime);
+        List<TimeTrackingEntry> entries = timeTrackingEntryRepository
+                .findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(user, startDt, endDt);
+        for (TimeTrackingEntry e : entries) {
+            e.setCustomer(customer);
+        }
+        timeTrackingEntryRepository.saveAll(entries);
+
+        TimeTrackingEntry latest = timeTrackingEntryRepository
+                .findByUserOrderByEntryTimestampDesc(user)
+                .stream().findFirst().orElse(null);
+        if (latest != null && !entries.isEmpty() && latest.getId().equals(entries.get(entries.size() - 1).getId())) {
+            user.setLastCustomer(customer);
+            userRepository.save(user);
+        }
+    }
+
+    @Transactional
     public void saveDailyNote(String username, LocalDate date, String note) {
         User user = loadUserByUsername(username);
         DailyNote dailyNote = dailyNoteRepository.findByUserAndNoteDate(user, date).orElse(null);
