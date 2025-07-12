@@ -37,6 +37,7 @@ const PercentageWeekOverview = ({
                                     selectedProjectId,
                                     setSelectedProjectId,
                                     assignCustomerForDay,
+                                    assignCustomerForRange,
                                     assignProjectForDay,
                                     vacationRequests,
                                     sickLeaves,
@@ -44,9 +45,12 @@ const PercentageWeekOverview = ({
                                 }) => {
 
     // Immer 7 Tage für eine volle Wochenansicht (Mo-So)
-    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i)); //
-const [selectedCustomers, setSelectedCustomers] = useState({});
-const [selectedProjects, setSelectedProjects] = useState({});
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i)); // Mo-So
+    const [selectedCustomers, setSelectedCustomers] = useState({});
+    const [selectedProjects, setSelectedProjects] = useState({});
+    const [startTimes, setStartTimes] = useState({});
+    const [endTimes, setEndTimes] = useState({});
+    const [customerRanges, setCustomerRanges] = useState({});
 
     function handlePrevWeek() {
         setMonday(prev => addDays(prev, -7));
@@ -62,6 +66,32 @@ const [selectedProjects, setSelectedProjects] = useState({});
             setMonday(getMondayOfWeek(picked)); // Stellt sicher, dass immer ein Montag gewählt wird
         }
     }
+
+    const addCustomerRange = iso => {
+        setCustomerRanges(prev => ({
+            ...prev,
+            [iso]: [...(prev[iso] || []), { customerId: '', start: '', end: '' }]
+        }));
+    };
+
+    const updateCustomerRange = (iso, idx, field, value) => {
+        setCustomerRanges(prev => {
+            const ranges = [...(prev[iso] || [])];
+            ranges[idx] = { ...ranges[idx], [field]: value };
+            return { ...prev, [iso]: ranges };
+        });
+    };
+
+    const saveCustomerRange = async (iso, idx) => {
+        const range = (customerRanges[iso] || [])[idx];
+        if (!range || !range.start || !range.end) return;
+        await assignCustomerForRange(iso, range.start, range.end, range.customerId);
+        setCustomerRanges(prev => {
+            const ranges = [...(prev[iso] || [])];
+            ranges.splice(idx, 1);
+            return { ...prev, [iso]: ranges };
+        });
+    };
 
 
     return (
@@ -189,7 +219,42 @@ const [selectedProjects, setSelectedProjects] = useState({});
                                                 <option key={p.id} value={p.id}>{p.name}</option>
                                             ))}
                                         </select>
-                                        <button className="button-secondary" onClick={() => {assignCustomerForDay(isoDate, selectedCustomers[isoDate]);assignProjectForDay(isoDate, selectedProjects[isoDate]);}}>{t('applyForDay')}</button>
+                                        <input
+                                            type="time"
+                                            value={startTimes[isoDate] || ''}
+                                            onChange={e => setStartTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        />
+                                        <input
+                                            type="time"
+                                            value={endTimes[isoDate] || ''}
+                                            onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        />
+                                        <button className="button-secondary" onClick={() => {
+                                            if (startTimes[isoDate] && endTimes[isoDate]) {
+                                                assignCustomerForRange(isoDate, startTimes[isoDate], endTimes[isoDate], selectedCustomers[isoDate]);
+                                            } else {
+                                                assignCustomerForDay(isoDate, selectedCustomers[isoDate]);
+                                            }
+                                            assignProjectForDay(isoDate, selectedProjects[isoDate]);
+                                        }}>{t('applyForDay')}</button>
+
+                                        {(customerRanges[isoDate] || []).map((r, idx) => (
+                                            <div key={idx} className="customer-range-row">
+                                                <select
+                                                    value={r.customerId}
+                                                    onChange={e => updateCustomerRange(isoDate, idx, 'customerId', e.target.value)}
+                                                >
+                                                    <option value="">{t('noCustomer')}</option>
+                                                    {customers.map(c => (
+                                                        <option key={c.id} value={c.id}>{c.name}</option>
+                                                    ))}
+                                                </select>
+                                                <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
+                                                <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
+                                                <button className="button-secondary" onClick={() => saveCustomerRange(isoDate, idx)}>{t('save','Speichern')}</button>
+                                            </div>
+                                        ))}
+                                        <button className="button-secondary" onClick={() => addCustomerRange(isoDate)}>{t('addRange','Zeitraum hinzufügen')}</button>
                                     </div>
                                 )}
                             </div>
@@ -287,6 +352,7 @@ PercentageWeekOverview.propTypes = {
     selectedProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     setSelectedProjectId: PropTypes.func,
     assignCustomerForDay: PropTypes.func,
+    assignCustomerForRange: PropTypes.func,
     assignProjectForDay: PropTypes.func,
     vacationRequests: PropTypes.array.isRequired,
     sickLeaves: PropTypes.array.isRequired,
