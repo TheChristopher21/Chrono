@@ -1,5 +1,5 @@
 // src/pages/HourlyDashboard/HourlyWeekOverview.jsx
-import React, { useState } from 'react'; // 'useState' hinzugefügt für die Bearbeitungslogik
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import {
     addDays,
@@ -48,6 +48,41 @@ const HourlyWeekOverview = ({
     const [startTimes, setStartTimes] = useState({});
     const [endTimes, setEndTimes] = useState({});
     const [customerRanges, setCustomerRanges] = useState({});
+
+    // Initialize customer selections and ranges from existing entries
+    useEffect(() => {
+        const initialCustomers = {};
+        const existingRanges = {};
+        dailySummaries.forEach(s => {
+            const iso = s.date;
+            const entries = Array.isArray(s.entries) ? s.entries : [];
+            const customerIds = entries.map(e => e.customerId).filter(id => id != null);
+            const unique = Array.from(new Set(customerIds));
+            if (unique.length === 1) {
+                initialCustomers[iso] = String(unique[0]);
+            }
+            let currentCustomer = null;
+            let start = null;
+            entries.forEach(entry => {
+                const time = entry.entryTimestamp?.substring(11,16);
+                if (entry.punchType === 'START') {
+                    currentCustomer = entry.customerId;
+                    start = time;
+                } else if (entry.punchType === 'ENDE' && start) {
+                    (existingRanges[iso] ||= []).push({
+                        customerId: currentCustomer || '',
+                        start,
+                        end: time
+                    });
+                    currentCustomer = null;
+                    start = null;
+                }
+            });
+        });
+        setSelectedCustomers(initialCustomers);
+        setCustomerRanges(existingRanges);
+    }, [dailySummaries]);
+
 
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
@@ -256,6 +291,8 @@ const HourlyWeekOverview = ({
                                                     {customers.map(c => (
                                                         <option key={c.id} value={c.id}>{c.name}</option>
                                                     ))}
+
+
 
                                                 </select>
                                                 <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
