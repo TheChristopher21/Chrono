@@ -390,7 +390,6 @@
 }
 /* Kein .day-card-meta mit Soll/Diff im HourlyDashboard */
 
-
 .hourly-dashboard.scoped-dashboard .week-day-content .time-entry-list {
   list-style: none;
   padding: 0;
