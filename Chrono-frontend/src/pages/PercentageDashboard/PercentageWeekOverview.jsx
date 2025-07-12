@@ -86,6 +86,7 @@ const PercentageWeekOverview = ({
         setCustomerRanges(existingRanges);
     }, [dailySummaries]);
 
+
     function handlePrevWeek() {
         setMonday(prev => addDays(prev, -7));
     }
@@ -296,6 +297,10 @@ const PercentageWeekOverview = ({
                                                     {customers.map(c => (
                                                         <option key={c.id} value={c.id}>{c.name}</option>
                                                     ))}
+
+
+
+
                                                 </select>
                                                 <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
                                                 <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
