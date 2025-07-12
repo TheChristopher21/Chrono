@@ -48,7 +48,6 @@ const HourlyWeekOverview = ({
     const [startTimes, setStartTimes] = useState({});
     const [endTimes, setEndTimes] = useState({});
     const [customerRanges, setCustomerRanges] = useState({});
-
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
         : [];
