@@ -50,11 +50,13 @@ const HourlyWeekOverview = ({
     const [customerRanges, setCustomerRanges] = useState({});
     const [savedRanges, setSavedRanges] = useState({});
 
+
     // Initialize customer selections and ranges from existing entries
     useEffect(() => {
         const initialCustomers = {};
         const existingRanges = {};
         const displayRanges = {};
+
         dailySummaries.forEach(s => {
             const iso = s.date;
             const entries = Array.isArray(s.entries) ? s.entries : [];
@@ -83,6 +85,7 @@ const HourlyWeekOverview = ({
                         start,
                         end: time
                     });
+
                     currentCustomer = null;
                     start = null;
                 }
@@ -92,6 +95,7 @@ const HourlyWeekOverview = ({
         setCustomerRanges(existingRanges);
         setSavedRanges(displayRanges);
     }, [dailySummaries]);
+
 
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
@@ -298,6 +302,7 @@ const HourlyWeekOverview = ({
                                             </ul>
                                         )}
 
+
                                         {(customerRanges[isoDate] || []).map((r, idx) => (
                                             <div key={idx} className="customer-range-row">
                                                 <select
@@ -308,6 +313,7 @@ const HourlyWeekOverview = ({
                                                     {customers.map(c => (
                                                         <option key={c.id} value={c.id}>{c.name}</option>
                                                     ))}
+
                                                 </select>
                                                 <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
                                                 <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
