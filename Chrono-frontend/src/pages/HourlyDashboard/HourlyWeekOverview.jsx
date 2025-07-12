@@ -48,11 +48,15 @@ const HourlyWeekOverview = ({
     const [startTimes, setStartTimes] = useState({});
     const [endTimes, setEndTimes] = useState({});
     const [customerRanges, setCustomerRanges] = useState({});
+    const [savedRanges, setSavedRanges] = useState({});
+
 
     // Initialize customer selections and ranges from existing entries
     useEffect(() => {
         const initialCustomers = {};
         const existingRanges = {};
+        const displayRanges = {};
+
         dailySummaries.forEach(s => {
             const iso = s.date;
             const entries = Array.isArray(s.entries) ? s.entries : [];
@@ -74,6 +78,14 @@ const HourlyWeekOverview = ({
                         start,
                         end: time
                     });
+                    const name = entry.customerName || '';
+                    (displayRanges[iso] ||= []).push({
+                        customerId: currentCustomer || '',
+                        customerName: name,
+                        start,
+                        end: time
+                    });
+
                     currentCustomer = null;
                     start = null;
                 }
@@ -81,10 +93,9 @@ const HourlyWeekOverview = ({
         });
         setSelectedCustomers(initialCustomers);
         setCustomerRanges(existingRanges);
+        setSavedRanges(displayRanges);
     }, [dailySummaries]);
 
-  
-  
 
     const weekDates = selectedMonday
         ? Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))
@@ -283,6 +294,15 @@ const HourlyWeekOverview = ({
                                             assignProjectForDay(isoDate, selectedProjects[isoDate]);
                                         }}>{t('applyForDay')}</button>
 
+                                        {(savedRanges[isoDate] || []).length > 0 && (
+                                            <ul className="saved-range-list">
+                                                {(savedRanges[isoDate] || []).map((r, i) => (
+                                                    <li key={i}>{r.customerName || t('noCustomer')} {r.start} - {r.end}</li>
+                                                ))}
+                                            </ul>
+                                        )}
+
+
                                         {(customerRanges[isoDate] || []).map((r, idx) => (
                                             <div key={idx} className="customer-range-row">
                                                 <select
@@ -293,11 +313,6 @@ const HourlyWeekOverview = ({
                                                     {customers.map(c => (
                                                         <option key={c.id} value={c.id}>{c.name}</option>
                                                     ))}
-
-
-
-
-
 
                                                 </select>
                                                 <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
