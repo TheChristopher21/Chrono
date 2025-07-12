@@ -333,6 +333,7 @@
 .percentage-dashboard.scoped-dashboard .day-customer-select {
   display: flex;
   flex-wrap: wrap;
+
   gap: var(--ud-gap-xs, 0.5rem);
   align-items: center;
   margin-bottom: var(--ud-gap-sm, 0.75rem);
@@ -340,12 +341,14 @@
 
 .percentage-dashboard.scoped-dashboard .day-customer-select select,
 .percentage-dashboard.scoped-dashboard .day-customer-select button {
+
   flex: 1 1 auto;
   min-width: 0;
 }
 
 .percentage-dashboard.scoped-dashboard .day-customer-select button {
   max-width: 160px;
+
 }
 .percentage-dashboard.scoped-dashboard .week-day-content {
   font-size: var(--ud-fz-sm, 0.875rem);
