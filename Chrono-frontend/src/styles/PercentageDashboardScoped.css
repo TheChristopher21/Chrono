@@ -329,6 +329,24 @@
   padding-bottom: var(--ud-gap-sm, 0.75rem);
   border-bottom: 1px solid var(--ud-c-line, #e2e8f0);
 }
+
+.percentage-dashboard.scoped-dashboard .day-customer-select {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--ud-gap-xs, 0.5rem);
+  align-items: center;
+  margin-bottom: var(--ud-gap-sm, 0.75rem);
+}
+
+.percentage-dashboard.scoped-dashboard .day-customer-select select,
+.percentage-dashboard.scoped-dashboard .day-customer-select button {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.percentage-dashboard.scoped-dashboard .day-customer-select button {
+  max-width: 160px;
+}
 .percentage-dashboard.scoped-dashboard .week-day-content {
   font-size: var(--ud-fz-sm, 0.875rem);
   flex-grow: 1;
@@ -653,6 +671,15 @@
     flex-direction: column-reverse;
   }
   .percentage-dashboard.scoped-dashboard .modal-buttons button {
+    width: 100%;
+  }
+
+  .percentage-dashboard.scoped-dashboard .day-customer-select {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .percentage-dashboard.scoped-dashboard .day-customer-select select,
+  .percentage-dashboard.scoped-dashboard .day-customer-select button {
     width: 100%;
   }
 }
