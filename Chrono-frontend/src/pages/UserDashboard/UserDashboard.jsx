@@ -35,6 +35,7 @@ import DayCard from '../../components/DayCard';
 import TrendChart from '../../components/TrendChart';
 import UserCorrectionsPanel from './UserCorrectionsPanel';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
+import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
 
 function UserDashboard() {
     const { currentUser, fetchCurrentUser } = useAuth();
@@ -62,12 +63,7 @@ function UserDashboard() {
     const [projects, setProjects] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [selectedProjectId, setSelectedProjectId] = useState('');
-    const [selectedCustomers, setSelectedCustomers] = useState({});
-    const [selectedProjects, setSelectedProjects] = useState({});
-    const [startTimes, setStartTimes] = useState({});
-    const [endTimes, setEndTimes] = useState({});
-    const [customerRanges, setCustomerRanges] = useState({});
-    const [savedRanges, setSavedRanges] = useState({});
+    const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
 
     const [printModalVisible, setPrintModalVisible] = useState(false);
     const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)));
@@ -123,37 +119,6 @@ function UserDashboard() {
         }
     }, [userProfile, currentUser, fetchCustomers]);
 
-    useEffect(() => {
-        const initialCustomers = {};
-        const existingRanges = {};
-        const displayRanges = {};
-        dailySummaries.forEach(s => {
-            const iso = s.date;
-            const entries = Array.isArray(s.entries) ? s.entries : [];
-            const customerIds = entries.map(e => e.customerId).filter(id => id != null);
-            const unique = Array.from(new Set(customerIds));
-            if (unique.length === 1) {
-                initialCustomers[iso] = String(unique[0]);
-            }
-            let currentCustomer = null;
-            let start = null;
-            entries.forEach(entry => {
-                const time = entry.entryTimestamp?.substring(11,16);
-                if (entry.punchType === 'START') {
-                    currentCustomer = entry.customerId;
-                    start = time;
-                } else if (entry.punchType === 'ENDE' && start) {
-                    (existingRanges[iso] ||= []).push({ customerId: currentCustomer || '', start, end: time });
-                    (displayRanges[iso] ||= []).push({ customerId: currentCustomer || '', customerName: entry.customerName || '', start, end: time });
-                    currentCustomer = null;
-                    start = null;
-                }
-            });
-        });
-        setSelectedCustomers(initialCustomers);
-        setCustomerRanges(existingRanges);
-        setSavedRanges(displayRanges);
-    }, [dailySummaries]);
 
     const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
@@ -262,70 +227,6 @@ function UserDashboard() {
         }
     }
 
-    const assignCustomerForDay = async (isoDate, customerId) => {
-        try {
-            const params = { username: userProfile.username, date: isoDate };
-            if (customerId) params.customerId = customerId;
-            await api.put('/api/timetracking/day/customer', null, { params });
-            fetchDataForUser();
-            notify(t('customerSaved'), 'success');
-        } catch (err) {
-            console.error('Error saving customer', err);
-            notify(t('customerSaveError'), 'error');
-        }
-    };
-
-    const assignCustomerForRange = async (isoDate, startTime, endTime, customerId) => {
-        try {
-            const params = { username: userProfile.username, date: isoDate, startTime, endTime };
-            if (customerId) params.customerId = customerId;
-            await api.put('/api/timetracking/range/customer', null, { params });
-            fetchDataForUser();
-            notify(t('customerSaved'), 'success');
-        } catch (err) {
-            console.error('Error saving customer range', err);
-            notify(t('customerSaveError'), 'error');
-        }
-    };
-
-    const assignProjectForDay = async (isoDate, projectId) => {
-        try {
-            const params = { username: userProfile.username, date: isoDate };
-            if (projectId) params.projectId = projectId;
-            await api.put('/api/timetracking/day/project', null, { params });
-            fetchDataForUser();
-            notify(t('customerSaved'), 'success');
-        } catch (err) {
-            console.error('Error saving project', err);
-            notify(t('customerSaveError'), 'error');
-        }
-    };
-
-    const addCustomerRange = iso => {
-        setCustomerRanges(prev => ({
-            ...prev,
-            [iso]: [...(prev[iso] || []), { customerId: '', start: '', end: '' }]
-        }));
-    };
-
-    const updateCustomerRange = (iso, idx, field, value) => {
-        setCustomerRanges(prev => {
-            const ranges = [...(prev[iso] || [])];
-            ranges[idx] = { ...ranges[idx], [field]: value };
-            return { ...prev, [iso]: ranges };
-        });
-    };
-
-    const saveCustomerRange = async (iso, idx) => {
-        const range = (customerRanges[iso] || [])[idx];
-        if (!range || !range.start || !range.end) return;
-        await assignCustomerForRange(iso, range.start, range.end, range.customerId);
-        setCustomerRanges(prev => {
-            const ranges = [...(prev[iso] || [])];
-            ranges.splice(idx, 1);
-            return { ...prev, [iso]: ranges };
-        });
-    };
 
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
 
@@ -635,100 +536,36 @@ function UserDashboard() {
                                 showCorrection
                                 onRequestCorrection={() => openCorrectionModalForDay(dayObj)}
                             >
-                                {(userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled) && (
-                                    <div className="day-customer-select">
-                                        <label>
-                                            <span>{t('customerLabel', 'Kunde')}</span>
-                                            <select
-                                                value={selectedCustomers[isoDate] || ''}
-                                                onChange={e => {
-                                                    const val = e.target.value;
-                                                    setSelectedCustomers(prev => ({ ...prev, [isoDate]: val }));
-                                                    if (startTimes[isoDate] && endTimes[isoDate]) {
-                                                        assignCustomerForRange(isoDate, startTimes[isoDate], endTimes[isoDate], val);
-                                                    } else {
-                                                        assignCustomerForDay(isoDate, val);
-                                                    }
-                                                }}
-                                            >
-                                                <option value="">{t('noCustomer')}</option>
-                                                {recentCustomers.length > 0 && (
-                                                    <optgroup label={t('recentCustomers')}>
-                                                        {recentCustomers.map(c => (
-                                                            <option key={'r'+c.id} value={c.id}>{c.name}</option>
-                                                        ))}
-                                                    </optgroup>
-                                                )}
-                                                {customers.map(c => (
-                                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                        <label>
-                                            <span>{t('projectLabel', 'Projekt')}</span>
-                                            <select
-                                                value={selectedProjects[isoDate] || ''}
-                                                onChange={e => {
-                                                    const val = e.target.value;
-                                                    setSelectedProjects(prev => ({ ...prev, [isoDate]: val }));
-                                                    assignProjectForDay(isoDate, val);
-                                                }}
-                                            >
-                                                <option value="">{t('noProject','Kein Projekt')}</option>
-                                                {projects.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                        <label>
-                                            <span>{t('start')}</span>
-                                            <input
-                                                type="time"
-                                                placeholder="HH:MM"
-                                                value={startTimes[isoDate] || ''}
-                                                onChange={e => setStartTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                            />
-                                        </label>
-                                        <label>
-                                            <span>{t('end')}</span>
-                                            <input
-                                                type="time"
-                                                placeholder="HH:MM"
-                                                value={endTimes[isoDate] || ''}
-                                                onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                            />
-                                        </label>
-                                        {(savedRanges[isoDate] || []).length > 0 && (
-                                            <ul className="saved-range-list">
-                                                {(savedRanges[isoDate] || []).map((r, i) => (
-                                                    <li key={i}>{r.customerName || t('noCustomer')} {r.start} - {r.end}</li>
-                                                ))}
-                                            </ul>
-                                        )}
-                                        {(customerRanges[isoDate] || []).map((r, idx) => (
-                                            <div key={idx} className="customer-range-row">
-                                                <select
-                                                    value={r.customerId}
-                                                    onChange={e => updateCustomerRange(isoDate, idx, 'customerId', e.target.value)}
-                                                >
-                                                    <option value="">{t('noCustomer')}</option>
-                                                    {customers.map(c => (
-                                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                                    ))}
-
-                                                </select>
-                                                <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
-                                                <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
-                                                <button className="button-secondary" onClick={() => saveCustomerRange(isoDate, idx)}>{t('save','Speichern')}</button>
-                                            </div>
-                                        ))}
-                                        <button className="button-secondary" onClick={() => addCustomerRange(isoDate)}>{t('addRange','Zeitraum hinzufügen')}</button>
+                                {(userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled) && summary && summary.entries.length > 0 && (
+                                    <div className="day-card-actions">
+                                        <button
+                                            onClick={() => setModalInfo({ isVisible: true, day: dayObj, summary })}
+                                            className="button-primary-outline"
+                                        >
+                                            {t('assignCustomer.editButton', 'Kunden & Zeiten bearbeiten')}
+                                        </button>
                                     </div>
                                 )}
                             </DayCard>
                         );
                     })}
                 </div>
+
+                {modalInfo.isVisible && (
+                    <CustomerTimeAssignModal
+                        t={t}
+                        day={modalInfo.day}
+                        summary={modalInfo.summary}
+                        customers={customers}
+                        projects={projects}
+                        onClose={() => setModalInfo({ isVisible: false, day: null, summary: null })}
+                        onSave={() => {
+                            fetchDataForUser();
+                            setModalInfo({ isVisible: false, day: null, summary: null });
+                        }}
+                    />
+                )}
+
             </section>
 
             <VacationCalendar

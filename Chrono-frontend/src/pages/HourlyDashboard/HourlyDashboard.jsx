@@ -322,6 +322,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 assignCustomerForDay={assignCustomerForDay}
                 assignCustomerForRange={assignCustomerForRange}
                 assignProjectForDay={assignProjectForDay}
+                reloadData={() => fetchWeeklyData(selectedMonday)}
             />
 
             <PrintReportModal

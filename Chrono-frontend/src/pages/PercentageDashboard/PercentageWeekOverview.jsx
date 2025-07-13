@@ -18,6 +18,7 @@ import {
 import '../../styles/PercentageDashboardScoped.css'; // Stellt sicher, dass die Styles hier auch referenziert werden
 import api from "../../utils/api.js";
 import DayCard from '../../components/DayCard';
+import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
 
 const PercentageWeekOverview = ({
                                     t,
@@ -39,67 +40,19 @@ const PercentageWeekOverview = ({
                                     selectedProjectId,
                                     setSelectedProjectId,
                                     assignCustomerForDay,
-                                    assignCustomerForRange,
                                     assignProjectForDay,
                                     vacationRequests,
                                     sickLeaves,
-                                holidaysForUserCanton
+                                    holidaysForUserCanton,
+                                    reloadData
                                 }) => {
 
     // Immer 7 Tage für eine volle Wochenansicht (Mo-So)
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i)); // Mo-So
     const { currentUser } = useAuth();
-    const [selectedCustomers, setSelectedCustomers] = useState({});
-    const [selectedProjects, setSelectedProjects] = useState({});
-    const [startTimes, setStartTimes] = useState({});
-    const [endTimes, setEndTimes] = useState({});
-    const [customerRanges, setCustomerRanges] = useState({});
-    const [savedRanges, setSavedRanges] = useState({});
+    const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
 
     // Derive current customer selections and ranges from loaded entries
-    useEffect(() => {
-        const initialCustomers = {};
-        const existingRanges = {};
-        const displayRanges = {};
-
-        dailySummaries.forEach(s => {
-            const iso = s.date;
-            const entries = Array.isArray(s.entries) ? s.entries : [];
-            const customerIds = entries.map(e => e.customerId).filter(id => id != null);
-            const unique = Array.from(new Set(customerIds));
-            if (unique.length === 1) {
-                initialCustomers[iso] = String(unique[0]);
-            }
-            let currentCustomer = null;
-            let start = null;
-            entries.forEach(entry => {
-                const time = entry.entryTimestamp?.substring(11,16);
-                if (entry.punchType === 'START') {
-                    currentCustomer = entry.customerId;
-                    start = time;
-                } else if (entry.punchType === 'ENDE' && start) {
-                    (existingRanges[iso] ||= []).push({
-                        customerId: currentCustomer || '',
-                        start,
-                        end: time
-                    });
-                    const name = entry.customerName || '';
-                    (displayRanges[iso] ||= []).push({
-                        customerId: currentCustomer || '',
-                        customerName: name,
-                        start,
-                        end: time
-                    });
-
-                    currentCustomer = null;
-                    start = null;
-                }
-            });
-        });
-        setSelectedCustomers(initialCustomers);
-        setCustomerRanges(existingRanges);
-        setSavedRanges(displayRanges);
-    }, [dailySummaries]);
 
 
     function handlePrevWeek() {
@@ -117,31 +70,6 @@ const PercentageWeekOverview = ({
         }
     }
 
-    const addCustomerRange = iso => {
-        setCustomerRanges(prev => ({
-            ...prev,
-            [iso]: [...(prev[iso] || []), { customerId: '', start: '', end: '' }]
-        }));
-    };
-
-    const updateCustomerRange = (iso, idx, field, value) => {
-        setCustomerRanges(prev => {
-            const ranges = [...(prev[iso] || [])];
-            ranges[idx] = { ...ranges[idx], [field]: value };
-            return { ...prev, [iso]: ranges };
-        });
-    };
-
-    const saveCustomerRange = async (iso, idx) => {
-        const range = (customerRanges[iso] || [])[idx];
-        if (!range || !range.start || !range.end) return;
-        await assignCustomerForRange(iso, range.start, range.end, range.customerId);
-        setCustomerRanges(prev => {
-            const ranges = [...(prev[iso] || [])];
-            ranges.splice(idx, 1);
-            return { ...prev, [iso]: ranges };
-        });
-    };
 
 
     return (
@@ -249,106 +177,35 @@ const PercentageWeekOverview = ({
                             showCorrection
                             onRequestCorrection={() => openCorrectionModal(dayObj, summary)}
                         >
-                            {(userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled) && (
-                                <div className="day-customer-select">
-                                    <label>
-                                        <span>{t('customerLabel', 'Kunde')}</span>
-                                        <select
-                                            value={selectedCustomers[isoDate] || ''}
-                                            onChange={e => {
-                                                const val = e.target.value;
-                                                setSelectedCustomers(prev => ({ ...prev, [isoDate]: val }));
-                                                if (startTimes[isoDate] && endTimes[isoDate]) {
-                                                    assignCustomerForRange(isoDate, startTimes[isoDate], endTimes[isoDate], val);
-                                                } else {
-                                                    assignCustomerForDay(isoDate, val);
-                                                }
-                                            }}
-
-                                        >
-                                            <option value="">{t('noCustomer')}</option>
-                                            {recentCustomers.length > 0 && (
-                                                <optgroup label={t('recentCustomers')}>
-                                                    {recentCustomers.map(c => (
-                                                        <option key={'r'+c.id} value={c.id}>{c.name}</option>
-                                                    ))}
-                                                </optgroup>
-                                            )}
-                                            {customers.map(c => (
-                                                <option key={c.id} value={c.id}>{c.name}</option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                    <label>
-                                        <span>{t('projectLabel', 'Projekt')}</span>
-                                        <select
-                                            value={selectedProjects[isoDate] || ''}
-                                            onChange={e => {
-                                                const val = e.target.value;
-                                                setSelectedProjects(prev => ({ ...prev, [isoDate]: val }));
-                                                assignProjectForDay(isoDate, val);
-                                            }}
-
-                                        >
-                                            <option value="">{t('noProject','Kein Projekt')}</option>
-                                            {projects.map(p => (
-                                                <option key={p.id} value={p.id}>{p.name}</option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                    <label>
-                                        <span>{t('start')}</span>
-                                        <input
-                                            type="time"
-                                            placeholder="HH:MM"
-                                            value={startTimes[isoDate] || ''}
-                                            onChange={e => setStartTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                        />
-                                    </label>
-                                    <label>
-                                        <span>{t('end')}</span>
-                                        <input
-                                            type="time"
-                                            placeholder="HH:MM"
-                                            value={endTimes[isoDate] || ''}
-                                            onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                        />
-                                    </label>
-
-
-                                    {(savedRanges[isoDate] || []).length > 0 && (
-                                        <ul className="saved-range-list">
-                                            {(savedRanges[isoDate] || []).map((r, i) => (
-                                                <li key={i}>{r.customerName || t('noCustomer')} {r.start} - {r.end}</li>
-                                            ))}
-                                        </ul>
-                                    )}
-
-                                    {(customerRanges[isoDate] || []).map((r, idx) => (
-                                        <div key={idx} className="customer-range-row">
-                                            <select
-                                                value={r.customerId}
-                                                onChange={e => updateCustomerRange(isoDate, idx, 'customerId', e.target.value)}
-                                            >
-                                                <option value="">{t('noCustomer')}</option>
-                                                {customers.map(c => (
-                                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                                ))}
-
-
-                                            </select>
-                                            <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
-                                            <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
-                                            <button className="button-secondary" onClick={() => saveCustomerRange(isoDate, idx)}>{t('save','Speichern')}</button>
-                                        </div>
-                                    ))}
-                                    <button className="button-secondary" onClick={() => addCustomerRange(isoDate)}>{t('addRange','Zeitraum hinzufügen')}</button>
+                            {summary && summary.entries.length > 0 && (
+                                <div className="day-card-actions">
+                                    <button
+                                        onClick={() => setModalInfo({ isVisible: true, day: dayObj, summary })}
+                                        className="button-primary-outline"
+                                    >
+                                        {t('assignCustomer.editButton', 'Kunden & Zeiten bearbeiten')}
+                                    </button>
                                 </div>
                             )}
                         </DayCard>
                     );
                 })}
             </div>
+
+            {modalInfo.isVisible && (
+                <CustomerTimeAssignModal
+                    t={t}
+                    day={modalInfo.day}
+                    summary={modalInfo.summary}
+                    customers={customers}
+                    projects={projects}
+                    onClose={() => setModalInfo({ isVisible: false, day: null, summary: null })}
+                    onSave={() => {
+                        if (reloadData) reloadData();
+                        setModalInfo({ isVisible: false, day: null, summary: null });
+                    }}
+                />
+            )}
         </section>
     );
 };
@@ -387,11 +244,11 @@ PercentageWeekOverview.propTypes = {
     selectedProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     setSelectedProjectId: PropTypes.func,
     assignCustomerForDay: PropTypes.func,
-    assignCustomerForRange: PropTypes.func,
     assignProjectForDay: PropTypes.func,
     vacationRequests: PropTypes.array.isRequired,
     sickLeaves: PropTypes.array.isRequired,
     holidaysForUserCanton: PropTypes.object,
+    reloadData: PropTypes.func,
 };
 
 export default PercentageWeekOverview;
