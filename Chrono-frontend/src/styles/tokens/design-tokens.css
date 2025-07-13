@@ -1,8 +1,8 @@
 /* Central design tokens for colors, typography and spacing */
 :root {
   /* Primary colors */
-  --c-pri: #475bff;
-  --c-pri-dim: #6b7cff;
+  --c-pri: #4a90e2;
+  --c-pri-dim: #5aa1f2;
   --c-pri-rgb: 71, 91, 255;
   --c-danger: #ed5757;
 
@@ -19,6 +19,7 @@
   --u-radius: 12px;
   --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
   --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.12);
+  --u-card-padding: 1.5rem;
 
   /* Motion */
   --u-dur: 0.25s;
@@ -32,11 +33,11 @@
 [data-theme="dark"] {
   --c-text: #e4e6eb;
   --c-muted: #9ea3b0;
-  --c-bg: #18191a;
-  --c-bg-rgb: 24, 25, 26;
+  --c-bg: #121212;
+  --c-bg-rgb: 18, 18, 18;
   --c-surface: #202328;
-  --c-card: #1e1f23;
-  --c-border: #3d4048;
+  --c-card: #1e1e1e;
+  --c-border: #2f2f2f;
 
   --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
   --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
@@ -49,11 +50,11 @@
     :root:not([data-theme="light"]) {
     --c-text: #e4e6eb;
     --c-muted: #9ea3b0;
-    --c-bg: #18191a;
-    --c-bg-rgb: 24, 25, 26;
+    --c-bg: #121212;
+    --c-bg-rgb: 18, 18, 18;
     --c-surface: #202328;
-    --c-card: #1e1f23;
-    --c-border: #3d4048;
+    --c-card: #1e1e1e;
+    --c-border: #2f2f2f;
 
       --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
       --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);

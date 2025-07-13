@@ -64,6 +64,13 @@ body {
     color var(--u-dur) var(--u-ease);
 }
 
+.scoped-dashboard {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: 1rem;
+}
+
 /* Links */
 a {
   color: var(--c-pri);
@@ -159,6 +166,24 @@ html[data-theme="dark"] {
 .text-uppercase {
   text-transform: uppercase;
 }
+
+.content-section {
+  margin-bottom: 2.5rem;
+  padding: var(--u-card-padding);
+}
+
+.day-card {
+  padding: var(--u-card-padding);
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius);
+  transition: border-color var(--u-dur), transform var(--u-dur);
+}
+
+.day-card:hover {
+  border-color: var(--c-pri);
+  transform: translateY(-2px);
+}
 /* ---------- 5)  Reduced-Motion ---------------------------------------- */
 @media (prefers-reduced-motion: reduce) {
   * {
@@ -170,4 +195,18 @@ html[data-theme="dark"] {
   html {
     font-size: 15px; /* oder 14px, je nach Geschmack */
   }
+}
+
+.skeleton-card {
+  background: #eee;
+  border-radius: 4px;
+  height: 120px;
+  margin-bottom: 10px;
+  animation: pulse 1.2s infinite ease-in-out;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.6; }
+  100% { opacity: 1; }
 }
