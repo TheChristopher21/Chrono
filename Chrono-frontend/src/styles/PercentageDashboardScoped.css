@@ -275,27 +275,38 @@
 
 /* Wöchentliche Zusammenfassung (Ist, Soll, Saldo) */
 .percentage-dashboard.scoped-dashboard .weekly-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--ud-gap-md);
+  margin-bottom: var(--ud-gap-lg);
+}
+.percentage-dashboard.scoped-dashboard .summary-item {
+  background: var(--ud-c-card);
+  border: 1px solid var(--ud-c-border);
+  border-radius: var(--ud-radius-md);
+  padding: var(--ud-gap-md);
   text-align: center;
-  margin-bottom: var(--ud-gap-lg, 2rem);
-  padding: var(--ud-gap-md, 1.25rem);
-  background-color: var(--ud-c-primary-light-bg, rgba(71, 91, 255, 0.08));
-  border-radius: var(--ud-radius-md, 10px);
+  box-shadow: var(--ud-shadow-card);
 }
-.percentage-dashboard.scoped-dashboard .weekly-summary p {
-  margin: var(--ud-gap-xs, 0.5rem) 0;
-  font-size: var(--ud-fz-lg, 1.125rem);
-  font-weight: 500;
-  color: var(--ud-c-text, #1f2024);
+.percentage-dashboard.scoped-dashboard .summary-label {
+  display: block;
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+  margin-bottom: var(--ud-gap-xs);
 }
-.percentage-dashboard.scoped-dashboard .weekly-summary p strong {
-  color: var(--ud-c-primary-text, var(--c-pri));
+.percentage-dashboard.scoped-dashboard .summary-value {
+  font-size: var(--ud-fz-lg);
   font-weight: 600;
+  color: var(--ud-c-text);
 }
-.percentage-dashboard.scoped-dashboard .weekly-summary .balance-positive {
-  color: var(--ud-c-success-text, #059669);
+.percentage-dashboard.scoped-dashboard .summary-value.balance-positive {
+  color: var(--ud-c-success-text);
 }
-.percentage-dashboard.scoped-dashboard .weekly-summary .balance-negative {
-  color: var(--ud-c-error-text, #dc2626);
+.percentage-dashboard.scoped-dashboard .summary-value.balance-negative {
+  color: var(--ud-c-error-text);
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .summary-item {
+  background: var(--ud-c-surface);
 }
 /* Dark Mode für .weekly-summary und Textfarben wird durch die Neudefinition der entsprechenden --ud- Variablen abgedeckt. */
 

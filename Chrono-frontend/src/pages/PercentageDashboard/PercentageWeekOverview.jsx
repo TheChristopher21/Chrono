@@ -193,21 +193,21 @@ const PercentageWeekOverview = ({
             </div>
 
             <div className="weekly-summary">
-                <p>
-                    <strong>{t('weeklyHours', "Ges. Std. (Woche)")}:</strong> {minutesToHHMM(weeklyWorked)}
-                </p>
-                <p>
-                    <strong>{t('expected', "Soll (Woche)")}:</strong> {minutesToHHMM(weeklyExpected)}
-                    <span className="info-badge" title={t('expectedWeekInfo')}>ℹ️</span>
-                </p>
-                <p>
-                    <strong className={(weeklyDiff ?? 0) < 0 ? 'balance-negative' : 'balance-positive'}>
-                        {t('weekBalance', "Saldo (Woche)")}:
-                    </strong>
-                    <span className={(weeklyDiff ?? 0) < 0 ? 'balance-negative' : 'balance-positive'}>
-                        {minutesToHHMM(weeklyDiff)}
+                <div className="summary-item">
+                    <span className="summary-label">{t('weeklyHours', 'Ges. Std. (Woche)')}</span>
+                    <span className="summary-value">{minutesToHHMM(weeklyWorked)}</span>
+                </div>
+                <div className="summary-item">
+                    <span className="summary-label">
+                        {t('expected', 'Soll (Woche)')}
+                        <span className="info-badge" title={t('expectedWeekInfo')}>ℹ️</span>
                     </span>
-                </p>
+                    <span className="summary-value">{minutesToHHMM(weeklyExpected)}</span>
+                </div>
+                <div className="summary-item">
+                    <span className="summary-label">{t('weekBalance', 'Saldo (Woche)')}</span>
+                    <span className={`summary-value ${(weeklyDiff ?? 0) < 0 ? 'balance-negative' : 'balance-positive'}`}>{minutesToHHMM(weeklyDiff)}</span>
+                </div>
             </div>
 
             <div className="week-display">

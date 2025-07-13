@@ -336,22 +336,32 @@
 }
 
 .hourly-dashboard.scoped-dashboard .weekly-monthly-totals {
-  /* Spezifisch für HourlyDashboard */
-  text-align: center;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--ud-gap-md);
   margin-bottom: var(--ud-gap-lg);
-  padding: var(--ud-gap-md);
-  background-color: var(--ud-c-primary-light-bg);
-  border-radius: var(--ud-radius-lg);
 }
-.hourly-dashboard.scoped-dashboard .weekly-monthly-totals p {
-  margin: var(--ud-gap-sm) 0;
+.hourly-dashboard.scoped-dashboard .summary-item {
+  background: var(--ud-c-card);
+  border: 1px solid var(--ud-c-border);
+  border-radius: var(--ud-radius-md);
+  padding: var(--ud-gap-md);
+  text-align: center;
+  box-shadow: var(--ud-shadow-card);
+}
+.hourly-dashboard.scoped-dashboard .summary-label {
+  display: block;
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+  margin-bottom: var(--ud-gap-xs);
+}
+.hourly-dashboard.scoped-dashboard .summary-value {
   font-size: var(--ud-fz-lg);
-  font-weight: 500;
+  font-weight: 600;
   color: var(--ud-c-text);
 }
-.hourly-dashboard.scoped-dashboard .weekly-monthly-totals p strong {
-  color: var(--ud-c-primary-text);
-  font-weight: 600;
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .summary-item {
+  background: var(--ud-c-surface);
 }
 
 .hourly-dashboard.scoped-dashboard .week-display {
