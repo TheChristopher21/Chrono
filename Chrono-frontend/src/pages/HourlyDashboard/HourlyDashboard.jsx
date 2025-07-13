@@ -27,7 +27,7 @@ import {
 import HourlyWeekOverview from './HourlyWeekOverview';
 import HourlyVacationSection from './HourlyVacationSection';
 import HourlyCorrectionsPanel from './HourlyCorrectionsPanel';
-import HourlyCorrectionModal from './HourlyCorrectionModal';
+import CorrectionModal from '../../components/CorrectionModal';
 import PrintReportModal from '../../components/PrintReportModal.jsx';
 
 import '../../styles/UserDashboardScoped.css';
@@ -350,11 +350,11 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 setShowAllCorrections={setShowAllCorrections}
             />
 
-            <HourlyCorrectionModal
+            <CorrectionModal
                 visible={showCorrectionModal}
                 correctionDate={correctionDate}
-                dailySummaryForCorrection={dailySummaryForCorrection}
-                onSubmitCorrection={handleCorrectionSubmit}
+                dailySummary={dailySummaryForCorrection}
+                onSubmit={handleCorrectionSubmit}
                 onClose={() => setShowCorrectionModal(false)}
                 t={t}
             />

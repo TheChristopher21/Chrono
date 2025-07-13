@@ -1,20 +1,28 @@
 // src/pages/UserDashboard/userDashUtils.js
 import { parseISO } from 'date-fns'; // parseISO wird für String-Datumskonvertierung verwendet
+import {
+    getMondayOfWeek,
+    addDays,
+    formatLocalDate,
+    formatDate,
+} from '../../utils/dateUtils';
+import {
+    formatTime,
+    formatPunchedTimeFromEntry,
+    minutesToHHMM,
+    isLateTime,
+} from '../../utils/timeUtils';
 
-export function getMondayOfWeek(date) {
-    const copy = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-    const day = copy.getDay();
-    const diff = copy.getDate() - day + (day === 0 ? -6 : 1); // Montag ist Ziel
-    copy.setDate(diff);
-    copy.setHours(0, 0, 0, 0);
-    return copy;
-}
-
-export function addDays(date, days) {
-    const d = new Date(date);
-    d.setDate(d.getDate() + days);
-    return d;
-}
+export {
+    getMondayOfWeek,
+    addDays,
+    formatLocalDate,
+    formatDate,
+    formatTime,
+    formatPunchedTimeFromEntry,
+    minutesToHHMM,
+    isLateTime,
+};
 
 export function parseHex16(hexString) {
     if (!hexString) return null;
@@ -31,48 +39,7 @@ export function parseHex16(hexString) {
     return output;
 }
 
-export function formatTime(dateInput) {
-    if (!dateInput) {
-        return "--:--";
-    }
-    try {
-        const date = new Date(dateInput);
-        if (isNaN(date.getTime())) {
-            return "--:--";
-        }
-        const hours = String(date.getHours()).padStart(2, '0');
-        const minutes = String(date.getMinutes()).padStart(2, '0');
-        return `${hours}:${minutes}`;
-    } catch (error) {
-        console.error("Fehler beim Formatieren der Zeit:", dateInput, error);
-        return "--:--";
-    }
-}
-export function formatPunchedTimeFromEntry(entry) {
-    if (!entry || !entry.entryTimestamp) return '-';
-    return formatTime(entry.entryTimestamp);
-}
 
-
-export function formatLocalDate(date) { // Gibt YYYY-MM-DD zurück
-    if (!date || !(date instanceof Date) || isNaN(date.getTime())) return "";
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
-}
-
-export function formatDate(dateInput) {
-    if (!dateInput) return "-";
-    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
-
-    if (isNaN(date.getTime())) return "-";
-
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}.${month}.${year}`;
-}
 
 export function getMinutesSinceMidnight(datetimeStr) {
     if (!datetimeStr) return 0;
@@ -98,18 +65,6 @@ export function formatDiffDecimal(diffInMinutes) {
     const absHours = Math.abs(diffInMinutes) / 60;
     return `${sign}${absHours.toFixed(2)}h`;
 }
-
-export function minutesToHHMM(totalMinutes) {
-    if (typeof totalMinutes !== 'number' || isNaN(totalMinutes)) {
-        return "0h 0m";
-    }
-    const sign = totalMinutes < 0 ? "-" : "";
-    const absMinutes = Math.abs(totalMinutes);
-    const h = Math.floor(absMinutes / 60);
-    const m = absMinutes % 60;
-    return `${sign}${h}h ${String(m).padStart(2, '0')}m`;
-}
-
 
 export function getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours = 8.5) {
     if (!userProfile || !dayObj || !(dayObj instanceof Date) || isNaN(dayObj.getTime())) {
@@ -143,15 +98,4 @@ export function getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours
         }
     }
     return (dayOfWeekJs === 0 || dayOfWeekJs === 6) ? 0 : defaultExpectedHours;
-}
-
-export function isLateTime(timeString) {
-    if (!timeString || typeof timeString !== 'string' || !timeString.includes(':')) return false;
-    try {
-        const [hours, minutes] = timeString.split(':').map(Number);
-        if (isNaN(hours) || isNaN(minutes)) return false;
-        return (hours === 23 && minutes >= 20 && minutes <= 25) || (hours === 22 && minutes >=55);
-    } catch (e) {
-        return false;
-    }
 }
