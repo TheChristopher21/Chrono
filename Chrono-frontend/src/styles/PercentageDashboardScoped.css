@@ -62,10 +62,15 @@
 
   --ud-c-late-time: var(--ud-c-error); /* Verwendet die definierte Fehlerfarbe */
   --ud-c-late-time-bg: var(--ud-c-error-light-bg); /* Verwendet den hellen Fehlerhintergrund */
+  --ud-c-time: var(--ud-c-text);
 
   --ud-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.25);
   --ud-shadow-interactive: 0 4px 12px rgba(0, 0, 0, 0.3);
   --ud-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.2);
+  --ud-shadow-hover: 0 6px 18px rgba(var(--ud-c-primary-rgb, 71, 91, 255), 0.15);
+  --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card, #ffffff) 90%, #000);
+  --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface, #f3f5fd) 95%, #000);
+  --ud-c-time: #f8f9fa;
 }
 
 /* =========================================================================
@@ -324,16 +329,14 @@
   box-shadow: var(--ud-shadow-card, 0 8px 24px rgba(71, 91, 255, 0.08));
   display: flex;
   flex-direction: column;
-  transition:
-    transform var(--u-dur, 0.25s) var(--u-ease, ease),
-    box-shadow var(--u-dur, 0.25s) var(--u-ease, ease);
+  transition: background-color var(--u-dur), box-shadow var(--u-dur), transform var(--u-dur);
 }
 .percentage-dashboard.scoped-dashboard .week-day-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(var(--ud-c-primary-rgb, 71, 91, 255), 0.12);
-}
-.percentage-dashboard.scoped-dashboard .week-day-header {
-  font-weight: 600;
+  /* transform: translateY(-5px); */
+  /* box-shadow: 0 10px 20px rgba(var(--ud-c-primary-rgb, 71, 91, 255), 0.12); */
+  background: var(--ud-c-card-hover);
+  box-shadow: var(--ud-shadow-hover);
+  transform: translateY(-4px);
   margin-bottom: var(--ud-gap-md, 1.25rem);
   font-size: var(--ud-fz-lg, 1.125rem);
   color: var(--ud-c-text, #1f2024);
@@ -366,7 +369,7 @@
 }
 .percentage-dashboard.scoped-dashboard .week-day-content .entry-time {
   font-weight: 600;
-  color: var(--ud-c-text, #1f2024);
+  color: var(--ud-c-time);
 }
 .percentage-dashboard.scoped-dashboard .late-time {
   color: var(--ud-c-late-time, #f87171);
