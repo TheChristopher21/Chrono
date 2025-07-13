@@ -219,10 +219,19 @@ const HourlyWeekOverview = ({
                 <button onClick={handleNextWeek} className="button-secondary">{t("nextWeek", "Nächste Woche")} →</button>
             </div>
             <div className="weekly-monthly-totals">
-                <p><strong>{t("weeklyHours", "Ges. Std. (Woche)")}:</strong> {minutesToHHMM(weeklyTotalMins)}</p>
-                <p><strong>{t("monthlyHours", "Ges. Std. (Monat)")}:</strong> {minutesToHHMM(monthlyTotalMins)}</p>
+                <div className="summary-item">
+                    <span className="summary-label">{t('weeklyHours', 'Ges. Std. (Woche)')}</span>
+                    <span className="summary-value">{minutesToHHMM(weeklyTotalMins)}</span>
+                </div>
+                <div className="summary-item">
+                    <span className="summary-label">{t('monthlyHours', 'Ges. Std. (Monat)')}</span>
+                    <span className="summary-value">{minutesToHHMM(monthlyTotalMins)}</span>
+                </div>
                 {weeklyEarnings !== null && (
-                    <p><strong>{t('estimatedEarnings', 'gesch\u00e4tzterVerdienst')}:</strong> {weeklyEarnings.toFixed(2)} CHF</p>
+                    <div className="summary-item">
+                        <span className="summary-label">{t('estimatedEarnings', 'gesch\u00e4tzterVerdienst')}</span>
+                        <span className="summary-value">{weeklyEarnings.toFixed(2)} CHF</span>
+                    </div>
                 )}
             </div>
             <TrendChart data={chartData} />

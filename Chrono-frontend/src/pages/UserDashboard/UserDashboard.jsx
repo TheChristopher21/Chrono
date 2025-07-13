@@ -431,14 +431,18 @@ function UserDashboard() {
                     </button>
                 </div>
                 <div className="weekly-summary">
-                    <p><strong>{t('actualTime')}:</strong> {minutesToHHMM(weeklyActualWorkedMinutes)}</p>
-                    <p><strong>{t('expected')}:</strong> {weeklyExpectedStr}</p>
-                    <p>
-                        <strong>{t('weekBalance')}:</strong>
-                        <span className={weeklyActualWorkedMinutes - weeklyExpectedMins < 0 ? 'balance-negative' : 'balance-positive'}>
-                            {weeklyDiffStr}
-                        </span>
-                    </p>
+                    <div className="summary-item">
+                        <span className="summary-label">{t('actualTime')}</span>
+                        <span className="summary-value">{minutesToHHMM(weeklyActualWorkedMinutes)}</span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="summary-label">{t('expected')}</span>
+                        <span className="summary-value">{weeklyExpectedStr}</span>
+                    </div>
+                    <div className="summary-item">
+                        <span className="summary-label">{t('weekBalance')}</span>
+                        <span className={`summary-value ${weeklyActualWorkedMinutes - weeklyExpectedMins < 0 ? 'balance-negative' : 'balance-positive'}`}>{weeklyDiffStr}</span>
+                    </div>
                 </div>
 
                 <TrendChart data={chartData} />

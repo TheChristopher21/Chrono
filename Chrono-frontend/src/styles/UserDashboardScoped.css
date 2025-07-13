@@ -332,6 +332,35 @@
   background-color: var(--ud-c-card);
 }
 
+.user-dashboard.scoped-dashboard .weekly-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--ud-gap-md);
+  margin-bottom: var(--ud-gap-lg);
+}
+.user-dashboard.scoped-dashboard .summary-item {
+  background: var(--ud-c-card);
+  border: 1px solid var(--ud-c-border);
+  border-radius: var(--ud-radius-md);
+  padding: var(--ud-gap-md);
+  text-align: center;
+  box-shadow: var(--ud-shadow-card);
+}
+.user-dashboard.scoped-dashboard .summary-label {
+  display: block;
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+  margin-bottom: var(--ud-gap-xs);
+}
+.user-dashboard.scoped-dashboard .summary-value {
+  font-size: var(--ud-fz-lg);
+  font-weight: 600;
+  color: var(--ud-c-text);
+}
+[data-theme="dark"] .user-dashboard.scoped-dashboard .summary-item {
+  background: var(--ud-c-surface);
+}
+
 .user-dashboard.scoped-dashboard .week-display {
   display: grid;
   gap: var(--ud-gap-lg);
