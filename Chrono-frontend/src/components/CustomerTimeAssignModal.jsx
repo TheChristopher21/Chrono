@@ -7,6 +7,7 @@ import { useNotification } from '../context/NotificationContext';
 import { formatTime, minutesToHHMM } from '../utils/timeUtils';
 import { formatDate, formatLocalDate } from '../utils/dateUtils';
 
+
 const createTimeBlocks = (entries) => {
   const blocks = [];
   let currentBlock = null;
@@ -52,6 +53,7 @@ const CustomerTimeAssignModal = ({ t, day, summary, customers, projects, onClose
       const customerParams = {
         username: currentUser.username,
         date: formatLocalDate(day),
+
         startTime: formatTime(block.startEntry.entryTimestamp),
         endTime: formatTime(block.endEntry.entryTimestamp)
       };
@@ -63,6 +65,7 @@ const CustomerTimeAssignModal = ({ t, day, summary, customers, projects, onClose
         tasks.push(api.put(`/api/timetracking/entry/${block.startEntry.id}/project`, null, { params: projectParams(block.projectId) }));
       if (block.endEntry.id)
         tasks.push(api.put(`/api/timetracking/entry/${block.endEntry.id}/project`, null, { params: projectParams(block.projectId) }));
+
     });
     try {
       await Promise.all(tasks);
