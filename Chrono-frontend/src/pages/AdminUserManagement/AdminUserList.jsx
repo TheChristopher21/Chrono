@@ -40,13 +40,16 @@ const AdminUserList = ({ users, t, handleEditUser, requestDeleteUser, handleProg
                             </td>
                             <td data-label={t("userManagement.annualVacationDays", "Urlaubstage")}>{user.annualVacationDays ?? "-"}</td>
                             <td data-label={t("userManagement.table.actions", "Aktionen")} className="actions-cell">
-                                <button onClick={() => handleEditUser(user)} className="action-button edit-action" title={t("userManagement.table.edit", "Bearbeiten")}>
+                                <button onClick={() => handleEditUser(user)} className="action-button edit-action" title={t("userManagement.table.edit", "Bearbeiten")}
+                                    aria-label={t('userManagement.table.edit', 'Bearbeiten')}>
                                     ✏️
                                 </button>
-                                <button onClick={() => handleProgramCard(user)} className="action-button program-action" title={t("userManagement.table.programCard", "Karte programmieren")}>
+                                <button onClick={() => handleProgramCard(user)} className="action-button program-action" title={t("userManagement.table.programCard", "Karte programmieren")}
+                                    aria-label={t('userManagement.table.programCard', 'Karte programmieren')}>
                                     💳
                                 </button>
-                                <button onClick={() => requestDeleteUser(user)} className="action-button delete-action" title={t("userManagement.table.delete", "Löschen")}>
+                                <button onClick={() => requestDeleteUser(user)} className="action-button delete-action" title={t("userManagement.table.delete", "Löschen")}
+                                    aria-label={t('userManagement.table.delete', 'Löschen')}>
                                     🗑️
                                 </button>
                             </td>
