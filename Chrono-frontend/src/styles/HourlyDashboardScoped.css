@@ -61,6 +61,7 @@
 
   --ud-c-late-time: var(--ud-c-error);
   --ud-c-late-time-bg: var(--ud-c-error-light-bg);
+  --ud-c-time: var(--ud-c-text);
 
   --ud-c-bg-vacation: rgba(var(--ud-c-primary-rgb), 0.05);
   --ud-c-text-vacation: var(--ud-c-primary);
@@ -137,6 +138,7 @@
   --ud-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.5);
   --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card) 92%, #fff);
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 92%, #fff);
+  --ud-c-time: #f8f9fa;
   --ud-c-bg-input: var(--ud-c-surface);
 
 }
@@ -436,7 +438,7 @@
 }
 .hourly-dashboard.scoped-dashboard .week-day-content .entry-time {
   font-weight: 500;
-  color: var(--ud-c-text);
+  color: var(--ud-c-time);
 }
 .hourly-dashboard.scoped-dashboard .late-time {
   color: var(--ud-c-late-time);

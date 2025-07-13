@@ -62,6 +62,7 @@
 
   --ud-c-late-time: var(--ud-c-error); /* Verwendet die definierte Fehlerfarbe */
   --ud-c-late-time-bg: var(--ud-c-error-light-bg); /* Verwendet den hellen Fehlerhintergrund */
+  --ud-c-time: var(--ud-c-text);
 
   --ud-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.25);
   --ud-shadow-interactive: 0 4px 12px rgba(0, 0, 0, 0.3);
@@ -69,6 +70,8 @@
   --ud-shadow-hover: 0 6px 18px rgba(var(--ud-c-primary-rgb, 71, 91, 255), 0.15);
   --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card, #ffffff) 90%, #000);
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface, #f3f5fd) 95%, #000);
+  --ud-c-time: #f8f9fa;
+
 }
 
 /* =========================================================================
@@ -367,7 +370,7 @@
 }
 .percentage-dashboard.scoped-dashboard .week-day-content .entry-time {
   font-weight: 600;
-  color: var(--ud-c-text, #1f2024);
+  color: var(--ud-c-time);
 }
 .percentage-dashboard.scoped-dashboard .late-time {
   color: var(--ud-c-late-time, #f87171);

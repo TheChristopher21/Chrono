@@ -58,6 +58,7 @@
 
   --ud-c-late-time: var(--ud-c-error);
   --ud-c-late-time-bg: var(--ud-c-error-light-bg);
+  --ud-c-time: var(--ud-c-text);
 
   --ud-c-bg-vacation: #e0f2fe;
   --ud-c-text-vacation: #0c4a6e;
@@ -121,6 +122,8 @@
   --ud-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.5);
   --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card) 92%, #fff);
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 92%, #fff);
+  --ud-c-time: #f8f9fa;
+
 }
 
 /* =========================================================================
@@ -506,7 +509,7 @@
 }
 .user-dashboard.scoped-dashboard .day-card .entry-time {
   font-weight: 500;
-  color: var(--ud-c-text);
+  color: var(--ud-c-time);
 }
 .user-dashboard.scoped-dashboard .day-card .entry-meta {
   margin-left: var(--ud-gap-sm);
