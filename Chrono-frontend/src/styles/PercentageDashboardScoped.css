@@ -71,6 +71,7 @@
   --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card, #ffffff) 90%, #000);
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface, #f3f5fd) 95%, #000);
   --ud-c-time: #f8f9fa;
+
 }
 
 /* =========================================================================

@@ -83,6 +83,7 @@
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 95%, #000);
   --ud-c-bg-input: var(--ud-c-card);
 
+
   min-height: 100vh;
   font-family: var(--ud-font-family);
   background: var(--ud-c-bg);
@@ -139,6 +140,7 @@
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 92%, #fff);
   --ud-c-time: #f8f9fa;
   --ud-c-bg-input: var(--ud-c-surface);
+
 }
 
 /* =========================================================================
