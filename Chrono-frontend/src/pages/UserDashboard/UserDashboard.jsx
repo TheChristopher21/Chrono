@@ -376,6 +376,7 @@ function UserDashboard() {
         return <HourlyDashboard />;
     }
     if (userProfile?.isPercentage || (!userProfile && currentUser?.isPercentage)) {
+
         return <PercentageDashboard />;
     }
 
