@@ -1044,3 +1044,113 @@
   display: flex;
   gap: 10px;
 }
+/* Ergänzung für die Tageskarte in der Wochenübersicht */
+.hourly-dashboard.scoped-dashboard .day-card-actions {
+    margin-top: auto;
+    padding-top: var(--ud-gap-md);
+    border-top: 1px solid var(--ud-c-line);
+}
+
+.hourly-dashboard.scoped-dashboard .button-primary-outline {
+    width: 100%;
+    padding: var(--ud-gap-sm) var(--ud-gap-md);
+    font-size: var(--ud-fz-sm);
+    font-weight: 600;
+    border-radius: var(--ud-radius-md);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+    background: transparent;
+    color: var(--ud-c-primary);
+    border: 2px solid var(--ud-c-primary);
+}
+
+.hourly-dashboard.scoped-dashboard .button-primary-outline:hover {
+    background-color: var(--ud-c-primary);
+    color: #fff;
+    transform: translateY(-2px);
+    box-shadow: var(--ud-shadow-interactive);
+}
+
+.customer-assign-modal {
+    width: 100%;
+    max-width: 600px;
+    background: var(--ud-c-card);
+    border-radius: var(--ud-radius-lg);
+    box-shadow: var(--ud-shadow-lg);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+}
+
+.customer-assign-modal .modal-header {
+    padding: var(--ud-gap-md) var(--ud-gap-lg);
+    border-bottom: 1px solid var(--ud-c-border);
+}
+
+.customer-assign-modal .modal-header h3 {
+    margin: 0;
+    font-size: var(--ud-fz-xl);
+    color: var(--ud-c-text);
+}
+
+.customer-assign-modal .modal-header p {
+    margin: 4px 0 0;
+    color: var(--ud-c-text-muted);
+    font-size: var(--ud-fz-sm);
+}
+
+.customer-assign-modal .modal-body {
+    padding: var(--ud-gap-lg);
+    overflow-y: auto;
+    flex-grow: 1;
+}
+
+.customer-assign-modal .time-block-card {
+    background: var(--ud-c-surface);
+    border: 1px solid var(--ud-c-border);
+    border-radius: var(--ud-radius-md);
+    padding: var(--ud-gap-md);
+    margin-bottom: var(--ud-gap-md);
+}
+
+[data-theme="dark"] .customer-assign-modal .time-block-card {
+    background: var(--ud-c-surface);
+}
+
+.customer-assign-modal .time-block-header {
+    font-weight: 600;
+    margin-bottom: var(--ud-gap-md);
+    font-size: var(--ud-fz-lg);
+}
+
+.customer-assign-modal .time-block-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--ud-gap-md);
+}
+
+.customer-assign-modal .form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.customer-assign-modal .form-group label {
+    font-size: var(--ud-fz-sm);
+    color: var(--ud-c-text-muted);
+    margin-bottom: var(--ud-gap-xs);
+}
+
+.customer-assign-modal .modal-footer {
+    padding: var(--ud-gap-md) var(--ud-gap-lg);
+    border-top: 1px solid var(--ud-c-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--ud-gap-sm);
+}
+
+.no-blocks-message {
+    color: var(--ud-c-text-muted);
+    text-align: center;
+    padding: var(--ud-gap-lg);
+}
