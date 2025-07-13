@@ -23,7 +23,9 @@ export const useUserData = () => {
                 api.get('/api/vacation/my'),
                 api.get(`/api/correction/my?username=${currentUser.username}`),
                 api.get('/api/sick-leave/my'),
-                api.get('/api/holidays')
+                api.get('/api/holidays', {
+                    params: { year: new Date().getFullYear() }
+                })
             ]);
 
             const [profileRes, summariesRes, vacationsRes, corrRes, sickRes, holiRes] = results;
