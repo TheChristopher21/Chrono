@@ -408,7 +408,7 @@ const PercentageDashboard = () => {
     }
 
     if (!userProfile) {
-        return ( <div className="percentage-dashboard scoped-dashboard"><Navbar /><p className="loading-message">{t("loading", "Lade Benutzerprofil...")}</p></div> );
+        return ( <div className="percentage-dashboard scoped-dashboard"><Navbar /><div className="skeleton-card"></div><div className="skeleton-card"></div></div> );
     }
     if (userProfile.isHourly) { // Sicherstellen, dass nur Stundenlöhner hier landen
         navigate("/user", { replace: true });

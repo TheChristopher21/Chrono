@@ -28,7 +28,9 @@ import {
     formatPunchedTimeFromEntry,
 } from './userDashUtils';
 
-import UserCorrectionModal from './UserCorrectionModal';
+import CorrectionModal from '../../components/CorrectionModal';
+import DayCard from '../../components/DayCard';
+import TrendChart from '../../components/TrendChart';
 import UserCorrectionsPanel from './UserCorrectionsPanel';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 
@@ -217,6 +219,20 @@ function UserDashboard() {
     const weeklyDiffStr = minutesToHHMM(weeklyActualWorkedMinutes - weeklyExpectedMins);
     const overtimeBalanceStr = minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0);
 
+    const chartData = weekDates.map(d => {
+        const iso = formatLocalDate(d);
+        const summary = dailySummaries.find(s => s.date === iso);
+        const expectedMins = Math.round(getExpectedHoursForDay(
+            d,
+            userProfile,
+            defaultExpectedHours,
+            holidaysForUserCanton?.data,
+            vacationRequests,
+            sickLeaves
+        ) * 60);
+        return { date: iso, workedMinutes: summary ? summary.workedMinutes : 0, expectedMinutes: expectedMins };
+    });
+
     const sortedCorrections = (showAllCorrections ? correctionRequests : correctionRequests.filter(req => {
         if (!req.requestDate) return false;
         const reqDate = parseISO(req.requestDate);
@@ -350,7 +366,9 @@ function UserDashboard() {
         return (
             <div className="user-dashboard scoped-dashboard">
                 <Navbar />
-                <p className="loading-message">{t("loading", "Lade Benutzerprofil...")}</p>
+                <div className="skeleton-card"></div>
+                <div className="skeleton-card"></div>
+                <div className="skeleton-card"></div>
             </div>
         );
     }
@@ -375,7 +393,11 @@ function UserDashboard() {
                 <div className="personal-info">
                     <p><strong>{t("usernameLabel")}:</strong> {userProfile.username}</p>
                     <p><strong>{t('expected')}:</strong> {weeklyExpectedStr}</p>
-                    <p><strong>{t('overtimeBalance')}:</strong> <span className={userProfile.trackingBalanceInMinutes < 0 ? 'balance-negative': 'balance-positive'}>{overtimeBalanceStr}</span></p>
+                    <p>
+                        <strong>{t('overtimeBalance')}:</strong>
+                        <span className={userProfile.trackingBalanceInMinutes < 0 ? 'balance-negative': 'balance-positive'}>{overtimeBalanceStr}</span>
+                        <span className="info-badge" title={t('overtimeBalanceInfo')}>ℹ️</span>
+                    </p>
                 </div>
             </header>
 
@@ -419,6 +441,8 @@ function UserDashboard() {
                     </p>
                 </div>
 
+                <TrendChart data={chartData} />
+
                 <div className="week-display">
                     {weekDates.map((dayObj) => {
                         const isoDate = formatLocalDate(dayObj);
@@ -442,64 +466,20 @@ function UserDashboard() {
 
 
                         return (
-                            <div key={isoDate}
-                                 className={`day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''} ${vacationToday ? 'vacation-day' : ''} ${sickToday ? 'sick-day' : ''} ${isHolidayToday ? 'holiday-day' : ''}`}>
-                                <div className="day-card-header">
-                                    <h4>{dayName}, {formattedDisplayDate}</h4>
-                                    <div className="day-card-meta">
-                                        {!userProfile.isPercentage && <span className="expected-hours">({t("expectedWorkHours")}: {minutesToHHMM(expectedMinsToday)})</span>}
-                                        {summary && !userProfile.isPercentage && <span className={`daily-diff ${dailyDiffMinutes < 0 ? 'balance-negative' : 'balance-positive'}`}>({t("diffToday")}: {minutesToHHMM(dailyDiffMinutes)})</span>}
-                                    </div>
-                                </div>
-
-                                {isHolidayToday ? (
-                                    <div className="holiday-indicator day-card-info">
-                                        <span role="img" aria-label="Feiertag">🎉</span> {holidaysForUserCanton.data[isoDate]}
-                                    </div>
-                                ) : vacationToday ? (
-                                    <div className="vacation-indicator day-card-info">
-                                        <span role="img" aria-label="Urlaub">🏖️</span> {t('onVacation', 'Im Urlaub')}
-                                        {vacationToday.halfDay && ` (${t('halfDayShort', '½ Tag')})`}
-                                        {vacationToday.usesOvertime && ` (${t('overtimeVacationShort', 'ÜS')})`}
-                                    </div>
-                                ) : sickToday ? (
-                                    <div className="sick-leave-indicator day-card-info">
-                                        <span role="img" aria-label="Krank">⚕️</span> {t('sickLeave.sick', 'Krank')}
-                                        {sickToday.halfDay && ` (${t('halfDayShort', '½ Tag')})`}
-                                        {sickToday.comment && <span className="info-badge" title={sickToday.comment}>📝</span>}
-                                    </div>
-                                ) : (!summary || summary.entries.length === 0) ? (
-                                    <p className="no-entries">{t("noEntries")}</p>
-                                ) : (
-                                    <>
-                                        <ul className="time-entry-list">
-                                            {summary.entries.map(entry => (
-                                                <li key={entry.id || entry.entryTimestamp}>
-                                                    <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
-                                                    <span className={`entry-time ${isLateTime(formatTime(entry.entryTimestamp)) ? 'late-time' : ''}`}>
-                                                        {formatPunchedTimeFromEntry(entry)}
-                                                        {entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser && <span className="auto-end-indicator" title={t('messages.autoEndedTooltip', 'Automatisch beendet')}> (A)</span>}
-                                                    </span>
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        <div className="daily-summary-times">
-                                            <p><strong>{t('actualTime')}:</strong> {minutesToHHMM(summary.workedMinutes)}</p>
-                                            <p><strong>{t('breakTime')}:</strong> {minutesToHHMM(summary.breakMinutes)}</p>
-                                        </div>
-                                    </>
-                                )}
-                                {summary?.needsCorrection && !vacationToday && !sickToday && !isHolidayToday && (
-                                    <p className="needs-correction-text">{t('messages.correctionNeeded', 'Bitte korrigieren!')}</p>
-                                )}
-                                {!vacationToday && !sickToday && !isHolidayToday && (
-                                    <div className="correction-button-row">
-                                        <button onClick={() => openCorrectionModalForDay(dayObj)} className="button-secondary">
-                                            {t("submitCorrectionRequest")}
-                                        </button>
-                                    </div>
-                                )}
-                            </div>
+                            <DayCard
+                                key={isoDate}
+                                t={t}
+                                dayName={dayName}
+                                displayDate={formattedDisplayDate}
+                                summary={summary}
+                                holidayName={holidaysForUserCanton.data?.[isoDate]}
+                                vacationInfo={vacationToday}
+                                sickInfo={sickToday}
+                                expectedMinutes={!userProfile.isPercentage ? expectedMinsToday : undefined}
+                                diffMinutes={!userProfile.isPercentage ? dailyDiffMinutes : undefined}
+                                showCorrection
+                                onRequestCorrection={() => openCorrectionModalForDay(dayObj)}
+                            />
                         );
                     })}
                 </div>
@@ -540,11 +520,11 @@ function UserDashboard() {
                 cssScope="user"
             />
 
-            <UserCorrectionModal
+            <CorrectionModal
                 visible={showCorrectionModal}
                 correctionDate={correctionDate}
-                dailySummaryForCorrection={dailySummaryForCorrection}
-                onSubmitCorrection={handleCorrectionSubmit}
+                dailySummary={dailySummaryForCorrection}
+                onSubmit={handleCorrectionSubmit}
                 onClose={() => setShowCorrectionModal(false)}
                 t={t}
             />
