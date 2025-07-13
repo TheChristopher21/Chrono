@@ -449,6 +449,11 @@
   font-size: var(--ud-fz-sm);
   color: var(--ud-c-text-muted);
 }
+.scoped-dashboard .day-customer-indicator-header {
+  margin-left: var(--ud-gap-sm);
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+}
 
 .user-dashboard.scoped-dashboard .expected-hours strong,
 .user-dashboard.scoped-dashboard .daily-diff strong {

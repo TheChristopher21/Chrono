@@ -71,6 +71,11 @@ const DayCard = ({
               t('diffToday')
             }: {minutesToHHMM(diffMinutes)})</span>
           )}
+          {dayCustomerName && (
+            <span className="day-customer-indicator-header">
+              {t('customerLabel', 'Kunde')}: {dayCustomerName}
+            </span>
+          )}
         </div>
       </div>
       <div className="day-card-content">
