@@ -253,7 +253,16 @@ const PercentageWeekOverview = ({
                                         <span>{t('customerLabel', 'Kunde')}</span>
                                         <select
                                             value={selectedCustomers[isoDate] || ''}
-                                            onChange={e => setSelectedCustomers(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setSelectedCustomers(prev => ({ ...prev, [isoDate]: val }));
+                                                if (startTimes[isoDate] && endTimes[isoDate]) {
+                                                    assignCustomerForRange(isoDate, startTimes[isoDate], endTimes[isoDate], val);
+                                                } else {
+                                                    assignCustomerForDay(isoDate, val);
+                                                }
+                                            }}
+
                                         >
                                             <option value="">{t('noCustomer')}</option>
                                             {recentCustomers.length > 0 && (
@@ -272,7 +281,12 @@ const PercentageWeekOverview = ({
                                         <span>{t('projectLabel', 'Projekt')}</span>
                                         <select
                                             value={selectedProjects[isoDate] || ''}
-                                            onChange={e => setSelectedProjects(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                            onChange={e => {
+                                                const val = e.target.value;
+                                                setSelectedProjects(prev => ({ ...prev, [isoDate]: val }));
+                                                assignProjectForDay(isoDate, val);
+                                            }}
+
                                         >
                                             <option value="">{t('noProject','Kein Projekt')}</option>
                                             {projects.map(p => (
@@ -298,14 +312,8 @@ const PercentageWeekOverview = ({
                                             onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
                                         />
                                     </label>
-                                    <button className="button-secondary" onClick={() => {
-                                        if (startTimes[isoDate] && endTimes[isoDate]) {
-                                            assignCustomerForRange(isoDate, startTimes[isoDate], endTimes[isoDate], selectedCustomers[isoDate]);
-                                        } else {
-                                            assignCustomerForDay(isoDate, selectedCustomers[isoDate]);
-                                        }
-                                        assignProjectForDay(isoDate, selectedProjects[isoDate]);
-                                    }}>{t('applyForDay')}</button>
+
+
 
                                     {(savedRanges[isoDate] || []).length > 0 && (
                                         <ul className="saved-range-list">
