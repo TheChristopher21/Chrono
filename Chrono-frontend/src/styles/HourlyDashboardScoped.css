@@ -76,6 +76,9 @@
   --ud-shadow-card: 0 10px 30px rgba(0, 0, 0, 0.07);
   --ud-shadow-interactive: 0 6px 15px rgba(var(--ud-c-primary-rgb), 0.15);
   --ud-shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.1);
+  --ud-shadow-hover: 0 6px 18px rgba(var(--ud-c-primary-rgb), 0.15);
+  --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card) 90%, #000);
+  --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 95%, #000);
 
   min-height: 100vh;
   font-family: var(--ud-font-family);
@@ -127,6 +130,9 @@
 
   --ud-shadow-card: 0 10px 35px rgba(0, 0, 0, 0.25);
   --ud-shadow-interactive: 0 8px 20px rgba(var(--ud-c-primary-rgb), 0.2);
+  --ud-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.5);
+  --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card) 92%, #fff);
+  --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 92%, #fff);
 }
 
 /* =========================================================================
@@ -378,19 +384,16 @@
   box-shadow: var(--ud-shadow-card);
   display: flex;
   flex-direction: column;
-  transition:
-    transform 0.25s ease-out,
-    box-shadow 0.25s ease-out,
-    border-color 0.25s ease-out;
+  transition: background-color var(--u-dur), box-shadow var(--u-dur), transform var(--u-dur), border-color var(--u-dur);
   position: relative;
 }
 .hourly-dashboard.scoped-dashboard .week-day-card:hover {
-  transform: translateY(-6px) scale(1.02);
-  box-shadow: 0 15px 35px rgba(var(--ud-c-primary-rgb), 0.15);
+  /*   transform: translateY(-6px) scale(1.02); */
+  /*   box-shadow: 0 15px 35px rgba(var(--ud-c-primary-rgb), 0.15); */
   border-color: var(--ud-c-primary);
-}
-
-.hourly-dashboard.scoped-dashboard .week-day-header {
+  background: var(--ud-c-card-hover);
+  box-shadow: var(--ud-shadow-hover);
+  transform: translateY(-4px);
   margin-bottom: var(--ud-gap-md);
 }
 .hourly-dashboard.scoped-dashboard .week-day-header h4 {
