@@ -486,6 +486,7 @@ const PercentageDashboard = () => {
                 vacationRequests={vacationRequests} // NEU
                 sickLeaves={sickLeaves} // NEU
                 holidaysForUserCanton={holidaysForUserCanton?.data} // NEU
+                reloadData={fetchDataForUser}
             />
 
             <PercentageVacationSection
