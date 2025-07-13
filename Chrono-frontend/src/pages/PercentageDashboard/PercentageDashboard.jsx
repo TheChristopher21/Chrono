@@ -10,6 +10,7 @@ import { useCustomers } from '../../context/CustomerContext';
 import 'jspdf-autotable';
 import jsPDF from 'jspdf';
 import { parseISO } from 'date-fns';
+import { useUserData } from '../../hooks/useUserData';
 
 import {
     getMondayOfWeek,
@@ -27,7 +28,7 @@ import {
 import PercentageWeekOverview from './PercentageWeekOverview';
 import PercentageVacationSection from './PercentageVacationSection';
 import PercentageCorrectionsPanel from './PercentageCorrectionsPanel';
-import PercentageCorrectionModal from './PercentageCorrectionModal';
+import CorrectionModal from '../../components/CorrectionModal';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 
 import '../../styles/UserDashboardScoped.css';
@@ -40,6 +41,7 @@ const PercentageDashboard = () => {
     const { notify } = useNotification();
     const { currentUser, fetchCurrentUser } = useAuth();
     const navigate = useNavigate();
+    const { refreshData } = useUserData();
 
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
@@ -222,6 +224,7 @@ const PercentageDashboard = () => {
             if (customerId) params.customerId = customerId;
             await api.put('/api/timetracking/day/customer', null, { params });
             fetchDataForUser();
+            await refreshData();
             notify(t('customerSaved'), 'success');
         } catch (err) {
             console.error('Error saving customer', err);
@@ -235,6 +238,7 @@ const PercentageDashboard = () => {
             if (customerId) params.customerId = customerId;
             await api.put('/api/timetracking/range/customer', null, { params });
             fetchDataForUser();
+            await refreshData();
             notify(t('customerSaved'), 'success');
         } catch (err) {
             console.error('Error saving customer range', err);
@@ -248,6 +252,7 @@ const PercentageDashboard = () => {
             if (projectId) params.projectId = projectId;
             await api.put('/api/timetracking/day/project', null, { params });
             fetchDataForUser();
+            await refreshData();
             notify(t('customerSaved'), 'success');
         } catch (err) {
             console.error('Error saving project', err);
@@ -513,11 +518,11 @@ const PercentageDashboard = () => {
                 cssScope="percentage"
             />
 
-            <PercentageCorrectionModal
+            <CorrectionModal
                 visible={showCorrectionModal}
                 correctionDate={correctionDate}
-                dailySummaryForCorrection={dailySummaryForCorrection}
-                onSubmitCorrection={handleCorrectionSubmit}
+                dailySummary={dailySummaryForCorrection}
+                onSubmit={handleCorrectionSubmit}
                 onClose={() => setShowCorrectionModal(false)}
                 t={t}
             />

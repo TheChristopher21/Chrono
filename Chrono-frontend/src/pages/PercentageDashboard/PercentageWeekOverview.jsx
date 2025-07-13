@@ -314,7 +314,6 @@ const PercentageWeekOverview = ({
                                     </label>
 
 
-
                                     {(savedRanges[isoDate] || []).length > 0 && (
                                         <ul className="saved-range-list">
                                             {(savedRanges[isoDate] || []).map((r, i) => (
@@ -333,6 +332,7 @@ const PercentageWeekOverview = ({
                                                 {customers.map(c => (
                                                     <option key={c.id} value={c.id}>{c.name}</option>
                                                 ))}
+
 
                                             </select>
                                             <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />

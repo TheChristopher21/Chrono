@@ -7,6 +7,7 @@ import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import { useAuth } from "../../context/AuthContext.jsx";
+import { useUserData } from '../../hooks/useUserData';
 import { useCustomers } from '../../context/CustomerContext';
 import 'jspdf-autotable';
 import jsPDF from 'jspdf';
@@ -38,6 +39,7 @@ const HourlyDashboard = () => {
     const { notify } = useNotification();
     // KORREKTUR: Wir benötigen die 'punch'-Funktion aus dem AuthContext nicht.
     const { currentUser, fetchCurrentUser } = useAuth();
+    const { refreshData } = useUserData();
 
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
@@ -89,6 +91,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             if (customerId) params.customerId = customerId;
             await api.put('/api/timetracking/day/customer', null, { params });
             fetchWeeklyData(selectedMonday);
+            await refreshData();
             notify(t('customerSaved'), 'success');
         } catch (err) {
             console.error('Error saving customer', err);
@@ -102,6 +105,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             if (customerId) params.customerId = customerId;
             await api.put('/api/timetracking/range/customer', null, { params });
             fetchWeeklyData(selectedMonday);
+            await refreshData();
             notify(t('customerSaved'), 'success');
         } catch (err) {
             console.error('Error saving customer range', err);
@@ -115,6 +119,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             if (projectId) params.projectId = projectId;
             await api.put('/api/timetracking/day/project', null, { params });
             fetchWeeklyData(selectedMonday);
+            await refreshData();
             notify(t('customerSaved'), 'success');
         } catch (err) {
             console.error('Error saving project', err);
