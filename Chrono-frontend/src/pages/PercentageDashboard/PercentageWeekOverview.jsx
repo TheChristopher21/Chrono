@@ -262,6 +262,7 @@ const PercentageWeekOverview = ({
                                                     assignCustomerForDay(isoDate, val);
                                                 }
                                             }}
+
                                         >
                                             <option value="">{t('noCustomer')}</option>
                                             {recentCustomers.length > 0 && (
@@ -285,6 +286,7 @@ const PercentageWeekOverview = ({
                                                 setSelectedProjects(prev => ({ ...prev, [isoDate]: val }));
                                                 assignProjectForDay(isoDate, val);
                                             }}
+
                                         >
                                             <option value="">{t('noProject','Kein Projekt')}</option>
                                             {projects.map(p => (
@@ -330,6 +332,7 @@ const PercentageWeekOverview = ({
                                                 {customers.map(c => (
                                                     <option key={c.id} value={c.id}>{c.name}</option>
                                                 ))}
+
 
                                             </select>
                                             <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
