@@ -9,7 +9,6 @@ import { useTranslation } from '../../context/LanguageContext';
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useUserData } from '../../hooks/useUserData';
 import { useCustomers } from '../../context/CustomerContext';
-import 'jspdf-autotable';
 import jsPDF from 'jspdf';
 import autoTable from "jspdf-autotable";
 
