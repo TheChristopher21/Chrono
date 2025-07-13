@@ -46,17 +46,24 @@ const CustomerTimeAssignModal = ({ t, day, summary, customers, projects, onClose
   };
 
   const handleSave = async () => {
-    const tasks = timeBlocks.map(block => {
-      if (!block.startEntry || !block.endEntry) return Promise.resolve();
-      const params = {
+    const tasks = [];
+    timeBlocks.forEach(block => {
+      if (!block.startEntry || !block.endEntry) return;
+      const customerParams = {
         username: currentUser.username,
         date: formatDate(day),
         startTime: formatTime(block.startEntry.entryTimestamp),
-        endTime: formatTime(block.endEntry.entryTimestamp),
-        customerId: block.customerId || null,
-        projectId: block.projectId || null
+        endTime: formatTime(block.endEntry.entryTimestamp)
       };
-      return api.put('/api/timetracking/range/customer-project', null, { params });
+      if (block.customerId) customerParams.customerId = block.customerId;
+      tasks.push(api.put('/api/timetracking/range/customer', null, { params: customerParams }));
+
+      const projectParams = projectId => ({ projectId: projectId || null });
+      if (block.startEntry.id)
+        tasks.push(api.put(`/api/timetracking/entry/${block.startEntry.id}/project`, null, { params: projectParams(block.projectId) }));
+      if (block.endEntry.id)
+        tasks.push(api.put(`/api/timetracking/entry/${block.endEntry.id}/project`, null, { params: projectParams(block.projectId) }));
+
     });
     try {
       await Promise.all(tasks);
