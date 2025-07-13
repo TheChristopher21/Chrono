@@ -5,7 +5,8 @@ import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { formatTime, minutesToHHMM } from '../utils/timeUtils';
-import { formatDate } from '../utils/dateUtils';
+import { formatDate, formatLocalDate } from '../utils/dateUtils';
+
 
 const createTimeBlocks = (entries) => {
   const blocks = [];
@@ -51,7 +52,8 @@ const CustomerTimeAssignModal = ({ t, day, summary, customers, projects, onClose
       if (!block.startEntry || !block.endEntry) return;
       const customerParams = {
         username: currentUser.username,
-        date: formatDate(day),
+        date: formatLocalDate(day),
+
         startTime: formatTime(block.startEntry.entryTimestamp),
         endTime: formatTime(block.endEntry.entryTimestamp)
       };
