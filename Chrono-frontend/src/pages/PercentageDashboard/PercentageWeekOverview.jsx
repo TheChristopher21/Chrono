@@ -262,6 +262,7 @@ const PercentageWeekOverview = ({
                                                     assignCustomerForDay(isoDate, val);
                                                 }
                                             }}
+
                                         >
                                             <option value="">{t('noCustomer')}</option>
                                             {recentCustomers.length > 0 && (
@@ -285,6 +286,7 @@ const PercentageWeekOverview = ({
                                                 setSelectedProjects(prev => ({ ...prev, [isoDate]: val }));
                                                 assignProjectForDay(isoDate, val);
                                             }}
+
                                         >
                                             <option value="">{t('noProject','Kein Projekt')}</option>
                                             {projects.map(p => (
@@ -310,6 +312,7 @@ const PercentageWeekOverview = ({
                                             onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
                                         />
                                     </label>
+
 
 
                                     {(savedRanges[isoDate] || []).length > 0 && (
