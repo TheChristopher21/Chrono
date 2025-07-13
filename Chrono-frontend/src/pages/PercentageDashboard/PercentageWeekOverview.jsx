@@ -1,5 +1,6 @@
 // src/pages/PercentageDashboard/PercentageWeekOverview.jsx
 import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext.jsx';
 import PropTypes from 'prop-types';
 // Removed: import { useTranslation } from '../../context/LanguageContext'; // t wird als Prop übergeben
 
@@ -42,11 +43,12 @@ const PercentageWeekOverview = ({
                                     assignProjectForDay,
                                     vacationRequests,
                                     sickLeaves,
-                                    holidaysForUserCanton
+                                holidaysForUserCanton
                                 }) => {
 
     // Immer 7 Tage für eine volle Wochenansicht (Mo-So)
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i)); // Mo-So
+    const { currentUser } = useAuth();
     const [selectedCustomers, setSelectedCustomers] = useState({});
     const [selectedProjects, setSelectedProjects] = useState({});
     const [startTimes, setStartTimes] = useState({});
@@ -150,7 +152,7 @@ const PercentageWeekOverview = ({
 
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
-                {userProfile?.customerTrackingEnabled && (
+                {(userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled) && (
                     <>
                         <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                             <option value="">{t('noCustomer')}</option>
@@ -247,7 +249,7 @@ const PercentageWeekOverview = ({
                             showCorrection
                             onRequestCorrection={() => openCorrectionModal(dayObj, summary)}
                         >
-                            {userProfile?.customerTrackingEnabled && (
+                            {(userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled) && (
                                 <div className="day-customer-select">
                                     <label>
                                         <span>{t('customerLabel', 'Kunde')}</span>
