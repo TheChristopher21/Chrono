@@ -63,6 +63,7 @@ const CustomerTimeAssignModal = ({ t, day, summary, customers, projects, onClose
         tasks.push(api.put(`/api/timetracking/entry/${block.startEntry.id}/project`, null, { params: projectParams(block.projectId) }));
       if (block.endEntry.id)
         tasks.push(api.put(`/api/timetracking/entry/${block.endEntry.id}/project`, null, { params: projectParams(block.projectId) }));
+
     });
     try {
       await Promise.all(tasks);
