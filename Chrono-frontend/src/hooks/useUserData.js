@@ -17,6 +17,7 @@ export const useUserData = () => {
         if (!currentUser?.username) return;
         try {
             const results = await Promise.allSettled([
+
                 api.get(`/api/users/profile/${currentUser.username}`),
                 api.get(`/api/timetracking/history?username=${currentUser.username}`),
                 api.get('/api/vacation/my'),
@@ -38,6 +39,7 @@ export const useUserData = () => {
                 console.error('Einige Daten konnten nicht geladen werden:', results);
                 notify('Fehler beim Laden einiger Benutzerdaten.', 'error');
             }
+
         } catch (err) {
             console.error('Fehler beim Laden der Benutzerdaten:', err);
             notify('Fehler beim Laden der Benutzerdaten.', 'error');
