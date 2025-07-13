@@ -16,7 +16,8 @@ export const useUserData = () => {
     const fetchData = useCallback(async () => {
         if (!currentUser?.username) return;
         try {
-            const [profileRes, summariesRes, vacationsRes, corrRes, sickRes, holiRes] = await Promise.all([
+            const results = await Promise.allSettled([
+
                 api.get(`/api/users/profile/${currentUser.username}`),
                 api.get(`/api/timetracking/history?username=${currentUser.username}`),
                 api.get('/api/vacation/my'),
@@ -24,12 +25,21 @@ export const useUserData = () => {
                 api.get('/api/sick-leave/my'),
                 api.get('/api/holidays')
             ]);
-            setUserProfile(profileRes.data);
-            setDailySummaries(summariesRes.data);
-            setVacationRequests(vacationsRes.data);
-            setCorrectionRequests(corrRes.data);
-            setSickLeaves(sickRes.data);
-            setHolidays(holiRes.data);
+
+            const [profileRes, summariesRes, vacationsRes, corrRes, sickRes, holiRes] = results;
+
+            if (profileRes.status === 'fulfilled') setUserProfile(profileRes.value.data);
+            if (summariesRes.status === 'fulfilled') setDailySummaries(summariesRes.value.data);
+            if (vacationsRes.status === 'fulfilled') setVacationRequests(vacationsRes.value.data);
+            if (corrRes.status === 'fulfilled') setCorrectionRequests(corrRes.value.data);
+            if (sickRes.status === 'fulfilled') setSickLeaves(sickRes.value.data);
+            if (holiRes.status === 'fulfilled') setHolidays(holiRes.value.data);
+
+            if (results.some(r => r.status === 'rejected')) {
+                console.error('Einige Daten konnten nicht geladen werden:', results);
+                notify('Fehler beim Laden einiger Benutzerdaten.', 'error');
+            }
+
         } catch (err) {
             console.error('Fehler beim Laden der Benutzerdaten:', err);
             notify('Fehler beim Laden der Benutzerdaten.', 'error');
