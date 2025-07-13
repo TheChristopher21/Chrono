@@ -372,10 +372,11 @@ function UserDashboard() {
             </div>
         );
     }
-    if (userProfile.isHourly) {
+    if (userProfile?.isHourly || (!userProfile && currentUser?.isHourly)) {
         return <HourlyDashboard />;
     }
-    if (userProfile.isPercentage) {
+    if (userProfile?.isPercentage || (!userProfile && currentUser?.isPercentage)) {
+
         return <PercentageDashboard />;
     }
 
