@@ -384,9 +384,31 @@ public class WorkScheduleService {
 
 
     public boolean isHalfDay(User user, LocalDate date) {
-        // TODO: UserScheduleRule prüfen, ob dieser Tag spezifisch als "HALF_DAY" markiert ist.
-        // Diese Methode ist derzeit nicht voll implementiert und liefert immer false.
-        // Sie wird in `computeExpectedWorkMinutes` verwendet, aber hat aktuell keinen Effekt.
+        List<UserScheduleRule> rules = ruleRepo.findByUser(user);
+        for (UserScheduleRule rule : rules) {
+            if (rule.getDayMode() == null || !"HALF_DAY".equalsIgnoreCase(rule.getDayMode())) {
+                continue;
+            }
+
+            LocalDate start = rule.getStartDate();
+            if (start != null && date.isBefore(start)) {
+                continue;
+            }
+
+            if (rule.getDayOfWeek() != null && rule.getDayOfWeek() != date.getDayOfWeek().getValue()) {
+                continue;
+            }
+
+            if (rule.getRepeatIntervalDays() != null && rule.getRepeatIntervalDays() > 0 && start != null) {
+                long diff = ChronoUnit.DAYS.between(start, date);
+                if (diff % rule.getRepeatIntervalDays() == 0) {
+                    return true;
+                }
+            } else {
+                // Regel gilt einmalig oder jede Woche bei passendem dayOfWeek
+                return true;
+            }
+        }
         return false;
     }
 }

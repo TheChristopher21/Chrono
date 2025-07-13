@@ -7,7 +7,6 @@ import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import { useAuth } from "../../context/AuthContext.jsx";
 import { useCustomers } from '../../context/CustomerContext';
-import 'jspdf-autotable';
 import jsPDF from 'jspdf';
 import { parseISO } from 'date-fns';
 import { useUserData } from '../../hooks/useUserData';
