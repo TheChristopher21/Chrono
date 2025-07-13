@@ -9,10 +9,21 @@
   flex: 1;
   text-align: center;
 }
+.trend-bars {
+  display: flex;
+  align-items: flex-end;
+  height: 100%;
+}
 .trend-bar {
-  width: 100%;
-  background: #4caf50;
+  width: 40%;
   border-radius: 4px 4px 0 0;
+}
+.expected-bar {
+  background: #ccc;
+  margin-right: 2px;
+}
+.actual-bar {
+  background: #4caf50;
 }
 .trend-label {
   font-size: 0.7rem;

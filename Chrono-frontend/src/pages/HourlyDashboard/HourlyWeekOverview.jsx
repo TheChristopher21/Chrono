@@ -107,6 +107,10 @@ const HourlyWeekOverview = ({
         return { date: iso, workedMinutes: summary ? summary.workedMinutes : 0 };
     });
 
+    const weeklyEarnings = userProfile?.hourlyRate
+        ? (weeklyTotalMins / 60) * userProfile.hourlyRate
+        : null;
+
     function handlePrevWeek() {
         setSelectedMonday(prev => addDays(prev, -7));
     }
@@ -217,6 +221,9 @@ const HourlyWeekOverview = ({
             <div className="weekly-monthly-totals">
                 <p><strong>{t("weeklyHours", "Ges. Std. (Woche)")}:</strong> {minutesToHHMM(weeklyTotalMins)}</p>
                 <p><strong>{t("monthlyHours", "Ges. Std. (Monat)")}:</strong> {minutesToHHMM(monthlyTotalMins)}</p>
+                {weeklyEarnings !== null && (
+                    <p><strong>{t('estimatedEarnings', 'gesch\u00e4tzterVerdienst')}:</strong> {weeklyEarnings.toFixed(2)} CHF</p>
+                )}
             </div>
             <TrendChart data={chartData} />
 
@@ -381,6 +388,7 @@ const HourlyWeekOverview = ({
                                                     <button
                                                         className="button-edit-note"
                                                         title={t('editNote', 'Notiz bearbeiten')}
+                                                        aria-label={t('editNote', 'Notiz bearbeiten')}
                                                         onClick={() => {
                                                             setEditingNote(isoDate);
                                                             setNoteContent(summary?.dailyNote || '');

@@ -16,6 +16,7 @@ import {
 } from './percentageDashUtils';
 import '../../styles/PercentageDashboardScoped.css'; // Stellt sicher, dass die Styles hier auch referenziert werden
 import api from "../../utils/api.js";
+import DayCard from '../../components/DayCard';
 
 const PercentageWeekOverview = ({
                                     t,
@@ -197,6 +198,7 @@ const PercentageWeekOverview = ({
                 </p>
                 <p>
                     <strong>{t('expected', "Soll (Woche)")}:</strong> {minutesToHHMM(weeklyExpected)}
+                    <span className="info-badge" title={t('expectedWeekInfo')}>ℹ️</span>
                 </p>
                 <p>
                     <strong className={(weeklyDiff ?? 0) < 0 ? 'balance-negative' : 'balance-positive'}>
@@ -231,162 +233,109 @@ const PercentageWeekOverview = ({
                     const dailyDiffMinutes = dailyWorkedMins - displayDailyExpectedMins;
 
                     return (
-                        <div key={isoDate}
-                             className={`day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''} ${vacationToday ? 'vacation-day' : ''} ${sickToday ? 'sick-day' : ''} ${isHolidayToday ? 'holiday-day' : ''}`}>
-                            <div className="day-card-header">
-                                <h4>{dayName}, {formattedDisplayDate}</h4>
-                                <div className="day-card-meta">
-                                    <span className="expected-hours">({t("expectedWorkHours", "Soll")}: {minutesToHHMM(displayDailyExpectedMins)})</span>
-                                    {summary && <span className={`daily-diff ${dailyDiffMinutes < 0 ? 'balance-negative' : 'balance-positive'}`}>({t("diffToday")}: {minutesToHHMM(dailyDiffMinutes)})</span>}
-                                </div>
-                                {userProfile?.customerTrackingEnabled && (
-                                    <div className="day-customer-select">
-                                        <label>
-                                            <span>{t('customerLabel', 'Kunde')}</span>
+                        <DayCard
+                            key={isoDate}
+                            t={t}
+                            dayName={dayName}
+                            displayDate={formattedDisplayDate}
+                            summary={summary}
+                            holidayName={holidaysForUserCanton[isoDate]}
+                            vacationInfo={vacationToday}
+                            sickInfo={sickToday}
+                            expectedMinutes={displayDailyExpectedMins}
+                            diffMinutes={dailyDiffMinutes}
+                            showCorrection
+                            onRequestCorrection={() => openCorrectionModal(dayObj, summary)}
+                        >
+                            {userProfile?.customerTrackingEnabled && (
+                                <div className="day-customer-select">
+                                    <label>
+                                        <span>{t('customerLabel', 'Kunde')}</span>
+                                        <select
+                                            value={selectedCustomers[isoDate] || ''}
+                                            onChange={e => setSelectedCustomers(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        >
+                                            <option value="">{t('noCustomer')}</option>
+                                            {recentCustomers.length > 0 && (
+                                                <optgroup label={t('recentCustomers')}>
+                                                    {recentCustomers.map(c => (
+                                                        <option key={'r'+c.id} value={c.id}>{c.name}</option>
+                                                    ))}
+                                                </optgroup>
+                                            )}
+                                            {customers.map(c => (
+                                                <option key={c.id} value={c.id}>{c.name}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span>{t('projectLabel', 'Projekt')}</span>
+                                        <select
+                                            value={selectedProjects[isoDate] || ''}
+                                            onChange={e => setSelectedProjects(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        >
+                                            <option value="">{t('noProject','Kein Projekt')}</option>
+                                            {projects.map(p => (
+                                                <option key={p.id} value={p.id}>{p.name}</option>
+                                            ))}
+                                        </select>
+                                    </label>
+                                    <label>
+                                        <span>{t('start')}</span>
+                                        <input
+                                            type="time"
+                                            placeholder="HH:MM"
+                                            value={startTimes[isoDate] || ''}
+                                            onChange={e => setStartTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        />
+                                    </label>
+                                    <label>
+                                        <span>{t('end')}</span>
+                                        <input
+                                            type="time"
+                                            placeholder="HH:MM"
+                                            value={endTimes[isoDate] || ''}
+                                            onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                        />
+                                    </label>
+                                    <button className="button-secondary" onClick={() => {
+                                        if (startTimes[isoDate] && endTimes[isoDate]) {
+                                            assignCustomerForRange(isoDate, startTimes[isoDate], endTimes[isoDate], selectedCustomers[isoDate]);
+                                        } else {
+                                            assignCustomerForDay(isoDate, selectedCustomers[isoDate]);
+                                        }
+                                        assignProjectForDay(isoDate, selectedProjects[isoDate]);
+                                    }}>{t('applyForDay')}</button>
+
+                                    {(savedRanges[isoDate] || []).length > 0 && (
+                                        <ul className="saved-range-list">
+                                            {(savedRanges[isoDate] || []).map((r, i) => (
+                                                <li key={i}>{r.customerName || t('noCustomer')} {r.start} - {r.end}</li>
+                                            ))}
+                                        </ul>
+                                    )}
+
+                                    {(customerRanges[isoDate] || []).map((r, idx) => (
+                                        <div key={idx} className="customer-range-row">
                                             <select
-                                                value={selectedCustomers[isoDate] || ''}
-                                                onChange={e => setSelectedCustomers(prev => ({ ...prev, [isoDate]: e.target.value }))}
+                                                value={r.customerId}
+                                                onChange={e => updateCustomerRange(isoDate, idx, 'customerId', e.target.value)}
                                             >
                                                 <option value="">{t('noCustomer')}</option>
-                                                {recentCustomers.length > 0 && (
-                                                    <optgroup label={t('recentCustomers')}>
-                                                        {recentCustomers.map(c => (
-                                                            <option key={'r'+c.id} value={c.id}>{c.name}</option>
-                                                        ))}
-                                                    </optgroup>
-                                                )}
                                                 {customers.map(c => (
                                                     <option key={c.id} value={c.id}>{c.name}</option>
                                                 ))}
+
                                             </select>
-                                        </label>
-                                        <label>
-                                            <span>{t('projectLabel', 'Projekt')}</span>
-                                            <select
-                                                value={selectedProjects[isoDate] || ''}
-                                                onChange={e => setSelectedProjects(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                            >
-                                                <option value="">{t('noProject','Kein Projekt')}</option>
-                                                {projects.map(p => (
-                                                    <option key={p.id} value={p.id}>{p.name}</option>
-                                                ))}
-                                            </select>
-                                        </label>
-                                        <label>
-                                            <span>{t('start')}</span>
-                                            <input
-                                                type="time"
-                                                placeholder="HH:MM"
-                                                value={startTimes[isoDate] || ''}
-                                                onChange={e => setStartTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                            />
-                                        </label>
-                                        <label>
-                                            <span>{t('end')}</span>
-                                            <input
-                                                type="time"
-                                                placeholder="HH:MM"
-                                                value={endTimes[isoDate] || ''}
-                                                onChange={e => setEndTimes(prev => ({ ...prev, [isoDate]: e.target.value }))}
-                                            />
-                                        </label>
-                                        <button className="button-secondary" onClick={() => {
-                                            if (startTimes[isoDate] && endTimes[isoDate]) {
-                                                assignCustomerForRange(isoDate, startTimes[isoDate], endTimes[isoDate], selectedCustomers[isoDate]);
-                                            } else {
-                                                assignCustomerForDay(isoDate, selectedCustomers[isoDate]);
-                                            }
-                                            assignProjectForDay(isoDate, selectedProjects[isoDate]);
-                                        }}>{t('applyForDay')}</button>
-
-                                        {(savedRanges[isoDate] || []).length > 0 && (
-                                            <ul className="saved-range-list">
-                                                {(savedRanges[isoDate] || []).map((r, i) => (
-                                                    <li key={i}>{r.customerName || t('noCustomer')} {r.start} - {r.end}</li>
-                                                ))}
-                                            </ul>
-                                        )}
-
-
-                                        {(customerRanges[isoDate] || []).map((r, idx) => (
-                                            <div key={idx} className="customer-range-row">
-                                                <select
-                                                    value={r.customerId}
-                                                    onChange={e => updateCustomerRange(isoDate, idx, 'customerId', e.target.value)}
-                                                >
-                                                    <option value="">{t('noCustomer')}</option>
-                                                    {customers.map(c => (
-                                                        <option key={c.id} value={c.id}>{c.name}</option>
-                                                    ))}
-
-                                                </select>
-                                                <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
-                                                <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
-                                                <button className="button-secondary" onClick={() => saveCustomerRange(isoDate, idx)}>{t('save','Speichern')}</button>
-                                            </div>
-                                        ))}
-                                        <button className="button-secondary" onClick={() => addCustomerRange(isoDate)}>{t('addRange','Zeitraum hinzufügen')}</button>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="week-day-content day-card-content">
-                                {isHolidayToday ? (
-                                    <div className="holiday-indicator day-card-info">
-                                        <span role="img" aria-label="Feiertag">🎉</span> {holidaysForUserCanton[isoDate]}
-                                    </div>
-                                ) : vacationToday ? (
-                                    <div className="vacation-indicator day-card-info">
-                                        <span role="img" aria-label="Urlaub">🏖️</span> {t('onVacation', 'Im Urlaub')}
-                                        {vacationToday.halfDay && ` (${t('halfDayShort', '½ Tag')})`}
-                                        {vacationToday.usesOvertime && ` (${t('overtimeVacationShort', 'ÜS')})`}
-                                    </div>
-                                ) : sickToday ? (
-                                    <div className="sick-leave-indicator day-card-info">
-                                        <span role="img" aria-label="Krank">⚕️</span> {t('sickLeave.sick', 'Krank')}
-                                        {sickToday.halfDay && ` (${t('halfDayShort', '½ Tag')})`}
-                                        {sickToday.comment && <span className="info-badge" title={sickToday.comment}>📝</span>}
-                                    </div>
-                                ) : (!summary || summary.entries.length === 0) ? (
-                                    <p className="no-entries">{t('noEntries', "Keine Einträge")}</p>
-                                ) : (
-                                    <>
-                                        <ul className="time-entry-list">
-                                            {summary.entries.map(entry => (
-                                                <li key={entry.id || entry.entryTimestamp} style={{backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57)%360},70%,90%)` : 'transparent'}}>
-                                                    <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
-                                                    <span className={`entry-time ${isLateTime(formatTime(entry.entryTimestamp)) ? 'late-time' : ''}`}>
-                                                        {formatPunchedTimeFromEntry(entry)}
-                                                        {entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser &&
-                                                            <span className="auto-end-indicator" title={t('messages.autoEndedTooltip', 'Automatisch beendet')}> (A)</span>
-                                                        }
-                                                    </span>
-                                                    {(entry.customerName || entry.projectName) && (
-                                                        <span className="entry-meta">
-                                                            {entry.customerName || ''}{entry.projectName ? ` / ${entry.projectName}` : ''}
-                                                        </span>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                        <div className="daily-summary-times">
-                                            <p><strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(summary.workedMinutes)}</p>
-                                            <p><strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(summary.breakMinutes)}</p>
+                                            <input type="time" value={r.start} onChange={e => updateCustomerRange(isoDate, idx, 'start', e.target.value)} />
+                                            <input type="time" value={r.end} onChange={e => updateCustomerRange(isoDate, idx, 'end', e.target.value)} />
+                                            <button className="button-secondary" onClick={() => saveCustomerRange(isoDate, idx)}>{t('save','Speichern')}</button>
                                         </div>
-                                    </>
-                                )}
-                            </div>
-                            {summary?.needsCorrection && !vacationToday && !sickToday && !isHolidayToday && (
-                                <p className="needs-correction-text">{t('messages.correctionNeeded', 'Bitte korrigieren!')}</p>
-                            )}
-                            {!vacationToday && !sickToday && !isHolidayToday && (
-                                <div className="correction-button-row">
-                                    <button onClick={() => openCorrectionModal(dayObj, summary)} className="button-secondary">
-                                        {t('submitCorrectionRequest', "Korrektur anfragen")}
-                                    </button>
+                                    ))}
+                                    <button className="button-secondary" onClick={() => addCustomerRange(isoDate)}>{t('addRange','Zeitraum hinzufügen')}</button>
                                 </div>
                             )}
-                        </div>
+                        </DayCard>
                     );
                 })}
             </div>
