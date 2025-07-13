@@ -1,19 +1,23 @@
 /* Central design tokens for colors, typography and spacing */
 :root {
+  /* Typography */
+  --font-main: "Poppins", system-ui, sans-serif;
+  --font-alt: "Inter var", system-ui, sans-serif;
+
   /* Primary colors */
-  --c-pri: #4a90e2;
-  --c-pri-dim: #5aa1f2;
-  --c-pri-rgb: 71, 91, 255;
-  --c-danger: #ed5757;
+  --c-pri: #375bff;
+  --c-pri-dim: #5d74ff;
+  --c-pri-rgb: 55, 91, 255;
+  --c-danger: #e5484d;
 
   /* Base colors (light) */
-  --c-text: #1f1f1f;
-  --c-muted: #60646c;
-  --c-bg: #ffffff;
-  --c-bg-rgb: 255, 255, 255;
-  --c-surface: #f4f6ff;
+  --c-text: #202124;
+  --c-muted: #5f6368;
+  --c-bg: #f9fafc;
+  --c-bg-rgb: 249, 250, 252;
+  --c-surface: #ffffff;
   --c-card: #ffffff;
-  --c-border: #d0d3e2;
+  --c-border: #d7dae3;
 
   /* Radius & shadow */
   --u-radius: 12px;
@@ -28,20 +32,26 @@
   --app-brightness: 1;
   /* Default backdrop color for modal overlays (light mode) */
   --modal-backdrop-color: rgba(30, 30, 30, 0.6);
+
+  color-scheme: light dark;
 }
 
 [data-theme="dark"] {
   /* Adjusted colors for better contrast */
-  --c-text: #f0f0f0;
-  --c-muted: #b9bcc9;
+  --c-text: #e0e2e6;
+  --c-muted: #a0a4ad;
   --c-bg: #121212;
   --c-bg-rgb: 18, 18, 18;
-  --c-surface: #1c1f24;
-  --c-card: #181a1d;
-  --c-border: #3d3f46;
+  --c-surface: #1a1c20;
+  --c-card: #1c1e22;
+  --c-border: #3a3d47;
 
-  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
-  --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
+  --c-pri: #7aa8ff;
+  --c-pri-dim: #92b7ff;
+  --c-pri-rgb: 122, 168, 255;
+
+  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.45);
+  --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.75);
 
   /* Dark mode backdrop color for modal overlays */
   --modal-backdrop-color: rgba(0, 0, 0, 0.8);
@@ -49,16 +59,20 @@
 
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --c-text: #f0f0f0;
-      --c-muted: #b9bcc9;
+      --c-text: #e0e2e6;
+      --c-muted: #a0a4ad;
       --c-bg: #121212;
       --c-bg-rgb: 18, 18, 18;
-      --c-surface: #1c1f24;
-      --c-card: #181a1d;
-      --c-border: #3d3f46;
+      --c-surface: #1a1c20;
+      --c-card: #1c1e22;
+      --c-border: #3a3d47;
 
-      --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.4);
-      --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.65);
+      --c-pri: #7aa8ff;
+      --c-pri-dim: #92b7ff;
+      --c-pri-rgb: 122, 168, 255;
+
+      --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.45);
+      --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.75);
       --modal-backdrop-color: rgba(0, 0, 0, 0.8);
     }
   }
