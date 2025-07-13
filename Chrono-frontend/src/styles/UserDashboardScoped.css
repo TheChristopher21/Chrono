@@ -444,6 +444,11 @@
   color: var(--ud-c-text-muted);
   padding-left: 1rem;
 }
+.scoped-dashboard .day-customer-indicator {
+  margin-top: var(--ud-gap-xs);
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+}
 
 .user-dashboard.scoped-dashboard .expected-hours strong,
 .user-dashboard.scoped-dashboard .daily-diff strong {
@@ -1050,6 +1055,9 @@
   }
   .scoped-dashboard .saved-range-list {
     padding-left: 0;
+  }
+  .scoped-dashboard .day-customer-indicator {
+    text-align: left;
   }
 
 }

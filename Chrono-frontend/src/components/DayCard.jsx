@@ -1,3 +1,4 @@
+import React, { useMemo } from 'react';
 import PropTypes from 'prop-types';
 import {
   minutesToHHMM,
@@ -21,6 +22,34 @@ const DayCard = ({
   children,
 }) => {
   const correctionDisabled = holidayName || vacationInfo || sickInfo;
+
+  const customerRanges = useMemo(() => {
+    if (!summary || !Array.isArray(summary.entries)) return [];
+    const ranges = [];
+    let currentCustomer = null;
+    let start = null;
+    summary.entries.forEach(entry => {
+      const time = formatTime(entry.entryTimestamp);
+      if (entry.punchType === 'START') {
+        currentCustomer = entry.customerName || null;
+        start = time;
+      } else if (entry.punchType === 'ENDE' && start) {
+        ranges.push({ customerName: currentCustomer, start, end: time });
+        currentCustomer = null;
+        start = null;
+      }
+    });
+    return ranges;
+  }, [summary]);
+
+  const uniqueCustomers = useMemo(() => {
+    return Array.from(
+      new Set(customerRanges.map(r => r.customerName).filter(Boolean))
+    );
+  }, [customerRanges]);
+
+  const dayCustomerName =
+    uniqueCustomers.length === 1 ? uniqueCustomers[0] : null;
   return (
     <div
       className={`day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''} ${
@@ -113,6 +142,18 @@ const DayCard = ({
                 <strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(summary.breakMinutes)}
               </p>
             </div>
+            {dayCustomerName && (
+              <p className="day-customer-indicator">
+                {t('customerLabel', 'Kunde')}: {dayCustomerName}
+              </p>
+            )}
+            {customerRanges.length > 1 && (
+              <ul className="saved-range-list">
+                {customerRanges.map((r, i) => (
+                  <li key={i}>{r.customerName || t('noCustomer')} {r.start} - {r.end}</li>
+                ))}
+              </ul>
+            )}
           </>
         )}
         {children}
