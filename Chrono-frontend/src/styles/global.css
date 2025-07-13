@@ -49,10 +49,11 @@ a:focus-visible {
 
 /* ---------- 2)  Basis-Typografie -------------------------------------- */
 html {
-  font-family: "Poppins", system-ui, sans-serif;
+  font-family: var(--font-main, "Poppins", system-ui, sans-serif);
   font-size: 16px;
   line-height: 1.45;
   scroll-behavior: smooth; /* sanftes Scrollen auf der gesamten Seite */
+  color-scheme: light dark;
 }
 body {
   background: var(--c-bg);
@@ -76,9 +77,11 @@ body {
 a {
   color: var(--c-pri);
   text-decoration: none;
+  transition: color var(--u-dur);
 }
 a:hover {
   text-decoration: underline;
+  color: var(--c-pri-dim);
 }
 
 /* ---------- 3)  Dark-Mode-Overrides ----------------------------------- */

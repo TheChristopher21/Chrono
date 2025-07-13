@@ -5,9 +5,6 @@
 
 /* ---------- DESIGN TOKENS & SPACING ---------------------------------- */
 :root {
-  --font-main: "Poppins", system-ui, sans-serif;
-  --font-alt: "Inter var", system-ui, sans-serif;
-
   /* Hue auf Blau verschoben 220 ° */
   --hue: 220;
 
