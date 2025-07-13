@@ -14,6 +14,7 @@ import jsPDF from "jspdf"; // Für PDF Export
 import autoTable from "jspdf-autotable"; // Importiere autoTable explizit
 
 import HourlyDashboard from '../../pages/HourlyDashboard/HourlyDashboard.jsx'; // Für den Fall, dass ein User stündlich ist
+import PercentageDashboard from '../../pages/PercentageDashboard/PercentageDashboard.jsx';
 
 import {
     getMondayOfWeek,
@@ -371,16 +372,11 @@ function UserDashboard() {
             </div>
         );
     }
-    if (userProfile.isHourly) {
+    if (userProfile?.isHourly || (!userProfile && currentUser?.isHourly)) {
         return <HourlyDashboard />;
     }
-    if (userProfile.isPercentage) {
-        // Annahme: Es gibt eine PercentageDashboard Komponente
-        // import PercentageDashboard from '../PercentageDashboard/PercentageDashboard';
-        // return <PercentageDashboard />;
-        // Für dieses Beispiel leite auf eine dedizierte Route weiter oder zeige Nachricht
-        // Da das PercentageDashboard eigene Logik hat, ist eine eigene Komponente/Route besser
-        // return <Navigate to="/percentage-dashboard" replace />; // Besser wäre, es direkt hier zu rendern
+    if (userProfile?.isPercentage || (!userProfile && currentUser?.isPercentage)) {
+        return <PercentageDashboard />;
     }
 
     return (

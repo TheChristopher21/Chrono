@@ -104,7 +104,8 @@ const PercentageDashboard = () => {
     }, [loadProfileAndInitialData]);
 
     useEffect(() => {
-        if (userProfile?.customerTrackingEnabled) {
+        const trackingEnabled = userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled;
+        if (trackingEnabled) {
             fetchCustomers();
             api.get('/api/customers/recent')
                 .then(res => setRecentCustomers(Array.isArray(res.data) ? res.data : []))
@@ -116,7 +117,7 @@ const PercentageDashboard = () => {
             setRecentCustomers([]);
             setProjects([]);
         }
-    }, [userProfile, fetchCustomers]);
+    }, [userProfile, currentUser, fetchCustomers]);
 
     const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
