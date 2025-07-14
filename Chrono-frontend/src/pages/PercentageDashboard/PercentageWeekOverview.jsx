@@ -1,30 +1,27 @@
 // src/pages/PercentageDashboard/PercentageWeekOverview.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import PropTypes from 'prop-types';
-// Removed: import { useTranslation } from '../../context/LanguageContext'; // t wird als Prop übergeben
 
 import {
     addDays,
     formatLocalDate,
-    formatTime, // Wird für die Anzeige von Zeitstempeln aus Einträgen benötigt
-    minutesToHHMM, // Für die Anzeige von Gesamtminuten
-    isLateTime, // Beibehalten für UI-Hervorhebungen
+    formatTime,
+    minutesToHHMM,
+    isLateTime,
     formatDate,
-    formatPunchedTimeFromEntry, // Zum Formatieren der einzelnen Stempelzeiten
-    expectedDayMinutesForPercentageUser, // Spezifisch für %-User
-    getMondayOfWeek // Wird für die Datums-Input-Navigation benötigt
+    formatPunchedTimeFromEntry,
+    expectedDayMinutesForPercentageUser,
+    getMondayOfWeek
 } from './percentageDashUtils';
-import '../../styles/PercentageDashboardScoped.css'; // Stellt sicher, dass die Styles hier auch referenziert werden
-import api from "../../utils/api.js";
-import DayCard from '../../components/DayCard';
+import '../../styles/PercentageDashboardScoped.css';
 import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
 
 const PercentageWeekOverview = ({
                                     t,
-                                    dailySummaries, // Array von DailyTimeSummaryDTOs für die ausgewählte Woche
+                                    dailySummaries,
                                     monday,
-                                    setMonday, // Korrigiert von setSelectedMonday zu setMonday, falls es so in der Parent-Komponente heißt
+                                    setMonday,
                                     weeklyWorked,
                                     weeklyExpected,
                                     weeklyDiff,
@@ -39,38 +36,31 @@ const PercentageWeekOverview = ({
                                     setSelectedCustomerId,
                                     selectedProjectId,
                                     setSelectedProjectId,
-                                    assignCustomerForDay,
-                                    assignProjectForDay,
                                     vacationRequests,
                                     sickLeaves,
                                     holidaysForUserCanton,
                                     reloadData
                                 }) => {
 
-    // Immer 7 Tage für eine volle Wochenansicht (Mo-So)
-    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i)); // Mo-So
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
     const { currentUser } = useAuth();
     const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
-
-    // Derive current customer selections and ranges from loaded entries
-
 
     function handlePrevWeek() {
         setMonday(prev => addDays(prev, -7));
     }
+
     function handleNextWeek() {
         setMonday(prev => addDays(prev, 7));
     }
+
     function handleWeekJump(e) {
-        // Stellt sicher, dass das Datum korrekt als lokales Datum behandelt wird
-        const localDateString = e.target.value; // Kommt als "YYYY-MM-DD"
-        const picked = new Date(localDateString + "T00:00:00"); // Als Mitternacht lokal interpretieren
+        const localDateString = e.target.value;
+        const picked = new Date(localDateString + "T00:00:00");
         if (!isNaN(picked.getTime())) {
-            setMonday(getMondayOfWeek(picked)); // Stellt sicher, dass immer ein Montag gewählt wird
+            setMonday(getMondayOfWeek(picked));
         }
     }
-
-
 
     return (
         <section className="weekly-overview content-section">
@@ -81,7 +71,7 @@ const PercentageWeekOverview = ({
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
                 {(userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled) && (
-                    <>
+                    <div className="customer-project-selectors">
                         <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                             <option value="">{t('noCustomer')}</option>
                             {recentCustomers.length > 0 && (
@@ -101,7 +91,7 @@ const PercentageWeekOverview = ({
                                 <option key={p.id} value={p.id}>{p.name}</option>
                             ))}
                         </select>
-                    </>
+                    </div>
                 )}
                 <button onClick={handleManualPunch} className="button-primary">
                     {t("manualPunchButton", "Jetzt stempeln")}
@@ -144,8 +134,6 @@ const PercentageWeekOverview = ({
                 {weekDates.map((dayObj) => {
                     const isoDate = formatLocalDate(dayObj);
                     const summary = dailySummaries.find(s => s.date === isoDate);
-                    const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
-                    const formattedDisplayDate = formatDate(dayObj);
 
                     const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
                     const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
@@ -161,33 +149,89 @@ const PercentageWeekOverview = ({
 
                     const dailyWorkedMins = summary?.workedMinutes || 0;
                     const dailyDiffMinutes = dailyWorkedMins - displayDailyExpectedMins;
+                    const dailyBreakMinutes = summary?.breakMinutes || 0;
+
+                    const customerRanges = [];
+                    if (summary?.entries) {
+                        let currentCustomer = null;
+                        let start = null;
+                        summary.entries.forEach(entry => {
+                            const time = formatTime(entry.entryTimestamp);
+                            if (entry.punchType === 'START') {
+                                currentCustomer = entry.customerName || t('noCustomer', 'Allgemein');
+                                start = time;
+                            } else if (entry.punchType === 'ENDE' && start) {
+                                customerRanges.push({ customerName: currentCustomer, start, end: time });
+                                start = null;
+                            }
+                        });
+                    }
+
+                    const correctionDisabled = isHolidayToday || vacationToday || sickToday;
 
                     return (
-                        <DayCard
-                            key={isoDate}
-                            t={t}
-                            dayName={dayName}
-                            displayDate={formattedDisplayDate}
-                            summary={summary}
-                            holidayName={holidaysForUserCanton[isoDate]}
-                            vacationInfo={vacationToday}
-                            sickInfo={sickToday}
-                            expectedMinutes={displayDailyExpectedMins}
-                            diffMinutes={dailyDiffMinutes}
-                            showCorrection
-                            onRequestCorrection={() => openCorrectionModal(dayObj, summary)}
-                        >
-                            {summary && summary.entries.length > 0 && (
-                                <div className="day-card-actions">
-                                    <button
-                                        onClick={() => setModalInfo({ isVisible: true, day: dayObj, summary })}
-                                        className="button-primary-outline"
-                                    >
+                        <div key={isoDate} className="day-card">
+                            <div className="day-card-header">
+                                <h3>{dayObj.toLocaleDateString('de-DE', { weekday: 'long' })}, {formatDate(dayObj)}</h3>
+                            </div>
+                            <div className="day-card-body">
+                                {isHolidayToday ? (
+                                    <div className="day-card-info holiday-indicator">🎉 {holidaysForUserCanton[isoDate]}</div>
+                                ) : vacationToday ? (
+                                    <div className="day-card-info vacation-indicator">🏖️ {t('onVacation', 'Im Urlaub')} {vacationToday.halfDay && `(${t('halfDayShort', '½ Tag')})`}</div>
+                                ) : sickToday ? (
+                                    <div className="day-card-info sick-leave-indicator">⚕️ {t('sickLeave.sick', 'Krank')} {sickToday.halfDay && `(${t('halfDayShort', '½ Tag')})`}</div>
+                                ) : (
+                                    <>
+                                        <div className="time-summary">
+                                            <div className="time-block">
+                                                <span className="label">{t('actualTime', 'Ist')}</span>
+                                                <span className="value">{minutesToHHMM(dailyWorkedMins)}</span>
+                                            </div>
+                                            <div className="time-block">
+                                                <span className="label">{t('expected', 'Soll')}</span>
+                                                <span className="value">{minutesToHHMM(displayDailyExpectedMins)}</span>
+                                            </div>
+                                            <div className="time-block">
+                                                <span className="label">{t('diffToday', 'Differenz')}</span>
+                                                <span className={`value ${dailyDiffMinutes < 0 ? 'negative' : 'positive'}`}>{minutesToHHMM(dailyDiffMinutes)}</span>
+                                            </div>
+                                            <div className="time-block">
+                                                <span className="label">{t('breakTime', 'Pause')}</span>
+                                                <span className="value">{minutesToHHMM(dailyBreakMinutes)}</span>
+                                            </div>
+                                        </div>
+                                        <div className="work-details">
+                                            <h4>{t('punchTypes.title', 'Stempelungen')}:</h4>
+                                            {customerRanges.length > 0 ? (
+                                                <ul>
+                                                    {customerRanges.map((r, i) => (
+                                                        <li key={i}>
+                                                            <span className="work-description">{r.customerName}</span>
+                                                            <span className="work-time">{r.start} - {r.end}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            ) : (
+                                                <p className="no-entries">{t('noEntries', 'Keine Einträge')}</p>
+                                            )}
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                            <div className="day-card-footer">
+                                {!correctionDisabled && (
+                                    <button onClick={() => openCorrectionModal(dayObj, summary)} className="button-secondary correction-button">
+                                        {t('submitCorrectionRequest', 'Korrektur anfragen')}
+                                    </button>
+                                )}
+                                {summary && summary.entries.length > 0 && (
+                                    <button onClick={() => setModalInfo({ isVisible: true, day: dayObj, summary })} className="button-primary-outline">
                                         {t('assignCustomer.editButton', 'Kunden & Zeiten bearbeiten')}
                                     </button>
-                                </div>
-                            )}
-                        </DayCard>
+                                )}
+                            </div>
+                        </div>
                     );
                 })}
             </div>
@@ -212,21 +256,7 @@ const PercentageWeekOverview = ({
 
 PercentageWeekOverview.propTypes = {
     t: PropTypes.func.isRequired,
-    dailySummaries: PropTypes.arrayOf(PropTypes.shape({
-        date: PropTypes.string.isRequired,
-        workedMinutes: PropTypes.number.isRequired,
-        breakMinutes: PropTypes.number.isRequired,
-        entries: PropTypes.arrayOf(PropTypes.shape({
-            id: PropTypes.number,
-            entryTimestamp: PropTypes.string.isRequired,
-            punchType: PropTypes.string.isRequired,
-            source: PropTypes.string,
-            correctedByUser: PropTypes.bool,
-        })).isRequired,
-        dailyNote: PropTypes.string,
-        needsCorrection: PropTypes.bool,
-        primaryTimes: PropTypes.object
-    })).isRequired,
+    dailySummaries: PropTypes.array.isRequired,
     monday: PropTypes.instanceOf(Date).isRequired,
     setMonday: PropTypes.func.isRequired,
     weeklyWorked: PropTypes.number.isRequired,
@@ -243,8 +273,6 @@ PercentageWeekOverview.propTypes = {
     setSelectedCustomerId: PropTypes.func,
     selectedProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     setSelectedProjectId: PropTypes.func,
-    assignCustomerForDay: PropTypes.func,
-    assignProjectForDay: PropTypes.func,
     vacationRequests: PropTypes.array.isRequired,
     sickLeaves: PropTypes.array.isRequired,
     holidaysForUserCanton: PropTypes.object,

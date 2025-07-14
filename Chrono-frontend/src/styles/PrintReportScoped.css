@@ -1,97 +1,200 @@
 /* =========================================================================
-   PrintReportScoped.css
-   Scope: .print-report-page.scoped-print
+   PrintReportScoped.css (Neues Design)
+   Scope: .print-report-page
    ========================================================================= */
 
-/* --------------------------- Variablen LIGHT --------------------------- */
-.print-report-page.scoped-print {
-  --primary: #007bff;
-  --primary-dark: #0061c0;
-  --border: #d0d0d0;
-  --text: #222;
-  --bg: #fff;
-
-  font-family: system-ui, sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  padding: 20px;
-  max-width: 1000px;
-  margin: 0 auto;
+body {
+  background-color: #e9ecef;
 }
 
-/* --------------------------- Variablen DARK ---------------------------- */
-[data-theme="dark"] .print-report-page.scoped-print {
-  --bg: #1f2127;
-  --text: #e3e5eb;
-  --border: #4a4a4a;
+.print-report-page {
+  font-family: 'Segoe UI', 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  background: #e9ecef;
+  color: #343a40;
+  padding: 2rem;
+  max-width: 8.5in; /* US Letter-Breite */
+  margin: 2rem auto;
 }
 
-/* --------------------------- Grundlayout ------------------------------- */
-.print-report-page.scoped-print .title {
-  margin: 0 0 6px;
+/* Header-Bereich */
+.report-header {
+  text-align: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+.report-header h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #212529;
+  margin: 0 0 0.5rem 0;
+}
+.report-header p {
+  font-size: 1rem;
+  color: #6c757d;
+  margin: 0.25rem 0;
+}
+
+/* Zusammenfassungs-Box */
+.report-summary {
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 2.5rem;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  display: flex;
+  justify-content: space-around;
   text-align: center;
 }
-.print-report-page.scoped-print .sub {
-  margin: 0 0 20px;
-  text-align: center;
-}
-
-/* --------------------------- Tabelle ----------------------------------- */
-.print-report-page.scoped-print table {
-  width: 100%;
-  border-collapse: collapse;
+.report-summary .label {
   font-size: 0.9rem;
+  color: #6c757d;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
 }
-.print-report-page.scoped-print thead th {
-  background: var(--primary);
-  color: #fff;
-  padding: 8px;
-  border: 1px solid var(--border);
+.report-summary .value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #212529;
 }
-.print-report-page.scoped-print tbody td {
-  padding: 6px;
-  border: 1px solid var(--border);
-  text-align: center;
-}
-.print-report-page.scoped-print tbody tr:nth-child(even) {
-  background: #f9f9f9;
-}
-.print-report-page.scoped-print .noRows {
-  text-align: center;
-  padding: 20px;
+.report-summary .value.primary {
+  color: #007bff;
 }
 
-/* --------------------------- Buttons (Drucken/PDF) --------------------- */
-.print-report-page.scoped-print .btnRow {
-  margin-top: 20px;
+/* Hauptteil mit Tageskarten */
+.report-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.day-card-report {
+  background: #ffffff;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+  overflow: hidden; /* Stellt sicher, dass der abgerundete Rahmen eingehalten wird */
+}
+
+.day-card-report-header {
+  background-color: #f8f9fa;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid #dee2e6;
+}
+.day-card-report-header h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #343a40;
+}
+
+.day-card-report-body {
+  padding: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr; /* Aufteilung für Übersicht und Blöcke */
+  gap: 2rem;
+}
+
+.overview-col h4, .blocks-col h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  color: #007bff;
+  font-weight: 600;
+  border-bottom: 1px solid #e9ecef;
+  padding-bottom: 0.5rem;
+}
+
+.overview-col p {
+  margin: 0.5rem 0;
+  font-size: 0.95rem;
+}
+.overview-col p strong {
+  color: #495057;
+}
+.overview-col .note-text {
+  font-style: italic;
+  color: #6c757d;
+  white-space: pre-wrap;
+}
+
+.blocks-col .work-block, .blocks-col .break-block {
+  padding-left: 1rem;
+  border-left: 3px solid #007bff;
+  margin-bottom: 0.75rem;
+  font-size: 0.95rem;
+}
+.blocks-col .break-block {
+  border-left-color: #fd7e14; /* Orange für Pausen */
+}
+
+.blocks-col span {
+  display: block;
+}
+.blocks-col span:first-child {
+  font-weight: bold;
+}
+
+.no-entries-card {
+  background: #ffffff;
+  border: 1px dashed #dee2e6;
+  border-radius: 8px;
+  padding: 2rem;
+  text-align: center;
+  color: #6c757d;
+  font-style: italic;
+}
+
+/* Druck-Button-Leiste */
+.btnRow {
+  margin-top: 2.5rem;
   text-align: center;
 }
-.print-report-page.scoped-print .btnRow button {
-  background: var(--primary);
+.btnRow button {
+  background: #007bff;
   color: #fff;
   border: none;
-  padding: 10px 18px;
-  margin: 0 8px;
-  border-radius: 4px;
+  padding: 12px 24px;
+  margin: 0 0.5rem;
+  border-radius: 5px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: background-color 0.2s, transform 0.2s;
+  font-size: 1rem;
+  font-weight: 500;
 }
-.print-report-page.scoped-print .btnRow button:hover {
-  background: var(--primary-dark);
+.btnRow button:hover {
+  background: #0056b3;
+  transform: translateY(-2px);
+}
+.btnRow button:last-child {
+  background-color: #28a745;
+}
+.btnRow button:last-child:hover {
+  background-color: #218838;
 }
 
-/* --------------------------- Druckansicht ------------------------------ */
+/* Druckansicht */
 @media print {
-  .print-report-page.scoped-print .btnRow {
-    display: none;
-  }
   body {
-    margin: 0; /* entlastet den Druck */
+    background-color: #fff;
   }
-  .print-report-page.scoped-print {
+  .print-report-page {
     box-shadow: none;
     padding: 0;
+    margin: 0;
     max-width: 100%;
     width: 100%;
+    background: #fff;
+  }
+  .btnRow {
+    display: none;
+  }
+  .day-card-report {
+    page-break-inside: avoid; /* Verhindert, dass eine Karte über zwei Seiten getrennt wird */
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+  .report-summary {
+    box-shadow: none;
   }
 }

@@ -17,8 +17,8 @@
   padding: var(--ud-gap-lg, 2rem);
   box-sizing: border-box;
   transition:
-    background var(--u-dur, 0.25s) var(--u-ease, ease),
-    color var(--u-dur, 0.25s) var(--u-ease, ease);
+          background var(--u-dur, 0.25s) var(--u-ease, ease),
+          color var(--u-dur, 0.25s) var(--u-ease, ease);
   --customer-color-saturation: 70%;
   --customer-color-lightness: 90%;
 }
@@ -36,37 +36,25 @@
   --ud-c-surface: #374151;
   --customer-color-saturation: 35%;
   --customer-color-lightness: 25%;
-  /* Explizit definierte Primärfarben für Dark Mode für dieses Dashboard */
-  --ud-c-primary: #60a5fa; /* Helleres Blau für guten Kontrast im Dark Mode */
-  --ud-c-primary-dim: #3b82f6; /* Angepasste dunklere Variante für Hover etc. */
-  --ud-c-primary-rgb: 96, 165, 250; /* RGB-Werte für das hellere Blau */
-  --ud-c-primary-light-bg: rgba(
-    96,
-    165,
-    250,
-    0.15
-  ); /* Heller Hintergrund basierend auf dem neuen Blau */
-  --ud-c-primary-text: #60a5fa; /* Textfarbe in der neuen Primärfarbe */
-
+  --ud-c-primary: #60a5fa;
+  --ud-c-primary-dim: #3b82f6;
+  --ud-c-primary-rgb: 96, 165, 250;
+  --ud-c-primary-light-bg: rgba(96, 165, 250, 0.15);
+  --ud-c-primary-text: #60a5fa;
   --ud-c-success: #34d399;
   --ud-c-success-dim: #10b981;
-  --ud-c-success-light-bg: rgba(52, 211, 153, 0.15);
   --ud-c-success-text: #a7f3d0;
-
   --ud-c-error: #f87171;
   --ud-c-error-dim: #ef4444;
   --ud-c-error-light-bg: rgba(248, 113, 113, 0.15);
   --ud-c-error-text: #fecaca;
-
   --ud-c-warn: #fbbf24;
   --ud-c-warn-dim: #f59e0b;
   --ud-c-warn-light-bg: rgba(251, 191, 36, 0.15);
   --ud-c-warn-text: #fde68a;
-
-  --ud-c-late-time: var(--ud-c-error); /* Verwendet die definierte Fehlerfarbe */
-  --ud-c-late-time-bg: var(--ud-c-error-light-bg); /* Verwendet den hellen Fehlerhintergrund */
+  --ud-c-late-time: var(--ud-c-error);
+  --ud-c-late-time-bg: var(--ud-c-error-light-bg);
   --ud-c-time: var(--ud-c-text);
-
   --ud-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.25);
   --ud-shadow-interactive: 0 4px 12px rgba(0, 0, 0, 0.3);
   --ud-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.2);
@@ -74,7 +62,6 @@
   --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card, #ffffff) 90%, #000);
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface, #f3f5fd) 95%, #000);
   --ud-c-time: #f8f9fa;
-
 }
 
 /* =========================================================================
@@ -160,10 +147,312 @@
 [data-theme="dark"] .percentage-dashboard.scoped-dashboard .tooltip-icon {
   background-color: rgba(0, 0, 0, 0.3); /* Anpassung für Dark Mode */
 }
+.week-display {
+  display: grid;
+  gap: var(--ud-gap-lg, 2rem);
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); /* Adjusted min-width */
+}
 
+.day-card {
+  background: linear-gradient(145deg, #2c3e50, #233140);
+  border-radius: 15px;
+  padding: 25px;
+  color: #ecf0f1;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #34495e;
+  display: flex;
+  flex-direction: column;
+}
+
+.day-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.4);
+}
+
+.day-card-header h3 {
+  font-size: 1.4em;
+  font-weight: bold;
+  color: #ffffff;
+  border-bottom: 2px solid #3498db;
+  padding-bottom: 15px;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+.day-card-body {
+  flex-grow: 1;
+}
+
+.time-summary {
+  display: flex;
+  justify-content: space-around;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.time-block .label {
+  font-size: 0.9em;
+  color: #bdc3c7;
+  display: block;
+  margin-bottom: 5px;
+}
+
+.time-block .value {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.time-block .value.positive {
+  color: #2ecc71;
+}
+
+.time-block .value.negative {
+  color: #e74c3c;
+}
+
+.work-details {
+  border-top: 1px solid #34495e;
+  padding-top: 15px;
+}
+
+.work-details h4 {
+  margin: 0 0 15px 0;
+  color: #3498db;
+  font-weight: bold;
+  font-size: 1.1em;
+}
+
+.work-details ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.work-details li {
+  background-color: rgba(52, 73, 94, 0.5);
+  padding: 12px 15px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background-color 0.3s ease;
+}
+
+.work-details li:hover {
+  background-color: rgba(52, 73, 94, 1);
+}
+
+.work-details .work-description {
+  font-weight: bold;
+}
+
+.work-details .work-time {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 1.1em;
+  color: #bdc3c7;
+}
+
+.day-card-footer {
+  margin-top: auto;
+  padding-top: 20px;
+  border-top: 1px solid #34495e;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.day-card-footer .button-secondary.correction-button {
+  flex-grow: 1;
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #ecf0f1;
+  border: 1px solid #3498db;
+}
+
+.day-card-footer .button-secondary.correction-button:hover {
+  background-color: #3498db;
+  color: #ffffff;
+}
+
+.day-card-footer .button-primary-outline {
+  flex-grow: 1;
+}
+
+.day-card-info {
+  text-align: center;
+  padding: 2rem 0;
+  font-size: 1.2rem;
+  font-weight: 500;
+}
+.holiday-indicator { color: #f1c40f; }
+.vacation-indicator { color: #3498db; }
+.sick-leave-indicator { color: #e74c3c; }
 .percentage-dashboard.scoped-dashboard .tooltip-icon:hover {
   opacity: 1;
 }
+/* ===================================
+   Neues Design für Customer Assign Modal
+   =================================== */
+
+/* Overlay für den Hintergrund */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  animation: modalFadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Hauptcontainer des Modals */
+.customer-assign-modal {
+  width: 100%;
+  max-width: 650px;
+  background: #1f2937;
+  border-radius: 15px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
+  border: 1px solid #374151;
+  color: #ecf0f1;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  transform: scale(0.95) translateY(10px);
+  opacity: 0;
+  animation: modalScaleUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* Modal Header */
+.customer-assign-modal .modal-header {
+  padding: 20px 30px;
+  border-bottom: 1px solid #374151;
+}
+
+.customer-assign-modal .modal-header h3 {
+  margin: 0;
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+.customer-assign-modal .modal-header p {
+  margin: 5px 0 0;
+  color: #bdc3c7;
+  font-size: 1.1em;
+}
+
+/* Modal Body */
+.customer-assign-modal .modal-body {
+  padding: 30px;
+  overflow-y: auto;
+  background-color: #111827;
+}
+
+/* Karte für jeden Zeitblock */
+.customer-assign-modal .time-block-card {
+  background: #2c3e50;
+  border: 1px solid #34495e;
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+.customer-assign-modal .time-block-header {
+  font-weight: bold;
+  margin: 0 0 15px 0;
+  font-size: 1.3em;
+  color: #3498db;
+  border-bottom: 1px solid #34495e;
+  padding-bottom: 10px;
+}
+
+/* Formular innerhalb der Zeitblock-Karte */
+.customer-assign-modal .time-block-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 15px;
+}
+
+.customer-assign-modal .form-group label {
+  display: block;
+  font-size: 0.9em;
+  color: #bdc3c7;
+  margin-bottom: 8px;
+}
+
+.customer-assign-modal .form-group select,
+.customer-assign-modal .form-group input {
+  width: 100%;
+  padding: 12px;
+  background-color: #34495e;
+  border: 1px solid #4a6278;
+  border-radius: 5px;
+  color: #ecf0f1;
+  font-size: 1em;
+}
+
+.customer-assign-modal .form-group select:focus,
+.customer-assign-modal .form-group input:focus {
+  outline: none;
+  border-color: #3498db;
+  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.3);
+}
+
+/* Modal Footer */
+.customer-assign-modal .modal-footer {
+  padding: 20px 30px;
+  border-top: 1px solid #374151;
+  display: flex;
+  justify-content: flex-end;
+  gap: 15px;
+  background-color: #1f2937;
+}
+
+/* Spezifische Button-Stile für den Modal */
+.customer-assign-modal .modal-footer .button-secondary {
+  padding: 12px 25px;
+  background-color: #34495e;
+  color: #ecf0f1;
+  border: none;
+  border-radius: 5px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.customer-assign-modal .modal-footer .button-secondary:hover {
+  background-color: #4a6278;
+}
+
+.customer-assign-modal .modal-footer .button-primary {
+  padding: 12px 25px;
+  background-color: #3498db;
+  color: #ffffff;
+  border: none;
+  border-radius: 5px;
+  font-size: 1em;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+.customer-assign-modal .modal-footer .button-primary:hover {
+  background-color: #2980b9;
+}
+
+.no-blocks-message {
+  color: var(--ud-c-text-muted);
+  text-align: center;
+  padding: var(--ud-gap-lg);
+}
+
 .percentage-dashboard.scoped-dashboard .tooltip-box {
   visibility: hidden;
   opacity: 0;
@@ -287,7 +576,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: var(--ud-gap-md);
-  margin-bottom: var(--ud-gap-lg);
+  margin-bottom: 3.5rem; /* Increased from var(--ud-gap-lg) */
 }
 .percentage-dashboard.scoped-dashboard .summary-item {
   background: var(--ud-c-card);
@@ -323,7 +612,7 @@
 .percentage-dashboard.scoped-dashboard .week-display {
   display: grid;
   gap: var(--ud-gap-lg, 2rem);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 .percentage-dashboard.scoped-dashboard .week-day-card {
   background: var(--ud-c-card, #ffffff);
@@ -874,4 +1163,23 @@
   background: var(--ud-c-line);
   border-color: var(--ud-c-muted);
   transform: translateY(-1px);
+}
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalScaleUp {
+  from {
+    transform: scale(0.95) translateY(10px);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) translateY(0);
+    opacity: 1;
+  }
 }

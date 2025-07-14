@@ -9,7 +9,39 @@ export function getMondayOfWeek(date) {
     copy.setHours(0, 0, 0, 0);
     return copy;
 }
+export const processEntriesForReport = (entries) => {
+    const blocks = { work: [], break: [] };
+    if (!entries || entries.length === 0) return blocks;
 
+    let lastStartTime = null;
+    const sortedEntries = [...entries].sort((a, b) => new Date(a.entryTimestamp) - new Date(b.entryTimestamp));
+
+    for (const entry of sortedEntries) {
+        const entryTime = new Date(entry.entryTimestamp);
+        if (entry.punchType === 'START') {
+            lastStartTime = entryTime;
+        } else if (entry.punchType === 'ENDE' && lastStartTime) {
+            const duration = (entryTime - lastStartTime) / (1000 * 60); // in Minuten
+            const block = {
+                start: formatTime(lastStartTime),
+                end: formatTime(entryTime),
+                duration: minutesToHHMM(duration),
+                description: entry.customerName || entry.projectName || ''
+            };
+
+            // Heuristik zur Unterscheidung von Arbeit und Pause
+            // Annahme: Ein Block direkt nach einem Arbeitsblock ist eine Pause.
+            const lastWorkBlock = blocks.work.length > 0 ? blocks.work[blocks.work.length - 1] : null;
+            if (lastWorkBlock && lastWorkBlock.end === formatTime(lastStartTime)) {
+                blocks.break.push(block);
+            } else {
+                blocks.work.push(block);
+            }
+            lastStartTime = null;
+        }
+    }
+    return blocks;
+};
 export function formatDate(dateInput) {
     if (!dateInput) return "-";
     const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);

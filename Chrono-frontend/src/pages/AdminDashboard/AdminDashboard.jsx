@@ -21,7 +21,7 @@ import {
     formatLocalDateYMD,
     addDays,
     minutesToHHMM,
-    formatDate, // utils formatDate
+    formatDate, processEntriesForReport, // utils formatDate
 } from './adminDashboardUtils';
 
 const AdminDashboard = () => {
@@ -290,62 +290,160 @@ const AdminDashboard = () => {
         setPrintUserEndDate(lastDayOfMonth);
         setPrintUserModalVisible(true);
     }
+    const calculateCardHeight = (doc, dayData, width) => {
+        let height = 25; // Header + initial padding
+        let leftHeight = 30;
+        let rightHeight = 30;
 
-    async function handlePrintUserTimesPeriodSubmit() {
-        const userSummariesForPrint = dailySummaries.filter(summary => {
-            return (
-                summary.username === printUser &&
-                summary.date >= printUserStartDate &&
-                summary.date <= printUserEndDate
-            );
+        if(dayData.note) {
+            leftHeight += doc.splitTextToSize(dayData.note, (width/2.5) - 10).length * 5 + 10;
+        }
+
+        dayData.blocks.work.forEach(block => {
+            const text = `${block.description ? `${block.description}:` : ''} ${block.start} - ${block.end} (${block.duration})`;
+            rightHeight += doc.splitTextToSize(text, width - (width/2.5) - 5).length * 5 + 2;
         });
+        height += Math.max(leftHeight, rightHeight);
+        return height;
+    };
+    async function handlePrintUserTimesPeriodSubmit() {
+        if (!printUser || !printUserStartDate || !printUserEndDate) return;
 
-        const sortedSummaries = userSummariesForPrint.sort(
-            (a,b) => new Date(a.date) - new Date(b.date)
+        const userSummariesForPrint = dailySummaries.filter(summary =>
+            summary.username === printUser &&
+            summary.date >= printUserStartDate &&
+            summary.date <= printUserEndDate
         );
 
-        const doc = new jsPDF("p", "mm", "a4");
+        const sortedSummaries = userSummariesForPrint.sort(
+            (a, b) => new Date(a.date) - new Date(b.date)
+        );
+
         const userDetails = users.find(u => u.username === printUser);
         const userNameDisplay = userDetails ? `${userDetails.firstName} ${userDetails.lastName} (${printUser})` : printUser;
 
-        doc.setFontSize(14);
-        doc.text(`${t('printReport.title')} ${t('for')} ${userNameDisplay}`, 14, 15);
-        doc.setFontSize(11);
-        doc.text(`${t('printReport.periodLabel')}: ${formatDate(new Date(printUserStartDate + "T00:00:00Z"))} – ${formatDate(new Date(printUserEndDate + "T00:00:00Z"))}`, 14, 22);
+        const doc = new jsPDF("p", "mm", "a4");
+        const pageMargin = 15;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const contentWidth = pageWidth - (2 * pageMargin);
+        let yPos = 20;
 
-        const tableBody = sortedSummaries.map(summary => {
-            const displayDate = formatDate(new Date(summary.date + "T00:00:00Z"));
-            const primary = summary.primaryTimes;
-            const workStart  = primary.firstStartTime ? primary.firstStartTime.substring(0,5) : "-";
-            const workEnd    = primary.lastEndTime ? primary.lastEndTime.substring(0,5) : (primary.isOpen ? t('printReport.open') : "-");
+        // --- PDF Header ---
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.text("Zeitenbericht", pageWidth / 2, yPos, { align: "center" });
+        yPos += 10;
 
-            let breakTimes = "-";
-            if (summary.breakMinutes > 0) {
-                breakTimes = minutesToHHMM(summary.breakMinutes);
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.text(`für ${userNameDisplay}`, pageWidth / 2, yPos, { align: "center" });
+        yPos += 6;
+        doc.text(`Zeitraum: ${formatDate(new Date(printUserStartDate))} - ${formatDate(new Date(printUserEndDate))}`, pageWidth / 2, yPos, { align: "center" });
+        yPos += 15;
+
+        // --- PDF Summary Box ---
+        const totalWork = sortedSummaries.reduce((sum, day) => sum + day.workedMinutes, 0);
+        const totalPause = sortedSummaries.reduce((sum, day) => sum + day.breakMinutes, 0);
+
+        doc.setFillColor(248, 249, 250); // Helles Grau
+        doc.rect(pageMargin, yPos, contentWidth, 25, 'F');
+        const summaryTextY = yPos + 15;
+        const summaryCol1 = pageMargin + contentWidth / 4;
+        const summaryCol2 = pageMargin + (contentWidth / 4) * 3;
+
+        doc.setFontSize(10);
+        doc.setTextColor(108, 117, 125);
+        doc.text("Gesamte Arbeitszeit", summaryCol1, summaryTextY - 8, { align: 'center' });
+        doc.text("Gesamte Pausenzeit", summaryCol2, summaryTextY - 8, { align: 'center' });
+
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(41, 128, 185);
+        doc.text(minutesToHHMM(totalWork), summaryCol1, summaryTextY, { align: 'center' });
+        doc.setTextColor(44, 62, 80);
+        doc.text(minutesToHHMM(totalPause), summaryCol2, summaryTextY, { align: 'center' });
+        yPos += 35;
+
+        // --- Day Cards ---
+        sortedSummaries.forEach(day => {
+            const dayData = {
+                date: day.date,
+                workedMinutes: day.workedMinutes,
+                breakMinutes: day.breakMinutes,
+                blocks: processEntriesForReport(day.entries), // NEU: Blöcke berechnen
+                note: day.dailyNote || ""
+            };
+
+            const cardHeight = calculateCardHeight(doc, dayData, contentWidth);
+
+            if (yPos + cardHeight > pageHeight - pageMargin) { // Seitenumbruch, wenn nicht mehr genug Platz
+                doc.addPage();
+                yPos = 20;
             }
-            const totalStr  = summary.workedMinutes > 0 ? minutesToHHMM(summary.workedMinutes) : "-";
 
-            const stamps = summary.entries.map(e => `${e.punchType.substring(0,1)}:${e.entryTimestamp.substring(11,16)}${e.source === 'SYSTEM_AUTO_END' && !e.correctedByUser ? '(A)' : ''}`).join(' ');
+            const cardStartY = yPos;
+            // Card Header
+            doc.setFillColor(236, 240, 241);
+            doc.roundedRect(pageMargin, yPos, contentWidth, 10, 3, 3, 'F');
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(44, 62, 80);
+            doc.text(formatDate(new Date(dayData.date)), pageMargin + 5, yPos + 7);
+            yPos += 10;
 
-            return [displayDate, workStart, breakTimes, workEnd, totalStr, stamps, summary.dailyNote || ""];
+            // Card Body
+            const bodyYStart = yPos;
+            let leftColY = bodyYStart + 10;
+            let rightColY = bodyYStart + 10;
+            const rightColX = pageMargin + contentWidth / 2.5;
+
+            // Linke Spalte (Übersicht)
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text("Übersicht", pageMargin + 5, leftColY);
+            leftColY += 7;
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Gearbeitet: ${minutesToHHMM(dayData.workedMinutes)}`, pageMargin + 5, leftColY);
+            leftColY += 6;
+            doc.text(`Pause: ${minutesToHHMM(dayData.breakMinutes)}`, pageMargin + 5, leftColY);
+            leftColY += 10;
+
+            if (dayData.note) {
+                doc.setFont("helvetica", "bold");
+                doc.text("Notiz:", pageMargin + 5, leftColY);
+                leftColY += 6;
+                doc.setFont("helvetica", "italic");
+                const noteLines = doc.splitTextToSize(dayData.note, (contentWidth / 2.5) - 10);
+                doc.text(noteLines, pageMargin + 5, leftColY);
+                leftColY += noteLines.length * 5;
+            }
+
+            // Rechte Spalte (Blöcke)
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text("Arbeitsblöcke", rightColX, rightColY);
+            rightColY += 7;
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            dayData.blocks.work.forEach(block => {
+                const text = `${block.description ? `${block.description}:` : 'Arbeit:'} ${block.start} - ${block.end} (${block.duration})`;
+                const textLines = doc.splitTextToSize(text, contentWidth - rightColX - 5);
+                doc.text(textLines, rightColX, rightColY);
+                rightColY += textLines.length * 5 + 2;
+            });
+
+            const cardEndY = Math.max(leftColY, rightColY) + 5;
+            doc.setDrawColor(222, 226, 230); // Hellerer Rand
+            doc.roundedRect(pageMargin, cardStartY, contentWidth, cardEndY - cardStartY, 3, 3, 'S');
+
+            yPos = cardEndY + 10;
         });
 
-        autoTable(doc, {
-            head: [[t('printReport.date'), t('printReport.workStart'), t('printReport.pause'), t('printReport.workEnd'), t('printReport.total'), t('printReport.punches'), t('printReport.note')]],
-            body: tableBody,
-            startY: 30,
-            margin: { left: 14, right: 14 },
-            styles: { fontSize: 8, cellPadding: 1.5 },
-            headStyles: { fillColor: [71, 91, 255], textColor: 255, fontStyle: "bold", halign: "center" },
-            bodyStyles: { halign: "center" },
-            alternateRowStyles: { fillColor: [240, 242, 254] },
-            didDrawPage: (data) => {
-                doc.setFontSize(8);
-                doc.text(`${t('page')} ${data.pageNumber} ${t('of')} ${doc.getNumberOfPages()}`, doc.internal.pageSize.getWidth() - 14, doc.internal.pageSize.getHeight() - 10, { align: "right" });
-            }
-        });
-
-        doc.save(`Zeiten_${printUser}_${printUserStartDate}_bis_${printUserEndDate}.pdf`);
+        doc.save(`Zeitenbericht_${printUser}_${printUserStartDate}_bis_${printUserEndDate}.pdf`);
         setPrintUserModalVisible(false);
     }
 

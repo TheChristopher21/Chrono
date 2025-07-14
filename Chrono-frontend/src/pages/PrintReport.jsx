@@ -1,27 +1,47 @@
 // src/pages/PrintReport.jsx
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../utils/api";
-import {
-    formatDate,
-    formatTime,
-    minutesToHHMM,
-} from "./HourlyDashboard/hourDashUtils";
-
+import { formatDate, minutesToHHMM, formatTime } from "./HourlyDashboard/hourDashUtils";
 import jsPDF from "jspdf";
-// Stelle sicher, dass jspdf-autotable korrekt importiert wird und sich selbst an jsPDF bindet.
-// Manchmal ist kein expliziter 'from' Name nötig, oder er wird so verwendet:
-import 'jspdf-autotable'; // Oft reicht dieser Import, damit es sich global an jsPDF hängt
-// ODER, falls das nicht geht und du eine spezifische Funktion brauchst:
-// import autoTable from 'jspdf-autotable'; // Behalte diesen Import bei
-
-import "../styles/PrintReportScoped.css";
 import { useTranslation } from "../context/LanguageContext";
+import "../styles/PrintReportScoped.css";
 
 function useQuery() {
     return new URLSearchParams(useLocation().search);
 }
+
+// Hilfsfunktion zur Berechnung von Arbeits- und Pausenblöcken
+const processEntriesForReport = (entries) => {
+    const blocks = { work: [], break: [] };
+    let lastStartTime = null;
+
+    (entries || []).sort((a, b) => new Date(a.entryTimestamp) - new Date(b.entryTimestamp)).forEach(entry => {
+        if (entry.punchType === 'START') {
+            lastStartTime = new Date(entry.entryTimestamp);
+        } else if (entry.punchType === 'ENDE' && lastStartTime) {
+            const endTime = new Date(entry.entryTimestamp);
+            const duration = (endTime - lastStartTime) / (1000 * 60);
+            const block = {
+                start: formatTime(lastStartTime),
+                end: formatTime(endTime),
+                duration: minutesToHHMM(duration),
+                description: entry.customerName || entry.projectName || ''
+            };
+
+            // Unterscheidung zwischen Arbeit und Pause
+            if (blocks.work.length > 0 && blocks.work[blocks.work.length - 1].end === formatTime(lastStartTime)) {
+                blocks.break.push(block);
+            } else {
+                blocks.work.push(block);
+            }
+            lastStartTime = null;
+        }
+    });
+    return blocks;
+};
+
 
 export default function PrintReport() {
     const query = useQuery();
@@ -31,172 +51,214 @@ export default function PrintReport() {
 
     const { t } = useTranslation();
 
-    const [rows, setRows] = useState([]);
-    const tableRef = useRef(null);
+    const [reportData, setReportData] = useState([]);
+    const [totals, setTotals] = useState({ work: 0, pause: 0 });
 
     useEffect(() => {
         if (!username || !startDate || !endDate) return;
-        api
-            .get("/api/timetracking/history", { params: { username } })
+        api.get("/api/timetracking/history", { params: { username } })
             .then((res) => {
                 const filtered = (res.data || [])
                     .filter((r) => r.date >= startDate && r.date <= endDate)
                     .sort((a, b) => a.date.localeCompare(b.date));
 
-                const mapped = filtered.map((r) => {
-                    const pt = r.primaryTimes || {};
-                    const workStart = pt.firstStartTime
-                        ? pt.firstStartTime.substring(0, 5)
-                        : "-";
-                    const workEnd = pt.lastEndTime
-                        ? pt.lastEndTime.substring(0, 5)
-                        : pt.isOpen
-                          ? t("printReport.open")
-                          : "-";
+                let totalWorkMinutes = 0;
+                let totalBreakMinutes = 0;
 
-                    const punches = (r.entries || [])
-                        .map((e) =>
-                            `${e.punchType.substring(0, 1)}:${formatTime(
-                                e.entryTimestamp
-                            )}${
-                                e.source === "SYSTEM_AUTO_END" && !e.correctedByUser
-                                    ? "(A)"
-                                    : ""
-                            }`
-                        )
-                        .join(" | ");
-
+                const mapped = filtered.map((day) => {
+                    totalWorkMinutes += day.workedMinutes || 0;
+                    totalBreakMinutes += day.breakMinutes || 0;
                     return {
-                        date: r.date,
-                        workStart,
-                        workEnd,
-                        pause: minutesToHHMM(r.breakMinutes),
-                        total: minutesToHHMM(r.workedMinutes),
-                        punches,
-                        note: r.dailyNote || "",
+                        date: day.date,
+                        workedMinutes: day.workedMinutes || 0,
+                        breakMinutes: day.breakMinutes || 0,
+                        blocks: processEntriesForReport(day.entries),
+                        note: day.dailyNote || ""
                     };
                 });
 
-                setRows(mapped);
+                setReportData(mapped);
+                setTotals({ work: totalWorkMinutes, pause: totalBreakMinutes });
             })
             .catch((err) => console.error("Report-Fehler:", err));
-    }, [username, startDate, endDate, t]);
+    }, [username, startDate, endDate]);
 
-    // PDF-Export
-    function handlePdf() {
+    const handlePdf = () => {
         const doc = new jsPDF("p", "mm", "a4");
+        const pageMargin = 15;
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const contentWidth = pageWidth - (2 * pageMargin);
+        let yPos = 20;
 
-        doc.setFontSize(14);
-        doc.text(`${t("printReport.title", "Zeitenbericht")} – ${username}`, 14, 15);
+        // Header
+        doc.setFontSize(22);
+        doc.setFont("helvetica", "bold");
+        doc.text("Zeitenbericht", pageWidth / 2, yPos, { align: "center" });
+        yPos += 10;
 
-        doc.setFontSize(11);
-        doc.text(
-            `${t("printReport.periodLabel", "Zeitraum")}: ${startDate} – ${endDate}`,
-            14,
-            22
-        );
+        doc.setFontSize(12);
+        doc.setFont("helvetica", "normal");
+        doc.text(`für ${username}`, pageWidth / 2, yPos, { align: "center" });
+        yPos += 6;
+        doc.text(`Zeitraum: ${formatDate(startDate)} - ${formatDate(endDate)}`, pageWidth / 2, yPos, { align: "center" });
+        yPos += 15;
 
-        const body = rows.map((r) => [
-            formatDate(r.date),
-            r.workStart,
-            r.workEnd,
-            r.pause,
-            r.total,
-            r.punches,
-            r.note,
-        ]);
+        // Summary Box
+        doc.setFillColor(248, 249, 250); // Light grey
+        doc.rect(pageMargin, yPos, contentWidth, 25, 'F');
+        const summaryTextY = yPos + 15;
+        const summaryCol1 = pageMargin + contentWidth / 4;
+        const summaryCol2 = pageMargin + (contentWidth / 4) * 3;
 
-        // **ÄNDERUNG HIER:**
-        // Stelle sicher, dass autoTable direkt auf der jsPDF-Instanz aufgerufen wird,
-        // was die übliche Methode ist, nachdem sich das Plugin registriert hat.
-        // Wenn der `import 'jspdf-autotable';` korrekt funktioniert,
-        // sollte `doc.autoTable` verfügbar sein.
-        if (typeof doc.autoTable === 'function') {
-            doc.autoTable({
-                head: [[
-                    t("printReport.date"),
-                    t("printReport.workStart"),
-                    t("printReport.workEnd"),
-                    t("printReport.pause"),
-                    t("printReport.total"),
-                    t("printReport.punches"),
-                    t("printReport.note"),
-                ]],
-                body,
-                startY: 28,
-                margin: { left: 14, right: 14 },
-                styles: { fontSize: 9, cellPadding: 2, halign: "center" },
-                headStyles: { fillColor: [71, 91, 255], textColor: 255, halign: "center", fontStyle: 'bold' },
-                alternateRowStyles: { fillColor: [245, 245, 245] },
-                didDrawPage: (data) => {
-                    const pageCount = doc.internal.getNumberOfPages ? doc.internal.getNumberOfPages() : null;
-                    const pageStr = pageCount ? `${data.pageNumber} / ${pageCount}` : `${data.pageNumber}`;
-                    const pageWidth = doc.internal.pageSize.getWidth ? doc.internal.pageSize.getWidth() : doc.internal.pageSize.width;
-                    doc.text(pageStr, pageWidth - 14, 10, { align: "right" });
-                }
+        doc.setFontSize(10);
+        doc.setTextColor(108, 117, 125);
+        doc.text("Gesamte Arbeitszeit", summaryCol1, summaryTextY - 8, { align: 'center' });
+        doc.text("Gesamte Pausenzeit", summaryCol2, summaryTextY - 8, { align: 'center' });
+
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(41, 128, 185);
+        doc.text(minutesToHHMM(totals.work), summaryCol1, summaryTextY, { align: 'center' });
+        doc.setTextColor(44, 62, 80);
+        doc.text(minutesToHHMM(totals.pause), summaryCol2, summaryTextY, { align: 'center' });
+
+        yPos += 35;
+
+        // Day Cards
+        reportData.forEach(day => {
+            if (yPos > 260) { // Check for new page
+                doc.addPage();
+                yPos = 20;
+            }
+
+            const cardStartY = yPos;
+            doc.setFillColor(236, 240, 241); // Card Header bg
+            doc.roundedRect(pageMargin, yPos, contentWidth, 10, 3, 3, 'F');
+
+            doc.setFontSize(14);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(44, 62, 80);
+            doc.text(`${day.date.split('-')[2]}.${day.date.split('-')[1]}.${day.date.split('-')[0]}`, pageMargin + 5, yPos + 7);
+            yPos += 10;
+
+            // Card Body
+            const bodyYStart = yPos;
+            let leftColY = bodyYStart + 10;
+            let rightColY = bodyYStart + 10;
+            const rightColX = pageMargin + contentWidth / 2.5;
+
+            // Left column (Summary)
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text("Übersicht", pageMargin + 5, leftColY);
+            leftColY += 7;
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text(`Gearbeitet: ${minutesToHHMM(day.workedMinutes)}`, pageMargin + 5, leftColY);
+            leftColY += 6;
+            doc.text(`Pause: ${minutesToHHMM(day.breakMinutes)}`, pageMargin + 5, leftColY);
+            leftColY += 10;
+
+            if (day.note) {
+                doc.setFont("helvetica", "bold");
+                doc.text("Notiz:", pageMargin + 5, leftColY);
+                leftColY += 6;
+                doc.setFont("helvetica", "italic");
+                const noteLines = doc.splitTextToSize(day.note, (contentWidth / 2.5) - 10);
+                doc.text(noteLines, pageMargin + 5, leftColY);
+                leftColY += noteLines.length * 5;
+            }
+
+
+            // Right column (Blocks)
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.text("Arbeitsblöcke", rightColX, rightColY);
+            rightColY += 7;
+
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            day.blocks.work.forEach(block => {
+                const text = `${block.description ? `${block.description}:` : ''} ${block.start} - ${block.end} (${block.duration})`;
+                const textLines = doc.splitTextToSize(text, contentWidth - rightColX - 5);
+                doc.text(textLines, rightColX, rightColY);
+                rightColY += textLines.length * 5 + 2;
             });
-        } else {
-            console.error("jspdf-autotable ist nicht korrekt als Funktion auf der jsPDF Instanz registriert.");
-            // Fallback oder Fehlermeldung, falls autoTable nicht existiert
-            alert("Fehler: PDF-Tabellenerstellung ist nicht verfügbar.");
-            return;
-        }
 
-        doc.save(`timesheet_${username}_${startDate}_${endDate}.pdf`);
-    }
+            const cardEndY = Math.max(leftColY, rightColY) + 5;
+            doc.setDrawColor(236, 240, 241);
+            doc.roundedRect(pageMargin, cardStartY, contentWidth, cardEndY - cardStartY, 3, 3, 'S');
+
+            yPos = cardEndY + 10;
+        });
+
+        doc.save(`Zeitenbericht_${username}_${startDate}_${endDate}.pdf`);
+    };
 
     return (
-        // ... dein JSX bleibt gleich ...
-        <div className="print-report-page scoped-print">
-            <h1 className="title">{t("printReport.title", "Zeitenbericht")}</h1>
-            <p className="sub">
-                <strong>{t("printReport.userLabel", "User")}:</strong> {username} &nbsp;|&nbsp;
-                <strong>{t("printReport.periodLabel", "Zeitraum")}:</strong>{" "}
-                {startDate} – {endDate}
-            </p>
+        <div className="print-report-page">
+            <header className="report-header">
+                <h1>{t("printReport.title", "Zeitenbericht")}</h1>
+                <p>{t("printReport.userLabel", "User")}: {username}</p>
+                <p>{t("printReport.periodLabel", "Zeitraum")}: {formatDate(startDate)} – {formatDate(endDate)}</p>
+            </header>
 
-            <table ref={tableRef}>
-                <thead>
-                <tr>
-                    <th>{t("printReport.date")}</th>
-                    <th>{t("printReport.workStart")}</th>
-                    <th>{t("printReport.workEnd")}</th>
-                    <th>{t("printReport.pause")}</th>
-                    <th>{t("printReport.total")}</th>
-                    <th>{t("printReport.punches")}</th>
-                    <th>{t("printReport.note")}</th>
-                </tr>
-                </thead>
-                <tbody>
-                {rows.length === 0 ? (
-                    <tr>
-                        <td colSpan={7} className="noRows">
-                            {t("printReport.noEntries", "Keine Einträge")}
-                        </td>
-                    </tr>
+            <section className="report-summary">
+                <div>
+                    <span className="label">Gesamte Arbeitszeit</span>
+                    <span className="value primary">{minutesToHHMM(totals.work)}</span>
+                </div>
+                <div>
+                    <span className="label">Gesamte Pausenzeit</span>
+                    <span className="value">{minutesToHHMM(totals.pause)}</span>
+                </div>
+            </section>
+
+            <main className="report-body">
+                {reportData.length === 0 ? (
+                    <div className="no-entries-card">{t("printReport.noEntries", "Keine Einträge für diesen Zeitraum")}</div>
                 ) : (
-                    rows.map((r, i) => (
-                        <tr key={i}>
-                            <td>{formatDate(r.date)}</td>
-                            <td>{r.workStart}</td>
-                            <td>{r.workEnd}</td>
-                            <td>{r.pause}</td>
-                            <td>{r.total}</td>
-                            <td>{r.punches}</td>
-                            <td>{r.note}</td>
-                        </tr>
+                    reportData.map(day => (
+                        <div key={day.date} className="day-card-report">
+                            <div className="day-card-report-header">
+                                <h2>{formatDate(day.date)}</h2>
+                            </div>
+                            <div className="day-card-report-body">
+                                <div className="overview-col">
+                                    <h4>Übersicht</h4>
+                                    <p><strong>Gearbeitet:</strong> {minutesToHHMM(day.workedMinutes)}</p>
+                                    <p><strong>Pause:</strong> {minutesToHHMM(day.breakMinutes)}</p>
+                                    {day.note && <>
+                                        <h4>Notiz</h4>
+                                        <p className="note-text">{day.note}</p>
+                                    </>}
+                                </div>
+                                <div className="blocks-col">
+                                    <h4>Arbeitsblöcke</h4>
+                                    {day.blocks.work.map((b, i) => (
+                                        <div key={`w-${i}`} className="work-block">
+                                            <span>{b.description ? `${b.description}:` : 'Arbeit:'}</span>
+                                            <span>{b.start} - {b.end} ({b.duration})</span>
+                                        </div>
+                                    ))}
+                                    {day.blocks.break.length > 0 && <h4>Pausen</h4>}
+                                    {day.blocks.break.map((b, i) => (
+                                        <div key={`b-${i}`} className="break-block">
+                                            <span>Pause:</span>
+                                            <span>{b.start} - {b.end} ({b.duration})</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
                     ))
                 )}
-                </tbody>
-            </table>
+            </main>
 
             <div className="btnRow">
-                <button onClick={() => window.print()}>
-                    {t("printReport.printButton", "Drucken")}
-                </button>
-                <button onClick={handlePdf}>
-                    {t("printReport.pdfButton", "PDF speichern")}
-                </button>
+                <button onClick={() => window.print()}>{t("printReport.printButton", "Drucken")}</button>
+                <button onClick={handlePdf}>{t("printReport.pdfButton", "PDF speichern")}</button>
             </div>
         </div>
     );

@@ -1,10 +1,55 @@
 /* =========================================================================
-   RegistrationScoped.css
+   RegistrationScoped.css (Korrigiert für Lesbarkeit)
    Scope: .registration-page.scoped-registration
    ========================================================================= */
 
-/* Haupt-Container */
+/* Haupt-Container und Farbvariablen */
 .registration-page.scoped-registration {
+  /* Helles Theme (Standard) */
+  --c-bg: #f7f8fa;
+  --c-card: #ffffff;
+  --c-card-alt: #ffffff;
+  --c-bg-soft: #fdfdff;
+  --c-bg-input: #ffffff;
+  --c-bg-input-focus: #ffffff;
+  --c-border: #d1d4e2;
+  --c-border-light: #e2e8f0;
+  --c-border-extralight: #f1f5f9;
+  --c-text: #2d3748;
+  --c-text-strong: #1a202c;
+  --c-text-soft: #718096;
+  --c-text-emphasis: #2c5282;
+  --c-muted: #a0aec0;
+  --c-muted-strong: #718096;
+  --c-muted-bg: #e2e8f0;
+  --c-muted-text: #a0aec0;
+  --c-primary: #4a5568;
+  --c-primary-text: #ffffff;
+  --c-primary-light: #edf2f7;
+  --c-primary-hover: #2d3748;
+  --c-primary-bg-subtle: #f7fafc;
+  --c-heading: #1a202c;
+  --c-success: #38a169;
+  --c-success-bg: #f0fff4;
+  --c-success-bg-soft: #f0fff4;
+  --c-success-border: #9ae6b4;
+  --c-success-text: #2f855a;
+  --c-success-text-strong: #276749;
+  --c-success-text-emphasis: #276749;
+  --c-error: #e53e3e;
+  --c-error-bg: #fff5f5;
+  --c-error-text: #c53030;
+  --u-radius-lg: 16px;
+  --u-radius-md: 10px;
+  --u-radius-sm: 6px;
+  --u-radius-xs: 4px;
+  --u-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
+  --u-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.07);
+  --u-shadow-xs: 0 1px 3px rgba(0, 0, 0, 0.03);
+  --u-dur: 0.2s;
+  --u-ease: ease-in-out;
+
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -12,10 +57,47 @@
   color: var(--c-text);
   font-family: "Poppins", system-ui, sans-serif;
   min-height: 100vh;
-  padding-bottom: 4rem; /* Platz unten für Footer-Links etc. */
+  padding-bottom: 4rem;
   transition:
-    background var(--u-dur) var(--u-ease),
-    color var(--u-dur) var(--u-ease);
+          background var(--u-dur) var(--u-ease),
+          color var(--u-dur) var(--u-ease);
+}
+
+/* Dark Mode Variablen */
+[data-theme="dark"] .registration-page.scoped-registration {
+  --c-bg: #1a202c;
+  --c-card: #2d3748;
+  --c-card-alt: #2d3748;
+  --c-bg-soft: #2d3748;
+  --c-bg-input: #1a202c;
+  --c-bg-input-focus: #2d3748;
+  --c-border: #4a5568;
+  --c-border-light: #4a5568;
+  --c-border-extralight: #2d3748;
+  --c-text: #e2e8f0;
+  --c-text-strong: #f7fafc;
+  --c-text-soft: #a0aec0;
+  --c-text-emphasis: #90cdf4;
+  --c-muted: #718096;
+  --c-muted-strong: #a0aec0;
+  --c-muted-bg: #4a5568;
+  --c-muted-text: #e2e8f0;
+  --c-primary: #63b3ed;
+  --c-primary-text: #1a202c;
+  --c-primary-light: rgba(99, 179, 237, 0.1);
+  --c-primary-hover: #4299e1;
+  --c-primary-bg-subtle: #2d3748;
+  --c-heading: #f7fafc;
+  --c-success: #68d391;
+  --c-success-bg: rgba(104, 211, 145, 0.1);
+  --c-success-bg-soft: rgba(104, 211, 145, 0.1);
+  --c-success-border: #48bb78;
+  --c-success-text: #b2f5ea;
+  --c-success-text-strong: #f0fff4;
+  --c-success-text-emphasis: #f0fff4;
+  --c-error: #fc8181;
+  --c-error-bg: rgba(252, 129, 129, 0.1);
+  --c-error-text: #fed7d7;
 }
 
 /* Innerer Wrapper */
@@ -32,7 +114,7 @@
   margin-bottom: 1.2rem;
   text-align: center;
   font-weight: 700;
-  color: var(--c-heading, var(--c-text-strong));
+  color: var(--c-heading);
 }
 
 /* -------------------- Pricing-Section -------------------- */
@@ -76,9 +158,9 @@
   border: 1px solid var(--c-border-light);
   border-radius: var(--u-radius-sm);
   transition:
-    background-color 0.2s,
-    color 0.2s,
-    border-color 0.2s;
+          background-color 0.2s,
+          color 0.2s,
+          border-color 0.2s;
   color: var(--c-text-soft);
 }
 .billing-toggle input[type="radio"] {
@@ -105,7 +187,7 @@
   margin-bottom: 2.5rem;
 }
 .pricing-card {
-  background: var(--c-card-alt, var(--c-card));
+  background: var(--c-card-alt);
   border: 2px solid var(--card-accent-color, var(--c-border));
   border-radius: var(--u-radius-md);
   box-shadow: var(--u-shadow-sm);
@@ -114,10 +196,10 @@
   padding: clamp(1.2rem, 2vw, 1.8rem);
   cursor: pointer;
   transition:
-    transform 0.25s ease-out,
-    box-shadow 0.25s ease-out,
-    border-color 0.25s ease-out,
-    background-color 0.25s ease-out;
+          transform 0.25s ease-out,
+          box-shadow 0.25s ease-out,
+          border-color 0.25s ease-out,
+          background-color 0.25s ease-out;
   text-align: left;
 }
 .pricing-card:hover {
@@ -126,13 +208,13 @@
 }
 .pricing-card.selected {
   box-shadow:
-    0 0 0 3px var(--card-accent-color, var(--c-primary)),
-    var(--u-shadow-lg);
+          0 0 0 3px var(--card-accent-color, var(--c-primary)),
+          var(--u-shadow-lg);
   transform: scale(1.03) translateY(-2px);
   background-color: color-mix(
-    in srgb,
-    var(--c-card-alt, var(--c-card)) 92%,
-    var(--card-accent-color, var(--c-primary)) 8%
+          in srgb,
+          var(--c-card-alt) 92%,
+          var(--card-accent-color, var(--c-primary)) 8%
   );
 }
 .pricing-card h3 {
@@ -152,7 +234,7 @@
 .price-line.employee-rate strong {
   font-size: clamp(1.2em, 2vw, 1.4em);
   font-weight: 700;
-  color: var(--c-text-emphasis, var(--c-text-strong));
+  color: var(--c-text-emphasis);
   display: block;
   margin-top: 0.2em;
 }
@@ -217,11 +299,11 @@
   text-align: center;
   border: 1px solid var(--c-border);
   border-radius: var(--u-radius-sm);
-  background: var(--c-bg-input, var(--c-bg));
+  background: var(--c-bg-input);
   color: var(--c-text);
   transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
+          border-color 0.2s,
+          box-shadow 0.2s;
 }
 .central-employee-input input[type="number"]:focus {
   border-color: var(--c-primary);
@@ -247,7 +329,6 @@
   font-weight: 600;
 }
 
-/* Nur eine Zeile für das Checkbox-Label */
 .training-label {
   display: inline-flex;
   align-items: center;
@@ -258,7 +339,7 @@
   line-height: 1.6;
   text-align: left;
   gap: 0.8rem;
-  white-space: nowrap; /* Damit alles in einer Zeile bleibt */
+  white-space: nowrap;
 }
 .training-label input[type="checkbox"] {
   appearance: none;
@@ -266,16 +347,16 @@
   -moz-appearance: none;
   width: 20px;
   height: 20px;
-  background-color: var(--c-bg-input, var(--c-bg));
+  background-color: var(--c-bg-input);
   border: 1px solid var(--c-border);
-  border-radius: var(--u-radius-xs, 4px);
+  border-radius: var(--u-radius-xs);
   flex-shrink: 0;
   margin-top: 0.2em;
   position: relative;
   cursor: pointer;
   transition:
-    background-color 0.2s,
-    border-color 0.2s;
+          background-color 0.2s,
+          border-color 0.2s;
 }
 .training-label input[type="checkbox"]:checked::before {
   content: "✓";
@@ -284,7 +365,7 @@
   left: 50%;
   transform: translate(-50%, -50%);
   font-size: 14px;
-  color: var(--c-primary-text, #fff);
+  color: #fff;
   font-weight: bold;
   line-height: 1;
 }
@@ -336,16 +417,16 @@
   font: inherit;
   font-size: 0.95rem;
   color: var(--c-text);
-  background: var(--c-bg-input, var(--c-bg));
+  background: var(--c-bg-input);
   transition:
-    border-color var(--u-dur) var(--u-ease),
-    background var(--u-dur) var(--u-ease),
-    box-shadow var(--u-dur) var(--u-ease);
+          border-color var(--u-dur) var(--u-ease),
+          background var(--u-dur) var(--u-ease),
+          box-shadow var(--u-dur) var(--u-ease);
 }
 .application-section form input:focus,
 .application-section form textarea:focus {
   border-color: var(--c-primary);
-  background: var(--c-bg-input-focus, var(--c-bg-soft));
+  background: var(--c-bg-input-focus);
   outline: none;
   box-shadow: 0 0 8px -2px var(--c-primary-light);
 }
@@ -402,7 +483,7 @@
   margin: 1.2rem 0;
 }
 .application-section .price-preview.card .total-price-wrapper {
-  background-color: var(--c-primary-bg-subtle, var(--c-bg));
+  background-color: var(--c-primary-bg-subtle);
   margin: 1rem -1.8rem;
   padding: 1rem 1.8rem;
   border-top: 1px solid var(--c-border-light);
@@ -424,7 +505,7 @@
   color: var(--c-muted);
 }
 .application-section .price-preview.card p.sub-hint .value {
-  color: var(--c-muted-strong, var(--c-muted));
+  color: var(--c-muted-strong);
   font-weight: 500;
 }
 
@@ -432,7 +513,7 @@
 .application-section form button[type="submit"] {
   align-self: center;
   background: var(--c-primary);
-  color: var(--c-primary-text, #fff);
+  color: var(--c-primary-text);
   font-weight: 600;
   font-size: clamp(1rem, 1.6vw, 1.1em);
   border: none;
@@ -440,9 +521,9 @@
   padding: 0.9rem 2rem;
   cursor: pointer;
   transition:
-    background var(--u-dur) var(--u-ease),
-    transform var(--u-dur) var(--u-ease),
-    box-shadow var(--u-dur) var(--u-ease);
+          background var(--u-dur) var(--u-ease),
+          transform var(--u-dur) var(--u-ease),
+          box-shadow var(--u-dur) var(--u-ease);
   box-shadow: var(--u-shadow-sm);
   min-width: 280px;
 }
@@ -452,8 +533,8 @@
   box-shadow: var(--u-shadow-md);
 }
 .application-section form button[type="submit"]:disabled {
-  background: var(--c-muted-bg, var(--c-muted));
-  color: var(--c-muted-text, #aaa);
+  background: var(--c-muted-bg);
+  color: var(--c-muted-text);
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
@@ -461,7 +542,7 @@
 
 /* Fehlermeldung / Erfolgsmeldung */
 .error-message {
-  color: var(--c-error-text, var(--c-error));
+  color: var(--c-error-text);
   background-color: var(--c-error-bg);
   border: 1px solid var(--c-error);
   padding: 0.9rem 1.2rem;
@@ -473,9 +554,9 @@
   line-height: 1.5;
 }
 .success-message-box {
-  background-color: var(--c-success-bg-soft, var(--c-success-bg));
-  border: 1px solid var(--c-success-border, var(--c-success));
-  color: var(--c-success-text-strong, var(--c-success-text));
+  background-color: var(--c-success-bg-soft);
+  border: 1px solid var(--c-success-border);
+  color: var(--c-success-text-strong);
   padding: clamp(1.2rem, 2vw, 2rem);
   border-radius: var(--u-radius-md);
   text-align: center;
@@ -486,29 +567,29 @@
   margin-bottom: 1rem;
   font-size: clamp(1.25rem, 1.9vw, 1.4em);
   font-weight: 600;
-  color: var(--c-success-text-strong, var(--c-success));
+  color: var(--c-success-text-strong);
 }
 .success-message-box p {
   margin-bottom: 0.8rem;
   font-size: clamp(0.9rem, 1.5vw, 1rem);
   line-height: 1.6;
-  color: var(--c-success-text, var(--c-text-soft));
+  color: var(--c-success-text);
 }
 .success-message-box p strong {
-  color: var(--c-success-text-emphasis, var(--c-success));
+  color: var(--c-success-text-emphasis);
   font-weight: 600;
 }
 .success-message-box button {
   background: var(--c-primary);
-  color: var(--c-primary-text, #fff);
+  color: var(--c-primary-text);
   font-weight: 600;
   border: none;
   border-radius: var(--u-radius-sm);
   padding: 0.8rem 1.5rem;
   cursor: pointer;
   transition:
-    background var(--u-dur) var(--u-ease),
-    transform 0.15s ease-out;
+          background var(--u-dur) var(--u-ease),
+          transform 0.15s ease-out;
   margin-top: 1rem;
 }
 .success-message-box button:hover {
@@ -523,7 +604,7 @@
   border-top: 1px solid var(--c-border-extralight);
 }
 .registration-content > div:last-child a {
-  color: var(--c-muted-strong, var(--c-muted));
+  color: var(--c-muted-strong);
   text-decoration: none;
   transition: color 0.2s;
 }
