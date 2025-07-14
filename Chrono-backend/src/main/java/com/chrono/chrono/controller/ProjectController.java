@@ -72,7 +72,7 @@ public class ProjectController {
                     existing.setCustomer(customer);
                     return ResponseEntity.ok(projectService.save(existing));
                 })
-                .orElse(ResponseEntity.notFound().build());
+                .orElse(ResponseEntity.status(404).<Project>build());
     }
 
     @DeleteMapping("/{id}")
