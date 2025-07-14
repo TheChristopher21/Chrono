@@ -7,6 +7,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import { LanguageProvider } from "./context/LanguageContext";
 import { CustomerProvider } from "./context/CustomerContext";
+import { ProjectProvider } from "./context/ProjectContext";
 import "./styles/global.css";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
@@ -16,11 +17,13 @@ root.render(
         <LanguageProvider>
             <AuthProvider>
                 <CustomerProvider>
-                    <NotificationProvider>
-                        <React.StrictMode>
-                            <App />
-                        </React.StrictMode>
-                    </NotificationProvider>
+                    <ProjectProvider>
+                        <NotificationProvider>
+                            <React.StrictMode>
+                                <App />
+                            </React.StrictMode>
+                        </NotificationProvider>
+                    </ProjectProvider>
                 </CustomerProvider>
             </AuthProvider>
         </LanguageProvider>

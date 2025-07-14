@@ -22,6 +22,7 @@ import AdminDashboard from "./pages/AdminDashboard/AdminDashboard.jsx";
 import AdminUserManagementPage from "./pages/AdminUserManagement/AdminUserManagementPage.jsx";
 import AdminChangePassword from "./pages/AdminChangePassword.jsx";
 import AdminCustomersPage from "./pages/AdminCustomers/AdminCustomersPage.jsx";
+import AdminProjectsPage from "./pages/AdminProjects/AdminProjectsPage.jsx";
 import CompanyManagementPage from "./pages/CompanyManagementPage.jsx";
 import PrintReport from "./pages/PrintReport.jsx";
 import Impressum from "./pages/Impressum.jsx";
@@ -104,6 +105,18 @@ function App() {
                         <PrivateRoute requiredRole="ROLE_ADMIN">
                             {currentUser?.customerTrackingEnabled ? ( // Dies ist die korrekte Version
                                 <AdminCustomersPage />
+                            ) : (
+                                <Navigate to="/admin" replace />
+                            )}
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/projects"
+                    element={
+                        <PrivateRoute requiredRole="ROLE_ADMIN">
+                            {currentUser?.customerTrackingEnabled ? (
+                                <AdminProjectsPage />
                             ) : (
                                 <Navigate to="/admin" replace />
                             )}
