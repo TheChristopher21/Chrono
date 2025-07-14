@@ -78,7 +78,8 @@
   --ud-shadow-hover: 0 6px 18px rgba(var(--ud-c-primary-rgb), 0.15);
   --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card) 90%, #000);
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 95%, #000);
-
+  --customer-color-saturation: 70%;
+  --customer-color-lightness: 90%;
   min-height: 100vh;
   font-family: var(--ud-font-family);
   background: var(--ud-c-bg);
@@ -108,6 +109,8 @@
   --ud-c-success-text: #a7f3d0;
   --ud-c-error-text: #fecaca;
   --ud-c-warn-text: #fde68a;
+  --customer-color-saturation: 35%;
+  --customer-color-lightness: 25%; /* dunklere, gedämpfte Farbe */
   --ud-c-bg-vacation: #1e3a8a;
   --ud-c-text-vacation: #bfdbfe;
   --ud-c-border-vacation: #3b82f6;
@@ -122,8 +125,7 @@
   --ud-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.5);
   --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card) 92%, #fff);
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 92%, #fff);
-  --ud-c-time: #f8f9fa;
-
+  --ud-c-time: var(--ud-c-text);
 }
 
 /* =========================================================================

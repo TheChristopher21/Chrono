@@ -266,7 +266,7 @@ const HourlyWeekOverview = ({
                                 </button>
                             </div>
                             </div>
-                        </div>
+
                     );
                 })}
             </div>

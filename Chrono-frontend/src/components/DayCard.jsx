@@ -114,12 +114,14 @@ const DayCard = ({
           <>
             <ul className="time-entry-list">
               {summary.entries.map((entry) => (
-                <li
-                  key={entry.id || entry.entryTimestamp}
-                  style={{
-                    backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57) % 360},70%,90%)` : 'transparent',
-                  }}
-                >
+                  <li
+                      key={entry.id || entry.entryTimestamp}
+                      style={{
+                        backgroundColor: entry.customerId
+                            ? `hsl(${(entry.customerId * 57) % 360}, var(--customer-color-saturation), var(--customer-color-lightness))`
+                            : 'transparent',
+                      }}
+                  >
                   <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
                   <span className={`entry-time ${isLateTime(formatTime(entry.entryTimestamp)) ? 'late-time' : ''}`}>
                     {formatPunchedTimeFromEntry(entry)}

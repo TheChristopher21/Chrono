@@ -293,14 +293,14 @@ const translations = {
         monthBalance: "Monatssaldo",
         overallBalance: "Gesamtsaldo",
         overtimeBalance: "Überstundenkonto",
-        overtimeBalanceInfo: "Summe der Überstunden abzüglich genutzter Stunden."
+        overtimeBalanceInfo: "Summe der Überstunden abzüglich genutzter Stunden.",
         noCorrections: "Keine Korrekturanträge vorhanden",
         dailyNoteSaved: "Tagesnotiz gespeichert.",
         dailyNoteError: "Fehler beim Speichern der Tagesnotiz.",
         weeklyHours: "Gesamtstunden (aktuelle Woche)",
         monthlyHours: "Gesamtstunden (Monat)",
         estimatedEarnings: "Gesch\u00e4tzter Verdienst",
-        expectedWeekInfo: "Ihr Wochenziel basiert auf Ihrem Arbeitspensum und reduziert sich bei Abwesenheiten."
+        expectedWeekInfo: "Ihr Wochenziel basiert auf Ihrem Arbeitspensum und reduziert sich bei Abwesenheiten.",
         editNotes: "Notizen bearbeiten",
         addNotes: "Notizen hinzufügen",
         fillWorkTimesError: "Bitte Work Start und Work End ausfüllen",
@@ -830,13 +830,13 @@ const translations = {
         overtimeBalance: "Overtime Balance",
         noCorrections: "No correction requests found",
         dailyNoteSaved: "Daily note saved.",
-        overtimeBalanceInfo: "Total overtime minus used or deducted hours."
+        overtimeBalanceInfo: "Total overtime minus used or deducted hours.",
         dailyNoteError: "Error saving daily note.",
         weeklyHours: "Total hours (current week)",
         monthlyHours: "Total hours (month)",
         estimatedEarnings: "Estimated earnings",
         editNotes: "Edit notes",
-        expectedWeekInfo: "Your weekly target is based on your work percentage and reduces when you are absent."
+        expectedWeekInfo: "Your weekly target is based on your work percentage and reduces when you are absent.",
         addNotes: "Add notes",
         fillWorkTimesError: "Please fill in Work Start and Work End",
 
