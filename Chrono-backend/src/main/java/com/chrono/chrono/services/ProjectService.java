@@ -17,6 +17,10 @@ public class ProjectService {
         return projectRepository.findAll();
     }
 
+    public List<Project> findAllByCompanyId(Long companyId) {
+        return projectRepository.findByCustomerCompanyId(companyId);
+    }
+
     public Optional<Project> findById(Long id) {
         return projectRepository.findById(id);
     }
