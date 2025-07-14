@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -55,25 +56,32 @@ public class ProjectController {
     @PutMapping("/{id}")
     public ResponseEntity<Project> update(@PathVariable Long id, @RequestBody Project projectDetails, Principal principal) {
         if (!featureEnabled(principal)) return ResponseEntity.status(403).build();
-        User user = userService.getUserByUsername(principal.getName());
-        return projectService.findById(id)
-                .map(existing -> {
-                    if (existing.getCustomer() == null || !existing.getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
-                        return ResponseEntity.<Project>status(403).build();
-                    }
-                    Customer customer = null;
-                    if (projectDetails.getCustomer() != null && projectDetails.getCustomer().getId() != null) {
-                        customer = customerService.findById(projectDetails.getCustomer().getId()).orElse(null);
-                        if (customer == null || !customer.getCompany().getId().equals(user.getCompany().getId())) {
-                            return ResponseEntity.<Project>status(403).build();
-                        }
-                    }
-                    existing.setName(projectDetails.getName());
-                    existing.setCustomer(customer);
-                    return ResponseEntity.ok(projectService.save(existing));
-                })
-                .orElse(ResponseEntity.status(404).<Project>build());
 
+        User user = userService.getUserByUsername(principal.getName());
+        Optional<Project> maybeProject = projectService.findById(id);
+        if (maybeProject.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Project existing = maybeProject.get();
+
+        if (existing.getCustomer() == null || !existing.getCustomer().getCompany().getId().equals(user.getCompany().getId())) {
+            return ResponseEntity.status(403).build();
+        }
+
+        Customer customer = null;
+        if (projectDetails.getCustomer() != null && projectDetails.getCustomer().getId() != null) {
+            customer = customerService.findById(projectDetails.getCustomer().getId()).orElse(null);
+            if (customer == null || !customer.getCompany().getId().equals(user.getCompany().getId())) {
+                return ResponseEntity.status(403).build();
+            }
+        }
+
+        existing.setName(projectDetails.getName());
+        existing.setCustomer(customer);
+        Project saved = projectService.save(existing);
+
+        return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/{id}")
