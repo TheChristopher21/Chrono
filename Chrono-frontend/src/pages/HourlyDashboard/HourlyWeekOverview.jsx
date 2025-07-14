@@ -194,8 +194,7 @@ const HourlyWeekOverview = ({
                                         <ul className="time-entry-list">
                                             {/* ... (deine Listeneinträge bleiben unverändert) ... */}
                                             {summary.entries.map(entry => (
-                                                <li key={entry.id || entry.entryTimestamp} style={{backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57)%360},70%,90%)` : 'transparent'}}>
-                                                    <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
+                                                <li key={entry.id || entry.entryTimestamp} style={{backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57) % 360}, var(--customer-color-saturation), var(--customer-color-lightness))` : 'transparent'}}>                                                    <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
                                                     <span className={`entry-time ${isLateTime(formatTime(new Date(entry.entryTimestamp))) ? 'late-time' : ''}`}>
                                                         {formatPunchedTimeFromEntry(entry)}
                                                         {entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser &&

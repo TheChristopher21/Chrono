@@ -15,7 +15,8 @@
   --ud-fz-lg: 1.125rem;
   --ud-fz-xl: 1.5rem;
   --ud-fz-xxl: 2.25rem;
-
+  --customer-color-saturation: 70%;
+  --customer-color-lightness: 90%;
   --ud-radius-xl: 24px;
   --ud-radius-lg: 18px;
   --ud-radius-md: 12px;
@@ -107,7 +108,8 @@
   --ud-c-border: #3a3f58;
   --ud-c-line: #2a2d40;
   --ud-c-surface: #232539;
-
+  --customer-color-saturation: 35%;
+  --customer-color-lightness: 25%;
   --ud-c-primary: #4dabf7;
   --ud-c-primary-dim: #3690f5;
   --ud-c-primary-rgb: 77, 171, 247;

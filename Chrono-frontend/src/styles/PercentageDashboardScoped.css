@@ -19,6 +19,8 @@
   transition:
     background var(--u-dur, 0.25s) var(--u-ease, ease),
     color var(--u-dur, 0.25s) var(--u-ease, ease);
+  --customer-color-saturation: 70%;
+  --customer-color-lightness: 90%;
 }
 
 /* =========================================================================
@@ -32,7 +34,8 @@
   --ud-c-border: #374151;
   --ud-c-line: #374151;
   --ud-c-surface: #374151;
-
+  --customer-color-saturation: 35%;
+  --customer-color-lightness: 25%;
   /* Explizit definierte Primärfarben für Dark Mode für dieses Dashboard */
   --ud-c-primary: #60a5fa; /* Helleres Blau für guten Kontrast im Dark Mode */
   --ud-c-primary-dim: #3b82f6; /* Angepasste dunklere Variante für Hover etc. */
@@ -827,4 +830,69 @@
     color: var(--ud-c-text-muted);
     text-align: center;
     padding: var(--ud-gap-lg);
+}
+/* In src/styles/PercentageDashboardScoped.css */
+
+.percentage-dashboard.scoped-dashboard .personal-info p {
+  margin: 0;
+  font-size: var(--ud-fz-md, 1rem);
+  background-color: rgba(255, 255, 255, 0.15);
+  padding: var(--ud-gap-xs, 0.5rem) var(--ud-gap-md, 1.25rem);
+  border-radius: var(--ud-radius-md, 10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  font-weight: 500;
+}
+
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .personal-info p {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.percentage-dashboard.scoped-dashboard .personal-info strong {
+  font-weight: 600;
+}
+/* In src/styles/PercentageDashboardScoped.css */
+
+.percentage-dashboard.scoped-dashboard .punch-section select,
+.percentage-dashboard.scoped-dashboard .week-navigation input[type="date"] {
+  font-family: inherit;
+  padding: 0.6rem 1rem;
+  border-radius: var(--ud-radius-sm, 8px);
+  border: 1px solid var(--ud-c-border);
+  background-color: var(--ud-c-card);
+  color: var(--ud-c-text);
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.percentage-dashboard.scoped-dashboard .punch-section select:focus,
+.percentage-dashboard.scoped-dashboard .week-navigation input[type="date"]:focus {
+  outline: none;
+  border-color: var(--ud-c-primary);
+  box-shadow: 0 0 0 3px var(--ud-c-primary-light-bg);
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .punch-section select,
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .week-navigation input[type="date"] {
+  background-color: var(--ud-c-surface);
+  border-color: var(--ud-c-border);
+}
+/* In src/styles/PercentageDashboardScoped.css */
+
+.percentage-dashboard.scoped-dashboard .button-secondary {
+  border-radius: var(--ud-radius-sm, 8px);
+  border: 1px solid var(--ud-c-border);
+  background: var(--ud-c-surface);
+  color: var(--ud-c-text);
+  padding: 0.6rem 1.2rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, transform 0.2s;
+}
+
+.percentage-dashboard.scoped-dashboard .button-secondary:hover {
+  background: var(--ud-c-line);
+  border-color: var(--ud-c-muted);
+  transform: translateY(-1px);
 }
