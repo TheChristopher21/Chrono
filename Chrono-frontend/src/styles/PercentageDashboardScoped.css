@@ -330,6 +330,7 @@
   border: 1px solid var(--ud-c-border, #d0d3e2);
   border-radius: var(--ud-radius-lg, 16px);
   padding: var(--ud-gap-md, 1.25rem);
+  margin-bottom: var(--ud-gap-md, 1.25rem);
   box-shadow: var(--ud-shadow-card, 0 8px 24px rgba(71, 91, 255, 0.08));
   display: flex;
   flex-direction: column;
@@ -341,7 +342,6 @@
   background: var(--ud-c-card-hover);
   box-shadow: var(--ud-shadow-hover);
   transform: translateY(-4px);
-  margin-bottom: var(--ud-gap-md, 1.25rem);
   font-size: var(--ud-fz-lg, 1.125rem);
   color: var(--ud-c-text, #1f2024);
   padding-bottom: var(--ud-gap-sm, 0.75rem);
@@ -830,27 +830,6 @@
     color: var(--ud-c-text-muted);
     text-align: center;
     padding: var(--ud-gap-lg);
-}
-/* In src/styles/PercentageDashboardScoped.css */
-
-.percentage-dashboard.scoped-dashboard .personal-info p {
-  margin: 0;
-  font-size: var(--ud-fz-md, 1rem);
-  background-color: rgba(255, 255, 255, 0.15);
-  padding: var(--ud-gap-xs, 0.5rem) var(--ud-gap-md, 1.25rem);
-  border-radius: var(--ud-radius-md, 10px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  font-weight: 500;
-}
-
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .personal-info p {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
-.percentage-dashboard.scoped-dashboard .personal-info strong {
-  font-weight: 600;
 }
 /* In src/styles/PercentageDashboardScoped.css */
 
