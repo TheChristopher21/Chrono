@@ -72,7 +72,8 @@ public class PayslipController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
     @GetMapping("/admin/approved")
     public ResponseEntity<List<PayslipDTO>> approved() {
-        return ResponseEntity.ok(payrollService.getApprovedPayslips().stream().map(PayslipDTO::new).toList());
+        return ResponseEntity.ok(payrollService.getApprovedPayslips());
+
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
