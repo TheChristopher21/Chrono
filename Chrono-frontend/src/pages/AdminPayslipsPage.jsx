@@ -6,6 +6,8 @@ import { useTranslation } from '../context/LanguageContext';
 
 const AdminPayslipsPage = () => {
   const [payslips, setPayslips] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [form, setForm] = useState({ userId: '', start: '', end: '' });
   const { t } = useTranslation();
 
   const fetchPending = () => {
@@ -15,9 +17,9 @@ const AdminPayslipsPage = () => {
   };
 
   const approve = (id) => {
-    const comment = prompt(t('payslips.approve'));
-    api.post(`/api/payslips/approve/${id}`, null, { params: { comment } }).then(() => fetchPending());
+    api.post(`/api/payslips/approve/${id}`).then(() => fetchPending());
   };
+
 
   const approveAll = () => {
     const comment = prompt(t('payslips.approveAll'));
@@ -35,8 +37,20 @@ const AdminPayslipsPage = () => {
     });
   };
 
+  const createPayslip = () => {
+    if (!form.userId || !form.start || !form.end) return;
+    api.post('/api/payslips/generate', null, {
+      params: { userId: form.userId, start: form.start, end: form.end }
+    }).then(() => {
+      setForm({ userId: '', start: '', end: '' });
+      fetchPending();
+    });
+  };
+
   useEffect(() => {
     fetchPending();
+    // Hier die Userliste holen:
+    api.get('/api/admin/users').then(res => setUsers(res.data));
   }, []);
 
   const backup = () => {
@@ -44,14 +58,27 @@ const AdminPayslipsPage = () => {
   };
 
   return (
-    <div className="admin-payslips-page scoped-dashboard">
-      <Navbar />
-      <h2>{t('payslips.pendingTitle')}</h2>
-      <button className="approve-all" onClick={approveAll}>{t('payslips.approveAll')}</button>
-      <button className="approve-all" onClick={exportCsv}>{t('payslips.exportCsv')}</button>
-      <button className="approve-all" onClick={backup}>{t('payslips.backup')}</button>
-      <table className="payslip-table">
-        <thead>
+      <div className="admin-payslips-page scoped-dashboard">
+        <Navbar />
+        <h2>{t('payslips.pendingTitle')}</h2>
+        {/* NEU: Formular zum Erstellen */}
+        <div className="generate-form">
+          <select value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })}>
+            <option value="">{t('payslips.selectUser', 'Benutzer wählen')}</option>
+            {users.map(u => (
+                <option key={u.id} value={u.id}>{u.username}</option>
+            ))}
+          </select>
+          <input type="date" value={form.start} onChange={e => setForm({ ...form, start: e.target.value })} />
+          <input type="date" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} />
+          <button onClick={createPayslip}>{t('payslips.generate', 'Erstellen')}</button>
+        </div>
+        {/* --- */}
+        <button className="approve-all" onClick={approveAll}>{t('payslips.approveAll')}</button>
+        <button className="approve-all" onClick={exportCsv}>{t('payslips.exportCsv')}</button>
+        <button className="approve-all" onClick={backup}>{t('payslips.backup')}</button>
+        <table className="payslip-table">
+          <thead>
           <tr>
             <th>{t('payslips.user')}</th>
             <th>{t('payslips.period', 'Zeitraum')}</th>
@@ -59,20 +86,20 @@ const AdminPayslipsPage = () => {
             <th>{t('payslips.net')}</th>
             <th></th>
           </tr>
-        </thead>
-        <tbody>
+          </thead>
+          <tbody>
           {payslips.map(ps => (
-            <tr key={ps.id}>
-              <td>{ps.userId}</td>
-              <td>{ps.periodStart} - {ps.periodEnd}</td>
-              <td>{ps.grossSalary?.toFixed(2)} CHF</td>
-              <td>{ps.netSalary?.toFixed(2)} CHF</td>
-              <td><button onClick={() => approve(ps.id)}>{t('payslips.approve')}</button></td>
-            </tr>
+              <tr key={ps.id}>
+                <td>{ps.userId}</td>
+                <td>{ps.periodStart} - {ps.periodEnd}</td>
+                <td>{ps.grossSalary?.toFixed(2)} CHF</td>
+                <td>{ps.netSalary?.toFixed(2)} CHF</td>
+                <td><button onClick={() => approve(ps.id)}>{t('payslips.approve')}</button></td>
+              </tr>
           ))}
-        </tbody>
-      </table>
-    </div>
+          </tbody>
+        </table>
+      </div>
   );
 };
 

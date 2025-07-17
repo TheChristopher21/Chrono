@@ -95,7 +95,7 @@ public class PayslipController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
     @GetMapping("/admin/backup")
     public ResponseEntity<String> backup() {
-        // simple CSV backup using same export
-        return exportCsv();
+        // Default-Sprache: Englisch
+        return exportCsv("en");
     }
 }
