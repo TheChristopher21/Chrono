@@ -144,4 +144,10 @@ public class PayrollService {
     public List<Payslip> getPendingPayslips() {
         return payslipRepository.findByApproved(false);
     }
+
+    @Transactional(readOnly = true)
+    public List<PayslipDTO> getApprovedPayslips() {
+        return payslipRepository.findByApproved(true)
+                .stream().map(PayslipDTO::new).toList();
+    }
 }

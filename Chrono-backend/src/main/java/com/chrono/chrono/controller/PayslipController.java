@@ -70,6 +70,12 @@ public class PayslipController {
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @GetMapping("/admin/approved")
+    public ResponseEntity<List<PayslipDTO>> approved() {
+        return ResponseEntity.ok(payrollService.getApprovedPayslips());
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
     @GetMapping("/admin/export")
     public ResponseEntity<String> exportCsv(@RequestParam(defaultValue = "en") String lang) {
         StringBuilder sb = new StringBuilder();
