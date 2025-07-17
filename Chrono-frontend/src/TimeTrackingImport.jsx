@@ -129,10 +129,12 @@ function TimeTrackingImport() {
 
         const { message, importedCount, successMessages, errors: responseErrors } = uploadResponse;
 
+        const msgClass = responseErrors && responseErrors.length > 0 ? 'feedback-warning' : 'feedback-success';
+
         return (
-            <div style={{ marginTop: '20px', padding: '10px', border: '1px solid #eee' }}>
+            <div className="feedback-container">
                 <h4>Import Ergebnis:</h4>
-                {message && <p style={{ color: responseErrors && responseErrors.length > 0 ? 'orange' : 'green' }}>{message}</p>}
+                {message && <p className={msgClass}>{message}</p>}
                 {typeof importedCount === 'number' && <p>Erfolgreich importierte Einträge: {importedCount}</p>}
 
                 {successMessages && successMessages.length > 0 && (
@@ -140,7 +142,7 @@ function TimeTrackingImport() {
                         <h5>Erfolgsmeldungen:</h5>
                         <ul style={{ listStyleType: 'disc', paddingLeft: '20px', maxHeight: '150px', overflowY: 'auto' }}>
                             {successMessages.map((msg, index) => (
-                                <li key={`succ-${index}`} style={{ color: 'green', fontSize: '0.9em' }}>{msg}</li>
+                                <li key={`succ-${index}`} className="feedback-success" style={{ fontSize: '0.9em' }}>{msg}</li>
                             ))}
                         </ul>
                     </div>
@@ -149,7 +151,7 @@ function TimeTrackingImport() {
                 {responseErrors && responseErrors.length > 0 && (
                     <div style={{ marginTop: '10px' }}>
                         <h5>Fehlerdetails ({responseErrors.length}):</h5>
-                        <ul style={{ listStyleType: 'disc', paddingLeft: '20px', maxHeight: '150px', overflowY: 'auto', color: 'red' }}>
+                        <ul style={{ listStyleType: 'disc', paddingLeft: '20px', maxHeight: '150px', overflowY: 'auto' }} className="feedback-warning">
                             {responseErrors.map((err, index) => (
                                 <li key={`err-${index}`} style={{ fontSize: '0.9em' }}>{typeof err === 'object' ? JSON.stringify(err) : err}</li>
                             ))}
@@ -180,12 +182,12 @@ function TimeTrackingImport() {
                                         <td><input value={row.punchType || ''} onChange={e => handleRowChange(idx, 'punchType', e.target.value)} /></td>
                                         <td><input value={row.source || ''} onChange={e => handleRowChange(idx, 'source', e.target.value)} /></td>
                                         <td><input value={row.note || ''} onChange={e => handleRowChange(idx, 'note', e.target.value)} /></td>
-                                        <td style={{color:'red'}}>{row.error}</td>
+                                        <td className="error-cell">{row.error}</td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
-                        <button onClick={handleReimport} disabled={isReimporting} style={{marginTop:'10px'}}>
+                        <button onClick={handleReimport} disabled={isReimporting} className="import-button" style={{marginTop:'10px'}}>
                             {isReimporting ? 'Importiere...' : 'Korrigierte Zeilen importieren'}
                         </button>
                         {isReimporting && <div className="import-progress"><div className="import-progress-bar" style={{width: `${reimportProgress}%`}}/></div>}
@@ -197,37 +199,31 @@ function TimeTrackingImport() {
 
 
     return (
-        <div style={{ margin: '20px', padding: '20px', border: '1px solid #ccc', borderRadius: '5px' }}>
-            <h3>Stempelzeiten aus Excel importieren</h3>
-            <form onSubmit={handleSubmit}>
-                <div>
-                    <input
-                        type="file"
-                        onChange={handleFileChange}
-                        accept=".xlsx, .xls"
-                        // ref={fileInputRef} // EINKOMMENTIEREN, falls benötigt
-                        style={{ marginBottom: '10px', padding: '8px', border: '1px solid #ddd', borderRadius: '4px' }}
-                    />
-                </div>
-                <button
-                    type="submit"
-                    disabled={isUploading || !selectedFile}
-                    style={{
-                        padding: '10px 15px',
-                        backgroundColor: isUploading || !selectedFile ? '#ccc' : '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: isUploading || !selectedFile ? 'not-allowed' : 'pointer'
-                    }}
-                >
-                    {isUploading ? 'Wird hochgeladen...' : 'Importieren'}
-                </button>
-                {isUploading && <div className="import-progress" style={{marginTop:'8px'}}><div className="import-progress-bar" style={{width:`${progress}%`}} /></div>}
-            </form>
-            {error && <p style={{ color: 'red', marginTop: '10px' }}>{error}</p>}
-            {renderFeedback()}
-            <div style={{marginTop: '20px', fontSize: '0.9em', color: '#555'}}>
+        <div className="time-import-page">
+            <div className="time-import-container">
+                <h3>Stempelzeiten aus Excel importieren</h3>
+                <form onSubmit={handleSubmit} className="import-form">
+                    <div>
+                        <input
+                            type="file"
+                            onChange={handleFileChange}
+                            accept=".xlsx, .xls"
+                            // ref={fileInputRef} // EINKOMMENTIEREN, falls benötigt
+                            className="file-input"
+                        />
+                    </div>
+                    <button
+                        type="submit"
+                        disabled={isUploading || !selectedFile}
+                        className="import-button"
+                    >
+                        {isUploading ? 'Wird hochgeladen...' : 'Importieren'}
+                    </button>
+                    {isUploading && <div className="import-progress"><div className="import-progress-bar" style={{width:`${progress}%`}} /></div>}
+                </form>
+                {error && <p className="error-message">{error}</p>}
+                {renderFeedback()}
+                <div className="hint-text">
                 <p><strong>Hinweis zum Excel-Format:</strong></p>
                 <ul>
                     <li>Die erste Zeile wird als Kopfzeile ignoriert.</li>
@@ -239,6 +235,7 @@ function TimeTrackingImport() {
                     <li>Spalte F: Arbeitsende (Format: HH:mm, z.B. 17:00)</li>
                     <li>Spalte G: Tagesnotiz (optional)</li>
                 </ul>
+                </div>
             </div>
         </div>
     );
