@@ -1,25 +1,112 @@
+/* =========================================================================
+   TimeTrackingImport Scoped Styles
+   Supports light and dark mode via CSS variables
+   ========================================================================= */
+
+.time-import-page {
+  font-family: "Poppins", sans-serif;
+  background: var(--c-bg);
+  color: var(--c-text);
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+.time-import-container {
+  max-width: 700px;
+  margin: 0 auto;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius);
+  padding: var(--u-card-padding);
+}
+
+.file-input {
+  padding: 0.5rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-sm);
+  background: var(--c-surface);
+  color: var(--c-text);
+}
+
+.import-button {
+  padding: 0.5rem 1.2rem;
+  background: var(--c-pri);
+  color: #fff;
+  border: none;
+  border-radius: var(--u-radius-sm);
+  cursor: pointer;
+}
+
+.import-button:disabled {
+  background: var(--c-muted);
+  cursor: not-allowed;
+}
+
 .import-progress {
   width: 100%;
   height: 8px;
-  background: #eee;
+  background: var(--c-border);
   border-radius: 4px;
   overflow: hidden;
+  margin-top: 0.5rem;
 }
+
 .import-progress-bar {
   height: 100%;
-  background: #007bff;
+  background: var(--c-pri);
   width: 0;
   transition: width 0.3s;
 }
+
 .invalid-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 1rem;
+  background: var(--c-card);
 }
-.invalid-table th, .invalid-table td {
-  border: 1px solid #ccc;
+
+.invalid-table th,
+.invalid-table td {
+  border: 1px solid var(--c-border);
   padding: 4px;
   font-size: 0.8rem;
 }
+
 .invalid-table input {
   width: 100%;
+  background: var(--c-surface);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-xs);
+}
+
+.invalid-table td.error-cell {
+  color: var(--c-error);
+}
+
+.feedback-container {
+  margin-top: 1.25rem;
+  padding: 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-sm);
+  background: var(--c-card);
+}
+
+.feedback-success {
+  color: var(--c-success);
+}
+
+.feedback-warning {
+  color: var(--c-warn);
+}
+
+.error-message {
+  margin-top: 0.5rem;
+  color: var(--c-error);
+}
+
+.hint-text {
+  margin-top: 1.25rem;
+  font-size: 0.9em;
+  color: var(--c-muted);
 }
