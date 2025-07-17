@@ -55,6 +55,7 @@ public class EmailService {
 
     public void sendPayslipGeneratedMail(User user, Payslip payslip) {
         if (user.getEmail() == null || !user.isEmailNotifications()) return;
+
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom("siefertchristopher@chrono-logisch.ch");
         msg.setTo(user.getEmail());
@@ -65,6 +66,7 @@ public class EmailService {
 
     public void sendPayslipApprovedMail(User user, Payslip payslip) {
         if (user.getEmail() == null || !user.isEmailNotifications()) return;
+
         SimpleMailMessage msg = new SimpleMailMessage();
         msg.setFrom("siefertchristopher@chrono-logisch.ch");
         msg.setTo(user.getEmail());
