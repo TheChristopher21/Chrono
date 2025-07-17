@@ -138,34 +138,6 @@
 }
 
 /* Sprache-Selector */
-.scoped-login .language-switch {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  margin-bottom: 1rem;
-}
-
-.scoped-login .language-switch label {
-  margin-right: 0.75rem;
-  font-weight: bold;
-  color: var(--c-text);
-}
-
-.scoped-login .language-switch select {
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  font-size: 1rem;
-  color: var(--c-text);
-  background-color: #fff; /* wird im Dark Mode überschrieben */
-  transition:
-    border-color 0.2s,
-    box-shadow 0.2s;
-}
-.scoped-login .language-switch select:focus {
-  border-color: var(--c-primary);
-  box-shadow: 0 0 5px rgba(90, 103, 216, 0.5);
-}
 
 /* Meldungen (Fehler/Punch) */
 .scoped-login .error-message {
@@ -235,7 +207,6 @@
 [data-theme="dark"] .scoped-login .login-left-content h1,
 [data-theme="dark"] .scoped-login .login-left-content p,
 [data-theme="dark"] .scoped-login .login-left-content form label,
-[data-theme="dark"] .scoped-login .language-switch label,
 [data-theme="dark"] .scoped-login .register-cta,
 [data-theme="dark"] .scoped-login .error-message,
 [data-theme="dark"] .scoped-login .punch-message {
@@ -251,11 +222,6 @@
   color: #bcbcbc;
 }
 
-[data-theme="dark"] .scoped-login .language-switch select {
-  background-color: #3a3b3c;
-  border: 1px solid var(--c-border);
-  color: #f0f0f0;
-}
 
 /* Rechte Spalte im Dark Mode -> dunklere Overlay */
 [data-theme="dark"] .scoped-login .login-right {
@@ -339,18 +305,7 @@
   }
 
   /* Sprache-Switch in eine Zeile, minimal kleiner */
-  .scoped-login .language-switch {
-    justify-content: center;
-    margin-bottom: 1rem;
-  }
-  .scoped-login .language-switch label {
-    font-size: 0.85rem;
-    margin-right: 0.5rem;
-  }
-  .scoped-login .language-switch select {
-    font-size: 0.85rem;
-    padding: 0.4rem 0.7rem;
-  }
+
 
   /* Registrierungshinweis + Error kompakter */
   .scoped-login .register-cta,

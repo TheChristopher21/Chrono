@@ -208,6 +208,7 @@ const translations = {
             whatsNew: "Was ist neu?",
             history: "Update-Verlauf",
             brightness: "Helligkeit",
+            languageLabel: "Sprache",
         },
         // ----------------------------------------------------------------------
         // Dashboard title / corrections
@@ -767,6 +768,7 @@ const translations = {
             whatsNew: "What's New?",
             history: "Update History",
             brightness: "brightness",
+            languageLabel: "Language",
         },
         // ----------------------------------------------------------------------
         // Dashboard / corrections
