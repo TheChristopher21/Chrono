@@ -149,5 +149,6 @@ public class PayrollService {
     public List<PayslipDTO> getApprovedPayslips() {
         return payslipRepository.findByApproved(true)
                 .stream().map(PayslipDTO::new).toList();
+
     }
 }
