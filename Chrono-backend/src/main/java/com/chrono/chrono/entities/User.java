@@ -42,6 +42,7 @@ public class User {
     @Column(name = "email_notifications", nullable = false)
     private boolean emailNotifications = true;
 
+
     @Convert(converter = com.chrono.chrono.utils.EncryptionConverter.class)
     private String bankAccount;
 
@@ -165,6 +166,7 @@ public class User {
 
     public boolean isEmailNotifications() { return emailNotifications; }
     public void setEmailNotifications(boolean emailNotifications) { this.emailNotifications = emailNotifications; }
+
 
     public String getBankAccount() { return bankAccount; }
     public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
