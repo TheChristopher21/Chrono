@@ -123,6 +123,7 @@ const Navbar = () => {
                                             <li><Link to="/admin/projects">{t('navbar.projectManagement', 'Projekte')}</Link></li>
                                         </>
                                     )}
+                                    <li><Link to="/admin/payslips">{t('navbar.payslips', 'Abrechnungen')}</Link></li>
                                     <li><Link to="/admin/change-password">{t('admin.changePasswordTitle', 'Passwort ändern')}</Link></li>
                                 </>
                             ) : (
