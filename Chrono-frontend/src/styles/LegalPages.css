@@ -1,0 +1,25 @@
+.legal-page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius);
+  color: var(--c-text);
+  transition: background var(--u-dur) var(--u-ease),
+              color var(--u-dur) var(--u-ease),
+              border-color var(--u-dur) var(--u-ease);
+}
+
+.legal-page h1,
+.legal-page h2 {
+  color: var(--c-text);
+}
+
+.legal-page a {
+  color: var(--c-pri);
+}
+
+.legal-page ul {
+  padding-left: 1.2rem;
+}

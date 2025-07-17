@@ -254,6 +254,28 @@ header.landing-hero p {
   margin-bottom: 0.7rem;
 }
 
+/* ---------- CONTACT -------------------------------------------------- */
+.contact-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  max-width: 420px;
+  margin: 0 auto;
+}
+.contact-form input,
+.contact-form textarea {
+  padding: 0.9rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface-glass);
+  backdrop-filter: blur(8px);
+  color: var(--c-text-main);
+}
+.contact-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
 /* ---------- NEWSLETTER ---------------------------------------------- */
 .newsletter-form {
   display: flex;

@@ -1,6 +1,7 @@
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.ApplicationData;
+import com.chrono.chrono.dto.ContactMessage;
 import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.entities.User;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,18 @@ public class EmailService {
         message.setText(mailText);
 
         mailSender.send(message);
+    }
+
+    public void sendContactMail(ContactMessage contact) {
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom("siefertchristopher@chrono-logisch.ch");
+        msg.setTo("siefertchristopher@chrono-logisch.ch");
+        msg.setSubject("Kontaktanfrage von " + contact.getName());
+        String text = "Name: " + contact.getName() + "\n" +
+                "E-Mail: " + contact.getEmail() + "\n\n" +
+                contact.getMessage();
+        msg.setText(text);
+        mailSender.send(msg);
     }
 
     public void sendPayslipGeneratedMail(User user, Payslip payslip) {

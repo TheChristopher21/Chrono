@@ -1,9 +1,13 @@
 // src/pages/Impressum.jsx
 import React from 'react';
+import Navbar from '../components/Navbar';
+import '../styles/LegalPages.css';
 
 const Impressum = () => {
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+        <>
+        <Navbar />
+        <div className="legal-page">
             <h1>Impressum</h1>
 
             <p>
@@ -39,6 +43,7 @@ const Impressum = () => {
                 <em>Stand: Mai 2025</em>
             </p>
         </div>
+        </>
     );
 };
 

@@ -511,6 +511,13 @@ const translations = {
             step3Text: "Echtzeit-Insights & Abwesenheiten verwalten.",
             newsletterPlaceholder: "Deine E-Mail",
             newsletterButton: "Abonnieren",
+            contactTitle: "Kontakt",
+            contactName: "Name",
+            contactEmail: "E-Mail",
+            contactMessage: "Nachricht",
+            contactButton: "Absenden",
+            contactSuccess: "Nachricht gesendet!",
+            contactError: "Fehler beim Senden.",
         },
 
         // Falls du "search", "darkMode", "lightMode" usw. nutzt
@@ -1058,6 +1065,13 @@ const translations = {
             step3Text: "Realtime insights & absence management.",
             newsletterPlaceholder: "Your email",
             newsletterButton: "Subscribe",
+            contactTitle: "Contact",
+            contactName: "Name",
+            contactEmail: "Email",
+            contactMessage: "Message",
+            contactButton: "Send",
+            contactSuccess: "Message sent!",
+            contactError: "Failed to send message.",
         },
 
         // Falls du "search", "darkMode", "lightMode" etc. nutzt

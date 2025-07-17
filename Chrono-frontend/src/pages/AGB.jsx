@@ -1,9 +1,13 @@
 // src/pages/AGB.jsx
 import React from 'react';
+import Navbar from '../components/Navbar';
+import '../styles/LegalPages.css';
 
 const AGB = () => {
     return (
-        <div style={{ maxWidth: '800px', margin: '0 auto', padding: '20px' }}>
+        <>
+        <Navbar />
+        <div className="legal-page">
             <h1>Allgemeine Geschäftsbedingungen (AGB)</h1>
 
             <h2>1. Geltungsbereich</h2>
@@ -152,6 +156,7 @@ const AGB = () => {
                 von Montag bis Freitag (11:00–15:00) zur Verfügung.
             </p>
         </div>
+        </>
     );
 };
 
