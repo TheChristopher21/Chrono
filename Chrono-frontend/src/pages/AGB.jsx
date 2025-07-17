@@ -7,6 +7,7 @@ const AGB = () => {
     return (
         <>
         <Navbar />
+        <div className="legal-wrapper">
         <div className="legal-page">
             <h1>Allgemeine Geschäftsbedingungen (AGB)</h1>
 
@@ -155,6 +156,7 @@ const AGB = () => {
                 </a>{" "}
                 von Montag bis Freitag (11:00–15:00) zur Verfügung.
             </p>
+        </div>
         </div>
         </>
     );

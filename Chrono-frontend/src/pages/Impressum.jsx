@@ -7,6 +7,7 @@ const Impressum = () => {
     return (
         <>
         <Navbar />
+        <div className="legal-wrapper">
         <div className="legal-page">
             <h1>Impressum</h1>
 
@@ -42,6 +43,7 @@ const Impressum = () => {
             <p>
                 <em>Stand: Mai 2025</em>
             </p>
+        </div>
         </div>
         </>
     );
