@@ -1,0 +1,103 @@
+import { useState, useEffect } from 'react';
+import Navbar from '../components/Navbar';
+import api from '../utils/api';
+import '../styles/AdminPayslipsPageScoped.css';
+import { useTranslation } from '../context/LanguageContext';
+
+const AdminPayslipsPage = () => {
+  const [payslips, setPayslips] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [form, setForm] = useState({ userId: '', start: '', end: '' });
+  const { t } = useTranslation();
+
+  const fetchPending = () => {
+    api.get('/api/payslips/admin/pending').then(res => {
+      setPayslips(res.data);
+    });
+  };
+
+  const approve = (id) => {
+    const comment = prompt(t('payslips.approve'));
+    api.post(`/api/payslips/approve/${id}`, null, { params: { comment } }).then(() => fetchPending());
+  };
+
+  const approveAll = () => {
+    const comment = prompt(t('payslips.approveAll'));
+    api.post('/api/payslips/approve-all', null, { params: { comment } }).then(() => fetchPending());
+  };
+
+  const exportCsv = () => {
+    api.get('/api/payslips/admin/export', { responseType: 'blob' }).then(res => {
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'payslips.csv');
+      document.body.appendChild(link);
+      link.click();
+    });
+  };
+
+  const createPayslip = () => {
+    if (!form.userId || !form.start || !form.end) return;
+    api.post('/api/payslips/generate', null, {
+      params: { userId: form.userId, start: form.start, end: form.end }
+    }).then(() => {
+      setForm({ userId: '', start: '', end: '' });
+      fetchPending();
+    });
+  };
+
+  useEffect(() => {
+    fetchPending();
+    api.get('/api/admin/users').then(res => setUsers(res.data));
+  }, []);
+
+  const backup = () => {
+    api.get('/api/payslips/admin/backup');
+  };
+
+  return (
+    <div className="admin-payslips-page scoped-dashboard">
+      <Navbar />
+      <h2>{t('payslips.pendingTitle')}</h2>
+      <button className="approve-all" onClick={approveAll}>{t('payslips.approveAll')}</button>
+      <button className="approve-all" onClick={exportCsv}>{t('payslips.exportCsv')}</button>
+      <button className="approve-all" onClick={backup}>{t('payslips.backup')}</button>
+      <div className="generate-form">
+        <select value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })}>
+          <option value="">{t('payslips.selectUser', 'Benutzer wählen')}</option>
+          {users.map(u => (
+            <option key={u.id} value={u.id}>{u.username}</option>
+          ))}
+        </select>
+        <input type="date" value={form.start} onChange={e => setForm({ ...form, start: e.target.value })} />
+        <input type="date" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} />
+        <button onClick={createPayslip}>{t('payslips.generate', 'Erstellen')}</button>
+      </div>
+      <table className="payslip-table">
+        <thead>
+          <tr>
+            <th>{t('payslips.user')}</th>
+            <th>{t('payslips.period', 'Zeitraum')}</th>
+            <th>{t('payslips.gross')}</th>
+            <th>{t('payslips.net')}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {payslips.map(ps => (
+            <tr key={ps.id}>
+              <td>{ps.userId}</td>
+              <td>{ps.periodStart} - {ps.periodEnd}</td>
+              <td>{ps.grossSalary?.toFixed(2)} CHF</td>
+              <td>{ps.netSalary?.toFixed(2)} CHF</td>
+              <td><button onClick={() => approve(ps.id)}>{t('payslips.approve')}</button></td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+};
+
+export default AdminPayslipsPage;

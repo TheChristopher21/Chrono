@@ -458,6 +458,9 @@ const AdminDashboard = () => {
                 <Link to="/admin/import-times" className="admin-action-button button-primary">
                     {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
                 </Link>
+                <Link to="/admin/payslips" className="admin-action-button button-primary">
+                    {t('navbar.payslips', 'Abrechnungen')}
+                </Link>
                 <button onClick={handleDataReloadNeeded} className="admin-action-button button-secondary">
                     {t('adminDashboard.reloadDataButton', 'Daten neu laden')}
                 </button>

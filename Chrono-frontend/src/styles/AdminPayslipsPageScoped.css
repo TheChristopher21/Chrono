@@ -1,0 +1,52 @@
+.admin-payslips-page.scoped-dashboard {
+  --c-bg: #f4f6ff;
+  --c-text: #1e1f22;
+  --c-card: #ffffff;
+  --c-border: #d5d8e5;
+  background: var(--c-bg);
+  color: var(--c-text);
+  min-height: 100vh;
+  padding: 1.5rem;
+  font-family: 'Poppins', sans-serif;
+}
+
+.payslip-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.payslip-table th,
+.payslip-table td {
+  border: 1px solid var(--c-border);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.approve-all {
+  margin-bottom: 1rem;
+  padding: 0.5rem 1rem;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  cursor: pointer;
+}
+
+.generate-form {
+  margin: 1rem 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.generate-form select,
+.generate-form input {
+  padding: 0.4rem;
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+}
+
+.generate-form button {
+  padding: 0.4rem 1rem;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  cursor: pointer;
+}
