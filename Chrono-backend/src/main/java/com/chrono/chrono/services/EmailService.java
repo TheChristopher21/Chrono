@@ -1,6 +1,8 @@
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.ApplicationData;
+import com.chrono.chrono.entities.Payslip;
+import com.chrono.chrono.entities.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -9,8 +11,12 @@ import org.springframework.stereotype.Service;
 @Service
 public class EmailService {
 
+    private final JavaMailSender mailSender;
+
     @Autowired
-    private JavaMailSender mailSender;
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
 
     public void sendRegistrationMail(ApplicationData data) {
         SimpleMailMessage message = new SimpleMailMessage();
@@ -45,5 +51,25 @@ public class EmailService {
         message.setText(mailText);
 
         mailSender.send(message);
+    }
+
+    public void sendPayslipGeneratedMail(User user, Payslip payslip) {
+        if (user.getEmail() == null) return;
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom("siefertchristopher@chrono-logisch.ch");
+        msg.setTo(user.getEmail());
+        msg.setSubject("Neue Gehaltsabrechnung bereit");
+        msg.setText("Ihre Abrechnung vom " + payslip.getPeriodStart() + " bis " + payslip.getPeriodEnd() + " ist erstellt.");
+        mailSender.send(msg);
+    }
+
+    public void sendPayslipApprovedMail(User user, Payslip payslip) {
+        if (user.getEmail() == null) return;
+        SimpleMailMessage msg = new SimpleMailMessage();
+        msg.setFrom("siefertchristopher@chrono-logisch.ch");
+        msg.setTo(user.getEmail());
+        msg.setSubject("Gehaltsabrechnung freigegeben");
+        msg.setText("Ihre Abrechnung vom " + payslip.getPeriodStart() + " bis " + payslip.getPeriodEnd() + " wurde freigegeben.");
+        mailSender.send(msg);
     }
 }

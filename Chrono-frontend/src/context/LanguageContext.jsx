@@ -532,6 +532,19 @@ const translations = {
             title: "Alle Änderungen und Updates",
             loading: "Lade Verlauf...",
         },
+        payslips: {
+            title: "Meine Gehaltsabrechnungen",
+            pendingTitle: "Offene Gehaltsabrechnungen",
+            approve: "Freigeben",
+            approveAll: "Alle freigeben",
+            exportCsv: "CSV Export",
+            backup: "Backup",
+            print: "Drucken",
+            period: "Zeitraum",
+            user: "Benutzer",
+            gross: "Brutto",
+            net: "Netto"
+        },
         notFound: {
             pageNotFound: "404 - Seite nicht gefunden",
         },
@@ -1062,6 +1075,19 @@ const translations = {
         whatsNewPage: {
             title: "All changes and updates",
             loading: "Loading history...",
+        },
+        payslips: {
+            title: "My Payslips",
+            pendingTitle: "Pending Payslips",
+            approve: "Approve",
+            approveAll: "Approve All",
+            exportCsv: "CSV Export",
+            backup: "Backup",
+            print: "Print",
+            period: "Period",
+            user: "User",
+            gross: "Gross",
+            net: "Net"
         },
         notFound: {
             pageNotFound: "404 - Page not found",
