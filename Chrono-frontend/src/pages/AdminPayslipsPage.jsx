@@ -6,6 +6,7 @@ import { useTranslation } from '../context/LanguageContext';
 
 const AdminPayslipsPage = () => {
   const [payslips, setPayslips] = useState([]);
+  const [approvedSlips, setApprovedSlips] = useState([]);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ userId: '', start: '', end: '' });
   const { t } = useTranslation();
@@ -13,6 +14,12 @@ const AdminPayslipsPage = () => {
   const fetchPending = () => {
     api.get('/api/payslips/admin/pending').then(res => {
       setPayslips(res.data);
+    });
+  };
+
+  const fetchApproved = () => {
+    api.get('/api/payslips/admin/approved').then(res => {
+      setApprovedSlips(res.data);
     });
   };
 
@@ -49,6 +56,7 @@ const AdminPayslipsPage = () => {
 
   useEffect(() => {
     fetchPending();
+    fetchApproved();
     // Hier die Userliste holen:
     api.get('/api/admin/users').then(res => setUsers(res.data));
   }, []);
@@ -95,6 +103,28 @@ const AdminPayslipsPage = () => {
                 <td>{ps.grossSalary?.toFixed(2)} CHF</td>
                 <td>{ps.netSalary?.toFixed(2)} CHF</td>
                 <td><button onClick={() => approve(ps.id)}>{t('payslips.approve')}</button></td>
+              </tr>
+          ))}
+          </tbody>
+        </table>
+
+        <h2>{t('payslips.approvedTitle')}</h2>
+        <table className="payslip-table">
+          <thead>
+          <tr>
+            <th>{t('payslips.user')}</th>
+            <th>{t('payslips.period', 'Zeitraum')}</th>
+            <th>{t('payslips.gross')}</th>
+            <th>{t('payslips.net')}</th>
+          </tr>
+          </thead>
+          <tbody>
+          {approvedSlips.map(ps => (
+              <tr key={ps.id}>
+                <td>{ps.userId}</td>
+                <td>{ps.periodStart} - {ps.periodEnd}</td>
+                <td>{ps.grossSalary?.toFixed(2)} CHF</td>
+                <td>{ps.netSalary?.toFixed(2)} CHF</td>
               </tr>
           ))}
           </tbody>

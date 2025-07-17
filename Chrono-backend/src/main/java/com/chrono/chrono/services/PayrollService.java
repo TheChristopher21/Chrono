@@ -144,4 +144,8 @@ public class PayrollService {
     public List<Payslip> getPendingPayslips() {
         return payslipRepository.findByApproved(false);
     }
+
+    public List<Payslip> getApprovedPayslips() {
+        return payslipRepository.findByApproved(true);
+    }
 }
