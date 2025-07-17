@@ -167,7 +167,6 @@ public class User {
     public boolean isEmailNotifications() { return emailNotifications; }
     public void setEmailNotifications(boolean emailNotifications) { this.emailNotifications = emailNotifications; }
 
-
     public String getBankAccount() { return bankAccount; }
     public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
 

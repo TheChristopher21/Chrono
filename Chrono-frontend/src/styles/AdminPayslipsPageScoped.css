@@ -30,3 +30,24 @@
   border: 1px solid var(--c-border);
   cursor: pointer;
 }
+
+.generate-form {
+  margin: 1rem 0;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.generate-form select,
+.generate-form input {
+  padding: 0.4rem;
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+}
+
+.generate-form button {
+  padding: 0.4rem 1rem;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  cursor: pointer;
+}
+

@@ -6,6 +6,9 @@ import { useTranslation } from '../context/LanguageContext';
 
 const AdminPayslipsPage = () => {
   const [payslips, setPayslips] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [form, setForm] = useState({ userId: '', start: '', end: '' });
+
   const { t } = useTranslation();
 
   const fetchPending = () => {
@@ -35,8 +38,20 @@ const AdminPayslipsPage = () => {
     });
   };
 
+  const createPayslip = () => {
+    if (!form.userId || !form.start || !form.end) return;
+    api.post('/api/payslips/generate', null, {
+      params: { userId: form.userId, start: form.start, end: form.end }
+    }).then(() => {
+      setForm({ userId: '', start: '', end: '' });
+      fetchPending();
+    });
+  };
+
   useEffect(() => {
     fetchPending();
+    api.get('/api/admin/users').then(res => setUsers(res.data));
+
   }, []);
 
   const backup = () => {
@@ -50,6 +65,18 @@ const AdminPayslipsPage = () => {
       <button className="approve-all" onClick={approveAll}>{t('payslips.approveAll')}</button>
       <button className="approve-all" onClick={exportCsv}>{t('payslips.exportCsv')}</button>
       <button className="approve-all" onClick={backup}>{t('payslips.backup')}</button>
+      <div className="generate-form">
+        <select value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })}>
+          <option value="">{t('payslips.selectUser', 'Benutzer wählen')}</option>
+          {users.map(u => (
+            <option key={u.id} value={u.id}>{u.username}</option>
+          ))}
+        </select>
+        <input type="date" value={form.start} onChange={e => setForm({ ...form, start: e.target.value })} />
+        <input type="date" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} />
+        <button onClick={createPayslip}>{t('payslips.generate', 'Erstellen')}</button>
+      </div>
+
       <table className="payslip-table">
         <thead>
           <tr>

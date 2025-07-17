@@ -541,6 +541,9 @@ const translations = {
             approveAll: "Alle freigeben",
             exportCsv: "CSV Export",
             backup: "Backup",
+            generate: "Erstellen",
+            selectUser: "Benutzer wählen",
+
             print: "Drucken",
             period: "Zeitraum",
             user: "Benutzer",
@@ -1087,6 +1090,9 @@ const translations = {
             approveAll: "Approve All",
             exportCsv: "CSV Export",
             backup: "Backup",
+            generate: "Generate",
+            selectUser: "Select User",
+
             print: "Print",
             period: "Period",
             user: "User",
