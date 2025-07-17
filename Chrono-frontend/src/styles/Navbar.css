@@ -279,6 +279,22 @@
   min-width: 30px; /* Platz für "100%" */
   text-align: right;
 }
+.scoped-navbar .language-switch {
+  display: flex;
+  align-items: center;
+  gap: var(--ud-gap-xs, 0.5rem);
+}
+.scoped-navbar .language-switch label {
+  font-size: 0.85rem;
+  color: var(--nav-text-muted);
+}
+.scoped-navbar .language-switch select {
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--nav-border);
+  border-radius: var(--nav-radius);
+  background-color: var(--nav-bg);
+  color: var(--nav-text);
+}
 .scoped-navbar .navbar-links button.theme-toggle {
   /* Button für Theme-Wechsel */
   background-color: transparent;

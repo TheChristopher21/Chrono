@@ -1,11 +1,11 @@
 // src/pages/Login.jsx
-import { useState, useEffect, useRef, useContext } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
 import '../styles/Login.css';
 import api from '../utils/api';
-import { LanguageContext, useTranslation } from '../context/LanguageContext';
+import { useTranslation } from '../context/LanguageContext';
 import { Howl } from 'howler';
 import stampMp3 from '/sounds/stamp.mp3';
 
@@ -28,7 +28,6 @@ const Login = () => {
     const { login} = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const { language, setLanguage } = useContext(LanguageContext);
     const { t } = useTranslation();
 
     const [form, setForm] = useState({ username: '', password: '' });
@@ -127,16 +126,7 @@ const Login = () => {
                         {error && <p className="error-message">{error}</p>}
                         {punchMsg && <div className="punch-message">{punchMsg}</div>}
 
-                        <div className="language-switch">
-                            <label>{t('login.languageLabel', 'Sprache')}:</label>
-                            <select
-                                value={language}
-                                onChange={(e) => setLanguage(e.target.value)}
-                            >
-                                <option value="de">DE</option>
-                                <option value="en">EN</option>
-                            </select>
-                        </div>
+
 
                         <form onSubmit={handleSubmit}>
                             <label htmlFor="username">

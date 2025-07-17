@@ -1,10 +1,10 @@
 /****************************************
  * Navbar.jsx · mit Hamburger-Menü und Changelog
  ****************************************/
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { useTranslation } from '../context/LanguageContext';
+import { LanguageContext, useTranslation } from '../context/LanguageContext';
 
 // Importiere dein CSS:
 import '../styles/Navbar.css';
@@ -17,6 +17,7 @@ import ChangelogModal from './ChangelogModal'; // Stellen Sie sicher, dass diese
 const Navbar = () => {
     const { authToken, logout, currentUser } = useAuth();
     const { t } = useTranslation();
+    const { language, setLanguage } = useContext(LanguageContext);
     const location = useLocation();
 
     // Bestimme, ob es sich um eine "öffentliche" Seite handelt
@@ -175,6 +176,15 @@ const Navbar = () => {
                         <button onClick={toggleTheme}>
                             {theme === 'light' ? t('darkMode', 'Dark Mode') : t('lightMode', 'Light Mode')}
                         </button>
+                    </li>
+                    <li>
+                        <div className="language-switch">
+                            <label>{t('navbar.languageLabel', 'Sprache')}:</label>
+                            <select value={language} onChange={(e) => setLanguage(e.target.value)}>
+                                <option value="de">DE</option>
+                                <option value="en">EN</option>
+                            </select>
+                        </div>
                     </li>
                 </ul>
             </nav>
