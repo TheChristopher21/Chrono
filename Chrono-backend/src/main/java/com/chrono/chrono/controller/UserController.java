@@ -49,6 +49,19 @@ public class UserController {
         return convertToDTO(user);
     }
 
+    @PutMapping("/api/user/update")
+    public ResponseEntity<UserDTO> update(@RequestBody UserDTO dto) {
+        User user = userRepository.findByUsername(dto.getUsername()).orElseThrow();
+        user.setFirstName(dto.getFirstName());
+        user.setLastName(dto.getLastName());
+        user.setEmail(dto.getEmail());
+        if (dto.getEmailNotifications() != null) {
+            user.setEmailNotifications(dto.getEmailNotifications());
+        }
+        userRepository.save(user);
+        return ResponseEntity.ok(convertToDTO(user));
+    }
+
     @PostMapping("/api/users/{id}/opt-out")
     public ResponseEntity<Void> optOut(@PathVariable Long id) {
         User u = userRepository.findById(id).orElseThrow();
@@ -79,6 +92,7 @@ public class UserController {
         dto.setBankAccount(user.getBankAccount());
         dto.setSocialSecurityNumber(user.getSocialSecurityNumber());
         dto.setTrackingBalanceInMinutes(user.getTrackingBalanceInMinutes());
+        dto.setEmailNotifications(user.isEmailNotifications());
         if (user.getLastCustomer() != null) {
             dto.setLastCustomerId(user.getLastCustomer().getId());
             dto.setLastCustomerName(user.getLastCustomer().getName());

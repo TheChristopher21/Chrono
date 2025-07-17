@@ -14,6 +14,7 @@ const PersonalDataPage = () => {
         firstName: currentUser?.firstName || '',
         lastName: currentUser?.lastName || '',
         email: currentUser?.email || '',
+        emailNotifications: currentUser?.emailNotifications ?? true,
     });
     const [passwordData, setPasswordData] = useState({
         currentPassword: '',
@@ -38,6 +39,7 @@ const PersonalDataPage = () => {
                 firstName: res.data.firstName,
                 lastName: res.data.lastName,
                 email: res.data.email,
+                emailNotifications: res.data.emailNotifications,
             });
         } catch (err) {
             console.error(t("personalData.errorLoading"), err);
@@ -53,6 +55,7 @@ const PersonalDataPage = () => {
                 firstName: personalData.firstName,
                 lastName: personalData.lastName,
                 email: personalData.email,
+                emailNotifications: personalData.emailNotifications,
             });
             notify(t("personalData.saved", "Gespeichert"));
             setCurrentUser(res.data);
@@ -128,6 +131,19 @@ const PersonalDataPage = () => {
                                 setPersonalData({ ...personalData, email: e.target.value })
                             }
                             required
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>
+                            {t('personalData.emailNotifications')}
+                        </label>
+                        <input
+                            type="checkbox"
+                            checked={personalData.emailNotifications}
+                            onChange={(e) =>
+                                setPersonalData({ ...personalData, emailNotifications: e.target.checked })
+                            }
                         />
                     </div>
 

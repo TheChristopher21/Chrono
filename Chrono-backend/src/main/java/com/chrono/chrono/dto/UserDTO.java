@@ -16,6 +16,7 @@ public class UserDTO {
     private String firstName;
     private String lastName;
     private String email;
+    private Boolean emailNotifications;
     private List<String> roles;
     private Integer expectedWorkDays;
     private Double dailyWorkHours;
@@ -52,6 +53,7 @@ public class UserDTO {
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.email = user.getEmail();
+        this.emailNotifications = user.isEmailNotifications();
         this.roles = user.getRoles().stream()
                 .map(Role::getRoleName)
                 .collect(Collectors.toList());
@@ -80,7 +82,7 @@ public class UserDTO {
     }
 
     // All-Args-Constructor
-    public UserDTO(Long id, String username, String password, String firstName, String lastName, String email, List<String> roles,
+    public UserDTO(Long id, String username, String password, String firstName, String lastName, String email, Boolean emailNotifications, List<String> roles,
                    Integer expectedWorkDays, Double dailyWorkHours, Integer breakDuration, String color,
                    Integer scheduleCycle, List<Map<String, Double>> weeklySchedule, LocalDate scheduleEffectiveDate,
                    Boolean isHourly, Integer annualVacationDays, Integer trackingBalanceInMinutes,
@@ -94,6 +96,7 @@ public class UserDTO {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
+        this.emailNotifications = emailNotifications != null ? emailNotifications : true;
         this.roles = roles != null ? roles : new ArrayList<>();
         this.expectedWorkDays = expectedWorkDays;
         this.dailyWorkHours = dailyWorkHours;
@@ -125,6 +128,7 @@ public class UserDTO {
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
     public String getEmail() { return email; }
+    public Boolean getEmailNotifications() { return emailNotifications; }
     public List<String> getRoles() { return roles; }
     public Integer getExpectedWorkDays() { return expectedWorkDays; }
     public Double getDailyWorkHours() { return dailyWorkHours; }
@@ -156,6 +160,7 @@ public class UserDTO {
     public void setFirstName(String firstName) { this.firstName = firstName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
     public void setEmail(String email) { this.email = email; }
+    public void setEmailNotifications(Boolean emailNotifications) { this.emailNotifications = emailNotifications; }
     public void setRoles(List<String> roles) { this.roles = roles; }
     public void setExpectedWorkDays(Integer expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }
     public void setDailyWorkHours(Double dailyWorkHours) { this.dailyWorkHours = dailyWorkHours; }

@@ -111,6 +111,11 @@
     border-color var(--transition);
 }
 
+.personal-data-page.scoped-personal-data .form-group input[type="checkbox"] {
+  width: auto;
+  padding: 0.5rem;
+}
+
 /* Buttons */
 .personal-data-page.scoped-personal-data .form-personal button,
 .personal-data-page.scoped-personal-data .form-password button {
