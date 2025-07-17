@@ -537,6 +537,7 @@ const translations = {
         payslips: {
             title: "Meine Gehaltsabrechnungen",
             pendingTitle: "Offene Gehaltsabrechnungen",
+            approvedTitle: "Freigegebene Gehaltsabrechnungen",
             approve: "Freigeben",
             approveAll: "Alle freigeben",
             exportCsv: "CSV Export",
@@ -1083,6 +1084,7 @@ const translations = {
         payslips: {
             title: "My Payslips",
             pendingTitle: "Pending Payslips",
+            approvedTitle: "Approved Payslips",
             approve: "Approve",
             approveAll: "Approve All",
             exportCsv: "CSV Export",
