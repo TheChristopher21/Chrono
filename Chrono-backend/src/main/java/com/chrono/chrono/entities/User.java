@@ -42,6 +42,7 @@ public class User {
     @Column(name = "email_notifications", nullable = false)
     private boolean emailNotifications = true;
 
+
     @Convert(converter = com.chrono.chrono.utils.EncryptionConverter.class)
     private String bankAccount;
 

@@ -8,6 +8,7 @@ const AdminPayslipsPage = () => {
   const [payslips, setPayslips] = useState([]);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ userId: '', start: '', end: '' });
+
   const { t } = useTranslation();
 
   const fetchPending = () => {
@@ -50,6 +51,7 @@ const AdminPayslipsPage = () => {
   useEffect(() => {
     fetchPending();
     api.get('/api/admin/users').then(res => setUsers(res.data));
+
   }, []);
 
   const backup = () => {
@@ -74,6 +76,7 @@ const AdminPayslipsPage = () => {
         <input type="date" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} />
         <button onClick={createPayslip}>{t('payslips.generate', 'Erstellen')}</button>
       </div>
+
       <table className="payslip-table">
         <thead>
           <tr>

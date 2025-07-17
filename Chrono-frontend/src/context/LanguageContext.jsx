@@ -543,6 +543,7 @@ const translations = {
             backup: "Backup",
             generate: "Erstellen",
             selectUser: "Benutzer wählen",
+
             print: "Drucken",
             period: "Zeitraum",
             user: "Benutzer",
@@ -1091,6 +1092,7 @@ const translations = {
             backup: "Backup",
             generate: "Generate",
             selectUser: "Select User",
+
             print: "Print",
             period: "Period",
             user: "User",
