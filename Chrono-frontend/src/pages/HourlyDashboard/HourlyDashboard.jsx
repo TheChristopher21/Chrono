@@ -2,6 +2,7 @@
 //was hat man gemacht / kategorie / pro Stunde? / popup für den tag
 //Events im UrlaubsKalender per Admin
 import { useState, useEffect, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
@@ -299,6 +300,9 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 <button onClick={() => setPrintModalVisible(true)} className="button-primary">
                     {t('printReportButton')}
                 </button>
+                <Link to="/payslips" className="button-primary-outline" style={{ marginLeft: '1rem' }}>
+                    {t('payslips.title')}
+                </Link>
             </header>
 
             <HourlyWeekOverview

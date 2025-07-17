@@ -1,6 +1,6 @@
 // src/pages/PercentageDashboard/PercentageDashboard.jsx
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
@@ -453,6 +453,9 @@ const PercentageDashboard = () => {
                     <button onClick={() => setPrintModalVisible(true)} className="button-primary">
                         {t("printReportButton", "Bericht drucken")}
                     </button>
+                    <Link to="/payslips" className="button-primary-outline" style={{ marginLeft: '1rem' }}>
+                        {t('payslips.title')}
+                    </Link>
                 </div>
             </header>
 
