@@ -27,6 +27,8 @@ import CompanyManagementPage from "./pages/CompanyManagementPage.jsx";
 import PrintReport from "./pages/PrintReport.jsx";
 import Impressum from "./pages/Impressum.jsx";
 import AGB from "./pages/AGB.jsx";
+import PayslipsPage from "./pages/PayslipsPage.jsx";
+import AdminPayslipsPage from "./pages/AdminPayslipsPage.jsx";
 import PrivateRoute from "./components/PrivateRoute";
 import { useAuth } from "./context/AuthContext";
 
@@ -70,6 +72,14 @@ function App() {
                     element={
                         <PrivateRoute>
                             <PersonalDataPage />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/payslips"
+                    element={
+                        <PrivateRoute>
+                            <PayslipsPage />
                         </PrivateRoute>
                     }
                 />
@@ -128,6 +138,14 @@ function App() {
                     element={
                         <PrivateRoute requiredRole="ROLE_ADMIN">
                             <AdminChangePassword />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/payslips"
+                    element={
+                        <PrivateRoute requiredRole={["ROLE_ADMIN","ROLE_PAYROLL_ADMIN"]}>
+                            <AdminPayslipsPage />
                         </PrivateRoute>
                     }
                 />

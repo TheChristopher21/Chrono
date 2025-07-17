@@ -39,6 +39,7 @@ public class UserService {
         user.setFirstName(updatedUser.getFirstName());
         user.setLastName(updatedUser.getLastName());
         user.setEmail(updatedUser.getEmail());
+        user.setEmailNotifications(updatedUser.isEmailNotifications());
 
         if (updatedUser.getAnnualVacationDays() != null) {
             user.setAnnualVacationDays(updatedUser.getAnnualVacationDays());
