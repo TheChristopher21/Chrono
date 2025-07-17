@@ -9,19 +9,20 @@
 */
 
 /* --------------------------- Variablen für LIGHT --------------------------- */
-.scoped-login {
-  --c-text: #1f1f1f;
-  --c-bg: #f7f8fa;
-  --c-card: #ffffff;
-  --c-border: #d1d4e2;
-  --c-muted: #545863;
 
-  --c-primary: #475bff;
-  --c-primary-hover: #6b7cff;
+.scoped-login {
+  --c-text: #1e2438; /* wie LandingPage */
+  --c-bg: #f6f9ff;
+  --c-card: rgba(255, 255, 255, 0.82);
+  --c-border: #d5d8e7;
+  --c-muted: #506080;
+
+  --c-primary: #4285ff;
+  --c-primary-hover: #356dff;
   --c-danger: #ed5757;
   --c-secondary: #48bb78; /* z.B. für Punch-Messages */
 
-  --radius: 8px;
+  --radius: 16px;
   --transition: 0.3s;
   --font-family: "Poppins", system-ui, sans-serif;
 
@@ -31,18 +32,18 @@
 
 /* --------------------------- Variablen für DARK --------------------------- */
 [data-theme="dark"] .scoped-login {
-  --c-text: #e4e6eb;
-  --c-bg: #18191a;
-  --c-card: #242526;
-  --c-border: #484a4d;
-  --c-muted: #9da1b2;
+  --c-text: #e6ecff;
+  --c-bg: #0b1020;
+  --c-card: rgba(25, 28, 46, 0.7);
+  --c-border: #3b3f54;
+  --c-muted: #95a3c6;
 
-  --c-primary: #475bff;
-  --c-primary-hover: #6b7cff;
+  --c-primary: #5b8fff;
+  --c-primary-hover: #407bff;
   --c-danger: #ed5757;
   --c-secondary: #48bb78;
 
-  --radius: 8px;
+  --radius: 16px;
   --transition: 0.3s;
   /* Font-Family bleibt gleich */
 }
