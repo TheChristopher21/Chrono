@@ -193,7 +193,7 @@ const LandingPage = () => {
                 {/* CONTACT ----------------------------------------------------- */}
                 <section className="contact-section site-section" id="contact">
                     <div className="section-inner">
-                        <h3>{t('landingPage.contactTitle', 'Kontakt')}</h3>
+                        <h3>{t('landingPage.contactTitle', 'Kontakt')}</h3><br/>
                         <form className="contact-form" onSubmit={submitContact}>
                             <input
                                 name="name"
