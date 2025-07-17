@@ -1,0 +1,42 @@
+.payslips-page.scoped-dashboard {
+  --c-text: #1e1f22;
+  --c-bg: #f4f6ff;
+  --c-card: #ffffff;
+  --c-border: #d5d8e5;
+  font-family: "Poppins", sans-serif;
+  background: var(--c-bg);
+  color: var(--c-text);
+  min-height: 100vh;
+  padding: 1.5rem;
+}
+
+[data-theme="dark"] .payslips-page.scoped-dashboard {
+  --c-text: #e5e7ec;
+  --c-bg: #15171c;
+  --c-card: #212429;
+  --c-border: #3a3f4b;
+}
+
+.payslip-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.payslip-table th,
+.payslip-table td {
+  border: 1px solid var(--c-border);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.payslip-table th {
+  background: var(--c-card);
+}
+
+.payslip-table button {
+  padding: 0.3rem 0.6rem;
+  border-radius: 4px;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  cursor: pointer;
+}

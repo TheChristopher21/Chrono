@@ -61,7 +61,10 @@ public class DataInitializer implements CommandLineRunner {
 
             Role adminRole = roleRepository.findByRoleName("ROLE_ADMIN")
                     .orElseGet(() -> roleRepository.save(new Role("ROLE_ADMIN")));
+            Role payrollRole = roleRepository.findByRoleName("ROLE_PAYROLL_ADMIN")
+                    .orElseGet(() -> roleRepository.save(new Role("ROLE_PAYROLL_ADMIN")));
             adminUser.getRoles().add(adminRole);
+            adminUser.getRoles().add(payrollRole);
 
             userRepository.save(adminUser);
             System.out.println("[DataInitializer] Admin-Konto ('" + adminUsername + "') wurde erstellt.");

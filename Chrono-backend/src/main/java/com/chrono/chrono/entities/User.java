@@ -13,9 +13,11 @@ import java.util.List;
 import java.util.ArrayList; // Import für ArrayList
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.converters.WeeklyScheduleConverter;
+import jakarta.persistence.Convert;
 
 @Entity
 @Table(name = "users")
+@EntityListeners(com.chrono.chrono.entities.listeners.UserAuditListener.class)
 public class User {
 
     @Id
@@ -36,6 +38,18 @@ public class User {
 
     @Column(unique = true) // E-Mail sollte normalerweise eindeutig sein
     private String email;
+
+    @Convert(converter = com.chrono.chrono.utils.EncryptionConverter.class)
+    private String bankAccount;
+
+    @Convert(converter = com.chrono.chrono.utils.EncryptionConverter.class)
+    private String socialSecurityNumber;
+
+    @Column(name = "deleted", nullable = false)
+    private boolean deleted = false;
+
+    @Column(name = "opt_out", nullable = false)
+    private boolean optOut = false;
 
     @Column(nullable = false)
     private Integer trackingBalanceInMinutes = 0; // Default-Wert direkt hier
@@ -106,6 +120,9 @@ public class User {
     @Column(name = "work_percentage") // Standardwert 100 ist hier nicht nötig, wird im Getter gehandhabt
     private Integer workPercentage;
 
+    @Column(name = "hourly_rate")
+    private Double hourlyRate;
+
     public User() {}
 
     public static Map<String, Double> getDefaultWeeklyScheduleMap() {
@@ -142,6 +159,18 @@ public class User {
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }
+
+    public String getBankAccount() { return bankAccount; }
+    public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
+
+    public String getSocialSecurityNumber() { return socialSecurityNumber; }
+    public void setSocialSecurityNumber(String socialSecurityNumber) { this.socialSecurityNumber = socialSecurityNumber; }
+
+    public boolean isDeleted() { return deleted; }
+    public void setDeleted(boolean deleted) { this.deleted = deleted; }
+
+    public boolean isOptOut() { return optOut; }
+    public void setOptOut(boolean optOut) { this.optOut = optOut; }
 
     public Integer getTrackingBalanceInMinutes() {
         return trackingBalanceInMinutes != null ? trackingBalanceInMinutes : 0;
@@ -205,4 +234,7 @@ public class User {
     public void setWorkPercentage(Integer workPercentage) {
         this.workPercentage = (workPercentage != null && workPercentage >= 0 && workPercentage <=100 ? workPercentage : 100);
     }
+
+    public Double getHourlyRate() { return hourlyRate; }
+    public void setHourlyRate(Double hourlyRate) { this.hourlyRate = hourlyRate; }
 }

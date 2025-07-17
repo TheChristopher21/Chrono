@@ -29,6 +29,11 @@ public class UserDTO {
     private Integer trackingBalanceInMinutes;
     private Boolean isPercentage;
     private Integer workPercentage;
+    private Double hourlyRate;
+    private String bankAccount;
+    private String socialSecurityNumber;
+    private Boolean deleted;
+    private Boolean optOut;
     private Long companyId;
     private String companyCantonAbbreviation;
     private Boolean customerTrackingEnabled; // Kept
@@ -62,6 +67,11 @@ public class UserDTO {
         this.trackingBalanceInMinutes = user.getTrackingBalanceInMinutes();
         this.isPercentage = user.getIsPercentage();
         this.workPercentage = user.getWorkPercentage();
+        this.hourlyRate = user.getHourlyRate();
+        this.bankAccount = user.getBankAccount();
+        this.socialSecurityNumber = user.getSocialSecurityNumber();
+        this.deleted = user.isDeleted();
+        this.optOut = user.isOptOut();
         this.companyId = (user.getCompany() != null) ? user.getCompany().getId() : null;
         this.companyCantonAbbreviation = (user.getCompany() != null) ? user.getCompany().getCantonAbbreviation() : null;
         this.lastCustomerId = user.getLastCustomer() != null ? user.getLastCustomer().getId() : null;
@@ -74,8 +84,10 @@ public class UserDTO {
                    Integer expectedWorkDays, Double dailyWorkHours, Integer breakDuration, String color,
                    Integer scheduleCycle, List<Map<String, Double>> weeklySchedule, LocalDate scheduleEffectiveDate,
                    Boolean isHourly, Integer annualVacationDays, Integer trackingBalanceInMinutes,
-                   Boolean isPercentage, Integer workPercentage, Long companyId,
-                   Long lastCustomerId, String lastCustomerName, Boolean customerTrackingEnabled) { // Kept
+                   Boolean isPercentage, Integer workPercentage, Double hourlyRate, String bankAccount,
+                   String socialSecurityNumber, Long companyId,
+                   Long lastCustomerId, String lastCustomerName, Boolean customerTrackingEnabled,
+                   Boolean deleted, Boolean optOut) { // Kept
         this.id = id;
         this.username = username;
         this.password = password;
@@ -95,10 +107,15 @@ public class UserDTO {
         this.trackingBalanceInMinutes = trackingBalanceInMinutes != null ? trackingBalanceInMinutes : 0;
         this.isPercentage = isPercentage != null ? isPercentage : false;
         this.workPercentage = workPercentage != null ? workPercentage : 100;
+        this.hourlyRate = hourlyRate;
+        this.bankAccount = bankAccount;
+        this.socialSecurityNumber = socialSecurityNumber;
         this.companyId = companyId;
         this.lastCustomerId = lastCustomerId;
         this.lastCustomerName = lastCustomerName;
         this.customerTrackingEnabled = customerTrackingEnabled; // Kept
+        this.deleted = deleted;
+        this.optOut = optOut;
     }
 
     // ----- Getters -----
@@ -121,6 +138,11 @@ public class UserDTO {
     public Integer getTrackingBalanceInMinutes() { return trackingBalanceInMinutes; }
     public Boolean getIsPercentage() { return isPercentage; }
     public Integer getWorkPercentage() { return workPercentage; }
+    public Double getHourlyRate() { return hourlyRate; }
+    public String getBankAccount() { return bankAccount; }
+    public String getSocialSecurityNumber() { return socialSecurityNumber; }
+    public Boolean getDeleted() { return deleted; }
+    public Boolean getOptOut() { return optOut; }
     public Long getCompanyId() { return companyId; }
     public String getCompanyCantonAbbreviation() { return companyCantonAbbreviation; }
     public Long getLastCustomerId() { return lastCustomerId; }
@@ -147,6 +169,11 @@ public class UserDTO {
     public void setTrackingBalanceInMinutes(Integer trackingBalanceInMinutes) { this.trackingBalanceInMinutes = trackingBalanceInMinutes; }
     public void setIsPercentage(Boolean isPercentage) { this.isPercentage = isPercentage; }
     public void setWorkPercentage(Integer workPercentage) { this.workPercentage = workPercentage; }
+    public void setHourlyRate(Double hourlyRate) { this.hourlyRate = hourlyRate; }
+    public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
+    public void setSocialSecurityNumber(String socialSecurityNumber) { this.socialSecurityNumber = socialSecurityNumber; }
+    public void setDeleted(Boolean deleted) { this.deleted = deleted; }
+    public void setOptOut(Boolean optOut) { this.optOut = optOut; }
     public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public void setCompanyCantonAbbreviation(String companyCantonAbbreviation) { this.companyCantonAbbreviation = companyCantonAbbreviation; }
     public void setLastCustomerId(Long lastCustomerId) { this.lastCustomerId = lastCustomerId; }
