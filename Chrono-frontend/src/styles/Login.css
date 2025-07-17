@@ -266,6 +266,35 @@
   color: #f0f0f0;
 }
 
+/* Footer am Seitenende */
+.scoped-login .impressum-agb-footer {
+  text-align: center;
+  padding: 10px 0;
+  background-color: var(--c-card);
+  border-top: 1px solid var(--c-border);
+}
+
+/* Links styling */
+.scoped-login .impressum-agb-footer a {
+  display: inline-block;
+  margin: 0 1rem;
+  color: var(--c-text);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+.scoped-login .impressum-agb-footer a:hover {
+  text-decoration: underline;
+}
+
+/* Dark Mode Override */
+[data-theme="dark"] .scoped-login .impressum-agb-footer {
+  background-color: var(--c-card);
+}
+[data-theme="dark"] .scoped-login .impressum-agb-footer a {
+  color: var(--c-text);
+}
+
 /* =========================================================================
    Login.css – Mobile Overrides
    Scope: .scoped-login
@@ -358,31 +387,4 @@
     /* min-height kann entfernt werden, da wir min-height nun auf .scoped-login haben */
   }
 
-  /* Footer am Seitenende */
-  .scoped-login .impressum-agb-footer {
-    text-align: center;
-    padding: 10px 0;
-    background-color: #f5f5f5;
-  }
-
-  /* Links styling */
-  .scoped-login .impressum-agb-footer a {
-    display: inline-block;
-    margin: 0 1rem;
-    color: var(--c-text);
-    text-decoration: none;
-    font-weight: 500;
-    transition: color 0.2s;
-  }
-  .scoped-login .impressum-agb-footer a:hover {
-    text-decoration: underline;
-  }
-
-  /* Dark Mode Override */
-  [data-theme="dark"] .scoped-login .impressum-agb-footer {
-    background-color: var(--c-card); /* oder #242526, wenn du magst */
-  }
-  [data-theme="dark"] .scoped-login .impressum-agb-footer a {
-    color: var(--c-text);
-  }
 }
