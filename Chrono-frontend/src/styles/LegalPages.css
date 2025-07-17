@@ -1,4 +1,29 @@
-.legal-page {
+.legal-wrapper {
+  /* Farben wie LandingPage */
+  --c-text: #1e2438;
+  --c-bg: #f6f9ff;
+  --c-card: rgba(255, 255, 255, 0.82);
+  --c-border: #d5d8e7;
+  --c-muted: #506080;
+  --c-pri: #4285ff;
+  --c-pri-dim: #356dff;
+
+  min-height: 100vh;
+  background: var(--c-bg);
+  padding: 2rem 1rem;
+}
+
+[data-theme="dark"] .legal-wrapper {
+  --c-text: #e6ecff;
+  --c-bg: #0b1020;
+  --c-card: rgba(25, 28, 46, 0.7);
+  --c-border: #3b3f54;
+  --c-muted: #95a3c6;
+  --c-pri: #5b8fff;
+  --c-pri-dim: #407bff;
+}
+
+.legal-wrapper .legal-page {
   max-width: 800px;
   margin: 0 auto;
   padding: 2rem;
@@ -11,15 +36,15 @@
               border-color var(--u-dur) var(--u-ease);
 }
 
-.legal-page h1,
-.legal-page h2 {
+.legal-wrapper .legal-page h1,
+.legal-wrapper .legal-page h2 {
   color: var(--c-text);
 }
 
-.legal-page a {
+.legal-wrapper .legal-page a {
   color: var(--c-pri);
 }
 
-.legal-page ul {
+.legal-wrapper .legal-page ul {
   padding-left: 1.2rem;
 }
