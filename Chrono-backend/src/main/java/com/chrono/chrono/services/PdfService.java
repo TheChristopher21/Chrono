@@ -34,6 +34,7 @@ public class PdfService {
             Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
             Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
             Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
+            BaseColor headerBg = BaseColor.LIGHT_GRAY;
 
             Paragraph title = new Paragraph(companyName + " - Payslip", titleFont);
             title.setAlignment(Element.ALIGN_CENTER);
@@ -43,49 +44,112 @@ public class PdfService {
             PdfPTable infoTable = new PdfPTable(2);
             infoTable.setWidthPercentage(100);
             infoTable.setSpacingAfter(15);
+
             if (ps.getUser() != null) {
-                infoTable.addCell(new Phrase("Employee", labelFont));
-                infoTable.addCell(new Phrase(ps.getUser().getFirstName() + " " + ps.getUser().getLastName(), normalFont));
-                infoTable.addCell(new Phrase("Address", labelFont));
-                infoTable.addCell(new Phrase(ps.getUser().getAddress() == null ? "" : ps.getUser().getAddress(), normalFont));
-                infoTable.addCell(new Phrase("Personnel No", labelFont));
-                infoTable.addCell(new Phrase(ps.getUser().getPersonnelNumber() == null ? "" : ps.getUser().getPersonnelNumber(), normalFont));
+                PdfPCell l1 = new PdfPCell(new Phrase("Employee", labelFont));
+                l1.setBackgroundColor(headerBg);
+                l1.setPadding(5);
+                infoTable.addCell(l1);
+                PdfPCell v1 = new PdfPCell(new Phrase(ps.getUser().getFirstName() + " " + ps.getUser().getLastName(), normalFont));
+                v1.setPadding(5);
+                infoTable.addCell(v1);
+
+                PdfPCell l2 = new PdfPCell(new Phrase("Address", labelFont));
+                l2.setBackgroundColor(headerBg);
+                l2.setPadding(5);
+                infoTable.addCell(l2);
+                PdfPCell v2 = new PdfPCell(new Phrase(ps.getUser().getAddress() == null ? "" : ps.getUser().getAddress(), normalFont));
+                v2.setPadding(5);
+                infoTable.addCell(v2);
+
+                PdfPCell l3 = new PdfPCell(new Phrase("Personnel No", labelFont));
+                l3.setBackgroundColor(headerBg);
+                l3.setPadding(5);
+                infoTable.addCell(l3);
+                PdfPCell v3 = new PdfPCell(new Phrase(ps.getUser().getPersonnelNumber() == null ? "" : ps.getUser().getPersonnelNumber(), normalFont));
+                v3.setPadding(5);
+                infoTable.addCell(v3);
             }
-            infoTable.addCell(new Phrase("Period", labelFont));
-            infoTable.addCell(new Phrase(ps.getPeriodStart() + " - " + ps.getPeriodEnd(), normalFont));
+
+            PdfPCell periodLabel = new PdfPCell(new Phrase("Period", labelFont));
+            periodLabel.setBackgroundColor(headerBg);
+            periodLabel.setPadding(5);
+            infoTable.addCell(periodLabel);
+            PdfPCell periodValue = new PdfPCell(new Phrase(ps.getPeriodStart() + " - " + ps.getPeriodEnd(), normalFont));
+            periodValue.setPadding(5);
+            infoTable.addCell(periodValue);
             doc.add(infoTable);
+            doc.add(new Paragraph(" "));
 
             PdfPTable earningsTable = new PdfPTable(new float[]{4, 2});
             earningsTable.setWidthPercentage(100);
             earningsTable.setSpacingAfter(10);
-            earningsTable.addCell(new Phrase("Earnings", labelFont));
-            earningsTable.addCell(new Phrase("Amount", labelFont));
+            PdfPCell eHead1 = new PdfPCell(new Phrase("Earnings", labelFont));
+            eHead1.setBackgroundColor(headerBg);
+            eHead1.setPadding(5);
+            earningsTable.addCell(eHead1);
+            PdfPCell eHead2 = new PdfPCell(new Phrase("Amount", labelFont));
+            eHead2.setBackgroundColor(headerBg);
+            eHead2.setPadding(5);
+            earningsTable.addCell(eHead2);
             for (var comp : ps.getEarnings()) {
-                earningsTable.addCell(new Phrase(comp.getType(), normalFont));
-                earningsTable.addCell(new Phrase(String.format("%.2f", comp.getAmount()), normalFont));
+                PdfPCell type = new PdfPCell(new Phrase(comp.getType(), normalFont));
+                type.setPadding(5);
+                earningsTable.addCell(type);
+                PdfPCell amount = new PdfPCell(new Phrase(String.format("CHF %.2f", comp.getAmount()), normalFont));
+                amount.setPadding(5);
+                earningsTable.addCell(amount);
             }
             doc.add(earningsTable);
 
             PdfPTable dedTable = new PdfPTable(new float[]{4, 2});
             dedTable.setWidthPercentage(100);
             dedTable.setSpacingAfter(10);
-            dedTable.addCell(new Phrase("Deductions", labelFont));
-            dedTable.addCell(new Phrase("Amount", labelFont));
+            PdfPCell dHead1 = new PdfPCell(new Phrase("Deductions", labelFont));
+            dHead1.setBackgroundColor(headerBg);
+            dHead1.setPadding(5);
+            dedTable.addCell(dHead1);
+            PdfPCell dHead2 = new PdfPCell(new Phrase("Amount", labelFont));
+            dHead2.setBackgroundColor(headerBg);
+            dHead2.setPadding(5);
+            dedTable.addCell(dHead2);
             for (var comp : ps.getDeductionsList()) {
-                dedTable.addCell(new Phrase(comp.getType(), normalFont));
-                dedTable.addCell(new Phrase(String.format("%.2f", comp.getAmount()), normalFont));
+                PdfPCell type = new PdfPCell(new Phrase(comp.getType(), normalFont));
+                type.setPadding(5);
+                dedTable.addCell(type);
+                PdfPCell amount = new PdfPCell(new Phrase(String.format("CHF %.2f", comp.getAmount()), normalFont));
+                amount.setPadding(5);
+                dedTable.addCell(amount);
             }
             doc.add(dedTable);
+            doc.add(new Paragraph(" "));
 
             PdfPTable totals = new PdfPTable(new float[]{4, 2});
             totals.setWidthPercentage(100);
             totals.setSpacingAfter(20);
-            totals.addCell(new Phrase("Gross Salary", labelFont));
-            totals.addCell(new Phrase(String.format("%.2f", ps.getGrossSalary()), normalFont));
-            totals.addCell(new Phrase("Deductions", labelFont));
-            totals.addCell(new Phrase(String.format("%.2f", ps.getDeductions()), normalFont));
-            totals.addCell(new Phrase("Net Salary", labelFont));
-            totals.addCell(new Phrase(String.format("%.2f", ps.getNetSalary()), normalFont));
+            PdfPCell tHead1 = new PdfPCell(new Phrase("Gross Salary", labelFont));
+            tHead1.setBackgroundColor(headerBg);
+            tHead1.setPadding(5);
+            totals.addCell(tHead1);
+            PdfPCell tVal1 = new PdfPCell(new Phrase(String.format("CHF %.2f", ps.getGrossSalary()), normalFont));
+            tVal1.setPadding(5);
+            totals.addCell(tVal1);
+
+            PdfPCell tHead2 = new PdfPCell(new Phrase("Deductions", labelFont));
+            tHead2.setBackgroundColor(headerBg);
+            tHead2.setPadding(5);
+            totals.addCell(tHead2);
+            PdfPCell tVal2 = new PdfPCell(new Phrase(String.format("CHF %.2f", ps.getDeductions()), normalFont));
+            tVal2.setPadding(5);
+            totals.addCell(tVal2);
+
+            PdfPCell tHead3 = new PdfPCell(new Phrase("Net Salary", labelFont));
+            tHead3.setBackgroundColor(headerBg);
+            tHead3.setPadding(5);
+            totals.addCell(tHead3);
+            PdfPCell tVal3 = new PdfPCell(new Phrase(String.format("CHF %.2f", ps.getNetSalary()), normalFont));
+            tVal3.setPadding(5);
+            totals.addCell(tVal3);
             doc.add(totals);
 
             if (ps.getPayoutDate() != null) {
