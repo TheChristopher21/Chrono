@@ -71,6 +71,7 @@ public class PdfService {
             compTrans.put("Tax", en ? "Tax" : "Steuer");
             compTrans.put("Social", en ? "Social" : "Sozialabgaben");
 
+
             // ---- Header mit Firmenlogo und Firmendaten ----
             PdfPTable header = new PdfPTable(2);
             header.setWidthPercentage(100);
@@ -250,6 +251,7 @@ public class PdfService {
                 empTable.addCell(headerCell(amountHeader));
                 empTable.addCell(headerCell(currencyHeader));
                 empTable.addCell(cell(pensionLabel, normalFont, false));
+
                 empTable.addCell(cell(String.format("%.2f", ps.getEmployerContributions()), normalFont, false));
                 empTable.addCell(cell("CHF", normalFont, false));
                 doc.add(empTable);
