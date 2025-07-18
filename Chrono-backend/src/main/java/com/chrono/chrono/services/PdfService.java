@@ -58,6 +58,7 @@ public class PdfService {
 
             doc.add(new Paragraph(" "));
 
+
             // ---- Dokumenttitel ----
             Paragraph title = new Paragraph("Lohnabrechnung / Payslip", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16));
             title.setAlignment(Element.ALIGN_CENTER);
@@ -85,6 +86,7 @@ public class PdfService {
             employeeTable.addCell(cell(safe(ps.getUser().getEntryDate()), normalFont, false));
             employeeTable.addCell(cell("AHV-Nr.", labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getSocialSecurityNumber()), normalFont, false));
+
 
             employeeTable.addCell(cell("Bank", labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getBankAccount()), normalFont, false));
@@ -115,6 +117,7 @@ public class PdfService {
                 earningsTable.addCell(cell(comp.getType(), normalFont, false));
                 earningsTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
                 earningsTable.addCell(cell("CHF", normalFont, false));
+
             }
             doc.add(earningsTable);
 
@@ -129,8 +132,10 @@ public class PdfService {
                 dedTable.addCell(cell(comp.getType(), normalFont, false));
                 dedTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
                 dedTable.addCell(cell("CHF", normalFont, false));
+
             }
             doc.add(dedTable);
+            doc.add(new Paragraph(" "));
 
             // ---- Überstunden/Resturlaub ----
             if (ps.getUser().getOvertimeBalance() != null || ps.getUser().getVacationBalance() != null) {
@@ -167,6 +172,7 @@ public class PdfService {
             totals.addCell(cell("Nettolohn", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
             totals.addCell(cell(String.format("%.2f", ps.getNetSalary()), FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
             totals.addCell(cell("CHF", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
+
 
             doc.add(totals);
 
