@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import '../styles/AdminPayslipsPageScoped.css';
-import { useTranslation } from '../context/LanguageContext';
+import { useTranslation, LanguageContext } from '../context/LanguageContext';
 
 const AdminPayslipsPage = () => {
   const [payslips, setPayslips] = useState([]);
@@ -12,6 +12,8 @@ const AdminPayslipsPage = () => {
   const [filter, setFilter] = useState({ name: '', start: '', end: '' });
   const [logoFile, setLogoFile] = useState(null);
   const { t } = useTranslation();
+  const { language } = useContext(LanguageContext);
+  const [printLang, setPrintLang] = useState('de');
 
   const fetchPending = () => {
     api.get('/api/payslips/admin/pending').then(res => {
@@ -47,7 +49,7 @@ const AdminPayslipsPage = () => {
   };
 
   const printPdf = (id) => {
-    api.get(`/api/payslips/admin/pdf/${id}`, { responseType: 'blob' })
+    api.get(`/api/payslips/admin/pdf/${id}`, { responseType: 'blob', params: { lang: printLang } })
       .then(res => {
         const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
         const win = window.open(url);
@@ -139,6 +141,13 @@ const AdminPayslipsPage = () => {
         </table>
 
         <h2>{t('payslips.approvedTitle')}</h2>
+        <div className="print-lang-select">
+          <label>{t('navbar.languageLabel', 'Sprache')}:</label>
+          <select value={printLang} onChange={e => setPrintLang(e.target.value)}>
+            <option value="de">DE</option>
+            <option value="en">EN</option>
+          </select>
+        </div>
         <div className="filter-form">
           <input
             placeholder={t('payslips.filterName', 'Name')}
