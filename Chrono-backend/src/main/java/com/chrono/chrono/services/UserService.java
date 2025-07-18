@@ -53,6 +53,12 @@ public class UserService {
         if (updatedUser.getWorkPercentage() != null) {
             user.setWorkPercentage(updatedUser.getWorkPercentage());
         }
+        if (updatedUser.getHourlyRate() != null) {
+            user.setHourlyRate(updatedUser.getHourlyRate());
+        }
+        if (updatedUser.getMonthlySalary() != null) {
+            user.setMonthlySalary(updatedUser.getMonthlySalary());
+        }
 
         if (updatedUser.getTrackingBalanceInMinutes() == null) {
             user.setTrackingBalanceInMinutes(0);

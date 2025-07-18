@@ -63,11 +63,21 @@ public class PayrollService {
             }
         }
         double hours = minutes / 60.0;
-        double rate = user.getHourlyRate() != null ? user.getHourlyRate() : 0.0;
-        double overtimeHours = Math.max(0, hours - 160);
-        double baseHours = hours - overtimeHours;
-        double basePay = baseHours * rate;
-        double overtimePay = overtimeHours * rate * (1 + OVERTIME_BONUS);
+        double basePay;
+        double overtimePay = 0.0;
+        if (user.getIsHourly() != null && user.getIsHourly()) {
+            double rate = user.getHourlyRate() != null ? user.getHourlyRate() : 0.0;
+            double overtimeHours = Math.max(0, hours - 160);
+            double baseHours = hours - overtimeHours;
+            basePay = baseHours * rate;
+            overtimePay = overtimeHours * rate * (1 + OVERTIME_BONUS);
+        } else {
+            basePay = user.getMonthlySalary() != null ? user.getMonthlySalary() : 0.0;
+            if (hours > 160 && user.getHourlyRate() != null) {
+                double overtimeHours = hours - 160;
+                overtimePay = overtimeHours * user.getHourlyRate() * (1 + OVERTIME_BONUS);
+            }
+        }
         double gross = basePay + overtimePay;
         double tax = gross * TAX_RATE;
         double social = gross * SOCIAL_RATE;

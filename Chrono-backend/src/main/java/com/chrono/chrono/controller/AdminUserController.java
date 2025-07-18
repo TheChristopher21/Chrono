@@ -200,6 +200,8 @@ public class AdminUserController {
         newUser.setColor(userDTO.getColor() != null && !userDTO.getColor().isEmpty() ? userDTO.getColor() : "#CCCCCC");
         newUser.setAnnualVacationDays(userDTO.getAnnualVacationDays() != null ? userDTO.getAnnualVacationDays() : 25);
         newUser.setBreakDuration(userDTO.getBreakDuration() != null ? userDTO.getBreakDuration() : 30);
+        newUser.setHourlyRate(userDTO.getHourlyRate());
+        newUser.setMonthlySalary(userDTO.getMonthlySalary());
 
         boolean isHourly = userDTO.getIsHourly() != null ? userDTO.getIsHourly() : false;
         boolean isPercentage = userDTO.getIsPercentage() != null ? userDTO.getIsPercentage() : false;
@@ -342,6 +344,12 @@ public class AdminUserController {
         existingUser.setColor(userDTO.getColor());
         existingUser.setAnnualVacationDays(userDTO.getAnnualVacationDays() != null ? userDTO.getAnnualVacationDays() : existingUser.getAnnualVacationDays());
         existingUser.setBreakDuration(userDTO.getBreakDuration() != null ? userDTO.getBreakDuration() : existingUser.getBreakDuration());
+        if (userDTO.getHourlyRate() != null) {
+            existingUser.setHourlyRate(userDTO.getHourlyRate());
+        }
+        if (userDTO.getMonthlySalary() != null) {
+            existingUser.setMonthlySalary(userDTO.getMonthlySalary());
+        }
         existingUser.setTrackingBalanceInMinutes(userDTO.getTrackingBalanceInMinutes() != null ? userDTO.getTrackingBalanceInMinutes() : existingUser.getTrackingBalanceInMinutes());
 
 

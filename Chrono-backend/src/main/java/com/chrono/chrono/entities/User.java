@@ -141,6 +141,9 @@ public class User {
     @Column(name = "hourly_rate")
     private Double hourlyRate;
 
+    @Column(name = "monthly_salary")
+    private Double monthlySalary;
+
     public User() {}
 
     public static Map<String, Double> getDefaultWeeklyScheduleMap() {
@@ -295,4 +298,7 @@ public class User {
 
     public Double getHourlyRate() { return hourlyRate; }
     public void setHourlyRate(Double hourlyRate) { this.hourlyRate = hourlyRate; }
+
+    public Double getMonthlySalary() { return monthlySalary; }
+    public void setMonthlySalary(Double monthlySalary) { this.monthlySalary = monthlySalary; }
 }

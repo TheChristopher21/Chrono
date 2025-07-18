@@ -43,6 +43,7 @@ public class UserDTO {
     private Boolean isPercentage;
     private Integer workPercentage;
     private Double hourlyRate;
+    private Double monthlySalary;
     private String bankAccount;
     private String socialSecurityNumber;
     private Boolean deleted;
@@ -94,6 +95,7 @@ public class UserDTO {
         this.isPercentage = user.getIsPercentage();
         this.workPercentage = user.getWorkPercentage();
         this.hourlyRate = user.getHourlyRate();
+        this.monthlySalary = user.getMonthlySalary();
         this.bankAccount = user.getBankAccount();
         this.socialSecurityNumber = user.getSocialSecurityNumber();
         this.deleted = user.isDeleted();
@@ -115,7 +117,7 @@ public class UserDTO {
                    Integer expectedWorkDays, Double dailyWorkHours, Integer breakDuration, String color,
                    Integer scheduleCycle, List<Map<String, Double>> weeklySchedule, LocalDate scheduleEffectiveDate,
                    Boolean isHourly, Integer annualVacationDays, Integer trackingBalanceInMinutes,
-                   Boolean isPercentage, Integer workPercentage, Double hourlyRate, String bankAccount,
+                   Boolean isPercentage, Integer workPercentage, Double hourlyRate, Double monthlySalary, String bankAccount,
                    String socialSecurityNumber, Long companyId,
                    Long lastCustomerId, String lastCustomerName, Boolean customerTrackingEnabled,
                    Boolean deleted, Boolean optOut) { // Kept
@@ -152,6 +154,7 @@ public class UserDTO {
         this.isPercentage = isPercentage != null ? isPercentage : false;
         this.workPercentage = workPercentage != null ? workPercentage : 100;
         this.hourlyRate = hourlyRate;
+        this.monthlySalary = monthlySalary;
         this.bankAccount = bankAccount;
         this.socialSecurityNumber = socialSecurityNumber;
         this.companyId = companyId;
@@ -196,6 +199,7 @@ public class UserDTO {
     public Boolean getIsPercentage() { return isPercentage; }
     public Integer getWorkPercentage() { return workPercentage; }
     public Double getHourlyRate() { return hourlyRate; }
+    public Double getMonthlySalary() { return monthlySalary; }
     public String getBankAccount() { return bankAccount; }
     public String getSocialSecurityNumber() { return socialSecurityNumber; }
     public Boolean getDeleted() { return deleted; }
@@ -240,6 +244,7 @@ public class UserDTO {
     public void setIsPercentage(Boolean isPercentage) { this.isPercentage = isPercentage; }
     public void setWorkPercentage(Integer workPercentage) { this.workPercentage = workPercentage; }
     public void setHourlyRate(Double hourlyRate) { this.hourlyRate = hourlyRate; }
+    public void setMonthlySalary(Double monthlySalary) { this.monthlySalary = monthlySalary; }
     public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }
     public void setSocialSecurityNumber(String socialSecurityNumber) { this.socialSecurityNumber = socialSecurityNumber; }
     public void setDeleted(Boolean deleted) { this.deleted = deleted; }
