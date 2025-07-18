@@ -193,25 +193,33 @@ public class PayrollService {
     }
 
 
-    @Transactional(readOnly = true)
+    @Transactional
     public byte[] getPayslipPdf(Long id) {
         Payslip ps = payslipRepository.findById(id).orElseThrow();
-        if (ps.getPdfPath() == null) {
-            String generated = pdfService.generatePayslipPdf(ps);
-            if (generated == null) {
-                return null;
+        String path = ps.getPdfPath();
+        if (path != null) {
+            try {
+                return java.nio.file.Files.readAllBytes(java.nio.file.Path.of(path));
+            } catch (java.io.IOException ignore) {
+                // fall through to regeneration
             }
-            ps.setPdfPath(generated);
-            payslipRepository.save(ps);
         }
+
+        byte[] bytes = pdfService.generatePayslipPdfBytes(ps);
+        if (bytes == null) {
+            return null;
+        }
+
         try {
-            if (ps.getPdfPath() != null) {
-                return java.nio.file.Files.readAllBytes(java.nio.file.Path.of(ps.getPdfPath()));
-            }
-        } catch (java.io.IOException e) {
-            // handle error if needed
+            path = "/tmp/payslip-" + ps.getId() + ".pdf";
+            java.nio.file.Files.write(java.nio.file.Path.of(path), bytes);
+            ps.setPdfPath(path);
+            payslipRepository.save(ps);
+        } catch (java.io.IOException ignore) {
+            // ignore write error, still return bytes
         }
-        return null;
+
+        return bytes;
 
     }
 }
