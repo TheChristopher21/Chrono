@@ -1,169 +1,210 @@
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.entities.Payslip;
-import org.springframework.stereotype.Service;
-
 import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
+import org.springframework.stereotype.Service;
 
-import java.io.FileOutputStream;
 import java.io.IOException;
 
 @Service
 public class PdfService {
     public byte[] generatePayslipPdfBytes(Payslip ps) {
-        Document doc = new Document(PageSize.A4, 40, 40, 40, 40);
+        Document doc = new Document(PageSize.A4, 36, 36, 48, 36);
         try (java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream()) {
             PdfWriter.getInstance(doc, baos);
             doc.open();
 
-            // Logo if available
+            // ---- Header mit Firmenlogo und Firmendaten ----
+            PdfPTable header = new PdfPTable(2);
+            header.setWidthPercentage(100);
+            header.setWidths(new float[]{2, 4});
+
+            // Logo (links)
             try {
                 java.net.URL logoUrl = getClass().getClassLoader().getResource("static/logo.png");
                 if (logoUrl != null) {
                     Image logo = Image.getInstance(logoUrl);
-                    logo.scaleToFit(120, 60);
-                    doc.add(logo);
+                    logo.scaleToFit(110, 50);
+                    PdfPCell logoCell = new PdfPCell(logo, false);
+                    logoCell.setBorder(Rectangle.NO_BORDER);
+                    header.addCell(logoCell);
+                } else {
+                    PdfPCell logoCell = new PdfPCell(new Phrase(""));
+                    logoCell.setBorder(Rectangle.NO_BORDER);
+                    header.addCell(logoCell);
                 }
-            } catch (Exception ignore) {
+            } catch (Exception e) {
+                header.addCell(new PdfPCell(new Phrase("")));
             }
 
+            // Firmendaten (rechts)
             String companyName = ps.getUser() != null && ps.getUser().getCompany() != null
-                    ? ps.getUser().getCompany().getName() : "";
-            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
-            Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
-            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
-            BaseColor headerBg = BaseColor.LIGHT_GRAY;
+                    ? ps.getUser().getCompany().getName() : "Firma Muster AG";
+            String companyAddress = ps.getUser() != null && ps.getUser().getCompany() != null
+                    ? ps.getUser().getCompany().getAddress() : "Beispielstr. 1, 8000 Zürich";
+            String companyContact = "Tel. 044 123 45 67 | info@firma.ch";
+            PdfPCell companyCell = new PdfPCell();
+            companyCell.addElement(new Phrase(companyName, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13)));
+            companyCell.addElement(new Phrase(companyAddress, FontFactory.getFont(FontFactory.HELVETICA, 10)));
+            companyCell.addElement(new Phrase(companyContact, FontFactory.getFont(FontFactory.HELVETICA, 9, BaseColor.DARK_GRAY)));
+            companyCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+            companyCell.setVerticalAlignment(Element.ALIGN_TOP);
+            companyCell.setBorder(Rectangle.NO_BORDER);
+            header.addCell(companyCell);
+            doc.add(header);
 
-            Paragraph title = new Paragraph(companyName + " - Payslip", titleFont);
-            title.setAlignment(Element.ALIGN_CENTER);
-            title.setSpacingAfter(20);
-            doc.add(title);
-
-            PdfPTable infoTable = new PdfPTable(2);
-            infoTable.setWidthPercentage(100);
-            infoTable.setSpacingAfter(15);
-
-            if (ps.getUser() != null) {
-                PdfPCell l1 = new PdfPCell(new Phrase("Employee", labelFont));
-                l1.setBackgroundColor(headerBg);
-                l1.setPadding(5);
-                infoTable.addCell(l1);
-                PdfPCell v1 = new PdfPCell(new Phrase(ps.getUser().getFirstName() + " " + ps.getUser().getLastName(), normalFont));
-                v1.setPadding(5);
-                infoTable.addCell(v1);
-
-                PdfPCell l2 = new PdfPCell(new Phrase("Address", labelFont));
-                l2.setBackgroundColor(headerBg);
-                l2.setPadding(5);
-                infoTable.addCell(l2);
-                PdfPCell v2 = new PdfPCell(new Phrase(ps.getUser().getAddress() == null ? "" : ps.getUser().getAddress(), normalFont));
-                v2.setPadding(5);
-                infoTable.addCell(v2);
-
-                PdfPCell l3 = new PdfPCell(new Phrase("Personnel No", labelFont));
-                l3.setBackgroundColor(headerBg);
-                l3.setPadding(5);
-                infoTable.addCell(l3);
-                PdfPCell v3 = new PdfPCell(new Phrase(ps.getUser().getPersonnelNumber() == null ? "" : ps.getUser().getPersonnelNumber(), normalFont));
-                v3.setPadding(5);
-                infoTable.addCell(v3);
-            }
-
-            PdfPCell periodLabel = new PdfPCell(new Phrase("Period", labelFont));
-            periodLabel.setBackgroundColor(headerBg);
-            periodLabel.setPadding(5);
-            infoTable.addCell(periodLabel);
-            PdfPCell periodValue = new PdfPCell(new Phrase(ps.getPeriodStart() + " - " + ps.getPeriodEnd(), normalFont));
-            periodValue.setPadding(5);
-            infoTable.addCell(periodValue);
-            doc.add(infoTable);
             doc.add(new Paragraph(" "));
 
-            PdfPTable earningsTable = new PdfPTable(new float[]{4, 2});
-            earningsTable.setWidthPercentage(100);
+
+            // ---- Dokumenttitel ----
+            Paragraph title = new Paragraph("Lohnabrechnung / Payslip", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16));
+            title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingAfter(18);
+            doc.add(title);
+
+            // ---- Mitarbeiterdatenblock ----
+            PdfPTable employeeTable = new PdfPTable(4);
+            employeeTable.setWidthPercentage(100);
+            employeeTable.setWidths(new float[]{2, 4, 2, 4});
+            Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
+            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
+
+            employeeTable.addCell(cell("Mitarbeiter", labelFont, true));
+            employeeTable.addCell(cell(ps.getUser().getFirstName() + " " + ps.getUser().getLastName(), normalFont, false));
+            employeeTable.addCell(cell("Personalnummer", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getPersonnelNumber()), normalFont, false));
+
+            employeeTable.addCell(cell("Adresse", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getAddress()), normalFont, false));
+            employeeTable.addCell(cell("Geburtsdatum", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getBirthDate()), normalFont, false));
+
+            employeeTable.addCell(cell("Eintritt", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getEntryDate()), normalFont, false));
+            employeeTable.addCell(cell("AHV-Nr.", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getSocialSecurityNumber()), normalFont, false));
+
+
+            employeeTable.addCell(cell("Bank", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getBankAccount()), normalFont, false));
+            employeeTable.addCell(cell("Abteilung", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getDepartment()), normalFont, false));
+
+            doc.add(employeeTable);
+            doc.add(new Paragraph(" "));
+
+            // ---- Abrechnungszeitraum ----
+            PdfPTable periodTable = new PdfPTable(2);
+            periodTable.setWidthPercentage(55);
+            periodTable.setHorizontalAlignment(Element.ALIGN_LEFT);
+            periodTable.addCell(cell("Abrechnungsmonat", labelFont, true));
+            periodTable.addCell(cell(ps.getPeriodStart() + " – " + ps.getPeriodEnd(), normalFont, false));
+            doc.add(periodTable);
+
+            doc.add(new Paragraph(" "));
+
+            // ---- Verdienst (Earnings) ----
+            PdfPTable earningsTable = new PdfPTable(new float[]{4, 2, 2});
+            earningsTable.setWidthPercentage(70);
             earningsTable.setSpacingAfter(10);
-            PdfPCell eHead1 = new PdfPCell(new Phrase("Earnings", labelFont));
-            eHead1.setBackgroundColor(headerBg);
-            eHead1.setPadding(5);
-            earningsTable.addCell(eHead1);
-            PdfPCell eHead2 = new PdfPCell(new Phrase("Amount", labelFont));
-            eHead2.setBackgroundColor(headerBg);
-            eHead2.setPadding(5);
-            earningsTable.addCell(eHead2);
+            earningsTable.addCell(headerCell("Bezüge / Earnings"));
+            earningsTable.addCell(headerCell("Betrag"));
+            earningsTable.addCell(headerCell("Währung"));
             for (var comp : ps.getEarnings()) {
-                PdfPCell type = new PdfPCell(new Phrase(comp.getType(), normalFont));
-                type.setPadding(5);
-                earningsTable.addCell(type);
-                PdfPCell amount = new PdfPCell(new Phrase(String.format("CHF %.2f", comp.getAmount()), normalFont));
-                amount.setPadding(5);
-                earningsTable.addCell(amount);
+                earningsTable.addCell(cell(comp.getType(), normalFont, false));
+                earningsTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
+                earningsTable.addCell(cell("CHF", normalFont, false));
+
             }
             doc.add(earningsTable);
 
-            PdfPTable dedTable = new PdfPTable(new float[]{4, 2});
-            dedTable.setWidthPercentage(100);
+            // ---- Abzüge (Deductions) ----
+            PdfPTable dedTable = new PdfPTable(new float[]{4, 2, 2});
+            dedTable.setWidthPercentage(70);
             dedTable.setSpacingAfter(10);
-            PdfPCell dHead1 = new PdfPCell(new Phrase("Deductions", labelFont));
-            dHead1.setBackgroundColor(headerBg);
-            dHead1.setPadding(5);
-            dedTable.addCell(dHead1);
-            PdfPCell dHead2 = new PdfPCell(new Phrase("Amount", labelFont));
-            dHead2.setBackgroundColor(headerBg);
-            dHead2.setPadding(5);
-            dedTable.addCell(dHead2);
+            dedTable.addCell(headerCell("Abzüge / Deductions"));
+            dedTable.addCell(headerCell("Betrag"));
+            dedTable.addCell(headerCell("Währung"));
             for (var comp : ps.getDeductionsList()) {
-                PdfPCell type = new PdfPCell(new Phrase(comp.getType(), normalFont));
-                type.setPadding(5);
-                dedTable.addCell(type);
-                PdfPCell amount = new PdfPCell(new Phrase(String.format("CHF %.2f", comp.getAmount()), normalFont));
-                amount.setPadding(5);
-                dedTable.addCell(amount);
+                dedTable.addCell(cell(comp.getType(), normalFont, false));
+                dedTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
+                dedTable.addCell(cell("CHF", normalFont, false));
+
             }
             doc.add(dedTable);
             doc.add(new Paragraph(" "));
 
-            PdfPTable totals = new PdfPTable(new float[]{4, 2});
-            totals.setWidthPercentage(100);
-            totals.setSpacingAfter(20);
-            PdfPCell tHead1 = new PdfPCell(new Phrase("Gross Salary", labelFont));
-            tHead1.setBackgroundColor(headerBg);
-            tHead1.setPadding(5);
-            totals.addCell(tHead1);
-            PdfPCell tVal1 = new PdfPCell(new Phrase(String.format("CHF %.2f", ps.getGrossSalary()), normalFont));
-            tVal1.setPadding(5);
-            totals.addCell(tVal1);
+            // ---- Überstunden/Resturlaub ----
+            if (ps.getUser().getOvertimeBalance() != null || ps.getUser().getVacationBalance() != null) {
+                PdfPTable saldoTable = new PdfPTable(2);
+                saldoTable.setWidthPercentage(55);
+                saldoTable.setSpacingAfter(8);
+                if (ps.getUser().getOvertimeBalance() != null) {
+                    saldoTable.addCell(cell("Überstundensaldo", labelFont, true));
+                    saldoTable.addCell(cell(String.format("%.1f Std.", ps.getUser().getOvertimeBalance()), normalFont, false));
+                }
+                if (ps.getUser().getVacationBalance() != null) {
+                    saldoTable.addCell(cell("Resturlaub", labelFont, true));
+                    saldoTable.addCell(cell(String.format("%.1f Tage", ps.getUser().getVacationBalance()), normalFont, false));
+                }
+                doc.add(saldoTable);
+            }
 
-            PdfPCell tHead2 = new PdfPCell(new Phrase("Deductions", labelFont));
-            tHead2.setBackgroundColor(headerBg);
-            tHead2.setPadding(5);
-            totals.addCell(tHead2);
-            PdfPCell tVal2 = new PdfPCell(new Phrase(String.format("CHF %.2f", ps.getDeductions()), normalFont));
-            tVal2.setPadding(5);
-            totals.addCell(tVal2);
+            // ---- Summenblock ----
+            PdfPTable totals = new PdfPTable(3);
+            totals.setWidthPercentage(70);
+            totals.setSpacingAfter(15);
+            totals.addCell(headerCell("Summe", BaseColor.LIGHT_GRAY));
+            totals.addCell(headerCell("Betrag", BaseColor.LIGHT_GRAY));
+            totals.addCell(headerCell("Währung", BaseColor.LIGHT_GRAY));
 
-            PdfPCell tHead3 = new PdfPCell(new Phrase("Net Salary", labelFont));
-            tHead3.setBackgroundColor(headerBg);
-            tHead3.setPadding(5);
-            totals.addCell(tHead3);
-            PdfPCell tVal3 = new PdfPCell(new Phrase(String.format("CHF %.2f", ps.getNetSalary()), normalFont));
-            tVal3.setPadding(5);
-            totals.addCell(tVal3);
+            totals.addCell(cell("Bruttolohn", normalFont, false));
+            totals.addCell(cell(String.format("%.2f", ps.getGrossSalary()), normalFont, false));
+            totals.addCell(cell("CHF", normalFont, false));
+
+            totals.addCell(cell("Abzüge", normalFont, false));
+            totals.addCell(cell(String.format("%.2f", ps.getDeductions()), normalFont, false));
+            totals.addCell(cell("CHF", normalFont, false));
+
+            totals.addCell(cell("Nettolohn", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
+            totals.addCell(cell(String.format("%.2f", ps.getNetSalary()), FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
+            totals.addCell(cell("CHF", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
+
+
             doc.add(totals);
 
+            // ---- Auszahlungsdatum ----
             if (ps.getPayoutDate() != null) {
-                Paragraph payout = new Paragraph("Payout date: " + ps.getPayoutDate(), normalFont);
-                payout.setSpacingAfter(10);
+                Paragraph payout = new Paragraph("Auszahlungsdatum: " + ps.getPayoutDate(), normalFont);
+                payout.setSpacingAfter(8);
                 doc.add(payout);
             }
 
-            Paragraph footer = new Paragraph("Generated by Chrono Payroll", FontFactory.getFont(FontFactory.HELVETICA, 8));
-            footer.setAlignment(Element.ALIGN_CENTER);
-            doc.add(footer);
+            // ---- Rechtlicher Footer und Unterschrift ----
+            doc.add(new Paragraph(" "));
+
+            Paragraph legal = new Paragraph("Dieses Dokument wurde maschinell erstellt und ist ohne Unterschrift gültig.",
+                    FontFactory.getFont(FontFactory.HELVETICA, 8, BaseColor.DARK_GRAY));
+            legal.setAlignment(Element.ALIGN_LEFT);
+            legal.setSpacingAfter(6);
+            doc.add(legal);
+
+            Paragraph contact = new Paragraph("Bei Fragen wenden Sie sich bitte an Ihre Personalabteilung.",
+                    FontFactory.getFont(FontFactory.HELVETICA, 8, BaseColor.DARK_GRAY));
+            contact.setAlignment(Element.ALIGN_LEFT);
+            doc.add(contact);
+
+            doc.add(new Paragraph("\n\n"));
+            doc.add(new Paragraph("______________________________           ______________________________", normalFont));
+            doc.add(new Paragraph("  Arbeitgeber / Employer                         Mitarbeiter / Employee",
+                    FontFactory.getFont(FontFactory.HELVETICA, 9)));
+
             doc.close();
             return baos.toByteArray();
-        } catch (DocumentException | IOException e) {
+        } catch (Exception e) {
             return null;
         }
     }
@@ -178,5 +219,30 @@ public class PdfService {
             return null;
         }
         return path;
+    }
+
+    // Hilfsfunktion für Zellen mit/ohne Kopf-Design
+    private static PdfPCell cell(String text, Font font, boolean header) {
+        PdfPCell cell = new PdfPCell(new Phrase(text == null ? "" : text, font));
+        cell.setPadding(5);
+        if (header) {
+            cell.setBackgroundColor(BaseColor.LIGHT_GRAY);
+        }
+        return cell;
+    }
+
+    private static PdfPCell headerCell(String text) {
+        return headerCell(text, BaseColor.LIGHT_GRAY);
+    }
+
+    private static PdfPCell headerCell(String text, BaseColor bg) {
+        PdfPCell cell = new PdfPCell(new Phrase(text, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10)));
+        cell.setBackgroundColor(bg);
+        cell.setPadding(5);
+        return cell;
+    }
+
+    private static String safe(Object o) {
+        return o == null ? "" : o.toString();
     }
 }
