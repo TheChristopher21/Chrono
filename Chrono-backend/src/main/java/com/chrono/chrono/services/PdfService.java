@@ -63,10 +63,25 @@ public class PdfService {
             // Firmendaten (rechts)
             String companyName = ps.getUser() != null && ps.getUser().getCompany() != null
                     ? ps.getUser().getCompany().getName() : "";
+            String address1 = ps.getUser() != null && ps.getUser().getCompany() != null
+                    ? ps.getUser().getCompany().getAddressLine1() : null;
+            String address2 = ps.getUser() != null && ps.getUser().getCompany() != null
+                    ? ps.getUser().getCompany().getAddressLine2() : null;
+            String postal = ps.getUser() != null && ps.getUser().getCompany() != null
+                    ? ps.getUser().getCompany().getPostalCode() : null;
+            String city = ps.getUser() != null && ps.getUser().getCompany() != null
+                    ? ps.getUser().getCompany().getCity() : null;
 
             PdfPCell companyCell = new PdfPCell();
             companyCell.addElement(new Phrase(companyName,
                     FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13)));
+            if (address1 != null && !address1.isBlank())
+                companyCell.addElement(new Phrase(address1, FontFactory.getFont(FontFactory.HELVETICA, 10)));
+            if (address2 != null && !address2.isBlank())
+                companyCell.addElement(new Phrase(address2, FontFactory.getFont(FontFactory.HELVETICA, 10)));
+            String plzOrt = ((postal != null ? postal : "") + " " + (city != null ? city : "")).trim();
+            if (!plzOrt.isBlank())
+                companyCell.addElement(new Phrase(plzOrt, FontFactory.getFont(FontFactory.HELVETICA, 10)));
             companyCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             companyCell.setVerticalAlignment(Element.ALIGN_TOP);
             companyCell.setBorder(Rectangle.NO_BORDER);

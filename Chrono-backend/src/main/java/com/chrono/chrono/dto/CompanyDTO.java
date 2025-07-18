@@ -4,6 +4,10 @@ public class CompanyDTO {
 
     private Long   id;
     private String name;
+    private String addressLine1;
+    private String addressLine2;
+    private String postalCode;
+    private String city;
     private boolean active;
     private int    userCount;   // Anzahl der User in dieser Firma
     private boolean paid;
@@ -31,6 +35,18 @@ public class CompanyDTO {
 
     public String getName()           { return name; }
     public void setName(String name)  { this.name = name; }
+
+    public String getAddressLine1() { return addressLine1; }
+    public void setAddressLine1(String addressLine1) { this.addressLine1 = addressLine1; }
+
+    public String getAddressLine2() { return addressLine2; }
+    public void setAddressLine2(String addressLine2) { this.addressLine2 = addressLine2; }
+
+    public String getPostalCode() { return postalCode; }
+    public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
+
+    public String getCity() { return city; }
+    public void setCity(String city) { this.city = city; }
 
     public boolean isActive()         { return active; }
     public void setActive(boolean a)  { this.active = a; }
@@ -60,6 +76,10 @@ public class CompanyDTO {
                 co.isCanceled()
         );
         dto.setCustomerTrackingEnabled(co.getCustomerTrackingEnabled());
+        dto.setAddressLine1(co.getAddressLine1());
+        dto.setAddressLine2(co.getAddressLine2());
+        dto.setPostalCode(co.getPostalCode());
+        dto.setCity(co.getCity());
         return dto;
     }
 }

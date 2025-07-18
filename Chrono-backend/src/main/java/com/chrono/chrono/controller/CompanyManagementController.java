@@ -60,6 +60,10 @@ public class CompanyManagementController {
 
         Company company = new Company();
         company.setName(body.getCompanyName().trim());
+        company.setAddressLine1(body.getAddressLine1());
+        company.setAddressLine2(body.getAddressLine2());
+        company.setPostalCode(body.getPostalCode());
+        company.setCity(body.getCity());
         company.setActive(true);
         if (body.getCantonAbbreviation() != null && !body.getCantonAbbreviation().trim().isEmpty()) {
             company.setCantonAbbreviation(body.getCantonAbbreviation().trim().toUpperCase());
@@ -108,6 +112,10 @@ public class CompanyManagementController {
         Company company = new Company();
         company.setId(null); // Sicherstellen, dass es eine neue Entität ist
         company.setName(companyDTO.getName().trim());
+        company.setAddressLine1(companyDTO.getAddressLine1());
+        company.setAddressLine2(companyDTO.getAddressLine2());
+        company.setPostalCode(companyDTO.getPostalCode());
+        company.setCity(companyDTO.getCity());
         company.setActive(companyDTO.isActive()); // Standard auf true oder vom DTO nehmen
         company.setPaid(false); // Standard für neue Firmen
         company.setCanceled(false); // Standard für neue Firmen
@@ -135,6 +143,14 @@ public class CompanyManagementController {
                     if (companyDTO.getName() != null && !companyDTO.getName().trim().isEmpty()) {
                         existingCompany.setName(companyDTO.getName().trim());
                     }
+                    if (companyDTO.getAddressLine1() != null)
+                        existingCompany.setAddressLine1(companyDTO.getAddressLine1());
+                    if (companyDTO.getAddressLine2() != null)
+                        existingCompany.setAddressLine2(companyDTO.getAddressLine2());
+                    if (companyDTO.getPostalCode() != null)
+                        existingCompany.setPostalCode(companyDTO.getPostalCode());
+                    if (companyDTO.getCity() != null)
+                        existingCompany.setCity(companyDTO.getCity());
                     // Das DTO sollte den aktuellen 'active' Status enthalten, nicht nur für den Toggle
                     existingCompany.setActive(companyDTO.isActive());
 
@@ -209,6 +225,10 @@ public class CompanyManagementController {
     public static class CompanyDTO {
         private Long   id;
         private String name;
+        private String addressLine1;
+        private String addressLine2;
+        private String postalCode;
+        private String city;
         private boolean active;
         private int    userCount;
         private boolean paid;
@@ -226,6 +246,10 @@ public class CompanyManagementController {
             CompanyDTO dto = new CompanyDTO();
             dto.id = co.getId();
             dto.name = co.getName();
+            dto.addressLine1 = co.getAddressLine1();
+            dto.addressLine2 = co.getAddressLine2();
+            dto.postalCode = co.getPostalCode();
+            dto.city = co.getCity();
             dto.active = co.isActive();
             dto.userCount = co.getUsers() != null ? co.getUsers().size() : 0;
             dto.paid = co.isPaid();
@@ -244,6 +268,10 @@ public class CompanyManagementController {
         // Getter
         public Long getId() { return id; }
         public String getName() { return name; }
+        public String getAddressLine1() { return addressLine1; }
+        public String getAddressLine2() { return addressLine2; }
+        public String getPostalCode() { return postalCode; }
+        public String getCity() { return city; }
         public boolean isActive() { return active; }
         public int getUserCount() { return userCount; }
         public boolean isPaid() { return paid; }
@@ -260,6 +288,10 @@ public class CompanyManagementController {
         // Setter (wichtig für @RequestBody)
         public void setId(Long id) { this.id = id; }
         public void setName(String name) { this.name = name; }
+        public void setAddressLine1(String addressLine1) { this.addressLine1 = addressLine1; }
+        public void setAddressLine2(String addressLine2) { this.addressLine2 = addressLine2; }
+        public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
+        public void setCity(String city) { this.city = city; }
         public void setActive(boolean active) { this.active = active; }
         public void setUserCount(int userCount) { this.userCount = userCount; }
         public void setPaid(boolean paid) { this.paid = paid; }
@@ -281,6 +313,10 @@ public class CompanyManagementController {
         private String adminFirstName;
         private String adminLastName;
         private String adminEmail;
+        private String addressLine1;
+        private String addressLine2;
+        private String postalCode;
+        private String city;
         private String cantonAbbreviation; // NEU
         private String slackWebhookUrl;
         private String teamsWebhookUrl;
@@ -301,6 +337,14 @@ public class CompanyManagementController {
         public void setAdminLastName(String adminLastName) { this.adminLastName = adminLastName; }
         public String getAdminEmail() { return adminEmail; }
         public void setAdminEmail(String adminEmail) { this.adminEmail = adminEmail; }
+        public String getAddressLine1() { return addressLine1; }
+        public void setAddressLine1(String addressLine1) { this.addressLine1 = addressLine1; }
+        public String getAddressLine2() { return addressLine2; }
+        public void setAddressLine2(String addressLine2) { this.addressLine2 = addressLine2; }
+        public String getPostalCode() { return postalCode; }
+        public void setPostalCode(String postalCode) { this.postalCode = postalCode; }
+        public String getCity() { return city; }
+        public void setCity(String city) { this.city = city; }
         public String getCantonAbbreviation() { return cantonAbbreviation; } // NEU
         public void setCantonAbbreviation(String cantonAbbreviation) { this.cantonAbbreviation = cantonAbbreviation; } // NEU
         public String getSlackWebhookUrl() { return slackWebhookUrl; }
