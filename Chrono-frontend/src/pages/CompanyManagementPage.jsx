@@ -16,6 +16,10 @@ const CompanyManagementPage = () => {
     // Neues Formular: "Nur Firma anlegen"
     const [newCompanyName, setNewCompanyName] = useState('');
     const [newCompanyCanton, setNewCompanyCanton] = useState(''); // NEU
+    const [newAddressLine1, setNewAddressLine1] = useState('');
+    const [newAddressLine2, setNewAddressLine2] = useState('');
+    const [newPostalCode, setNewPostalCode] = useState('');
+    const [newCity, setNewCity] = useState('');
     const [newSlackWebhook, setNewSlackWebhook] = useState('');
     const [newTeamsWebhook, setNewTeamsWebhook] = useState('');
     const [newNotifyVacation, setNewNotifyVacation] = useState(false);
@@ -30,6 +34,10 @@ const CompanyManagementPage = () => {
         adminEmail: '',
         adminFirstName: '',
         adminLastName: '',
+        addressLine1: '',
+        addressLine2: '',
+        postalCode: '',
+        city: '',
         companyCanton: '' // NEU
         ,
         slackWebhookUrl: '',
@@ -75,6 +83,10 @@ const CompanyManagementPage = () => {
             // NEU: cantonAbbreviation im Payload
             const payload = {
                 name: newCompanyName.trim(),
+                addressLine1: newAddressLine1.trim() || null,
+                addressLine2: newAddressLine2.trim() || null,
+                postalCode: newPostalCode.trim() || null,
+                city: newCity.trim() || null,
                 active: true,
                 cantonAbbreviation: newCompanyCanton.trim().toUpperCase() || null,
                 slackWebhookUrl: newSlackWebhook || null,
@@ -85,6 +97,10 @@ const CompanyManagementPage = () => {
             };
             await api.post('/api/superadmin/companies', payload);
             setNewCompanyName('');
+            setNewAddressLine1('');
+            setNewAddressLine2('');
+            setNewPostalCode('');
+            setNewCity('');
             setNewCompanyCanton(''); // NEU
             setNewSlackWebhook('');
             setNewTeamsWebhook('');
@@ -118,6 +134,10 @@ const CompanyManagementPage = () => {
                 adminEmail: createWithAdmin.adminEmail,
                 adminFirstName: createWithAdmin.adminFirstName,
                 adminLastName: createWithAdmin.adminLastName,
+                addressLine1: createWithAdmin.addressLine1.trim() || null,
+                addressLine2: createWithAdmin.addressLine2.trim() || null,
+                postalCode: createWithAdmin.postalCode.trim() || null,
+                city: createWithAdmin.city.trim() || null,
                 // NEU: cantonAbbreviation im Payload
                 cantonAbbreviation: createWithAdmin.companyCanton.trim().toUpperCase() || null,
                 slackWebhookUrl: createWithAdmin.slackWebhookUrl || null,
@@ -137,6 +157,10 @@ const CompanyManagementPage = () => {
                 adminEmail: '',
                 adminFirstName: '',
                 adminLastName: '',
+                addressLine1: '',
+                addressLine2: '',
+                postalCode: '',
+                city: '',
                 companyCanton: '', // NEU
                 slackWebhookUrl: '',
                 teamsWebhookUrl: '',
@@ -198,6 +222,10 @@ const CompanyManagementPage = () => {
         setEditingCompany({
             ...company,
             cantonAbbreviation: company.cantonAbbreviation || '',
+            addressLine1: company.addressLine1 || '',
+            addressLine2: company.addressLine2 || '',
+            postalCode: company.postalCode || '',
+            city: company.city || '',
             slackWebhookUrl: company.slackWebhookUrl || '',
             teamsWebhookUrl: company.teamsWebhookUrl || '',
             notifyVacation: company.notifyVacation || false,
@@ -216,6 +244,10 @@ const CompanyManagementPage = () => {
                 active: editingCompany.active,
                 // NEU: cantonAbbreviation im Payload
                 cantonAbbreviation: editingCompany.cantonAbbreviation.trim().toUpperCase() || null,
+                addressLine1: editingCompany.addressLine1.trim() || null,
+                addressLine2: editingCompany.addressLine2.trim() || null,
+                postalCode: editingCompany.postalCode.trim() || null,
+                city: editingCompany.city.trim() || null,
                 slackWebhookUrl: editingCompany.slackWebhookUrl,
                 teamsWebhookUrl: editingCompany.teamsWebhookUrl,
                 notifyVacation: editingCompany.notifyVacation,
@@ -294,6 +326,31 @@ const CompanyManagementPage = () => {
                                 onChange={(e) => setNewCompanyName(e.target.value)}
                                 required
                             />
+                            <input
+                                type="text"
+                                placeholder="Adresse 1"
+                                value={newAddressLine1}
+                                onChange={(e) => setNewAddressLine1(e.target.value)}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Adresse 2"
+                                value={newAddressLine2}
+                                onChange={(e) => setNewAddressLine2(e.target.value)}
+                            />
+                            <input
+                                type="text"
+                                placeholder="PLZ"
+                                value={newPostalCode}
+                                onChange={(e) => setNewPostalCode(e.target.value)}
+                                style={{ width: '80px' }}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Ort"
+                                value={newCity}
+                                onChange={(e) => setNewCity(e.target.value)}
+                            />
                             {/* NEUES FELD für Kanton */}
                             <input
                                 type="text"
@@ -354,6 +411,31 @@ const CompanyManagementPage = () => {
                                     setCreateWithAdmin({ ...createWithAdmin, companyName: e.target.value })
                                 }
                                 required
+                            />
+                            <input
+                                type="text"
+                                placeholder="Adresse 1"
+                                value={createWithAdmin.addressLine1}
+                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, addressLine1: e.target.value })}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Adresse 2"
+                                value={createWithAdmin.addressLine2}
+                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, addressLine2: e.target.value })}
+                            />
+                            <input
+                                type="text"
+                                placeholder="PLZ"
+                                value={createWithAdmin.postalCode}
+                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, postalCode: e.target.value })}
+                                style={{ width: '80px' }}
+                            />
+                            <input
+                                type="text"
+                                placeholder="Ort"
+                                value={createWithAdmin.city}
+                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, city: e.target.value })}
                             />
                             {/* NEUES FELD für Kanton */}
                             <input
@@ -463,6 +545,31 @@ const CompanyManagementPage = () => {
                                                     setEditingCompany({ ...editingCompany, name: e.target.value })
                                                 }
                                                 required
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Adresse 1"
+                                                value={editingCompany.addressLine1}
+                                                onChange={(e) => setEditingCompany({ ...editingCompany, addressLine1: e.target.value })}
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Adresse 2"
+                                                value={editingCompany.addressLine2}
+                                                onChange={(e) => setEditingCompany({ ...editingCompany, addressLine2: e.target.value })}
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="PLZ"
+                                                value={editingCompany.postalCode}
+                                                onChange={(e) => setEditingCompany({ ...editingCompany, postalCode: e.target.value })}
+                                                style={{ width: '80px' }}
+                                            />
+                                            <input
+                                                type="text"
+                                                placeholder="Ort"
+                                                value={editingCompany.city}
+                                                onChange={(e) => setEditingCompany({ ...editingCompany, city: e.target.value })}
                                             />
                                             <input
                                                 type="text"
