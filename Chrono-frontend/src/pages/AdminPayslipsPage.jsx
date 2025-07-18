@@ -46,11 +46,14 @@ const AdminPayslipsPage = () => {
   };
 
   const printPdf = (id) => {
-    api.get(`/api/payslips/admin/pdf/${id}`, { responseType: 'blob' }).then(res => {
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const win = window.open(url);
-      win?.print();
-    });
+    api.get(`/api/payslips/admin/pdf/${id}`, { responseType: 'blob' })
+      .then(res => {
+        const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+        const win = window.open(url);
+        win?.print();
+      })
+      .catch(() => alert(t('payslips.printError')));
+
   };
 
   const createPayslip = () => {

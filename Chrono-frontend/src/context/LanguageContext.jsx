@@ -570,7 +570,9 @@ const translations = {
             filterName: "Name",
             start: "Startdatum",
             end: "Enddatum",
-            filter: "Filtern"
+            filter: "Filtern",
+            printError: "PDF konnte nicht geladen werden"
+
         },
         notFound: {
             pageNotFound: "404 - Seite nicht gefunden",
@@ -1141,7 +1143,9 @@ const translations = {
             filterName: "Name",
             start: "Start",
             end: "End",
-            filter: "Filter"
+            filter: "Filter",
+            printError: "Failed to load PDF"
+
         },
         notFound: {
             pageNotFound: "404 - Page not found",

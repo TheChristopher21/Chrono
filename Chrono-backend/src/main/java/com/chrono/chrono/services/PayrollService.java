@@ -192,6 +192,28 @@ public class PayrollService {
 
     }
 
+
+    @Transactional(readOnly = true)
+    public byte[] getPayslipPdf(Long id) {
+        Payslip ps = payslipRepository.findById(id).orElseThrow();
+        if (ps.getPdfPath() == null) {
+            String generated = pdfService.generatePayslipPdf(ps);
+            if (generated == null) {
+                return null;
+            }
+            ps.setPdfPath(generated);
+            payslipRepository.save(ps);
+        }
+        try {
+            if (ps.getPdfPath() != null) {
+                return java.nio.file.Files.readAllBytes(java.nio.file.Path.of(ps.getPdfPath()));
+            }
+        } catch (java.io.IOException e) {
+            // fall through
+        }
+        return null;
+    }
+
     @Transactional(readOnly = true)
     public byte[] getPayslipPdf(Long id) {
         Payslip ps = payslipRepository.findById(id).orElseThrow();
