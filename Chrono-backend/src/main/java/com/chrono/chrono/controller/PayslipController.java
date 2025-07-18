@@ -81,8 +81,9 @@ public class PayslipController {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
     @GetMapping("/admin/pdf/{id}")
-    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id) {
-        byte[] bytes = payrollService.getPayslipPdf(id);
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id,
+            @RequestParam(defaultValue = "de") String lang) {
+        byte[] bytes = payrollService.getPayslipPdf(id, lang);
         if (bytes == null) return ResponseEntity.notFound().build();
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_PDF);

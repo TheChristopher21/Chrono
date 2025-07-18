@@ -195,9 +195,14 @@ public class PayrollService {
 
     @Transactional
     public byte[] getPayslipPdf(Long id) {
+        return getPayslipPdf(id, "de");
+    }
+
+    @Transactional
+    public byte[] getPayslipPdf(Long id, String lang) {
         Payslip ps = payslipRepository.findById(id).orElseThrow();
         String path = ps.getPdfPath();
-        if (path != null) {
+        if (path != null && "de".equalsIgnoreCase(lang)) {
             try {
                 return java.nio.file.Files.readAllBytes(java.nio.file.Path.of(path));
             } catch (java.io.IOException ignore) {
@@ -205,18 +210,20 @@ public class PayrollService {
             }
         }
 
-        byte[] bytes = pdfService.generatePayslipPdfBytes(ps);
+        byte[] bytes = pdfService.generatePayslipPdfBytes(ps, lang);
         if (bytes == null) {
             return null;
         }
 
-        try {
-            path = "/tmp/payslip-" + ps.getId() + ".pdf";
-            java.nio.file.Files.write(java.nio.file.Path.of(path), bytes);
-            ps.setPdfPath(path);
-            payslipRepository.save(ps);
-        } catch (java.io.IOException ignore) {
-            // ignore write error, still return bytes
+        if ("de".equalsIgnoreCase(lang)) {
+            try {
+                path = "/tmp/payslip-" + ps.getId() + ".pdf";
+                java.nio.file.Files.write(java.nio.file.Path.of(path), bytes);
+                ps.setPdfPath(path);
+                payslipRepository.save(ps);
+            } catch (java.io.IOException ignore) {
+                // ignore write error, still return bytes
+            }
         }
 
         return bytes;
