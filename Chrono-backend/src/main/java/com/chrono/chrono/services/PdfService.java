@@ -19,12 +19,50 @@ import java.io.IOException;
 public class PdfService {
     @Autowired
     private VacationService vacationService;
+
     public byte[] generatePayslipPdfBytes(Payslip ps) {
+        return generatePayslipPdfBytes(ps, "de");
+    }
+
+    public byte[] generatePayslipPdfBytes(Payslip ps, String lang) {
         Document doc = new Document(PageSize.A4, 36, 36, 48, 36);
         try (java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream()) {
             PdfWriter writer = PdfWriter.getInstance(doc, baos);
             writer.setPageEvent(new PageNumberEvent());
             doc.open();
+
+            boolean en = "en".equalsIgnoreCase(lang);
+            String titleText = en ? "Payslip" : "Lohnabrechnung";
+            String employeeLabel = en ? "Employee" : "Mitarbeiter";
+            String personnelLabel = en ? "Personnel no." : "Personalnummer";
+            String addressLabel = en ? "Address" : "Adresse";
+            String birthLabel = en ? "Birthdate" : "Geburtsdatum";
+            String entryLabel = en ? "Entry" : "Eintritt";
+            String ahvLabel = en ? "AHV no." : "AHV-Nr.";
+            String bankLabel = en ? "Bank" : "Bank";
+            String deptLabel = en ? "Department" : "Abteilung";
+            String nationalityLabel = en ? "Nationality" : "Nationalität";
+            String civilLabel = en ? "Marital status" : "Zivilstand";
+            String childrenLabel = en ? "Children" : "Kinder";
+            String religionLabel = en ? "Religion" : "Religion";
+            String pensumLabel = en ? "Workload" : "Pensum";
+            String taxLabel = en ? "Withholding tax" : "Quellensteuer";
+            String periodLabel = en ? "Payroll period" : "Abrechnungsmonat";
+            String earningsHeader = en ? "Earnings" : "Bezüge";
+            String amountHeader = en ? "Amount" : "Betrag";
+            String currencyHeader = en ? "Currency" : "Währung";
+            String deductionsHeader = en ? "Deductions" : "Abzüge";
+            String employerHeader = en ? "Employer contribution" : "Arbeitgeberbeitrag";
+            String overtimeLabel = en ? "Overtime balance" : "Überstundensaldo";
+            String vacationLabel = en ? "Remaining vacation" : "Resturlaub";
+            String totalsHeader = en ? "Total" : "Summe";
+            String grossLabel = en ? "Gross salary" : "Bruttolohn";
+            String deductionsLabel = en ? "Deductions" : "Abzüge";
+            String netLabel = en ? "Net salary" : "Nettolohn";
+            String payoutPrefix = en ? "Payout date: " : "Auszahlungsdatum: ";
+            String legalText = en ? "This document was generated electronically and is valid without a signature." : "Dieses Dokument wurde maschinell erstellt und ist ohne Unterschrift gültig.";
+            String contactText = en ? "If you have any questions, please contact your HR department." : "Bei Fragen wenden Sie sich bitte an Ihre Personalabteilung.";
+            String signatureText = en ? "  Employer                   Employee" : "  Arbeitgeber                Mitarbeiter";
 
             // ---- Header mit Firmenlogo und Firmendaten ----
             PdfPTable header = new PdfPTable(2);
@@ -92,7 +130,7 @@ public class PdfService {
 
 
             // ---- Dokumenttitel ----
-            Paragraph title = new Paragraph("Lohnabrechnung / Payslip", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16));
+            Paragraph title = new Paragraph(titleText, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16));
             title.setAlignment(Element.ALIGN_CENTER);
             title.setSpacingAfter(18);
             doc.add(title);
@@ -104,42 +142,42 @@ public class PdfService {
             Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
             Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 10);
 
-            employeeTable.addCell(cell("Mitarbeiter", labelFont, true));
+            employeeTable.addCell(cell(employeeLabel, labelFont, true));
             employeeTable.addCell(cell(ps.getUser().getFirstName() + " " + ps.getUser().getLastName(), normalFont, false));
-            employeeTable.addCell(cell("Personalnummer", labelFont, true));
+            employeeTable.addCell(cell(personnelLabel, labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getPersonnelNumber()), normalFont, false));
 
-            employeeTable.addCell(cell("Adresse", labelFont, true));
+            employeeTable.addCell(cell(addressLabel, labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getAddress()), normalFont, false));
-            employeeTable.addCell(cell("Geburtsdatum", labelFont, true));
+            employeeTable.addCell(cell(birthLabel, labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getBirthDate()), normalFont, false));
 
-            employeeTable.addCell(cell("Eintritt", labelFont, true));
+            employeeTable.addCell(cell(entryLabel, labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getEntryDate()), normalFont, false));
-            employeeTable.addCell(cell("AHV-Nr.", labelFont, true));
+            employeeTable.addCell(cell(ahvLabel, labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getSocialSecurityNumber()), normalFont, false));
 
 
-            employeeTable.addCell(cell("Bank", labelFont, true));
+            employeeTable.addCell(cell(bankLabel, labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getBankAccount()), normalFont, false));
             // Das User-Entity besitzt kein 'Department'-Feld mehr. Zur
             // Wahrung des Layouts wird ein leerer Wert eingetragen.
-            employeeTable.addCell(cell("Abteilung", labelFont, true));
+            employeeTable.addCell(cell(deptLabel, labelFont, true));
             employeeTable.addCell(cell("", normalFont, false));
 
-            employeeTable.addCell(cell("Nationalität", labelFont, true));
+            employeeTable.addCell(cell(nationalityLabel, labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getCountry()), normalFont, false));
-            employeeTable.addCell(cell("Zivilstand", labelFont, true));
+            employeeTable.addCell(cell(civilLabel, labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getCivilStatus()), normalFont, false));
 
-            employeeTable.addCell(cell("Kinder", labelFont, true));
+            employeeTable.addCell(cell(childrenLabel, labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getChildren()), normalFont, false));
-            employeeTable.addCell(cell("Religion", labelFont, true));
+            employeeTable.addCell(cell(religionLabel, labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getReligion()), normalFont, false));
 
-            employeeTable.addCell(cell("Pensum", labelFont, true));
+            employeeTable.addCell(cell(pensumLabel, labelFont, true));
             employeeTable.addCell(cell(ps.getUser().getWorkPercentage() + "%", normalFont, false));
-            employeeTable.addCell(cell("Quellensteuer", labelFont, true));
+            employeeTable.addCell(cell(taxLabel, labelFont, true));
             String taxInfo = ps.getUser().getTarifCode() != null && !ps.getUser().getTarifCode().isEmpty() ?
                     ps.getUser().getTarifCode() : safe(ps.getUser().getTaxClass());
             employeeTable.addCell(cell(taxInfo, normalFont, false));
@@ -152,7 +190,7 @@ public class PdfService {
             PdfPTable periodTable = new PdfPTable(2);
             periodTable.setWidthPercentage(55);
             periodTable.setHorizontalAlignment(Element.ALIGN_LEFT);
-            periodTable.addCell(cell("Abrechnungsmonat", labelFont, true));
+            periodTable.addCell(cell(periodLabel, labelFont, true));
             periodTable.addCell(cell(ps.getPeriodStart() + " – " + ps.getPeriodEnd(), normalFont, false));
             doc.add(periodTable);
 
@@ -162,9 +200,9 @@ public class PdfService {
             PdfPTable earningsTable = new PdfPTable(new float[]{4, 2, 2});
             earningsTable.setWidthPercentage(70);
             earningsTable.setSpacingAfter(10);
-            earningsTable.addCell(headerCell("Bezüge / Earnings"));
-            earningsTable.addCell(headerCell("Betrag"));
-            earningsTable.addCell(headerCell("Währung"));
+            earningsTable.addCell(headerCell(earningsHeader));
+            earningsTable.addCell(headerCell(amountHeader));
+            earningsTable.addCell(headerCell(currencyHeader));
             for (var comp : ps.getEarnings()) {
                 earningsTable.addCell(cell(comp.getType(), normalFont, false));
                 earningsTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
@@ -177,9 +215,9 @@ public class PdfService {
             PdfPTable dedTable = new PdfPTable(new float[]{4, 2, 2});
             dedTable.setWidthPercentage(70);
             dedTable.setSpacingAfter(10);
-            dedTable.addCell(headerCell("Abzüge / Deductions"));
-            dedTable.addCell(headerCell("Betrag"));
-            dedTable.addCell(headerCell("Währung"));
+            dedTable.addCell(headerCell(deductionsHeader));
+            dedTable.addCell(headerCell(amountHeader));
+            dedTable.addCell(headerCell(currencyHeader));
             for (var comp : ps.getDeductionsList()) {
                 dedTable.addCell(cell(comp.getType(), normalFont, false));
                 dedTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
@@ -193,9 +231,9 @@ public class PdfService {
                 PdfPTable empTable = new PdfPTable(new float[]{4,2,2});
                 empTable.setWidthPercentage(70);
                 empTable.setSpacingAfter(10);
-                empTable.addCell(headerCell("Arbeitgeberbeitrag"));
-                empTable.addCell(headerCell("Betrag"));
-                empTable.addCell(headerCell("Währung"));
+                empTable.addCell(headerCell(employerHeader));
+                empTable.addCell(headerCell(amountHeader));
+                empTable.addCell(headerCell(currencyHeader));
                 empTable.addCell(cell("Pensionskasse", normalFont, false));
                 empTable.addCell(cell(String.format("%.2f", ps.getEmployerContributions()), normalFont, false));
                 empTable.addCell(cell("CHF", normalFont, false));
@@ -216,11 +254,11 @@ public class PdfService {
                 saldoTable.setWidthPercentage(55);
                 saldoTable.setSpacingAfter(8);
                 if (overtimeMinutes != 0) {
-                    saldoTable.addCell(cell("Überstundensaldo", labelFont, true));
+                    saldoTable.addCell(cell(overtimeLabel, labelFont, true));
                     saldoTable.addCell(cell(String.format("%.1f Std.", overtimeHours), normalFont, false));
                 }
                 if (vacationDays > 0) {
-                    saldoTable.addCell(cell("Resturlaub", labelFont, true));
+                    saldoTable.addCell(cell(vacationLabel, labelFont, true));
                     saldoTable.addCell(cell(String.format("%.1f Tage", vacationDays), normalFont, false));
                 }
                 doc.add(saldoTable);
@@ -231,19 +269,19 @@ public class PdfService {
             PdfPTable totals = new PdfPTable(3);
             totals.setWidthPercentage(70);
             totals.setSpacingAfter(15);
-            totals.addCell(headerCell("Summe", BaseColor.LIGHT_GRAY));
-            totals.addCell(headerCell("Betrag", BaseColor.LIGHT_GRAY));
-            totals.addCell(headerCell("Währung", BaseColor.LIGHT_GRAY));
+            totals.addCell(headerCell(totalsHeader, BaseColor.LIGHT_GRAY));
+            totals.addCell(headerCell(amountHeader, BaseColor.LIGHT_GRAY));
+            totals.addCell(headerCell(currencyHeader, BaseColor.LIGHT_GRAY));
 
-            totals.addCell(cell("Bruttolohn", normalFont, false));
+            totals.addCell(cell(grossLabel, normalFont, false));
             totals.addCell(cell(String.format("%.2f", ps.getGrossSalary()), normalFont, false));
             totals.addCell(cell("CHF", normalFont, false));
 
-            totals.addCell(cell("Abzüge", normalFont, false));
+            totals.addCell(cell(deductionsLabel, normalFont, false));
             totals.addCell(cell(String.format("%.2f", ps.getDeductions()), normalFont, false));
             totals.addCell(cell("CHF", normalFont, false));
 
-            totals.addCell(cell("Nettolohn", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
+            totals.addCell(cell(netLabel, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
             totals.addCell(cell(String.format("%.2f", ps.getNetSalary()), FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
             totals.addCell(cell("CHF", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
 
@@ -252,7 +290,7 @@ public class PdfService {
 
             // ---- Auszahlungsdatum ----
             if (ps.getPayoutDate() != null) {
-                Paragraph payout = new Paragraph("Auszahlungsdatum: " + ps.getPayoutDate(), normalFont);
+                Paragraph payout = new Paragraph(payoutPrefix + ps.getPayoutDate(), normalFont);
                 payout.setSpacingAfter(8);
                 doc.add(payout);
             }
@@ -260,20 +298,20 @@ public class PdfService {
             // ---- Rechtlicher Footer und Unterschrift ----
             doc.add(new Paragraph(" "));
 
-            Paragraph legal = new Paragraph("Dieses Dokument wurde maschinell erstellt und ist ohne Unterschrift gültig.",
+            Paragraph legal = new Paragraph(legalText,
                     FontFactory.getFont(FontFactory.HELVETICA, 8, BaseColor.DARK_GRAY));
             legal.setAlignment(Element.ALIGN_LEFT);
             legal.setSpacingAfter(6);
             doc.add(legal);
 
-            Paragraph contact = new Paragraph("Bei Fragen wenden Sie sich bitte an Ihre Personalabteilung.",
+            Paragraph contact = new Paragraph(contactText,
                     FontFactory.getFont(FontFactory.HELVETICA, 8, BaseColor.DARK_GRAY));
             contact.setAlignment(Element.ALIGN_LEFT);
             doc.add(contact);
 
             doc.add(new Paragraph("\n\n"));
             doc.add(new Paragraph("______________________________           ______________________________", normalFont));
-            doc.add(new Paragraph("  Arbeitgeber / Employer                         Mitarbeiter / Employee",
+            doc.add(new Paragraph(signatureText,
                     FontFactory.getFont(FontFactory.HELVETICA, 9)));
             BarcodeQRCode barcode = new BarcodeQRCode("payslip-" + ps.getId(), 100, 100, null);
             Image qrImage = barcode.getImage();
@@ -289,8 +327,12 @@ public class PdfService {
     }
 
     public String generatePayslipPdf(Payslip ps) {
+        return generatePayslipPdf(ps, "de");
+    }
+
+    public String generatePayslipPdf(Payslip ps, String lang) {
         String path = "/tmp/payslip-" + ps.getId() + ".pdf";
-        byte[] data = generatePayslipPdfBytes(ps);
+        byte[] data = generatePayslipPdfBytes(ps, lang);
         if (data == null) return null;
         try {
             java.nio.file.Files.write(java.nio.file.Path.of(path), data);

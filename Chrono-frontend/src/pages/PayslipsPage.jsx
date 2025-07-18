@@ -1,17 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import '../styles/PayslipsPageScoped.css';
 import { useAuth } from '../context/AuthContext';
-import { useTranslation } from '../context/LanguageContext';
+import { useTranslation, LanguageContext } from '../context/LanguageContext';
 import jsPDF from 'jspdf';
 
 const PayslipsPage = () => {
   const { currentUser } = useAuth();
   const { t } = useTranslation();
+  const { language, setLanguage } = useContext(LanguageContext);
+  const [printLang, setPrintLang] = useState('de');
   const [payslips, setPayslips] = useState([]);
 
-  const handlePrint = (ps) => {
+  const handlePrint = async (ps) => {
+    const prev = language;
+    if (printLang !== language) {
+      setLanguage(printLang);
+      await new Promise((r) => setTimeout(r, 0));
+    }
     const doc = new jsPDF();
     doc.setFontSize(16);
     doc.text(t('payslips.title'), 105, 20, { align: 'center' });
@@ -20,6 +27,9 @@ const PayslipsPage = () => {
     doc.text(`${t('payslips.gross')}: ${ps.grossSalary?.toFixed(2)} CHF`, 20, 50);
     doc.text(`${t('payslips.net')}: ${ps.netSalary?.toFixed(2)} CHF`, 20, 60);
     doc.save(`Payslip_${ps.periodStart}_${ps.periodEnd}.pdf`);
+    if (printLang !== prev) {
+      setLanguage(prev);
+    }
   };
 
   useEffect(() => {
@@ -33,6 +43,13 @@ const PayslipsPage = () => {
     <div className="payslips-page scoped-dashboard">
       <Navbar />
       <h2>{t('payslips.title')}</h2>
+      <div className="print-lang-select">
+        <label>{t('navbar.languageLabel', 'Sprache')}:</label>
+        <select value={printLang} onChange={e => setPrintLang(e.target.value)}>
+          <option value="de">DE</option>
+          <option value="en">EN</option>
+        </select>
+      </div>
       <table className="payslip-table">
         <thead>
           <tr>
