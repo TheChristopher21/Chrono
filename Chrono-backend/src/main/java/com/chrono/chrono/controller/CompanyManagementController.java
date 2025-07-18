@@ -220,6 +220,7 @@ public class CompanyManagementController {
         private Boolean notifyVacation;
         private Boolean notifyOvertime;
         private Boolean customerTrackingEnabled;
+        private String logoPath;
 
         public static CompanyDTO fromEntity(Company co) {
             CompanyDTO dto = new CompanyDTO();
@@ -236,6 +237,7 @@ public class CompanyManagementController {
             dto.notifyVacation = co.getNotifyVacation();
             dto.notifyOvertime = co.getNotifyOvertime();
             dto.customerTrackingEnabled = co.getCustomerTrackingEnabled();
+            dto.logoPath = co.getLogoPath();
             return dto;
         }
 
@@ -253,6 +255,7 @@ public class CompanyManagementController {
         public Boolean getNotifyVacation() { return notifyVacation; }
         public Boolean getNotifyOvertime() { return notifyOvertime; }
         public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; }
+        public String getLogoPath() { return logoPath; }
 
         // Setter (wichtig für @RequestBody)
         public void setId(Long id) { this.id = id; }
@@ -268,6 +271,7 @@ public class CompanyManagementController {
         public void setNotifyVacation(Boolean notifyVacation) { this.notifyVacation = notifyVacation; }
         public void setNotifyOvertime(Boolean notifyOvertime) { this.notifyOvertime = notifyOvertime; }
         public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; }
+        public void setLogoPath(String logoPath) { this.logoPath = logoPath; }
     }
 
     public static class CreateCompanyWithAdminDTO {

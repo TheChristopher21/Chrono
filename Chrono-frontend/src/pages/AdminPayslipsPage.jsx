@@ -10,6 +10,7 @@ const AdminPayslipsPage = () => {
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ userId: '', start: '', end: '' });
   const [filter, setFilter] = useState({ name: '', start: '', end: '' });
+  const [logoFile, setLogoFile] = useState(null);
   const { t } = useTranslation();
 
   const fetchPending = () => {
@@ -76,9 +77,27 @@ const AdminPayslipsPage = () => {
     api.get('/api/payslips/admin/backup');
   };
 
+  const uploadLogo = () => {
+    if (!logoFile) return;
+    const formData = new FormData();
+    formData.append('file', logoFile);
+    api.put('/api/admin/company/logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    }).then(() => {
+      alert(t('payslips.logoSaved', 'Logo gespeichert'));
+      setLogoFile(null);
+    }).catch(() => {
+      alert(t('payslips.logoSaveError', 'Fehler beim Speichern'));
+    });
+  };
+
   return (
       <div className="admin-payslips-page scoped-dashboard">
         <Navbar />
+        <div className="logo-upload">
+          <input type="file" accept="image/*" onChange={e => setLogoFile(e.target.files[0])} />
+          <button onClick={uploadLogo}>{t('payslips.saveLogo', 'Logo speichern')}</button>
+        </div>
         <h2>{t('payslips.pendingTitle')}</h2>
         {/* NEU: Formular zum Erstellen */}
         <div className="generate-form">
