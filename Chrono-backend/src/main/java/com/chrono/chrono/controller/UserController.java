@@ -52,8 +52,36 @@ public class UserController {
     @PutMapping("/api/user/update")
     public ResponseEntity<UserDTO> update(@RequestBody UserDTO dto) {
         User user = userRepository.findByUsername(dto.getUsername()).orElseThrow();
+        if (dto.getCountry() == null || dto.getCountry().trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+        if ("DE".equalsIgnoreCase(dto.getCountry())) {
+            if (dto.getTaxClass() == null || dto.getTaxClass().trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+        } else if ("CH".equalsIgnoreCase(dto.getCountry())) {
+            if (dto.getTarifCode() == null || dto.getTarifCode().trim().isEmpty()) {
+                return ResponseEntity.badRequest().build();
+            }
+        }
+        if (dto.getPersonnelNumber() == null || dto.getPersonnelNumber().trim().isEmpty()) {
+            return ResponseEntity.badRequest().build();
+        }
+
         user.setFirstName(dto.getFirstName());
         user.setLastName(dto.getLastName());
+        user.setAddress(dto.getAddress());
+        user.setBirthDate(dto.getBirthDate());
+        user.setEntryDate(dto.getEntryDate());
+        user.setCountry(dto.getCountry());
+        user.setTaxClass(dto.getTaxClass());
+        user.setTarifCode(dto.getTarifCode());
+        user.setCanton(dto.getCanton());
+        user.setCivilStatus(dto.getCivilStatus());
+        user.setChildren(dto.getChildren());
+        user.setReligion(dto.getReligion());
+        user.setHealthInsurance(dto.getHealthInsurance());
+        user.setPersonnelNumber(dto.getPersonnelNumber());
         user.setEmail(dto.getEmail());
         if (dto.getEmailNotifications() != null) {
             user.setEmailNotifications(dto.getEmailNotifications());
@@ -83,6 +111,18 @@ public class UserController {
         dto.setUsername(user.getUsername());
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
+        dto.setAddress(user.getAddress());
+        dto.setBirthDate(user.getBirthDate());
+        dto.setEntryDate(user.getEntryDate());
+        dto.setCountry(user.getCountry());
+        dto.setTaxClass(user.getTaxClass());
+        dto.setTarifCode(user.getTarifCode());
+        dto.setCanton(user.getCanton());
+        dto.setCivilStatus(user.getCivilStatus());
+        dto.setChildren(user.getChildren());
+        dto.setReligion(user.getReligion());
+        dto.setHealthInsurance(user.getHealthInsurance());
+        dto.setPersonnelNumber(user.getPersonnelNumber());
         dto.setEmail(user.getEmail());
         dto.setIsHourly(user.getIsHourly());
         dto.setIsPercentage(user.getIsPercentage());

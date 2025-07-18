@@ -15,6 +15,18 @@ public class UserDTO {
     private String password;
     private String firstName;
     private String lastName;
+    private String address;
+    private LocalDate birthDate;
+    private LocalDate entryDate;
+    private String country;
+    private String taxClass;
+    private String tarifCode;
+    private String canton;
+    private String civilStatus;
+    private Integer children;
+    private String religion;
+    private String healthInsurance;
+    private String personnelNumber;
     private String email;
     private Boolean emailNotifications;
     private List<String> roles;
@@ -52,6 +64,18 @@ public class UserDTO {
         this.username = user.getUsername();
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
+        this.address = user.getAddress();
+        this.birthDate = user.getBirthDate();
+        this.entryDate = user.getEntryDate();
+        this.country = user.getCountry();
+        this.taxClass = user.getTaxClass();
+        this.tarifCode = user.getTarifCode();
+        this.canton = user.getCanton();
+        this.civilStatus = user.getCivilStatus();
+        this.children = user.getChildren();
+        this.religion = user.getReligion();
+        this.healthInsurance = user.getHealthInsurance();
+        this.personnelNumber = user.getPersonnelNumber();
         this.email = user.getEmail();
         this.emailNotifications = user.isEmailNotifications();
         this.roles = user.getRoles().stream()
@@ -82,7 +106,12 @@ public class UserDTO {
     }
 
     // All-Args-Constructor
-    public UserDTO(Long id, String username, String password, String firstName, String lastName, String email, Boolean emailNotifications, List<String> roles,
+    public UserDTO(Long id, String username, String password, String firstName, String lastName,
+                   String address, LocalDate birthDate, LocalDate entryDate, String country,
+                   String taxClass, String tarifCode, String canton, String civilStatus,
+                   Integer children, String religion,
+                   String healthInsurance, String personnelNumber,
+                   String email, Boolean emailNotifications, List<String> roles,
                    Integer expectedWorkDays, Double dailyWorkHours, Integer breakDuration, String color,
                    Integer scheduleCycle, List<Map<String, Double>> weeklySchedule, LocalDate scheduleEffectiveDate,
                    Boolean isHourly, Integer annualVacationDays, Integer trackingBalanceInMinutes,
@@ -95,6 +124,18 @@ public class UserDTO {
         this.password = password;
         this.firstName = firstName;
         this.lastName = lastName;
+        this.address = address;
+        this.birthDate = birthDate;
+        this.entryDate = entryDate;
+        this.country = country;
+        this.taxClass = taxClass;
+        this.tarifCode = tarifCode;
+        this.canton = canton;
+        this.civilStatus = civilStatus;
+        this.children = children;
+        this.religion = religion;
+        this.healthInsurance = healthInsurance;
+        this.personnelNumber = personnelNumber;
         this.email = email;
         this.emailNotifications = emailNotifications != null ? emailNotifications : true;
         this.roles = roles != null ? roles : new ArrayList<>();
@@ -127,6 +168,18 @@ public class UserDTO {
     public String getPassword() { return password; }
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
+    public String getAddress() { return address; }
+    public LocalDate getBirthDate() { return birthDate; }
+    public LocalDate getEntryDate() { return entryDate; }
+    public String getCountry() { return country; }
+    public String getTaxClass() { return taxClass; }
+    public String getTarifCode() { return tarifCode; }
+    public String getCanton() { return canton; }
+    public String getCivilStatus() { return civilStatus; }
+    public Integer getChildren() { return children; }
+    public String getReligion() { return religion; }
+    public String getHealthInsurance() { return healthInsurance; }
+    public String getPersonnelNumber() { return personnelNumber; }
     public String getEmail() { return email; }
     public Boolean getEmailNotifications() { return emailNotifications; }
     public List<String> getRoles() { return roles; }
@@ -159,6 +212,18 @@ public class UserDTO {
     public void setPassword(String password) { this.password = password; }
     public void setFirstName(String firstName) { this.firstName = firstName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
+    public void setAddress(String address) { this.address = address; }
+    public void setBirthDate(LocalDate birthDate) { this.birthDate = birthDate; }
+    public void setEntryDate(LocalDate entryDate) { this.entryDate = entryDate; }
+    public void setCountry(String country) { this.country = country; }
+    public void setTaxClass(String taxClass) { this.taxClass = taxClass; }
+    public void setTarifCode(String tarifCode) { this.tarifCode = tarifCode; }
+    public void setCanton(String canton) { this.canton = canton; }
+    public void setCivilStatus(String civilStatus) { this.civilStatus = civilStatus; }
+    public void setChildren(Integer children) { this.children = children; }
+    public void setReligion(String religion) { this.religion = religion; }
+    public void setHealthInsurance(String healthInsurance) { this.healthInsurance = healthInsurance; }
+    public void setPersonnelNumber(String personnelNumber) { this.personnelNumber = personnelNumber; }
     public void setEmail(String email) { this.email = email; }
     public void setEmailNotifications(Boolean emailNotifications) { this.emailNotifications = emailNotifications; }
     public void setRoles(List<String> roles) { this.roles = roles; }

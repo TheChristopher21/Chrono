@@ -35,6 +35,20 @@ public class User {
 
     private String firstName;
     private String lastName;
+    private String address;
+    private LocalDate birthDate;
+    private LocalDate entryDate;
+    @Column(nullable = false)
+    private String country;
+    private String taxClass;        // DE
+    private String tarifCode;       // CH
+    private String canton;          // CH
+    private String civilStatus;     // CH
+    private Integer children;
+    private String religion;        // DE/CH
+    private String healthInsurance;
+    @Column(nullable = false)
+    private String personnelNumber;
 
     @Column(unique = true) // E-Mail sollte normalerweise eindeutig sein
     private String email;
@@ -160,6 +174,42 @@ public class User {
 
     public String getLastName() { return lastName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
+
+    public String getAddress() { return address; }
+    public void setAddress(String address) { this.address = address; }
+
+    public LocalDate getBirthDate() { return birthDate; }
+    public void setBirthDate(LocalDate birthDate) { this.birthDate = birthDate; }
+
+    public LocalDate getEntryDate() { return entryDate; }
+    public void setEntryDate(LocalDate entryDate) { this.entryDate = entryDate; }
+
+    public String getCountry() { return country; }
+    public void setCountry(String country) { this.country = country; }
+
+    public String getTaxClass() { return taxClass; }
+    public void setTaxClass(String taxClass) { this.taxClass = taxClass; }
+
+    public String getTarifCode() { return tarifCode; }
+    public void setTarifCode(String tarifCode) { this.tarifCode = tarifCode; }
+
+    public String getCanton() { return canton; }
+    public void setCanton(String canton) { this.canton = canton; }
+
+    public String getCivilStatus() { return civilStatus; }
+    public void setCivilStatus(String civilStatus) { this.civilStatus = civilStatus; }
+
+    public Integer getChildren() { return children; }
+    public void setChildren(Integer children) { this.children = children; }
+
+    public String getReligion() { return religion; }
+    public void setReligion(String religion) { this.religion = religion; }
+
+    public String getHealthInsurance() { return healthInsurance; }
+    public void setHealthInsurance(String healthInsurance) { this.healthInsurance = healthInsurance; }
+
+    public String getPersonnelNumber() { return personnelNumber; }
+    public void setPersonnelNumber(String personnelNumber) { this.personnelNumber = personnelNumber; }
 
     public String getEmail() { return email; }
     public void setEmail(String email) { this.email = email; }

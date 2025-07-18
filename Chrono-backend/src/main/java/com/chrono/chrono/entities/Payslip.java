@@ -3,6 +3,8 @@ package com.chrono.chrono.entities;
 import jakarta.persistence.*;
 import jakarta.persistence.Convert;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "payslips")
@@ -24,6 +26,17 @@ public class Payslip {
     private Double bonuses;
     private Double oneTimePayments;
     private Double taxFreeAllowances;
+
+    @ElementCollection
+    @CollectionTable(name = "payslip_earnings", joinColumns = @JoinColumn(name = "payslip_id"))
+    private List<PayComponent> earnings = new ArrayList<>();
+
+    @ElementCollection
+    @CollectionTable(name = "payslip_deductions", joinColumns = @JoinColumn(name = "payslip_id"))
+    private List<PayComponent> deductionsList = new ArrayList<>();
+
+    private Double employerContributions;
+    private LocalDate payoutDate;
 
     @Convert(converter = com.chrono.chrono.utils.EncryptionConverter.class)
     private String bankAccount;
@@ -72,6 +85,18 @@ public class Payslip {
 
     public Double getTaxFreeAllowances() { return taxFreeAllowances; }
     public void setTaxFreeAllowances(Double taxFreeAllowances) { this.taxFreeAllowances = taxFreeAllowances; }
+
+    public List<PayComponent> getEarnings() { return earnings; }
+    public void setEarnings(List<PayComponent> earnings) { this.earnings = earnings; }
+
+    public List<PayComponent> getDeductionsList() { return deductionsList; }
+    public void setDeductionsList(List<PayComponent> deductionsList) { this.deductionsList = deductionsList; }
+
+    public Double getEmployerContributions() { return employerContributions; }
+    public void setEmployerContributions(Double employerContributions) { this.employerContributions = employerContributions; }
+
+    public LocalDate getPayoutDate() { return payoutDate; }
+    public void setPayoutDate(LocalDate payoutDate) { this.payoutDate = payoutDate; }
 
     public String getBankAccount() { return bankAccount; }
     public void setBankAccount(String bankAccount) { this.bankAccount = bankAccount; }

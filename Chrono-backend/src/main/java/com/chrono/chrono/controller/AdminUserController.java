@@ -121,11 +121,38 @@ public class AdminUserController {
         if (userDTO.getPassword() == null || userDTO.getPassword().trim().isEmpty()) {
             return ResponseEntity.badRequest().body("Password is required for new user");
         }
+        if (userDTO.getCountry() == null || userDTO.getCountry().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("country is mandatory");
+        }
+        if ("DE".equalsIgnoreCase(userDTO.getCountry())) {
+            if (userDTO.getTaxClass() == null || userDTO.getTaxClass().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("taxClass is mandatory for DE");
+            }
+        } else if ("CH".equalsIgnoreCase(userDTO.getCountry())) {
+            if (userDTO.getTarifCode() == null || userDTO.getTarifCode().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("tarifCode is mandatory for CH");
+            }
+        }
+        if (userDTO.getPersonnelNumber() == null || userDTO.getPersonnelNumber().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("personnelNumber is mandatory");
+        }
 
         User newUser = new User();
         newUser.setUsername(userDTO.getUsername());
         newUser.setFirstName(userDTO.getFirstName());
         newUser.setLastName(userDTO.getLastName());
+        newUser.setAddress(userDTO.getAddress());
+        newUser.setBirthDate(userDTO.getBirthDate());
+        newUser.setEntryDate(userDTO.getEntryDate());
+        newUser.setCountry(userDTO.getCountry());
+        newUser.setTaxClass(userDTO.getTaxClass());
+        newUser.setTarifCode(userDTO.getTarifCode());
+        newUser.setCanton(userDTO.getCanton());
+        newUser.setCivilStatus(userDTO.getCivilStatus());
+        newUser.setChildren(userDTO.getChildren());
+        newUser.setReligion(userDTO.getReligion());
+        newUser.setHealthInsurance(userDTO.getHealthInsurance());
+        newUser.setPersonnelNumber(userDTO.getPersonnelNumber());
         newUser.setEmail(userDTO.getEmail());
         newUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
@@ -281,8 +308,36 @@ public class AdminUserController {
             existingUser.setUsername(userDTO.getUsername());
         }
 
+        if (userDTO.getCountry() == null || userDTO.getCountry().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("country is mandatory");
+        }
+        if ("DE".equalsIgnoreCase(userDTO.getCountry())) {
+            if (userDTO.getTaxClass() == null || userDTO.getTaxClass().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("taxClass is mandatory for DE");
+            }
+        } else if ("CH".equalsIgnoreCase(userDTO.getCountry())) {
+            if (userDTO.getTarifCode() == null || userDTO.getTarifCode().trim().isEmpty()) {
+                return ResponseEntity.badRequest().body("tarifCode is mandatory for CH");
+            }
+        }
+        if (userDTO.getPersonnelNumber() == null || userDTO.getPersonnelNumber().trim().isEmpty()) {
+            return ResponseEntity.badRequest().body("personnelNumber is mandatory");
+        }
+
         existingUser.setFirstName(userDTO.getFirstName());
         existingUser.setLastName(userDTO.getLastName());
+        existingUser.setAddress(userDTO.getAddress());
+        existingUser.setBirthDate(userDTO.getBirthDate());
+        existingUser.setEntryDate(userDTO.getEntryDate());
+        existingUser.setCountry(userDTO.getCountry());
+        existingUser.setTaxClass(userDTO.getTaxClass());
+        existingUser.setTarifCode(userDTO.getTarifCode());
+        existingUser.setCanton(userDTO.getCanton());
+        existingUser.setCivilStatus(userDTO.getCivilStatus());
+        existingUser.setChildren(userDTO.getChildren());
+        existingUser.setReligion(userDTO.getReligion());
+        existingUser.setHealthInsurance(userDTO.getHealthInsurance());
+        existingUser.setPersonnelNumber(userDTO.getPersonnelNumber());
         existingUser.setEmail(userDTO.getEmail());
         existingUser.setColor(userDTO.getColor());
         existingUser.setAnnualVacationDays(userDTO.getAnnualVacationDays() != null ? userDTO.getAnnualVacationDays() : existingUser.getAnnualVacationDays());

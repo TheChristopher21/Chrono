@@ -1,7 +1,9 @@
 package com.chrono.chrono.dto;
 
 import com.chrono.chrono.entities.Payslip;
+import com.chrono.chrono.entities.PayComponent;
 import java.time.LocalDate;
+import java.util.List;
 
 public class PayslipDTO {
     private Long id;
@@ -15,6 +17,10 @@ public class PayslipDTO {
     private Double bonuses;
     private Double oneTimePayments;
     private Double taxFreeAllowances;
+    private List<PayComponent> earnings;
+    private List<PayComponent> deductionsList;
+    private Double employerContributions;
+    private LocalDate payoutDate;
     private String bankAccount;
     private String socialSecurityNumber;
     private String payType;
@@ -35,6 +41,10 @@ public class PayslipDTO {
         this.bonuses = ps.getBonuses();
         this.oneTimePayments = ps.getOneTimePayments();
         this.taxFreeAllowances = ps.getTaxFreeAllowances();
+        this.earnings = ps.getEarnings();
+        this.deductionsList = ps.getDeductionsList();
+        this.employerContributions = ps.getEmployerContributions();
+        this.payoutDate = ps.getPayoutDate();
         this.bankAccount = ps.getBankAccount();
         this.socialSecurityNumber = ps.getSocialSecurityNumber();
         this.payType = ps.getPayType();
@@ -55,6 +65,10 @@ public class PayslipDTO {
     public Double getBonuses() { return bonuses; }
     public Double getOneTimePayments() { return oneTimePayments; }
     public Double getTaxFreeAllowances() { return taxFreeAllowances; }
+    public List<PayComponent> getEarnings() { return earnings; }
+    public List<PayComponent> getDeductionsList() { return deductionsList; }
+    public Double getEmployerContributions() { return employerContributions; }
+    public LocalDate getPayoutDate() { return payoutDate; }
     public String getBankAccount() { return bankAccount; }
     public String getSocialSecurityNumber() { return socialSecurityNumber; }
     public String getPayType() { return payType; }

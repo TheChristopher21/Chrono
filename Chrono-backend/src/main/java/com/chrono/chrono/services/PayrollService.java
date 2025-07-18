@@ -3,6 +3,7 @@ package com.chrono.chrono.services;
 import com.chrono.chrono.dto.PayslipDTO;
 import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.entities.PayslipAudit;
+import com.chrono.chrono.entities.PayComponent;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.PayslipAuditRepository;
@@ -65,8 +66,12 @@ public class PayrollService {
         double rate = user.getHourlyRate() != null ? user.getHourlyRate() : 0.0;
         double overtimeHours = Math.max(0, hours - 160);
         double baseHours = hours - overtimeHours;
-        double gross = baseHours * rate + overtimeHours * rate * (1 + OVERTIME_BONUS);
-        double deductions = gross * (TAX_RATE + SOCIAL_RATE);
+        double basePay = baseHours * rate;
+        double overtimePay = overtimeHours * rate * (1 + OVERTIME_BONUS);
+        double gross = basePay + overtimePay;
+        double tax = gross * TAX_RATE;
+        double social = gross * SOCIAL_RATE;
+        double deductions = tax + social;
         double net = gross - deductions;
         Payslip ps = new Payslip();
         ps.setUser(user);
@@ -82,6 +87,14 @@ public class PayrollService {
         ps.setBonuses(0.0);
         ps.setOneTimePayments(0.0);
         ps.setTaxFreeAllowances(0.0);
+        ps.getEarnings().add(new PayComponent("Base salary", basePay));
+        if (overtimePay > 0) {
+            ps.getEarnings().add(new PayComponent("Overtime", overtimePay));
+        }
+        ps.getDeductionsList().add(new PayComponent("Tax", tax));
+        ps.getDeductionsList().add(new PayComponent("Social", social));
+        ps.setEmployerContributions(0.0);
+        ps.setPayoutDate(end.plusDays(5));
         ps.setBankAccount(user.getBankAccount());
         ps.setSocialSecurityNumber(user.getSocialSecurityNumber());
         ps.setPayType(user.getIsHourly() != null && user.getIsHourly() ? "hourly" : "salary");
