@@ -29,6 +29,9 @@ public class Company {
     private String slackWebhookUrl;
     private String teamsWebhookUrl;
 
+    // Pfad zum Firmenlogo
+    private String logoPath;
+
     // Einstellungen, welche Benachrichtigungen gesendet werden sollen
     private Boolean notifyVacation;
     private Boolean notifyOvertime;
@@ -91,4 +94,7 @@ public class Company {
 
     public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; }
     public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; }
+
+    public String getLogoPath() { return logoPath; }
+    public void setLogoPath(String logoPath) { this.logoPath = logoPath; }
 }

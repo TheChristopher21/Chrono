@@ -5,16 +5,25 @@ import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.PdfPCell;
 import com.itextpdf.text.pdf.PdfPTable;
 import com.itextpdf.text.pdf.PdfWriter;
+import com.itextpdf.text.pdf.BarcodeQRCode;
+import com.itextpdf.text.pdf.PdfPageEventHelper;
+import com.itextpdf.text.pdf.ColumnText;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import java.time.LocalDate;
+import com.chrono.chrono.services.VacationService;
 
 import java.io.IOException;
 
 @Service
 public class PdfService {
+    @Autowired
+    private VacationService vacationService;
     public byte[] generatePayslipPdfBytes(Payslip ps) {
         Document doc = new Document(PageSize.A4, 36, 36, 48, 36);
         try (java.io.ByteArrayOutputStream baos = new java.io.ByteArrayOutputStream()) {
-            PdfWriter.getInstance(doc, baos);
+            PdfWriter writer = PdfWriter.getInstance(doc, baos);
+            writer.setPageEvent(new PageNumberEvent());
             doc.open();
 
             // ---- Header mit Firmenlogo und Firmendaten ----
@@ -24,9 +33,20 @@ public class PdfService {
 
             // Logo (links)
             try {
-                java.net.URL logoUrl = getClass().getClassLoader().getResource("static/logo.png");
-                if (logoUrl != null) {
-                    Image logo = Image.getInstance(logoUrl);
+                String logoPath = null;
+                if (ps.getUser() != null && ps.getUser().getCompany() != null) {
+                    logoPath = ps.getUser().getCompany().getLogoPath();
+                }
+                Image logo = null;
+                if (logoPath != null && java.nio.file.Files.exists(java.nio.file.Path.of(logoPath))) {
+                    logo = Image.getInstance(logoPath);
+                } else {
+                    java.net.URL logoUrl = getClass().getClassLoader().getResource("static/logo.png");
+                    if (logoUrl != null) {
+                        logo = Image.getInstance(logoUrl);
+                    }
+                }
+                if (logo != null) {
                     logo.scaleToFit(110, 50);
                     PdfPCell logoCell = new PdfPCell(logo, false);
                     logoCell.setBorder(Rectangle.NO_BORDER);
@@ -42,14 +62,10 @@ public class PdfService {
 
             // Firmendaten (rechts)
             String companyName = ps.getUser() != null && ps.getUser().getCompany() != null
-                    ? ps.getUser().getCompany().getName() : "Firma Muster AG";
-            String companyAddress = ps.getUser() != null && ps.getUser().getCompany() != null
-                    ? ps.getUser().getCompany().getAddress() : "Beispielstr. 1, 8000 Zürich";
-            String companyContact = "Tel. 044 123 45 67 | info@firma.ch";
+                    ? ps.getUser().getCompany().getName() : "";
             PdfPCell companyCell = new PdfPCell();
-            companyCell.addElement(new Phrase(companyName, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13)));
-            companyCell.addElement(new Phrase(companyAddress, FontFactory.getFont(FontFactory.HELVETICA, 10)));
-            companyCell.addElement(new Phrase(companyContact, FontFactory.getFont(FontFactory.HELVETICA, 9, BaseColor.DARK_GRAY)));
+            companyCell.addElement(new Phrase(companyName,
+                    FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13)));
             companyCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
             companyCell.setVerticalAlignment(Element.ALIGN_TOP);
             companyCell.setBorder(Rectangle.NO_BORDER);
@@ -90,8 +106,27 @@ public class PdfService {
 
             employeeTable.addCell(cell("Bank", labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getBankAccount()), normalFont, false));
+            // Das User-Entity besitzt kein 'Department'-Feld mehr. Zur
+            // Wahrung des Layouts wird ein leerer Wert eingetragen.
             employeeTable.addCell(cell("Abteilung", labelFont, true));
-            employeeTable.addCell(cell(safe(ps.getUser().getDepartment()), normalFont, false));
+            employeeTable.addCell(cell("", normalFont, false));
+
+            employeeTable.addCell(cell("Nationalität", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getCountry()), normalFont, false));
+            employeeTable.addCell(cell("Zivilstand", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getCivilStatus()), normalFont, false));
+
+            employeeTable.addCell(cell("Kinder", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getChildren()), normalFont, false));
+            employeeTable.addCell(cell("Religion", labelFont, true));
+            employeeTable.addCell(cell(safe(ps.getUser().getReligion()), normalFont, false));
+
+            employeeTable.addCell(cell("Pensum", labelFont, true));
+            employeeTable.addCell(cell(ps.getUser().getWorkPercentage() + "%", normalFont, false));
+            employeeTable.addCell(cell("Quellensteuer", labelFont, true));
+            String taxInfo = ps.getUser().getTarifCode() != null && !ps.getUser().getTarifCode().isEmpty() ?
+                    ps.getUser().getTarifCode() : safe(ps.getUser().getTaxClass());
+            employeeTable.addCell(cell(taxInfo, normalFont, false));
 
             doc.add(employeeTable);
             doc.add(new Paragraph(" "));
@@ -137,18 +172,39 @@ public class PdfService {
             doc.add(dedTable);
             doc.add(new Paragraph(" "));
 
-            // ---- Überstunden/Resturlaub ----
-            if (ps.getUser().getOvertimeBalance() != null || ps.getUser().getVacationBalance() != null) {
+            if (ps.getEmployerContributions() != null) {
+                PdfPTable empTable = new PdfPTable(new float[]{4,2,2});
+                empTable.setWidthPercentage(70);
+                empTable.setSpacingAfter(10);
+                empTable.addCell(headerCell("Arbeitgeberbeitrag"));
+                empTable.addCell(headerCell("Betrag"));
+                empTable.addCell(headerCell("Währung"));
+                empTable.addCell(cell("Pensionskasse", normalFont, false));
+                empTable.addCell(cell(String.format("%.2f", ps.getEmployerContributions()), normalFont, false));
+                empTable.addCell(cell("CHF", normalFont, false));
+                doc.add(empTable);
+                doc.add(new Paragraph(" "));
+            }
+
+            // ---- Überstunden- und Urlaubssaldo ----
+            int overtimeMinutes = ps.getUser().getTrackingBalanceInMinutes() != null
+                    ? ps.getUser().getTrackingBalanceInMinutes() : 0;
+            double overtimeHours = overtimeMinutes / 60.0;
+            double vacationDays = vacationService.calculateRemainingVacationDays(
+                    ps.getUser().getUsername(),
+                    ps.getPeriodEnd() != null ? ps.getPeriodEnd().getYear() : LocalDate.now().getYear());
+
+            if (overtimeMinutes != 0 || vacationDays > 0) {
                 PdfPTable saldoTable = new PdfPTable(2);
                 saldoTable.setWidthPercentage(55);
                 saldoTable.setSpacingAfter(8);
-                if (ps.getUser().getOvertimeBalance() != null) {
+                if (overtimeMinutes != 0) {
                     saldoTable.addCell(cell("Überstundensaldo", labelFont, true));
-                    saldoTable.addCell(cell(String.format("%.1f Std.", ps.getUser().getOvertimeBalance()), normalFont, false));
+                    saldoTable.addCell(cell(String.format("%.1f Std.", overtimeHours), normalFont, false));
                 }
-                if (ps.getUser().getVacationBalance() != null) {
+                if (vacationDays > 0) {
                     saldoTable.addCell(cell("Resturlaub", labelFont, true));
-                    saldoTable.addCell(cell(String.format("%.1f Tage", ps.getUser().getVacationBalance()), normalFont, false));
+                    saldoTable.addCell(cell(String.format("%.1f Tage", vacationDays), normalFont, false));
                 }
                 doc.add(saldoTable);
             }
@@ -201,6 +257,11 @@ public class PdfService {
             doc.add(new Paragraph("______________________________           ______________________________", normalFont));
             doc.add(new Paragraph("  Arbeitgeber / Employer                         Mitarbeiter / Employee",
                     FontFactory.getFont(FontFactory.HELVETICA, 9)));
+            BarcodeQRCode barcode = new BarcodeQRCode("payslip-" + ps.getId(), 100, 100, null);
+            Image qrImage = barcode.getImage();
+            qrImage.scaleToFit(70, 70);
+            qrImage.setAlignment(Image.ALIGN_RIGHT);
+            doc.add(qrImage);
 
             doc.close();
             return baos.toByteArray();
@@ -244,5 +305,16 @@ public class PdfService {
 
     private static String safe(Object o) {
         return o == null ? "" : o.toString();
+    }
+
+    private static class PageNumberEvent extends PdfPageEventHelper {
+        @Override
+        public void onEndPage(PdfWriter writer, Document document) {
+            ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_CENTER,
+                    new Phrase(String.valueOf(writer.getPageNumber()),
+                            FontFactory.getFont(FontFactory.HELVETICA, 8)),
+                    (document.right() - document.left()) / 2 + document.leftMargin(),
+                    document.bottom() - 20, 0);
+        }
     }
 }

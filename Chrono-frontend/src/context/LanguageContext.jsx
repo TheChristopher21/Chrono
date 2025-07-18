@@ -571,7 +571,10 @@ const translations = {
             start: "Startdatum",
             end: "Enddatum",
             filter: "Filtern",
-            printError: "PDF konnte nicht geladen werden"
+            printError: "PDF konnte nicht geladen werden",
+            saveLogo: "Logo speichern",
+            logoSaved: "Logo gespeichert",
+            logoSaveError: "Fehler beim Speichern"
 
         },
         notFound: {
@@ -1144,7 +1147,10 @@ const translations = {
             start: "Start",
             end: "End",
             filter: "Filter",
-            printError: "Failed to load PDF"
+            printError: "Failed to load PDF",
+            saveLogo: "Save logo",
+            logoSaved: "Logo saved",
+            logoSaveError: "Failed to save logo"
 
         },
         notFound: {
