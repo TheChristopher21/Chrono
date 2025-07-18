@@ -63,6 +63,14 @@ public class PdfService {
             String legalText = en ? "This document was generated electronically and is valid without a signature." : "Dieses Dokument wurde maschinell erstellt und ist ohne Unterschrift gültig.";
             String contactText = en ? "If you have any questions, please contact your HR department." : "Bei Fragen wenden Sie sich bitte an Ihre Personalabteilung.";
             String signatureText = en ? "  Employer                   Employee" : "  Arbeitgeber                Mitarbeiter";
+            String pensionLabel = en ? "Pension fund" : "Pensionskasse";
+
+            java.util.Map<String, String> compTrans = new java.util.HashMap<>();
+            compTrans.put("Base salary", en ? "Base salary" : "Grundlohn");
+            compTrans.put("Overtime", en ? "Overtime" : "Überstunden");
+            compTrans.put("Tax", en ? "Tax" : "Steuer");
+            compTrans.put("Social", en ? "Social" : "Sozialabgaben");
+
 
             // ---- Header mit Firmenlogo und Firmendaten ----
             PdfPTable header = new PdfPTable(2);
@@ -204,7 +212,11 @@ public class PdfService {
             earningsTable.addCell(headerCell(amountHeader));
             earningsTable.addCell(headerCell(currencyHeader));
             for (var comp : ps.getEarnings()) {
-                earningsTable.addCell(cell(comp.getType(), normalFont, false));
+                String etype = comp.getType();
+                if (!en && compTrans.containsKey(etype)) {
+                    etype = compTrans.get(etype);
+                }
+                earningsTable.addCell(cell(etype, normalFont, false));
                 earningsTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
                 earningsTable.addCell(cell("CHF", normalFont, false));
 
@@ -219,7 +231,11 @@ public class PdfService {
             dedTable.addCell(headerCell(amountHeader));
             dedTable.addCell(headerCell(currencyHeader));
             for (var comp : ps.getDeductionsList()) {
-                dedTable.addCell(cell(comp.getType(), normalFont, false));
+                String dtype = comp.getType();
+                if (!en && compTrans.containsKey(dtype)) {
+                    dtype = compTrans.get(dtype);
+                }
+                dedTable.addCell(cell(dtype, normalFont, false));
                 dedTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
                 dedTable.addCell(cell("CHF", normalFont, false));
 
@@ -234,7 +250,8 @@ public class PdfService {
                 empTable.addCell(headerCell(employerHeader));
                 empTable.addCell(headerCell(amountHeader));
                 empTable.addCell(headerCell(currencyHeader));
-                empTable.addCell(cell("Pensionskasse", normalFont, false));
+                empTable.addCell(cell(pensionLabel, normalFont, false));
+
                 empTable.addCell(cell(String.format("%.2f", ps.getEmployerContributions()), normalFont, false));
                 empTable.addCell(cell("CHF", normalFont, false));
                 doc.add(empTable);
