@@ -209,22 +209,9 @@ public class PayrollService {
                 return java.nio.file.Files.readAllBytes(java.nio.file.Path.of(ps.getPdfPath()));
             }
         } catch (java.io.IOException e) {
-            // fall through
+            // handle error if needed
         }
         return null;
-    }
 
-    @Transactional(readOnly = true)
-    public byte[] getPayslipPdf(Long id) {
-        Payslip ps = payslipRepository.findById(id).orElseThrow();
-        if (ps.getPdfPath() == null) {
-            ps.setPdfPath(pdfService.generatePayslipPdf(ps));
-            payslipRepository.save(ps);
-        }
-        try {
-            return java.nio.file.Files.readAllBytes(java.nio.file.Path.of(ps.getPdfPath()));
-        } catch (java.io.IOException e) {
-            return null;
-        }
     }
 }
