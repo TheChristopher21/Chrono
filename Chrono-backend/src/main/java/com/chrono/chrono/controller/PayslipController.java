@@ -71,9 +71,23 @@ public class PayslipController {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
     @GetMapping("/admin/approved")
-    public ResponseEntity<List<PayslipDTO>> approved() {
-        return ResponseEntity.ok(payrollService.getApprovedPayslips());
+    public ResponseEntity<List<PayslipDTO>> approved(
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
+        return ResponseEntity.ok(payrollService.getApprovedPayslips(name, start, end));
 
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @GetMapping("/admin/pdf/{id}")
+    public ResponseEntity<byte[]> downloadPdf(@PathVariable Long id) {
+        byte[] bytes = payrollService.getPayslipPdf(id);
+        if (bytes == null) return ResponseEntity.notFound().build();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=payslip-" + id + ".pdf");
+        return ResponseEntity.ok().headers(headers).body(bytes);
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")

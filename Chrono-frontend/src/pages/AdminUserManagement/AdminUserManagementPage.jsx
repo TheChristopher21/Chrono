@@ -53,6 +53,8 @@ const AdminUserManagementPage = () => {
         dailyWorkHours: 8.5,
         breakDuration: 30,
         annualVacationDays: 25,
+        hourlyWage: null,
+        monthlySalary: null,
         color: STANDARD_COLORS[0],
         scheduleCycle: 1,
         weeklySchedule: [{ ...defaultWeeklySchedule }],
@@ -225,6 +227,11 @@ const AdminUserManagementPage = () => {
             delete dataToSend.role;
         }
 
+        if (Object.prototype.hasOwnProperty.call(dataToSend, 'hourlyWage')) {
+            dataToSend.hourlyRate = dataToSend.hourlyWage;
+            delete dataToSend.hourlyWage;
+        }
+
         // Sicherstellen, dass Felder für das Backend korrekt formatiert/gesetzt sind
         if (dataToSend.isHourly) {
             dataToSend.isPercentage = false;
@@ -307,6 +314,8 @@ const AdminUserManagementPage = () => {
             religion: userToEdit.religion || '',
             workPercentage: userToEdit.workPercentage !== null && userToEdit.workPercentage !== undefined ? userToEdit.workPercentage : (userToEdit.isPercentage ? 100 : null),
             expectedWorkDays: userToEdit.expectedWorkDays !== null && userToEdit.expectedWorkDays !== undefined ? userToEdit.expectedWorkDays : (userToEdit.isHourly ? null : 5.0) // Wichtig für Edit
+            ,hourlyWage: userToEdit.hourlyRate ?? null
+            ,monthlySalary: userToEdit.monthlySalary ?? null
         });
         setIsCreatingNewUser(false);
     };

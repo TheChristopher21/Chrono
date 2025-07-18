@@ -14,7 +14,7 @@ import java.io.IOException;
 public class PdfService {
     public String generatePayslipPdf(Payslip ps) {
         String path = "/tmp/payslip-" + ps.getId() + ".pdf";
-        Document doc = new Document();
+        Document doc = new Document(PageSize.A4, 40, 40, 40, 40);
         try {
             PdfWriter.getInstance(doc, new FileOutputStream(path));
             doc.open();
@@ -24,52 +24,77 @@ public class PdfService {
                 java.net.URL logoUrl = getClass().getClassLoader().getResource("static/logo.png");
                 if (logoUrl != null) {
                     Image logo = Image.getInstance(logoUrl);
-                    logo.scaleToFit(100, 50);
+                    logo.scaleToFit(120, 60);
                     doc.add(logo);
                 }
-            } catch (Exception ignore) {}
-
-            // Header information
-            String companyName = ps.getUser() != null && ps.getUser().getCompany() != null
-                    ? ps.getUser().getCompany().getName() : "";
-            Font headerFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14);
-            doc.add(new Paragraph(companyName, headerFont));
-            if (ps.getUser() != null) {
-                doc.add(new Paragraph(ps.getUser().getFirstName() + " " + ps.getUser().getLastName()));
-                if (ps.getUser().getAddress() != null) {
-                    doc.add(new Paragraph(ps.getUser().getAddress()));
-                }
+            } catch (Exception ignore) {
             }
 
-            doc.add(new Paragraph("Period: " + ps.getPeriodStart() + " - " + ps.getPeriodEnd()));
+            String companyName = ps.getUser() != null && ps.getUser().getCompany() != null
+                    ? ps.getUser().getCompany().getName() : "";
+            Font titleFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16);
+            Font labelFont = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 12);
+            Font normalFont = FontFactory.getFont(FontFactory.HELVETICA, 12);
 
-            PdfPTable earningsTable = new PdfPTable(2);
-            earningsTable.setSpacingBefore(10);
+            Paragraph title = new Paragraph(companyName + " - Payslip", titleFont);
+            title.setAlignment(Element.ALIGN_CENTER);
+            title.setSpacingAfter(20);
+            doc.add(title);
+
+            PdfPTable infoTable = new PdfPTable(2);
+            infoTable.setWidthPercentage(100);
+            infoTable.setSpacingAfter(15);
+            if (ps.getUser() != null) {
+                infoTable.addCell(new Phrase("Employee", labelFont));
+                infoTable.addCell(new Phrase(ps.getUser().getFirstName() + " " + ps.getUser().getLastName(), normalFont));
+                infoTable.addCell(new Phrase("Address", labelFont));
+                infoTable.addCell(new Phrase(ps.getUser().getAddress() == null ? "" : ps.getUser().getAddress(), normalFont));
+                infoTable.addCell(new Phrase("Personnel No", labelFont));
+                infoTable.addCell(new Phrase(ps.getUser().getPersonnelNumber() == null ? "" : ps.getUser().getPersonnelNumber(), normalFont));
+            }
+            infoTable.addCell(new Phrase("Period", labelFont));
+            infoTable.addCell(new Phrase(ps.getPeriodStart() + " - " + ps.getPeriodEnd(), normalFont));
+            doc.add(infoTable);
+
+            PdfPTable earningsTable = new PdfPTable(new float[]{4, 2});
             earningsTable.setWidthPercentage(100);
-            earningsTable.addCell(new Phrase("Earnings", headerFont));
-            earningsTable.addCell(new Phrase("Amount", headerFont));
+            earningsTable.setSpacingAfter(10);
+            earningsTable.addCell(new Phrase("Earnings", labelFont));
+            earningsTable.addCell(new Phrase("Amount", labelFont));
             for (var comp : ps.getEarnings()) {
-                earningsTable.addCell(comp.getType());
-                earningsTable.addCell(String.format("%.2f", comp.getAmount()));
+                earningsTable.addCell(new Phrase(comp.getType(), normalFont));
+                earningsTable.addCell(new Phrase(String.format("%.2f", comp.getAmount()), normalFont));
             }
             doc.add(earningsTable);
 
-            PdfPTable dedTable = new PdfPTable(2);
+            PdfPTable dedTable = new PdfPTable(new float[]{4, 2});
             dedTable.setWidthPercentage(100);
-            dedTable.addCell(new Phrase("Deductions", headerFont));
-            dedTable.addCell(new Phrase("Amount", headerFont));
+            dedTable.setSpacingAfter(10);
+            dedTable.addCell(new Phrase("Deductions", labelFont));
+            dedTable.addCell(new Phrase("Amount", labelFont));
             for (var comp : ps.getDeductionsList()) {
-                dedTable.addCell(comp.getType());
-                dedTable.addCell(String.format("%.2f", comp.getAmount()));
+                dedTable.addCell(new Phrase(comp.getType(), normalFont));
+                dedTable.addCell(new Phrase(String.format("%.2f", comp.getAmount()), normalFont));
             }
             doc.add(dedTable);
 
-            doc.add(new Paragraph("Gross: " + ps.getGrossSalary()));
-            doc.add(new Paragraph("Deductions: " + ps.getDeductions()));
-            doc.add(new Paragraph("Net salary: " + ps.getNetSalary()));
+            PdfPTable totals = new PdfPTable(new float[]{4, 2});
+            totals.setWidthPercentage(100);
+            totals.setSpacingAfter(20);
+            totals.addCell(new Phrase("Gross Salary", labelFont));
+            totals.addCell(new Phrase(String.format("%.2f", ps.getGrossSalary()), normalFont));
+            totals.addCell(new Phrase("Deductions", labelFont));
+            totals.addCell(new Phrase(String.format("%.2f", ps.getDeductions()), normalFont));
+            totals.addCell(new Phrase("Net Salary", labelFont));
+            totals.addCell(new Phrase(String.format("%.2f", ps.getNetSalary()), normalFont));
+            doc.add(totals);
+
             if (ps.getPayoutDate() != null) {
-                doc.add(new Paragraph("Payout date: " + ps.getPayoutDate()));
+                Paragraph payout = new Paragraph("Payout date: " + ps.getPayoutDate(), normalFont);
+                payout.setSpacingAfter(10);
+                doc.add(payout);
             }
+
             Paragraph footer = new Paragraph("Generated by Chrono Payroll", FontFactory.getFont(FontFactory.HELVETICA, 8));
             footer.setAlignment(Element.ALIGN_CENTER);
             doc.add(footer);

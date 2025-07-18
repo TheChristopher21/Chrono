@@ -63,11 +63,21 @@ public class PayrollService {
             }
         }
         double hours = minutes / 60.0;
-        double rate = user.getHourlyRate() != null ? user.getHourlyRate() : 0.0;
-        double overtimeHours = Math.max(0, hours - 160);
-        double baseHours = hours - overtimeHours;
-        double basePay = baseHours * rate;
-        double overtimePay = overtimeHours * rate * (1 + OVERTIME_BONUS);
+        double basePay;
+        double overtimePay = 0.0;
+        if (user.getIsHourly() != null && user.getIsHourly()) {
+            double rate = user.getHourlyRate() != null ? user.getHourlyRate() : 0.0;
+            double overtimeHours = Math.max(0, hours - 160);
+            double baseHours = hours - overtimeHours;
+            basePay = baseHours * rate;
+            overtimePay = overtimeHours * rate * (1 + OVERTIME_BONUS);
+        } else {
+            basePay = user.getMonthlySalary() != null ? user.getMonthlySalary() : 0.0;
+            if (hours > 160 && user.getHourlyRate() != null) {
+                double overtimeHours = hours - 160;
+                overtimePay = overtimeHours * user.getHourlyRate() * (1 + OVERTIME_BONUS);
+            }
+        }
         double gross = basePay + overtimePay;
         double tax = gross * TAX_RATE;
         double social = gross * SOCIAL_RATE;
@@ -160,9 +170,39 @@ public class PayrollService {
     }
 
     @Transactional(readOnly = true)
-    public List<PayslipDTO> getApprovedPayslips() {
-        return payslipRepository.findByApproved(true)
-                .stream().map(PayslipDTO::new).toList();
+    public List<PayslipDTO> getApprovedPayslips(String name, LocalDate start, LocalDate end) {
+        List<Payslip> list = payslipRepository.findByApproved(true);
+        if (name != null && !name.isBlank()) {
+            String lower = name.toLowerCase();
+            list = list.stream().filter(ps -> {
+                User u = ps.getUser();
+                if (u == null) return false;
+                String full = (u.getFirstName() + " " + u.getLastName()).toLowerCase();
+                return full.contains(lower) ||
+                        (u.getUsername() != null && u.getUsername().toLowerCase().contains(lower));
+            }).toList();
+        }
+        if (start != null) {
+            list = list.stream().filter(ps -> !ps.getPeriodEnd().isBefore(start)).toList();
+        }
+        if (end != null) {
+            list = list.stream().filter(ps -> !ps.getPeriodStart().isAfter(end)).toList();
+        }
+        return list.stream().map(PayslipDTO::new).toList();
 
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] getPayslipPdf(Long id) {
+        Payslip ps = payslipRepository.findById(id).orElseThrow();
+        if (ps.getPdfPath() == null) {
+            ps.setPdfPath(pdfService.generatePayslipPdf(ps));
+            payslipRepository.save(ps);
+        }
+        try {
+            return java.nio.file.Files.readAllBytes(java.nio.file.Path.of(ps.getPdfPath()));
+        } catch (java.io.IOException e) {
+            return null;
+        }
     }
 }
