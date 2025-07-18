@@ -151,6 +151,8 @@ public class AdminUserController {
         newUser.setCivilStatus(userDTO.getCivilStatus());
         newUser.setChildren(userDTO.getChildren());
         newUser.setReligion(userDTO.getReligion());
+        newUser.setBankAccount(userDTO.getBankAccount());
+        newUser.setSocialSecurityNumber(userDTO.getSocialSecurityNumber());
         newUser.setHealthInsurance(userDTO.getHealthInsurance());
         newUser.setPersonnelNumber(userDTO.getPersonnelNumber());
         newUser.setEmail(userDTO.getEmail());
@@ -338,6 +340,8 @@ public class AdminUserController {
         existingUser.setCivilStatus(userDTO.getCivilStatus());
         existingUser.setChildren(userDTO.getChildren());
         existingUser.setReligion(userDTO.getReligion());
+        existingUser.setBankAccount(userDTO.getBankAccount());
+        existingUser.setSocialSecurityNumber(userDTO.getSocialSecurityNumber());
         existingUser.setHealthInsurance(userDTO.getHealthInsurance());
         existingUser.setPersonnelNumber(userDTO.getPersonnelNumber());
         existingUser.setEmail(userDTO.getEmail());

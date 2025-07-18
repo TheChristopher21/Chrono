@@ -109,6 +109,81 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
+                    <label htmlFor="country">{t("userManagement.country", "Land")}</label>
+                    <select
+                        id="country"
+                        value={userData.country || "DE"}
+                        onChange={(e) => handleChange("country", e.target.value)}
+                    >
+                        <option value="DE">DE</option>
+                        <option value="CH">CH</option>
+                    </select>
+                </div>
+                <div className="form-group">
+                    <label htmlFor="tarifCode">{t("userManagement.tarifCode", "Tarifcode")}</label>
+                    <input
+                        id="tarifCode"
+                        type="text"
+                        value={userData.tarifCode || ""}
+                        onChange={(e) => handleChange("tarifCode", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="canton">{t("userManagement.canton", "Kanton")}</label>
+                    <input
+                        id="canton"
+                        type="text"
+                        value={userData.canton || ""}
+                        onChange={(e) => handleChange("canton", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="civilStatus">{t("userManagement.civilStatus", "Zivilstand")}</label>
+                    <input
+                        id="civilStatus"
+                        type="text"
+                        value={userData.civilStatus || ""}
+                        onChange={(e) => handleChange("civilStatus", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="children">{t("userManagement.children", "Kinder")}</label>
+                    <input
+                        id="children"
+                        type="number"
+                        min="0"
+                        value={userData.children ?? 0}
+                        onChange={(e) => handleChange("children", parseInt(e.target.value, 10))}
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="religion">{t("userManagement.religion", "Religion")}</label>
+                    <input
+                        id="religion"
+                        type="text"
+                        value={userData.religion || ""}
+                        onChange={(e) => handleChange("religion", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="bankAccount">{t("userManagement.bankAccount", "Bankverbindung")}</label>
+                    <input
+                        id="bankAccount"
+                        type="text"
+                        value={userData.bankAccount || ""}
+                        onChange={(e) => handleChange("bankAccount", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="socialSecurityNumber">{t("userManagement.socialSecurityNumber", "AHV-Nr.")}</label>
+                    <input
+                        id="socialSecurityNumber"
+                        type="text"
+                        value={userData.socialSecurityNumber || ""}
+                        onChange={(e) => handleChange("socialSecurityNumber", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
                     <label htmlFor="taxClass">{t("userManagement.taxClass", "Steuerklasse")}</label>
                     <input
                         id="taxClass"
@@ -139,8 +214,6 @@ const AdminUserForm = ({
                         required
                     />
                 </div>
-                <div className="form-group">
-                <div className="form-group">
                 <div className="form-group">
                     <label htmlFor="email">{t("userManagement.email", "E-Mail")}:</label>
                     <input
