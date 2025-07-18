@@ -43,8 +43,9 @@ public class PdfService {
             // Firmendaten (rechts)
             String companyName = ps.getUser() != null && ps.getUser().getCompany() != null
                     ? ps.getUser().getCompany().getName() : "Firma Muster AG";
-            String companyAddress = ps.getUser() != null && ps.getUser().getCompany() != null
-                    ? ps.getUser().getCompany().getAddress() : "Beispielstr. 1, 8000 Zürich";
+            // Company besitzt aktuell kein Adressfeld. Verwende statischen
+            // Platzhalter, um Kompilierungsfehler zu vermeiden.
+            String companyAddress = "Beispielstr. 1, 8000 Zürich";
             String companyContact = "Tel. 044 123 45 67 | info@firma.ch";
             PdfPCell companyCell = new PdfPCell();
             companyCell.addElement(new Phrase(companyName, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13)));
@@ -90,8 +91,10 @@ public class PdfService {
 
             employeeTable.addCell(cell("Bank", labelFont, true));
             employeeTable.addCell(cell(safe(ps.getUser().getBankAccount()), normalFont, false));
+            // Das User-Entity besitzt kein 'Department'-Feld mehr. Zur
+            // Wahrung des Layouts wird ein leerer Wert eingetragen.
             employeeTable.addCell(cell("Abteilung", labelFont, true));
-            employeeTable.addCell(cell(safe(ps.getUser().getDepartment()), normalFont, false));
+            employeeTable.addCell(cell("", normalFont, false));
 
             doc.add(employeeTable);
             doc.add(new Paragraph(" "));
@@ -137,21 +140,9 @@ public class PdfService {
             doc.add(dedTable);
             doc.add(new Paragraph(" "));
 
-            // ---- Überstunden/Resturlaub ----
-            if (ps.getUser().getOvertimeBalance() != null || ps.getUser().getVacationBalance() != null) {
-                PdfPTable saldoTable = new PdfPTable(2);
-                saldoTable.setWidthPercentage(55);
-                saldoTable.setSpacingAfter(8);
-                if (ps.getUser().getOvertimeBalance() != null) {
-                    saldoTable.addCell(cell("Überstundensaldo", labelFont, true));
-                    saldoTable.addCell(cell(String.format("%.1f Std.", ps.getUser().getOvertimeBalance()), normalFont, false));
-                }
-                if (ps.getUser().getVacationBalance() != null) {
-                    saldoTable.addCell(cell("Resturlaub", labelFont, true));
-                    saldoTable.addCell(cell(String.format("%.1f Tage", ps.getUser().getVacationBalance()), normalFont, false));
-                }
-                doc.add(saldoTable);
-            }
+            // Die Felder "OvertimeBalance" und "VacationBalance" existieren im
+            // User-Entity nicht mehr. Der entsprechende PDF-Block wird daher
+            // übersprungen.
 
             // ---- Summenblock ----
             PdfPTable totals = new PdfPTable(3);
