@@ -203,6 +203,38 @@ const AdminUserForm = ({
                     <label htmlFor="isPercentage">{t("userManagement.percentageTracking", "Prozentbasierte Zeiterfassung")}</label>
                 </div>
 
+                {userData.isHourly && (
+                    <div className="form-group">
+                        <label htmlFor="hourlyWage">{t("userManagement.hourlyWage", "Stundenlohn (Brutto)")}</label>
+                        <input
+                            id="hourlyWage"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={userData.hourlyWage ?? ""}
+                            onChange={(e) => handleChange("hourlyWage", e.target.value ? parseFloat(e.target.value) : null)}
+                            placeholder="z.B. 25.00"
+                            required
+                        />
+                    </div>
+                )}
+
+                {!userData.isHourly && (
+                    <div className="form-group">
+                        <label htmlFor="monthlySalary">{t("userManagement.monthlySalary", "Monatslohn (Brutto)")}</label>
+                        <input
+                            id="monthlySalary"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            value={userData.monthlySalary ?? ""}
+                            onChange={(e) => handleChange("monthlySalary", e.target.value ? parseFloat(e.target.value) : null)}
+                            placeholder="z.B. 4500.00"
+                            required
+                        />
+                    </div>
+                )}
+
                 {userData.isPercentage && !userData.isHourly && (
                     <div className="form-group">
                         <label htmlFor="workPercentage">{t("userManagement.workPercentage", "Arbeitspensum (%)")}:</label>
