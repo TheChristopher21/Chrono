@@ -53,6 +53,7 @@ const AdminPayslipsPage = () => {
         win?.print();
       })
       .catch(() => alert(t('payslips.printError')));
+
   };
 
   const createPayslip = () => {
