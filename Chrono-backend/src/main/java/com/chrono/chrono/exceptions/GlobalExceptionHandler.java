@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -19,6 +20,13 @@ public class GlobalExceptionHandler {
         logger.error("User not found: {}", ex.getMessage());
         // Gib dem Client eine generische Fehlermeldung zurück
         return new ResponseEntity<>("Benutzer wurde nicht gefunden.", HttpStatus.NOT_FOUND);
+    }
+
+    // Spezieller Handler für zu große Datei-Uploads
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    public ResponseEntity<String> handleMaxSize(MaxUploadSizeExceededException ex) {
+        logger.error("Dateiupload zu groß", ex);
+        return new ResponseEntity<>("Datei ist zu groß.", HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
     // Weitere spezifische Exception-Handler können hier hinzugefügt werden
