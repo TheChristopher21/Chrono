@@ -9,6 +9,7 @@ const AdminPayslipsPage = () => {
   const [approvedSlips, setApprovedSlips] = useState([]);
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState({ userId: '', start: '', end: '' });
+  const [filter, setFilter] = useState({ name: '', start: '', end: '' });
   const { t } = useTranslation();
 
   const fetchPending = () => {
@@ -18,7 +19,7 @@ const AdminPayslipsPage = () => {
   };
 
   const fetchApproved = () => {
-    api.get('/api/payslips/admin/approved').then(res => {
+    api.get('/api/payslips/admin/approved', { params: filter }).then(res => {
       setApprovedSlips(res.data);
     });
   };
@@ -44,6 +45,14 @@ const AdminPayslipsPage = () => {
     });
   };
 
+  const printPdf = (id) => {
+    api.get(`/api/payslips/admin/pdf/${id}`, { responseType: 'blob' }).then(res => {
+      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+      const win = window.open(url);
+      win?.print();
+    });
+  };
+
   const createPayslip = () => {
     if (!form.userId || !form.start || !form.end) return;
     api.post('/api/payslips/generate', null, {
@@ -57,9 +66,8 @@ const AdminPayslipsPage = () => {
   useEffect(() => {
     fetchPending();
     fetchApproved();
-    // Hier die Userliste holen:
     api.get('/api/admin/users').then(res => setUsers(res.data));
-  }, []);
+  }, [filter]);
 
   const backup = () => {
     api.get('/api/payslips/admin/backup');
@@ -109,6 +117,18 @@ const AdminPayslipsPage = () => {
         </table>
 
         <h2>{t('payslips.approvedTitle')}</h2>
+        <div className="filter-form">
+          <input
+            placeholder={t('payslips.filterName', 'Name')}
+            value={filter.name}
+            onChange={e => setFilter({ ...filter, name: e.target.value })}
+          />
+          <input type="date" value={filter.start}
+            onChange={e => setFilter({ ...filter, start: e.target.value })} />
+          <input type="date" value={filter.end}
+            onChange={e => setFilter({ ...filter, end: e.target.value })} />
+          <button onClick={fetchApproved}>{t('payslips.filter', 'Filtern')}</button>
+        </div>
         <table className="payslip-table">
           <thead>
           <tr>
@@ -116,6 +136,7 @@ const AdminPayslipsPage = () => {
             <th>{t('payslips.period', 'Zeitraum')}</th>
             <th>{t('payslips.gross')}</th>
             <th>{t('payslips.net')}</th>
+            <th></th>
           </tr>
           </thead>
           <tbody>
@@ -125,6 +146,7 @@ const AdminPayslipsPage = () => {
                 <td>{ps.periodStart} - {ps.periodEnd}</td>
                 <td>{ps.grossSalary?.toFixed(2)} CHF</td>
                 <td>{ps.netSalary?.toFixed(2)} CHF</td>
+                <td><button onClick={() => printPdf(ps.id)}>{t('payslips.print')}</button></td>
               </tr>
           ))}
           </tbody>

@@ -566,7 +566,11 @@ const translations = {
             period: "Zeitraum",
             user: "Benutzer",
             gross: "Brutto",
-            net: "Netto"
+            net: "Netto",
+            filterName: "Name",
+            start: "Startdatum",
+            end: "Enddatum",
+            filter: "Filtern"
         },
         notFound: {
             pageNotFound: "404 - Seite nicht gefunden",
@@ -1133,7 +1137,11 @@ const translations = {
             period: "Period",
             user: "User",
             gross: "Gross",
-            net: "Net"
+            net: "Net",
+            filterName: "Name",
+            start: "Start",
+            end: "End",
+            filter: "Filter"
         },
         notFound: {
             pageNotFound: "404 - Page not found",

@@ -170,9 +170,39 @@ public class PayrollService {
     }
 
     @Transactional(readOnly = true)
-    public List<PayslipDTO> getApprovedPayslips() {
-        return payslipRepository.findByApproved(true)
-                .stream().map(PayslipDTO::new).toList();
+    public List<PayslipDTO> getApprovedPayslips(String name, LocalDate start, LocalDate end) {
+        List<Payslip> list = payslipRepository.findByApproved(true);
+        if (name != null && !name.isBlank()) {
+            String lower = name.toLowerCase();
+            list = list.stream().filter(ps -> {
+                User u = ps.getUser();
+                if (u == null) return false;
+                String full = (u.getFirstName() + " " + u.getLastName()).toLowerCase();
+                return full.contains(lower) ||
+                        (u.getUsername() != null && u.getUsername().toLowerCase().contains(lower));
+            }).toList();
+        }
+        if (start != null) {
+            list = list.stream().filter(ps -> !ps.getPeriodEnd().isBefore(start)).toList();
+        }
+        if (end != null) {
+            list = list.stream().filter(ps -> !ps.getPeriodStart().isAfter(end)).toList();
+        }
+        return list.stream().map(PayslipDTO::new).toList();
 
+    }
+
+    @Transactional(readOnly = true)
+    public byte[] getPayslipPdf(Long id) {
+        Payslip ps = payslipRepository.findById(id).orElseThrow();
+        if (ps.getPdfPath() == null) {
+            ps.setPdfPath(pdfService.generatePayslipPdf(ps));
+            payslipRepository.save(ps);
+        }
+        try {
+            return java.nio.file.Files.readAllBytes(java.nio.file.Path.of(ps.getPdfPath()));
+        } catch (java.io.IOException e) {
+            return null;
+        }
     }
 }
