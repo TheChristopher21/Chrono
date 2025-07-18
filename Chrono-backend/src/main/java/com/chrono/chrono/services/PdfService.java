@@ -63,6 +63,7 @@ public class PdfService {
             // Firmendaten (rechts)
             String companyName = ps.getUser() != null && ps.getUser().getCompany() != null
                     ? ps.getUser().getCompany().getName() : "";
+
             PdfPCell companyCell = new PdfPCell();
             companyCell.addElement(new Phrase(companyName,
                     FontFactory.getFont(FontFactory.HELVETICA_BOLD, 13)));
@@ -127,6 +128,7 @@ public class PdfService {
             String taxInfo = ps.getUser().getTarifCode() != null && !ps.getUser().getTarifCode().isEmpty() ?
                     ps.getUser().getTarifCode() : safe(ps.getUser().getTaxClass());
             employeeTable.addCell(cell(taxInfo, normalFont, false));
+
 
             doc.add(employeeTable);
             doc.add(new Paragraph(" "));
@@ -208,6 +210,7 @@ public class PdfService {
                 }
                 doc.add(saldoTable);
             }
+
 
             // ---- Summenblock ----
             PdfPTable totals = new PdfPTable(3);
