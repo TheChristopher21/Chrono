@@ -20,6 +20,8 @@
 .payslip-table {
   width: 100%;
   border-collapse: collapse;
+  margin-top: 1rem;
+  background: var(--c-card);
 }
 
 .payslip-table th,
@@ -39,4 +41,69 @@
   background: var(--c-card);
   border: 1px solid var(--c-border);
   cursor: pointer;
+  transition: background 0.2s;
+}
+.payslip-table button:hover {
+  background: var(--c-border);
+}
+
+.generate-form {
+  margin: 1rem 0;
+  display: flex;
+  gap: 0.7rem;
+}
+
+.generate-form input[type="date"] {
+  padding: 0.38rem 0.7rem;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  background: var(--c-card);
+  color: var(--c-text);
+}
+
+.generate-form button {
+  padding: 0.45rem 1.2rem;
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  color: var(--c-text);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.generate-form button:hover {
+  background: var(--c-border);
+}
+
+.schedule-form {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.schedule-form input[type="number"] {
+  width: 4rem;
+  padding: 0.3rem;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  background: var(--c-card);
+  color: var(--c-text);
+}
+.schedule-form button {
+  padding: 0.45rem 1.2rem;
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  color: var(--c-text);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.schedule-form button:hover {
+  background: var(--c-border);
+}
+
+.print-lang-select {
+  margin-bottom: 0.5rem;
+}
+.print-lang-select label {
+  margin-right: 0.4rem;
 }

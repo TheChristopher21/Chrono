@@ -6,8 +6,10 @@ import com.chrono.chrono.entities.PayslipAudit;
 import com.chrono.chrono.entities.PayComponent;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.entities.PayslipSchedule;
 import com.chrono.chrono.repositories.PayslipAuditRepository;
 import com.chrono.chrono.repositories.PayslipRepository;
+import com.chrono.chrono.repositories.PayslipScheduleRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.EmailService;
@@ -35,6 +37,8 @@ public class PayrollService {
     private EmailService emailService;
     @Autowired
     private PdfService pdfService;
+    @Autowired
+    private PayslipScheduleRepository payslipScheduleRepository;
 
     private static final double TAX_RATE = 0.15; // simple example tax
     private static final double SOCIAL_RATE = 0.05; // social deductions
@@ -229,5 +233,33 @@ public class PayrollService {
         return bytes;
 
 
+    }
+    public void setPayslipSchedule(Long userId, int dayOfMonth) {
+        User user = userRepository.findById(userId).orElseThrow();
+        PayslipSchedule sched = payslipScheduleRepository.findByUser(user).orElse(new PayslipSchedule());
+        sched.setUser(user);
+        sched.setDayOfMonth(dayOfMonth);
+        LocalDate today = LocalDate.now();
+        LocalDate next = today.withDayOfMonth(Math.min(dayOfMonth, today.lengthOfMonth()));
+        if (!next.isAfter(today)) {
+            LocalDate tmp = today.plusMonths(1);
+            next = tmp.withDayOfMonth(Math.min(dayOfMonth, tmp.lengthOfMonth()));
+        }
+        sched.setNextRun(next);
+        payslipScheduleRepository.save(sched);
+    }
+
+    /**
+     * Enable monthly payslip generation for all non-deleted users.
+     * The day parameter indicates which day of the month should trigger creation.
+     */
+    @Transactional
+    public void setPayslipScheduleForAll(int dayOfMonth) {
+        List<User> users = userRepository.findAll();
+        for (User u : users) {
+            if (!u.isDeleted()) {
+                setPayslipSchedule(u.getId(), dayOfMonth);
+            }
+        }
     }
 }

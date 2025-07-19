@@ -576,7 +576,10 @@ const translations = {
             printError: "PDF konnte nicht geladen werden",
             saveLogo: "Logo speichern",
             logoSaved: "Logo gespeichert",
-            logoSaveError: "Fehler beim Speichern"
+            logoSaveError: "Fehler beim Speichern",
+            scheduleDay: "Automatisch am Tag",
+            scheduleButton: "Planen",
+            scheduleAll: "Automatische Abrechnung für alle aktivieren"
 
         },
         notFound: {
@@ -1154,7 +1157,10 @@ const translations = {
             printError: "Failed to load PDF",
             saveLogo: "Save logo",
             logoSaved: "Logo saved",
-            logoSaveError: "Failed to save logo"
+            logoSaveError: "Failed to save logo",
+            scheduleDay: "Automatically on day",
+            scheduleButton: "Schedule",
+            scheduleAll: "Enable automatic payslips for all"
 
         },
         notFound: {
