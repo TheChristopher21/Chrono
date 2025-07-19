@@ -3,6 +3,7 @@ import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import '../styles/AdminPayslipsPageScoped.css';
 import { useTranslation, LanguageContext } from '../context/LanguageContext';
+import ScheduleAllModal from '../components/ScheduleAllModal';
 
 const AdminPayslipsPage = () => {
   const [payslips, setPayslips] = useState([]);
@@ -14,6 +15,7 @@ const AdminPayslipsPage = () => {
   const { t } = useTranslation();
   const { language } = useContext(LanguageContext);
   const [printLang, setPrintLang] = useState('de');
+  const [scheduleVisible, setScheduleVisible] = useState(false);
 
   const fetchPending = () => {
     api.get('/api/payslips/admin/pending').then(res => {
@@ -35,6 +37,15 @@ const AdminPayslipsPage = () => {
   const approveAll = () => {
     const comment = prompt(t('payslips.approveAll'));
     api.post('/api/payslips/approve-all', null, { params: { comment } }).then(() => fetchPending());
+  };
+
+  const scheduleAll = () => {
+    setScheduleVisible(true);
+  };
+
+  const confirmScheduleAll = (day) => {
+    api.post('/api/payslips/schedule-all', null, { params: { day } });
+    setScheduleVisible(false);
   };
 
   const exportCsv = () => {
@@ -117,6 +128,12 @@ const AdminPayslipsPage = () => {
         <button className="approve-all" onClick={approveAll}>{t('payslips.approveAll')}</button>
         <button className="approve-all" onClick={exportCsv}>{t('payslips.exportCsv')}</button>
         <button className="approve-all" onClick={backup}>{t('payslips.backup')}</button>
+        <button className="approve-all" onClick={scheduleAll}>{t('payslips.scheduleAll')}</button>
+        <ScheduleAllModal
+          visible={scheduleVisible}
+          onConfirm={confirmScheduleAll}
+          onClose={() => setScheduleVisible(false)}
+        />
         <table className="payslip-table">
           <thead>
           <tr>
