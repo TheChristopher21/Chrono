@@ -34,6 +34,7 @@ const PayslipsPage = () => {
     });
   };
 
+
   const handlePrint = async (ps) => {
     const prev = language;
     if (printLang !== language) {
@@ -95,6 +96,7 @@ const PayslipsPage = () => {
         />
         <button onClick={saveSchedule}>{t('payslips.scheduleButton')}</button>
       </div>
+
       <table className="payslip-table">
         <thead>
           <tr>

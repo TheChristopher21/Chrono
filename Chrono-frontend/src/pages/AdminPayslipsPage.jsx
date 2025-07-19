@@ -46,6 +46,7 @@ const AdminPayslipsPage = () => {
   const confirmScheduleAll = (day) => {
     api.post('/api/payslips/schedule-all', null, { params: { day } });
     setScheduleVisible(false);
+
   };
 
   const exportCsv = () => {
@@ -134,6 +135,7 @@ const AdminPayslipsPage = () => {
           onConfirm={confirmScheduleAll}
           onClose={() => setScheduleVisible(false)}
         />
+
         <table className="payslip-table">
           <thead>
           <tr>
