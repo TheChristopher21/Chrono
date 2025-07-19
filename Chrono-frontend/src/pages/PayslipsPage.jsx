@@ -12,6 +12,19 @@ const PayslipsPage = () => {
   const { language, setLanguage } = useContext(LanguageContext);
   const [printLang, setPrintLang] = useState('de');
   const [payslips, setPayslips] = useState([]);
+  const [form, setForm] = useState({ start: '', end: '' });
+
+  const createPayslip = () => {
+    if (!form.start || !form.end || !currentUser) return;
+    api
+      .post('/api/payslips/generate', null, {
+        params: { userId: currentUser.id, start: form.start, end: form.end }
+      })
+      .then(res => {
+        setPayslips(prev => [...prev, res.data]);
+        setForm({ start: '', end: '' });
+      });
+  };
 
   const handlePrint = async (ps) => {
     const prev = language;
@@ -49,6 +62,19 @@ const PayslipsPage = () => {
           <option value="de">DE</option>
           <option value="en">EN</option>
         </select>
+      </div>
+      <div className="generate-form">
+        <input
+          type="date"
+          value={form.start}
+          onChange={e => setForm({ ...form, start: e.target.value })}
+        />
+        <input
+          type="date"
+          value={form.end}
+          onChange={e => setForm({ ...form, end: e.target.value })}
+        />
+        <button onClick={createPayslip}>{t('payslips.generate', 'Erstellen')}</button>
       </div>
       <table className="payslip-table">
         <thead>
