@@ -15,7 +15,6 @@ const PayslipsPage = () => {
   const [form, setForm] = useState({ start: '', end: '' });
   const [scheduleDay, setScheduleDay] = useState(1);
 
-
   const createPayslip = () => {
     if (!form.start || !form.end || !currentUser) return;
     api
