@@ -31,6 +31,22 @@ public class PayslipController {
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
+    @PostMapping("/schedule")
+    public ResponseEntity<Void> schedule(
+            @RequestParam Long userId,
+            @RequestParam int day) {
+        payrollService.setPayslipSchedule(userId, day);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PostMapping("/schedule-all")
+    public ResponseEntity<Void> scheduleAll(@RequestParam(defaultValue = "1") int day) {
+        payrollService.setPayslipScheduleForAll(day);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<PayslipDTO>> list(@PathVariable Long userId) {
         List<Payslip> list = payrollService.getPayslipsForUser(userId);

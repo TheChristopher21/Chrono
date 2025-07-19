@@ -37,6 +37,11 @@ const AdminPayslipsPage = () => {
     api.post('/api/payslips/approve-all', null, { params: { comment } }).then(() => fetchPending());
   };
 
+  const scheduleAll = () => {
+    const day = parseInt(prompt(t('payslips.scheduleDay'))) || 1;
+    api.post('/api/payslips/schedule-all', null, { params: { day } });
+  };
+
   const exportCsv = () => {
     api.get('/api/payslips/admin/export', { responseType: 'blob' }).then(res => {
       const url = window.URL.createObjectURL(new Blob([res.data]));
@@ -117,6 +122,7 @@ const AdminPayslipsPage = () => {
         <button className="approve-all" onClick={approveAll}>{t('payslips.approveAll')}</button>
         <button className="approve-all" onClick={exportCsv}>{t('payslips.exportCsv')}</button>
         <button className="approve-all" onClick={backup}>{t('payslips.backup')}</button>
+        <button className="approve-all" onClick={scheduleAll}>{t('payslips.scheduleAll')}</button>
         <table className="payslip-table">
           <thead>
           <tr>

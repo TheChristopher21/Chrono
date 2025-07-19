@@ -74,6 +74,34 @@
   background: var(--c-border);
 }
 
+.schedule-form {
+  margin-bottom: 1rem;
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.schedule-form input[type="number"] {
+  width: 4rem;
+  padding: 0.3rem;
+  border: 1px solid var(--c-border);
+  border-radius: 4px;
+  background: var(--c-card);
+  color: var(--c-text);
+}
+.schedule-form button {
+  padding: 0.45rem 1.2rem;
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  color: var(--c-text);
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.schedule-form button:hover {
+  background: var(--c-border);
+}
+
+
 .print-lang-select {
   margin-bottom: 0.5rem;
 }

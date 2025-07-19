@@ -13,6 +13,8 @@ const PayslipsPage = () => {
   const [printLang, setPrintLang] = useState('de');
   const [payslips, setPayslips] = useState([]);
   const [form, setForm] = useState({ start: '', end: '' });
+  const [scheduleDay, setScheduleDay] = useState(1);
+
 
   const createPayslip = () => {
     if (!form.start || !form.end || !currentUser) return;
@@ -25,6 +27,14 @@ const PayslipsPage = () => {
         setForm({ start: '', end: '' });
       });
   };
+
+  const saveSchedule = () => {
+    if (!currentUser) return;
+    api.post('/api/payslips/schedule', null, {
+      params: { userId: currentUser.id, day: scheduleDay }
+    });
+  };
+
 
   const handlePrint = async (ps) => {
     const prev = language;
@@ -76,6 +86,18 @@ const PayslipsPage = () => {
         />
         <button onClick={createPayslip}>{t('payslips.generate', 'Erstellen')}</button>
       </div>
+      <div className="schedule-form">
+        <label>{t('payslips.scheduleDay')}:</label>
+        <input
+          type="number"
+          min="1"
+          max="28"
+          value={scheduleDay}
+          onChange={e => setScheduleDay(e.target.value)}
+        />
+        <button onClick={saveSchedule}>{t('payslips.scheduleButton')}</button>
+      </div>
+
       <table className="payslip-table">
         <thead>
           <tr>
