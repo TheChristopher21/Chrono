@@ -15,6 +15,7 @@ const PayslipsPage = () => {
   const [form, setForm] = useState({ start: '', end: '' });
   const [scheduleDay, setScheduleDay] = useState(1);
 
+
   const createPayslip = () => {
     if (!form.start || !form.end || !currentUser) return;
     api
@@ -33,6 +34,7 @@ const PayslipsPage = () => {
       params: { userId: currentUser.id, day: scheduleDay }
     });
   };
+
 
   const handlePrint = async (ps) => {
     const prev = language;
@@ -95,6 +97,7 @@ const PayslipsPage = () => {
         />
         <button onClick={saveSchedule}>{t('payslips.scheduleButton')}</button>
       </div>
+
       <table className="payslip-table">
         <thead>
           <tr>
