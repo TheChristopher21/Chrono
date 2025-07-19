@@ -149,7 +149,7 @@ const AdminPayslipsPage = () => {
           <tbody>
           {payslips.map(ps => (
               <tr key={ps.id}>
-                <td>{ps.userId}</td>
+                <td>{ps.firstName} {ps.lastName}</td>
                 <td>{ps.periodStart} - {ps.periodEnd}</td>
                 <td>{ps.grossSalary?.toFixed(2)} CHF</td>
                 <td>{ps.netSalary?.toFixed(2)} CHF</td>
@@ -192,7 +192,7 @@ const AdminPayslipsPage = () => {
           <tbody>
           {approvedSlips.map(ps => (
               <tr key={ps.id}>
-                <td>{ps.userId}</td>
+                <td>{ps.firstName} {ps.lastName}</td>
                 <td>{ps.periodStart} - {ps.periodEnd}</td>
                 <td>{ps.grossSalary?.toFixed(2)} CHF</td>
                 <td>{ps.netSalary?.toFixed(2)} CHF</td>

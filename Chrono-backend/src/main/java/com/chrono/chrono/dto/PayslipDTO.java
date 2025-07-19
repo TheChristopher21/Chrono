@@ -8,6 +8,8 @@ import java.util.List;
 public class PayslipDTO {
     private Long id;
     private Long userId;
+    private String firstName;
+    private String lastName;
     private LocalDate periodStart;
     private LocalDate periodEnd;
     private Double grossSalary;
@@ -32,6 +34,8 @@ public class PayslipDTO {
     public PayslipDTO(Payslip ps) {
         this.id = ps.getId();
         this.userId = ps.getUser() != null ? ps.getUser().getId() : null;
+        this.firstName = ps.getUser() != null ? ps.getUser().getFirstName() : null;
+        this.lastName = ps.getUser() != null ? ps.getUser().getLastName() : null;
         this.periodStart = ps.getPeriodStart();
         this.periodEnd = ps.getPeriodEnd();
         this.grossSalary = ps.getGrossSalary();
@@ -76,4 +80,6 @@ public class PayslipDTO {
     public String getPdfPath() { return pdfPath; }
     public Integer getVersion() { return version; }
     public boolean isApproved() { return approved; }
+    public String getFirstName() { return firstName; }
+    public String getLastName() { return lastName; }
 }
