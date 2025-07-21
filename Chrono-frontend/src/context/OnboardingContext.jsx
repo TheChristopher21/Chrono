@@ -11,6 +11,7 @@ export function OnboardingProvider({ children }) {
 
     const start = (force = false) => {
         if (force || localStorage.getItem('onboardingDone') !== 'true') {
+
             setShow(true);
         }
     };
