@@ -435,8 +435,7 @@ const AdminUserForm = ({
                         {t("userManagement.button.cancel", "Abbrechen")}
                     </button>
                 </div>
-                </div>
-                </div>
+
 
             </form>
         </section>
