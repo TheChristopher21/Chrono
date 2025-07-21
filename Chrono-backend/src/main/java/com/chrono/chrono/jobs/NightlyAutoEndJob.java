@@ -18,10 +18,11 @@ public class NightlyAutoEndJob {
     @Autowired
     private TimeTrackingService timeTrackingService;
 
-    @Scheduled(cron = "0 30 23 * * *", zone = "Europe/Zurich")
+    // Use CET/Berlin timezone for the nightly job
+    @Scheduled(cron = "0 30 23 * * *", zone = "Europe/Berlin")
     @Transactional
     public void performAutoEndForForgottenPunches() {
-        LocalDate today = LocalDate.now(ZoneId.of("Europe/Zurich")); 
+        LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
         logger.info("NightlyAutoEndJob gestartet für Datum: {}", today);
         try {
             timeTrackingService.autoEndDayForUsersWhoForgotPunchOut(today);

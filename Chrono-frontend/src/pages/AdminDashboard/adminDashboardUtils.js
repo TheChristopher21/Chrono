@@ -1,5 +1,6 @@
 // src/pages/AdminDashboard/adminDashboardUtils.js
 import { parseISO, format as formatDateFns } from "date-fns"; // Import muss oben in der Datei sein
+import { utcToZonedTime, format as tzFormat } from 'date-fns-tz';
 
 export function getMondayOfWeek(date) {
     const copy = new Date(date);
@@ -89,10 +90,9 @@ export function formatLocalDateYMD(d) {
         console.warn("formatLocalDateYMD: Invalid date input after parsing:", d, dateToFormat);
         return "";
     }
-    const year = dateToFormat.getFullYear();
-    const month = String(dateToFormat.getMonth() + 1).padStart(2, '0');
-    const day = String(dateToFormat.getDate()).padStart(2, '0');
-    return `${year}-${month}-${day}`;
+    const zone = 'Europe/Berlin';
+    const zoned = utcToZonedTime(dateToFormat, zone);
+    return tzFormat(zoned, 'yyyy-MM-dd', { timeZone: zone });
 }
 
 export function addDays(date, days) {
