@@ -325,7 +325,7 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
                     activeStartDate={activeStartDate}
                 />
                 <div className="calendar-action-buttons">
-                    <button onClick={handleOpenVacationModal} className="button-primary request-vacation-button">
+                    <button id="vacation-request-button" onClick={handleOpenVacationModal} className="button-primary request-vacation-button">
                         {t('requestVacationButton', 'Urlaub beantragen')}
                     </button>
                     <button onClick={handleOpenSickLeaveModal} className="button-secondary report-sick-leave-button">
