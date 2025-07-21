@@ -590,6 +590,7 @@ const translations = {
             next: "Weiter",
             prev: "Zurück",
             done: "Fertig",
+            congrats: "Geschafft!",
             feedbackPrompt: "Wie hilfreich war die Tour?",
             feedbackPlaceholder: "Dein Feedback",
             feedbackSend: "Senden"
@@ -1190,6 +1191,7 @@ const translations = {
             next: "Next",
             prev: "Back",
             done: "Done",
+            congrats: "All done!",
             feedbackPrompt: "How helpful was the tour?",
             feedbackPlaceholder: "Your feedback",
             feedbackSend: "Send"

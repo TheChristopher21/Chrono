@@ -5,10 +5,10 @@ import { useTranslation } from '../context/LanguageContext';
 import '../styles/Onboarding.css';
 
 const steps = [
-    { id: 'punch-button', key: 'onboarding.punch' },
-    { id: 'vacation-request-button', key: 'onboarding.vacation' },
-    { id: 'payslips-link', key: 'onboarding.payslips' },
-    { id: 'help-button', key: 'onboarding.help' }
+    { id: 'punch-button', key: 'onboarding.punch', icon: '🕒' },
+    { id: 'vacation-request-button', key: 'onboarding.vacation', icon: '🏖️' },
+    { id: 'payslips-link', key: 'onboarding.payslips', icon: '📄' },
+    { id: 'help-button', key: 'onboarding.help', icon: '❓' }
 ];
 
 export default function OnboardingTour() {
@@ -18,6 +18,7 @@ export default function OnboardingTour() {
     const [pos, setPos] = useState({ top: 0, left: 0 });
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedback, setFeedback] = useState('');
+    const [showConfetti, setShowConfetti] = useState(false);
     const tooltipRef = useRef(null);
 
     useEffect(() => {
@@ -60,7 +61,11 @@ export default function OnboardingTour() {
 
     const handleFinish = () => {
         finish();
-        setShowFeedback(true);
+        setShowConfetti(true);
+        setTimeout(() => {
+            setShowConfetti(false);
+            setShowFeedback(true);
+        }, 1500);
     };
 
     return createPortal(
@@ -73,6 +78,7 @@ export default function OnboardingTour() {
                     role="dialog"
                     aria-live="polite"
                 >
+                    <span className="step-icon">{step.icon}</span>
                     <p>{t(step.key)}</p>
                     <div className="onboarding-actions">
                         {index > 0 && <button onClick={() => setIndex(index - 1)}>{t('onboarding.prev')}</button>}
@@ -84,6 +90,24 @@ export default function OnboardingTour() {
                     </div>
                 </div>
             </div>
+            {showConfetti && (
+                <div className="confetti-overlay">
+                    {[...Array(30)].map((_, i) => (
+                        <span
+                            key={i}
+                            className="confetti"
+                            style={{
+                                '--color': `hsl(${Math.random()*360},70%,60%)`,
+                                left: Math.random()*100 + '%',
+                                top: '-10px'
+                            }}
+                        />
+                    ))}
+                    <div className="onboarding-tooltip" role="alert">
+                        {t('onboarding.congrats')}
+                    </div>
+                </div>
+            )}
             {showFeedback && (
                 <div className="feedback-overlay">
                     <div className="feedback-popup">
