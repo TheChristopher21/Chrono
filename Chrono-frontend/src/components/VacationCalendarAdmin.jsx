@@ -467,7 +467,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                             </div>
                             {newVacationUsesOvertime && selectedUserDetailsForVacation?.isPercentage && (
                                 <div className="form-group">
-                                    <label htmlFor="vacOvertimeDeductionHoursInput">{t('adminVacation.overtimeDeductionHoursLabel', 'Abzuziehende Überstunden (in Stunden):')}</label>
+                                    <label htmlFor="vacOvertimeDeductionHoursInput">{t('adminVacation.overtimeDeductionHoursLabel', 'Abzuziehende Überstunden Insgesamt (in Stunden):')}</label>
                                     <input type="number" id="vacOvertimeDeductionHoursInput" value={overtimeDeductionHours} onChange={(e) => setOvertimeDeductionHours(e.target.value)} placeholder={t('adminVacation.hoursPlaceholder', 'z.B. 4 oder 8.5')} step="0.01" min="0.01" required />
                                     {newVacationHalfDay && vacationStartDate && vacationEndDate && vacationStartDate === vacationEndDate && (<small className="form-text text-muted">{t('adminVacation.halfDayDeductionNotice', 'Hinweis: Für diesen halben Tag die entsprechenden Stunden für den halben Tag eintragen.')}</small>)}
                                 </div>

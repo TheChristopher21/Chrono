@@ -961,7 +961,7 @@ const translations = {
             createError: "Error creating admin vacation",
             endDateBeforeStart: "End date cannot be before start date.",
             invalidOvertimeHours: "Please enter a valid positive number of hours for overtime deduction.",
-            overtimeDeductionHoursLabel: "Overtime deduction (hours):",
+            overtimeDeductionHoursLabel: "Overtime deduction overall (hours):",
             hoursPlaceholder: "e.g. 4 or 8.5",
             usesOvertimeLabel: "Use overtime",
             halfDayDeductionNotice: "Note: enter the hours for the half day.",
