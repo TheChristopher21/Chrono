@@ -1,0 +1,26 @@
+.onboarding-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 1000;
+}
+
+.onboarding-tooltip {
+    position: absolute;
+    background: #fff;
+    padding: 1rem;
+    border-radius: 4px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.onboarding-actions {
+    margin-top: 0.5rem;
+    text-align: right;
+}
+
+.onboarding-actions button {
+    margin-left: 0.5rem;
+}

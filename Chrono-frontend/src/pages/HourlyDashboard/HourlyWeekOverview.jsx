@@ -133,7 +133,7 @@ const HourlyWeekOverview = ({
                         </select>
                     </>
                 )}
-                <button onClick={handleManualPunch} className="button-primary">
+                <button id="punch-button" onClick={handleManualPunch} className="button-primary">
                     {t("manualPunchButton", "Jetzt stempeln")}
                 </button>
             </div>

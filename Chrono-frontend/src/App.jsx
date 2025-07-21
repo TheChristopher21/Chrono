@@ -35,6 +35,10 @@ import { useAuth } from "./context/AuthContext";
 // NEU: Importieren Sie die WhatsNewPage
 import WhatsNewPage from "./pages/WhatsNewPage.jsx";
 import TimeTrackingImport from "./TimeTrackingImport.jsx"; // HINZUGEFÜGT
+import HelpPage from "./pages/HelpPage.jsx";
+import HelpButton from "./components/HelpButton.jsx";
+import OnboardingTour from "./components/OnboardingTour.jsx";
+import QuickStart from "./components/QuickStart.jsx";
 
 
 function App() {
@@ -42,6 +46,8 @@ function App() {
 
     return (
         <div className="App">
+            <OnboardingTour />
+            <HelpButton />
             <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<LandingPage />} />
@@ -49,6 +55,7 @@ function App() {
                 <Route path="/register" element={<Registration />} />
                 <Route path="/impressum" element={<Impressum />} />
                 <Route path="/agb" element={<AGB />} />
+                <Route path="/help" element={<HelpPage />} />
 
                 {/* Private routes */}
                 <Route
