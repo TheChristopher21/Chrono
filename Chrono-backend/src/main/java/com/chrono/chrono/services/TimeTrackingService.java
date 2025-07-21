@@ -75,8 +75,9 @@ public class TimeTrackingService {
         if (projectId != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
             project = projectRepository.findById(projectId).orElse(null);
         }
-        LocalDate today = LocalDate.now(ZoneId.of("Europe/Zurich"));
-        LocalDateTime now = LocalDateTime.now(ZoneId.of("Europe/Zurich")).truncatedTo(ChronoUnit.MINUTES);
+        // Default to CET/Berlin timezone for all automatic timestamps
+        LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        LocalDateTime now = LocalDateTime.now(ZoneId.of("Europe/Berlin")).truncatedTo(ChronoUnit.MINUTES);
 
         Optional<TimeTrackingEntry> lastEntryOpt = timeTrackingEntryRepository.findLastEntryByUserAndDate(user, today);
 
@@ -310,7 +311,7 @@ public class TimeTrackingService {
             return;
         }
 
-        LocalDate firstDayToConsider = LocalDate.now(ZoneId.of("Europe/Zurich"));
+        LocalDate firstDayToConsider = LocalDate.now(ZoneId.of("Europe/Berlin"));
 
         Optional<LocalDate> firstTrackingDayOpt = allEntriesForUser.stream().map(TimeTrackingEntry::getEntryDate).filter(Objects::nonNull).min(LocalDate::compareTo);
         Optional<LocalDate> firstVacationDayOpt = approvedVacations.stream().map(VacationRequest::getStartDate).min(LocalDate::compareTo);
@@ -319,7 +320,7 @@ public class TimeTrackingService {
         firstDayToConsider = Stream.of(firstTrackingDayOpt, firstVacationDayOpt, firstSickLeaveDayOpt)
                 .filter(Optional::isPresent).map(Optional::get).min(LocalDate::compareTo).orElse(firstDayToConsider);
 
-        LocalDate lastDay = LocalDate.now(ZoneId.of("Europe/Zurich"));
+        LocalDate lastDay = LocalDate.now(ZoneId.of("Europe/Berlin"));
         Optional<LocalDate> lastTrackingDayOpt = allEntriesForUser.stream().map(TimeTrackingEntry::getEntryDate).filter(Objects::nonNull).max(LocalDate::compareTo);
         if(lastTrackingDayOpt.isPresent() && lastTrackingDayOpt.get().isAfter(lastDay)){
             lastDay = lastTrackingDayOpt.get();

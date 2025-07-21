@@ -84,10 +84,18 @@ public class VacationService {
         vr.setUser(user); //
         vr.setStartDate(start); //
         vr.setEndDate(end); //
-        vr.setApproved(false); //
         vr.setDenied(false); //
         vr.setHalfDay(halfDay); //
         vr.setUsesOvertime(usesOvertime); //
+
+        // Auto approve if enough remaining vacation days and no conflicts
+        boolean autoApprove = false;
+        if (!usesOvertime) {
+            double requested = calculateRequestedVacationDays(user, start, end, halfDay);
+            double remaining = calculateRemainingVacationDays(username, start.getYear());
+            autoApprove = requested <= remaining;
+        }
+        vr.setApproved(autoApprove);
 
         if (usesOvertime && Boolean.TRUE.equals(user.getIsPercentage())) { //
             if (overtimeDeductionMinutes != null && overtimeDeductionMinutes > 0) { //
@@ -459,6 +467,19 @@ public class VacationService {
                 logger.warn("Konnte User {} nach Löschen der Urlaube nicht finden, um Saldo zu aktualisieren.", user.getUsername()); //
             }
         }
+    }
+
+    private double calculateRequestedVacationDays(User user, LocalDate start, LocalDate end, boolean halfDay) {
+        double days = 0.0;
+        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
+            if (!workScheduleService.isDayOff(user, d)) {
+                days += 1.0;
+            }
+        }
+        if (halfDay && start.equals(end)) {
+            days -= 0.5;
+        }
+        return days;
     }
 
 

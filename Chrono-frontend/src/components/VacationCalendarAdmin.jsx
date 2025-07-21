@@ -427,7 +427,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
             {showVacationModal && (
                 <ModalOverlay visible>
-                    <div className="modal-content">
+                    <div className="modal-content large-calendar-modal">
                         <h3>{t('adminVacation.modalTitle', 'Neuen Urlaub für Mitarbeiter anlegen')}</h3>
                         <form onSubmit={(e) => { e.preventDefault(); handleCreateVacation(); }}>
                             <div className="form-group">
@@ -437,6 +437,18 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                     {users.map((u) => (<option key={u.id} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
                                 </select>
                             </div>
+                            <Calendar
+                                selectRange
+                                onChange={(range) => {
+                                    if (Array.isArray(range)) {
+                                        const [startSel, endSel] = range;
+                                        if (startSel) setVacationStartDate(formatLocalDateYMD(startSel));
+                                        if (endSel) setVacationEndDate(formatLocalDateYMD(endSel));
+                                    }
+                                }}
+                                value={[vacationStartDate ? new Date(vacationStartDate) : new Date(), vacationEndDate ? new Date(vacationEndDate) : new Date()]}
+                                locale={t('calendarLocale', 'de-DE')}
+                            />
                             <div className="form-group">
                                 <label htmlFor="vacStartDateInput">{t('adminVacation.startDateLabel', 'Startdatum')}:</label>
                                 <input id="vacStartDateInput" type="date" value={vacationStartDate} onChange={(e) => setVacationStartDate(e.target.value)} required />

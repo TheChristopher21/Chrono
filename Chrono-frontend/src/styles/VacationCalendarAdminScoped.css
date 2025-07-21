@@ -131,7 +131,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 86px;
+  height: 110px;
   border-radius: 10px;
   background: var(--c-surface);
   transition: background var(--u-dur) var(--u-ease);
@@ -249,6 +249,10 @@
   max-height: 90vh; /* Verhindert Überlaufen auf kleinen Bildschirmen */
   overflow-y: auto; /* Scrollbar bei Bedarf */
   -webkit-overflow-scrolling: touch;
+}
+
+.vacation-calendar-admin.scoped-vacation .modal-content.large-calendar-modal {
+  max-width: 800px;
 }
 
 .vacation-calendar-admin.scoped-vacation .modal-content h3 {
