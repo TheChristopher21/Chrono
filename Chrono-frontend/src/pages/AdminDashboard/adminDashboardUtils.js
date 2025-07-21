@@ -2,6 +2,7 @@
 import { parseISO, format as formatDateFns } from "date-fns"; // Import muss oben in der Datei sein
 import { toZonedTime, format as tzFormat } from 'date-fns-tz';
 
+
 export function getMondayOfWeek(date) {
     const copy = new Date(date);
     const day = copy.getDay(); // Sonntag = 0, Montag = 1, ...
@@ -92,6 +93,7 @@ export function formatLocalDateYMD(d) {
     }
     const zone = 'Europe/Berlin';
     const zoned = toZonedTime(dateToFormat, zone);
+
     return tzFormat(zoned, 'yyyy-MM-dd', { timeZone: zone });
 }
 
