@@ -609,7 +609,7 @@ const translations = {
             profile: "Profil ausfüllen",
             punch: "Erste Zeiterfassung",
             vacation: "Urlaub beantragen",
-            progress: "erledigt"
+            progress: "erledigt",
         impressumPage: {
             title: "Impressum",
             address: "<strong>Chrono-Logisch</strong><br />Einzelunternehmen<br />Inhaber: Christopher Siefert<br />Lettenstrasse 20<br />CH-9122 Mogelsberg",
@@ -1249,7 +1249,7 @@ const translations = {
             profile: "Complete your profile",
             punch: "First time tracking",
             vacation: "Request vacation",
-            progress: "done"
+            progress: "done",
         impressumPage: {
             title: "Imprint",
             address: "<strong>Chrono-Logisch</strong><br />Sole proprietorship<br />Owner: Christopher Siefert<br />Lettenstrasse 20<br />CH-9122 Mogelsberg",
@@ -1290,7 +1290,6 @@ const translations = {
     },
 };
 
-export const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
     // Standard: "de" oder "en" je nach Vorliebe
