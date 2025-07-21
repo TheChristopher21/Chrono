@@ -37,11 +37,13 @@ import UserCorrectionsPanel from './UserCorrectionsPanel';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
 import QuickStart from '../../components/QuickStart.jsx';
+import { useOnboarding } from '../../context/OnboardingContext';
 
 function UserDashboard() {
     const { currentUser, fetchCurrentUser } = useAuth();
     const { notify } = useNotification();
     const { t } = useTranslation();
+    const { start } = useOnboarding();
 
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
@@ -75,6 +77,12 @@ function UserDashboard() {
     const [dailySummaryForCorrection, setDailySummaryForCorrection] = useState(null);
 
     const defaultExpectedHours = userProfile?.dailyWorkHours ?? 8.5;
+
+    useEffect(() => {
+        if (localStorage.getItem('onboardingDone') !== 'true') {
+            start();
+        }
+    }, [start]);
 
     const loadProfileAndInitialData = useCallback(async () => {
         try {
