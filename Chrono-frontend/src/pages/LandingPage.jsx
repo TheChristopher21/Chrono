@@ -108,9 +108,12 @@ const LandingPage = () => {
             title: "Sicher & DSGVO-konform",
             text: "Deine Daten liegen verschlüsselt auf Schweizer Servern. Rechte- und Rollenkonzept, 2FA und DSGVO-Unterstützung inklusive.",
         },
+        {
+            icon: "🚀",
+            title: "Ständige Weiterentwicklung",
+            text: "Kontinuierlich neue Features und Verbesserungen – Wunschfeatures können direkt vorgeschlagen werden!",
+        },
     ];
-
-
     const steps = [
         {
             n: "1",
