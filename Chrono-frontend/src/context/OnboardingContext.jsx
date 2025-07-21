@@ -9,8 +9,9 @@ const OnboardingContext = createContext({
 export function OnboardingProvider({ children }) {
     const [show, setShow] = useState(false);
 
-    const start = () => {
-        if (localStorage.getItem('onboardingDone') !== 'true') {
+    const start = (force = false) => {
+        if (force || localStorage.getItem('onboardingDone') !== 'true') {
+
             setShow(true);
         }
     };
