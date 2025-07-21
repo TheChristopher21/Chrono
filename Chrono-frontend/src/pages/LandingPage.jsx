@@ -55,78 +55,66 @@ const LandingPage = () => {
     const features = [
         {
             icon: "🔄",
-            title: "Automatische Lohnabrechnung",
-            text: "Erstelle Abrechnungen für alle Mitarbeitenden automatisch – monatlich, pünktlich und ohne Excel-Chaos. Für Schweiz und Deutschland, individuell einstellbar.",
+            title: t('landingPage.featureReportsTitle'),
+            text: t('landingPage.featureReportsText'),
         },
         {
             icon: "🧾",
-            title: "All-in-One Payroll & Zeiterfassung",
-            text: "Arbeitszeiten, Projekte, Urlaub, Kranktage, Zuschläge und Überstunden werden automatisch in der Abrechnung berücksichtigt. Alles aus einer Hand – kein Toolwechsel!",
+            title: t('landingPage.featureSmartTitle'),
+            text: t('landingPage.featureSmartText'),
         },
         {
             icon: "🇨🇭🇩🇪",
-            title: "Abrechnung für Schweiz & Deutschland",
-            text: "Unterstützt sowohl Schweizer als auch deutsche Lohnmodelle (inkl. Steuerklasse, Tarifcode, Kanton, Quellensteuer etc.). Perfekt für grenzüberschreitende Teams.",
+            title: t('landingPage.featureVacationTitle'),
+            text: t('landingPage.featureVacationText'),
         },
         {
             icon: "👆",
-            title: "NFC-Terminal",
-            text: "Zeiterfassung ganz einfach per NFC-Chip oder Web – keine teure Hardware nötig. Auf Wunsch auch Terminal-Modus für das Büro.",
+            title: t('landingPage.featureNfcTitle'),
+            text: t('landingPage.featureNfcText'),
         },
         {
             icon: "📅",
-            title: "Urlaubsplanung & Genehmigung",
-            text: "Urlaubsanträge, Überstundenfrei und Abwesenheiten digital beantragen, verwalten und direkt genehmigen. Übersichtlicher Kalender und automatische Berechnung der Resttage.",
+            title: t('landingPage.featureDuplicateTitle'),
+            text: t('landingPage.featureDuplicateText'),
         },
         {
             icon: "⏰",
-            title: "Automatisches Ausstempeln",
-            text: "Schutz vor vergessenen Stempeln: Am Tagesende wird automatisch ausgestempelt und die Zeit korrekt berechnet.",
+            title: t('landingPage.featureAutoPunchOutTitle'),
+            text: t('landingPage.featureAutoPunchOutText'),
         },
         {
             icon: "🟢",
-            title: "Live-Status & Dashboard",
-            text: "Immer im Blick: Wer ist heute da? Was wurde schon genehmigt? Automatische Benachrichtigungen bei neuen Abrechnungen, Urlaubsanträgen und mehr.",
+            title: t('landingPage.featureDirectTitle'),
+            text: t('landingPage.featureDirectText'),
         },
         {
             icon: "📄",
-            title: "PDF-Lohnabrechnung & CSV-Export",
-            text: "Erstelle und exportiere Lohnabrechnungen als PDF oder CSV für Steuerberater, Buchhaltung und die eigene Ablage.",
+            title: t('landingPage.featureHistoryTitle'),
+            text: t('landingPage.featureHistoryText'),
         },
         {
             icon: "📊",
-            title: "Projekt- & Kundenzeiten",
-            text: "Ordne Zeiten und Abwesenheiten direkt Projekten und Kunden zu. Perfekt für Agenturen, Dienstleister und projektorientierte Teams.",
+            title: t('landingPage.featurePercentTitle'),
+            text: t('landingPage.featurePercentText'),
         },
         {
             icon: "🔔",
-            title: "Erinnerungen & Automatisierung",
-            text: "Nie wieder Fristen verpassen: Erinnerungen an offene Stempelungen, Abrechnungen, Anträge oder bevorstehende Monatswechsel.",
+            title: t('landingPage.featureAdminTitle'),
+            text: t('landingPage.featureAdminText'),
         },
         {
             icon: "🛡️",
-            title: "Sicher & DSGVO-konform",
-            text: "Deine Daten liegen verschlüsselt auf Schweizer Servern. Rechte- und Rollenkonzept, 2FA und DSGVO-Unterstützung inklusive.",
+            title: t('landingPage.featureOvertimeTitle'),
+            text: t('landingPage.featureOvertimeText'),
         },
     ];
 
 
     const steps = [
-        {
-            n: "1",
-            title: "Account anlegen",
-            text: "Jetzt kostenlos registrieren – ganz ohne Risiko, keine Kreditkarte nötig.",
-        },
-        {
-            n: "2",
-            title: "Team & Projekte anlegen",
-            text: "Mitarbeiter, Projekte und (falls nötig) Kunden hinzufügen. Alles super einfach.",
-        },
-        {
-            n: "3",
-            title: "Direkt loslegen",
-            text: "Stempeln, Zeiten erfassen, Urlaub beantragen oder direkt die erste Abrechnung erstellen lassen. Fertig!",
-        },
+        { n: "1", title: t('landingPage.step1Title'), text: t('landingPage.step1Text') },
+        { n: "2", title: t('landingPage.step2Title'), text: t('landingPage.step2Text') },
+        { n: "3", title: t('landingPage.step3Title'), text: t('landingPage.step3Text') },
     ];
 
     return (
@@ -136,10 +124,10 @@ const LandingPage = () => {
                 {/* HERO *********************************************************** */}
                 <header className="landing-hero site-section lg" id="home">
                     <div className="section-inner">
-                        <h1>Die smarte Zeiterfassung & Lohnabrechnung für Teams in der Schweiz und Deutschland</h1>
+                        <h1>{t('landingPage.headline')}</h1>
                         <div className="cta-buttons">
                             <Link to="/register" className="btn primary">
-                                Jetzt kostenlos starten
+                                {t('landingPage.ctaPrimary')}
                             </Link>
                         </div>
                     </div>
@@ -148,12 +136,10 @@ const LandingPage = () => {
                 {/* INFO *********************************************************** */}
                 <section className="info-section site-section">
                     <div className="section-inner">
-                        <h2 className="section-title accent">Warum Chrono-Logisch?</h2>
+                        <h2 className="section-title accent">{t('landingPage.whyTitle')}</h2>
                         <div className="info-box">
                             <p>
-                                Schluss mit komplizierten Excel-Listen, Papier-Stundenzetteln und teuren Insellösungen!<br /><br />
-                                Chrono-Logisch digitalisiert deine komplette Zeiterfassung & Abrechnung in einem System – automatisch, rechtssicher und so einfach, dass jeder im Team damit klarkommt.<br /><br />
-                                Egal ob Homeoffice, Büro oder unterwegs: Stempeln, Projekte zuordnen, Urlaub oder Überstunden beantragen und die Lohnabrechnung automatisch generieren lassen – alles aus einer App. Perfekt für KMU, Dienstleister, Agenturen und Unternehmen mit flexiblen Arbeitsmodellen.
+                                {t('landingPage.infoText')}
                             </p>
                         </div>
                     </div>
@@ -162,10 +148,10 @@ const LandingPage = () => {
                 {/* FEATURES ******************************************************* */}
                 <section className="features-section site-section" id="features">
                     <div className="section-inner">
-                        <h2>Alle Funktionen im Überblick</h2>
+                        <h2>{t('landingPage.featuresTitle')}</h2>
                         <p>
-                            Keine Gimmicks – nur Features, die deinen Alltag wirklich erleichtern.<br />
-                            <b>Automatische Lohnabrechnung, Projektzeiten, NFC-Terminal, Überstunden, Urlaub, PDF-Export & mehr.</b>
+                            {t('landingPage.featuresSub')}<br />
+                            <b>{t('landingPage.featureReportsText')}</b>
                         </p>
 
                         <div className="features-grid">
@@ -179,7 +165,7 @@ const LandingPage = () => {
                 {/* STEPS ********************************************************** */}
                 <section className="steps-section site-section">
                     <div className="section-inner">
-                        <h2>In 3 Schritten startklar</h2>
+                        <h2>{t('landingPage.stepsTitle')}</h2>
                         <div className="steps-grid">
                             {steps.map((s, idx) => (
                                 <StepCard key={idx} n={s.n} title={s.title} text={s.text} />
@@ -191,12 +177,12 @@ const LandingPage = () => {
                 {/* CONTACT ----------------------------------------------------- */}
                 <section className="contact-section site-section" id="contact">
                     <div className="section-inner">
-                        <h3>Kontakt</h3><br/>
+                        <h3>{t('landingPage.contactTitle')}</h3><br/>
                         <form className="contact-form" onSubmit={submitContact}>
                             <input
                                 name="name"
                                 type="text"
-                                placeholder="Name"
+                                placeholder={t('landingPage.contactName')}
                                 value={contact.name}
                                 onChange={handleContactChange}
                                 required
@@ -204,20 +190,20 @@ const LandingPage = () => {
                             <input
                                 name="email"
                                 type="email"
-                                placeholder="E-Mail"
+                                placeholder={t('landingPage.contactEmail')}
                                 value={contact.email}
                                 onChange={handleContactChange}
                                 required
                             />
                             <textarea
                                 name="message"
-                                placeholder="Nachricht"
+                                placeholder={t('landingPage.contactMessage')}
                                 value={contact.message}
                                 onChange={handleContactChange}
                                 required
                             />
                             <button className="btn primary" disabled={sending}>
-                                Absenden
+                                {t('landingPage.contactButton')}
                             </button>
                         </form>
                     </div>
@@ -225,12 +211,12 @@ const LandingPage = () => {
 
                 <section className="newsletter-section site-section">
                     <div className="section-inner">
-                        <h3>Bleib informiert!</h3>
-                        <p>Updates & Tipps direkt in dein Postfach.</p>
+                        <h3>{t('landingPage.newsletterTitle', 'Bleib informiert!')}</h3>
+                        <p>{t('landingPage.newsletterText', 'Updates & Tipps direkt in dein Postfach.')}</p>
                         <br/>
                         <form className="newsletter-form">
-                            <input type="email" placeholder="Deine E-Mail" />
-                            <button className="btn primary">Abonnieren</button>
+                            <input type="email" placeholder={t('landingPage.newsletterPlaceholder')} />
+                            <button className="btn primary">{t('landingPage.newsletterButton')}</button>
                         </form>
                     </div>
                 </section>
@@ -239,11 +225,11 @@ const LandingPage = () => {
             {/* FOOTER ********************************************************* */}
             <footer className="landing-footer">
                 <div className="footer-content">
-                    <p>© {new Date().getFullYear()} Chrono-Logisch. Alle Rechte vorbehalten.</p>
+                    <p>© {new Date().getFullYear()} Chrono-Logisch. {t('landingPage.allRights')}</p>
                     <div className="social-icons"></div>
                     <div style={{ marginTop: "1rem" }}>
-                        <Link to="/impressum" style={{ marginRight: "1rem" }}>Impressum</Link>
-                        <Link to="/agb">AGB</Link>
+                        <Link to="/impressum" style={{ marginRight: "1rem" }}>{t('impressum')}</Link>
+                        <Link to="/agb">{t('agb')}</Link>
                     </div>
                 </div>
             </footer>
