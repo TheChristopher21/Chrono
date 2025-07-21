@@ -183,12 +183,8 @@ const Registration = () => {
             <div className="registration-page scoped-registration">
                 <div className="registration-content">
                     <div className="pricing-section">
-                        <h2>Pakete &amp; Preisübersicht</h2>
-                        <p className="pricing-intro">
-                            Wählen Sie das Service-Paket, das am besten zu Ihren Bedürfnissen passt.
-                            Alle Pakete beinhalten die vollen Chrono-Funktionen. Die Preise variieren je nach Mitarbeiterzahl und Service-Level.
-                            <br /><strong>Diese Registrierung ist unverbindlich. Sie erhalten im Anschluss ein detailliertes Angebot per E-Mail.</strong>
-                        </p>
+                        <h2>{t('registrationPage.pricingTitle')}</h2>
+                        <p className="pricing-intro">{t('registrationPage.pricingIntro')}</p>
 
                         <div className="billing-toggle">
                             <label>
@@ -199,7 +195,7 @@ const Registration = () => {
                                     checked={billingPeriod === "monthly"}
                                     onChange={handleBillingPeriodChange}
                                 />
-                                Monatliche Zahlung
+                                {t('registrationPage.monthlyBilling')}
                             </label>
                             <label>
                                 <input
@@ -209,7 +205,7 @@ const Registration = () => {
                                     checked={billingPeriod === "yearly"}
                                     onChange={handleBillingPeriodChange}
                                 />
-                                Jährliche Zahlung (2 Monate geschenkt!)
+                                {t('registrationPage.yearlyBilling')}
                             </label>
                         </div>
 
@@ -240,7 +236,7 @@ const Registration = () => {
                         </div>
 
                         <div className="central-employee-input">
-                            <label htmlFor="employeeCount">Anzahl Mitarbeiter (1-100):</label>
+                            <label htmlFor="employeeCount">{t('registrationPage.employeeCount')}</label>
                             <input
                                 type="number"
                                 id="employeeCount"
@@ -254,7 +250,7 @@ const Registration = () => {
                         </div>
 
                         <div className="training-option-section">
-                            <h4>Optionales Add-on:</h4>
+                            <h4>{t('registrationPage.trainingTitle')}</h4>
                             <label htmlFor="includeOptionalTraining" className="training-label">
                                 <input
                                     type="checkbox"
@@ -263,40 +259,36 @@ const Registration = () => {
                                     checked={includeOptionalTraining}
                                     onChange={handleOptionalTrainingChange}
                                 />
-                                Zusätzliches Intensiv-Onboarding (1 Std. individuell) für <strong>{formatCHF(OPTIONAL_TRAINING_COST)}</strong> (einmalig) buchen.
+                                {t('registrationPage.addTraining')} <strong>{formatCHF(OPTIONAL_TRAINING_COST)}</strong>
                             </label>
                         </div>
 
-                        <p className="pricing-footnote">
-                            * Alle Preise zzgl. MwSt. | Bei jährlicher Zahlung nur 10 statt 12 Monatsraten für Paket- und Mitarbeiterkosten.
-                            <br />
-                            Die einmalige Installationsgebühr von {formatCHF(INSTALL_FEE)} wird bei Beauftragung fällig.
-                        </p>
+                        <p className="pricing-footnote">{t('registrationPage.footnote')}</p>
                     </div>
 
                     <div className="application-section">
-                        <h2>Registrierungsanfrage senden</h2>
+                        <h2>{t('registrationPage.sendRequest')}</h2>
                         {selectedPackageName && priceBreakdown && (
                             <div className="price-preview card">
-                                <h4>Ihre Konfiguration: Paket "{selectedPackageName}"</h4>
+                                <h4>{t('registrationPage.yourConfig', 'Ihre Konfiguration')}: "{selectedPackageName}"</h4>
                                 <p className="price-item">
-                                    <span className="label">Mitarbeiter:</span>
+                                    <span className="label">{t('usernameLabel')}:</span>
                                     <span className="value">{employeeCount}</span>
                                 </p>
                                 <p className="price-item">
-                                    <span className="label">Zahlungsweise:</span>
+                                    <span className="label">{t('registrationPage.billingType', 'Zahlungsweise')}:</span>
                                     <span className="value">{billingPeriod === "monthly" ? "Monatlich" : "Jährlich"}</span>
                                 </p>
                                 <hr />
                                 <p className="price-item">
-                                    <span className="label">Voraussichtliche Service-Grundgebühr:</span>
+                                    <span className="label">{t('registrationPage.serviceFeeLabel', 'Voraussichtliche Service-Grundgebühr')}:</span>
                                     <span className="value">
                                         {formatCHF(priceBreakdown.serviceFee)}{" "}
                                         {priceBreakdown.billingPeriodText.replace(" (entspricht 10 Monatsraten)", "")}
                                     </span>
                                 </p>
                                 <p className="price-item">
-                                    <span className="label">Voraussichtliche Kosten für Mitarbeiter:</span>
+                                    <span className="label">{t('registrationPage.employeeCostLabel', 'Voraussichtliche Kosten für Mitarbeiter')}:</span>
                                     <span className="value">
                                         {formatCHF(priceBreakdown.employeeCost)}{" "}
                                         {priceBreakdown.billingPeriodText.replace(" (entspricht 10 Monatsraten)", "")}
@@ -304,13 +296,13 @@ const Registration = () => {
                                 </p>
                                 <p className="price-item prominent-subtotal">
                                     <span className="label">
-                                        Voraussichtliche Paketkosten {billingPeriod === "monthly" ? "monatlich" : "jährlich"}:
+                                        {t('registrationPage.packageCostLabel', 'Voraussichtliche Paketkosten')} {billingPeriod === 'monthly' ? t('registrationPage.monthlyBilling') : t('registrationPage.yearlyBilling')}:
                                     </span>
                                     <span className="value">{formatCHF(priceBreakdown.packageSubtotal)}</span>
                                 </p>
                                 {priceBreakdown.isYearly && (
                                     <p className="price-item sub-hint">
-                                        <span className="label">(Entspricht ca. pro Monat):</span>
+                                        <span className="label">{t('registrationPage.perMonth', '(Entspricht ca. pro Monat):')}</span>
                                         <span className="value">
                                             {formatCHF(priceBreakdown.packageSubtotal / 10)}
                                         </span>
@@ -318,12 +310,12 @@ const Registration = () => {
                                 )}
                                 <hr />
                                 <p className="price-item">
-                                    <span className="label">Einmalige Installationsgebühr:</span>
+                                        <span className="label">{t('registrationPage.installFeeLabel', 'Einmalige Installationsgebühr')}:</span>
                                     <span className="value">{formatCHF(priceBreakdown.installationFee)}</span>
                                 </p>
                                 {includeOptionalTraining && (
                                     <p className="price-item">
-                                        <span className="label">Optionales Intensiv-Onboarding:</span>
+                                        <span className="label">{t('registrationPage.trainingLabel', 'Optionales Intensiv-Onboarding')}:</span>
                                         <span className="value">{formatCHF(priceBreakdown.optionalTrainingCost)}</span>
                                     </p>
                                 )}
@@ -331,13 +323,13 @@ const Registration = () => {
                                 <div className="total-price-wrapper">
                                     <p className="price-item total-price">
                                         <span className="label">
-                                            Voraussichtlicher Gesamtbetrag für erste Zahlung (bei Beauftragung):
+                                            {t('registrationPage.totalDue', 'Voraussichtlicher Gesamtbetrag für erste Zahlung (bei Beauftragung):')}
                                         </span>
                                         <span className="value">{formatCHF(calculatedPrice)}</span>
                                     </p>
                                 </div>
                                 <p className="price-item sub-hint">
-                                    <span className="label">Die nachfolgenden Zahlungen für das Paket betragen:</span>
+                                    <span className="label">{t('registrationPage.followupPayments', 'Die nachfolgenden Zahlungen für das Paket betragen:')}</span>
                                     <span className="value">
                                         {formatCHF(priceBreakdown.packageSubtotal)}{" "}
                                         {billingPeriod === "monthly" ? "monatlich" : "jährlich"}
@@ -349,7 +341,7 @@ const Registration = () => {
                         {error && <p className="error-message">{error}</p>}
                         {success ? (
                             <div className="success-message-box">
-                                <h3>Vielen Dank für Ihre Anfrage!</h3>
+                                <h3>{t('registrationPage.thanks')}</h3>
                                 <p>Wir haben Ihre Konfiguration erhalten und prüfen diese.</p>
                                 <p>
                                     Sie erhalten in Kürze (üblicherweise innerhalb von 1-2 Werktagen) ein individuelles Angebot und weitere Informationen per E-Mail an siefertchristopher@chrono-logisch.ch.
@@ -357,7 +349,7 @@ const Registration = () => {
                                     Bitte prüfen Sie auch Ihren Spam-Ordner.
                                 </p>
                                 <button onClick={() => navigate('/')} style={{ marginTop: '1rem' }}>
-                                    Zurück zur Startseite
+                                    {t('registrationPage.backHome')}
                                 </button>
                             </div>
                         ) : (
@@ -401,7 +393,7 @@ const Registration = () => {
                                     rows="4"
                                 />
                                 <button type="submit" disabled={isSubmitting || !selectedPackageName || calculatedPrice <= 0}>
-                                    {isSubmitting ? "Anfrage wird gesendet..." : "Registrierungsanfrage senden"}
+                                    {isSubmitting ? t('registrationPage.sending') : t('registrationPage.sendRequest')}
                                 </button>
                             </form>
                         )}

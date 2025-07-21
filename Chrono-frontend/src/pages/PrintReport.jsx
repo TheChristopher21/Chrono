@@ -112,8 +112,8 @@ export default function PrintReport() {
 
         doc.setFontSize(10);
         doc.setTextColor(108, 117, 125);
-        doc.text("Gesamte Arbeitszeit", summaryCol1, summaryTextY - 8, { align: 'center' });
-        doc.text("Gesamte Pausenzeit", summaryCol2, summaryTextY - 8, { align: 'center' });
+        doc.text(t("printReport.summaryWork"), summaryCol1, summaryTextY - 8, { align: 'center' });
+        doc.text(t("printReport.summaryBreak"), summaryCol2, summaryTextY - 8, { align: 'center' });
 
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
@@ -150,19 +150,19 @@ export default function PrintReport() {
             // Left column (Summary)
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
-            doc.text("Übersicht", pageMargin + 5, leftColY);
+            doc.text(t("printReport.overview"), pageMargin + 5, leftColY);
             leftColY += 7;
 
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text(`Gearbeitet: ${minutesToHHMM(day.workedMinutes)}`, pageMargin + 5, leftColY);
+            doc.text(`${t('printReport.worked')}: ${minutesToHHMM(day.workedMinutes)}`, pageMargin + 5, leftColY);
             leftColY += 6;
-            doc.text(`Pause: ${minutesToHHMM(day.breakMinutes)}`, pageMargin + 5, leftColY);
+            doc.text(`${t('printReport.pause')}: ${minutesToHHMM(day.breakMinutes)}`, pageMargin + 5, leftColY);
             leftColY += 10;
 
             if (day.note) {
                 doc.setFont("helvetica", "bold");
-                doc.text("Notiz:", pageMargin + 5, leftColY);
+                doc.text(`${t('printReport.note')}:`, pageMargin + 5, leftColY);
                 leftColY += 6;
                 doc.setFont("helvetica", "italic");
                 const noteLines = doc.splitTextToSize(day.note, (contentWidth / 2.5) - 10);
@@ -174,7 +174,7 @@ export default function PrintReport() {
             // Right column (Blocks)
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
-            doc.text("Arbeitsblöcke", rightColX, rightColY);
+            doc.text(t("printReport.blocks"), rightColX, rightColY);
             rightColY += 7;
 
             doc.setFontSize(10);
@@ -206,11 +206,11 @@ export default function PrintReport() {
 
             <section className="report-summary">
                 <div>
-                    <span className="label">Gesamte Arbeitszeit</span>
+                    <span className="label">{t('printReport.summaryWork')}</span>
                     <span className="value primary">{minutesToHHMM(totals.work)}</span>
                 </div>
                 <div>
-                    <span className="label">Gesamte Pausenzeit</span>
+                    <span className="label">{t('printReport.summaryBreak')}</span>
                     <span className="value">{minutesToHHMM(totals.pause)}</span>
                 </div>
             </section>
@@ -226,26 +226,26 @@ export default function PrintReport() {
                             </div>
                             <div className="day-card-report-body">
                                 <div className="overview-col">
-                                    <h4>Übersicht</h4>
-                                    <p><strong>Gearbeitet:</strong> {minutesToHHMM(day.workedMinutes)}</p>
-                                    <p><strong>Pause:</strong> {minutesToHHMM(day.breakMinutes)}</p>
+                                    <h4>{t('printReport.overview')}</h4>
+                                    <p><strong>{t('printReport.worked')}:</strong> {minutesToHHMM(day.workedMinutes)}</p>
+                                    <p><strong>{t('printReport.pause')}:</strong> {minutesToHHMM(day.breakMinutes)}</p>
                                     {day.note && <>
-                                        <h4>Notiz</h4>
+                                        <h4>{t('printReport.note')}</h4>
                                         <p className="note-text">{day.note}</p>
                                     </>}
                                 </div>
                                 <div className="blocks-col">
-                                    <h4>Arbeitsblöcke</h4>
+                                    <h4>{t('printReport.blocks')}</h4>
                                     {day.blocks.work.map((b, i) => (
                                         <div key={`w-${i}`} className="work-block">
-                                            <span>{b.description ? `${b.description}:` : 'Arbeit:'}</span>
+                                            <span>{b.description ? `${b.description}:` : `${t('printReport.workLabel')}:`}</span>
                                             <span>{b.start} - {b.end} ({b.duration})</span>
                                         </div>
                                     ))}
-                                    {day.blocks.break.length > 0 && <h4>Pausen</h4>}
+                                    {day.blocks.break.length > 0 && <h4>{t('printReport.breaks')}</h4>}
                                     {day.blocks.break.map((b, i) => (
                                         <div key={`b-${i}`} className="break-block">
-                                            <span>Pause:</span>
+                                            <span>{t('printReport.pause')}:</span>
                                             <span>{b.start} - {b.end} ({b.duration})</span>
                                         </div>
                                     ))}
