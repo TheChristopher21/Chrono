@@ -4,16 +4,18 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.4);
+    background: var(--modal-backdrop-color, rgba(0,0,0,0.4));
     z-index: 1000;
 }
 
 .onboarding-tooltip {
     position: absolute;
-    background: #fff;
+    background: var(--c-surface);
+    color: var(--c-text);
     padding: 1rem;
     border-radius: 4px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    box-shadow: var(--u-shadow-sm, 0 2px 6px rgba(0,0,0,0.2));
+    border: 1px solid var(--c-border);
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -34,7 +36,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0,0,0,0.5);
+    background: var(--modal-backdrop-color, rgba(0,0,0,0.5));
     display: flex;
     align-items: center;
     justify-content: center;
@@ -42,10 +44,12 @@
 }
 
 .feedback-popup {
-    background: #fff;
+    background: var(--c-surface);
+    color: var(--c-text);
     padding: 1rem;
     border-radius: 4px;
-    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    box-shadow: var(--u-shadow-sm, 0 2px 6px rgba(0,0,0,0.2));
+    border: 1px solid var(--c-border);
 }
 .feedback-popup textarea {
     width: 100%;

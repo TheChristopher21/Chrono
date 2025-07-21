@@ -7,11 +7,13 @@ const OnboardingContext = createContext({
 });
 
 export function OnboardingProvider({ children }) {
-    const [show, setShow] = useState(() => {
-        return localStorage.getItem('onboardingDone') !== 'true';
-    });
+    const [show, setShow] = useState(false);
 
-    const start = () => setShow(true);
+    const start = (force = false) => {
+        if (force || localStorage.getItem('onboardingDone') !== 'true') {
+            setShow(true);
+        }
+    };
     const finish = () => {
         setShow(false);
         localStorage.setItem('onboardingDone', 'true');

@@ -16,6 +16,7 @@ export default function OnboardingTour() {
     const { t } = useTranslation();
     const [index, setIndex] = useState(0);
     const [pos, setPos] = useState({ top: 0, left: 0 });
+    const [visible, setVisible] = useState(false);
     const [showFeedback, setShowFeedback] = useState(false);
     const [feedback, setFeedback] = useState('');
     const [showConfetti, setShowConfetti] = useState(false);
@@ -28,21 +29,36 @@ export default function OnboardingTour() {
     }, [show]);
 
     useEffect(() => {
-        const step = steps[index];
-        const target = document.getElementById(step.id);
-        const rect = target ? target.getBoundingClientRect() : null;
-        if (rect && tooltipRef.current) {
-            const { offsetWidth: w, offsetHeight: h } = tooltipRef.current;
-            let top = rect.bottom + 8;
-            let left = rect.left;
-            if (top + h > window.innerHeight) {
-                top = rect.top - h - 8;
+        if (!show) return;
+
+        const updatePos = () => {
+            const step = steps[index];
+            const target = document.getElementById(step.id);
+            const rect = target ? target.getBoundingClientRect() : null;
+            if (rect && tooltipRef.current) {
+                const { offsetWidth: w, offsetHeight: h } = tooltipRef.current;
+                let top = rect.bottom + 8;
+                let left = rect.left;
+                if (top + h > window.innerHeight) {
+                    top = rect.top - h - 8;
+                }
+                if (left + w > window.innerWidth) {
+                    left = window.innerWidth - w - 8;
+                }
+                setPos({ top, left });
+                setVisible(true);
+            } else {
+                setVisible(false);
             }
-            if (left + w > window.innerWidth) {
-                left = window.innerWidth - w - 8;
-            }
-            setPos({ top, left });
-        }
+        };
+
+        updatePos();
+        window.addEventListener('resize', updatePos);
+        const interval = setInterval(updatePos, 500);
+        return () => {
+            window.removeEventListener('resize', updatePos);
+            clearInterval(interval);
+        };
     }, [index, show]);
 
     const handleKey = (e) => {
@@ -55,7 +71,7 @@ export default function OnboardingTour() {
         }
     };
 
-    if (!show) return null;
+    if (!show || !visible) return null;
 
     const step = steps[index];
 
