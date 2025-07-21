@@ -1,6 +1,7 @@
 // src/pages/AdminDashboard/adminDashboardUtils.js
 import { parseISO, format as formatDateFns } from "date-fns"; // Import muss oben in der Datei sein
-import { utcToZonedTime, format as tzFormat } from 'date-fns-tz';
+import { toZonedTime, format as tzFormat } from 'date-fns-tz';
+
 
 export function getMondayOfWeek(date) {
     const copy = new Date(date);
@@ -91,7 +92,8 @@ export function formatLocalDateYMD(d) {
         return "";
     }
     const zone = 'Europe/Berlin';
-    const zoned = utcToZonedTime(dateToFormat, zone);
+    const zoned = toZonedTime(dateToFormat, zone);
+
     return tzFormat(zoned, 'yyyy-MM-dd', { timeZone: zone });
 }
 
