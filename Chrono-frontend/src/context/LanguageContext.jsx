@@ -582,6 +582,25 @@ const translations = {
             scheduleAll: "Automatische Abrechnung für alle aktivieren"
 
         },
+        onboarding: {
+            punch: "Hier klickst du, um zu stempeln.",
+            vacation: "Hier stellst du deinen Urlaubsantrag.",
+            payslips: "Hier findest du deine Abrechnungen.",
+            help: "Bei Fragen gelangst du hier zur Hilfe.",
+            next: "Weiter",
+            prev: "Zurück",
+            done: "Fertig",
+            feedbackPrompt: "Wie hilfreich war die Tour?",
+            feedbackPlaceholder: "Dein Feedback",
+            feedbackSend: "Senden"
+        },
+        quickStart: {
+            title: "Quick Start",
+            profile: "Profil ausfüllen",
+            punch: "Erste Zeiterfassung",
+            vacation: "Urlaub beantragen",
+            progress: "erledigt"
+        },
         notFound: {
             pageNotFound: "404 - Seite nicht gefunden",
         },
@@ -1162,6 +1181,25 @@ const translations = {
             scheduleButton: "Schedule",
             scheduleAll: "Enable automatic payslips for all"
 
+        },
+        onboarding: {
+            punch: "Click here to punch in.",
+            vacation: "Request vacation here.",
+            payslips: "View your payslips here.",
+            help: "Need help? Open it here.",
+            next: "Next",
+            prev: "Back",
+            done: "Done",
+            feedbackPrompt: "How helpful was the tour?",
+            feedbackPlaceholder: "Your feedback",
+            feedbackSend: "Send"
+        },
+        quickStart: {
+            title: "Quick Start",
+            profile: "Complete your profile",
+            punch: "First time tracking",
+            vacation: "Request vacation",
+            progress: "done"
         },
         notFound: {
             pageNotFound: "404 - Page not found",

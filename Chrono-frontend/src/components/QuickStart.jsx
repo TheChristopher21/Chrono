@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import '../styles/QuickStart.css';
+import { useTranslation } from '../context/LanguageContext';
 
 const tasks = [
-    { id: 'profile', label: 'Profil ausfüllen' },
-    { id: 'punch', label: 'Erste Zeiterfassung' },
-    { id: 'vacation', label: 'Urlaub beantragen' }
+    { id: 'profile', labelKey: 'quickStart.profile' },
+    { id: 'punch', labelKey: 'quickStart.punch' },
+    { id: 'vacation', labelKey: 'quickStart.vacation' }
 ];
 
 export default function QuickStart() {
+    const { t } = useTranslation();
     const [done, setDone] = useState(() => {
         try { return JSON.parse(localStorage.getItem('qsDone') || '{}'); } catch { return {}; }
     });
@@ -23,18 +25,18 @@ export default function QuickStart() {
 
     return (
         <div className="quickstart-widget">
-            <h3>Quick Start</h3>
+            <h3>{t('quickStart.title')}</h3>
             <ul>
-                {tasks.map(t => (
-                    <li key={t.id}>
+                {tasks.map(tk => (
+                    <li key={tk.id}>
                         <label>
-                            <input type="checkbox" checked={!!done[t.id]} onChange={() => toggle(t.id)} />
-                            {t.label}
+                            <input type="checkbox" checked={!!done[tk.id]} onChange={() => toggle(tk.id)} />
+                            {t(tk.labelKey)}
                         </label>
                     </li>
                 ))}
             </ul>
-            <div className="qs-progress">{progress}% erledigt</div>
+            <div className="qs-progress">{progress}% {t('quickStart.progress')}</div>
         </div>
     );
 }
