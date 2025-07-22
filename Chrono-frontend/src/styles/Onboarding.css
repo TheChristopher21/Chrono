@@ -5,7 +5,7 @@
     right: 0;
     bottom: 0;
     background: var(--modal-backdrop-color, rgba(0,0,0,0.4));
-    z-index: 1000;
+    z-index: 12000; /* Above navigation and modals */
 }
 
 .onboarding-tooltip {
@@ -28,6 +28,14 @@
 
 .onboarding-actions button {
     margin-left: 0.5rem;
+}
+
+.onboarding-highlight {
+    position: relative;
+    z-index: 12001;
+    outline: 3px solid var(--c-pri);
+    outline-offset: 3px;
+    border-radius: 4px;
 }
 
 .feedback-overlay {

@@ -21,6 +21,7 @@ export default function OnboardingTour() {
     const [feedback, setFeedback] = useState('');
     const [showConfetti, setShowConfetti] = useState(false);
     const tooltipRef = useRef(null);
+    const prevTargetRef = useRef(null);
 
     useEffect(() => {
         if (!show) {
@@ -34,30 +35,46 @@ export default function OnboardingTour() {
         const updatePos = () => {
             const step = steps[index];
             const target = document.getElementById(step.id);
-            const rect = target ? target.getBoundingClientRect() : null;
-            if (rect && tooltipRef.current) {
-                const { offsetWidth: w, offsetHeight: h } = tooltipRef.current;
-                let top = rect.bottom + 8;
-                let left = rect.left;
-                if (top + h > window.innerHeight) {
-                    top = rect.top - h - 8;
-                }
-                if (left + w > window.innerWidth) {
-                    left = window.innerWidth - w - 8;
-                }
-                setPos({ top, left });
-                setVisible(true);
-            } else {
-                setVisible(false);
+
+            if (prevTargetRef.current && prevTargetRef.current !== target) {
+                prevTargetRef.current.classList.remove('onboarding-highlight');
             }
+
+            if (target) {
+                target.classList.add('onboarding-highlight');
+                prevTargetRef.current = target;
+                target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+                const rect = target.getBoundingClientRect();
+                if (tooltipRef.current) {
+                    const { offsetWidth: w, offsetHeight: h } = tooltipRef.current;
+                    let top = rect.top - h - 12;
+                    if (top < 8) top = rect.bottom + 12;
+
+                    let left = rect.left + rect.width / 2 - w / 2;
+                    left = Math.max(8, Math.min(left, window.innerWidth - w - 8));
+
+                    setPos({ top, left });
+                    setVisible(true);
+                    return;
+                }
+            }
+
+            setVisible(false);
         };
 
         updatePos();
         window.addEventListener('resize', updatePos);
+        window.addEventListener('scroll', updatePos, true);
         const interval = setInterval(updatePos, 500);
         return () => {
             window.removeEventListener('resize', updatePos);
+            window.removeEventListener('scroll', updatePos, true);
             clearInterval(interval);
+            if (prevTargetRef.current) {
+                prevTargetRef.current.classList.remove('onboarding-highlight');
+                prevTargetRef.current = null;
+            }
         };
     }, [index, show]);
 
@@ -77,6 +94,10 @@ export default function OnboardingTour() {
 
     const handleFinish = () => {
         finish();
+        if (prevTargetRef.current) {
+            prevTargetRef.current.classList.remove('onboarding-highlight');
+            prevTargetRef.current = null;
+        }
         setShowConfetti(true);
         setTimeout(() => {
             setShowConfetti(false);
