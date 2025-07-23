@@ -37,7 +37,6 @@ import WhatsNewPage from "./pages/WhatsNewPage.jsx";
 import TimeTrackingImport from "./TimeTrackingImport.jsx"; // HINZUGEFÜGT
 import HelpPage from "./pages/HelpPage.jsx";
 import HelpButton from "./components/HelpButton.jsx";
-import OnboardingTour from "./components/OnboardingTour.jsx";
 import QuickStart from "./components/QuickStart.jsx";
 
 
@@ -46,7 +45,6 @@ function App() {
 
     return (
         <div className="App">
-            <OnboardingTour />
             <HelpButton />
             <Routes>
                 {/* Public routes */}
