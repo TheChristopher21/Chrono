@@ -74,3 +74,16 @@ Im Backend befinden sich unter `com.chrono.chrono` die Pakete `controller`, `ser
 
 Für Code-Qualitätsanalysen liegen `qodana.yaml`‑Dateien in beiden Teilprojekten. Die Einstellungen in `application.properties` geben Hinweise auf benötigte Umgebungsvariablen für die Datenbank- und Mailkonfiguration.
 
+
+## Lokaler Chatbot
+
+Für einen lokal betriebenen KI-Chatbot erwartet das Backend einen HTTP-Endpunkt, der auf Anfragen unter `llm.base-url` reagiert. Standardmäßig wird `http://localhost:5000` genutzt. Beispiel in `application.properties`:
+
+```
+# Local LLM endpoint
+llm.base-url=${LLM_BASE_URL:http://localhost:5000}
+```
+
+Der Endpunkt sollte JSON im Format `{ "prompt": "Nachricht" }` akzeptieren und mit `{ "response": "Antwort" }` antworten.
+
+Im Frontend befindet sich auf jeder Seite unten rechts ein ausklappbarer Chat-Button. Darüber lassen sich Fragen direkt an den lokalen Chatbot stellen.
