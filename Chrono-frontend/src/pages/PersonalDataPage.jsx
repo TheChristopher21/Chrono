@@ -7,7 +7,6 @@ import '../styles/PersonalDataPageScoped.css';
 
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
-import { useOnboarding } from '../context/OnboardingContext';
 
 const PersonalDataPage = () => {
     const { currentUser, setCurrentUser } = useAuth();
@@ -25,7 +24,6 @@ const PersonalDataPage = () => {
 
     const { notify } = useNotification();
     const { t } = useTranslation();
-    const { start } = useOnboarding();
 
     useEffect(() => {
         if (currentUser) {
