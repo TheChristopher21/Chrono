@@ -85,3 +85,6 @@ llm.base-url=${LLM_BASE_URL:http://localhost:5000}
 ```
 
 Der Endpunkt sollte JSON im Format `{ "prompt": "Nachricht" }` akzeptieren und mit `{ "response": "Antwort" }` antworten.
+
+Im Frontend befindet sich auf jeder Seite unten rechts ein ausklappbarer Chat-Button. Darüber lassen sich Fragen direkt an den lokalen Chatbot stellen.
+

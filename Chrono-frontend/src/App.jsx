@@ -39,6 +39,7 @@ import HelpPage from "./pages/HelpPage.jsx";
 import ChatPage from "./pages/ChatPage.jsx";
 import HelpButton from "./components/HelpButton.jsx";
 import QuickStart from "./components/QuickStart.jsx";
+import ChatWidget from "./components/ChatWidget.jsx";
 
 
 function App() {
@@ -47,6 +48,7 @@ function App() {
     return (
         <div className="App">
             <HelpButton />
+            <ChatWidget />
             <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<LandingPage />} />
