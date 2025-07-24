@@ -36,8 +36,10 @@ import { useAuth } from "./context/AuthContext";
 import WhatsNewPage from "./pages/WhatsNewPage.jsx";
 import TimeTrackingImport from "./TimeTrackingImport.jsx"; // HINZUGEFÜGT
 import HelpPage from "./pages/HelpPage.jsx";
+import ChatPage from "./pages/ChatPage.jsx";
 import HelpButton from "./components/HelpButton.jsx";
 import QuickStart from "./components/QuickStart.jsx";
+import ChatWidget from "./components/ChatWidget.jsx";
 
 
 function App() {
@@ -46,6 +48,7 @@ function App() {
     return (
         <div className="App">
             <HelpButton />
+            <ChatWidget />
             <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<LandingPage />} />
@@ -54,6 +57,14 @@ function App() {
                 <Route path="/impressum" element={<Impressum />} />
                 <Route path="/agb" element={<AGB />} />
                 <Route path="/help" element={<HelpPage />} />
+                <Route
+                    path="/chat"
+                    element={
+                        <PrivateRoute>
+                            <ChatPage />
+                        </PrivateRoute>
+                    }
+                />
 
                 {/* Private routes */}
                 <Route
