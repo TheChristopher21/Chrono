@@ -1,7 +1,8 @@
 .chat-widget {
     position: fixed;
     bottom: 1rem;
-    right: 1rem;
+    right: 4.5rem; /* neben dem Hilfe-Button */
+
     z-index: 1000;
 }
 
@@ -17,8 +18,9 @@
 }
 
 .chat-box {
-    width: 280px;
-    background: var(--c-card);
+    width: 320px;
+    background: var(--c-surface); /* undurchsichtiger Hintergrund */
+
     color: var(--c-text);
     border: 1px solid var(--c-border);
     border-radius: var(--u-radius);
