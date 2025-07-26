@@ -1,16 +1,16 @@
 /* src/styles/FloatingButtons.css */
 
 /* Scope: .scoped-floating-buttons */
-.scoped-floating-buttons .floating-buttons-container {
+.scoped-floating-buttons.floating-buttons-container {
     /* DIES ist jetzt der EINZIGE Ort für die Positionierung */
     position: fixed;
     bottom: 20px;
     right: 20px;
     z-index: 1000; /* Stellt sicher, dass es über dem Seiteninhalt liegt */
 
-    /* Diese Regeln ordnen die Buttons (Help & Chat) untereinander an */
+    /* Die Buttons (Help & Chat) liegen nebeneinander */
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 16px; /* Abstand zwischen den Buttons */
+    flex-direction: row;
+    align-items: center;
+    gap: 12px; /* Abstand zwischen den Buttons */
 }
