@@ -1,17 +1,29 @@
-/* Scope: .scoped-help-button */
+/* src/styles/HelpButton.css */
+
+/*
+ * Der Button wird jetzt nur noch als Kreis gestylt.
+ * Die Positionierung übernimmt der .floating-buttons-container!
+ */
 .scoped-help-button .help-button {
-    position: fixed;
-    bottom: 1rem;
-    right: 1rem;
-    background: #007bff;
+    /* Beibehalten: Das Aussehen des Buttons */
+    background: var(--c-pri-dim); /* Leicht andere Farbe zur Unterscheidung vom Chat */
     color: #fff;
     border-radius: 50%;
-    width: 40px;
-    height: 40px;
+    width: 52px; /* Etwas kleiner als der Haupt-Chat-Button */
+    height: 52px;
     display: flex;
     align-items: center;
     justify-content: center;
     text-decoration: none;
-    font-size: 1.5rem;
-    z-index: 999;
+    font-size: 1.8rem; /* Größeres Fragezeichen */
+    font-weight: bold;
+    box-shadow: var(--u-shadow-md);
+    transition: all 0.2s ease-in-out;
+    z-index: 1; /* Stellt sicher, dass er klickbar ist */
+}
+
+.scoped-help-button .help-button:hover {
+    transform: scale(1.08);
+    background: var(--c-pri);
+    box-shadow: var(--u-shadow-lg);
 }
