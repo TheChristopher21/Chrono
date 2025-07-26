@@ -1268,6 +1268,7 @@ const translations = {
     },
 };
 
+export const LanguageContext = createContext();
 
 export const LanguageProvider = ({ children }) => {
     // Standard: "de" oder "en" je nach Vorliebe
