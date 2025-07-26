@@ -1,9 +1,10 @@
+/* Scope: .scoped-time-import */
 /* =========================================================================
    TimeTrackingImport Scoped Styles
    Supports light and dark mode via CSS variables
    ========================================================================= */
 
-.time-import-page {
+.scoped-time-import .time-import-page {
   font-family: "Poppins", sans-serif;
   background: var(--c-bg);
   color: var(--c-text);
@@ -11,7 +12,7 @@
   padding: 1.5rem;
 }
 
-.time-import-container {
+.scoped-time-import .time-import-container {
   max-width: 700px;
   margin: 0 auto;
   background: var(--c-card);
@@ -20,7 +21,7 @@
   padding: var(--u-card-padding);
 }
 
-.file-input {
+.scoped-time-import .file-input {
   padding: 0.5rem;
   border: 1px solid var(--c-border);
   border-radius: var(--u-radius-sm);
@@ -28,7 +29,7 @@
   color: var(--c-text);
 }
 
-.import-button {
+.scoped-time-import .import-button {
   padding: 0.5rem 1.2rem;
   background: var(--c-pri);
   color: #fff;
@@ -37,12 +38,12 @@
   cursor: pointer;
 }
 
-.import-button:disabled {
+.scoped-time-import .import-button:disabled {
   background: var(--c-muted);
   cursor: not-allowed;
 }
 
-.import-progress {
+.scoped-time-import .import-progress {
   width: 100%;
   height: 8px;
   background: var(--c-border);
@@ -51,22 +52,22 @@
   margin-top: 0.5rem;
 }
 
-.import-progress-bar {
+.scoped-time-import .import-progress-bar {
   height: 100%;
   background: var(--c-pri);
   width: 0;
   transition: width 0.3s;
 }
 
-.invalid-table {
+.scoped-time-import .invalid-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 1rem;
   background: var(--c-card);
 }
 
-.invalid-table th,
-.invalid-table td {
+.scoped-time-import .invalid-table th,
+.scoped-time-import .invalid-table td {
   border: 1px solid var(--c-border);
   padding: 4px;
   font-size: 0.8rem;
@@ -80,11 +81,11 @@
   border-radius: var(--u-radius-xs);
 }
 
-.invalid-table td.error-cell {
+.scoped-time-import .invalid-table td.error-cell {
   color: var(--c-error);
 }
 
-.feedback-container {
+.scoped-time-import .feedback-container {
   margin-top: 1.25rem;
   padding: 1rem;
   border: 1px solid var(--c-border);
@@ -92,20 +93,20 @@
   background: var(--c-card);
 }
 
-.feedback-success {
+.scoped-time-import .feedback-success {
   color: var(--c-success);
 }
 
-.feedback-warning {
+.scoped-time-import .feedback-warning {
   color: var(--c-warn);
 }
 
-.error-message {
+.scoped-time-import .error-message {
   margin-top: 0.5rem;
   color: var(--c-error);
 }
 
-.hint-text {
+.scoped-time-import .hint-text {
   margin-top: 1.25rem;
   font-size: 0.9em;
   color: var(--c-muted);

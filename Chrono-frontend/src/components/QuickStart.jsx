@@ -24,7 +24,8 @@ export default function QuickStart() {
     const progress = Math.round(completed / tasks.length * 100);
 
     return (
-        <div className="quickstart-widget">
+        <div className="scoped-quickstart">
+            <div className="quickstart-widget">
             <h3>{t('quickStart.title')}</h3>
             <ul>
                 {tasks.map(tk => (
@@ -37,6 +38,7 @@ export default function QuickStart() {
                 ))}
             </ul>
             <div className="qs-progress">{progress}% {t('quickStart.progress')}</div>
+            </div>
         </div>
     );
 }

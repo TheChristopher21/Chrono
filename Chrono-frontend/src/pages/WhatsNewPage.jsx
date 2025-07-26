@@ -27,7 +27,7 @@ const WhatsNewPage = () => {
     return (
         <div>
             <Navbar />
-            <div className="page-container">
+            <div className="page-container scoped-changelog">
                 <h1>{t('whatsNewPage.title')}</h1>
                 {loading ? (
                     <p>{t('whatsNewPage.loading')}</p>

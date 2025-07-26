@@ -1,7 +1,8 @@
+/* Scope: .scoped-notification */
 /* Notification.css oder global */
 
 
-.notification-modal {
+.scoped-notification .notification-modal {
   background: var(--c-card);
   color: var(--c-text);
   padding: 1.5rem 2rem;
@@ -15,7 +16,7 @@
 }
 
 /* Button anpassen */
-.notification-modal button {
+.scoped-notification .notification-modal button {
   margin-top: 1rem;
   background: var(--c-pri);
   color: #fff;
@@ -25,6 +26,6 @@
   cursor: pointer;
   transition: background var(--u-dur) var(--u-ease);
 }
-.notification-modal button:hover {
+.scoped-notification .notification-modal button:hover {
   background: var(--c-pri-dim);
 }
