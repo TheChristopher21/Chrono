@@ -30,7 +30,7 @@ public class ChatService {
     @Value("${llm.base-url}")
     private String llmBaseUrl;
 
-    @Value("${llama.model:tinyllama}")
+    @Value("${llama.model:llama3:8b}")
     private String modelName;
 
     private final RestTemplate restTemplate;
@@ -46,44 +46,38 @@ public class ChatService {
     }
 
     private void loadKnowledgeBase() {
-        // Dieser Pfad entspricht dem, was wir in docker-compose.yml gemountet haben
         Path kbPath = Paths.get("/app/knowledge_base");
-        logger.info("Versuche, Wissensdatenbank aus dem Verzeichnis zu laden: {}", kbPath);
-
-        if (Files.isDirectory(kbPath)) {
-            try (Stream<Path> paths = Files.walk(kbPath)) {
-                this.knowledgeBaseContent = paths
-                        .filter(Files::isRegularFile)
-                        .map(path -> {
-                            try {
-                                return Files.readString(path);
-                            } catch (IOException e) {
-                                logger.error("Fehler beim Lesen der Datei: {}", path, e);
-                                return "";
-                            }
-                        })
-                        .collect(Collectors.joining("\n\n---\n\n"));
-                logger.info("Wissensdatenbank erfolgreich geladen. Umfang: {} Zeichen.", this.knowledgeBaseContent.length());
-            } catch (IOException e) {
-                logger.error("Fehler beim Zugriff auf das Wissensdatenbank-Verzeichnis: {}", kbPath, e);
-            }
-        } else {
-            logger.warn("Wissensdatenbank-Verzeichnis nicht gefunden unter: {}", kbPath);
+        logger.info("Lade Wissensdatenbank aus: {}", kbPath);
+        if (!Files.isDirectory(kbPath)) {
+            logger.warn("Wissensdatenbank-Verzeichnis nicht gefunden!");
+            return;
+        }
+        try (Stream<Path> paths = Files.walk(kbPath)) {
+            this.knowledgeBaseContent = paths
+                    .filter(Files::isRegularFile)
+                    .map(path -> {
+                        try { return Files.readString(path); }
+                        catch (IOException e) { return ""; }
+                    })
+                    .collect(Collectors.joining("\n\n---\n\n"));
+            logger.info("Wissensdatenbank geladen ({} Zeichen).", this.knowledgeBaseContent.length());
+        } catch (IOException e) {
+            logger.error("Fehler beim Lesen des Wissensdatenbank-Verzeichnisses.", e);
         }
     }
 
     public String ask(String message) {
-        logger.info("Neue Chat-Anfrage erhalten: '{}'", message);
+        logger.info("Neue Chat-Anfrage: '{}'", message);
 
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            // Hier bauen wir den intelligenten Prompt zusammen
-            String fullPrompt = "Antworte auf die folgende Frage nur basierend auf dem untenstehenden Kontext. Antworte auf Deutsch.\n\n" +
-                    "--- KONTEXT ---\n" +
+            // HIER IST DIE ÄNDERUNG: Die neue, flexiblere Anweisung
+            String fullPrompt = "Answer the following question based only on the context provided below. Respond in the same language as the question.\n\n" +
+                    "--- CONTEXT ---\n" +
                     this.knowledgeBaseContent +
-                    "\n--- FRAGE ---\n" +
+                    "\n--- QUESTION ---\n" +
                     message;
 
             Map<String, Object> body = new HashMap<>();
@@ -93,21 +87,17 @@ public class ChatService {
 
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
-            logger.info("Sende Anfrage an Ollama...");
+            logger.info("Sende Anfrage an Ollama mit Modell {}...", modelName);
             String jsonResponse = restTemplate.postForObject(llmBaseUrl, requestEntity, String.class);
             logger.info("Antwort von Ollama erhalten.");
 
-            if (jsonResponse != null) {
-                JsonNode rootNode = objectMapper.readTree(jsonResponse);
-                if (rootNode.has("response")) {
-                    String responseText = rootNode.get("response").asText();
-                    logger.info("Erfolgreich Antwort extrahiert.");
-                    return responseText;
-                }
+            JsonNode rootNode = objectMapper.readTree(jsonResponse);
+            if (rootNode.has("response")) {
+                return rootNode.get("response").asText();
             }
         } catch (Exception e) {
             logger.error("Fehler bei der Kommunikation mit dem LLM:", e);
         }
-        return "Entschuldigung, es gab einen Fehler bei der Kommunikation mit der KI.";
+        return "Entschuldigung, es gab einen Fehler.";
     }
 }

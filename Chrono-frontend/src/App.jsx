@@ -1,7 +1,7 @@
 /* ------------------------------------------------------------------------
     App.jsx · zentrale Routen‐Definition (Korrigiert)
     ------------------------------------------------------------------------ */
-import "react";
+import React from "react"; // Korrekter React-Import
 import { Routes, Route, Navigate } from "react-router-dom";
 
 /* ---------- globale Styles -------------------------------------------- */
@@ -31,15 +31,12 @@ import PayslipsPage from "./pages/PayslipsPage.jsx";
 import AdminPayslipsPage from "./pages/AdminPayslipsPage.jsx";
 import PrivateRoute from "./components/PrivateRoute";
 import { useAuth } from "./context/AuthContext";
-
-// NEU: Importieren Sie die WhatsNewPage
 import WhatsNewPage from "./pages/WhatsNewPage.jsx";
-import TimeTrackingImport from "./TimeTrackingImport.jsx"; // HINZUGEFÜGT
+import TimeTrackingImport from "./TimeTrackingImport.jsx";
 import HelpPage from "./pages/HelpPage.jsx";
-import ChatPage from "./pages/ChatPage.jsx";
-import HelpButton from "./components/HelpButton.jsx";
-import QuickStart from "./components/QuickStart.jsx";
-import ChatWidget from "./components/ChatWidget.jsx";
+
+// NEU: Nur noch der ActionButtons Container wird importiert
+import ActionButtons from "./components/ActionButtons.jsx";
 
 
 function App() {
@@ -47,8 +44,9 @@ function App() {
 
     return (
         <div className="App">
-            <HelpButton />
-            <ChatWidget />
+            {/* NEU: Nur der ActionButtons Container wird hier aufgerufen */}
+            <ActionButtons />
+
             <Routes>
                 {/* Public routes */}
                 <Route path="/" element={<LandingPage />} />
@@ -57,15 +55,6 @@ function App() {
                 <Route path="/impressum" element={<Impressum />} />
                 <Route path="/agb" element={<AGB />} />
                 <Route path="/help" element={<HelpPage />} />
-                <Route
-                    path="/chat"
-                    element={
-                        <PrivateRoute>
-                            <ChatPage />
-                        </PrivateRoute>
-                    }
-                />
-
                 {/* Private routes */}
                 <Route
                     path="/user"
@@ -129,7 +118,7 @@ function App() {
                     path="/admin/customers"
                     element={
                         <PrivateRoute requiredRole="ROLE_ADMIN">
-                            {currentUser?.customerTrackingEnabled ? ( // Dies ist die korrekte Version
+                            {currentUser?.customerTrackingEnabled ? (
                                 <AdminCustomersPage />
                             ) : (
                                 <Navigate to="/admin" replace />
@@ -165,9 +154,8 @@ function App() {
                         </PrivateRoute>
                     }
                 />
-                {/* NEU: Route für den Zeitimport (als Admin-Route) */}
                 <Route
-                    path="/admin/import-times" // Du kannst diesen Pfad bei Bedarf ändern
+                    path="/admin/import-times"
                     element={
                         <PrivateRoute requiredRole="ROLE_ADMIN">
                             <TimeTrackingImport />
@@ -175,7 +163,6 @@ function App() {
                     }
                 />
 
-                {/* NEU: Fügen Sie die Route für den Update-Verlauf hinzu */}
                 <Route
                     path="/whats-new"
                     element={
