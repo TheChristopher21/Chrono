@@ -1,4 +1,5 @@
-.floating-buttons-container {
+/* Scope: .scoped-floating-buttons */
+.scoped-floating-buttons .floating-buttons-container {
     position: fixed;
     bottom: 20px;
     right: 20px;
@@ -8,12 +9,12 @@
     align-items: flex-end;
     gap: 16px;
 }
-.chat-widget {
+.scoped-floating-buttons .chat-widget {
     position: relative;
     display: flex;
     justify-content: flex-end;
 }
-.chat-toggle {
+.scoped-floating-buttons .chat-toggle {
     width: 60px;
     height: 60px;
     border-radius: 50%;
@@ -26,16 +27,16 @@
     align-items: center;
     transition: all 0.3s ease;
 }
-.chat-toggle:hover {
+.scoped-floating-buttons .chat-toggle:hover {
     transform: scale(1.1);
     background: var(--c-pri-hover);
 }
-.chat-toggle svg {
+.scoped-floating-buttons .chat-toggle svg {
     fill: var(--c-text-on-pri);
     width: 28px;
     height: 28px;
 }
-.chat-box {
+.scoped-floating-buttons .chat-box {
     position: absolute;
     bottom: calc(100% + 16px);
     right: 0;

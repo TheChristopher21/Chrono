@@ -4,7 +4,8 @@ import '../styles/TrendChart.css';
 function TrendChart({ data }) {
   const max = Math.max(...data.map(d => Math.max(d.workedMinutes, d.expectedMinutes || 0)), 1);
   return (
-    <div className="trend-chart">
+    <div className="scoped-trend-chart">
+      <div className="trend-chart">
       {data.map(d => (
         <div key={d.date} className="trend-bar-wrapper">
           <div className="trend-bars">
@@ -16,6 +17,7 @@ function TrendChart({ data }) {
           <span className="trend-label">{new Date(d.date).toLocaleDateString()}</span>
         </div>
       ))}
+      </div>
     </div>
   );
 }

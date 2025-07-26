@@ -7,7 +7,7 @@ import '../styles/FloatingButtons.css';
 const ActionButtons = () => {
     return (
         // Dieser Container wird vom neuen Stylesheet korrekt positioniert
-        <div className="floating-buttons-container">
+        <div className="scoped-floating-buttons floating-buttons-container">
             <HelpButton />
             <ChatWidget />
         </div>

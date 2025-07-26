@@ -28,7 +28,7 @@ export function NotificationProvider({ children }) {
             {children}
 
             {visible && (
-                <ModalOverlay visible className="notification-overlay">
+                <ModalOverlay visible className="notification-overlay scoped-notification">
                     <div className="notification-modal">
                         <p>{message}</p>
                         <button onClick={closeNotification}>{t('ok')}</button>

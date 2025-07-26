@@ -1,4 +1,5 @@
-.help-button {
+/* Scope: .scoped-help-button */
+.scoped-help-button .help-button {
     position: fixed;
     bottom: 1rem;
     right: 1rem;

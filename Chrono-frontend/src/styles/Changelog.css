@@ -1,17 +1,18 @@
+/* Scope: .scoped-changelog */
 /* ==========================================================
  * Changelog.css (Finale Korrektur mit korrekten CSS-Variablen)
  * ==========================================================
  */
 
 /* --- Styling für das Modal-Backdrop --- */
-.changelog-backdrop {
+.scoped-changelog .changelog-backdrop {
   /* Grundlayout über global.css */
   background-color: var(--modal-backdrop-color, rgba(0, 0, 0, 0.8));
   padding: 1rem;
 }
 
 /* --- Styling für das Modal selbst --- */
-.changelog-modal {
+.scoped-changelog .changelog-modal {
   /* KORREKTUR: --c-card und --c-text statt --card-bg-color und --text-color */
   background: var(--c-card);
   color: var(--c-text);
@@ -28,7 +29,7 @@
 }
 
 /* --- Header für Modal & Verlauf --- */
-.changelog-header {
+.scoped-changelog .changelog-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -39,12 +40,12 @@
   border-bottom: 1px solid var(--c-border);
 }
 
-.changelog-header h2 {
+.scoped-changelog .changelog-header h2 {
   margin: 0;
   font-size: 1.25rem;
 }
 
-.changelog-close-btn {
+.scoped-changelog .changelog-close-btn {
   background: none;
   border: none;
   font-size: 2rem;
@@ -54,24 +55,24 @@
   color: var(--c-muted);
   transition: color 0.2s ease;
 }
-.changelog-close-btn:hover {
+.scoped-changelog .changelog-close-btn:hover {
   color: var(--c-text);
 }
 
 /* --- Hauptinhalt des Modals --- */
-.changelog-content {
+.scoped-changelog .changelog-content {
   padding: 1.5rem;
   max-height: 70vh;
   overflow-y: auto;
 }
 
-.changelog-content h3 {
+.scoped-changelog .changelog-content h3 {
   margin-top: 0;
   margin-bottom: 0.5rem;
   font-size: 1.5rem;
 }
 
-.changelog-date {
+.scoped-changelog .changelog-date {
   font-size: 0.9rem;
   /* KORREKTUR: --c-muted für die sekundäre Farbe */
   color: var(--c-muted);
@@ -80,33 +81,33 @@
 }
 
 /* --- Formatierung für den Markdown-Textkörper --- */
-.changelog-body {
+.scoped-changelog .changelog-body {
   line-height: 1.7;
   font-size: 1rem;
 }
 
-.changelog-body p,
-.changelog-body ul,
-.changelog-body ol {
+.scoped-changelog .changelog-body p,
+.scoped-changelog .changelog-body ul,
+.scoped-changelog .changelog-body ol {
   margin-bottom: 1rem;
 }
 
-.changelog-body ul,
-.changelog-body ol {
+.scoped-changelog .changelog-body ul,
+.scoped-changelog .changelog-body ol {
   padding-left: 25px;
 }
 
-.changelog-body li {
+.scoped-changelog .changelog-body li {
   margin-bottom: 0.5rem;
 }
 
-.changelog-body strong {
+.scoped-changelog .changelog-body strong {
   font-weight: 600;
   color: var(--c-text);
 }
 
 /* --- Footer für das Modal --- */
-.changelog-footer {
+.scoped-changelog .changelog-footer {
   padding: 1rem 1.5rem;
   text-align: right;
   /* KORREKTUR: --c-surface als subtiler Hintergrund */
@@ -120,12 +121,12 @@
   padding: 1rem 2rem;
 }
 
-.changelog-history {
+.scoped-changelog .changelog-history {
   max-width: 900px;
   margin: 0 auto;
 }
 
-.changelog-history-item {
+.scoped-changelog .changelog-history-item {
   /* KORREKTUR: --c-card und --c-border */
   background: var(--c-card);
   border: 1px solid var(--c-border);
@@ -139,26 +140,26 @@
     box-shadow 0.2s ease;
 }
 
-.changelog-history-item:hover {
+.scoped-changelog .changelog-history-item:hover {
   transform: translateY(-4px);
   box-shadow: var(--u-shadow-lg);
 }
 
 /* In der Verlaufs-Seite hat der Header einen anderen Look */
-.changelog-history-item .changelog-header {
+.scoped-changelog .changelog-history-item .changelog-header {
   background-color: var(--c-surface);
   border-bottom: 1px solid var(--c-border);
 }
 
-.changelog-history-item .changelog-header h2 {
+.scoped-changelog .changelog-history-item .changelog-header h2 {
   font-size: 1.1rem;
 }
 
-.changelog-history-item .changelog-date {
+.scoped-changelog .changelog-history-item .changelog-date {
   font-size: 0.8rem;
   margin-bottom: 0;
 }
 
-.changelog-history-item .changelog-body {
+.scoped-changelog .changelog-history-item .changelog-body {
   padding: 1.5rem;
 }
