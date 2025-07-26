@@ -70,6 +70,8 @@
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+    /* ensure a solid background */
+    background-color: var(--c-surface);
 }
 
 /* Container für jede einzelne Nachricht (richtet sie links/rechts aus) */
@@ -181,4 +183,26 @@
     40% {
         transform: scale(1.0);
     }
+}
+
+/* Theme specific adjustments */
+html[data-theme="dark"] .chat-box {
+    background-color: var(--c-surface);
+    border-color: var(--c-border);
+}
+
+html[data-theme="dark"] .msg-bot .msg-bubble {
+    background-color: var(--c-card);
+    color: var(--c-text);
+}
+
+html[data-theme="dark"] .chat-toggle {
+    background-color: var(--c-pri);
+}
+
+html[data-theme="light"] .chat-box,
+html[data-theme="light"] .msg-bot .msg-bubble,
+html[data-theme="light"] .chat-toggle {
+    /* ensure colors remain fully opaque */
+    opacity: 1;
 }
