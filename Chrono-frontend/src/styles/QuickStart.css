@@ -1,16 +1,17 @@
-.quickstart-widget {
+/* Scope: .scoped-quickstart */
+.scoped-quickstart .quickstart-widget {
     border: 1px solid #ccc;
     padding: 1rem;
     margin-bottom: 1rem;
     border-radius: 4px;
 }
-.quickstart-widget ul {
+.scoped-quickstart .quickstart-widget ul {
     list-style: none;
     padding: 0;
 }
-.quickstart-widget li {
+.scoped-quickstart .quickstart-widget li {
     margin-bottom: 0.5rem;
 }
-.qs-progress {
+.scoped-quickstart .qs-progress {
     font-weight: bold;
 }

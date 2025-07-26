@@ -15,7 +15,7 @@ const ChangelogModal = ({ changelog, onClose }) => {
     };
 
     return (
-        <ModalOverlay visible className="changelog-backdrop" onClick={handleBackdropClick}>
+        <ModalOverlay visible className="changelog-backdrop scoped-changelog" onClick={handleBackdropClick}>
             <div className="changelog-modal">
                 <div className="changelog-header">
                     <h2>{t('changelogModal.whatsNew')} {changelog.version}?</h2>

@@ -199,7 +199,7 @@ function TimeTrackingImport() {
 
 
     return (
-        <div className="time-import-page">
+        <div className="scoped-time-import time-import-page">
             <div className="time-import-container">
                 <h3>Stempelzeiten aus Excel importieren</h3>
                 <form onSubmit={handleSubmit} className="import-form">

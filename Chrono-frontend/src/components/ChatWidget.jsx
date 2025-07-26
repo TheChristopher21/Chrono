@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
 
-// Das CSS wird jetzt über die ActionButtons-Komponente importiert
+// Scoped styles for the widget itself
+import '../styles/ChatWidget.css';
 
 export default function ChatWidget() {
     const [open, setOpen] = useState(false);
@@ -42,12 +43,13 @@ export default function ChatWidget() {
     };
 
     return (
-        <div className="chat-widget">
-            <div className={`chat-box ${open ? 'open' : 'closed'}`}>
-                <div className="chat-header">
-                    <h3>Chrono Assistent</h3>
-                    <button className="close-btn" onClick={toggle}>×</button>
-                </div>
+        <div className="scoped-chat-widget">
+            <div className="chat-widget">
+                <div className={`chat-box ${open ? 'open' : 'closed'}`}>
+                    <div className="chat-header">
+                        <h3>Chrono Assistent</h3>
+                        <button className="close-btn" onClick={toggle}>×</button>
+                    </div>
                 <div className="chat-window" ref={chatWindowRef}>
                     {messages.map((m, i) => (
                         <div key={i} className={`msg-container msg-${m.sender}`}>
@@ -77,11 +79,12 @@ export default function ChatWidget() {
                     </button>
                 </div>
             </div>
-            <button className="chat-toggle" onClick={toggle} aria-label="Chat öffnen">
-                <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
-                    <path d="M80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160q-33 0-56.5-23.5T80-240Zm120-80h40l40 40v-40h400q33 0 56.5-23.5T760-400v-320q0-33-23.5-56.5T680-800H280q-33 0-56.5 23.5T200-720v320h-40l-40 40v-40Z"/>
-                </svg>
-            </button>
+                <button className="chat-toggle" onClick={toggle} aria-label="Chat öffnen">
+                    <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px">
+                        <path d="M80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5T880-720v480q0 33-23.5 56.5T800-160H160q-33 0-56.5-23.5T80-240Zm120-80h40l40 40v-40h400q33 0 56.5-23.5T760-400v-320q0-33-23.5-56.5T680-800H280q-33 0-56.5 23.5T200-720v320h-40l-40 40v-40Z"/>
+                    </svg>
+                </button>
+            </div>
         </div>
     );
 }
