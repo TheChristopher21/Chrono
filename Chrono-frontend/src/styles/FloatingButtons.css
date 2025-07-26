@@ -1,7 +1,7 @@
 /* src/styles/FloatingButtons.css */
 
 /* Scope: .scoped-floating-buttons */
-.scoped-floating-buttons .floating-buttons-container {
+.scoped-floating-buttons.floating-buttons-container {
     /* DIES ist jetzt der EINZIGE Ort für die Positionierung */
     position: fixed;
     bottom: 20px;
@@ -14,3 +14,4 @@
     align-items: center;
     gap: 12px; /* Abstand zwischen den Buttons */
 }
+
