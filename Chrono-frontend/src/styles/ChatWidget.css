@@ -2,7 +2,7 @@
 .chat-widget {
     position: fixed;
     bottom: 1rem;
-    right: 1.5rem;
+    right: 4rem; /* position next to help button */
     z-index: 1000;
 }
 
@@ -12,7 +12,7 @@
     height: 60px;
     border-radius: 50%;
     background: var(--c-pri);
-    color: var(--c-text-on-pri);
+    color: #fff; /* ensure contrast */
     border: none;
     cursor: pointer;
     box-shadow: var(--u-shadow-lg);
@@ -30,7 +30,7 @@
 .chat-box {
     width: 350px;
     height: 500px;
-    background: var(--c-surface);
+    background: var(--c-card);
     color: var(--c-text);
     border: 1px solid var(--c-border);
     border-radius: var(--u-radius-lg);
@@ -48,7 +48,7 @@
     align-items: center;
     padding: 0.75rem 1rem;
     border-bottom: 1px solid var(--c-border);
-    background: var(--c-surface-variant);
+    background: var(--c-card);
     font-weight: bold;
 }
 
@@ -97,12 +97,12 @@
 
 .msg-user .msg-bubble {
     background-color: var(--c-pri);
-    color: var(--c-text-on-pri);
+    color: #fff;
     border-bottom-right-radius: var(--u-radius-sm);
 }
 
 .msg-bot .msg-bubble {
-    background-color: var(--c-surface-container-high);
+    background-color: var(--c-card);
     color: var(--c-text);
     border-bottom-left-radius: var(--u-radius-sm);
 }
@@ -120,7 +120,7 @@
     padding: 0.75rem;
     border-radius: var(--u-radius);
     border: 1px solid var(--c-border);
-    background-color: var(--c-surface-container);
+    background-color: var(--c-surface);
     color: var(--c-text);
 }
 
@@ -134,17 +134,17 @@
     border-radius: var(--u-radius);
     border: none;
     background-color: var(--c-pri);
-    color: var(--c-text-on-pri);
+    color: #fff;
     cursor: pointer;
     transition: background-color 0.2s;
 }
 
 .chat-input button:hover {
-    background-color: var(--c-pri-hover);
+    background-color: var(--c-pri-dim);
 }
 
 .chat-input button:disabled {
-    background-color: var(--c-disabled);
+    background-color: var(--c-border);
     cursor: not-allowed;
 }
 
@@ -159,7 +159,7 @@
 .typing-indicator span {
     height: 8px;
     width: 8px;
-    background-color: var(--c-text-subtle);
+    background-color: var(--c-muted);
     border-radius: 50%;
     display: inline-block;
     margin: 0 2px;
