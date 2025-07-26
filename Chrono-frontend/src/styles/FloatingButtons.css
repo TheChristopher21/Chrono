@@ -8,9 +8,9 @@
     right: 20px;
     z-index: 1000; /* Stellt sicher, dass es über dem Seiteninhalt liegt */
 
-    /* Diese Regeln ordnen die Buttons (Help & Chat) untereinander an */
+    /* Die Buttons (Help & Chat) liegen nebeneinander */
     display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 16px; /* Abstand zwischen den Buttons */
+    flex-direction: row;
+    align-items: center;
+    gap: 12px; /* Abstand zwischen den Buttons */
 }
