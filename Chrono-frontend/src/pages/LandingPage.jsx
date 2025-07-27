@@ -246,7 +246,8 @@ const LandingPage = () => {
                     <div className="social-icons"></div>
                     <div style={{ marginTop: "1rem" }}>
                         <Link to="/impressum" style={{ marginRight: "1rem" }}>Impressum</Link>
-                        <Link to="/agb">AGB</Link>
+                        <Link to="/agb" style={{ marginRight: "1rem" }}>AGB</Link>
+                        <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a>
                     </div>
                 </div>
             </footer>
