@@ -11,6 +11,11 @@ Dein **persönliches Dashboard** ist die zentrale Übersicht. Dort findest du di
 - Ein **negativer Wert** (z.B. -2:15) bedeutet, du hast Minusstunden.
   Das System zeigt dir auch die Differenz für den aktuellen Tag und die aktuelle Woche an.
 
+## Kann mir der Chatbot meine Überstunden anzeigen?
+Ja. Wenn du in der Anwendung angemeldet bist, kannst du den Chatbot direkt fragen:
+"Wie viele Überstunden habe ich?". Der Assistent liest deinen aktuellen Überstundenstand aus
+deinem Profil aus und antwortet dir mit dem Wert in Stunden und Minuten.
+
 ## Ich habe vergessen, mich einzustempeln. Was kann ich tun?
 Kein Problem. Du kannst eine Korrektur beantragen.
 - Gehe zum Menüpunkt **"Korrekturanträge"**.

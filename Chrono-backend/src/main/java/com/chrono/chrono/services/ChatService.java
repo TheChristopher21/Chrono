@@ -14,6 +14,8 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import com.chrono.chrono.entities.User;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -74,8 +76,16 @@ public class ChatService {
         }
     }
 
-    public String ask(String message) {
+    public String ask(String message, User user) {
         logger.info("Neue Chat-Anfrage: '{}'", message);
+
+        if (user != null && message != null && message.toLowerCase().contains("überstunden")) {
+            int minutes = user.getTrackingBalanceInMinutes() != null ? user.getTrackingBalanceInMinutes() : 0;
+            int hours = Math.abs(minutes) / 60;
+            int mins = Math.abs(minutes) % 60;
+            String sign = minutes < 0 ? "-" : "";
+            return String.format("Du hast aktuell %s%d:%02d Stunden.", sign, hours, mins);
+        }
 
         try {
             HttpHeaders headers = new HttpHeaders();
