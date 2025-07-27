@@ -1,3 +1,4 @@
+/* src/styles/PercentageDashboardScoped.css */
 /* =========================================================================
    PercentageDashboardScoped.css · V2 Modern (Mai 2025)
    Scope: .percentage-dashboard.scoped-dashboard
@@ -69,9 +70,9 @@
    ========================================================================= */
 .percentage-dashboard.scoped-dashboard .dashboard-header {
   background: linear-gradient(
-    135deg,
-    var(--ud-c-primary, #475bff) 0%,
-    var(--ud-c-primary-dim, #6b7cff) 100%
+          135deg,
+          var(--ud-c-primary, #475bff) 0%,
+          var(--ud-c-primary-dim, #6b7cff) 100%
   );
   color: #fff; /* Textfarbe im Header ist explizit weiß für Kontrast zum Gradient */
   padding: var(--ud-gap-lg, 2rem) var(--ud-gap-xl, 2.5rem);
@@ -83,9 +84,9 @@
 /* Dark mode override für den Header-Gradient, falls die neuen Primärfarben verwendet werden sollen */
 [data-theme="dark"] .percentage-dashboard.scoped-dashboard .dashboard-header {
   background: linear-gradient(
-    135deg,
-    var(--ud-c-primary) 0%,
-    var(--ud-c-primary-dim) 100%
+          135deg,
+          var(--ud-c-primary) 0%,
+          var(--ud-c-primary-dim) 100%
   );
 }
 
@@ -115,10 +116,10 @@
 }
 [data-theme="dark"] .percentage-dashboard.scoped-dashboard .personal-info p {
   background-color: rgba(
-    0,
-    0,
-    0,
-    0.2
+          0,
+          0,
+          0,
+          0.2
   ); /* Dunklerer transparenter Hintergrund für Dark Mode */
   border-color: rgba(255, 255, 255, 0.1); /* Hellere Border für Dark Mode */
 }
@@ -470,8 +471,8 @@
   left: 50%;
   transform: translateX(-50%);
   transition:
-    opacity var(--u-dur, 0.25s) var(--u-ease, ease),
-    visibility var(--u-dur, 0.25s) var(--u-ease, ease);
+          opacity var(--u-dur, 0.25s) var(--u-ease, ease),
+          visibility var(--u-dur, 0.25s) var(--u-ease, ease);
   font-size: var(--ud-fz-sm, 0.875rem);
   line-height: 1.5;
 }
@@ -562,8 +563,8 @@
   color: var(--ud-c-text, #1e1f22); /* Standard Textfarbe */
 }
 [data-theme="dark"]
-  .percentage-dashboard.scoped-dashboard
-  .week-navigation input[type="date"] {
+.percentage-dashboard.scoped-dashboard
+.week-navigation input[type="date"] {
   border-color: var(--ud-c-border); /* Nutzt Dark Mode Border Variable */
   background-color: var(--ud-c-surface); /* Nutzt Dark Mode Surface Variable für Inputs */
   color: var(--ud-c-text); /* Nutzt Dark Mode Text Variable */
@@ -764,8 +765,8 @@
   background-color: var(--ud-c-line); /* Leichter Hover-Effekt */
 }
 [data-theme="dark"]
-  .percentage-dashboard.scoped-dashboard
-  .corrections-header:hover {
+.percentage-dashboard.scoped-dashboard
+.corrections-header:hover {
   background-color: var(--ud-c-border); /* Leichter Hover-Effekt im Dark Mode */
 }
 
@@ -803,8 +804,8 @@
   line-height: 1.6;
 }
 .percentage-dashboard.scoped-dashboard
-  .correction-panel
-  .single-correction:last-child {
+.correction-panel
+.single-correction:last-child {
   border-bottom: none;
 }
 .percentage-dashboard.scoped-dashboard .correction-panel .status-badge {
@@ -884,9 +885,9 @@
   color: var(--ud-c-text-muted, #6b7280);
 }
 .percentage-dashboard.scoped-dashboard
-  .modal-content
-  .form-group
-  input[type="time"] {
+.modal-content
+.form-group
+input[type="time"] {
   max-width: 180px;
   /* Theming für Inputs wird von globalen Dashboard-Input-Stilen geerbt, die --ud-Variablen verwenden */
 }
@@ -1012,113 +1013,113 @@
 }
 /* Ergänzung für die Tageskarte in der Wochenübersicht */
 .percentage-dashboard.scoped-dashboard .day-card-actions {
-    margin-top: auto;
-    padding-top: var(--ud-gap-md);
-    border-top: 1px solid var(--ud-c-line);
+  margin-top: auto;
+  padding-top: var(--ud-gap-md);
+  border-top: 1px solid var(--ud-c-line);
 }
 
 .percentage-dashboard.scoped-dashboard .button-primary-outline {
-    width: 100%;
-    padding: var(--ud-gap-sm) var(--ud-gap-md);
-    font-size: var(--ud-fz-sm);
-    font-weight: 600;
-    border-radius: var(--ud-radius-md);
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.2s ease;
-    background: transparent;
-    color: var(--ud-c-primary);
-    border: 2px solid var(--ud-c-primary);
+  width: 100%;
+  padding: var(--ud-gap-sm) var(--ud-gap-md);
+  font-size: var(--ud-fz-sm);
+  font-weight: 600;
+  border-radius: var(--ud-radius-md);
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s ease;
+  background: transparent;
+  color: var(--ud-c-primary);
+  border: 2px solid var(--ud-c-primary);
 }
 
 .percentage-dashboard.scoped-dashboard .button-primary-outline:hover {
-    background-color: var(--ud-c-primary);
-    color: #fff;
-    transform: translateY(-2px);
-    box-shadow: var(--ud-shadow-interactive);
+  background-color: var(--ud-c-primary);
+  color: #fff;
+  transform: translateY(-2px);
+  box-shadow: var(--ud-shadow-interactive);
 }
 
 .customer-assign-modal {
-    width: 100%;
-    max-width: 600px;
-    background: var(--ud-c-card);
-    border-radius: var(--ud-radius-lg);
-    box-shadow: var(--ud-shadow-lg);
-    display: flex;
-    flex-direction: column;
-    max-height: 90vh;
+  width: 100%;
+  max-width: 600px;
+  background: var(--ud-c-card);
+  border-radius: var(--ud-radius-lg);
+  box-shadow: var(--ud-shadow-lg);
+  display: flex;
+  flex-direction: column;
+  max-height: 90vh;
 }
 
 .customer-assign-modal .modal-header {
-    padding: var(--ud-gap-md) var(--ud-gap-lg);
-    border-bottom: 1px solid var(--ud-c-border);
+  padding: var(--ud-gap-md) var(--ud-gap-lg);
+  border-bottom: 1px solid var(--ud-c-border);
 }
 
 .customer-assign-modal .modal-header h3 {
-    margin: 0;
-    font-size: var(--ud-fz-xl);
-    color: var(--ud-c-text);
+  margin: 0;
+  font-size: var(--ud-fz-xl);
+  color: var(--ud-c-text);
 }
 
 .customer-assign-modal .modal-header p {
-    margin: 4px 0 0;
-    color: var(--ud-c-text-muted);
-    font-size: var(--ud-fz-sm);
+  margin: 4px 0 0;
+  color: var(--ud-c-text-muted);
+  font-size: var(--ud-fz-sm);
 }
 
 .customer-assign-modal .modal-body {
-    padding: var(--ud-gap-lg);
-    overflow-y: auto;
-    flex-grow: 1;
+  padding: var(--ud-gap-lg);
+  overflow-y: auto;
+  flex-grow: 1;
 }
 
 .customer-assign-modal .time-block-card {
-    background: var(--ud-c-surface);
-    border: 1px solid var(--ud-c-border);
-    border-radius: var(--ud-radius-md);
-    padding: var(--ud-gap-md);
-    margin-bottom: var(--ud-gap-md);
+  background: var(--ud-c-surface);
+  border: 1px solid var(--ud-c-border);
+  border-radius: var(--ud-radius-md);
+  padding: var(--ud-gap-md);
+  margin-bottom: var(--ud-gap-md);
 }
 
 [data-theme="dark"] .customer-assign-modal .time-block-card {
-    background: var(--ud-c-surface);
+  background: var(--ud-c-surface);
 }
 
 .customer-assign-modal .time-block-header {
-    font-weight: 600;
-    margin-bottom: var(--ud-gap-md);
-    font-size: var(--ud-fz-lg);
+  font-weight: 600;
+  margin-bottom: var(--ud-gap-md);
+  font-size: var(--ud-fz-lg);
 }
 
 .customer-assign-modal .time-block-form {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--ud-gap-md);
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--ud-gap-md);
 }
 
 .customer-assign-modal .form-group {
-    display: flex;
-    flex-direction: column;
+  display: flex;
+  flex-direction: column;
 }
 
 .customer-assign-modal .form-group label {
-    font-size: var(--ud-fz-sm);
-    color: var(--ud-c-text-muted);
-    margin-bottom: var(--ud-gap-xs);
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+  margin-bottom: var(--ud-gap-xs);
 }
 
 .customer-assign-modal .modal-footer {
-    padding: var(--ud-gap-md) var(--ud-gap-lg);
-    border-top: 1px solid var(--ud-c-border);
-    display: flex;
-    justify-content: flex-end;
-    gap: var(--ud-gap-sm);
+  padding: var(--ud-gap-md) var(--ud-gap-lg);
+  border-top: 1px solid var(--ud-c-border);
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--ud-gap-sm);
 }
 
 .no-blocks-message {
-    color: var(--ud-c-text-muted);
-    text-align: center;
-    padding: var(--ud-gap-lg);
+  color: var(--ud-c-text-muted);
+  text-align: center;
+  padding: var(--ud-gap-lg);
 }
 /* In src/styles/PercentageDashboardScoped.css */
 
