@@ -36,7 +36,6 @@ import TrendChart from '../../components/TrendChart';
 import UserCorrectionsPanel from './UserCorrectionsPanel';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
-import QuickStart from '../../components/QuickStart.jsx';
 
 function UserDashboard() {
     const { currentUser, fetchCurrentUser } = useAuth();
@@ -431,8 +430,6 @@ function UserDashboard() {
                     </p>
                 </div>
             </header>
-
-            <QuickStart />
 
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
 
