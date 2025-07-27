@@ -557,6 +557,7 @@ const translations = {
         sessionExpired: "Session abgelaufen. Bitte erneut einloggen.",
         impressum: "Impressum",
         agb: "AGB",
+        instagram: "Instagram",
         changelogModal: {
             whatsNew: "Was ist neu in Version",
             published: "Veröffentlicht am",
@@ -1186,6 +1187,7 @@ const translations = {
         sessionExpired: "Session expired. Please log in again.",
         impressum: "Impressum",
         agb: "Terms",
+        instagram: "Instagram",
         changelogModal: {
             whatsNew: "What's new in version",
             published: "Published on",
