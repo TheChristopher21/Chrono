@@ -40,7 +40,8 @@ public class ChatService {
     public ChatService(RestTemplateBuilder restTemplateBuilder) {
         this.restTemplate = restTemplateBuilder
                 .setConnectTimeout(Duration.ofSeconds(20))
-                .setReadTimeout(Duration.ofSeconds(60))
+                // HIER IST DIE ÄNDERUNG: Erhöhtes Timeout auf 5 Minuten
+                .setReadTimeout(Duration.ofMinutes(5))
                 .build();
         loadKnowledgeBase();
     }
@@ -73,11 +74,10 @@ public class ChatService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
-            // HIER IST DIE ÄNDERUNG: Die neue, flexiblere Anweisung
-            String fullPrompt = "Answer the following question based only on the context provided below. Respond in the same language as the question.\n\n" +
-                    "--- CONTEXT ---\n" +
+            String fullPrompt = "Antworte auf die folgende Frage nur basierend auf dem untenstehenden Kontext. Antworte in der gleichen Sprache wie die Frage.\n\n" +
+                    "--- KONTEXT ---\n" +
                     this.knowledgeBaseContent +
-                    "\n--- QUESTION ---\n" +
+                    "\n--- FRAGE ---\n" +
                     message;
 
             Map<String, Object> body = new HashMap<>();
@@ -91,9 +91,22 @@ public class ChatService {
             String jsonResponse = restTemplate.postForObject(llmBaseUrl, requestEntity, String.class);
             logger.info("Antwort von Ollama erhalten.");
 
-            JsonNode rootNode = objectMapper.readTree(jsonResponse);
-            if (rootNode.has("response")) {
-                return rootNode.get("response").asText();
+            if (jsonResponse != null) {
+                String lastJsonLine = null;
+                for (String line : jsonResponse.trim().split("\n")) {
+                    if (!line.isEmpty()) {
+                        lastJsonLine = line;
+                    }
+                }
+
+                if (lastJsonLine != null) {
+                    JsonNode rootNode = objectMapper.readTree(lastJsonLine);
+                    if (rootNode.has("response")) {
+                        String responseText = rootNode.get("response").asText();
+                        logger.info("Erfolgreich Antwort extrahiert.");
+                        return responseText;
+                    }
+                }
             }
         } catch (Exception e) {
             logger.error("Fehler bei der Kommunikation mit dem LLM:", e);

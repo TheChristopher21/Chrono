@@ -33,7 +33,6 @@ import PrivateRoute from "./components/PrivateRoute";
 import { useAuth } from "./context/AuthContext";
 import WhatsNewPage from "./pages/WhatsNewPage.jsx";
 import TimeTrackingImport from "./TimeTrackingImport.jsx";
-import HelpPage from "./pages/HelpPage.jsx";
 
 // NEU: Nur noch der ActionButtons Container wird importiert
 import ActionButtons from "./components/ActionButtons.jsx";
@@ -54,7 +53,6 @@ function App() {
                 <Route path="/register" element={<Registration />} />
                 <Route path="/impressum" element={<Impressum />} />
                 <Route path="/agb" element={<AGB />} />
-                <Route path="/help" element={<HelpPage />} />
                 {/* Private routes */}
                 <Route
                     path="/user"

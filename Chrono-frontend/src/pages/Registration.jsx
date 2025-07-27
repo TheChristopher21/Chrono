@@ -454,7 +454,7 @@ const Registration = () => {
                     <div style={{ marginTop: "40px", textAlign: "center", fontSize: "0.9rem" }}>
                         <Link to="/impressum" style={{ marginRight: "1rem" }}>Impressum</Link>
                         <Link to="/agb" style={{ marginRight: "1rem" }}>AGB</Link>
-                        <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">Instagram</a>
+                        <a href="https://www.instagram.com/itschronologisch" target="_blank" rel="noopener noreferrer">Instagram</a>
                     </div>
                 </div>
             </div>

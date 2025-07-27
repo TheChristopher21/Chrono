@@ -171,7 +171,7 @@ const Login = () => {
             <div className="impressum-agb-footer">
                 <Link to="/impressum">{t("impressum")}</Link>
                 <Link to="/agb">{t("agb")}</Link>
-                <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">{t("instagram", "Instagram")}</a>
+                <a href="https://www.instagram.com/itschronologisch" target="_blank" rel="noopener noreferrer">{t("instagram", "Instagram")}</a>
             </div>
         </div>
     );
