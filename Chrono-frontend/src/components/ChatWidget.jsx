@@ -1,17 +1,29 @@
 // src/components/ChatWidget.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import '../styles/ChatWidget.css';
 
 import chatIcon from '../assets/chat-icon.jpg';
 
+function renderWithLinks(text) {
+    const html = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
+    return <span dangerouslySetInnerHTML={{ __html: html }} />;
+}
+
 export default function ChatWidget() {
+    const { currentUser } = useAuth();
+
+    const getInitialMessages = () => {
+        const saved = sessionStorage.getItem('chatMessages');
+        if (saved) return JSON.parse(saved);
+        const greet = currentUser ? `Hallo ${currentUser.username}! Wie kann ich dir helfen?` : 'Hallo! Wie kann ich dir helfen?';
+        return [{ sender: 'bot', text: greet }];
+    };
+
     const [open, setOpen] = useState(false);
     const [input, setInput] = useState('');
-    const [messages, setMessages] = useState(() => {
-        const savedMessages = sessionStorage.getItem('chatMessages');
-        return savedMessages ? JSON.parse(savedMessages) : [{ sender: 'bot', text: 'Hallo! Wie kann ich dir helfen?' }];
-    });
+    const [messages, setMessages] = useState(getInitialMessages);
     const [loading, setLoading] = useState(false);
     const chatWindowRef = useRef(null);
     const abortControllerRef = useRef(null); // Ref für den AbortController
@@ -19,6 +31,13 @@ export default function ChatWidget() {
     useEffect(() => {
         sessionStorage.setItem('chatMessages', JSON.stringify(messages));
     }, [messages]);
+
+    useEffect(() => {
+        const greet = currentUser ? `Hallo ${currentUser.username}! Wie kann ich dir helfen?` : 'Hallo! Wie kann ich dir helfen?';
+        if (messages.length === 1 && messages[0].sender === 'bot') {
+            setMessages([{ sender: 'bot', text: greet }]);
+        }
+    }, [currentUser]);
 
     useEffect(() => {
         if (chatWindowRef.current) {
@@ -78,7 +97,7 @@ export default function ChatWidget() {
                     <div className="chat-window" ref={chatWindowRef}>
                         {messages.map((m, i) => (
                             <div key={i} className={`msg-container msg-${m.sender}`}>
-                                <div className="msg-bubble">{m.text}</div>
+                                <div className="msg-bubble">{renderWithLinks(m.text)}</div>
                             </div>
                         ))}
                         {loading && (
