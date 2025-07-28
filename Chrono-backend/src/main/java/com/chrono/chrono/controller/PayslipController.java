@@ -63,6 +63,22 @@ public class PayslipController {
         return ResponseEntity.ok(list.stream().map(PayslipDTO::new).toList());
     }
 
+    /**
+     * Returns the approved payslips for the currently authenticated user.
+     * This mirrors the behaviour of {@link #list(Long, LocalDate, LocalDate)}
+     * but determines the user id from the {@link Principal}.
+     */
+    @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<PayslipDTO>> myPayslips(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+            Principal principal) {
+        User user = userRepository.findByUsername(principal.getName()).orElseThrow();
+        List<Payslip> list = payrollService.getPayslipsForUser(user.getId(), start, end);
+        return ResponseEntity.ok(list.stream().map(PayslipDTO::new).toList());
+    }
+
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
     @PostMapping("/approve/{id}")
     public ResponseEntity<Void> approve(@PathVariable Long id,
