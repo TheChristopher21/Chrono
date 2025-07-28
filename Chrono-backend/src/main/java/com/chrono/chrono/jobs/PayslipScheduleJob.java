@@ -26,7 +26,7 @@ public class PayslipScheduleJob {
         for (PayslipSchedule s : due) {
             LocalDate start = s.getNextRun().minusMonths(1).withDayOfMonth(1);
             LocalDate end = start.plusMonths(1).minusDays(1);
-            payrollService.generatePayslip(s.getUser().getId(), start, end);
+            payrollService.generatePayslip(s.getUser().getId(), start, end, null);
             LocalDate next = s.getNextRun().plusMonths(1);
             next = next.withDayOfMonth(Math.min(s.getDayOfMonth(), next.lengthOfMonth()));
             s.setNextRun(next);
