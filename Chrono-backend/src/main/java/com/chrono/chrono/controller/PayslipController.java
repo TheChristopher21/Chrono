@@ -5,11 +5,13 @@ import com.chrono.chrono.dto.PayslipDTO;
 import com.chrono.chrono.services.PayrollService;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.repositories.PayslipRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +27,9 @@ public class PayslipController {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private PayslipRepository payslipRepository;
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     @PostMapping("/generate")
@@ -77,6 +82,35 @@ public class PayslipController {
         User user = userRepository.findByUsername(principal.getName()).orElseThrow();
         List<Payslip> list = payrollService.getPayslipsForUser(user.getId(), start, end);
         return ResponseEntity.ok(list.stream().map(PayslipDTO::new).toList());
+    }
+
+    /**
+     * Downloads a PDF for the given payslip if the current user is allowed to access it.
+     * Regular users may only download their own payslips, while admins can access all.
+     */
+    @GetMapping("/pdf/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<byte[]> myPayslipPdf(@PathVariable Long id,
+                                               @RequestParam(defaultValue = "de") String lang,
+                                               Principal principal) {
+        User user = userRepository.findByUsername(principal.getName()).orElseThrow();
+        Payslip ps = payslipRepository.findById(id).orElse(null);
+        if (ps == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        boolean isAdmin = user.getRoles().stream().anyMatch(r ->
+                r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_PAYROLL_ADMIN"));
+        if (!isAdmin && !ps.getUser().getId().equals(user.getId())) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        byte[] bytes = payrollService.getPayslipPdf(id, lang);
+        if (bytes == null) return ResponseEntity.notFound().build();
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=payslip-" + id + ".pdf");
+        return ResponseEntity.ok().headers(headers).body(bytes);
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
