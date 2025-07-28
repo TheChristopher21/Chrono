@@ -46,13 +46,28 @@ const PayslipsPage = () => {
     });
   };
 
-  const approveAll = () => {
-    const comment = prompt(t('payslips.approveAll'));
-    if (comment !== null) {
-      api.post('/api/payslips/approve-all', null, { params: { comment } })
-          .then(() => api.get('/api/payslips/admin/pending').then(res => setPendingSlips(res.data || [])));
-    }
-  };
+const approveAll = () => {
+  const comment = prompt(t('payslips.approveAll'));
+  if (comment !== null) {
+    api.post('/api/payslips/approve-all', null, { params: { comment } })
+        .then(() => api.get('/api/payslips/admin/pending').then(res => setPendingSlips(res.data || [])));
+  }
+};
+
+ const scheduleAll = () => setScheduleVisible(true);
+
+ const confirmScheduleAll = (day) => {
+   api.post('/api/payslips/schedule-all', null, { params: { day } });
+   setScheduleVisible(false);
+ };
+
+ const editPayoutDate = (id, current) => {
+   const val = prompt(t('payslips.enterPayoutDate'), current || '');
+   if (val) {
+     api.post(`/api/payslips/set-payout/${id}`, null, { params: { payoutDate: val } })
+         .then(() => api.get('/api/payslips/admin/pending').then(res => setPendingSlips(res.data || [])));
+   }
+ };
 
   const uploadLogo = () => {
     if (!logoFile) return;
@@ -111,7 +126,10 @@ const PayslipsPage = () => {
           </div>
           {isPendingExpanded && (
               <>
-                <div className="controls-bar"><button type="button" className="button-primary" onClick={approveAll}>{t('payslips.approveAll')}</button></div>
+                <div className="controls-bar">
+                  <button type="button" className="button-primary" onClick={approveAll}>{t('payslips.approveAll')}</button>
+                  <button type="button" className="button-secondary" onClick={scheduleAll}>{t('payslips.scheduleAll')}</button>
+                </div>
                 <div className="table-wrapper">
                   <table className="payslip-table">
                     {/* Tabellenkopf für Admins */}
@@ -134,6 +152,7 @@ const PayslipsPage = () => {
                           <td>{ps.netSalary?.toFixed(2)} CHF</td>
                           <td>{ps.payoutDate}</td>
                           <td className="actions-col">
+                            <button type="button" className="button-secondary" onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout')}</button>
                             <button type="button" className="button-success" onClick={() => approve(ps.id)}>{t('payslips.approve')}</button>
                           </td>
                         </tr>
@@ -202,7 +221,13 @@ const PayslipsPage = () => {
             )}
           </section>
 
-          {isAdmin && <ScheduleAllModal visible={scheduleVisible} onConfirm={() => {}} onClose={() => setScheduleVisible(false)} />}
+          {isAdmin && (
+            <ScheduleAllModal
+              visible={scheduleVisible}
+              onConfirm={confirmScheduleAll}
+              onClose={() => setScheduleVisible(false)}
+            />
+          )}
         </div>
       </>
   );

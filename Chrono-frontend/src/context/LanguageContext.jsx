@@ -591,7 +591,9 @@ const translations = {
             logoSaveError: "Fehler beim Speichern",
             scheduleDay: "Automatisch am Tag",
             scheduleButton: "Planen",
-            scheduleAll: "Automatische Abrechnung für alle aktivieren"
+            scheduleAll: "Automatische Abrechnung für alle aktivieren",
+            editPayout: "Datum ändern",
+            enterPayoutDate: "Auszahlungsdatum eingeben"
 
         },
         quickStart: {
@@ -1222,7 +1224,9 @@ const translations = {
             logoSaveError: "Failed to save logo",
             scheduleDay: "Automatically on day",
             scheduleButton: "Schedule",
-            scheduleAll: "Enable automatic payslips for all"
+            scheduleAll: "Enable automatic payslips for all",
+            editPayout: "Edit date",
+            enterPayoutDate: "Enter payout date"
 
         },
         quickStart: {

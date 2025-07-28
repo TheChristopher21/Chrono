@@ -33,6 +33,14 @@ const AdminPayslipsPage = () => {
     api.post(`/api/payslips/approve/${id}`).then(() => fetchPending());
   };
 
+  const editPayoutDate = (id, current) => {
+    const val = prompt(t('payslips.enterPayoutDate'), current || '');
+    if (val) {
+      api.post(`/api/payslips/set-payout/${id}`, null, { params: { payoutDate: val } })
+        .then(() => fetchPending());
+    }
+  };
+
 
   const approveAll = () => {
     const comment = prompt(t('payslips.approveAll'));
@@ -156,7 +164,11 @@ const AdminPayslipsPage = () => {
                 <td>{ps.grossSalary?.toFixed(2)} CHF</td>
                 <td>{ps.netSalary?.toFixed(2)} CHF</td>
                 <td>{ps.payoutDate}</td>
-                <td><button onClick={() => approve(ps.id)}>{t('payslips.approve')}</button></td>
+                <td>
+                  <button onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout')}</button>
+                  <button onClick={() => approve(ps.id)}>{t('payslips.approve')}</button>
+                </td>
+
               </tr>
           ))}
           </tbody>
