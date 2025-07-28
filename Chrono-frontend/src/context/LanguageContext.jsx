@@ -601,6 +601,7 @@ const translations = {
             selectFile: "Datei wählen",
             myPayslips: "Meine Lohnabrechnungen"
 
+
         },
         quickStart: {
             title: "Quick Start",
@@ -1239,6 +1240,7 @@ const translations = {
             logoUploadTitle: "Upload logo",
             selectFile: "Choose file",
             myPayslips: "My Payslips"
+
 
         },
         quickStart: {

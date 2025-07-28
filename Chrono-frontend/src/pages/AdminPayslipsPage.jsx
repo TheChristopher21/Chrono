@@ -168,6 +168,7 @@ const AdminPayslipsPage = () => {
                   <button onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout')}</button>
                   <button onClick={() => approve(ps.id)}>{t('payslips.approve')}</button>
                 </td>
+
               </tr>
           ))}
           </tbody>
