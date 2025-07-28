@@ -112,7 +112,7 @@ public class ChatService {
 
             for (Map.Entry<String, String> e : links.entrySet()) {
                 if (lower.contains("wo") && lower.contains(e.getKey())) {
-                    return "Du findest " + e.getKey() + " [hier](" + e.getValue() + ").";
+                    return "Du findest [" + e.getKey() + "](" + e.getValue() + ").";
                 }
             }
         }
