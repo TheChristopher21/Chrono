@@ -3,6 +3,8 @@ package com.chrono.chrono.controller;
 import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.dto.PayslipDTO;
 import com.chrono.chrono.services.PayrollService;
+import com.chrono.chrono.entities.User;
+import com.chrono.chrono.repositories.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -13,12 +15,16 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.security.Principal;
 
 @RestController
 @RequestMapping("/api/payslips")
 public class PayslipController {
     @Autowired
     private PayrollService payrollService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     @PostMapping("/generate")
@@ -81,8 +87,11 @@ public class PayslipController {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
     @GetMapping("/admin/pending")
-    public ResponseEntity<List<PayslipDTO>> pending() {
-        return ResponseEntity.ok(payrollService.getPendingPayslips().stream().map(PayslipDTO::new).toList());
+    public ResponseEntity<List<PayslipDTO>> pending(Principal principal) {
+        User admin = userRepository.findByUsername(principal.getName()).orElseThrow();
+        return ResponseEntity.ok(
+                payrollService.getPendingPayslips(admin).stream()
+                        .map(PayslipDTO::new).toList());
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
@@ -90,8 +99,11 @@ public class PayslipController {
     public ResponseEntity<List<PayslipDTO>> approved(
             @RequestParam(required = false) String name,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
-        return ResponseEntity.ok(payrollService.getApprovedPayslips(name, start, end));
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+            Principal principal) {
+        User admin = userRepository.findByUsername(principal.getName()).orElseThrow();
+        return ResponseEntity.ok(payrollService
+                .getApprovedPayslips(admin, name, start, end));
 
     }
 
