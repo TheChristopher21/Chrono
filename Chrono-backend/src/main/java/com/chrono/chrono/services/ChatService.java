@@ -99,6 +99,24 @@ public class ChatService {
 
     // Public method for chat requests, uses the STANDARD RestTemplate
     public String ask(String message, User user) {
+        if (message != null) {
+            String lower = message.toLowerCase();
+            Map<String, String> links = new HashMap<>();
+            links.put("login", "/login");
+            links.put("anmeldung", "/login");
+            links.put("profil", "/profile");
+            links.put("zeiterfassung", "/user");
+            links.put("abrechnung", "/payslips");
+            links.put("projekte", "/admin/projects");
+            links.put("kunden", "/admin/customers");
+
+            for (Map.Entry<String, String> e : links.entrySet()) {
+                if (lower.contains("wo") && lower.contains(e.getKey())) {
+                    return "Du findest " + e.getKey() + " [hier](" + e.getValue() + ").";
+                }
+            }
+        }
+
         return askWithTemplate(this.restTemplate, message, user, 0);
     }
 
@@ -116,7 +134,12 @@ public class ChatService {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
 
+            String userContext = (user != null)
+                    ? "Der Benutzer ist eingeloggt mit dem Benutzernamen '" + user.getUsername() + "'."
+                    : "Es ist kein Benutzer eingeloggt.";
+
             String fullPrompt = "Antworte auf die folgende Frage nur basierend auf dem untenstehenden Kontext. Antworte in der gleichen Sprache wie die Frage.\n\n" +
+                    "Benutzerkontext: " + userContext + "\n\n" +
                     "--- KONTEXT ---\n" +
                     this.knowledgeBaseContent +
                     "\n--- FRAGE ---\n" +

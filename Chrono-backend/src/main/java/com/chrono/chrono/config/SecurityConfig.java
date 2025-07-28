@@ -85,6 +85,8 @@ public class SecurityConfig {
                     // Den Mail-Endpunkt öffentlich freigeben
                     auth.requestMatchers(HttpMethod.POST, "/api/apply").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/contact").permitAll();
+                    // Chatbot darf auch ohne Login genutzt werden
+                    auth.requestMatchers("/api/chat").permitAll();
                     // Schütze Admin-Endpunkte – nur Nutzer mit ROLE_ADMIN dürfen zugreifen
                     auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
                     auth.requestMatchers("/api/superadmin/**").hasRole("SUPERADMIN");
