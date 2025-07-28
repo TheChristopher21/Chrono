@@ -593,7 +593,14 @@ const translations = {
             scheduleButton: "Planen",
             scheduleAll: "Automatische Abrechnung für alle aktivieren",
             editPayout: "Datum ändern",
-            enterPayoutDate: "Auszahlungsdatum eingeben"
+            enterPayoutDate: "Auszahlungsdatum eingeben",
+            generateManual: "Manuell erstellen",
+            selectUser: "Benutzer wählen",
+            generate: "Erstellen",
+            logoUploadTitle: "Logo hochladen",
+            selectFile: "Datei wählen",
+            myPayslips: "Meine Lohnabrechnungen"
+
 
         },
         quickStart: {
@@ -1226,7 +1233,14 @@ const translations = {
             scheduleButton: "Schedule",
             scheduleAll: "Enable automatic payslips for all",
             editPayout: "Edit date",
-            enterPayoutDate: "Enter payout date"
+            enterPayoutDate: "Enter payout date",
+            generateManual: "Generate manually",
+            selectUser: "Select user",
+            generate: "Generate",
+            logoUploadTitle: "Upload logo",
+            selectFile: "Choose file",
+            myPayslips: "My Payslips"
+
 
         },
         quickStart: {
