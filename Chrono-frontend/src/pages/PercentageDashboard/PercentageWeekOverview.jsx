@@ -1,20 +1,17 @@
 // src/pages/PercentageDashboard/PercentageWeekOverview.jsx
-import React, { useState, useMemo } from 'react';
-import { useAuth } from '../../context/AuthContext.jsx';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 import {
     addDays,
     formatLocalDate,
-    formatTime,
     minutesToHHMM,
-    isLateTime,
     formatDate,
-    formatPunchedTimeFromEntry,
-    expectedDayMinutesForPercentageUser,
     getMondayOfWeek
 } from './percentageDashUtils';
-import '../../styles/PercentageDashboardScoped.css';
+
+import '../../styles/HourlyDashboardScoped.css'; // Einheitliches Design verwenden
 import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
 
 const PercentageWeekOverview = ({
@@ -26,7 +23,6 @@ const PercentageWeekOverview = ({
                                     weeklyExpected,
                                     weeklyDiff,
                                     handleManualPunch,
-                                    punchMessage,
                                     openCorrectionModal,
                                     userProfile,
                                     customers,
@@ -39,24 +35,19 @@ const PercentageWeekOverview = ({
                                     vacationRequests,
                                     sickLeaves,
                                     holidaysForUserCanton,
-                                    reloadData
+                                    reloadData,
+                                    editingNote,
+                                    setEditingNote,
+                                    noteContent,
+                                    setNoteContent,
+                                    handleNoteSave
                                 }) => {
-
-    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
     const { currentUser } = useAuth();
     const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
-
-    function handlePrevWeek() {
-        setMonday(prev => addDays(prev, -7));
-    }
-
-    function handleNextWeek() {
-        setMonday(prev => addDays(prev, 7));
-    }
+    const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
 
     function handleWeekJump(e) {
-        const localDateString = e.target.value;
-        const picked = new Date(localDateString + "T00:00:00");
+        const picked = new Date(e.target.value + "T00:00:00");
         if (!isNaN(picked.getTime())) {
             setMonday(getMondayOfWeek(picked));
         }
@@ -66,8 +57,6 @@ const PercentageWeekOverview = ({
         <section className="weekly-overview content-section">
             <h3 className="section-title">{t('weeklyOverview', "Wochenübersicht")}</h3>
 
-            {punchMessage && <div className="punch-message">{punchMessage}</div>}
-
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
                 {(userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled) && (
@@ -76,20 +65,14 @@ const PercentageWeekOverview = ({
                             <option value="">{t('noCustomer')}</option>
                             {recentCustomers.length > 0 && (
                                 <optgroup label={t('recentCustomers')}>
-                                    {recentCustomers.map(c => (
-                                        <option key={'r'+c.id} value={c.id}>{c.name}</option>
-                                    ))}
+                                    {recentCustomers.map(c => (<option key={'r'+c.id} value={c.id}>{c.name}</option>))}
                                 </optgroup>
                             )}
-                            {customers.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
+                            {customers.map(c => (<option key={c.id} value={c.id}>{c.name}</option>))}
                         </select>
                         <select value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}>
                             <option value="">{t('noProject','Kein Projekt')}</option>
-                            {projects.map(p => (
-                                <option key={p.id} value={p.id}>{p.name}</option>
-                            ))}
+                            {projects.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
                         </select>
                     </div>
                 )}
@@ -99,7 +82,7 @@ const PercentageWeekOverview = ({
             </div>
 
             <div className="week-navigation">
-                <button onClick={handlePrevWeek} className="button-secondary">
+                <button onClick={() => setMonday(prev => addDays(prev, -7))} className="button-secondary">
                     ← {t('prevWeek', "Vorige Woche")}
                 </button>
                 <input
@@ -107,26 +90,25 @@ const PercentageWeekOverview = ({
                     value={formatLocalDate(monday)}
                     onChange={handleWeekJump}
                 />
-                <button onClick={handleNextWeek} className="button-secondary">
+                <button onClick={() => setMonday(prev => addDays(prev, 7))} className="button-secondary">
                     {t('nextWeek', "Nächste Woche")} →
                 </button>
             </div>
 
             <div className="weekly-summary">
                 <div className="summary-item">
-                    <span className="summary-label">{t('weeklyHours', 'Ges. Std. (Woche)')}</span>
+                    <span className="summary-label">{t('actualTime', 'Ist (Woche)')}</span>
                     <span className="summary-value">{minutesToHHMM(weeklyWorked)}</span>
                 </div>
                 <div className="summary-item">
-                    <span className="summary-label">
-                        {t('expected', 'Soll (Woche)')}
-                        <span className="info-badge" title={t('expectedWeekInfo')}>ℹ️</span>
-                    </span>
+                    <span className="summary-label">{t('expected', 'Soll (Woche)')}</span>
                     <span className="summary-value">{minutesToHHMM(weeklyExpected)}</span>
                 </div>
                 <div className="summary-item">
                     <span className="summary-label">{t('weekBalance', 'Saldo (Woche)')}</span>
-                    <span className={`summary-value ${(weeklyDiff ?? 0) < 0 ? 'balance-negative' : 'balance-positive'}`}>{minutesToHHMM(weeklyDiff)}</span>
+                    <span className={`summary-value ${(weeklyDiff ?? 0) < 0 ? 'balance-negative' : 'balance-positive'}`}>
+                        {minutesToHHMM(weeklyDiff)}
+                    </span>
                 </div>
             </div>
 
@@ -134,99 +116,74 @@ const PercentageWeekOverview = ({
                 {weekDates.map((dayObj) => {
                     const isoDate = formatLocalDate(dayObj);
                     const summary = dailySummaries.find(s => s.date === isoDate);
+                    const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
 
                     const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
                     const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
-                    const isHolidayToday = holidaysForUserCanton && holidaysForUserCanton[isoDate];
+                    const holidayName = holidaysForUserCanton && holidaysForUserCanton[isoDate];
 
-                    const baseDailyExpectedMins = expectedDayMinutesForPercentageUser(userProfile);
-                    let displayDailyExpectedMins = baseDailyExpectedMins;
-                    if (isHolidayToday || (vacationToday && !vacationToday.halfDay) || (sickToday && !sickToday.halfDay)) {
-                        displayDailyExpectedMins = 0;
-                    } else if (vacationToday?.halfDay || sickToday?.halfDay) {
-                        displayDailyExpectedMins /= 2;
-                    }
+                    let dayClass = 'day-card';
+                    if (vacationToday) dayClass += ' vacation-day';
+                    if (sickToday) dayClass += ' sick-day';
+                    if (holidayName) dayClass += ' holiday-day';
 
                     const dailyWorkedMins = summary?.workedMinutes || 0;
-                    const dailyDiffMinutes = dailyWorkedMins - displayDailyExpectedMins;
-                    const dailyBreakMinutes = summary?.breakMinutes || 0;
-
-                    const customerRanges = [];
-                    if (summary?.entries) {
-                        let currentCustomer = null;
-                        let start = null;
-                        summary.entries.forEach(entry => {
-                            const time = formatTime(entry.entryTimestamp);
-                            if (entry.punchType === 'START') {
-                                currentCustomer = entry.customerName || t('noCustomer', 'Allgemein');
-                                start = time;
-                            } else if (entry.punchType === 'ENDE' && start) {
-                                customerRanges.push({ customerName: currentCustomer, start, end: time });
-                                start = null;
-                            }
-                        });
-                    }
-
-                    const correctionDisabled = isHolidayToday || vacationToday || sickToday;
 
                     return (
-                        <div key={isoDate} className="day-card">
+                        <div key={isoDate} className={dayClass}>
                             <div className="day-card-header">
-                                <h3>{dayObj.toLocaleDateString('de-DE', { weekday: 'long' })}, {formatDate(dayObj)}</h3>
+                                <h3>{dayName}, {formatDate(dayObj)}</h3>
                             </div>
                             <div className="day-card-body">
-                                {isHolidayToday ? (
-                                    <div className="day-card-info holiday-indicator">🎉 {holidaysForUserCanton[isoDate]}</div>
+                                {holidayName ? (
+                                    <div className="day-card-info holiday-indicator">🎉 {holidayName}</div>
                                 ) : vacationToday ? (
                                     <div className="day-card-info vacation-indicator">🏖️ {t('onVacation', 'Im Urlaub')} {vacationToday.halfDay && `(${t('halfDayShort', '½ Tag')})`}</div>
                                 ) : sickToday ? (
                                     <div className="day-card-info sick-leave-indicator">⚕️ {t('sickLeave.sick', 'Krank')} {sickToday.halfDay && `(${t('halfDayShort', '½ Tag')})`}</div>
                                 ) : (
                                     <>
-                                        <div className="time-summary">
-                                            <div className="time-block">
-                                                <span className="label">{t('actualTime', 'Ist')}</span>
-                                                <span className="value">{minutesToHHMM(dailyWorkedMins)}</span>
-                                            </div>
-                                            <div className="time-block">
-                                                <span className="label">{t('expected', 'Soll')}</span>
-                                                <span className="value">{minutesToHHMM(displayDailyExpectedMins)}</span>
-                                            </div>
-                                            <div className="time-block">
-                                                <span className="label">{t('diffToday', 'Differenz')}</span>
-                                                <span className={`value ${dailyDiffMinutes < 0 ? 'negative' : 'positive'}`}>{minutesToHHMM(dailyDiffMinutes)}</span>
-                                            </div>
-                                            <div className="time-block">
-                                                <span className="label">{t('breakTime', 'Pause')}</span>
-                                                <span className="value">{minutesToHHMM(dailyBreakMinutes)}</span>
-                                            </div>
+                                        <div className="daily-summary-times">
+                                            <p><strong>{t('actualTime', 'Gearbeitet')}:</strong> {minutesToHHMM(dailyWorkedMins)}</p>
+                                            <p><strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(summary?.breakMinutes || 0)}</p>
                                         </div>
-                                        <div className="work-details">
-                                            <h4>{t('punchTypes.title', 'Stempelungen')}:</h4>
-                                            {customerRanges.length > 0 ? (
-                                                <ul>
-                                                    {customerRanges.map((r, i) => (
-                                                        <li key={i}>
-                                                            <span className="work-description">{r.customerName}</span>
-                                                            <span className="work-time">{r.start} - {r.end}</span>
-                                                        </li>
-                                                    ))}
-                                                </ul>
+                                        <ul className="time-entry-list" style={{marginTop: '1rem'}}>
+                                            {(summary?.entries || []).map(entry => (
+                                                <li key={entry.id || entry.entryTimestamp} style={{backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57) % 360}, var(--customer-color-saturation), var(--customer-color-lightness))` : 'transparent'}}>
+                                                    <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
+                                                    <span className="entry-time">{entry.entryTimestamp ? new Date(entry.entryTimestamp).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                        {(summary?.entries || []).length === 0 && <p className='no-entries'>{t('noEntries')}</p>}
+                                        <div className="daily-note-container">
+                                            {editingNote === isoDate ? (
+                                                <>
+                                                    <textarea className="daily-note-editor" value={noteContent} onChange={(e) => setNoteContent(e.target.value)} rows="4" placeholder={t('enterNotePlaceholder', "Notiz eingeben...")} />
+                                                    <div className="note-buttons">
+                                                        <button className="button-primary" onClick={() => handleNoteSave(isoDate, noteContent)}>{t('save')}</button>
+                                                        <button className="button-secondary" onClick={() => setEditingNote(null)}>{t('cancel')}</button>
+                                                    </div>
+                                                </>
                                             ) : (
-                                                <p className="no-entries">{t('noEntries', 'Keine Einträge')}</p>
+                                                <div className="daily-note-display">
+                                                    <div className="note-content">
+                                                        <strong>{t('dailyNoteTitle', 'Notiz')}:</strong>
+                                                        <p>{summary?.dailyNote || t('noNotePlaceholder', 'Keine Notiz.')}</p>
+                                                    </div>
+                                                    <button className="button-edit-note" title={t('editNote', 'Notiz bearbeiten')} onClick={() => { setEditingNote(isoDate); setNoteContent(summary?.dailyNote || ''); }}>✏️</button>
+                                                </div>
                                             )}
                                         </div>
                                     </>
                                 )}
                             </div>
-                            <div className="day-card-footer">
-                                {!correctionDisabled && (
-                                    <button onClick={() => openCorrectionModal(dayObj, summary)} className="button-secondary correction-button">
-                                        {t('submitCorrectionRequest', 'Korrektur anfragen')}
-                                    </button>
-                                )}
+                            <div className="correction-button-row">
+                                <button onClick={() => openCorrectionModal(dayObj, summary)} className="button-secondary">
+                                    {t('submitCorrectionRequest', 'Korrektur anfragen')}
+                                </button>
                                 {summary && summary.entries.length > 0 && (
-                                    <button onClick={() => setModalInfo({ isVisible: true, day: dayObj, summary })} className="button-primary-outline">
+                                    <button onClick={() => setModalInfo({ isVisible: true, day: dayObj, summary })} className="button-primary-outline" style={{marginTop: '0.5rem'}}>
                                         {t('assignCustomer.editButton', 'Kunden & Zeiten bearbeiten')}
                                     </button>
                                 )}
@@ -237,18 +194,9 @@ const PercentageWeekOverview = ({
             </div>
 
             {modalInfo.isVisible && (
-                <CustomerTimeAssignModal
-                    t={t}
-                    day={modalInfo.day}
-                    summary={modalInfo.summary}
-                    customers={customers}
-                    projects={projects}
-                    onClose={() => setModalInfo({ isVisible: false, day: null, summary: null })}
-                    onSave={() => {
-                        if (reloadData) reloadData();
-                        setModalInfo({ isVisible: false, day: null, summary: null });
-                    }}
-                />
+                <CustomerTimeAssignModal t={t} day={modalInfo.day} summary={modalInfo.summary} customers={customers} projects={projects}
+                                         onClose={() => setModalInfo({ isVisible: false, day: null, summary: null })}
+                                         onSave={() => { if (reloadData) reloadData(); setModalInfo({ isVisible: false, day: null, summary: null }); }} />
             )}
         </section>
     );
@@ -263,7 +211,6 @@ PercentageWeekOverview.propTypes = {
     weeklyExpected: PropTypes.number.isRequired,
     weeklyDiff: PropTypes.number.isRequired,
     handleManualPunch: PropTypes.func.isRequired,
-    punchMessage: PropTypes.string,
     openCorrectionModal: PropTypes.func.isRequired,
     userProfile: PropTypes.object.isRequired,
     customers: PropTypes.array,
@@ -277,6 +224,11 @@ PercentageWeekOverview.propTypes = {
     sickLeaves: PropTypes.array.isRequired,
     holidaysForUserCanton: PropTypes.object,
     reloadData: PropTypes.func,
+    editingNote: PropTypes.string,
+    setEditingNote: PropTypes.func.isRequired,
+    noteContent: PropTypes.string.isRequired,
+    setNoteContent: PropTypes.func.isRequired,
+    handleNoteSave: PropTypes.func.isRequired,
 };
 
 export default PercentageWeekOverview;

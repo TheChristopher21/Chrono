@@ -107,6 +107,8 @@ a:hover {
    Popups werden damit immer zentriert im aktuellen Viewport angezeigt,
    unabhängig von der Scrollposition der Seite.
 */
+/* Ersetze den vorhandenen .modal-overlay Block in src/styles/global.css hiermit */
+
 .modal-overlay,
 .modal-backdrop,
 .notification-overlay,
@@ -114,21 +116,23 @@ a:hover {
 .sick-leave-modal-overlay,
 .changelog-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0; /* Moderne Kurzform für top/left/right/bottom = 0 */
   display: flex;
   align-items: center;
   justify-content: center;
-  /* z-index auf 10000 angehoben, damit Modals stets 
-     oberhalb aller Inhalte (z.B. Navbar mit z-index 1000) liegen */
   z-index: 10000;
-  background-color: var(--modal-backdrop-color, rgba(0, 0, 0, 0.6));
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
-  overflow-y: auto; /* Bei sehr hohen Inhalten scrollen */
-  background: var(--modal-backdrop-color);
+
+  /* --- KORREKTUR HIER --- */
+  /* Explizite Hintergrundfarbe mit Fallback-Wert. */
+  /* Die Variable wird aus design-tokens.css für Light/Dark Mode geladen. */
+  background-color: var(--modal-backdrop-color, rgba(30, 30, 30, 0.6));
+
+  /* Blur-Effekt für den modernen Look */
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  overflow-y: auto; /* Scrollen bei sehr hohen Inhalten */
+  padding: 1rem; /* Verhindert, dass das Modal am Rand klebt */
 }
 
 /* Grundlegende Einstellungen für alle Modal-Inhalte */

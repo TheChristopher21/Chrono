@@ -1,12 +1,14 @@
-/* src/styles/UserDashboardScoped.css */
 /* =========================================================================
-   UserDashboardScoped.css · V2.4 Unified Design (Juli 2025)
-   Scope: .user-dashboard.scoped-dashboard
-   Angelehnt an das Design von HourlyDashboardScoped.css
+   HourlyDashboardScoped.css · V2.3 Smart & Futuristic (Juni 2025)
+   Scope: .hourly-dashboard.scoped-dashboard
+   Angelehnt an das Design von PercentageDashboardScoped.css / UserDashboardScoped.css V2.3
    ========================================================================= */
 
-.user-dashboard.scoped-dashboard {
-  /* Grundlegende Design Tokens (Variablen) */
+/* Basisvariablen werden von UserDashboardScoped.css oder global.css geerbt.
+   Fallbacks sind hier definiert für den Fall, dass diese Datei isoliert betrachtet wird.
+*/
+.hourly-dashboard.scoped-dashboard,
+.user-dashboard.scoped-dashboard { /* ERWEITERT, um auch für UserDashboard zu gelten */
   --ud-font-family: "Poppins", system-ui, sans-serif;
   --ud-fz-base: 1rem;
   --ud-fz-sm: 0.875rem;
@@ -14,11 +16,13 @@
   --ud-fz-lg: 1.125rem;
   --ud-fz-xl: 1.5rem;
   --ud-fz-xxl: 2.25rem;
-
+  --customer-color-saturation: 70%;
+  --customer-color-lightness: 90%;
   --ud-radius-xl: 24px;
   --ud-radius-lg: 18px;
   --ud-radius-md: 12px;
   --ud-radius-sm: 8px;
+  --ud-radius-xs: 5px;
 
   --ud-gap-xl: 2.5rem;
   --ud-gap-lg: 2rem;
@@ -26,61 +30,93 @@
   --ud-gap-sm: 0.75rem;
   --ud-gap-xs: 0.5rem;
 
-  /* Light Theme Farben */
-  --ud-c-text: #212529;
-  --ud-c-text-muted: #6c757d;
-  --ud-c-bg: #f8f9fa;
-  --ud-c-card: #ffffff;
-  --ud-c-border: #dee2e6;
-  --ud-c-surface: #e9ecef;
-  --ud-c-line: #dee2e6;
+  /* Farben (Light Theme) */
+  --ud-c-text: var(--c-text, #212529);
+  --ud-c-text-muted: var(--c-muted, #6c757d);
+  --ud-c-text-secondary: var(--c-muted, #6b7280);
+  --ud-c-bg: var(--c-bg, #f8f9fa);
+  --ud-c-card: var(--c-card, #ffffff);
+  --ud-c-border: var(--c-border, #dee2e6);
+  --ud-c-line: var(--c-border);
+  --ud-c-surface: var(--c-surface, #e9ecef);
 
-  --ud-c-primary: #007bff;
-  --ud-c-primary-rgb: 0, 123, 255;
-  --ud-c-primary-text: var(--ud-c-primary);
+  --ud-c-primary: var(--c-pri, #007bff);
+  --ud-c-primary-dim: var(--c-pri-dim, #0056b3);
+  --ud-c-primary-rgb: var(--c-pri-rgb, 0, 123, 255);
   --ud-c-primary-light-bg: rgba(var(--ud-c-primary-rgb), 0.1);
+  --ud-c-primary-text: var(--ud-c-primary);
 
-  --ud-c-success: #28a745;
-  --ud-c-success-rgb: 40, 167, 69;
-  --ud-c-success-text: #155724;
-  --ud-c-success-light-bg: rgba(var(--ud-c-success-rgb), 0.1);
+  --ud-c-success: var(--c-success, #28a745);
+  --ud-c-success-dim: var(--c-success-dim, #1e7e34);
+  --ud-c-success-light-bg: rgba(var(--c-success-rgb, 40, 167, 69), 0.1);
+  --ud-c-success-text: var(--c-success-text, #155724);
 
-  --ud-c-error: #dc3545;
-  --ud-c-error-rgb: 220, 53, 69;
-  --ud-c-error-text: #721c24;
-  --ud-c-error-light-bg: rgba(var(--ud-c-error-rgb), 0.1);
+  --ud-c-error: var(--c-error, #dc3545);
+  --ud-c-error-dim: var(--c-error-dim, #bd2130);
+  --ud-c-error-light-bg: rgba(var(--c-error-rgb, 220, 53, 69), 0.1);
+  --ud-c-error-text: var(--c-error-text, #721c24);
 
-  --ud-c-warn: #ffc107;
-  --ud-c-warn-rgb: 255, 193, 7;
-  --ud-c-warn-text: #856404;
-  --ud-c-warn-light-bg: rgba(var(--ud-c-warn-rgb), 0.15);
-  
+  --ud-c-warn: var(--c-warn, #ffc107);
+  --ud-c-warn-dim: var(--c-warn-dim, #d39e00);
+  --ud-c-warn-light-bg: rgba(var(--c-warn-rgb, 255, 193, 7), 0.15);
+  --ud-c-warn-text: var(--c-warn-text, #856404);
+
+  --ud-c-late-time: var(--ud-c-error);
+  --ud-c-late-time-bg: var(--ud-c-error-light-bg);
+  --ud-c-time: var(--ud-c-text);
+
+  --ud-c-bg-vacation: rgba(var(--ud-c-primary-rgb), 0.05);
+  --ud-c-text-vacation: var(--ud-c-primary);
+  --ud-c-border-vacation: var(--ud-c-primary);
+
+  --ud-c-bg-sick: rgba(var(--c-error-rgb), 0.05);
+  --ud-c-text-sick: var(--ud-c-error);
+  --ud-c-border-sick: var(--ud-c-error);
+
+  --ud-c-bg-holiday: rgba(var(--c-warn-rgb), 0.08);
+  --ud-c-text-holiday: var(--ud-c-warn-text);
+  --ud-c-border-holiday: var(--ud-c-warn);
+
   --ud-shadow-card: 0 10px 30px rgba(0, 0, 0, 0.07);
   --ud-shadow-interactive: 0 6px 15px rgba(var(--ud-c-primary-rgb), 0.15);
+  --ud-shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.1);
   --ud-shadow-hover: 0 6px 18px rgba(var(--ud-c-primary-rgb), 0.15);
   --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card) 90%, #000);
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 95%, #000);
-  
+  --ud-c-bg-input: var(--ud-c-card);
+
+
   min-height: 100vh;
   font-family: var(--ud-font-family);
   background: var(--ud-c-bg);
   color: var(--ud-c-text);
+  font-size: var(--ud-fz-base);
+  line-height: 1.6;
   padding: var(--ud-gap-lg);
   box-sizing: border-box;
+  transition:
+          background 0.3s ease,
+          color 0.3s ease;
 }
 
-/* Dark Mode */
+/* Dark Mode Anpassungen */
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard,
 [data-theme="dark"] .user-dashboard.scoped-dashboard {
   --ud-c-text: #e9ecef;
   --ud-c-text-muted: #adb5bd;
+  --ud-c-text-secondary: #9ca3af;
   --ud-c-bg: #0e101c;
   --ud-c-card: #1c1e2e;
   --ud-c-border: #3a3f58;
-  --ud-c-surface: #232539;
   --ud-c-line: #2a2d40;
-
+  --ud-c-surface: #232539;
+  --customer-color-saturation: 35%;
+  --customer-color-lightness: 25%;
   --ud-c-primary: #4dabf7;
+  --ud-c-primary-dim: #3690f5;
   --ud-c-primary-rgb: 77, 171, 247;
+  --ud-c-primary-light-bg: rgba(var(--ud-c-primary-rgb), 0.15);
+  --ud-c-primary-text: var(--ud-c-primary);
 
   --ud-c-success: #51cf66;
   --ud-c-success-text: #c3fae8;
@@ -89,43 +125,140 @@
   --ud-c-warn: #fab005;
   --ud-c-warn-text: #fff9db;
 
+  --ud-c-bg-vacation: rgba(var(--ud-c-primary-rgb), 0.1);
+  --ud-c-text-vacation: var(--ud-c-primary);
+  --ud-c-border-vacation: var(--ud-c-primary);
+
+  --ud-c-bg-sick: rgba(255, 107, 107, 0.1);
+  --ud-c-text-sick: var(--ud-c-error);
+  --ud-c-border-sick: var(--ud-c-error);
+
+  --ud-c-bg-holiday: rgba(250, 176, 5, 0.1);
+  --ud-c-text-holiday: var(--ud-c-warn);
+  --ud-c-border-holiday: var(--ud-c-warn);
+
   --ud-shadow-card: 0 10px 35px rgba(0, 0, 0, 0.25);
   --ud-shadow-interactive: 0 8px 20px rgba(var(--ud-c-primary-rgb), 0.2);
   --ud-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.5);
   --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card) 92%, #fff);
   --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 92%, #fff);
+  --ud-c-time: #f8f9fa;
+  --ud-c-bg-input: var(--ud-c-surface);
+
 }
 
-/* Allgemeine Elemente (Inputs, Buttons etc.) */
-.user-dashboard.scoped-dashboard input,
-.user-dashboard.scoped-dashboard select {
+/* =========================================================================
+   Generelle Element-Styles (Inputs, Selects etc.)
+   ========================================================================= */
+.scoped-dashboard input,
+.scoped-dashboard select,
+.scoped-dashboard textarea {
   font-family: inherit;
   border: 1px solid var(--ud-c-border);
   border-radius: var(--ud-radius-md);
   color: var(--ud-c-text);
   background-color: var(--ud-c-card);
   padding: var(--ud-gap-sm) var(--ud-gap-md);
+  font-size: var(--ud-fz-md);
   width: 100%;
   box-sizing: border-box;
+  transition:
+          border-color 0.25s,
+          background-color 0.25s,
+          color 0.25s,
+          box-shadow 0.25s;
 }
-.user-dashboard.scoped-dashboard input:focus,
-.user-dashboard.scoped-dashboard select:focus {
+.scoped-dashboard input:focus,
+.scoped-dashboard select:focus,
+.scoped-dashboard textarea:focus {
   outline: none;
   border-color: var(--ud-c-primary);
   box-shadow: 0 0 0 3px var(--ud-c-primary-light-bg);
 }
+[data-theme="dark"] .scoped-dashboard input,
+[data-theme="dark"] .scoped-dashboard select,
+[data-theme="dark"] .scoped-dashboard textarea {
+  background-color: var(--ud-c-surface);
+}
+.scoped-dashboard select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59L6 5.17L10.59.59L12 2L6 8L0 2L1.41.59Z' fill='%236B7280'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--ud-gap-md) center;
+  background-size: 12px 8px;
+  padding-right: calc(var(--ud-gap-md) + 1.5rem);
+}
+[data-theme="dark"] .scoped-dashboard select {
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59L6 5.17L10.59.59L12 2L6 8L0 2L1.41.59Z' fill='%23adb5bd'/%3E%3C/svg%3E");
+}
 
-/* Layout-Komponenten */
-.user-dashboard.scoped-dashboard .dashboard-header {
+/* =========================================================================
+   Dashboard Header + Info
+   ========================================================================= */
+.scoped-dashboard .dashboard-header {
   background: var(--ud-c-card);
+  color: var(--ud-c-text);
   padding: var(--ud-gap-lg);
   border-radius: var(--ud-radius-xl);
   box-shadow: var(--ud-shadow-card);
   margin-bottom: var(--ud-gap-xl);
   border: 1px solid var(--ud-c-border);
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ud-gap-md);
+}
+[data-theme="dark"] .scoped-dashboard .dashboard-header {
+  background: linear-gradient(
+          145deg,
+          var(--ud-c-card) 0%,
+          var(--ud-c-surface) 100%
+  );
+}
+.scoped-dashboard .dashboard-header h1,
+.scoped-dashboard .dashboard-header h2 {
+  margin: 0;
+  font-size: var(--ud-fz-xxl);
+  font-weight: 700;
+  color: var(--ud-c-primary);
+  letter-spacing: -0.5px;
+  flex-grow: 1;
+}
+.scoped-dashboard .personal-info {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--ud-gap-sm) var(--ud-gap-md);
+}
+.scoped-dashboard .personal-info p {
+  margin: 0;
+  font-size: var(--ud-fz-md);
+  background-color: var(--ud-c-surface);
+  padding: var(--ud-gap-xs) var(--ud-gap-md);
+  border-radius: var(--ud-radius-md);
+  border: 1px solid var(--ud-c-line);
+  color: var(--ud-c-text-muted);
+}
+.scoped-dashboard .personal-info p strong {
+  color: var(--ud-c-text);
+  font-weight: 600;
+}
+.scoped-dashboard .balance-negative {
+  color: var(--ud-c-error);
+}
+.scoped-dashboard .balance-positive {
+  color: var(--ud-c-success);
 }
 
-.user-dashboard.scoped-dashboard .content-section {
+
+/* =========================================================================
+   Sektionen Allgemein
+   ========================================================================= */
+.scoped-dashboard .content-section {
   background: var(--ud-c-card);
   border: 1px solid var(--ud-c-border);
   border-radius: var(--ud-radius-xl);
@@ -133,28 +266,383 @@
   box-shadow: var(--ud-shadow-card);
   margin-bottom: var(--ud-gap-xl);
 }
+.scoped-dashboard .content-section > .section-title {
+  margin: 0 0 var(--ud-gap-lg) 0;
+  font-size: var(--ud-fz-xl);
+  font-weight: 600;
+  color: var(--ud-c-primary-text);
+  padding-bottom: var(--ud-gap-md);
+  border-bottom: 1px solid var(--ud-c-line);
+  display: flex;
+  align-items: center;
+  gap: var(--ud-gap-sm);
+}
+.scoped-dashboard .punch-section {
+  text-align: center;
+  padding: var(--ud-gap-lg);
+  margin-top: var(--ud-gap-lg);
+  background: var(--ud-c-surface);
+  border-radius: var(--ud-radius-xl);
+  border: 1px solid var(--ud-c-border);
+}
+.scoped-dashboard .punch-section h4 {
+  font-size: var(--ud-fz-lg);
+  margin-bottom: var(--ud-gap-md);
+  color: var(--ud-c-text);
+}
+.punch-section select {
+  margin-bottom: var(--ud-gap-sm);
+}
 
-/* Spezifische Anpassung für UserDashboard: 7-Tage-Ansicht */
-.user-dashboard.scoped-dashboard .week-display {
+/* =========================================================================
+   Wochenübersicht, Zeitkarten
+   ========================================================================= */
+.scoped-dashboard .week-navigation {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--ud-gap-md);
+  margin-bottom: var(--ud-gap-lg);
+  flex-wrap: wrap;
+  padding: var(--ud-gap-md);
+  background-color: var(--ud-c-surface);
+  border-radius: var(--ud-radius-lg);
+}
+.scoped-dashboard .week-navigation input[type="date"] {
+  text-align: center;
+  width: auto;
+  min-width: 180px;
+  padding: var(--ud-gap-sm) var(--ud-gap-md);
+  font-size: var(--ud-fz-md);
+  cursor: pointer;
+  border-color: var(--ud-c-border);
+  background-color: var(--ud-c-card);
+  border-radius: var(--ud-radius-md);
+}
+.scoped-dashboard .week-navigation button {
+  padding: var(--ud-gap-sm) var(--ud-gap-md);
+  font-size: var(--ud-fz-sm);
+}
+
+.scoped-dashboard .weekly-monthly-totals {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--ud-gap-md);
+  margin-bottom: var(--ud-gap-lg);
+}
+.scoped-dashboard .summary-item {
+  background: var(--ud-c-card);
+  border: 1px solid var(--ud-c-border);
+  border-radius: var(--ud-radius-md);
+  padding: var(--ud-gap-md);
+  text-align: center;
+  box-shadow: var(--ud-shadow-card);
+}
+.scoped-dashboard .summary-label {
+  display: block;
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+  margin-bottom: var(--ud-gap-xs);
+}
+.scoped-dashboard .summary-value {
+  font-size: var(--ud-fz-lg);
+  font-weight: 600;
+  color: var(--ud-c-text);
+}
+[data-theme="dark"] .scoped-dashboard .summary-item {
+  background: var(--ud-c-surface);
+}
+
+.scoped-dashboard .week-display {
   display: grid;
   gap: var(--ud-gap-lg);
-  /* Passt sich automatisch an, bleibt aber bei 7 Spalten auf großen Bildschirmen */
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
 }
-
-.user-dashboard.scoped-dashboard .day-card {
+.scoped-dashboard .week-day-card {
   background: var(--ud-c-card);
   border: 1px solid var(--ud-c-border);
   border-radius: var(--ud-radius-lg);
   padding: var(--ud-gap-md);
   box-shadow: var(--ud-shadow-card);
-  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.2s ease-in-out;
+  position: relative;
 }
-
-.user-dashboard.scoped-dashboard .day-card:hover {
-  transform: translateY(-4px);
-  box-shadow: var(--ud-shadow-hover);
+.scoped-dashboard .week-day-card:hover {
   border-color: var(--ud-c-primary);
+  background: var(--ud-c-card-hover);
+  box-shadow: var(--ud-shadow-hover);
+  transform: translateY(-4px);
+}
+.scoped-dashboard .week-day-header {
+  margin-bottom: var(--ud-gap-md);
+}
+.scoped-dashboard .week-day-header h4 {
+  font-size: var(--ud-fz-lg);
+  margin: 0 0 var(--ud-gap-xs) 0;
+  font-weight: 600;
 }
 
-/* ... weitere spezifische Stile für UserDashboard, die die --ud-Variablen nutzen ... */
+.scoped-dashboard .week-day-content {
+  flex-grow: 1;
+}
+.scoped-dashboard .week-day-content .time-entry-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--ud-gap-md) 0;
+  font-size: var(--ud-fz-sm);
+  flex-grow: 1;
+}
+.scoped-dashboard .week-day-content .time-entry-list li {
+  padding: var(--ud-gap-xs) var(--ud-gap-sm);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px dashed var(--ud-c-line);
+  border-radius: var(--ud-radius-sm);
+}
+.scoped-dashboard
+.week-day-content
+.time-entry-list
+li:last-child {
+  border-bottom: none;
+}
+.scoped-dashboard .week-day-content .entry-label {
+  color: var(--ud-c-text-muted);
+  margin-right: var(--ud-gap-sm);
+}
+.scoped-dashboard .week-day-content .entry-time {
+  font-weight: 500;
+  color: var(--ud-c-time);
+}
+.scoped-dashboard .late-time {
+  color: var(--ud-c-late-time);
+  font-weight: 600;
+  background-color: var(--ud-c-late-time-bg);
+  padding: 0.15em 0.4em;
+  border-radius: var(--ud-radius-sm);
+}
+.scoped-dashboard .no-entries {
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-muted);
+  font-style: italic;
+  margin: var(--ud-gap-md) 0;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80px;
+  background-color: var(--ud-c-surface);
+  border-radius: var(--ud-radius-md);
+  padding: var(--ud-gap-md);
+  border: 1px dashed var(--ud-c-border);
+}
+.scoped-dashboard .daily-summary-times {
+  margin-top: var(--ud-gap-sm);
+  padding-top: var(--ud-gap-sm);
+  border-top: 1px solid var(--ud-c-line);
+  font-size: var(--ud-fz-sm);
+}
+.scoped-dashboard .daily-summary-times p {
+  margin: var(--ud-gap-xs) 0;
+  display: flex;
+  justify-content: space-between;
+}
+.scoped-dashboard .daily-summary-times p strong {
+  color: var(--ud-c-text-muted);
+}
+.scoped-dashboard .correction-button-row {
+  margin-top: auto;
+  padding-top: var(--ud-gap-md);
+  border-top: 1px solid var(--ud-c-line);
+}
+.scoped-dashboard .correction-button-row button {
+  width: 100%;
+  font-size: var(--ud-fz-sm);
+}
+
+/* Tageskarten für Urlaub, Krankheit, Feiertag */
+.scoped-dashboard .week-day-card.vacation-day {
+  background-color: var(--ud-c-bg-vacation);
+  border-color: var(--ud-c-border-vacation);
+}
+.scoped-dashboard .week-day-card.sick-day {
+  background-color: var(--ud-c-bg-sick);
+  border-color: var(--ud-c-border-sick);
+}
+.scoped-dashboard .week-day-card.holiday-day {
+  background-color: var(--ud-c-bg-holiday);
+  border-color: var(--ud-c-border-holiday);
+}
+/* Stile für Notizen in den Tageskarten */
+.daily-note-container {
+  margin-top: 15px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ud-c-line);
+}
+.daily-note-display {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+}
+.daily-note-display .note-content {
+  flex-grow: 1;
+  word-break: break-word;
+}
+.daily-note-display p {
+  margin: 0;
+  font-size: var(--ud-fz-sm);
+  color: var(--ud-c-text-secondary);
+  white-space: pre-wrap;
+}
+.daily-note-display strong {
+  font-weight: 500;
+  display: block;
+  margin-bottom: 4px;
+}
+.button-edit-note {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 50%;
+  line-height: 1;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+  transition: background-color 0.2s;
+}
+.button-edit-note:hover {
+  background-color: var(--ud-c-bg-hover);
+}
+.daily-note-editor {
+  width: 100%;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  min-height: 80px;
+}
+.note-buttons {
+  display: flex;
+  gap: 10px;
+}
+
+/* =========================================================================
+   Corrections Panel
+   ========================================================================= */
+.scoped-dashboard .correction-panel .corrections-header {
+  background: var(--ud-c-surface);
+  color: var(--ud-c-text);
+  font-weight: 600;
+  padding: var(--ud-gap-md);
+  border-radius: var(--ud-radius-lg) var(--ud-radius-lg) 0 0;
+  border: 1px solid var(--ud-c-border);
+  border-bottom: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+.scoped-dashboard .correction-panel .corrections-header:hover {
+  background-color: var(--ud-c-line);
+}
+.scoped-dashboard .correction-panel .corrections-header h3 {
+  margin: 0;
+  font-size: var(--ud-fz-lg);
+  border: none;
+  padding: 0;
+  color: var(--ud-c-primary-text);
+}
+.scoped-dashboard
+.correction-panel
+.corrections-header
+.toggle-icon {
+  font-size: var(--ud-fz-md);
+  transition: transform 0.2s;
+}
+
+.scoped-dashboard .correction-panel .corrections-content {
+  background: var(--ud-c-card);
+  border: 1px solid var(--ud-c-border);
+  border-top: none;
+  border-radius: 0 0 var(--ud-radius-lg) var(--ud-radius-lg);
+  padding: var(--ud-gap-lg);
+}
+.scoped-dashboard
+.correction-panel
+.corrections-list.user-correction-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--ud-c-line);
+  border-radius: var(--ud-radius-md);
+  background-color: var(--ud-c-surface);
+}
+.scoped-dashboard .correction-panel .corrections-list li {
+  padding: var(--ud-gap-md);
+  border-bottom: 1px solid var(--ud-c-border);
+  font-size: var(--ud-fz-sm);
+  line-height: 1.6;
+}
+.scoped-dashboard .correction-panel .correction-header-info {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--ud-gap-xs);
+}
+.scoped-dashboard .correction-panel .correction-detail-block {
+  background-color: var(--ud-c-card);
+  padding: var(--ud-gap-sm);
+  border-radius: var(--ud-radius-md);
+  border: 1px solid var(--ud-c-line);
+  margin-bottom: var(--ud-gap-sm);
+}
+[data-theme="dark"] .scoped-dashboard .correction-panel .correction-detail-block {
+  background-color: var(--ud-c-surface);
+  border-color: var(--ud-c-border);
+}
+
+
+/* =========================================================================
+   Responsive Anpassungen
+   ========================================================================= */
+@media (max-width: 768px) {
+  .scoped-dashboard {
+    padding: var(--ud-gap-md);
+  }
+  .scoped-dashboard .content-section,
+  .scoped-dashboard .dashboard-header {
+    padding: var(--ud-gap-md);
+  }
+  .scoped-dashboard .dashboard-header h1,
+  .scoped-dashboard .dashboard-header h2 {
+    font-size: var(--ud-fz-xl);
+  }
+  .scoped-dashboard .personal-info {
+    flex-direction: column;
+    gap: var(--ud-gap-sm);
+    align-items: stretch;
+  }
+  .scoped-dashboard .week-navigation {
+    flex-direction: column;
+    gap: var(--ud-gap-sm);
+  }
+  .scoped-dashboard .week-navigation input[type="date"],
+  .scoped-dashboard .week-navigation button {
+    width: 100%;
+  }
+}
+@media (max-width: 480px) {
+  .scoped-dashboard {
+    --ud-fz-base: 0.9rem;
+    --ud-fz-lg: 1rem;
+    --ud-fz-xl: 1.15rem;
+    --ud-fz-xxl: 1.5rem;
+  }
+  .scoped-dashboard .week-display {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,0 +1,121 @@
+/* =========================================================================
+   AdminProjectsPageScoped.css (Neues Design, Juli 2025)
+   Scope: .admin-projects-page.scoped-dashboard
+   ========================================================================= */
+
+/* Da diese Seite .scoped-dashboard verwendet, erbt sie automatisch
+   alle Basis-Stile (Farben, Fonts, Abstände) aus der einheitlichen
+   Dashboard-CSS-Datei. Wir müssen nur noch spezifische Layouts definieren. */
+
+.admin-projects-page .create-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: var(--ud-gap-md);
+  align-items: center;
+  max-width: 800px;
+}
+
+.admin-projects-page .create-form input,
+.admin-projects-page .create-form select {
+  margin: 0;
+}
+
+/* Liste der Projekte */
+.admin-projects-page .item-list-container {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding-right: var(--ud-gap-sm);
+}
+
+.admin-projects-page .item-list.project-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--ud-gap-md);
+}
+
+.admin-projects-page .list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--ud-gap-md);
+  padding: var(--ud-gap-md) var(--ud-gap-lg);
+  background-color: var(--ud-c-surface);
+  border: 1px solid var(--ud-c-border);
+  border-radius: var(--ud-radius-lg);
+  transition: all 0.2s ease-in-out;
+}
+
+.admin-projects-page .list-item:hover {
+  border-color: var(--ud-c-primary);
+  transform: translateY(-2px);
+  box-shadow: var(--ud-shadow-interactive);
+}
+
+.admin-projects-page .item-details {
+  display: flex;
+  flex-direction: column;
+  gap: var(--ud-gap-xs);
+  flex-grow: 1;
+}
+
+.admin-projects-page .item-name {
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--ud-c-text);
+}
+
+.admin-projects-page .item-meta {
+  font-size: 0.85rem;
+  color: var(--ud-c-text-muted);
+  font-style: italic;
+}
+
+.admin-projects-page .item-actions {
+  display: flex;
+  gap: var(--ud-gap-sm);
+  flex-shrink: 0;
+}
+
+/* Inline-Formular für die Bearbeitung */
+.admin-projects-page .edit-form {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: var(--ud-gap-md);
+  width: 100%;
+  align-items: center;
+}
+
+.admin-projects-page .edit-form input,
+.admin-projects-page .edit-form select {
+  background-color: var(--ud-c-card);
+}
+
+.admin-projects-page .edit-form .form-actions {
+  display: flex;
+  gap: var(--ud-gap-sm);
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 768px) {
+  .admin-projects-page .create-form,
+  .admin-projects-page .edit-form {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-projects-page .list-item {
+    flex-direction: column;
+    align-items: stretch;
+    padding: var(--ud-gap-md);
+  }
+
+  .admin-projects-page .item-actions,
+  .admin-projects-page .edit-form .form-actions {
+    width: 100%;
+    justify-content: flex-end;
+    margin-top: var(--ud-gap-md);
+  }
+}

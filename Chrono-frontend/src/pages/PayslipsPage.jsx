@@ -1,125 +1,217 @@
-import { useState, useEffect, useContext } from 'react';
+// src/pages/AdminPayslipsPage.jsx
+import { useState, useEffect } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
-import '../styles/PayslipsPageScoped.css';
-import { useAuth } from '../context/AuthContext';
-import { useTranslation, LanguageContext } from '../context/LanguageContext';
-import jsPDF from 'jspdf';
+import { useTranslation } from '../context/LanguageContext';
+import ScheduleAllModal from '../components/ScheduleAllModal';
 
-const PayslipsPage = () => {
-  const { currentUser } = useAuth();
+// Importiere die zentralen, einheitlichen Dashboard-Styles
+import '../styles/HourlyDashboardScoped.css';
+// Importiere die spezifischen Styles für diese Seite
+import '../styles/AdminPayslipsPageScoped.css';
+
+const ITEMS_PER_PAGE = 10;
+
+const AdminPayslipsPage = () => {
   const { t } = useTranslation();
-  const { language, setLanguage } = useContext(LanguageContext);
-  const [printLang, setPrintLang] = useState('de');
   const [payslips, setPayslips] = useState([]);
-  const [form, setForm] = useState({ start: '', end: '' });
-  const [scheduleDay, setScheduleDay] = useState(1);
+  const [approvedSlips, setApprovedSlips] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [form, setForm] = useState({ userId: '', start: '', end: '' });
+  const [filter, setFilter] = useState({ name: '', start: '', end: '' });
+  const [scheduleVisible, setScheduleVisible] = useState(false);
 
-  const createPayslip = () => {
-    if (!form.start || !form.end || !currentUser) return;
-    api
-      .post('/api/payslips/generate', null, {
-        params: { userId: currentUser.id, start: form.start, end: form.end }
-      })
-      .then(res => {
-        setPayslips(prev => [...prev, res.data]);
-        setForm({ start: '', end: '' });
-      });
-  };
+  // --- NEU: State für Paginierung und Sektions-Toggle ---
+  const [pendingPage, setPendingPage] = useState(1);
+  const [approvedPage, setApprovedPage] = useState(1);
+  const [isPendingExpanded, setIsPendingExpanded] = useState(true);
+  const [isApprovedExpanded, setIsApprovedExpanded] = useState(true);
 
-  const saveSchedule = () => {
-    if (!currentUser) return;
-    api.post('/api/payslips/schedule', null, {
-      params: { userId: currentUser.id, day: scheduleDay }
-    });
-  };
-
-
-  const handlePrint = async (ps) => {
-    const prev = language;
-    if (printLang !== language) {
-      setLanguage(printLang);
-      await new Promise((r) => setTimeout(r, 0));
-    }
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text(t('payslips.title'), 105, 20, { align: 'center' });
-    doc.setFontSize(12);
-    doc.text(`${t('payslips.period')}: ${ps.periodStart} - ${ps.periodEnd}`, 20, 40);
-    doc.text(`${t('payslips.gross')}: ${ps.grossSalary?.toFixed(2)} CHF`, 20, 50);
-    doc.text(`${t('payslips.net')}: ${ps.netSalary?.toFixed(2)} CHF`, 20, 60);
-    doc.save(`Payslip_${ps.periodStart}_${ps.periodEnd}.pdf`);
-    if (printLang !== prev) {
-      setLanguage(prev);
-    }
-  };
+  const fetchPending = () => api.get('/api/payslips/admin/pending').then(res => setPayslips(res.data || []));
+  const fetchApproved = () => api.get('/api/payslips/admin/approved', { params: filter }).then(res => setApprovedSlips(res.data || []));
 
   useEffect(() => {
-    if (!currentUser) return;
-    api.get(`/api/payslips/user/${currentUser.id}`).then(res => {
-      setPayslips(res.data);
+    fetchPending();
+    fetchApproved();
+    api.get('/api/admin/users').then(res => setUsers(res.data || []));
+  }, [filter]);
+
+  const approve = (id) => api.post(`/api/payslips/approve/${id}`).then(fetchPending);
+  const approveAll = () => {
+    const comment = prompt(t('payslips.approveAll'));
+    api.post('/api/payslips/approve-all', { params: { comment } }).then(fetchPending);
+  };
+  const confirmScheduleAll = (day) => {
+    api.post('/api/payslips/schedule-all', null, { params: { day } });
+    setScheduleVisible(false);
+  };
+
+  const exportCsv = () => {
+    api.get('/api/payslips/admin/export', { responseType: 'blob' }).then(res => {
+      const url = window.URL.createObjectURL(new Blob([res.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'payslips.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
     });
-  }, [currentUser]);
+  };
+
+  const printPdf = (id) => {
+    api.get(`/api/payslips/admin/pdf/${id}`, { responseType: 'blob', params: { lang: 'de' } })
+        .then(res => {
+          const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+          window.open(url, '_blank');
+        })
+        .catch(() => alert(t('payslips.printError')));
+  };
+
+  const createPayslip = () => {
+    if (!form.userId || !form.start || !form.end) return;
+    api.post('/api/payslips/generate', null, { params: form })
+        .then(() => {
+          setForm({ userId: '', start: '', end: '' });
+          fetchPending();
+        });
+  };
+
+  // --- Paginierungs-Logik ---
+  const paginatedPending = payslips.slice((pendingPage - 1) * ITEMS_PER_PAGE, pendingPage * ITEMS_PER_PAGE);
+  const totalPendingPages = Math.ceil(payslips.length / ITEMS_PER_PAGE);
+
+  const paginatedApproved = approvedSlips.slice((approvedPage - 1) * ITEMS_PER_PAGE, approvedPage * ITEMS_PER_PAGE);
+  const totalApprovedPages = Math.ceil(approvedSlips.length / ITEMS_PER_PAGE);
+
+  const Pagination = ({ currentPage, totalPages, onPageChange }) => {
+    if (totalPages <= 1) return null;
+    return (
+        <div className="pagination-controls">
+          <button onClick={() => onPageChange(currentPage - 1)} disabled={currentPage === 1}>
+            &laquo; {t('prev', 'Zurück')}
+          </button>
+          <span>{t('page', 'Seite')} {currentPage} / {totalPages}</span>
+          <button onClick={() => onPageChange(currentPage + 1)} disabled={currentPage === totalPages}>
+            {t('next', 'Weiter')} &raquo;
+          </button>
+        </div>
+    );
+  };
+
 
   return (
-    <div className="payslips-page scoped-dashboard">
-      <Navbar />
-      <h2>{t('payslips.title')}</h2>
-      <div className="print-lang-select">
-        <label>{t('navbar.languageLabel', 'Sprache')}:</label>
-        <select value={printLang} onChange={e => setPrintLang(e.target.value)}>
-          <option value="de">DE</option>
-          <option value="en">EN</option>
-        </select>
-      </div>
-      <div className="generate-form">
-        <input
-          type="date"
-          value={form.start}
-          onChange={e => setForm({ ...form, start: e.target.value })}
-        />
-        <input
-          type="date"
-          value={form.end}
-          onChange={e => setForm({ ...form, end: e.target.value })}
-        />
-        <button onClick={createPayslip}>{t('payslips.generate', 'Erstellen')}</button>
-      </div>
-      <div className="schedule-form">
-        <label>{t('payslips.scheduleDay')}:</label>
-        <input
-          type="number"
-          min="1"
-          max="28"
-          value={scheduleDay}
-          onChange={e => setScheduleDay(e.target.value)}
-        />
-        <button onClick={saveSchedule}>{t('payslips.scheduleButton')}</button>
-      </div>
+      <>
+        <Navbar />
+        <div className="admin-payslips-page scoped-dashboard">
+          <header className="dashboard-header">
+            <h1>{t('navbar.payslips')}</h1>
+          </header>
 
-      <table className="payslip-table">
-        <thead>
-          <tr>
-            <th>{t('payslips.period', 'Zeitraum')}</th>
-            <th>{t('payslips.gross')}</th>
-            <th>{t('payslips.net')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {payslips.map(ps => (
-            <tr key={ps.id}>
-              <td>{ps.periodStart} - {ps.periodEnd}</td>
-              <td>{ps.grossSalary?.toFixed(2)} CHF</td>
-              <td>{ps.netSalary?.toFixed(2)} CHF</td>
-              <td>
-                <button onClick={() => handlePrint(ps)}>{t('payslips.print')}</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          <section className="content-section">
+            <h3 className="section-title">{t('payslips.generateManual', 'Manuelle Abrechnung erstellen')}</h3>
+            <form className="generate-form" onSubmit={e => { e.preventDefault(); createPayslip(); }}>
+              <select value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })} required>
+                <option value="">{t('payslips.selectUser', 'Benutzer wählen...')}</option>
+                {users.map(u => <option key={u.id} value={u.id}>{u.username}</option>)}
+              </select>
+              <input type="date" value={form.start} onChange={e => setForm({ ...form, start: e.target.value })} required />
+              <input type="date" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} required />
+              <button type="submit" className="button-primary">{t('payslips.generate', 'Erstellen')}</button>
+            </form>
+          </section>
+
+          <section className="content-section">
+            <div className="section-header" onClick={() => setIsPendingExpanded(!isPendingExpanded)}>
+              <h3 className="section-title">{t('payslips.pendingTitle')}</h3>
+              <span className="toggle-icon">{isPendingExpanded ? '▲' : '▼'}</span>
+            </div>
+            {isPendingExpanded && (
+                <>
+                  <div className="controls-bar">
+                    <button className="button-primary" onClick={approveAll}>{t('payslips.approveAll')}</button>
+                    <button className="button-secondary" onClick={exportCsv}>{t('payslips.exportCsv')}</button>
+                    <button className="button-secondary" onClick={() => setScheduleVisible(true)}>{t('payslips.scheduleAll')}</button>
+                  </div>
+                  <div className="item-list-container">
+                    <table className="payslip-table">
+                      {/* ... thead ... */}
+                      <thead>
+                      <tr>
+                        <th>{t('payslips.user')}</th>
+                        <th>{t('payslips.period')}</th>
+                        <th>{t('payslips.gross')}</th>
+                        <th>{t('payslips.net')}</th>
+                        <th className="actions-col">{t('userManagement.table.actions')}</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      {paginatedPending.map(ps => (
+                          <tr key={ps.id}>
+                            <td data-label={t('payslips.user')}>{ps.firstName} {ps.lastName}</td>
+                            <td data-label={t('payslips.period')}>{ps.periodStart} - {ps.periodEnd}</td>
+                            <td data-label={t('payslips.gross')}>{ps.grossSalary?.toFixed(2)} CHF</td>
+                            <td data-label={t('payslips.net')}>{ps.netSalary?.toFixed(2)} CHF</td>
+                            <td data-label={t('userManagement.table.actions')} className="actions-col">
+                              <button onClick={() => approve(ps.id)} className="button-success">{t('payslips.approve')}</button>
+                            </td>
+                          </tr>
+                      ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination currentPage={pendingPage} totalPages={totalPendingPages} onPageChange={setPendingPage} />
+                </>
+            )}
+          </section>
+
+          <section className="content-section">
+            <div className="section-header" onClick={() => setIsApprovedExpanded(!isApprovedExpanded)}>
+              <h3 className="section-title">{t('payslips.approvedTitle')}</h3>
+              <span className="toggle-icon">{isApprovedExpanded ? '▲' : '▼'}</span>
+            </div>
+            {isApprovedExpanded && (
+                <>
+                  <div className="controls-bar">
+                    <input className="filter-input" placeholder={t('payslips.filterName')} value={filter.name} onChange={e => setFilter({ ...filter, name: e.target.value })} />
+                    <input className="filter-input" type="date" value={filter.start} onChange={e => setFilter({ ...filter, start: e.target.value })} />
+                    <input className="filter-input" type="date" value={filter.end} onChange={e => setFilter({ ...filter, end: e.target.value })} />
+                  </div>
+                  <div className="item-list-container">
+                    <table className="payslip-table">
+                      {/* ... thead ... */}
+                      <thead>
+                      <tr>
+                        <th>{t('payslips.user')}</th>
+                        <th>{t('payslips.period')}</th>
+                        <th>{t('payslips.gross')}</th>
+                        <th>{t('payslips.net')}</th>
+                        <th className="actions-col">{t('userManagement.table.actions')}</th>
+                      </tr>
+                      </thead>
+                      <tbody>
+                      {paginatedApproved.map(ps => (
+                          <tr key={ps.id}>
+                            <td data-label={t('payslips.user')}>{ps.firstName} {ps.lastName}</td>
+                            <td data-label={t('payslips.period')}>{ps.periodStart} - {ps.periodEnd}</td>
+                            <td data-label={t('payslips.gross')}>{ps.grossSalary?.toFixed(2)} CHF</td>
+                            <td data-label={t('payslips.net')}>{ps.netSalary?.toFixed(2)} CHF</td>
+                            <td data-label={t('userManagement.table.actions')} className="actions-col">
+                              <button onClick={() => printPdf(ps.id)} className="button-primary">{t('payslips.print')}</button>
+                            </td>
+                          </tr>
+                      ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <Pagination currentPage={approvedPage} totalPages={totalApprovedPages} onPageChange={setApprovedPage} />
+                </>
+            )}
+          </section>
+
+          <ScheduleAllModal visible={scheduleVisible} onConfirm={confirmScheduleAll} onClose={() => setScheduleVisible(false)} />
+        </div>
+      </>
   );
 };
 
-export default PayslipsPage;
+export default AdminPayslipsPage;

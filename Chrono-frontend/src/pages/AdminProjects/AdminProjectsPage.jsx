@@ -1,124 +1,132 @@
+// src/pages/AdminCustomers/AdminCustomersPage.jsx
 import React, { useState } from 'react';
 import Navbar from '../../components/Navbar';
-import { useProjects } from '../../context/ProjectContext';
-import { useCustomers } from '../../context/CustomerContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
-import '../../styles/AdminCustomersPageScoped.css';
+import { useCustomers } from '../../context/CustomerContext';
 
-const AdminProjectsPage = () => {
-  const { projects, createProject, updateProject, deleteProject } = useProjects();
-  const { customers } = useCustomers();
+// Importiere die zentralen, einheitlichen Dashboard-Styles
+import '../../styles/HourlyDashboardScoped.css';
+// Importiere die spezifischen Styles für diese Seite
+import '../../styles/AdminProjectsPageScoped.css';
+
+const AdminCustomersPage = () => {
   const { notify } = useNotification();
   const { t } = useTranslation();
 
+  const { customers, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
   const [newName, setNewName] = useState('');
-  const [newCustomerId, setNewCustomerId] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
-  const [editingCustomerId, setEditingCustomerId] = useState('');
 
   const handleCreate = async (e) => {
     e.preventDefault();
-    if (!newName.trim() || !newCustomerId) return;
+    if (!newName.trim()) return;
     try {
-      await createProject(newName, newCustomerId);
+      await createCustomer(newName);
       setNewName('');
-      setNewCustomerId('');
+      notify(t('customer.createSuccess', 'Kunde erfolgreich angelegt!'), 'success');
     } catch (err) {
-      console.error('Error creating project', err);
-      notify('Fehler beim Anlegen', 'error');
+      console.error('Error creating customer', err);
+      notify(t('customer.createError', 'Fehler beim Anlegen des Kunden.'), 'error');
     }
   };
 
   const handleUpdate = async (e) => {
     e.preventDefault();
     try {
-      await updateProject(editingId, editingName, editingCustomerId);
+      await updateCustomer(editingId, editingName);
       setEditingId(null);
       setEditingName('');
-      setEditingCustomerId('');
+      notify(t('customer.updateSuccess', 'Kunde erfolgreich gespeichert!'), 'success');
     } catch (err) {
-      console.error('Error updating project', err);
-      notify('Fehler beim Speichern', 'error');
+      console.error('Error updating customer', err);
+      notify(t('customer.updateError', 'Fehler beim Speichern des Kunden.'), 'error');
     }
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Löschen?')) return;
+    if (!window.confirm(t('customer.deleteConfirm', 'Sind Sie sicher, dass Sie diesen Kunden löschen möchten?'))) return;
     try {
-      await deleteProject(id);
+      await deleteCustomer(id);
+      notify(t('customer.deleteSuccess', 'Kunde erfolgreich gelöscht!'), 'success');
     } catch (err) {
-      console.error('Error deleting project', err);
-      notify('Fehler beim Löschen', 'error');
+      console.error('Error deleting customer', err);
+      notify(t('customer.deleteError', 'Fehler beim Löschen des Kunden.'), 'error');
     }
   };
 
-  const startEdit = (p) => {
-    setEditingId(p.id);
-    setEditingName(p.name);
-    setEditingCustomerId(p.customer?.id || '');
+  const startEdit = (c) => {
+    setEditingId(c.id);
+    setEditingName(c.name);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingName('');
   };
 
   return (
-    <div className="admin-customers-page scoped-dashboard">
-      <Navbar />
-      <h2>{t('project.management.title', 'Projektverwaltung')}</h2>
-      <section className="cmp-section">
-        <form onSubmit={handleCreate} className="cmp-form">
-          <input
-            type="text"
-            placeholder="Projektname"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            required
-          />
-          <select value={newCustomerId} onChange={(e) => setNewCustomerId(e.target.value)} required>
-            <option value="">{t('customerLabel', 'Kunde')}</option>
-            {customers.map(c => (
-              <option key={c.id} value={c.id}>{c.name}</option>
-            ))}
-          </select>
-          <button type="submit">{t('create', 'Anlegen')}</button>
-        </form>
-      </section>
-      <section className="cmp-section">
-        <ul className="customer-list">
-          {projects.map(p => (
-            <li key={p.id}>
-              {editingId === p.id ? (
-                <form onSubmit={handleUpdate} className="inline-form">
-                  <input
-                    type="text"
-                    value={editingName}
-                    onChange={(e) => setEditingName(e.target.value)}
-                    required
-                  />
-                  <select value={editingCustomerId} onChange={(e) => setEditingCustomerId(e.target.value)} required>
-                    {customers.map(c => (
-                      <option key={c.id} value={c.id}>{c.name}</option>
-                    ))}
-                  </select>
-                  <button type="submit">{t('save', 'Speichern')}</button>
-                  <button type="button" onClick={() => { setEditingId(null); setEditingName(''); }}>
-                    {t('cancel', 'Abbruch')}
-                  </button>
-                </form>
-              ) : (
-                <>
-                  <span>{p.name} ({p.customer?.name || '-'})</span>
-                  <div>
-                    <button onClick={() => startEdit(p)}>{t('edit', 'Bearbeiten')}</button>
-                    <button onClick={() => handleDelete(p.id)}>{t('delete', 'Löschen')}</button>
-                  </div>
-                </>
-              )}
-            </li>
-          ))}
-        </ul>
-      </section>
-    </div>
+      <>
+        <Navbar />
+        <div className="admin-customers-page scoped-dashboard">
+          <header className="dashboard-header">
+            <h1>{t('customer.management.title', 'Kundenverwaltung')}</h1>
+          </header>
+
+          <section className="content-section">
+            <h3 className="section-title">{t('customer.create.title', 'Neuen Kunden anlegen')}</h3>
+            <form onSubmit={handleCreate} className="create-form">
+              <input
+                  type="text"
+                  placeholder={t('customer.create.placeholder', 'Name des neuen Kunden')}
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  required
+              />
+              <button type="submit" className="button-primary">{t('create', 'Anlegen')}</button>
+            </form>
+          </section>
+
+          <section className="content-section">
+            <h3 className="section-title">{t('customer.list.title', 'Bestehende Kunden')}</h3>
+            <div className="item-list-container">
+              <ul className="item-list customer-list">
+                {customers.map(c => (
+                    <li key={c.id} className="list-item">
+                      {editingId === c.id ? (
+                          <form onSubmit={handleUpdate} className="edit-form">
+                            <input
+                                type="text"
+                                value={editingName}
+                                onChange={(e) => setEditingName(e.target.value)}
+                                required
+                                autoFocus
+                            />
+                            <div className="form-actions">
+                              <button type="submit" className="button-primary">{t('save', 'Speichern')}</button>
+                              <button type="button" onClick={cancelEdit} className="button-secondary">
+                                {t('cancel', 'Abbrechen')}
+                              </button>
+                            </div>
+                          </form>
+                      ) : (
+                          <>
+                            <span className="item-name">{c.name}</span>
+                            <div className="item-actions">
+                              <button onClick={() => startEdit(c)} className="button-secondary">{t('edit', 'Bearbeiten')}</button>
+                              <button onClick={() => handleDelete(c.id)} className="button-danger">{t('delete', 'Löschen')}</button>
+                            </div>
+                          </>
+                      )}
+                    </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        </div>
+      </>
   );
 };
 
-export default AdminProjectsPage;
+export default AdminCustomersPage;

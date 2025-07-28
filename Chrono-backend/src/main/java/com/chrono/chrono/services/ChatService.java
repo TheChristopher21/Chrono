@@ -4,13 +4,16 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.support.PathMatchingResourcePatternResolver;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -19,7 +22,6 @@ import com.chrono.chrono.entities.User;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
@@ -37,19 +39,38 @@ public class ChatService {
     private String modelName;
 
     private final RestTemplate restTemplate;
+    private final RestTemplate longTimeoutRestTemplate; // The special patient RestTemplate
     private final ObjectMapper objectMapper = new ObjectMapper();
     private String knowledgeBaseContent = "";
 
-    public ChatService(RestTemplateBuilder restTemplateBuilder) {
-        this.restTemplate = restTemplateBuilder
-                .setConnectTimeout(Duration.ofSeconds(20))
-                .setReadTimeout(Duration.ofMinutes(5))
-                .build();
+    // Modified constructor to accept both RestTemplates
+    public ChatService(RestTemplate restTemplate, @Qualifier("longTimeoutRestTemplate") RestTemplate longTimeoutRestTemplate) {
+        this.restTemplate = restTemplate;
+        this.longTimeoutRestTemplate = longTimeoutRestTemplate;
         loadKnowledgeBaseFromResources();
     }
 
+    @Async
+    @EventListener(ApplicationReadyEvent.class)
+    public void warmUpLlm() {
+        logger.info("Starte LLM Warm-up im Hintergrund... Dies kann einige Minuten dauern.");
+        try {
+            // This request will trigger the model download if needed.
+            // Ollama will handle this automatically. We use the patient RestTemplate here.
+            String response = askWithTemplate(longTimeoutRestTemplate, "Hallo, initialisiere dich bitte.", null, -1);
+
+            if (response != null && !response.contains("Fehler")) {
+                logger.info("LLM Warm-up erfolgreich. Modell ist jetzt geladen und wird dauerhaft gehalten.");
+            } else {
+                logger.warn("LLM Warm-up mit einer Fehlerantwort abgeschlossen.");
+            }
+        } catch (Exception e) {
+            logger.error("Fehler während des LLM Warm-ups. Der Server könnte unter starker Last stehen oder das Modell ist sehr gross.", e);
+        }
+    }
+
     private void loadKnowledgeBaseFromResources() {
-        // Liest jetzt aus dem 'resources/knowledge_base' Ordner innerhalb der Anwendung
+        // ... (this method remains unchanged)
         logger.info("Lade Wissensdatenbank aus den Anwendungs-Ressourcen...");
         try {
             PathMatchingResourcePatternResolver resolver = new PathMatchingResourcePatternResolver();
@@ -76,9 +97,13 @@ public class ChatService {
         }
     }
 
+    // Public method for chat requests, uses the STANDARD RestTemplate
     public String ask(String message, User user) {
-        logger.info("Neue Chat-Anfrage: '{}'", message);
+        return askWithTemplate(this.restTemplate, message, user, 0);
+    }
 
+    // Private core method, now accepts a RestTemplate instance
+    private String askWithTemplate(RestTemplate template, String message, User user, Number keepAliveDuration) {
         if (user != null && message != null && message.toLowerCase().contains("überstunden")) {
             int minutes = user.getTrackingBalanceInMinutes() != null ? user.getTrackingBalanceInMinutes() : 0;
             int hours = Math.abs(minutes) / 60;
@@ -102,10 +127,15 @@ public class ChatService {
             body.put("prompt", fullPrompt);
             body.put("stream", false);
 
+            // The keep_alive is now only really needed for the first warm-up call
+            if (keepAliveDuration.doubleValue() != 0) {
+                body.put("keep_alive", keepAliveDuration);
+            }
+
             HttpEntity<Map<String, Object>> requestEntity = new HttpEntity<>(body, headers);
 
             logger.info("Sende Anfrage an Ollama mit Modell {}...", modelName);
-            String jsonResponse = restTemplate.postForObject(llmBaseUrl, requestEntity, String.class);
+            String jsonResponse = template.postForObject(llmBaseUrl, requestEntity, String.class);
             logger.info("Antwort von Ollama erhalten.");
 
             JsonNode rootNode = objectMapper.readTree(jsonResponse);
