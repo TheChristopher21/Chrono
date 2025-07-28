@@ -169,13 +169,36 @@ public class PayrollService {
         return payslipRepository.findAll();
     }
 
-    public List<Payslip> getPendingPayslips() {
-        return payslipRepository.findByApproved(false);
+    public List<Payslip> getPendingPayslips(User requestingAdmin) {
+        boolean isSuperAdmin = requestingAdmin.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+
+        if (isSuperAdmin && requestingAdmin.getCompany() == null) {
+            return payslipRepository.findByApproved(false);
+        }
+
+        if (requestingAdmin.getCompany() == null) {
+            return List.of();
+        }
+
+        return payslipRepository.findByUser_Company_IdAndApproved(
+                requestingAdmin.getCompany().getId(), false);
     }
 
     @Transactional(readOnly = true)
-    public List<PayslipDTO> getApprovedPayslips(String name, LocalDate start, LocalDate end) {
-        List<Payslip> list = payslipRepository.findByApproved(true);
+    public List<PayslipDTO> getApprovedPayslips(User requestingAdmin, String name, LocalDate start, LocalDate end) {
+        boolean isSuperAdmin = requestingAdmin.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+
+        List<Payslip> list;
+        if (isSuperAdmin && requestingAdmin.getCompany() == null) {
+            list = payslipRepository.findByApproved(true);
+        } else if (requestingAdmin.getCompany() != null) {
+            list = payslipRepository.findByUser_Company_IdAndApproved(
+                    requestingAdmin.getCompany().getId(), true);
+        } else {
+            list = List.of();
+        }
         if (name != null && !name.isBlank()) {
             String lower = name.toLowerCase();
             list = list.stream().filter(ps -> {
