@@ -18,7 +18,7 @@ const PayslipsPage = () => {
   const [pendingSlips, setPendingSlips] = useState([]);
   const [approvedSlips, setApprovedSlips] = useState([]);
   const [users, setUsers] = useState([]);
-  const [form, setForm] = useState({ userId: '', start: '', end: '' });
+  const [form, setForm] = useState({ userId: '', start: '', end: '', payoutDate: '' });
   const [filter, setFilter] = useState({ name: '', start: '', end: '' });
   const [logoFile, setLogoFile] = useState(null);
   const [scheduleVisible, setScheduleVisible] = useState(false);
@@ -121,6 +121,7 @@ const PayslipsPage = () => {
                       <th>{t('payslips.period')}</th>
                       <th>{t('payslips.gross')}</th>
                       <th>{t('payslips.net')}</th>
+                      <th>{t('payslips.payoutDate')}</th>
                       <th className="actions-col">{t('userManagement.table.actions')}</th>
                     </tr>
                     </thead>
@@ -131,6 +132,7 @@ const PayslipsPage = () => {
                           <td>{ps.periodStart} – {ps.periodEnd}</td>
                           <td>{ps.grossSalary?.toFixed(2)} CHF</td>
                           <td>{ps.netSalary?.toFixed(2)} CHF</td>
+                          <td>{ps.payoutDate}</td>
                           <td className="actions-col">
                             <button type="button" className="button-success" onClick={() => approve(ps.id)}>{t('payslips.approve')}</button>
                           </td>
@@ -176,6 +178,7 @@ const PayslipsPage = () => {
                         <th>{t('payslips.period')}</th>
                         <th>{t('payslips.gross')}</th>
                         <th>{t('payslips.net')}</th>
+                        <th>{t('payslips.payoutDate')}</th>
                         <th className="actions-col">{t('userManagement.table.actions')}</th>
                       </tr>
                       </thead>
@@ -186,6 +189,7 @@ const PayslipsPage = () => {
                             <td>{ps.periodStart} – {ps.periodEnd}</td>
                             <td>{ps.grossSalary?.toFixed(2)} CHF</td>
                             <td>{ps.netSalary?.toFixed(2)} CHF</td>
+                            <td>{ps.payoutDate}</td>
                             <td className="actions-col">
                               <button type="button" className="button-primary" onClick={() => printPdf(ps.id)}>{t('payslips.print')}</button>
                             </td>
