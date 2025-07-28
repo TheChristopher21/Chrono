@@ -119,9 +119,19 @@ public class PayrollService {
         return saved;
     }
 
-    public List<Payslip> getPayslipsForUser(Long userId) {
+    @Transactional(readOnly = true)
+    public List<Payslip> getPayslipsForUser(Long userId, LocalDate start, LocalDate end) {
         User user = userRepository.findById(userId).orElseThrow();
-        return payslipRepository.findByUserAndApproved(user, true);
+        List<Payslip> list = payslipRepository.findByUserAndApproved(user, true);
+
+        if (start != null) {
+            list = list.stream().filter(ps -> !ps.getPeriodEnd().isBefore(start)).toList();
+        }
+        if (end != null) {
+            list = list.stream().filter(ps -> !ps.getPeriodStart().isAfter(end)).toList();
+        }
+
+        return list;
     }
 
     @Transactional

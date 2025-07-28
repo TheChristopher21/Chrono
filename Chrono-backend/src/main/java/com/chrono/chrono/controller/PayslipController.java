@@ -54,8 +54,12 @@ public class PayslipController {
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('USER')")
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<PayslipDTO>> list(@PathVariable Long userId) {
-        List<Payslip> list = payrollService.getPayslipsForUser(userId);
+    public ResponseEntity<List<PayslipDTO>> list(
+            @PathVariable Long userId,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end
+    ) {
+        List<Payslip> list = payrollService.getPayslipsForUser(userId, start, end);
         return ResponseEntity.ok(list.stream().map(PayslipDTO::new).toList());
     }
 

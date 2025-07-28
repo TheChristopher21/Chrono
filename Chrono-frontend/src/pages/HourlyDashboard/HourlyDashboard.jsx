@@ -300,9 +300,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 <button onClick={() => setPrintModalVisible(true)} className="button-primary">
                     {t('printReportButton')}
                 </button>
-                <Link to="/payslips" className="button-primary-outline" style={{ marginLeft: '1rem' }}>
-                    {t('payslips.title')}
-                </Link>
+
             </header>
 
             <HourlyWeekOverview
