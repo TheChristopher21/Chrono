@@ -36,8 +36,9 @@ public class PayslipController {
     public ResponseEntity<PayslipDTO> generate(
             @RequestParam Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
-            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
-        Payslip ps = payrollService.generatePayslip(userId, start, end);
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate payoutDate) {
+        Payslip ps = payrollService.generatePayslip(userId, start, end, payoutDate);
         return ResponseEntity.ok(new PayslipDTO(ps));
     }
 
@@ -118,6 +119,14 @@ public class PayslipController {
     public ResponseEntity<Void> approve(@PathVariable Long id,
                                         @RequestParam(required = false) String comment) {
         payrollService.approvePayslip(id, comment);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PostMapping("/set-payout/{id}")
+    public ResponseEntity<Void> setPayoutDate(@PathVariable Long id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate payoutDate) {
+        payrollService.setPayoutDate(id, payoutDate);
         return ResponseEntity.ok().build();
     }
 

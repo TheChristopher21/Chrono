@@ -50,7 +50,7 @@ public class PayrollService {
     }
 
     @Transactional
-    public Payslip generatePayslip(Long userId, LocalDate start, LocalDate end) {
+    public Payslip generatePayslip(Long userId, LocalDate start, LocalDate end, LocalDate payoutDate) {
         User user = userRepository.findById(userId).orElseThrow();
         LocalDateTime startDt = start.atStartOfDay();
         LocalDateTime endDt = end.plusDays(1).atStartOfDay();
@@ -108,7 +108,11 @@ public class PayrollService {
         ps.getDeductionsList().add(new PayComponent("Tax", tax));
         ps.getDeductionsList().add(new PayComponent("Social", social));
         ps.setEmployerContributions(0.0);
-        ps.setPayoutDate(end.plusDays(5));
+        if (payoutDate != null) {
+            ps.setPayoutDate(payoutDate);
+        } else {
+            ps.setPayoutDate(end.plusDays(5));
+        }
         ps.setBankAccount(user.getBankAccount());
         ps.setSocialSecurityNumber(user.getSocialSecurityNumber());
         ps.setPayType(user.getIsHourly() != null && user.getIsHourly() ? "hourly" : "salary");
@@ -266,6 +270,13 @@ public class PayrollService {
         return bytes;
 
 
+    }
+
+    @Transactional
+    public void setPayoutDate(Long payslipId, LocalDate payoutDate) {
+        Payslip ps = payslipRepository.findById(payslipId).orElseThrow();
+        ps.setPayoutDate(payoutDate);
+        payslipRepository.save(ps);
     }
     public void setPayslipSchedule(Long userId, int dayOfMonth) {
         User user = userRepository.findById(userId).orElseThrow();

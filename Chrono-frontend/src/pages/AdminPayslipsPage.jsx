@@ -9,7 +9,7 @@ const AdminPayslipsPage = () => {
   const [payslips, setPayslips] = useState([]);
   const [approvedSlips, setApprovedSlips] = useState([]);
   const [users, setUsers] = useState([]);
-  const [form, setForm] = useState({ userId: '', start: '', end: '' });
+  const [form, setForm] = useState({ userId: '', start: '', end: '', payoutDate: '' });
   const [filter, setFilter] = useState({ name: '', start: '', end: '' });
   const [logoFile, setLogoFile] = useState(null);
   const { t } = useTranslation();
@@ -31,6 +31,14 @@ const AdminPayslipsPage = () => {
 
   const approve = (id) => {
     api.post(`/api/payslips/approve/${id}`).then(() => fetchPending());
+  };
+
+  const editPayoutDate = (id, current) => {
+    const val = prompt(t('payslips.enterPayoutDate'), current || '');
+    if (val) {
+      api.post(`/api/payslips/set-payout/${id}`, null, { params: { payoutDate: val } })
+        .then(() => fetchPending());
+    }
   };
 
 
@@ -74,9 +82,9 @@ const AdminPayslipsPage = () => {
   const createPayslip = () => {
     if (!form.userId || !form.start || !form.end) return;
     api.post('/api/payslips/generate', null, {
-      params: { userId: form.userId, start: form.start, end: form.end }
+      params: { userId: form.userId, start: form.start, end: form.end, payoutDate: form.payoutDate }
     }).then(() => {
-      setForm({ userId: '', start: '', end: '' });
+      setForm({ userId: '', start: '', end: '', payoutDate: '' });
       fetchPending();
     });
   };
@@ -123,6 +131,7 @@ const AdminPayslipsPage = () => {
           </select>
           <input type="date" value={form.start} onChange={e => setForm({ ...form, start: e.target.value })} />
           <input type="date" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} />
+          <input type="date" value={form.payoutDate} onChange={e => setForm({ ...form, payoutDate: e.target.value })} />
           <button onClick={createPayslip}>{t('payslips.generate', 'Erstellen')}</button>
         </div>
         {/* --- */}
@@ -143,6 +152,7 @@ const AdminPayslipsPage = () => {
             <th>{t('payslips.period', 'Zeitraum')}</th>
             <th>{t('payslips.gross')}</th>
             <th>{t('payslips.net')}</th>
+            <th>{t('payslips.payoutDate')}</th>
             <th></th>
           </tr>
           </thead>
@@ -153,7 +163,11 @@ const AdminPayslipsPage = () => {
                 <td>{ps.periodStart} - {ps.periodEnd}</td>
                 <td>{ps.grossSalary?.toFixed(2)} CHF</td>
                 <td>{ps.netSalary?.toFixed(2)} CHF</td>
-                <td><button onClick={() => approve(ps.id)}>{t('payslips.approve')}</button></td>
+                <td>{ps.payoutDate}</td>
+                <td>
+                  <button onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout')}</button>
+                  <button onClick={() => approve(ps.id)}>{t('payslips.approve')}</button>
+                </td>
               </tr>
           ))}
           </tbody>
@@ -186,6 +200,7 @@ const AdminPayslipsPage = () => {
             <th>{t('payslips.period', 'Zeitraum')}</th>
             <th>{t('payslips.gross')}</th>
             <th>{t('payslips.net')}</th>
+            <th>{t('payslips.payoutDate')}</th>
             <th></th>
           </tr>
           </thead>
@@ -196,6 +211,7 @@ const AdminPayslipsPage = () => {
                 <td>{ps.periodStart} - {ps.periodEnd}</td>
                 <td>{ps.grossSalary?.toFixed(2)} CHF</td>
                 <td>{ps.netSalary?.toFixed(2)} CHF</td>
+                <td>{ps.payoutDate}</td>
                 <td><button onClick={() => printPdf(ps.id)}>{t('payslips.print')}</button></td>
               </tr>
           ))}

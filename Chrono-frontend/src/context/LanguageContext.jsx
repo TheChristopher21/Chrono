@@ -580,6 +580,7 @@ const translations = {
             user: "Benutzer",
             gross: "Brutto",
             net: "Netto",
+            payoutDate: "Auszahlungsdatum",
             filterName: "Name",
             start: "Startdatum",
             end: "Enddatum",
@@ -590,7 +591,15 @@ const translations = {
             logoSaveError: "Fehler beim Speichern",
             scheduleDay: "Automatisch am Tag",
             scheduleButton: "Planen",
-            scheduleAll: "Automatische Abrechnung für alle aktivieren"
+            scheduleAll: "Automatische Abrechnung für alle aktivieren",
+            editPayout: "Datum ändern",
+            enterPayoutDate: "Auszahlungsdatum eingeben",
+            generateManual: "Manuell erstellen",
+            selectUser: "Benutzer wählen",
+            generate: "Erstellen",
+            logoUploadTitle: "Logo hochladen",
+            selectFile: "Datei wählen",
+            myPayslips: "Meine Lohnabrechnungen"
 
         },
         quickStart: {
@@ -1210,6 +1219,7 @@ const translations = {
             user: "User",
             gross: "Gross",
             net: "Net",
+            payoutDate: "Payout date",
             filterName: "Name",
             start: "Start",
             end: "End",
@@ -1220,7 +1230,15 @@ const translations = {
             logoSaveError: "Failed to save logo",
             scheduleDay: "Automatically on day",
             scheduleButton: "Schedule",
-            scheduleAll: "Enable automatic payslips for all"
+            scheduleAll: "Enable automatic payslips for all",
+            editPayout: "Edit date",
+            enterPayoutDate: "Enter payout date",
+            generateManual: "Generate manually",
+            selectUser: "Select user",
+            generate: "Generate",
+            logoUploadTitle: "Upload logo",
+            selectFile: "Choose file",
+            myPayslips: "My Payslips"
 
         },
         quickStart: {
