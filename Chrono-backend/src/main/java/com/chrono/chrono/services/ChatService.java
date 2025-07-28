@@ -25,7 +25,9 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.List;
 import java.util.stream.Collectors;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 public class ChatService {
@@ -42,6 +44,17 @@ public class ChatService {
     private final RestTemplate longTimeoutRestTemplate; // The special patient RestTemplate
     private final ObjectMapper objectMapper = new ObjectMapper();
     private String knowledgeBaseContent = "";
+    private static final List<String> FALLBACKS = Arrays.asList(
+            "Das habe ich leider nicht im Repertoire, aber ich lerne gerne dazu! Versuche es gerne nochmal anders oder schau in die Hilfeseite.",
+            "Puh, diese Frage ist echt knifflig! Magst du sie noch mal anders formulieren – oder ich leite dich an den Support weiter?",
+            "Da muss ich passen – aber vielleicht findest du Hilfe im Menü unter 'Hilfe & FAQ'.",
+            "Hier stoße ich an meine Grenzen – aber keine Sorge, du kannst immer auch deinen Admin oder den Support kontaktieren!",
+            "Sorry, das weiß ich leider nicht, aber ich bin immer neugierig auf neue Themen!",
+            "Das ist spannend – aber da bin ich leider überfragt. Vielleicht kann dir der technische Support helfen.",
+            "Diese Antwort habe ich gerade nicht parat. Probiere es nochmal oder frage nach Support.",
+            "Du hast mich erwischt – das weiß ich (noch) nicht. Aber zusammen finden wir sicher eine Lösung!",
+            "Gute Frage! Im Moment kann ich darauf nicht antworten, aber ich kann dich an einen echten Menschen weiterleiten."
+    );
 
     // Modified constructor to accept both RestTemplates
     public ChatService(RestTemplate restTemplate, @Qualifier("longTimeoutRestTemplate") RestTemplate longTimeoutRestTemplate) {
@@ -172,6 +185,10 @@ public class ChatService {
         } catch (Exception e) {
             logger.error("Fehler bei der Kommunikation mit dem LLM:", e);
         }
-        return "Entschuldigung, es gab einen Fehler.";
+        return getRandomFallback();
+    }
+
+    private String getRandomFallback() {
+        return FALLBACKS.get(ThreadLocalRandom.current().nextInt(FALLBACKS.size()));
     }
 }

@@ -87,7 +87,9 @@ export default function ChatWidget() {
                 signal, // Signal zum Abbrechen der Anfrage
                 timeout: 3 * 60 * 1000 // 3 Minuten Timeout in Millisekunden
             });
-            setMessages(m => [...m, { sender: 'bot', text: resp.data.answer }]);
+            const text = resp.data.answer;
+            const finalText = text.startsWith('Entschuldigung, es gab einen Fehler') ? getRandomFallback() : text;
+            setMessages(m => [...m, { sender: 'bot', text: finalText }]);
         } catch (e) {
             if (e.name === 'CanceledError' || e.name === 'AbortError') {
                 console.log('Request was canceled by the user.');
