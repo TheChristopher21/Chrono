@@ -112,7 +112,9 @@ public class ChatService {
 
             for (Map.Entry<String, String> e : links.entrySet()) {
                 if (lower.contains("wo") && lower.contains(e.getKey())) {
-                    return "Du findest [" + e.getKey() + "](" + e.getValue() + ").";
+                    String label = e.getKey().substring(0, 1).toUpperCase() + e.getKey().substring(1);
+                    return "Den Bereich '" + label + "' erreichst du über [" + label + "](" +
+                            e.getValue() + ") im Menü.";
                 }
             }
         }
