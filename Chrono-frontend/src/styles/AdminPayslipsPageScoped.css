@@ -1,101 +1,151 @@
-.admin-payslips-page.scoped-dashboard {
-  --c-bg: #f4f6ff;
-  --c-text: #1e1f22;
-  --c-card: #ffffff;
-  --c-border: #d5d8e5;
-  background: var(--c-bg);
-  color: var(--c-text);
-  min-height: 100vh;
-  padding: 1.5rem;
-  font-family: 'Poppins', sans-serif;
-  transition: background 0.3s, color 0.3s;
+/* AdminPayslipsPageScoped.css · überarbeitet */
+.admin-payslips-page {
+  /* Basis-Abstände und Hintergrund übernimmt scoped-dashboard aus unified styles :contentReference[oaicite:5]{index=5} */
 }
 
-[data-theme="dark"] .admin-payslips-page.scoped-dashboard {
-  --c-bg: #181a20;
-  --c-text: #e5e7ec;
-  --c-card: #22242c;
-  --c-border: #363b45;
+.admin-payslips-page .top-sections-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--ud-gap-lg);
+  margin-bottom: var(--ud-gap-xl);
 }
 
-.payslip-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 1rem;
-  background: var(--c-card);
-  color: var(--c-text);
+.admin-payslips-page .generate-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: var(--ud-gap-md);
+  align-items: end;
 }
 
-.payslip-table th,
-.payslip-table td {
-  border: 1px solid var(--c-border);
-  padding: 0.5rem;
-  text-align: left;
+.admin-payslips-page .logo-upload-form {
+  display: flex;
+  align-items: center;
+  gap: var(--ud-gap-sm);
 }
 
-.payslip-table th {
-  background: var(--c-card);
-  color: var(--c-text);
-}
-
-.payslip-table button {
-  padding: 0.3rem 0.8rem;
-  border-radius: 5px;
-  background: var(--c-card);
-  border: 1px solid var(--c-border);
-  color: var(--c-text);
+.admin-payslips-page .custom-file-upload {
+  flex: 1 1 auto;
+  max-width: 200px;
+  text-align: center;
+  padding: 0.5rem var(--ud-gap-md);
+  border: 1px solid var(--ud-c-border);
+  border-radius: var(--ud-radius-md);
+  background-color: var(--ud-c-bg-input);
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-}
-.payslip-table button:hover {
-  background: var(--c-border);
+  transition: background-color 0.2s;
 }
 
-.approve-all {
-  margin-bottom: 1rem;
-  margin-right: 0.7rem;
-  padding: 0.5rem 1.2rem;
-  background: var(--c-card);
-  border: 1px solid var(--c-border);
-  color: var(--c-text);
-  border-radius: 5px;
+.admin-payslips-page .custom-file-upload:hover {
+  background-color: var(--ud-c-card-hover);
+}
+
+.admin-payslips-page .section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--ud-gap-md) 0;
+  border-bottom: 1px solid var(--ud-c-border);
   cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s, color 0.2s;
-}
-.approve-all:hover {
-  background: var(--c-border);
 }
 
-.generate-form {
-  margin: 1.2rem 0 0.5rem 0;
+.admin-payslips-page .toggle-icon {
+  font-size: var(--ud-fz-lg);
+  transition: transform 0.2s;
+}
+
+.admin-payslips-page .controls-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.7rem;
+  gap: var(--ud-gap-sm);
+  margin-bottom: var(--ud-gap-lg);
 }
 
-.generate-form select,
-.generate-form input[type="date"] {
-  padding: 0.38rem 0.7rem;
-  border: 1px solid var(--c-border);
-  border-radius: 4px;
-  background: var(--c-card);
-  color: var(--c-text);
-  outline: none;
-  font-size: 1rem;
-  transition: background 0.2s, color 0.2s;
+.admin-payslips-page .filter-input {
+  max-width: 180px;
+  padding: var(--ud-gap-xs) var(--ud-gap-md);
 }
 
-.generate-form button {
-  padding: 0.45rem 1.2rem;
-  border: 1px solid var(--c-border);
-  background: var(--c-card);
-  color: var(--c-text);
-  border-radius: 5px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: background 0.2s, color 0.2s;
+.admin-payslips-page .table-wrapper {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--ud-c-border);
+  border-radius: var(--ud-radius-md);
 }
-.generate-form button:hover {
-  background: var(--c-border);
+
+.admin-payslips-page .payslip-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--ud-fz-sm);
+}
+
+.admin-payslips-page .payslip-table th,
+.admin-payslips-page .payslip-table td {
+  padding: var(--ud-gap-sm) var(--ud-gap-md);
+  border-bottom: 1px solid var(--ud-c-line);
+}
+
+.admin-payslips-page .payslip-table th {
+  position: sticky;
+  top: 0;
+  background: var(--ud-c-surface);
+  z-index: 2;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: var(--ud-fz-xs);
+  color: var(--ud-c-text-muted);
+}
+
+.admin-payslips-page .payslip-table tr:hover {
+  background: var(--ud-c-bg-hover);
+}
+
+.admin-payslips-page .actions-col {
+  text-align: right;
+}
+
+.admin-payslips-page button {
+  font-size: var(--ud-fz-sm);
+  padding: var(--ud-gap-xs) var(--ud-gap-md);
+}
+
+.admin-payslips-page .button-success {
+  background-color: var(--ud-c-success);
+  color: #fff;
+}
+
+.admin-payslips-page .button-success:hover {
+  background-color: var(--ud-c-success-dim);
+}
+
+/* Responsive Anpassungen */
+@media (max-width: 768px) {
+  .admin-payslips-page .payslip-table thead {
+    display: none;
+  }
+  .admin-payslips-page .payslip-table,
+  .admin-payslips-page .payslip-table tbody,
+  .admin-payslips-page .payslip-table tr,
+  .admin-payslips-page .payslip-table td {
+    display: block;
+    width: 100%;
+  }
+  .admin-payslips-page .payslip-table tr {
+    margin-bottom: var(--ud-gap-lg);
+    border: 1px solid var(--ud-c-border);
+    border-radius: var(--ud-radius-md);
+  }
+  .admin-payslips-page .payslip-table td {
+    position: relative;
+    padding-left: 50%;
+    text-align: left;
+    border-bottom: none;
+  }
+  .admin-payslips-page .payslip-table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: var(--ud-gap-md);
+    width: calc(50% - var(--ud-gap-md));
+    font-weight: 600;
+    color: var(--ud-c-text-muted);
+  }
 }

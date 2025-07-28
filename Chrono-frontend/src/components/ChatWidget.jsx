@@ -10,6 +10,20 @@ function renderWithLinks(text) {
     const html = text.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2">$1</a>');
     return <span dangerouslySetInnerHTML={{ __html: html }} />;
 }
+function getRandomFallback() {
+    const fallbacks = [
+        "Das habe ich leider nicht im Repertoire, aber ich lerne gerne dazu! Versuche es gerne nochmal anders oder schau in die Hilfeseite.",
+        "Puh, diese Frage ist echt knifflig! Magst du sie noch mal anders formulieren – oder ich leite dich an den Support weiter?",
+        "Da muss ich passen – aber vielleicht findest du Hilfe im Menü unter 'Hilfe & FAQ'.",
+        "Hier stoße ich an meine Grenzen – aber keine Sorge, du kannst immer auch deinen Admin oder den Support kontaktieren!",
+        "Sorry, das weiß ich leider nicht, aber ich bin immer neugierig auf neue Themen!",
+        "Das ist spannend – aber da bin ich leider überfragt. Vielleicht kann dir der technische Support helfen.",
+        "Diese Antwort habe ich gerade nicht parat. Probiere es nochmal oder frage nach Support.",
+        "Du hast mich erwischt – das weiß ich (noch) nicht. Aber zusammen finden wir sicher eine Lösung!",
+        "Gute Frage! Im Moment kann ich darauf nicht antworten, aber ich kann dich an einen echten Menschen weiterleiten."
+    ];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+}
 
 export default function ChatWidget() {
     const { currentUser } = useAuth();
@@ -78,7 +92,7 @@ export default function ChatWidget() {
             if (e.name === 'CanceledError' || e.name === 'AbortError') {
                 console.log('Request was canceled by the user.');
             } else {
-                setMessages(m => [...m, { sender: 'bot', text: 'Entschuldigung, es gab einen Fehler. Bitte versuche es erneut.' }]);
+                setMessages(m => [...m, { sender: 'bot', text: getRandomFallback() }]);
             }
         } finally {
             setLoading(false);
