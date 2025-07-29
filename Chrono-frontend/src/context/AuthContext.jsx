@@ -32,7 +32,9 @@ export const AuthProvider = ({ children }) => {
 
     // Funktion zum Abrufen des aktuellen Benutzers vom Server
     const fetchCurrentUser = useCallback(async (currentToken) => {
-        if (!currentToken) {
+        // Falls kein Token übergeben wird, versuche es aus dem localStorage zu holen
+        const tokenToUse = currentToken || localStorage.getItem('token');
+        if (!tokenToUse) {
             // Stellt sicher, dass ein eingeloggter Benutzer ohne Token ausgeloggt wird
             if (currentUser) {
                 logout();
@@ -40,7 +42,7 @@ export const AuthProvider = ({ children }) => {
             return;
         }
 
-        api.defaults.headers.common.Authorization = `Bearer ${currentToken}`;
+        api.defaults.headers.common.Authorization = `Bearer ${tokenToUse}`;
 
         try {
             const res = await api.get('/api/auth/me');
@@ -130,7 +132,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ authToken, currentUser, setCurrentUser, login, logout }}>
+        <AuthContext.Provider value={{ authToken, currentUser, setCurrentUser, login, logout, fetchCurrentUser }}>
             {children}
         </AuthContext.Provider>
     );
