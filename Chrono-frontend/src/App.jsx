@@ -33,7 +33,6 @@ import PrivateRoute from "./components/PrivateRoute";
 import { useAuth } from "./context/AuthContext";
 import WhatsNewPage from "./pages/WhatsNewPage.jsx";
 import TimeTrackingImport from "./TimeTrackingImport.jsx";
-import SchedulePlanner from "./pages/SchedulePlanner.jsx";
 
 // NEU: Nur noch der ActionButtons Container wird importiert
 import ActionButtons from "./components/ActionButtons.jsx";
@@ -76,14 +75,6 @@ function App() {
                     element={
                         <PrivateRoute>
                             <PersonalDataPage />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/schedule"
-                    element={
-                        <PrivateRoute>
-                            <SchedulePlanner />
                         </PrivateRoute>
                     }
                 />
