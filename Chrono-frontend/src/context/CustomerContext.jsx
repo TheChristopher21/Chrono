@@ -10,7 +10,8 @@ export const CustomerProvider = ({ children }) => {
     const [customers, setCustomers] = useState([]);
     const { notify } = useNotification();
     const { t } = useTranslation();
-    const { authToken } = useAuth();
+    const { authToken, currentUser } = useAuth();
+
 
     const fetchCustomers = useCallback(async () => {
 
@@ -62,12 +63,14 @@ export const CustomerProvider = ({ children }) => {
     }, [notify, t]);
 
     useEffect(() => {
-        if (authToken) {
+        if (authToken && currentUser?.customerTrackingEnabled) {
+
             fetchCustomers();
         } else {
             setCustomers([]);
         }
-    }, [fetchCustomers, authToken]);
+    }, [fetchCustomers, authToken, currentUser]);
+
 
 
     return (

@@ -10,7 +10,7 @@ export const ProjectProvider = ({ children }) => {
   const [projects, setProjects] = useState([]);
   const { notify } = useNotification();
   const { t } = useTranslation();
-  const { authToken } = useAuth();
+  const { authToken, currentUser } = useAuth();
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -58,12 +58,14 @@ export const ProjectProvider = ({ children }) => {
   }, [notify, t]);
 
   useEffect(() => {
-    if (authToken) {
+    if (authToken && currentUser?.customerTrackingEnabled) {
+
       fetchProjects();
     } else {
       setProjects([]);
     }
-  }, [fetchProjects, authToken]);
+  }, [fetchProjects, authToken, currentUser]);
+
 
   return (
     <ProjectContext.Provider value={{ projects, fetchProjects, createProject, updateProject, deleteProject }}>
