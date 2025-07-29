@@ -639,13 +639,18 @@ const translations = {
             sending: "Anfrage wird gesendet...",
             thanks: "Vielen Dank für Ihre Anfrage!",
             backHome: "Zurück zur Startseite"
-
+        },
+        schedulePlanner: {
+            title: "Arbeitsplan",
+            cycle: "Zyklus in Wochen",
+            effective: "Gültig ab",
+            loadError: "Fehler beim Laden: ",
+            saveSuccess: "Plan gespeichert",
+            saveError: "Fehler beim Speichern: "
         },
         notFound: {
             pageNotFound: "404 - Seite nicht gefunden",
         },
-
-
     },
 
     // =============== ENGLISCH ===============
@@ -1279,6 +1284,14 @@ const translations = {
             sending: "Sending request...",
             thanks: "Thank you for your request!",
             backHome: "Back to homepage"
+        },
+        schedulePlanner: {
+            title: "Work Schedule",
+            cycle: "Cycle in weeks",
+            effective: "Effective from",
+            loadError: "Load error: ",
+            saveSuccess: "Schedule saved",
+            saveError: "Save error: "
         },
         notFound: {
             pageNotFound: "404 - Page not found",
