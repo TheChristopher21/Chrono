@@ -11,6 +11,32 @@
   box-sizing: border-box;
 }
 
+/* ───────────────── Week Controls ───────────────── */
+.admin-schedule-planner-page .week-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--ud-gap-sm);
+  margin-bottom: var(--ud-gap-md);
+}
+
+.admin-schedule-planner-page .week-controls button {
+  padding: .4em .8em;
+  border: none;
+  border-radius: var(--ud-radius-sm);
+  background: var(--c-muted);
+  color: var(--c-card);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.admin-schedule-planner-page .week-controls input[type="date"] {
+  padding: .4em;
+  border: 1px solid var(--c-border);
+  border-radius: var(--ud-radius-sm);
+  background: var(--c-surface);
+  color: inherit;
+}
+
 /* ───────────────── Users‑Liste ───────────────── */
 .admin-schedule-planner-page .users-list {
   flex: 0 0 250px;
