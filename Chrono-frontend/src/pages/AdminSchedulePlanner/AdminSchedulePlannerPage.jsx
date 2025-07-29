@@ -16,16 +16,6 @@ const AdminSchedulePlannerPage = () => {
   const [dragUser, setDragUser] = useState(null);
   const [copyCount, setCopyCount] = useState(1);
 
-  const changeWeek = offset => {
-    setWeekStart(prev => addDays(prev, offset * 7));
-  };
-
-  const onWeekInput = e => {
-    const date = new Date(e.target.value);
-    if (!isNaN(date)) {
-      setWeekStart(startOfWeek(date, { weekStartsOn: 1 }));
-    }
-  };
 
   const changeWeek = offset => {
     setWeekStart(prev => addDays(prev, offset * 7));
