@@ -29,6 +29,7 @@ import Impressum from "./pages/Impressum.jsx";
 import AGB from "./pages/AGB.jsx";
 import PayslipsPage from "./pages/PayslipsPage.jsx";
 import AdminPayslipsPage from "./pages/AdminPayslipsPage.jsx";
+import AdminSchedulePlannerPage from "./pages/AdminSchedulePlanner/AdminSchedulePlannerPage.jsx";
 import PrivateRoute from "./components/PrivateRoute";
 import { useAuth } from "./context/AuthContext";
 import WhatsNewPage from "./pages/WhatsNewPage.jsx";
@@ -149,6 +150,14 @@ function App() {
                     element={
                         <PrivateRoute requiredRole={["ROLE_ADMIN","ROLE_PAYROLL_ADMIN"]}>
                             <AdminPayslipsPage />
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/admin/schedule"
+                    element={
+                        <PrivateRoute requiredRole="ROLE_ADMIN">
+                            <AdminSchedulePlannerPage />
                         </PrivateRoute>
                     }
                 />

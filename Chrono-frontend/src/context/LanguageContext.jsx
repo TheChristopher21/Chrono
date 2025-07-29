@@ -216,6 +216,7 @@ const translations = {
             projectManagement: "Projekte",
             companyManagement: "Firmen",
             payslips: "Abrechnungen",
+            schedulePlanner: "Dienstplan",
             payments: "Zahlungen",
             myDashboard: "Mein Dashboard",
             chatbot: "Chatbot",
@@ -601,7 +602,11 @@ const translations = {
             selectFile: "Datei wählen",
             myPayslips: "Meine Lohnabrechnungen"
 
-
+        },
+        schedulePlanner: {
+            title: "Dienstplan",
+            auto: "Automatisch",
+            save: "Speichern"
         },
         quickStart: {
             title: "Quick Start",
@@ -896,6 +901,7 @@ const translations = {
             projectManagement: "Projects",
             companyManagement: "Companies",
             payslips: "Payslips",
+            schedulePlanner: "Schedule",
             payments: "Payments",
             myDashboard: "My Dashboard",
             chatbot: "Chatbot",
@@ -1276,7 +1282,11 @@ const translations = {
             selectFile: "Choose file",
             myPayslips: "My Payslips"
 
-
+        },
+        schedulePlanner: {
+            title: "Schedule Planner",
+            auto: "Auto Fill",
+            save: "Save"
         },
         quickStart: {
             title: "Quick Start",

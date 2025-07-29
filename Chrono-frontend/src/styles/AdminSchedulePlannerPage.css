@@ -1,0 +1,45 @@
+.admin-schedule-planner-page {
+  padding: var(--ud-gap-lg);
+  display: flex;
+  gap: var(--ud-gap-lg);
+}
+
+.admin-schedule-planner-page .users-list {
+  width: 220px;
+  border: 1px solid var(--c-border);
+  border-radius: var(--ud-radius-sm);
+  background: var(--c-card);
+  padding: var(--ud-gap-sm);
+  display: flex;
+  flex-direction: column;
+  gap: var(--ud-gap-sm);
+  height: fit-content;
+}
+
+.admin-schedule-planner-page .user-item {
+  border: 1px solid var(--c-line);
+  padding: var(--ud-gap-xs) var(--ud-gap-sm);
+  border-radius: var(--ud-radius-xs);
+  background: var(--c-surface);
+  cursor: grab;
+}
+
+.admin-schedule-planner-page .schedule-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.admin-schedule-planner-page th,
+.admin-schedule-planner-page td {
+  border: 1px solid var(--c-line);
+  padding: var(--ud-gap-sm);
+  text-align: center;
+}
+
+.admin-schedule-planner-page td.droppable {
+  min-height: 40px;
+}
+
+.admin-schedule-planner-page td.conflict {
+  background: var(--c-error);
+  color: #fff;
+}
