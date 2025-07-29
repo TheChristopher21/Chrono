@@ -3,7 +3,7 @@ import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
 import '../../styles/AdminSchedulePlannerPage.css';
 import { useTranslation } from '../../context/LanguageContext';
-import { startOfWeek, addDays, formatISO } from 'date-fns';
+import { startOfWeek, addDays, formatISO, format, differenceInCalendarWeeks } from 'date-fns';
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -11,8 +11,19 @@ const AdminSchedulePlannerPage = () => {
   const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [schedule, setSchedule] = useState({});
-  const [weekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [dragUser, setDragUser] = useState(null);
+
+  const changeWeek = offset => {
+    setWeekStart(prev => addDays(prev, offset * 7));
+  };
+
+  const onWeekInput = e => {
+    const date = new Date(e.target.value);
+    if (!isNaN(date)) {
+      setWeekStart(startOfWeek(date, { weekStartsOn: 1 }));
+    }
+  };
 
   /* ---------------------------------- Daten laden ---------------------------------- */
   useEffect(() => {
@@ -46,10 +57,14 @@ const AdminSchedulePlannerPage = () => {
 
   /* ----------------------------- Auto‑Fill & Speichern ----------------------------- */
   const autoFill = () => {
+    if (users.length === 0) return;
+    const epochMonday = new Date(2020, 0, 6);
+    const weekIndex = Math.abs(differenceInCalendarWeeks(weekStart, epochMonday));
+    const startIndex = weekIndex % users.length;
     const newSchedule = {};
     days.forEach((_, i) => {
       const dateKey = formatISO(addDays(weekStart, i), { representation: 'date' });
-      const user = users[i % users.length];
+      const user = users[(startIndex + i) % users.length];
       if (user) newSchedule[dateKey] = { userId: user.id };
     });
     setSchedule(newSchedule);
@@ -75,6 +90,11 @@ const AdminSchedulePlannerPage = () => {
         <Navbar />
 
         <div className="admin-schedule-planner-page scoped-dashboard">
+          <div className="week-controls">
+            <button onClick={() => changeWeek(-1)}>{t('schedulePlanner.prevWeek', 'Prev')}</button>
+            <input type="date" value={format(weekStart, 'yyyy-MM-dd')} onChange={onWeekInput} />
+            <button onClick={() => changeWeek(1)}>{t('schedulePlanner.nextWeek', 'Next')}</button>
+          </div>
           {/* Users Liste */}
           <div className="users-list">
             {users.map(u => (

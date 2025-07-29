@@ -606,7 +606,9 @@ const translations = {
         schedulePlanner: {
             title: "Dienstplan",
             auto: "Automatisch",
-            save: "Speichern"
+            save: "Speichern",
+            prevWeek: "Vorherige Woche",
+            nextWeek: "Nächste Woche"
         },
         quickStart: {
             title: "Quick Start",
@@ -1286,7 +1288,9 @@ const translations = {
         schedulePlanner: {
             title: "Schedule Planner",
             auto: "Auto Fill",
-            save: "Save"
+            save: "Save",
+            prevWeek: "Prev Week",
+            nextWeek: "Next Week"
         },
         quickStart: {
             title: "Quick Start",
