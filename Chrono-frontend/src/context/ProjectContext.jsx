@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useCallback, useEffect } fr
 import api from '../utils/api';
 import { useNotification } from './NotificationContext';
 import { useTranslation } from './LanguageContext';
+import { useAuth } from './AuthContext';
 
 export const ProjectContext = createContext();
 
@@ -9,6 +10,7 @@ export const ProjectProvider = ({ children }) => {
   const [projects, setProjects] = useState([]);
   const { notify } = useNotification();
   const { t } = useTranslation();
+  const { authToken, currentUser } = useAuth();
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -55,7 +57,13 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [notify, t]);
 
-  useEffect(() => { fetchProjects(); }, [fetchProjects]);
+  useEffect(() => {
+    if (authToken && currentUser?.customerTrackingEnabled) {
+      fetchProjects();
+    } else {
+      setProjects([]);
+    }
+  }, [fetchProjects, authToken, currentUser]);
 
   return (
     <ProjectContext.Provider value={{ projects, fetchProjects, createProject, updateProject, deleteProject }}>

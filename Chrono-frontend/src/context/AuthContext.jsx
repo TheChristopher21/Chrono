@@ -39,7 +39,7 @@ export const AuthProvider = ({ children }) => {
             if (currentUser) {
                 logout();
             }
-            return;
+            return null;
         }
 
         api.defaults.headers.common.Authorization = `Bearer ${tokenToUse}`;
@@ -58,9 +58,12 @@ export const AuthProvider = ({ children }) => {
                 return prevUser; // Daten sind identisch -> keine Änderung, kein Re-Render
             });
 
+            return newUser;
+
         } catch (err) {
             console.error('⚠️ /api/auth/me fehlgeschlagen. Token könnte ungültig sein.', err);
             logout(); // Bei Fehler ausloggen, um inkonsistente Zustände zu vermeiden
+            return null;
         }
     }, [logout, currentUser]); // Abhängigkeiten korrigiert
 
