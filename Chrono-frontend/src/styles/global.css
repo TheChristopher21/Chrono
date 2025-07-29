@@ -1,230 +1,52 @@
-/* =========================================================================
-   global.css · Basis-Reset & Token-Layer (Mai 2025)
-   ========================================================================= */
+/* src/styles/global.css (Optimierte Version) */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
 
-/* ---------- 0)  CSS-Reset / Normalisieren ------------------------------ */
-/* --- Tailwind‑Override: Körperfarbe folgt Theme --- */
-html[data-theme="dark"] body {
-  background: var(--c-bg) !important;
-}
-
+/* 1. Ein besseres Box-Modell für alle Elemente */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
 }
-html,
+
+/* 2. Basis-Stile für den Body */
 body {
   margin: 0;
-  padding: 0;
+  font-family: var(--font-family-base);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-normal);
+  line-height: 1.6;
+  color: var(--c-text);
+  background-color: var(--c-bg);
+  -webkit-font-smoothing: antialiased;
 }
-img,
-picture,
-video,
-canvas,
-svg {
+
+/* 3. Globale Stile für häufige Elemente */
+h1, h2, h3, h4, h5, h6 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: var(--font-weight-bold);
+  line-height: 1.2;
+}
+
+a {
+  color: var(--c-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+a:hover {
+  text-decoration: underline;
+  color: color-mix(in srgb, var(--c-primary) 80%, black);
+}
+
+img, picture, video, canvas, svg {
   display: block;
   max-width: 100%;
 }
-button,
-input,
-select,
-textarea {
+
+/* 4. Konsistente Formular-Stile */
+input, button, textarea, select {
   font: inherit;
-  color: inherit;
-}
-
-/* Grundlegende Placeholder- und Fokus-Styles */
-::placeholder {
-  color: var(--c-muted);
-  opacity: 1;
-}
-button:focus-visible,
-input:focus-visible,
-select:focus-visible,
-textarea:focus-visible,
-a:focus-visible {
-  outline: 2px solid var(--c-pri);
-  outline-offset: 2px;
-}
-
-/* ---------- 1)  Design Tokens --------------------------------------- */
-@import "./tokens/design-tokens.css";
-
-/* ---------- 2)  Basis-Typografie -------------------------------------- */
-html {
-  font-family: var(--font-main, "Poppins", system-ui, sans-serif);
-  font-size: 16px;
-  line-height: 1.45;
-  scroll-behavior: smooth; /* sanftes Scrollen auf der gesamten Seite */
-  color-scheme: light dark;
-}
-body {
-  background: var(--c-bg);
-  color: var(--c-text);
-  -webkit-font-smoothing: antialiased;
-  filter: brightness(var(--app-brightness));
-  transition:
-    background var(--u-dur) var(--u-ease),
-    color var(--u-dur) var(--u-ease);
-}
-
-.scoped-dashboard {
-  width: 100%;
-  max-width: none;
   margin: 0;
-  padding: 1rem;
-
-}
-
-/* Links */
-a {
-  color: var(--c-pri);
-  text-decoration: none;
-  transition: color var(--u-dur);
-}
-a:hover {
-  text-decoration: underline;
-  color: var(--c-pri-dim);
-}
-
-/* ---------- 3)  Dark-Mode-Overrides ----------------------------------- */
-/* tokens for dark mode are defined in design-tokens.css */
-
-/* ---------- 4)  Accessibility / Helpers ------------------------------- */
-/* Screenreader-only content */
-.visually-hidden {
-  position: absolute !important;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-/* ---------- 4.1) Popup Overlay Helper ------------------------------- */
-/*
-   Vereinheitlicht die Positionierung aller Popup-Overlays.
-   Popups werden damit immer zentriert im aktuellen Viewport angezeigt,
-   unabhängig von der Scrollposition der Seite.
-*/
-/* Ersetze den vorhandenen .modal-overlay Block in src/styles/global.css hiermit */
-
-.modal-overlay,
-.modal-backdrop,
-.notification-overlay,
-.vacation-modal-overlay,
-.sick-leave-modal-overlay,
-.changelog-backdrop {
-  position: fixed;
-  inset: 0; /* Moderne Kurzform für top/left/right/bottom = 0 */
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-
-  /* --- KORREKTUR HIER --- */
-  /* Explizite Hintergrundfarbe mit Fallback-Wert. */
-  /* Die Variable wird aus design-tokens.css für Light/Dark Mode geladen. */
-  background-color: var(--modal-backdrop-color, rgba(30, 30, 30, 0.6));
-
-  /* Blur-Effekt für den modernen Look */
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-
-  overflow-y: auto; /* Scrollen bei sehr hohen Inhalten */
-  padding: 1rem; /* Verhindert, dass das Modal am Rand klebt */
-}
-
-/* Grundlegende Einstellungen für alle Modal-Inhalte */
-.modal-content,
-.vacation-modal-content,
-.sick-leave-modal-content,
-.changelog-modal,
-.notification-modal {
-  max-height: 90vh;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch; /* Sanfteres Scrollen auf iOS */
-}
-
-body.modal-open {
-  overflow: hidden;
-  /* Entfernt den Filter, damit position: fixed Elemente nicht innerhalb des
-     gefilterten Body-Elements relativ positioniert werden */
-  filter: none;
-}
-/* Innerhalb Ihres Light-Theme Blocks */
-html[data-theme="light"] {
-  /* ... Ihre bestehenden Variablen ... */
-  --modal-backdrop-color: rgba(30, 30, 30, 0.6);
-  --shadow-color: rgba(0, 0, 0, 0.2);
-  --text-color-secondary: #555;
-  --subtle-bg-color: #f7f9fc; /* Ein sehr helles, fast weißes Grau/Blau */
-}
-
-/* Innerhalb Ihres Dark-Theme Blocks */
-html[data-theme="dark"] {
-  /* ... Ihre bestehenden Variablen ... */
-  --modal-backdrop-color: rgba(0, 0, 0, 0.8);
-  --shadow-color: rgba(0, 0, 0, 0.5);
-  --text-color-secondary: #aaa;
-  --subtle-bg-color: #2c2c34; /* Ein dunkles Grau, das sich vom Hintergrund abhebt */
-}
-
-/* Utility classes */
-.text-uppercase {
-  text-transform: uppercase;
-}
-
-.content-section {
-  margin-bottom: 2.5rem;
-  padding: var(--u-card-padding);
-}
-
-.day-card {
-  padding: var(--u-card-padding);
-  background: var(--c-card);
-  border: 1px solid var(--c-border);
-  border-radius: var(--u-radius);
-  transition: border-color var(--u-dur), transform var(--u-dur);
-}
-
-.day-card:hover {
-  border-color: var(--c-pri);
-  transform: translateY(-2px);
-}
-.app-content {
-  background-color: var(--c-bg);
-  color: var(--c-text);
-  padding-top: 60px;
-  min-height: 100vh;
-}
-/* ---------- 5)  Reduced-Motion ---------------------------------------- */
-@media (prefers-reduced-motion: reduce) {
-  * {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-@media (max-width: 480px) {
-  html {
-    font-size: 15px; /* oder 14px, je nach Geschmack */
-  }
-}
-
-.skeleton-card {
-  background: #eee;
-  border-radius: 4px;
-  height: 120px;
-  margin-bottom: 10px;
-  animation: pulse 1.2s infinite ease-in-out;
-}
-
-@keyframes pulse {
-  0% { opacity: 1; }
-  50% { opacity: 0.6; }
-  100% { opacity: 1; }
+  border-radius: var(--radius-sm);
 }

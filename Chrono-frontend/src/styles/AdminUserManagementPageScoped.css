@@ -1,178 +1,1019 @@
-.admin-schedule-planner-page {
-  min-height: calc(100vh - 54px); /* Platz unter der Navbar */
-  width: 100vw;
-  max-width: 100vw;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  gap: 2.8rem;
-  padding: 3.2rem 2vw;
+/* src/styles/AdminUserManagementPageScoped.css */
+/* =========================================================================
+   AdminUserManagementPageScoped.css · Final
+   Scope: .admin-user-management-page.scoped-dashboard
+   ========================================================================= */
+
+/* --------------------------- 0) Basisvariablen (konsistent mit AdminDashboardScoped.css) --------------------------- */
+.admin-user-management-page.scoped-dashboard {
+  --c-pri: #475bff; /* Haupt-Farbe */
+  --c-pri-dim: #6b7cff; /* Hellere Variante für Hover */
+  --c-warn: #ffc741; /* Warnung/Gelb */
+  --c-danger: #e53935; /* Gefahr/Rot (für Löschen etc.) */
+  --c-success: #2ecc71; /* Erfolg/Grün */
+  --c-info: #3b82f6; /* Info/Blau */
+
+  --c-text: #1e1f22; /* Haupttext */
+  --c-text-light: #3a3b40; /* Hellerer Text */
+  --c-muted: #595e6b; /* Gedämpfter Text */
+  --c-bg: #f4f6ff; /* Seitenhintergrund */
+  --c-card: #ffffff; /* Kartenhintergrund */
+  --c-surface: #f9fafb; /* Leicht abgehobene Oberflächen (z.B. Tabellen-Header Light) */
+  --c-border: #d5d8e5; /* Ränder */
+  --c-line: #e7e8f1; /* Trennlinien */
+
+  --u-radius: 14px; /* Großer Radius */
+  --u-radius-md: 10px; /* Mittlerer Radius */
+  --u-radius-sm: 6px; /* Kleiner Radius */
+
+  --u-gap: clamp(1.5rem, 3vw, 2.2rem); /* Großer Abstand */
+  --u-gap-md: clamp(1rem, 2vw, 1.5rem); /* Mittlerer Abstand */
+  --u-gap-sm: clamp(0.5rem, 1vw, 0.8rem); /* Kleiner Abstand */
+
+  --u-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --u-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.12);
+
+  --u-dur: 0.26s;
+  --u-ease: cubic-bezier(0.4, 0.2, 0.2, 1);
+  min-height: 100vh; /* Dies ist entscheidend */
+  display: flex; /* Oder grid, um den Inhalt korrekt zu verteilen */
+  flex-direction: column; /* Wenn display: flex verwendet wird */
   background: var(--c-bg);
-  box-sizing: border-box;
-  z-index: 2;
-  position: relative;
+  color: var(--c-text);
+  font-family:
+          "Poppins",
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          "Helvetica Neue",
+          Arial,
+          sans-serif;
+  padding: var(--u-gap-md);
+  font-size: 16px;
+  line-height: 1.6;
 }
 
-.admin-schedule-planner-page .users-list {
-  min-width: 250px;
-  max-width: 260px;
-  border-radius: var(--ud-radius-md);
+[data-theme="dark"] .admin-user-management-page.scoped-dashboard {
+  --c-text: #e5e7ec;
+  --c-text-light: #c8cdd9;
+  --c-muted: #8d94a5;
+  --c-bg: #15171c;
+  --c-card: #1f2127;
+  --c-surface: #252830;
+  --c-border: #373b46;
+  --c-line: #2c2f37;
+  --c-danger: #f87171;
+  --c-warn: #f59e0b;
+  --c-info: #60a5fa;
+  --c-success: #4ade80;
+
+  --u-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.25);
+  --u-shadow-md: 0 5px 15px rgba(0, 0, 0, 0.3);
+  --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.4);
+}
+
+/* --------------------------- 1) Allgemeines Seitenlayout & Header --------------------------- */
+.admin-user-management-page.scoped-dashboard .page-header {
   background: var(--c-card);
-  padding: 1.6rem 1.2rem 1.2rem;
-  box-shadow: 0 4px 24px var(--shadow-color,rgba(0,0,0,0.10));
-  display: flex;
-  flex-direction: column;
-  gap: 0.8rem;
+  border-radius: var(--u-radius-md);
+  padding: var(--u-gap-md) var(--u-gap);
+  margin-bottom: var(--u-gap);
+  text-align: center;
+  box-shadow: var(--u-shadow-md);
+}
+.admin-user-management-page.scoped-dashboard .page-header h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.2rem);
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.admin-user-management-page.scoped-dashboard .add-user-button-container {
+  margin-bottom: var(--u-gap-md);
+  text-align: right;
+}
+
+/* Globale Button-Klasse (Primär-Aktion) */
+.admin-user-management-page.scoped-dashboard .button-primary,
+.admin-user-management-page.scoped-dashboard .add-user-button {
+  /* add-user-button erbt von button-primary */
   border: none;
-}
-
-.admin-schedule-planner-page .user-item {
-  border: 1.5px solid transparent;
-  padding: 0.8em 1.1em;
-  border-radius: var(--ud-radius-md);
-  background: var(--c-surface);
-  cursor: grab;
-  font-size: 1.11em;
-  font-weight: 500;
-  margin-bottom: 3px;
-  transition: border-color 0.18s, background 0.16s;
-  user-select: none;
-}
-.admin-schedule-planner-page .user-item:active {
-  opacity: 0.7;
-}
-.admin-schedule-planner-page .user-item:hover,
-.admin-schedule-planner-page .user-item:focus {
-  border-color: var(--c-pri);
-  background: var(--c-surface-hover, #f0f4fa);
-}
-
-.admin-schedule-planner-page .users-list button {
-  margin-top: 1.2em;
-  padding: 0.7em 1.3em;
+  border-radius: var(--u-radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  transition:
+          background-color var(--u-dur),
+          transform var(--u-dur),
+          box-shadow var(--u-dur);
+  font-size: 0.9rem;
+  padding: 0.75rem 1.5rem;
   background: var(--c-pri);
   color: #fff;
-  border: none;
-  border-radius: var(--ud-radius-md);
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  box-shadow: 0 2px 12px var(--shadow-color);
-  cursor: pointer;
-  font-size: 1em;
-  transition: background 0.15s, box-shadow 0.17s;
-}
-.admin-schedule-planner-page .users-list button:hover,
-.admin-schedule-planner-page .users-list button:focus {
-  background: var(--c-pri-dim, #2664ac);
-  box-shadow: 0 2px 15px var(--shadow-color);
-}
-
-.admin-schedule-planner-page .schedule-table {
-  width: 790px;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: var(--c-card);
-  border-radius: var(--ud-radius-md);
-  box-shadow: 0 2px 18px var(--shadow-color);
-  overflow: hidden;
-  table-layout: fixed;
-}
-
-.admin-schedule-planner-page th,
-.admin-schedule-planner-page td {
-  padding: 1.13em 0.2em;
   text-align: center;
-  font-size: 1.07em;
-  border-bottom: 1.5px solid var(--c-line);
-  transition: background 0.18s;
+  box-shadow: var(--u-shadow-sm);
+  line-height: 1.5;
+}
+.admin-user-management-page.scoped-dashboard .button-primary:hover,
+.admin-user-management-page.scoped-dashboard .add-user-button:hover {
+  background: var(--c-pri-dim);
+  transform: translateY(-2px);
+  box-shadow: var(--u-shadow-md);
 }
 
-.admin-schedule-planner-page th {
-  background: var(--subtle-bg-color, #f7f9fc);
-  color: var(--c-pri);
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  border-bottom: 2.5px solid var(--c-pri);
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-.admin-schedule-planner-page td {
-  background: var(--c-bg);
-  min-height: 54px;
-  font-weight: 500;
-  border-right: 1px solid var(--c-line);
-  border-left: 1px solid var(--c-line);
-  position: relative;
-}
-
-.admin-schedule-planner-page td.droppable {
+/* Sekundärer Button-Stil */
+.admin-user-management-page.scoped-dashboard .button-secondary {
+  /* composes: button-primary; CSS Modules Feature - für normales CSS manuell kopieren oder globale Klasse verwenden */
+  border: 1px solid var(--c-border); /* Standard-Rand für sekundäre Buttons */
+  border-radius: var(--u-radius-sm);
   cursor: pointer;
-  outline: none;
+  font-weight: 500; /* Weniger fett als Primär */
+  transition:
+          background-color var(--u-dur),
+          transform var(--u-dur),
+          box-shadow var(--u-dur),
+          border-color var(--u-dur);
+  font-size: 0.9rem;
+  padding: 0.75rem 1.5rem; /* Selbes Padding wie Primär für Konsistenz */
+  text-align: center;
+  line-height: 1.5;
   background: var(--c-surface);
-  border-radius: var(--ud-radius-xs);
-  transition: box-shadow 0.14s;
+  color: var(--c-text);
+  box-shadow: none; /* Kein Schatten für sekundäre Buttons */
 }
-.admin-schedule-planner-page td.droppable:hover,
-.admin-schedule-planner-page td.droppable:focus {
-  background: var(--c-surface-hover, #e4e9f8);
-  box-shadow: 0 0 0 2px var(--c-pri), 0 2px 8px var(--shadow-color);
-}
-
-.admin-schedule-planner-page td.conflict {
-  background: var(--c-error, #e64a4a) !important;
-  color: #fff !important;
-  animation: shake 0.19s 1;
-}
-
-@keyframes shake {
-  20% { transform: translateX(-3px);}
-  50% { transform: translateX(3px);}
-  80% { transform: translateX(-2px);}
-  100% { transform: translateX(0);}
-}
-
-@media (max-width: 1200px) {
-  .admin-schedule-planner-page {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 1.7rem;
-    padding: 2.1rem 2vw;
-  }
-  .admin-schedule-planner-page .schedule-table {
-    width: 100%;
-    min-width: 520px;
-  }
-  .admin-schedule-planner-page .users-list {
-    flex-direction: row;
-    gap: 0.7rem;
-    min-width: unset;
-    max-width: unset;
-    margin-bottom: 1.2em;
-    align-items: flex-start;
-    overflow-x: auto;
-  }
-}
-
-@media (max-width: 750px) {
-  .admin-schedule-planner-page .schedule-table {
-    width: 97vw;
-    min-width: unset;
-    font-size: 0.91em;
-  }
-  .admin-schedule-planner-page .users-list {
-    padding: 1em 0.5em 0.5em;
-    font-size: 0.94em;
-  }
-}
-
-::-webkit-scrollbar {
-  width: 9px;
-  background: var(--c-surface);
-}
-::-webkit-scrollbar-thumb {
+.admin-user-management-page.scoped-dashboard .button-secondary:hover {
   background: var(--c-line);
-  border-radius: 6px;
+  border-color: var(--c-muted);
+  transform: translateY(-1px); /* Subtilerer Hover */
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.button-secondary {
+  background: var(--c-line);
+  border-color: var(--c-border);
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.button-secondary:hover {
+  background: var(--c-border);
+}
+
+/* --------------------------- 2) Formular (AdminUserForm) --------------------------- */
+.admin-user-management-page.scoped-dashboard .user-form {
+  /* Dies ist <section className="user-form"> */
+  background: var(--c-card);
+  padding: var(--u-gap-md);
+  margin-bottom: var(--u-gap);
+  border-radius: var(--u-radius-md);
+  box-shadow: var(--u-shadow-md);
+}
+.admin-user-management-page.scoped-dashboard .user-form h3 {
+  margin: 0 0 var(--u-gap-md) 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--c-line);
+  padding-bottom: var(--u-gap-sm);
+  color: var(--c-text);
+}
+
+/* Das <form> Element selbst */
+.admin-user-management-page.scoped-dashboard .user-form form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--u-gap-sm) var(--u-gap-md);
+}
+
+@media (min-width: 768px) {
+  .admin-user-management-page.scoped-dashboard .user-form form {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (min-width: 1024px) {
+  .admin-user-management-page.scoped-dashboard .user-form form {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.admin-user-management-page.scoped-dashboard .user-form .form-section-title {
+  grid-column: 1 / -1;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--c-pri);
+  margin-top: var(--u-gap-sm);
+  margin-bottom: var(--u-gap-sm);
+  padding-bottom: 0.25rem;
+  border-bottom: 1px dashed var(--c-line);
+}
+
+.admin-user-management-page.scoped-dashboard .user-form .form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.admin-user-management-page.scoped-dashboard .user-form .form-group.full-width {
+  grid-column: 1 / -1;
+}
+.admin-user-management-page.scoped-dashboard .user-form .form-group.col-span-2 {
+  grid-column: span 2;
+}
+.admin-user-management-page.scoped-dashboard .user-form .form-group.col-span-3 {
+  grid-column: span 3;
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .admin-user-management-page.scoped-dashboard
+  .user-form
+  .form-group.col-span-3 {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 767px) {
+  .admin-user-management-page.scoped-dashboard
+  .user-form
+  .form-group.col-span-2,
+  .admin-user-management-page.scoped-dashboard
+  .user-form
+  .form-group.col-span-3 {
+    grid-column: 1 / -1;
+  }
+}
+
+.admin-user-management-page.scoped-dashboard .user-form label {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--c-muted);
+  margin-bottom: 0.1rem;
+  display: block;
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-group-checkbox
+label {
+  font-weight: normal;
+  color: var(--c-text);
+  margin-bottom: 0;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+}
+
+.admin-user-management-page.scoped-dashboard .user-form input[type="text"],
+.admin-user-management-page.scoped-dashboard .user-form input[type="email"],
+.admin-user-management-page.scoped-dashboard .user-form input[type="password"],
+.admin-user-management-page.scoped-dashboard .user-form input[type="number"],
+.admin-user-management-page.scoped-dashboard .user-form input[type="date"],
+.admin-user-management-page.scoped-dashboard .user-form select,
+.admin-user-management-page.scoped-dashboard .user-form textarea {
+  font-family: inherit;
+  transition:
+          border-color var(--u-dur),
+          background-color var(--u-dur),
+          color var(--u-dur),
+          box-shadow var(--u-dur);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-sm);
+  color: var(--c-text);
+  background-color: var(--c-card);
+  padding: 0.65rem 0.9rem;
+  font-size: 0.9rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+input[type="text"],
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+input[type="email"],
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+input[type="password"],
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+input[type="number"],
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+input[type="date"],
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+select,
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+textarea {
+  background-color: var(--c-line);
+  border-color: var(--c-border);
+}
+.admin-user-management-page.scoped-dashboard .user-form input:focus,
+.admin-user-management-page.scoped-dashboard .user-form select:focus,
+.admin-user-management-page.scoped-dashboard .user-form textarea:focus {
+  border-color: var(--c-pri);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-pri) 20%, transparent);
+  outline: none;
+}
+.admin-user-management-page.scoped-dashboard .user-form select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23595e6b'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.8rem center;
+  background-size: 10px 6px;
+  padding-right: 2rem;
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+select {
+  background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23a0a4b4'/%3E%3C/svg%3E");
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+select
+option {
+  background-color: var(--c-surface);
+  color: var(--c-text);
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+select
+option:checked,
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+select
+option:hover {
+  background-color: var(--c-pri);
+  color: #fff;
+}
+
+.admin-user-management-page.scoped-dashboard .user-form .form-group-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--u-gap-sm);
+  margin-top: var(--u-gap-sm);
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-group-checkbox
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-right: 0.4rem;
+  border: 2px solid var(--c-border);
+  border-radius: 4px;
+  background: transparent;
+  cursor: pointer;
+  vertical-align: middle;
+  position: relative;
+  appearance: none;
+  transition:
+          background var(--u-dur),
+          border-color var(--u-dur);
+  flex-shrink: 0;
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-group-checkbox
+input[type="checkbox"]:hover,
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-group-checkbox
+input[type="checkbox"]:focus-visible {
+  border-color: var(--c-pri);
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-group-checkbox
+input[type="checkbox"]:checked {
+  background: var(--c-pri);
+  border-color: var(--c-pri);
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-group-checkbox
+input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1px;
+  width: 5px;
+  height: 10px;
+  border: solid white;
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-group-checkbox
+input[type="checkbox"] {
+  border-color: var(--c-muted);
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-group-checkbox
+input[type="checkbox"]:checked {
+  background: var(--c-pri-dim);
+  border-color: var(--c-pri-dim);
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-group-checkbox
+input[type="checkbox"]:checked::after {
+  border-color: var(--c-card);
+}
+
+/* Color-Picker */
+.admin-user-management-page.scoped-dashboard .user-form .color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: var(--u-gap-sm);
+  background-color: var(--c-surface);
+  border-radius: var(--u-radius-sm);
+  border: 1px solid var(--c-line);
+  margin-top: 0.2rem;
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+.color-picker {
+  background-color: var(--c-line);
+  border-color: var(--c-border);
+}
+.admin-user-management-page.scoped-dashboard .user-form .color-swatch {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid transparent;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1) inset;
+  transition:
+          transform var(--u-dur),
+          border-color var(--u-dur),
+          box-shadow var(--u-dur);
+}
+.admin-user-management-page.scoped-dashboard .user-form .color-swatch:hover {
+  transform: scale(1.1);
+}
+.admin-user-management-page.scoped-dashboard .user-form .color-swatch.selected {
+  border-color: var(--c-text);
+  box-shadow:
+          0 0 0 3px var(--c-text),
+          0 0 0 1px rgba(0, 0, 0, 0.1) inset;
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+.color-swatch.selected {
+  border-color: var(--c-pri-dim);
+  box-shadow: 0 0 0 3px var(--c-pri-dim);
+}
+
+/* Weekly Schedule */
+.admin-user-management-page.scoped-dashboard
+.user-form
+.weekly-schedule-config {
+  grid-column: 1 / -1;
+  margin-top: var(--u-gap-sm);
+  padding-top: var(--u-gap-sm);
+  border-top: 1px solid var(--c-line);
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.weekly-schedule-config
+h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  margin-bottom: var(--u-gap-sm);
+  color: var(--c-text-light);
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.schedule-week-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--u-gap-md);
+}
+.admin-user-management-page.scoped-dashboard .user-form .schedule-week {
+  background: var(--c-surface);
+  border: 1px solid var(--c-line);
+  border-radius: var(--u-radius-sm);
+  padding: var(--u-gap-sm);
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+.schedule-week {
+  background: var(--c-line);
+  border-color: var(--c-border);
+}
+.admin-user-management-page.scoped-dashboard .user-form .schedule-week h5 {
+  margin: 0 0 var(--u-gap-sm) 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--c-border);
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.schedule-week
+.day-input-group {
+  display: flex;
+  align-items: center;
+  gap: var(--u-gap-sm);
+  margin-bottom: 0.4rem;
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.schedule-week
+.day-input-group
+label {
+  flex-basis: 90px;
+  font-size: 0.8rem;
+  color: var(--c-muted);
+  margin-bottom: 0;
+  text-transform: capitalize;
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.schedule-week
+.day-input-group
+input[type="number"] {
+  flex-grow: 1;
+  margin: 0;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.admin-user-management-page.scoped-dashboard .user-form .form-actions {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--u-gap-sm);
+  margin-top: var(--u-gap-md);
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-actions
+.button-cancel {
+  /* composes: button-secondary; Erbt vom global .button-secondary Stil */
+  background: var(--c-surface);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+  font-weight: 500;
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-actions
+.button-cancel {
+  background: var(--c-line);
+  border-color: var(--c-border);
+}
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-actions
+.button-cancel:hover {
+  background: var(--c-line);
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+.form-actions
+.button-cancel:hover {
+  background: var(--c-border);
+}
+
+/* --------------------------- 3) User-Liste (AdminUserList) --------------------------- */
+.admin-user-management-page.scoped-dashboard .user-list {
+  /* Dies ist <section className="user-list"> */
+  background: var(--c-card);
+  padding: var(--u-gap-md);
+  border-radius: var(--u-radius-md);
+  box-shadow: var(--u-shadow-md);
+  overflow-x: auto; /* Für schmale Bildschirme, damit Tabelle scrollbar wird */
+}
+.admin-user-management-page.scoped-dashboard .user-list h3 {
+  margin: 0 0 var(--u-gap-md) 0;
+  font-size: 1.4rem;
+  font-weight: 600;
+  border-bottom: 1px solid var(--c-line);
+  padding-bottom: var(--u-gap-sm);
+  color: var(--c-text);
+}
+
+/* User-Tabelle */
+.admin-user-management-page.scoped-dashboard .user-list table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem; /* Etwas kleinere Schrift für Tabellen */
+}
+.admin-user-management-page.scoped-dashboard .user-list th,
+.admin-user-management-page.scoped-dashboard .user-list td {
+  border: 1px solid var(--c-border);
+  padding: 0.6rem 0.8rem; /* Vertikales Padding etwas reduziert */
+  text-align: left;
+  vertical-align: middle; /* Vertikale Zentrierung des Zelleninhalts */
+}
+.admin-user-management-page.scoped-dashboard .user-list th {
+  background-color: var(--c-surface);
+  font-weight: 600;
+  white-space: nowrap; /* Verhindert Umbruch im Header */
+}
+[data-theme="dark"] .admin-user-management-page.scoped-dashboard .user-list th {
+  background-color: var(--c-line); /* Im Dark Mode etwas dunkler für Header */
+}
+.admin-user-management-page.scoped-dashboard
+.user-list
+tbody
+tr:nth-child(even) {
+  background-color: var(--c-surface);
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-list
+tbody
+tr:nth-child(even) {
+  background-color: var(--c-line); /* Dunkler für Zebra im Dark Mode */
+}
+.admin-user-management-page.scoped-dashboard .user-list tbody tr:hover {
+  background-color: color-mix(
+          in srgb,
+          var(--c-card) 80%,
+          var(--c-pri) 5%
+  ) !important; /* Wichtig, um nth-child zu überschreiben */
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-list
+tbody
+tr:hover {
+  background-color: color-mix(
+          in srgb,
+          var(--c-card) 90%,
+          var(--c-pri) 10%
+  ) !important;
+}
+
+/* --------------------------- 3a) User-Liste (Tabelle) - Aktionen --------------------------- */
+.admin-user-management-page.scoped-dashboard .user-list td.actions-cell {
+  /* Klasse für die TD selbst */
+  display: flex;
+  gap: var(--u-gap-sm);
+  justify-content: flex-end;
+  align-items: center; /* Vertikale Zentrierung der Buttons */
+}
+.admin-user-management-page.scoped-dashboard .user-list td .action-button {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--c-muted);
+  border-radius: var(--u-radius-sm);
+  padding: 0.35rem 0.6rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+          background-color var(--u-dur),
+          color var(--u-dur),
+          border-color var(--u-dur),
+          transform var(--u-dur);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1; /* Verhindert extra Höhe durch Line-Height */
+}
+.admin-user-management-page.scoped-dashboard
+.user-list
+td
+.action-button:hover {
+  transform: translateY(-1px);
+  background-color: var(--c-line);
+}
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-list
+td
+.action-button:hover {
+  background-color: var(--c-border);
+}
+
+/* Spezifische Button-Farben */
+.admin-user-management-page.scoped-dashboard
+.user-list
+td
+.action-button.edit-action {
+  color: var(--c-info);
+}
+.admin-user-management-page.scoped-dashboard
+.user-list
+td
+.action-button.edit-action:hover {
+  border-color: var(--c-info);
+  color: var(--c-info);
+}
+
+.admin-user-management-page.scoped-dashboard
+.user-list
+td
+.action-button.delete-action {
+  color: var(--c-danger);
+}
+.admin-user-management-page.scoped-dashboard
+.user-list
+td
+.action-button.delete-action:hover {
+  border-color: var(--c-danger);
+  color: var(--c-danger);
+}
+
+.admin-user-management-page.scoped-dashboard
+.user-list
+td
+.action-button.program-action {
+  color: var(--c-success);
+}
+.admin-user-management-page.scoped-dashboard
+.user-list
+td
+.action-button.program-action:hover {
+  border-color: var(--c-success);
+  color: var(--c-success);
+}
+
+/* --------------------------- Modals (DeleteConfirmModal) --------------------------- */
+.modal-overlay {
+  position: fixed; /* Wichtig: positioniert relativ zum Viewport */
+  inset: 0; /* sorgt für zentrierte Platzierung im sichtbaren Bereich */
+  z-index: 10000; /* Oder eine passende z-index Variable */
+  display: flex;
+  align-items: center; /* Vertikale Zentrierung */
+  justify-content: center; /* Horizontale Zentrierung */
+  background-color: var(--modal-backdrop-color);
+  /* Optional: backdrop-filter für Glassmorphism-Effekt */
+}
+
+.modal-content {
+  background: var(--c-card); /* Ihre Theme-Variable für Kartenhintergrund */
+  border: 1px solid var(--c-border); /* Ihre Theme-Variable für Ränder */
+  border-radius: var(--u-radius); /* Ihre Theme-Variable für Radius */
+  padding: 1.5rem 2rem; /* Oder Ihre Padding-Variablen */
+  width: 90%; /* Responsive Breite */
+  max-width: 550px; /* Maximale Breite des Modals */
+  box-shadow: var(--u-shadow-lg); /* Ihre Theme-Variable für Schatten */
+  max-height: 90vh; /* Verhindert, dass das Modal größer als der Viewport wird */
+  overflow-y: auto; /* Ermöglicht Scrollen innerhalb des Modals bei viel Inhalt */
+  -webkit-overflow-scrolling: touch;
+  position: relative; /* OK, stört Flex-Zentrierung nicht und nützlich für interne Positionierung */
+}
+/* Spezifisch für DeleteConfirmModal, falls eine andere Breite gewünscht ist */
+.admin-user-management-page.scoped-dashboard
+.delete-confirm-modal
+.modal-content {
+  max-width: 450px;
+}
+.modal-content h3 {
+  margin-top: 0;
+  margin-bottom: var(--u-gap-md);
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--c-text);
+  padding-bottom: var(--u-gap-sm);
+  border-bottom: 1px solid var(--c-line);
+}
+.admin-user-management-page.scoped-dashboard .delete-confirm-modal p {
+  font-size: 0.95rem;
+  color: var(--c-text-light);
+  line-height: 1.6;
+  margin-bottom: var(--u-gap-md);
+}
+.admin-user-management-page.scoped-dashboard .delete-confirm-modal p strong {
+  color: var(--c-text);
+  font-weight: 600;
+}
+
+.modal-buttons {
+  display: flex;
+  gap: var(--u-gap-sm);
+  margin-top: var(--u-gap-md);
+  justify-content: flex-end;
+}
+.modal-buttons button {
+  /* composes: button-primary; */ /* Erbt vom globalen .button-primary Stil */
+  border: none;
+  border-radius: var(--u-radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  transition:
+          background-color var(--u-dur),
+          transform var(--u-dur),
+          box-shadow var(--u-dur);
+  font-size: 0.85rem;
+  padding: 0.6rem 1.1rem;
+  background: var(--c-pri);
+  color: #fff;
+  text-align: center;
+  box-shadow: var(--u-shadow-sm);
+  line-height: 1.5;
+}
+.modal-buttons button:hover {
+  background: var(--c-pri-dim);
+  transform: translateY(-2px);
+  box-shadow: var(--u-shadow-md);
+}
+.modal-buttons button.button-secondary,
+.modal-buttons button.cancel {
+  /* composes: button-secondary; */ /* Erbt vom globalen .button-secondary Stil */
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-sm);
+  cursor: pointer;
+  font-weight: 500;
+  transition:
+          background-color var(--u-dur),
+          transform var(--u-dur),
+          box-shadow var(--u-dur),
+          border-color var(--u-dur);
+  font-size: 0.85rem;
+  padding: 0.6rem 1.1rem;
+  text-align: center;
+  line-height: 1.5;
+  background: var(--c-surface);
+  color: var(--c-text);
+  box-shadow: none;
+}
+.modal-buttons button.button-secondary:hover,
+.modal-buttons button.cancel:hover {
+  background: var(--c-line);
+  border-color: var(--c-muted);
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .modal-buttons button.button-secondary,
+[data-theme="dark"] .modal-buttons button.cancel {
+  background: var(--c-line);
+  border-color: var(--c-border);
+}
+[data-theme="dark"] .modal-buttons button.button-secondary:hover,
+[data-theme="dark"] .modal-buttons button.cancel:hover {
+  background: var(--c-border);
+}
+
+.modal-buttons button.button-danger,
+.modal-buttons button.confirm {
+  /* composes: button-primary; */
+  border: none;
+  border-radius: var(--u-radius-sm);
+  cursor: pointer;
+  font-weight: 600;
+  transition:
+          background-color var(--u-dur),
+          transform var(--u-dur),
+          box-shadow var(--u-dur);
+  font-size: 0.85rem;
+  padding: 0.6rem 1.1rem;
+  color: #fff;
+  text-align: center;
+  box-shadow: var(--u-shadow-sm);
+  line-height: 1.5;
+  background-color: var(--c-danger);
+}
+.modal-buttons button.button-danger:hover,
+.modal-buttons button.confirm:hover {
+  background-color: color-mix(in srgb, var(--c-danger) 80%, black);
+}
+
+/* --------------------------- NFC-Status --------------------------- */
+.admin-user-management-page.scoped-dashboard .nfc-status-message {
+  color: #fff;
+  padding: var(--u-gap-sm) var(--u-gap-md);
+  margin: 0 0 var(--u-gap-md) 0;
+  border-radius: var(--u-radius-sm);
+  text-align: center;
+  font-weight: 500;
+  box-shadow: var(--u-shadow-sm);
+  animation: fadeInNfc 0.4s ease;
+}
+@keyframes fadeInNfc {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.admin-user-management-page.scoped-dashboard .nfc-status-message.success {
+  background: var(--c-success);
+}
+.admin-user-management-page.scoped-dashboard .nfc-status-message.error {
+  background: var(--c-danger);
+}
+
+/* --------------------------- Responsiveness ------------------------- */
+@media (max-width: 992px) {
+  .admin-user-management-page.scoped-dashboard .user-form form {
+    grid-template-columns: 1fr;
+  }
+  .admin-user-management-page.scoped-dashboard .schedule-week-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .admin-user-management-page.scoped-dashboard {
+    padding: var(--u-gap-sm);
+  }
+  .admin-user-management-page.scoped-dashboard .page-header,
+  .admin-user-management-page.scoped-dashboard .user-form,
+  .admin-user-management-page.scoped-dashboard .user-list {
+    padding: var(--u-gap-sm);
+    margin-bottom: var(--u-gap-md);
+  }
+  .admin-user-management-page.scoped-dashboard .page-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .admin-user-management-page.scoped-dashboard .user-list table thead {
+    display: none;
+  }
+  .admin-user-management-page.scoped-dashboard .user-list table,
+  .admin-user-management-page.scoped-dashboard .user-list table tbody,
+  .admin-user-management-page.scoped-dashboard .user-list table tr,
+  .admin-user-management-page.scoped-dashboard .user-list table td {
+    display: block;
+    width: 100%;
+  }
+
+  .admin-user-management-page.scoped-dashboard .user-list table tr {
+    margin-bottom: var(--u-gap-sm);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius-sm);
+    overflow: hidden;
+  }
+  .admin-user-management-page.scoped-dashboard .user-list table td {
+    text-align: right;
+    padding-left: 45%;
+    position: relative;
+    border-bottom: 1px solid var(--c-line);
+    min-height: 40px; /* Angepasst für konsistente Höhe */
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem; /* Vertikales Padding für Zellen */
+  }
+  .admin-user-management-page.scoped-dashboard .user-list table td:last-child {
+    border-bottom: none;
+  }
+  .admin-user-management-page.scoped-dashboard .user-list table td::before {
+    content: attr(data-label);
+    position: absolute;
+    left: var(--u-gap-sm);
+    width: calc(45% - var(--u-gap-sm) - 0.5rem);
+    padding-right: 0.5rem;
+    font-weight: 600;
+    text-align: left;
+    white-space: nowrap;
+    font-size: 0.8rem;
+    color: var(--c-muted);
+    line-height: 1.3; /* Hilft bei der Zentrierung des Labels */
+    top: 50%;
+    transform: translateY(-50%); /* Vertikal zentrieren */
+  }
+  .admin-user-management-page.scoped-dashboard .user-list td.actions-cell {
+    justify-content: flex-end;
+    padding: 0.5rem var(--u-gap-sm); /* Konsistentes Padding für Aktionszelle */
+  }
+  .admin-user-management-page.scoped-dashboard .add-user-button-container {
+    text-align: center;
+  }
+  .admin-user-management-page.scoped-dashboard .add-user-button {
+    width: 100%;
+  }
+}
+
+/* Reduzierte Bewegung für Barrierefreiheit */
+@media (prefers-reduced-motion: reduce) {
+  .admin-user-management-page.scoped-dashboard *,
+  .admin-user-management-page.scoped-dashboard *::before,
+  .admin-user-management-page.scoped-dashboard *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

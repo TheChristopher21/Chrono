@@ -1,183 +1,258 @@
-import React, { useEffect, useState } from 'react';
-import Navbar from '../../components/Navbar';
-import api from '../../utils/api';
-import '../../styles/AdminSchedulePlannerPage.css';
-import { useTranslation } from '../../context/LanguageContext';
+import React from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { create } from 'zustand';
 import { startOfWeek, addDays, formatISO, format, differenceInCalendarWeeks, isSameWeek, isSameDay } from 'date-fns';
 
+import Navbar from '../../components/Navbar';
+import api from '../../utils/api';
+import '../../styles/AdminSchedulePlannerPageScooped.css'; // Stellen Sie sicher, dass dieser Pfad korrekt ist
+import { useTranslation } from '../../context/LanguageContext';
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
-const AdminSchedulePlannerPage = () => {
+// Zustand-Store für den UI-State
+const usePlannerStore = create((set) => ({
+  weekStart: startOfWeek(new Date(), { weekStartsOn: 1 }),
+  dragUser: null,
+  copyCount: 1,
+  setWeekStart: (date) => set({ weekStart: startOfWeek(date, { weekStartsOn: 1 }) }),
+  changeWeek: (offset) => set((state) => ({ weekStart: addDays(state.weekStart, offset * 7) })),
+  setDragUser: (user) => set({ dragUser: user }),
+  setCopyCount: (count) => set({ copyCount: count }),
+}));
+
+// API-Funktionen
+const fetchUsers = async () => {
+  const res = await api.get('/api/admin/users');
+  return Array.isArray(res.data) ? res.data : [];
+};
+
+const fetchSchedule = async (weekStart) => {
+  const start = formatISO(weekStart, { representation: 'date' });
+  const end = formatISO(addDays(weekStart, 6), { representation: 'date' });
+  const res = await api.get('/api/admin/schedule', { params: { start, end } });
+  const map = {};
+  (res.data || []).forEach(e => {
+    const dayKey = formatISO(new Date(e.date), { representation: 'date' });
+    map[dayKey] = { userId: e.userId, id: e.id };
+  });
+  return map;
+};
+
+const saveScheduleEntry = (entry) => {
+  return api.post('/api/admin/schedule', { ...entry, shift: 'DAY' });
+};
+
+// --- Sub-Komponenten ---
+
+const WeekNavigator = () => {
   const { t } = useTranslation();
-  const [users, setUsers] = useState([]);
-  const [schedule, setSchedule] = useState({});
-  const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const [dragUser, setDragUser] = useState(null);
-  const [copyCount, setCopyCount] = useState(1);
+  const { weekStart, changeWeek, setWeekStart, copyCount, setCopyCount } = usePlannerStore();
+  const { data: schedule = {} } = useQuery({ queryKey: ['schedule', weekStart], queryFn: () => fetchSchedule(weekStart) });
+  const queryClient = useQueryClient();
 
-
-  const changeWeek = offset => {
-    setWeekStart(prev => addDays(prev, offset * 7));
-  };
-
-  const onWeekInput = e => {
-    const date = new Date(e.target.value);
-    if (!isNaN(date)) {
-      setWeekStart(startOfWeek(date, { weekStartsOn: 1 }));
-    }
-  };
-
-  /* ---------------------------------- Daten laden ---------------------------------- */
-  useEffect(() => {
-    api.get('/api/admin/users').then(res => {
-      setUsers(Array.isArray(res.data) ? res.data : []);
-    });
-  }, []);
-
-  useEffect(() => {
-    const start = formatISO(weekStart, { representation: 'date' });
-    const end = formatISO(addDays(weekStart, 6), { representation: 'date' });
-    api
-        .get('/api/admin/schedule', { params: { start, end } })
-        .then(res => {
-          const map = {};
-          (res.data || []).forEach(e => {
-            const dayKey = formatISO(new Date(e.date), { representation: 'date' });
-            map[dayKey] = { userId: e.userId, id: e.id };
-          });
-          setSchedule(map);
-        });
-  }, [weekStart]);
-
-  /* -------------------------------- Drag & Drop ------------------------------------ */
-  const onDragStart = user => setDragUser(user);
-  const allowDrop = e => e.preventDefault();
-  const onDrop = dateKey => {
-    if (dragUser) setSchedule(prev => ({ ...prev, [dateKey]: { ...prev[dateKey], userId: dragUser.id } }));
-    setDragUser(null);
-  };
-
-  /* ----------------------------- Auto‑Fill & Speichern ----------------------------- */
-  const autoFill = () => {
-    if (users.length === 0) return;
-    const epochMonday = new Date(2020, 0, 6);
-    const weekIndex = Math.abs(differenceInCalendarWeeks(weekStart, epochMonday));
-    const startIndex = weekIndex % users.length;
-
-    const newSchedule = { ...schedule };
-    const assigned = new Set(Object.values(newSchedule).map(e => e.userId).filter(Boolean));
-    let userIdx = 0;
-
-    days.forEach((_, i) => {
-      const dateKey = formatISO(addDays(weekStart, i), { representation: 'date' });
-      if (newSchedule[dateKey] && newSchedule[dateKey].userId) return;
-
-      let attempts = 0;
-      let user;
-      while (attempts < users.length) {
-        user = users[(startIndex + userIdx) % users.length];
-        userIdx += 1;
-        attempts += 1;
-        if (!assigned.has(user.id)) break;
-      }
-
-      if (!user) user = users[(startIndex + userIdx++) % users.length];
-      newSchedule[dateKey] = { ...(newSchedule[dateKey] || {}), userId: user.id };
-      assigned.add(user.id);
-    });
-
-    setSchedule(newSchedule);
-  };
-
-  const save = () => {
-    Object.entries(schedule).forEach(([dateKey, { userId, id }]) => {
-      api.post('/api/admin/schedule', { id, userId, date: dateKey, shift: 'DAY' });
-    });
-  };
-
-  const copyWeeks = () => {
-    const weeks = Math.max(1, parseInt(copyCount, 10) || 1);
-    for (let w = 1; w <= weeks; w++) {
-      Object.entries(schedule).forEach(([dateKey, { userId }]) => {
-        if (!userId) return;
-        const date = addDays(new Date(dateKey), w * 7);
-        const copyDate = formatISO(date, { representation: 'date' });
-        api.post('/api/admin/schedule', { userId, date: copyDate, shift: 'DAY' });
-      });
-    }
-  };
-
-  /* --------------------------- Hilfs‑Berechnungen ---------------------------------- */
-  const dateKeys = days.map((_, i) => formatISO(addDays(weekStart, i), { representation: 'date' }));
+  const isCurrentWeek = isSameWeek(weekStart, new Date(), { weekStartsOn: 1 });
   const weekLabel = `${t('schedulePlanner.weekShort', 'KW')} ${format(weekStart, 'I')} / ${format(weekStart, 'yyyy')}`;
   const rangeLabel = `${format(weekStart, 'dd.MM.')}–${format(addDays(weekStart, 6), 'dd.MM.yyyy')}`;
-  const isCurrentWeek = isSameWeek(weekStart, new Date(), { weekStartsOn: 1 });
+
+  const copyWeeksMutation = useMutation({
+    mutationFn: async (weeks) => {
+      const promises = [];
+      for (let w = 1; w <= weeks; w++) {
+        Object.entries(schedule).forEach(([dateKey, { userId }]) => {
+          if (!userId) return;
+          const date = addDays(new Date(dateKey), w * 7);
+          const copyDate = formatISO(date, { representation: 'date' });
+          promises.push(api.post('/api/admin/schedule', { userId, date: copyDate, shift: 'DAY' }));
+        });
+      }
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      alert('Wochen erfolgreich kopiert!');
+      queryClient.invalidateQueries({ queryKey: ['schedule'] });
+    },
+    onError: () => alert('Fehler beim Kopieren der Wochen.'),
+  });
+
+  return (
+      <div className="week-controls">
+        <button onClick={() => changeWeek(-1)}>&laquo;</button>
+        <span className={`week-display${isCurrentWeek ? ' current' : ''}`}>{weekLabel} | {rangeLabel}</span>
+        <button onClick={() => changeWeek(1)}>&raquo;</button>
+        <input type="date" value={format(weekStart, 'yyyy-MM-dd')} onChange={(e) => setWeekStart(new Date(e.target.value))} />
+        <div className="copy-weeks">
+          <input type="number" min="1" value={copyCount} onChange={(e) => setCopyCount(parseInt(e.target.value, 10) || 1)} />
+          <button onClick={() => copyWeeksMutation.mutate(copyCount)} disabled={copyWeeksMutation.isLoading}>
+            {copyWeeksMutation.isLoading ? 'Kopiere...' : t('schedulePlanner.copyWeeks', 'Copy')}
+          </button>
+        </div>
+      </div>
+  );
+};
+
+const UserList = ({ setSchedule }) => {
+  const { t } = useTranslation();
+  const { data: users = [], isLoading: isLoadingUsers } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
+  const { setDragUser } = usePlannerStore();
+  const weekStart = usePlannerStore(state => state.weekStart);
+
+  const autoFill = () => {
+    if (users.length === 0) return;
+    setSchedule(prevSchedule => {
+      const epochMonday = new Date(2020, 0, 6);
+      const weekIndex = Math.abs(differenceInCalendarWeeks(weekStart, epochMonday));
+      const startIndex = weekIndex % users.length;
+      const newSchedule = { ...prevSchedule };
+      const assigned = new Set(Object.values(newSchedule).map(e => e.userId).filter(Boolean));
+      let userIdx = 0;
+      days.forEach((_, i) => {
+        const dateKey = formatISO(addDays(weekStart, i), { representation: 'date' });
+        if (newSchedule[dateKey] && newSchedule[dateKey].userId) return;
+        let user = users[(startIndex + userIdx) % users.length];
+        if (assigned.has(user.id)) {
+          let attempts = 0;
+          while (attempts < users.length) {
+            userIdx++;
+            user = users[(startIndex + userIdx) % users.length];
+            if (!assigned.has(user.id)) break;
+            attempts++;
+          }
+        }
+        newSchedule[dateKey] = { ...(newSchedule[dateKey] || {}), userId: user.id };
+        assigned.add(user.id);
+        userIdx++;
+      });
+      return newSchedule;
+    });
+  };
+
+  return (
+      <div className="users-list">
+        {isLoadingUsers ? <p>Lade Benutzer...</p> : users.map(u => (
+            <div key={u.id} className="user-item" draggable onDragStart={() => setDragUser(u)}>
+              {u.username}
+            </div>
+        ))}
+        <div className="user-list-buttons">
+          <button onClick={autoFill}>{t('schedulePlanner.auto', 'Auto Fill')}</button>
+        </div>
+      </div>
+  );
+};
+
+const ScheduleTable = ({ schedule, setSchedule }) => {
+  const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
+  const { weekStart, dragUser, setDragUser } = usePlannerStore();
+  const queryClient = useQueryClient();
+
+  const saveMutation = useMutation({
+    mutationFn: saveScheduleEntry,
+    onSuccess: (data, variables) => {
+      // Optional: Update schedule with the ID from the server response
+      setSchedule(prev => ({...prev, [variables.date]: { ...prev[variables.date], id: data.id }}));
+      queryClient.invalidateQueries({ queryKey: ['schedule', weekStart] });
+    },
+    onError: (err, variables) => {
+      alert('Fehler beim Speichern!');
+      queryClient.invalidateQueries({ queryKey: ['schedule', weekStart] }); // Zurücksetzen auf Server-Stand
+    }
+  });
+
+  const onDrop = (dateKey) => {
+    if (dragUser) {
+      const currentEntry = schedule[dateKey] || {};
+      if (currentEntry.userId === dragUser.id) { // Nicht speichern, wenn der User derselbe ist
+        setDragUser(null);
+        return;
+      }
+      const newEntry = { id: currentEntry.id, userId: dragUser.id, date: dateKey };
+      setSchedule(prev => ({ ...prev, [dateKey]: newEntry }));
+      saveMutation.mutate(newEntry);
+      setDragUser(null);
+    }
+  };
+
+  const dateKeys = days.map((_, i) => formatISO(addDays(weekStart, i), { representation: 'date' }));
   const conflictMap = Object.values(schedule).reduce((acc, { userId }) => {
-    if (!userId) return acc;
-    acc[userId] = (acc[userId] || 0) + 1;
+    if (userId) acc[userId] = (acc[userId] || 0) + 1;
     return acc;
   }, {});
 
-  /* ----------------------------------- Render -------------------------------------- */
+  return (
+      <table className="schedule-table">
+        <thead>
+        <tr>{days.map(d => <th key={d}>{d}</th>)}</tr>
+        </thead>
+        <tbody>
+        <tr>
+          {dateKeys.map(dateKey => {
+            const entry = schedule[dateKey] || {};
+            const user = users.find(u => u.id === entry.userId);
+            const conflict = entry.userId && conflictMap[entry.userId] > 1;
+            const today = isSameDay(new Date(dateKey), new Date());
+            return (
+                <td key={dateKey}
+                    className={`droppable ${conflict ? 'conflict' : ''} ${today ? 'today' : ''}`}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => onDrop(dateKey)}>
+                  {user ? user.username : '—'}
+                </td>
+            );
+          })}
+        </tr>
+        </tbody>
+      </table>
+  );
+};
+
+const AdminSchedulePlannerPage = () => {
+  const weekStart = usePlannerStore(state => state.weekStart);
+  const { data: initialSchedule, isLoading } = useQuery({
+    queryKey: ['schedule', weekStart],
+    queryFn: () => fetchSchedule(weekStart),
+  });
+
+  const [schedule, setSchedule] = React.useState({});
+  React.useEffect(() => {
+    if (initialSchedule) {
+      setSchedule(initialSchedule);
+    }
+  }, [initialSchedule]);
+
+  const queryClient = useQueryClient();
+  const saveAllMutation = useMutation({
+    mutationFn: (scheduleToSave) => {
+      const promises = Object.entries(scheduleToSave).map(([dateKey, { userId, id }]) =>
+          saveScheduleEntry({ id, userId, date: dateKey })
+      );
+      return Promise.all(promises);
+    },
+    onSuccess: () => {
+      alert('Plan erfolgreich gespeichert!');
+      queryClient.invalidateQueries({ queryKey: ['schedule', weekStart] });
+    },
+    onError: () => alert('Ein Fehler ist beim Speichern aufgetreten.'),
+  });
+
   return (
       <>
         <Navbar />
-
         <div className="admin-schedule-planner-page scoped-dashboard">
-          <div className="week-controls">
-            <button onClick={() => changeWeek(-1)}>&laquo;</button>
-            <span className={`week-display${isCurrentWeek ? ' current' : ''}`}>{weekLabel} | {rangeLabel}</span>
-            <button onClick={() => changeWeek(1)}>&raquo;</button>
-            <input type="date" value={format(weekStart, 'yyyy-MM-dd')} onChange={onWeekInput} />
-            <div className="copy-weeks">
-              <input type="number" min="1" value={copyCount} onChange={e => setCopyCount(e.target.value)} />
-              <button onClick={copyWeeks}>{t('schedulePlanner.copyWeeks', 'Copy')}</button>
+          <div className="main-content">
+            <WeekNavigator />
+            {isLoading ? (
+                <div className="loading-indicator">Lade Arbeitsplan...</div>
+            ) : (
+                <ScheduleTable schedule={schedule} setSchedule={setSchedule} />
+            )}
+            <div className="save-panel">
+              <button onClick={() => saveAllMutation.mutate(schedule)} disabled={saveAllMutation.isLoading}>
+                {saveAllMutation.isLoading ? 'Speichert...' : 'Kompletten Plan Speichern'}
+              </button>
             </div>
-
           </div>
-          {/* Users Liste */}
-          <div className="users-list">
-            {users.map(u => (
-                <div
-                    key={u.id}
-                    className="user-item"
-                    draggable
-                    onDragStart={() => onDragStart(u)}
-                >
-                  {u.username}
-                </div>
-            ))}
-            <button onClick={autoFill}>{t('schedulePlanner.auto', 'Auto&nbsp;Fill')}</button>
-            <button onClick={save}>{t('schedulePlanner.save', 'Save')}</button>
-          </div>
-
-          {/* Wochen‑Tabelle */}
-          <table className="schedule-table">
-            <thead>
-            <tr>{days.map(d => <th key={d}>{d}</th>)}</tr>
-            </thead>
-            <tbody>
-            <tr>
-              {dateKeys.map(dateKey => {
-                const entry = schedule[dateKey] || {};
-                const conflict = entry.userId && conflictMap[entry.userId] > 1;
-                const user = users.find(u => u.id === entry.userId);
-                const today = isSameDay(new Date(dateKey), new Date());
-                return (
-                    <td
-                        key={dateKey}
-                        className={`droppable${conflict ? ' conflict' : ''}${today ? ' today' : ''}`}
-                        onDragOver={allowDrop}
-                        onDrop={() => onDrop(dateKey)}
-                    >
-                      {user ? user.username : '—'}
-                    </td>
-                );
-              })}
-            </tr>
-            </tbody>
-          </table>
+          <UserList setSchedule={setSchedule} />
         </div>
       </>
   );

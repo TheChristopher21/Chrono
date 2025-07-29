@@ -1,8 +1,10 @@
 /* ------------------------------------------------------------------------
     App.jsx · zentrale Routen‐Definition (Korrigiert)
     ------------------------------------------------------------------------ */
-import React from "react"; // Korrekter React-Import
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
+// NEU: Imports für TanStack Query
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 /* ---------- globale Styles -------------------------------------------- */
 import "./styles/global.css";
@@ -34,155 +36,158 @@ import PrivateRoute from "./components/PrivateRoute";
 import { useAuth } from "./context/AuthContext";
 import WhatsNewPage from "./pages/WhatsNewPage.jsx";
 import TimeTrackingImport from "./TimeTrackingImport.jsx";
-
-// NEU: Nur noch der ActionButtons Container wird importiert
 import ActionButtons from "./components/ActionButtons.jsx";
 
+
+// NEU: Eine Instanz des QueryClient erstellen
+const queryClient = new QueryClient();
 
 function App() {
     const { currentUser } = useAuth();
 
     return (
-        <div className="App">
-            {/* NEU: Nur der ActionButtons Container wird hier aufgerufen */}
-            <ActionButtons />
+        // NEU: Die gesamte App mit dem Provider umschliessen
+        <QueryClientProvider client={queryClient}>
+            <div className="App">
+                <ActionButtons />
 
-            <Routes>
-                {/* Public routes */}
-                <Route path="/" element={<LandingPage />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/register" element={<Registration />} />
-                <Route path="/impressum" element={<Impressum />} />
-                <Route path="/agb" element={<AGB />} />
-                {/* Private routes */}
-                <Route
-                    path="/user"
-                    element={
-                        <PrivateRoute>
-                            <UserDashboard />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/percentage-punch"
-                    element={
-                        <PrivateRoute>
-                            <PercentagePunch />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/profile"
-                    element={
-                        <PrivateRoute>
-                            <PersonalDataPage />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/payslips"
-                    element={
-                        <PrivateRoute>
-                            <PayslipsPage />
-                        </PrivateRoute>
-                    }
-                />
+                <Routes>
+                    {/* Public routes */}
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="/register" element={<Registration />} />
+                    <Route path="/impressum" element={<Impressum />} />
+                    <Route path="/agb" element={<AGB />} />
+                    {/* Private routes */}
+                    <Route
+                        path="/user"
+                        element={
+                            <PrivateRoute>
+                                <UserDashboard />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/percentage-punch"
+                        element={
+                            <PrivateRoute>
+                                <PercentagePunch />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/profile"
+                        element={
+                            <PrivateRoute>
+                                <PersonalDataPage />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/payslips"
+                        element={
+                            <PrivateRoute>
+                                <PayslipsPage />
+                            </PrivateRoute>
+                        }
+                    />
 
-                {/* Admin routes */}
-                <Route
-                    path="/superadmin/companies"
-                    element={
-                        <PrivateRoute requiredRole="ROLE_SUPERADMIN">
-                            <CompanyManagementPage />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/admin"
-                    element={
-                        <PrivateRoute requiredRole="ROLE_ADMIN">
-                            <AdminDashboard />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/admin/users"
-                    element={
-                        <PrivateRoute requiredRole="ROLE_ADMIN">
-                            <AdminUserManagementPage />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/admin/customers"
-                    element={
-                        <PrivateRoute requiredRole="ROLE_ADMIN">
-                            {currentUser?.customerTrackingEnabled ? (
-                                <AdminCustomersPage />
-                            ) : (
-                                <Navigate to="/admin" replace />
-                            )}
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/admin/projects"
-                    element={
-                        <PrivateRoute requiredRole="ROLE_ADMIN">
-                            {currentUser?.customerTrackingEnabled ? (
-                                <AdminProjectsPage />
-                            ) : (
-                                <Navigate to="/admin" replace />
-                            )}
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/admin/change-password"
-                    element={
-                        <PrivateRoute requiredRole="ROLE_ADMIN">
-                            <AdminChangePassword />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/admin/payslips"
-                    element={
-                        <PrivateRoute requiredRole={["ROLE_ADMIN","ROLE_PAYROLL_ADMIN"]}>
-                            <AdminPayslipsPage />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/admin/schedule"
-                    element={
-                        <PrivateRoute requiredRole="ROLE_ADMIN">
-                            <AdminSchedulePlannerPage />
-                        </PrivateRoute>
-                    }
-                />
-                <Route
-                    path="/admin/import-times"
-                    element={
-                        <PrivateRoute requiredRole="ROLE_ADMIN">
-                            <TimeTrackingImport />
-                        </PrivateRoute>
-                    }
-                />
+                    {/* Admin routes */}
+                    <Route
+                        path="/superadmin/companies"
+                        element={
+                            <PrivateRoute requiredRole="ROLE_SUPERADMIN">
+                                <CompanyManagementPage />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin"
+                        element={
+                            <PrivateRoute requiredRole="ROLE_ADMIN">
+                                <AdminDashboard />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/users"
+                        element={
+                            <PrivateRoute requiredRole="ROLE_ADMIN">
+                                <AdminUserManagementPage />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/customers"
+                        element={
+                            <PrivateRoute requiredRole="ROLE_ADMIN">
+                                {currentUser?.customerTrackingEnabled ? (
+                                    <AdminCustomersPage />
+                                ) : (
+                                    <Navigate to="/admin" replace />
+                                )}
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/projects"
+                        element={
+                            <PrivateRoute requiredRole="ROLE_ADMIN">
+                                {currentUser?.customerTrackingEnabled ? (
+                                    <AdminProjectsPage />
+                                ) : (
+                                    <Navigate to="/admin" replace />
+                                )}
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/change-password"
+                        element={
+                            <PrivateRoute requiredRole="ROLE_ADMIN">
+                                <AdminChangePassword />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/payslips"
+                        element={
+                            <PrivateRoute requiredRole={["ROLE_ADMIN","ROLE_PAYROLL_ADMIN"]}>
+                                <AdminPayslipsPage />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/schedule"
+                        element={
+                            <PrivateRoute requiredRole="ROLE_ADMIN">
+                                <AdminSchedulePlannerPage />
+                            </PrivateRoute>
+                        }
+                    />
+                    <Route
+                        path="/admin/import-times"
+                        element={
+                            <PrivateRoute requiredRole="ROLE_ADMIN">
+                                <TimeTrackingImport />
+                            </PrivateRoute>
+                        }
+                    />
 
-                <Route
-                    path="/whats-new"
-                    element={
-                        <PrivateRoute>
-                            <WhatsNewPage />
-                        </PrivateRoute>
-                    }
-                />
+                    <Route
+                        path="/whats-new"
+                        element={
+                            <PrivateRoute>
+                                <WhatsNewPage />
+                            </PrivateRoute>
+                        }
+                    />
 
-                <Route path="/print-report" element={<PrintReport />} />
-                <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-        </div>
+                    <Route path="/print-report" element={<PrintReport />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </div>
+        </QueryClientProvider>
     );
 }
 

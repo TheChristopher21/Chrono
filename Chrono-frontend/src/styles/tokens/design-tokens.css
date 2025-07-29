@@ -1,84 +1,99 @@
-/* Central design tokens for colors, typography and spacing */
+/* src/styles/tokens/design-tokens.css (Optimierte Version) */
 :root {
-  /* Typography */
-  --font-main: "Poppins", system-ui, sans-serif;
-  --font-alt: "Inter var", system-ui, sans-serif;
-  --c-surface-hover: #f2f4f8;        /* oberflächen‑Hover light */
-  --ud-shadow-card: 0 2px 10px rgba(0,0,0,.06);
-  /* Primary colors */
-  --c-pri: #375bff;
-  --c-pri-dim: #5d74ff;
-  --c-pri-rgb: 55, 91, 255;
-  --c-danger: #e5484d;
-  --c-text-on-pri: #ffffff;
+  /* ─ Farbpalette (Basis) ──────────────────────── */
+  --brand-blue: #007bff;
+  --brand-green: #28a745;
+  --brand-red: #dc3545;
+  --brand-yellow: #ffc107;
+  --brand-gray-100: #f8f9fa;
+  --brand-gray-200: #e9ecef;
+  --brand-gray-300: #dee2e6;
+  --brand-gray-400: #ced4da;
+  --brand-gray-500: #adb5bd;
+  --brand-gray-600: #6c757d;
+  --brand-gray-700: #495057;
+  --brand-gray-800: #343a40;
+  --brand-gray-900: #212529;
 
-  /* Base colors (light) */
-  --c-text: #202124;
-  --c-muted: #5f6368;
-  --c-bg: #f9fafc;
-  --c-bg-rgb: 249, 250, 252;
-  --c-surface: #ffffff;
-  --c-card: #ffffff;
-  --c-border: #d7dae3;
+  /* ─ Semantische Farben (Anwendungszweck) ─────── */
+  --c-primary: var(--brand-blue);
+  --c-secondary: var(--brand-gray-600);
+  --c-success: var(--brand-green);
+  --c-danger: var(--brand-red);
+  --c-warning: var(--brand-yellow);
 
-  /* Radius & shadow */
-  --u-radius: 12px;
-  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.05);
-  --u-shadow-lg: 0 20px 34px rgba(0, 0, 0, 0.12);
-  --u-card-padding: 1.5rem;
+  /* Textfarben */
+  --c-text: var(--brand-gray-800);
+  --c-text-muted: var(--brand-gray-600);
+  --c-text-on-primary: #fff;
 
-  /* Motion */
-  --u-dur: 0.25s;
-  --u-ease: cubic-bezier(0.4, 0.2, 0.2, 1);
+  /* Hintergrundfarben */
+  --c-bg: #fff;
+  --c-bg-surface: var(--brand-gray-100); /* Für Elemente auf dem BG */
+  --c-bg-muted: var(--brand-gray-200);
 
-  --app-brightness: 1;
-  /* Default backdrop color for modal overlays (light mode) */
-  --modal-backdrop-color: rgba(30, 30, 30, 0.6);
+  /* Rahmenfarben */
+  --c-border: var(--brand-gray-300);
+  --c-border-focus: var(--brand-blue);
 
-  color-scheme: light dark;
+  /* ─ Typografie ───────────────────────────── */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-md: 1.125rem; /* 18px */
+  --font-size-lg: 1.25rem;  /* 20px */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* ─ Abstände & Größen ──────────────────────── */
+  --spacing-xs: 0.25rem;  /* 4px */
+  --spacing-sm: 0.5rem;   /* 8px */
+  --spacing-md: 1rem;     /* 16px */
+  --spacing-lg: 1.5rem;   /* 24px */
+  --spacing-xl: 2rem;     /* 32px */
+  --container-width: 1280px;
+
+  /* ─ Radien & Schatten ─────────────────────── */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* ─ Übergänge ─────────────────────────────── */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 250ms ease-in-out;
 }
+/* src/styles/tokens/design-tokens.css (am Ende hinzufügen) */
 
-[data-theme="dark"] {
-  /* Adjusted colors for better contrast */
-  --c-surface-hover: #26292f;        /* dunkler Hover‑Ton */
-  --ud-shadow-card: 0 2px 12px rgba(0,0,0,.55);
-  --c-text: #e0e2e6;
-  --c-muted: #a0a4ad;
-  --c-bg: #121212;
-  --c-bg-rgb: 18, 18, 18;
-  --c-surface: #1a1c20;
-  --c-card: #1c1e22;
-  --c-border: #3a3d47;
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* ─ Semantische Farben (Dark Mode) ─────────── */
+    --c-primary: #58a6ff; /* Helleres Blau für besseren Kontrast */
+    --c-secondary: var(--brand-gray-400);
+    --c-danger: #f87171; /* Helleres Rot */
 
-  --c-pri: #7aa8ff;
-  --c-pri-dim: #92b7ff;
-  --c-pri-rgb: 122, 168, 255;
-  --c-text-on-pri: #ffffff;
+    /* Textfarben */
+    --c-text: var(--brand-gray-200);
+    --c-text-muted: var(--brand-gray-400);
+    --c-text-on-primary: #fff;
 
-  --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.45);
-  --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.75);
+    /* Hintergrundfarben */
+    --c-bg: #0d1117; /* Dunkler Hintergrund für die Seite */
+    --c-bg-surface: #161b22; /* Etwas hellerer Hintergrund für Karten */
+    --c-bg-muted: #21262d;
 
-  /* Dark mode backdrop color for modal overlays */
-  --modal-backdrop-color: rgba(0, 0, 0, 0.8);
-}
+    /* Rahmenfarben */
+    --c-border: #30363d;
+    --c-border-focus: var(--c-primary);
 
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --c-text: #e0e2e6;
-      --c-muted: #a0a4ad;
-      --c-bg: #121212;
-      --c-bg-rgb: 18, 18, 18;
-      --c-surface: #1a1c20;
-      --c-card: #1c1e22;
-      --c-border: #3a3d47;
-
-      --c-pri: #7aa8ff;
-      --c-pri-dim: #92b7ff;
-      --c-pri-rgb: 122, 168, 255;
-      --c-text-on-pri: #ffffff;
-
-      --u-shadow-sm: 0 2px 6px rgba(0, 0, 0, 0.45);
-      --u-shadow-lg: 0 18px 36px rgba(0, 0, 0, 0.75);
-      --modal-backdrop-color: rgba(0, 0, 0, 0.8);
-    }
+    /* Schatten */
+    --shadow-color: rgb(0 0 0 / 0.4);
+    --shadow-sm: 0 1px 2px 0 var(--shadow-color);
+    --shadow-md: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
+    --shadow-lg: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -4px var(--shadow-color);
   }
+}
