@@ -29,6 +29,7 @@ import {
     getExpectedHoursForDay,
     isLateTime,
     formatPunchedTimeFromEntry,
+    parseHex16,
 } from './userDashUtils';
 
 import CorrectionModal from '../../components/CorrectionModal';
@@ -183,8 +184,31 @@ function UserDashboard() {
         return () => clearInterval(interval);
     }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-    async function doNfcCheck() { /* ... unverändert ... */ }
-    function showPunchMessage(msg) { /* ... unverändert ... */ }
+    async function doNfcCheck() {
+        try {
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`);
+            if (!response.ok) return;
+            const json = await response.json();
+            if (json.status !== 'success' || !json.data) return;
+            const cardUser = parseHex16(json.data);
+            if (!cardUser) return;
+            if (Date.now() - lastPunchTimeRef.current < 5000) return;
+            lastPunchTimeRef.current = Date.now();
+            showPunchMessage(`${t('login.stamped', 'Eingestempelt')}: ${cardUser}`);
+            await api.post('/api/timetracking/punch', null, { params: { username: cardUser, source: 'NFC_SCAN' } });
+            if (currentUser && cardUser === currentUser.username) {
+                fetchDataForUser();
+                loadProfileAndInitialData();
+            }
+        } catch (err) {
+            console.error('NFC error', err);
+        }
+    }
+
+    function showPunchMessage(msg) {
+        setPunchMessage(msg);
+        setTimeout(() => setPunchMessage(''), 3000);
+    }
 
     async function handleManualPunch() {
         if (!userProfile) return;
@@ -259,9 +283,114 @@ function UserDashboard() {
     }
 
     // Logik für Korrektur-Einreichung und PDF-Druck
-    const fetchCorrectionRequests = useCallback(async () => { /* ... unverändert ... */ }, [currentUser, notify]);
-    const handleCorrectionSubmit = async (entries, reason) => { /* ... unverändert ... */ };
-    async function handlePrintReport() { /* ... unverändert ... */ }
+    const fetchCorrectionRequests = useCallback(async () => {
+        if (!userProfile || !userProfile.username) return;
+        try {
+            const response = await api.get(`/api/correction/user/${userProfile.username}`);
+            setCorrectionRequests(response.data || []);
+        } catch (error) {
+            console.error('Fehler beim Abrufen der Korrekturanträge:', error);
+            notify(t('userManagement.errorLoadingCorrections'), 'error');
+        }
+    }, [userProfile, notify, t]);
+
+    const handleCorrectionSubmit = async (entries, reason) => {
+        if (!correctionDate || !entries || entries.length === 0) {
+            notify(t('hourlyDashboard.addEntryFirst'), 'error');
+            return;
+        }
+        if (!userProfile || !userProfile.username) {
+            notify(t('hourlyDashboard.userNotFound'), 'error');
+            return;
+        }
+        const correctionPromises = entries.map(entry => {
+            const params = new URLSearchParams({
+                username: userProfile.username,
+                reason,
+                requestDate: correctionDate,
+                desiredTimestamp: `${correctionDate}T${entry.time}:00`,
+                desiredPunchType: entry.type,
+            });
+            return api.post(`/api/correction/create?${params.toString()}`, null);
+        });
+        try {
+            await Promise.all(correctionPromises);
+            notify(t('userDashboard.correctionSuccess'), 'success');
+            setShowCorrectionModal(false);
+            fetchCorrectionRequests();
+        } catch (error) {
+            console.error('Fehler beim Absenden der Korrekturanträge:', error);
+            const errorMsg = error.response?.data?.message || 'Ein oder mehrere Anträge konnten nicht gesendet werden.';
+            notify(errorMsg, 'error');
+        }
+    };
+
+    async function handlePrintReport() {
+        if (!printStartDate || !printEndDate || !userProfile) {
+            notify(t('missingDateRange', 'Zeitraum oder Benutzerprofil fehlt.'), 'error');
+            return;
+        }
+        setPrintModalVisible(false);
+
+        const summariesToPrint = dailySummaries
+            .filter(s => s.date >= printStartDate && s.date <= printEndDate)
+            .sort((a, b) => parseISO(a.date) - parseISO(b.date));
+
+        const doc = new jsPDF('p', 'mm', 'a4');
+        doc.setFontSize(14);
+        doc.text(
+            `${t('printReport.title')} ${t('for')} ${userProfile.firstName} ${userProfile.lastName} (${userProfile.username})`,
+            14,
+            15
+        );
+        doc.setFontSize(11);
+        doc.text(
+            `${t('printReport.periodLabel')}: ${formatDate(printStartDate)} – ${formatDate(printEndDate)}`,
+            14,
+            22
+        );
+
+        const tableBody = summariesToPrint.map(summary => {
+            const displayDate = formatDate(summary.date);
+            const primary = summary.primaryTimes || { firstStartTime: null, lastEndTime: null, isOpen: false };
+            const workStart = primary.firstStartTime ? primary.firstStartTime.substring(0, 5) : '-';
+            const workEnd = primary.lastEndTime ? primary.lastEndTime.substring(0, 5) : (primary.isOpen ? t('printReport.open') : '-');
+            const breakTimeStr = minutesToHHMM(summary.breakMinutes);
+            const totalWorkedStr = minutesToHHMM(summary.workedMinutes);
+            const punches = summary.entries
+                .map(e => `${t('punchTypes.' + e.punchType, e.punchType).substring(0,1)}:${formatTime(e.entryTimestamp)}${e.source === 'SYSTEM_AUTO_END' && !e.correctedByUser ? '(A)' : ''}`)
+                .join(' | ');
+            return [displayDate, workStart, workEnd, breakTimeStr, totalWorkedStr, punches, summary.dailyNote || ''];
+        });
+
+        autoTable(doc, {
+            head: [[
+                t('printReport.date'),
+                t('printReport.workStart'),
+                t('printReport.workEnd'),
+                t('printReport.pause'),
+                t('printReport.total'),
+                t('printReport.punches'),
+                t('printReport.note'),
+            ]],
+            body: tableBody,
+            startY: 30,
+            margin: { left: 10, right: 10 },
+            styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
+            headStyles: { fillColor: [71, 91, 255], textColor: 255, fontStyle: 'bold', halign: 'center' },
+            columnStyles: { 5: { cellWidth: 'auto' }, 6: { cellWidth: 40 } },
+            didDrawPage: dataHooks => {
+                doc.setFontSize(8);
+                doc.text(
+                    `${t('page')} ${dataHooks.pageNumber} ${t('of')} ${doc.internal.getNumberOfPages()}`,
+                    doc.internal.pageSize.getWidth() - 10,
+                    doc.internal.pageSize.getHeight() - 10,
+                    { align: 'right' }
+                );
+            },
+        });
+        doc.save(`Zeitenbericht_${userProfile.username}_${printStartDate}_bis_${printEndDate}.pdf`);
+    }
 
     // Lade- und Routing-Logik
     if (!userProfile) {
