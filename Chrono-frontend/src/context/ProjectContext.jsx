@@ -59,11 +59,13 @@ export const ProjectProvider = ({ children }) => {
 
   useEffect(() => {
     if (authToken && currentUser?.customerTrackingEnabled) {
+
       fetchProjects();
     } else {
       setProjects([]);
     }
   }, [fetchProjects, authToken, currentUser]);
+
 
   return (
     <ProjectContext.Provider value={{ projects, fetchProjects, createProject, updateProject, deleteProject }}>
