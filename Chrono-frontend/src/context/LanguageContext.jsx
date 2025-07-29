@@ -621,10 +621,45 @@ const translations = {
         },
         agbPage: {
             title: "Allgemeine Geschäftsbedingungen",
-            intro1: "Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Verträge zwischen Chrono-Logisch und dem Kunden.",
-            intro2: "Der Anbieter stellt dem Kunden eine Zeiterfassungs-App zur Verfügung. Der genaue Funktionsumfang ergibt sich aus den Informationen auf der Website.",
-            intro3: "Ein Vertrag kommt zustande, sobald der Kunde ein Paket bucht und der Anbieter dies bestätigt.",
             stand: "Stand Mai 2025",
+            scope: {
+                title: "1. Geltungsbereich",
+                content: "Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Verträge über die Nutzung der SaaS-Dienste von Chrono-Logisch (nachfolgend „Anbieter“) durch den Kunden. Abweichende Bedingungen des Kunden werden nicht anerkannt, es sei denn, der Anbieter stimmt ihrer Geltung ausdrücklich schriftlich zu."
+            },
+            services: {
+                title: "2. Leistungsgegenstand",
+                content1: "Der Anbieter stellt dem Kunden die Software „Chrono-Logisch“ als Software-as-a-Service (SaaS) zur Verfügung. Der Funktionsumfang der Software ergibt sich aus der aktuellen Leistungsbeschreibung auf der Website des Anbieters.",
+                content2: "Die Software ermöglicht die digitale Zeiterfassung, Urlaubsverwaltung und Erstellung von Berichten. Der Anbieter gewährleistet eine Verfügbarkeit der Dienste von 99.5% im Monatsmittel. Geplante Wartungsarbeiten werden hiervon ausgenommen und im Voraus angekündigt."
+            },
+            contract: {
+                title: "3. Vertragsschluss",
+                content: "Der Vertrag kommt durch die Annahme eines Angebots des Anbieters durch den Kunden oder durch die Registrierung des Kunden auf der Website und die anschließende Bestätigung durch den Anbieter zustande."
+            },
+            rights: {
+                title: "4. Nutzungsrechte",
+                content: "Der Kunde erhält ein einfaches, nicht übertragbares Recht, die Software für die Dauer des Vertrages für eigene betriebliche Zwecke zu nutzen. Eine Weitergabe der Nutzungsrechte an Dritte ist nicht gestattet."
+            },
+            obligations: {
+                title: "5. Pflichten des Kunden",
+                content: "Der Kunde ist für die Sicherung seiner Zugangsdaten verantwortlich und hat sicherzustellen, dass diese nicht von unbefugten Dritten genutzt werden. Der Kunde ist verpflichtet, die Dienste nicht missbräuchlich zu nutzen und alle anwendbaren Gesetze zu beachten."
+            },
+            liability: {
+                title: "6. Haftung",
+                content: "Für die Inhalte externer Links übernehmen wir keine Haftung. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber verantwortlich. Die Haftung des Anbieters für leichte Fahrlässigkeit ist, außer bei Verletzung wesentlicher Vertragspflichten, ausgeschlossen."
+            },
+            payment: {
+                title: "7. Zahlungsbedingungen, Laufzeit und Kündigung",
+                content1: "Die Vergütung für die Nutzung der Software richtet sich nach dem vom Kunden gewählten Paket und Zahlungsintervall (monatlich oder jährlich). Die Rechnungsstellung erfolgt im Voraus für den jeweiligen Abrechnungszeitraum. Einmalige Gebühren, wie die Installationspauschale, sind mit der ersten Rechnung fällig.",
+                content2: "Der Vertrag wird auf unbestimmte Zeit geschlossen. Bei monatlicher Zahlungsweise kann der Vertrag von beiden Seiten jederzeit zum Ende des laufenden monatlichen Abrechnungszeitraums gekündigt werden. Bei jährlicher Zahlungsweise kann der Vertrag zum Ende des jährlichen Abrechnungszeitraums mit einer Frist von einem Monat gekündigt werden. Ohne Kündigung verlängert sich der Vertrag automatisch um den entsprechenden Zeitraum. Die Kündigung bedarf der Textform (z.B. per E-Mail)."
+            },
+            copyright: {
+                title: "7. Urheberrecht",
+                content: "Sämtliche Inhalte (Texte, Bilder, Grafiken) auf dieser Website und in der Anwendung sind urheberrechtlich geschützt. Jegliche Nutzung ohne ausdrückliche Zustimmung ist untersagt."
+            },
+            finalProvisions: {
+                title: "8. Schlussbestimmungen",
+                content: "Es gilt das Recht der Schweizerischen Eidgenossenschaft. Gerichtsstand ist der Sitz des Anbieters. Sollten einzelne Bestimmungen dieser AGB unwirksam sein oder werden, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt."
+            }
         },
         registrationPage: {
             pricingTitle: "Pakete & Preisübersicht",
@@ -1261,10 +1296,45 @@ const translations = {
         },
         agbPage: {
             title: "Terms of Service",
-            intro1: "These terms of service govern all contracts between Chrono-Logisch and the customer.",
-            intro2: "The provider makes a time tracking app available. Details of the functionality are described on the website.",
-            intro3: "A contract is formed once the customer books a package and the provider confirms it.",
             stand: "Updated May 2025",
+            scope: {
+                title: "1. Scope of Application",
+                content: "These General Terms and Conditions (GTC) apply to all contracts for the use of the SaaS services of Chrono-Logisch (hereinafter 'Provider') by the customer. Deviating terms and conditions of the customer are not recognized unless the provider expressly agrees to their validity in writing."
+            },
+            services: {
+                title: "2. Subject of Performance",
+                content1: "The provider makes the 'Chrono-Logisch' software available to the customer as a Software-as-a-Service (SaaS). The functional scope of the software is based on the current service description on the provider's website.",
+                content2: "The software enables digital time tracking, vacation management, and report generation. The provider guarantees a service availability of 99.5% on a monthly average. Planned maintenance work is excluded from this and will be announced in advance."
+            },
+            contract: {
+                title: "3. Conclusion of Contract",
+                content: "The contract is concluded upon acceptance of an offer from the provider by the customer or through the customer's registration on the website and subsequent confirmation by the provider."
+            },
+            rights: {
+                title: "4. Rights of Use",
+                content: "The customer receives a simple, non-transferable right to use the software for their own operational purposes for the duration of the contract. A transfer of the rights of use to third parties is not permitted."
+            },
+            obligations: {
+                title: "5. Customer's Obligations",
+                content: "The customer is responsible for securing their access data and must ensure that they are not used by unauthorized third parties. The customer is obliged not to misuse the services and to comply with all applicable laws."
+            },
+            liability: {
+                title: "6. Liability",
+                content: "We assume no liability for the content of external links. The operators of the linked pages are solely responsible for their content. The provider's liability for slight negligence is excluded, except in cases of breach of essential contractual obligations."
+            },
+            payment: {
+                title: "7. Payment Terms, Term, and Termination",
+                content1: "The fee for the use of the software is based on the package and payment interval (monthly or yearly) selected by the customer. Invoicing is done in advance for the respective billing period. One-time fees, such as the installation fee, are due with the first invoice.",
+                content2: "The contract is concluded for an indefinite period. With monthly payment, the contract can be terminated by either party at any time to the end of the current monthly billing period. With annual payment, the contract can be terminated at the end of the annual billing period with one month's notice. Without termination, the contract is automatically extended by the corresponding period. Termination must be in text form (e.g., by email)."
+            },
+            copyright: {
+                title: "7. Copyright",
+                content: "All content (texts, images, graphics) on this website and in the application is protected by copyright. Any use without express permission is prohibited."
+            },
+            finalProvisions: {
+                title: "8. Final Provisions",
+                content: "The law of the Swiss Confederation shall apply. The place of jurisdiction is the provider's registered office. Should individual provisions of these GTC be or become invalid, the validity of the remaining provisions shall remain unaffected."
+            }
         },
         registrationPage: {
             pricingTitle: "Packages & Pricing",

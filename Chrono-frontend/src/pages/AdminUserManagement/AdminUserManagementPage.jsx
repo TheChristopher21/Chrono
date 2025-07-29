@@ -124,6 +124,15 @@ const AdminUserManagementPage = () => {
         setCurrentUserFormData(prev => {
             const newState = { ...prev, [field]: value };
 
+            if (field === 'country') {
+                if (value === 'DE') {
+                    newState.tarifCode = '';
+                    newState.canton = '';
+                } else if (value === 'CH') {
+                    newState.taxClass = '';
+                }
+            }
+
             if (field === 'isHourly') {
                 if (value) { // Wird stündlich
                     newState.isPercentage = false;

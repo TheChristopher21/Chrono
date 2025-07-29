@@ -25,7 +25,8 @@ public class SecurityHeadersFilter extends OncePerRequestFilter {
         response.setHeader("X-Frame-Options", "DENY");
 
         // Setzt eine Content-Security-Policy (anpassen an deine Anforderungen)
-        response.setHeader("Content-Security-Policy", "default-src 'self'");
+        // KORRIGIERT: Erlaubt Verbindungen (connect-src) zur API-Domain
+        response.setHeader("Content-Security-Policy", "default-src 'self'; connect-src 'self' https://api.chrono-logisch.ch");
 
         // Referrer-Policy, um zu kontrollieren, welche Informationen beim Navigieren weitergegeben werden
         response.setHeader("Referrer-Policy", "no-referrer");

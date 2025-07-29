@@ -12,51 +12,79 @@ import { useNotification } from './NotificationContext';
 import { useTranslation } from './LanguageContext';
 
 export const AuthContext = createContext();
-const INACTIVITY_DURATION = 10 * 60 * 1000; // 10 min
+
+const INACTIVITY_DURATION = 10 * 60 * 1000; // 10 Minuten Inaktivität
+const USER_STATUS_CHECK_INTERVAL = 15 * 60 * 1000; // 15 Minuten für periodische Prüfung
 
 export const AuthProvider = ({ children }) => {
     const { notify } = useNotification();
     const { t } = useTranslation();
-    const [authToken, setAuthToken] = useState(null);
+    const [authToken, setAuthToken] = useState(() => localStorage.getItem('token'));
     const [currentUser, setCurrentUser] = useState(null);
 
-    /* ---------- Logout ------------------------------------------- */
-    const logout = () => {
+    // Logout-Funktion, die Zustände zurücksetzt
+    const logout = useCallback(() => {
         localStorage.removeItem('token');
         setAuthToken(null);
         setCurrentUser(null);
         delete api.defaults.headers.common.Authorization;
-    };
+    }, []);
 
-    /* ---------- User laden --------------------------------------- */
-    // Diese Funktion muss auch über den Context bereitgestellt werden
-    const fetchCurrentUser = useCallback(async () => { // useCallback hinzugefügt für Konsistenz und Memoization
+    // Funktion zum Abrufen des aktuellen Benutzers vom Server
+    const fetchCurrentUser = useCallback(async (currentToken) => {
+        if (!currentToken) {
+            // Stellt sicher, dass ein eingeloggter Benutzer ohne Token ausgeloggt wird
+            if (currentUser) {
+                logout();
+            }
+            return;
+        }
+
+        api.defaults.headers.common.Authorization = `Bearer ${currentToken}`;
+
         try {
             const res = await api.get('/api/auth/me');
-            setCurrentUser(res.data);
-            return res.data; // Gibt die Benutzerdaten zurück, damit sie direkt verwendet werden können
+            const newUser = res.data;
+
+            // *** DIE KERNLÖSUNG ***
+            // Aktualisiert den Benutzer nur, wenn sich die Daten geändert haben.
+            // Dies verhindert das unnötige Neu-Rendern und das Springen der Seite.
+            setCurrentUser(prevUser => {
+                if (JSON.stringify(prevUser) !== JSON.stringify(newUser)) {
+                    return newUser; // Daten haben sich geändert -> aktualisieren
+                }
+                return prevUser; // Daten sind identisch -> keine Änderung, kein Re-Render
+            });
+
         } catch (err) {
-            console.error('⚠️ /api/auth/me fehlgeschlagen', err);
-            logout(); // Wichtig: Bei Fehler ausloggen
-            return null; // Gibt null zurück bei Fehler, um klar zu signalisieren, dass kein User geladen wurde
+            console.error('⚠️ /api/auth/me fehlgeschlagen. Token könnte ungültig sein.', err);
+            logout(); // Bei Fehler ausloggen, um inkonsistente Zustände zu vermeiden
         }
-    }, []); // Abhängigkeiten hier leer, da logout nicht als Abhängigkeit notwendig ist (definiert im selben Scope)
+    }, [logout, currentUser]); // Abhängigkeiten korrigiert
 
-    /* ---------- Init --------------------------------------------- */
+    // Effekt für den initialen Ladevorgang und die periodische Statusprüfung
     useEffect(() => {
-        const storedToken = localStorage.getItem('token');
-        if (storedToken) {
-            setAuthToken(storedToken);
-            api.defaults.headers.common.Authorization = `Bearer ${storedToken}`;
-            fetchCurrentUser(); // Ruft die oben definierte Funktion auf
-            // resetInactivityTimer(); // Timer wird erst nach erfolgreichem Login/Token-Validierung gestartet
-        } else {
-            logout(); // Stellt sicher, dass der Zustand sauber ist, wenn kein Token vorhanden ist
+        const token = localStorage.getItem('token');
+        if (token) {
+            fetchCurrentUser(token);
         }
-    }, [fetchCurrentUser]); // fetchCurrentUser als Abhängigkeit hinzugefügt
+
+        // Dieser periodische Check stellt sicher, dass der Benutzerstatus aktuell bleibt
+        // (z.B. wenn ein Admin die Rechte ändert) und ist so optimiert, dass er
+        // das "Springen" der Seite verhindert.
+        const intervalId = setInterval(() => {
+            const currentToken = localStorage.getItem('token');
+            if (currentToken) {
+                fetchCurrentUser(currentToken);
+            }
+        }, USER_STATUS_CHECK_INTERVAL);
+
+        // Aufräumen, wenn die Komponente verlassen wird
+        return () => clearInterval(intervalId);
+    }, [fetchCurrentUser]);
 
 
-    /* ---------- Timer -------------------------------------------- */
+    // Effekt für den Inaktivitäts-Timer
     const timerRef = useRef(null);
 
     const resetInactivityTimer = useCallback(() => {
@@ -65,14 +93,15 @@ export const AuthProvider = ({ children }) => {
             logout();
             notify(t('sessionExpired'));
         }, INACTIVITY_DURATION);
-    }, [logout, notify]); // notify und logout sind Abhängigkeiten
+    }, [logout, notify, t]);
 
     useEffect(() => {
-        if (!authToken) return; // Timer nur starten, wenn ein Token vorhanden ist
+        if (!authToken) {
+            clearTimeout(timerRef.current);
+            return;
+        };
 
-        // Timer beim ersten Laden (nachdem Token aus localStorage gelesen wurde) und nach jedem Login starten
         resetInactivityTimer();
-
         const events = ['click', 'mousemove', 'keydown', 'scroll'];
         events.forEach((e) => window.addEventListener(e, resetInactivityTimer));
 
@@ -83,27 +112,25 @@ export const AuthProvider = ({ children }) => {
     }, [authToken, resetInactivityTimer]);
 
 
-    /* ---------- Login -------------------------------------------- */
+    // Login-Funktion
     const login = async (username, password) => {
         try {
             const { data } = await api.post('/api/auth/login', { username, password });
             const { token } = data;
 
             localStorage.setItem('token', token);
-            api.defaults.headers.common.Authorization = `Bearer ${token}`;
-            setAuthToken(token);
+            setAuthToken(token); // Löst den Inaktivitäts-Timer aus
 
-            const user = await fetchCurrentUser();   // Ruft die oben definierte Funktion auf
-            // resetInactivityTimer(); // Wird jetzt durch das useEffect auf authToken ausgelöst
+            const user = await fetchCurrentUser(token);
             return { success: true, user };
         } catch (err) {
-            logout(); // Bei Login-Fehler auch ausloggen, um inkonsistenten Zustand zu vermeiden
-            return { success: false, message: err.message || "Login failed" };
+            logout();
+            return { success: false, message: err.response?.data?.message || "Login failed" };
         }
     };
 
     return (
-        <AuthContext.Provider value={{ authToken, currentUser, setCurrentUser, login, logout, fetchCurrentUser }}>
+        <AuthContext.Provider value={{ authToken, currentUser, setCurrentUser, login, logout }}>
             {children}
         </AuthContext.Provider>
     );

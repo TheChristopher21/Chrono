@@ -119,24 +119,84 @@ const AdminUserForm = ({
                         <option value="CH">CH</option>
                     </select>
                 </div>
-                <div className="form-group">
-                    <label htmlFor="tarifCode">{t("userManagement.tarifCode", "Tarifcode")}</label>
-                    <input
-                        id="tarifCode"
-                        type="text"
-                        value={userData.tarifCode || ""}
-                        onChange={(e) => handleChange("tarifCode", e.target.value)}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="canton">{t("userManagement.canton", "Kanton")}</label>
-                    <input
-                        id="canton"
-                        type="text"
-                        value={userData.canton || ""}
-                        onChange={(e) => handleChange("canton", e.target.value)}
-                    />
-                </div>
+
+                {/* Conditional Fields based on Country */}
+                {userData.country === 'DE' && (
+                    <>
+                        <div className="form-group">
+                            <label htmlFor="taxClass">{t("userManagement.taxClass", "Steuerklasse")}</label>
+                            <input
+                                id="taxClass"
+                                type="text"
+                                pattern="[A-Za-z0-9]+"
+                                value={userData.taxClass || ""}
+                                onChange={(e) => handleChange("taxClass", e.target.value)}
+                                required
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="socialSecurityNumber">{t("userManagement.socialSecurityNumber.de", "Sozialversicherungsnummer")}</label>
+                            <input
+                                id="socialSecurityNumber"
+                                type="text"
+                                value={userData.socialSecurityNumber || ""}
+                                onChange={(e) => handleChange("socialSecurityNumber", e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="religion">{t("userManagement.religion.de", "Religion (für Kirchensteuer)")}</label>
+                            <input
+                                id="religion"
+                                type="text"
+                                value={userData.religion || ""}
+                                onChange={(e) => handleChange("religion", e.target.value)}
+                            />
+                        </div>
+                    </>
+                )}
+
+                {userData.country === 'CH' && (
+                    <>
+                        <div className="form-group">
+                            <label htmlFor="tarifCode">{t("userManagement.tarifCode", "Tarifcode")}</label>
+                            <input
+                                id="tarifCode"
+                                type="text"
+                                value={userData.tarifCode || ""}
+                                onChange={(e) => handleChange("tarifCode", e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="canton">{t("userManagement.canton", "Kanton")}</label>
+                            <input
+                                id="canton"
+                                type="text"
+                                value={userData.canton || ""}
+                                onChange={(e) => handleChange("canton", e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="socialSecurityNumber">{t("userManagement.socialSecurityNumber.ch", "AHV-Nr.")}</label>
+                            <input
+                                id="socialSecurityNumber"
+                                type="text"
+                                value={userData.socialSecurityNumber || ""}
+                                onChange={(e) => handleChange("socialSecurityNumber", e.target.value)}
+                            />
+                        </div>
+                        <div className="form-group">
+                            <label htmlFor="religion">{t("userManagement.religion.ch", "Religion")}</label>
+                            <input
+                                id="religion"
+                                type="text"
+                                value={userData.religion || ""}
+                                onChange={(e) => handleChange("religion", e.target.value)}
+                            />
+                        </div>
+                    </>
+                )}
+
+
                 <div className="form-group">
                     <label htmlFor="civilStatus">{t("userManagement.civilStatus", "Zivilstand")}</label>
                     <input
@@ -157,41 +217,12 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="religion">{t("userManagement.religion", "Religion")}</label>
-                    <input
-                        id="religion"
-                        type="text"
-                        value={userData.religion || ""}
-                        onChange={(e) => handleChange("religion", e.target.value)}
-                    />
-                </div>
-                <div className="form-group">
                     <label htmlFor="bankAccount">{t("userManagement.bankAccount", "Bankverbindung")}</label>
                     <input
                         id="bankAccount"
                         type="text"
                         value={userData.bankAccount || ""}
                         onChange={(e) => handleChange("bankAccount", e.target.value)}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="socialSecurityNumber">{t("userManagement.socialSecurityNumber", "AHV-Nr.")}</label>
-                    <input
-                        id="socialSecurityNumber"
-                        type="text"
-                        value={userData.socialSecurityNumber || ""}
-                        onChange={(e) => handleChange("socialSecurityNumber", e.target.value)}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="taxClass">{t("userManagement.taxClass", "Steuerklasse")}</label>
-                    <input
-                        id="taxClass"
-                        type="text"
-                        pattern="[A-Za-z0-9]+"
-                        value={userData.taxClass || ""}
-                        onChange={(e) => handleChange("taxClass", e.target.value)}
-                        required
                     />
                 </div>
                 <div className="form-group">

@@ -16,16 +16,22 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-
-import static com.chrono.chrono.config.CorsConfig.ALLOWED_ORIGINS;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
+
+    // KORRIGIERT: 'www' Subdomain hinzugefügt
+    public static final String[] ALLOWED_ORIGINS = {
+            "https://chrono-logisch.ch",
+            "https://www.chrono-logisch.ch",
+            "http://localhost:5173"
+    };
 
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
@@ -39,10 +45,10 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Nutze allowedOriginPatterns für flexible Übereinstimmung
-        configuration.setAllowedOriginPatterns(Arrays.stream(ALLOWED_ORIGINS).toList());
+        configuration.setAllowedOriginPatterns(List.of(ALLOWED_ORIGINS)); // Verwende List.of
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Origin"));
+        configuration.setExposedHeaders(List.of("Authorization")); // Wichtig für das Lesen des Tokens im Frontend
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
@@ -57,37 +63,28 @@ public class SecurityConfig {
         return authProvider;
     }
 
-// Pfad: src/main/java/com/chrono/chrono/config/SecurityConfig.java
-
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults())
+                .cors(Customizer.withDefaults()) // Nutzt die obige corsConfigurationSource Bean
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
-                    // Öffentliche Endpunkte für Authentifizierung (Login, Registrierung)
+                    // WICHTIGSTE ÄNDERUNG: Erlaube alle Preflight-Anfragen
+                    auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
+
+                    // Öffentliche Endpunkte
                     auth.requestMatchers("/api/auth/**").permitAll();
-                    // GET-Anfragen an den NFC-Kommando-Endpunkt erlauben
                     auth.requestMatchers(HttpMethod.GET, "/api/nfc/command").permitAll();
-                    // PUT-Anfragen für den NFC-Kommando-Endpunkt erlauben
                     auth.requestMatchers(HttpMethod.PUT, "/api/nfc/command/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/timetracking/punch").permitAll();
                     auth.requestMatchers("/api/nfc/read/1").permitAll();
-                    auth.requestMatchers("/api/holidays/**").authenticated(); // Oder permitAll(), falls Feiertage öffentlich sein sollen
-                    auth.requestMatchers("/api/sick-leave/**").authenticated();
-
-                    // NEU: Zugriff auf Changelog für alle eingeloggten User erlauben
-                    auth.requestMatchers("/api/changelog/**").authenticated();
-
-                    // Der Endpoint zum Schreiben von Sektor 0 bleibt öffentlich
                     auth.requestMatchers("/api/nfc/write-sector0").permitAll();
-                    // Den Mail-Endpunkt öffentlich freigeben
                     auth.requestMatchers(HttpMethod.POST, "/api/apply").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/contact").permitAll();
-                    // Chatbot darf auch ohne Login genutzt werden
                     auth.requestMatchers("/api/chat").permitAll();
-                    // Schütze Admin-Endpunkte – nur Nutzer mit ROLE_ADMIN dürfen zugreifen
+
+                    // Admin-Endpunkte
                     auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
                     auth.requestMatchers("/api/superadmin/**").hasRole("SUPERADMIN");
 

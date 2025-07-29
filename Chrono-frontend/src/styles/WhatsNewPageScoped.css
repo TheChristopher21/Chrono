@@ -1,0 +1,178 @@
+/* =========================================================================
+   WhatsNewPageScoped.css - Gekapselte Styles für die "Was ist neu?"-Seite
+   ========================================================================= */
+
+/* --- Definition der lokalen Theme-Variablen --- */
+.whats-new-page.scoped-whats-new {
+    --wn-c-bg: #f4f6ff;
+    --wn-c-surface: #ffffff;
+    --wn-c-text: #1e1f22;
+    --wn-c-text-strong: #000000;
+    --wn-c-text-secondary: #60646c;
+    --wn-c-border: #d5d8e5;
+    --wn-c-timeline: #e0e2f0;
+    --wn-c-primary: #475bff;
+}
+
+[data-theme="dark"] .whats-new-page.scoped-whats-new {
+    --wn-c-bg: #16171b;
+    --wn-c-surface: #202227;
+    --wn-c-text: #d4d7e1;
+    --wn-c-text-strong: #ffffff;
+    --wn-c-text-secondary: #9095a3;
+    --wn-c-border: #353842;
+    --wn-c-timeline: #414552;
+}
+
+/* --- Grundlayout der Seite --- */
+.whats-new-page.scoped-whats-new {
+    background-color: var(--wn-c-bg);
+    color: var(--wn-c-text);
+    min-height: calc(100vh - 60px);
+    padding: 2rem;
+}
+
+.whats-new-page.scoped-whats-new .header {
+    max-width: 800px;
+    margin: 0 auto 3rem auto;
+    text-align: center;
+}
+
+.whats-new-page.scoped-whats-new .header h1 {
+    color: var(--wn-c-text-strong);
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.whats-new-page.scoped-whats-new .header p {
+    color: var(--wn-c-text-secondary);
+    font-size: 1.1rem;
+}
+
+/* --- Lade- und Fehlerzustände --- */
+.whats-new-page.scoped-whats-new .loader,
+.whats-new-page.scoped-whats-new .error-message {
+    text-align: center;
+    font-size: 1.2rem;
+    color: var(--wn-c-text-secondary);
+    padding: 4rem 0;
+}
+
+.whats-new-page.scoped-whats-new .error-message {
+    color: #dc3545;
+}
+
+/* --- Timeline-Layout --- */
+.whats-new-page.scoped-whats-new .timeline {
+    position: relative;
+    max-width: 800px;
+    margin: 0 auto;
+    padding-left: 2rem;
+}
+
+.whats-new-page.scoped-whats-new .timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    bottom: 10px;
+    width: 3px;
+    background-color: var(--wn-c-timeline);
+    border-radius: 2px;
+}
+
+.whats-new-page.scoped-whats-new .timeline-item {
+    position: relative;
+    margin-bottom: 3rem;
+}
+
+.whats-new-page.scoped-whats-new .timeline-item:last-child {
+    margin-bottom: 0;
+}
+
+.whats-new-page.scoped-whats-new .timeline-dot {
+    position: absolute;
+    left: -2rem;
+    top: 10px;
+    transform: translateX(-50%);
+    width: 17px;
+    height: 17px;
+    background-color: var(--wn-c-primary);
+    border: 3px solid var(--wn-c-bg);
+    border-radius: 50%;
+    z-index: 1;
+}
+
+.whats-new-page.scoped-whats-new .timeline-content {
+    background-color: var(--wn-c-surface);
+    border: 1px solid var(--wn-c-border);
+    border-radius: 12px;
+    padding: 1.5rem 2rem;
+    position: relative;
+}
+
+.whats-new-page.scoped-whats-new .timeline-content::before {
+    content: '';
+    position: absolute;
+    left: -11px;
+    top: 12px;
+    width: 20px;
+    height: 20px;
+    background: var(--wn-c-surface);
+    border: 1px solid var(--wn-c-border);
+    border-right: none;
+    border-top: none;
+    transform: rotate(45deg);
+    z-index: 0;
+}
+
+.whats-new-page.scoped-whats-new .version-badge {
+    display: inline-block;
+    background-color: var(--wn-c-primary);
+    color: #fff;
+    padding: 0.25rem 0.6rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.whats-new-page.scoped-whats-new .title {
+    color: var(--wn-c-text-strong);
+    font-size: 1.5rem;
+    margin: 0;
+}
+
+.whats-new-page.scoped-whats-new .date {
+    display: block;
+    color: var(--wn-c-text-secondary);
+    font-size: 0.9rem;
+    margin-top: 0.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.whats-new-page.scoped-whats-new .changes-list {
+    line-height: 1.6;
+    color: var(--wn-c-text);
+}
+
+.whats-new-page.scoped-whats-new .changes-list ul,
+.whats-new-page.scoped-whats-new .changes-list ol {
+    padding-left: 20px;
+}
+
+.whats-new-page.scoped-whats-new .changes-list li {
+    margin-bottom: 0.5rem;
+}
+
+.whats-new-page.scoped-whats-new .changes-list a {
+    color: var(--wn-c-primary);
+}
+
+.whats-new-page.scoped-whats-new .changes-list code {
+    background-color: var(--wn-c-bg);
+    padding: 0.2em 0.4em;
+    margin: 0;
+    font-size: 85%;
+    border-radius: 6px;
+}

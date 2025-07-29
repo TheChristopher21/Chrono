@@ -1,243 +1,201 @@
-import { useState } from 'react';
-import api from './utils/api'; // Geändert: Importiere die globale api-Instanz
-// Stelle sicher, dass der Pfad zu 'api.js' korrekt ist,
-// ausgehend von der aktuellen Position von TimeTrackingImport.jsx.
-// Wenn TimeTrackingImport.jsx im Root-Verzeichnis (gleiche Ebene wie src/) liegt,
-// wäre es './src/utils/api' oder wenn es in src/pages/ liegt, dann '../utils/api'.
-// Annahme: TimeTrackingImport.jsx ist im Root des src-Ordners oder direkt darunter.
-// Wenn TimeTrackingImport.jsx z.B. in src/pages/AdminDashboard/ liegt, wäre der Pfad: ../../utils/api
-
-// Der API-Endpunkt-Pfad bleibt gleich, da die baseURL der api-Instanz
-// entweder die VITE_API_BASE_URL ist (z.B. http://localhost:8080)
-// oder "/api". In beiden Fällen ist der folgende Pfad korrekt, um
-// auf /api/admin/timetracking/import zu zielen.
-import './styles/TimeTrackingImport.css';
-const API_ENDPOINT_PATH = '/api/admin/timetracking/import';
+import React, { useState, useCallback, useMemo } from 'react';
+import { useDropzone } from 'react-dropzone';
+import api from './utils/api';
+import { useNotification } from './context/NotificationContext';
+import Navbar from './components/Navbar';
+import './styles/TimeTrackingImportScooped.css';
 
 function TimeTrackingImport() {
-    const [selectedFile, setSelectedFile] = useState(null);
+    // State-Hooks bleiben unverändert...
+    const [file, setFile] = useState(null);
     const [isUploading, setIsUploading] = useState(false);
     const [progress, setProgress] = useState(0);
     const [uploadResponse, setUploadResponse] = useState(null);
     const [error, setError] = useState('');
     const [invalidRows, setInvalidRows] = useState([]);
     const [isReimporting, setIsReimporting] = useState(false);
-    const [reimportProgress, setReimportProgress] = useState(0);
-    // const fileInputRef = useRef(null); // EINKOMMENTIEREN, falls benötigt
+    const { notify } = useNotification();
 
-    const handleFileChange = (event) => {
-        setSelectedFile(event.target.files[0]);
-        setUploadResponse(null); // Reset previous response
+    const resetState = useCallback(() => {
+        setFile(null);
+        setUploadResponse(null);
         setError('');
         setProgress(0);
         setInvalidRows([]);
-    };
+        setIsUploading(false);
+        setIsReimporting(false);
+    }, []);
 
-    const handleSubmit = async (event) => {
-        event.preventDefault();
-        if (!selectedFile) {
-            setError('Bitte wählen Sie zuerst eine Datei aus.');
-            return;
+    const onDrop = useCallback(acceptedFiles => {
+        resetState();
+        const selectedFile = acceptedFiles[0];
+        if (selectedFile) {
+            setFile(selectedFile);
+        } else {
+            notify("Dateiauswahl abgebrochen.", "info");
         }
+    }, [notify, resetState]);
 
+    const { getRootProps, getInputProps, isDragActive } = useDropzone({
+        onDrop,
+        accept: { 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': ['.xlsx'] },
+        multiple: false
+    });
+
+    const handleInitialImport = async () => {
+        if (!file) { return; }
         setIsUploading(true);
         setError('');
-        setUploadResponse(null);
-        setProgress(0);
-
         const formData = new FormData();
-        formData.append('file', selectedFile);
+        formData.append('file', file);
 
         try {
-            // Der Authorization-Header wird jetzt automatisch durch den Interceptor
-            // in der globalen api-Instanz hinzugefügt.
-            // Die manuelle Token-Abfrage und -Hinzufügung ist nicht mehr nötig.
-
-            const response = await api.post(API_ENDPOINT_PATH, formData, {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                },
-                onUploadProgress: (e) => {
-                    if (e.total) {
-                        setProgress(Math.round((e.loaded * 100) / e.total));
-                    }
+            const response = await api.post('/api/admin/timetracking/import', formData, {
+                onUploadProgress: e => {
+                    if (e.total) setProgress(Math.round((e.loaded * 100) / e.total));
                 }
             });
-
             setUploadResponse(response.data);
-            if (response.status === 200 || response.status === 201) {
-                setSelectedFile(null);
-                // if (fileInputRef.current) { // EINKOMMENTIEREN, falls benötigt
-                //     fileInputRef.current.value = null;
-                // }
-            }
-
+            setInvalidRows(response.data.invalidRows || []);
+            notify(response.data.message || "Import teilweise erfolgreich.", "success");
         } catch (err) {
-            console.error('Upload error:', err);
-            if (err.response) {
-                const backendError = err.response.data?.error || err.response.data?.message || 'Ein Fehler ist beim Hochladen aufgetreten.';
-                const backendErrorList = err.response.data?.errors;
-                setError(backendError);
-                if (backendErrorList) {
-                    setUploadResponse({ errors: backendErrorList, importedCount: err.response.data?.importedCount || 0, successMessages: err.response.data?.successMessages || [] });
-                } else {
-                    setUploadResponse({ errors: [backendError], importedCount: 0, successMessages: []});
-                }
-                setInvalidRows(err.response.data?.invalidRows || []);
-            } else if (err.request) {
-                setError('Keine Antwort vom Server erhalten. Bitte Netzwerk überprüfen.');
-            } else {
-                setError('Ein unerwarteter Fehler ist aufgetreten: ' + err.message);
+            const errorData = err.response?.data;
+            const errorMessage = errorData?.error || errorData?.message || 'Ein Fehler ist aufgetreten.';
+            setError(errorMessage);
+            notify(errorMessage, "error");
+            if (errorData) {
+                setUploadResponse(errorData);
+                setInvalidRows(errorData.invalidRows || []);
             }
         } finally {
             setIsUploading(false);
-            setProgress(0);
         }
-    };
-
-    const handleRowChange = (index, field, value) => {
-        const rows = [...invalidRows];
-        rows[index][field] = value;
-        setInvalidRows(rows);
     };
 
     const handleReimport = async () => {
         if (invalidRows.length === 0) return;
         setIsReimporting(true);
-        setReimportProgress(0);
+        setError('');
         try {
-            const res = await api.post('/api/admin/timetracking/import/json', invalidRows, {
-                onUploadProgress: (e) => {
-                    if (e.total) {
-                        setReimportProgress(Math.round((e.loaded * 100) / e.total));
-                    }
-                }
-            });
+            const res = await api.post('/api/admin/timetracking/import/json', invalidRows);
+            notify(res.data.message || `${res.data.importedCount} Zeilen erfolgreich re-importiert!`, "success");
             setUploadResponse(res.data);
             setInvalidRows(res.data.invalidRows || []);
         } catch (err) {
-            console.error('Reimport error', err);
-            setError(err.response?.data?.error || 'Fehler beim Reimport');
+            const errorMessage = err.response?.data?.error || 'Fehler beim Re-Import.';
+            setError(errorMessage);
+            notify(errorMessage, "error");
         } finally {
             setIsReimporting(false);
-            setReimportProgress(0);
         }
     };
 
-    const renderFeedback = () => {
-        if (!uploadResponse) return null;
-
-        const { message, importedCount, successMessages, errors: responseErrors } = uploadResponse;
-
-        const msgClass = responseErrors && responseErrors.length > 0 ? 'feedback-warning' : 'feedback-success';
-
-        return (
-            <div className="feedback-container">
-                <h4>Import Ergebnis:</h4>
-                {message && <p className={msgClass}>{message}</p>}
-                {typeof importedCount === 'number' && <p>Erfolgreich importierte Einträge: {importedCount}</p>}
-
-                {successMessages && successMessages.length > 0 && (
-                    <div>
-                        <h5>Erfolgsmeldungen:</h5>
-                        <ul style={{ listStyleType: 'disc', paddingLeft: '20px', maxHeight: '150px', overflowY: 'auto' }}>
-                            {successMessages.map((msg, index) => (
-                                <li key={`succ-${index}`} className="feedback-success" style={{ fontSize: '0.9em' }}>{msg}</li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-
-                {responseErrors && responseErrors.length > 0 && (
-                    <div style={{ marginTop: '10px' }}>
-                        <h5>Fehlerdetails ({responseErrors.length}):</h5>
-                        <ul style={{ listStyleType: 'disc', paddingLeft: '20px', maxHeight: '150px', overflowY: 'auto' }} className="feedback-warning">
-                            {responseErrors.map((err, index) => (
-                                <li key={`err-${index}`} style={{ fontSize: '0.9em' }}>{typeof err === 'object' ? JSON.stringify(err) : err}</li>
-                            ))}
-                        </ul>
-                    </div>
-                )}
-                {invalidRows.length > 0 && (
-                    <div style={{ marginTop: '10px' }}>
-                        <h5>Korrigierbare Zeilen:</h5>
-                        <table className="invalid-table">
-                            <thead>
-                                <tr>
-                                    <th>Nr</th>
-                                    <th>User</th>
-                                    <th>Timestamp</th>
-                                    <th>Type</th>
-                                    <th>Source</th>
-                                    <th>Note</th>
-                                    <th>Fehler</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {invalidRows.map((row, idx) => (
-                                    <tr key={idx}>
-                                        <td>{row.rowNumber}</td>
-                                        <td><input value={row.username || ''} onChange={e => handleRowChange(idx, 'username', e.target.value)} /></td>
-                                        <td><input value={row.timestamp || ''} onChange={e => handleRowChange(idx, 'timestamp', e.target.value)} /></td>
-                                        <td><input value={row.punchType || ''} onChange={e => handleRowChange(idx, 'punchType', e.target.value)} /></td>
-                                        <td><input value={row.source || ''} onChange={e => handleRowChange(idx, 'source', e.target.value)} /></td>
-                                        <td><input value={row.note || ''} onChange={e => handleRowChange(idx, 'note', e.target.value)} /></td>
-                                        <td className="error-cell">{row.error}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                        <button onClick={handleReimport} disabled={isReimporting} className="import-button" style={{marginTop:'10px'}}>
-                            {isReimporting ? 'Importiere...' : 'Korrigierte Zeilen importieren'}
-                        </button>
-                        {isReimporting && <div className="import-progress"><div className="import-progress-bar" style={{width: `${reimportProgress}%`}}/></div>}
-                    </div>
-                )}
-            </div>
-        );
+    const handleRowChange = (index, field, value) => {
+        const updatedRows = [...invalidRows];
+        updatedRows[index] = { ...updatedRows[index], [field]: value };
+        setInvalidRows(updatedRows);
     };
 
+    const tableHeaders = useMemo(() => {
+        if (invalidRows.length === 0) return [];
+        const headers = ['rowNumber', 'username', 'timestamp', 'punchType', 'source', 'note', 'error'];
+        return headers.filter(header => header in invalidRows[0]);
+    }, [invalidRows]);
 
     return (
-        <div className="scoped-time-import time-import-page">
-            <div className="time-import-container">
-                <h3>Stempelzeiten aus Excel importieren</h3>
-                <form onSubmit={handleSubmit} className="import-form">
-                    <div>
-                        <input
-                            type="file"
-                            onChange={handleFileChange}
-                            accept=".xlsx, .xls"
-                            // ref={fileInputRef} // EINKOMMENTIEREN, falls benötigt
-                            className="file-input"
-                        />
+        <>
+            <Navbar />
+            <div className="time-import-page scoped-import">
+                {/* Dieser neue Wrapper zentriert den Inhalt */}
+                <div className="page-content-wrapper">
+                    <div className="header">
+                        <h1>Stempelzeiten aus Excel importieren</h1>
+                        <p>Laden Sie eine formatierte .xlsx-Datei hoch, um Arbeitszeiten für mehrere Benutzer gleichzeitig zu verarbeiten.</p>
                     </div>
-                    <button
-                        type="submit"
-                        disabled={isUploading || !selectedFile}
-                        className="import-button"
-                    >
-                        {isUploading ? 'Wird hochgeladen...' : 'Importieren'}
-                    </button>
-                    {isUploading && <div className="import-progress"><div className="import-progress-bar" style={{width:`${progress}%`}} /></div>}
-                </form>
-                {error && <p className="error-message">{error}</p>}
-                {renderFeedback()}
-                <div className="hint-text">
-                <p><strong>Hinweis zum Excel-Format:</strong></p>
-                <ul>
-                    <li>Die erste Zeile wird als Kopfzeile ignoriert.</li>
-                    <li>Spalte A: Username</li>
-                    <li>Spalte B: Datum (Format: JJJJ-MM-TT, z.B. 2024-12-31)</li>
-                    <li>Spalte C: Arbeitsbeginn (Format: HH:mm, z.B. 08:00)</li>
-                    <li>Spalte D: Pausenbeginn (Format: HH:mm, z.B. 12:00, optional)</li>
-                    <li>Spalte E: Pausenende (Format: HH:mm, z.B. 12:45, optional)</li>
-                    <li>Spalte F: Arbeitsende (Format: HH:mm, z.B. 17:00)</li>
-                    <li>Spalte G: Tagesnotiz (optional)</li>
-                </ul>
+
+                    <div className="card">
+                        <h2>Schritt 1: Datei auswählen</h2>
+                        <div {...getRootProps()} className={`upload-area ${isDragActive ? 'active' : ''}`}>
+                            <input {...getInputProps()} />
+                            {isDragActive ? <p>Lassen Sie die Datei jetzt los...</p> : file ? <p>Ausgewählt: <strong>{file.name}</strong><br/><span className="upload-hint">Klicken oder neue Datei hierher ziehen, um zu ändern.</span></p> : <p>Excel-Datei hierher ziehen oder klicken.</p>}
+                        </div>
+                        {file && !isUploading && (
+                            <button onClick={handleInitialImport} disabled={isUploading} className="action-button">
+                                {`Datei prüfen & importieren`}
+                            </button>
+                        )}
+                        {isUploading && (
+                            <div className="progress-bar">
+                                <div className="progress-bar-inner" style={{ width: `${progress}%` }}></div>
+                            </div>
+                        )}
+                    </div>
+
+                    {uploadResponse && (
+                        <div className="card">
+                            <h2>Schritt 2: Ergebnis des Imports</h2>
+                            <div className="feedback-summary">
+                                {typeof uploadResponse.importedCount === 'number' && (
+                                    <div className="summary-item success">
+                                        <span className="count">{uploadResponse.importedCount}</span>
+                                        <span className="label">Einträge erfolgreich importiert</span>
+                                    </div>
+                                )}
+                                {(uploadResponse.errors?.length > 0 || invalidRows.length > 0) && (
+                                    <div className="summary-item error">
+                                        <span className="count">{invalidRows.length || uploadResponse.errors.length}</span>
+                                        <span className="label">Fehler gefunden</span>
+                                    </div>
+                                )}
+                            </div>
+                            {error && <p className="error-message">{error}</p>}
+
+                            {invalidRows.length > 0 && (
+                                <div className="correction-section">
+                                    <h4>Fehlerhafte Zeilen korrigieren</h4>
+                                    <p>Bearbeiten Sie die Daten direkt in der Tabelle und importieren Sie die korrigierten Zeilen erneut.</p>
+                                    <div className="table-container">
+                                        <table className="correction-table">
+                                            <thead>
+                                            <tr>{tableHeaders.map(header => <th key={header}>{header}</th>)}</tr>
+                                            </thead>
+                                            <tbody>
+                                            {invalidRows.map((row, idx) => (
+                                                <tr key={idx}>
+                                                    {tableHeaders.map(header => (
+                                                        <td key={header} data-label={header}>
+                                                            {header !== 'error' && header !== 'rowNumber' ? <input value={row[header] || ''} onChange={e => handleRowChange(idx, header, e.target.value)} /> : <span>{row[header]}</span>}
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <button onClick={handleReimport} disabled={isReimporting} className="action-button reimport">
+                                        {isReimporting ? 'Re-Import läuft...' : `Korrigierte ${invalidRows.length} Zeilen importieren`}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    <div className="card">
+                        <h2>Hinweis zum Excel-Format</h2>
+                        <p>Bitte stellen Sie sicher, dass Ihre .xlsx-Datei die folgenden Spalten enthält. Die erste Zeile wird als Kopfzeile ignoriert.</p>
+                        <ul className="instructions-list">
+                            <li><strong>Spalte A:</strong> Username</li>
+                            <li><strong>Spalte B:</strong> Datum (Format: JJJJ-MM-TT)</li>
+                            <li><strong>Spalte C:</strong> Arbeitsbeginn (Format: HH:mm)</li>
+                            <li><strong>Spalte D:</strong> Pausenbeginn (Format: HH:mm, optional)</li>
+                            <li><strong>Spalte E:</strong> Pausenende (Format: HH:mm, optional)</li>
+                            <li><strong>Spalte F:</strong> Arbeitsende (Format: HH:mm)</li>
+                            <li><strong>Spalte G:</strong> Tagesnotiz (optional)</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 
