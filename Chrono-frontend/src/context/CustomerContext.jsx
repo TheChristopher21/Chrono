@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import api from '../utils/api';
 import { useNotification } from './NotificationContext';
 import { useTranslation } from './LanguageContext';
+import { useAuth } from './AuthContext';
 
 export const CustomerContext = createContext();
 
@@ -9,6 +10,7 @@ export const CustomerProvider = ({ children }) => {
     const [customers, setCustomers] = useState([]);
     const { notify } = useNotification();
     const { t } = useTranslation();
+    const { authToken } = useAuth();
 
     const fetchCustomers = useCallback(async () => {
 
@@ -59,7 +61,13 @@ export const CustomerProvider = ({ children }) => {
         }
     }, [notify, t]);
 
-    useEffect(() => { fetchCustomers(); }, [fetchCustomers]);
+    useEffect(() => {
+        if (authToken) {
+            fetchCustomers();
+        } else {
+            setCustomers([]);
+        }
+    }, [fetchCustomers, authToken]);
 
 
     return (
