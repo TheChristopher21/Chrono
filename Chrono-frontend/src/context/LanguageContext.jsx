@@ -611,6 +611,7 @@ const translations = {
             nextWeek: "Nächste Woche",
             copyWeeks: "Kopieren",
             weekShort: "KW"
+
         },
         quickStart: {
             title: "Quick Start",
@@ -1295,6 +1296,7 @@ const translations = {
             nextWeek: "Next Week",
             copyWeeks: "Copy",
             weekShort: "Week"
+
         },
         quickStart: {
             title: "Quick Start",

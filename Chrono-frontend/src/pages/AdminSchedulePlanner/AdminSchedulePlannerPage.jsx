@@ -5,6 +5,7 @@ import '../../styles/AdminSchedulePlannerPage.css';
 import { useTranslation } from '../../context/LanguageContext';
 import { startOfWeek, addDays, formatISO, format, differenceInCalendarWeeks, isSameWeek, isSameDay } from 'date-fns';
 
+
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const AdminSchedulePlannerPage = () => {
@@ -14,6 +15,17 @@ const AdminSchedulePlannerPage = () => {
   const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [dragUser, setDragUser] = useState(null);
   const [copyCount, setCopyCount] = useState(1);
+
+  const changeWeek = offset => {
+    setWeekStart(prev => addDays(prev, offset * 7));
+  };
+
+  const onWeekInput = e => {
+    const date = new Date(e.target.value);
+    if (!isNaN(date)) {
+      setWeekStart(startOfWeek(date, { weekStartsOn: 1 }));
+    }
+  };
 
   const changeWeek = offset => {
     setWeekStart(prev => addDays(prev, offset * 7));
@@ -115,6 +127,7 @@ const AdminSchedulePlannerPage = () => {
               <input type="number" min="1" value={copyCount} onChange={e => setCopyCount(e.target.value)} />
               <button onClick={copyWeeks}>{t('schedulePlanner.copyWeeks', 'Copy')}</button>
             </div>
+
           </div>
           {/* Users Liste */}
           <div className="users-list">
