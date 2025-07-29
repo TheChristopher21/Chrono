@@ -76,9 +76,9 @@ const WeekNavigator = () => {
   });
 
   return (
-      <div className="week-controls">
+      <div className="schedule-planner__controls">
         <button onClick={() => changeWeek(-1)}>&laquo;</button>
-        <span className={`week-display${isCurrentWeek ? ' current' : ''}`}>{weekLabel} | {rangeLabel}</span>
+        <span className={`schedule-planner__week-display${isCurrentWeek ? ' schedule-planner__week-display--current' : ''}`}>{weekLabel} | {rangeLabel}</span>
         <button onClick={() => changeWeek(1)}>&raquo;</button>
         <input type="date" value={format(weekStart, 'yyyy-MM-dd')} onChange={(e) => setWeekStart(new Date(e.target.value))} />
         <div className="copy-weeks">
@@ -128,9 +128,9 @@ const UserList = ({ setSchedule }) => {
   };
 
   return (
-      <div className="users-list">
+      <div className="schedule-planner__users">
         {isLoadingUsers ? <p>Lade Benutzer...</p> : users.map(u => (
-            <div key={u.id} className="user-item" draggable onDragStart={() => setDragUser(u)}>
+            <div key={u.id} className="schedule-planner__user-item" draggable onDragStart={() => setDragUser(u)}>
               {u.username}
             </div>
         ))}
@@ -180,7 +180,7 @@ const ScheduleTable = ({ schedule, setSchedule }) => {
   }, {});
 
   return (
-      <table className="schedule-table">
+      <table className="schedule-planner__table">
         <thead>
         <tr>{days.map(d => <th key={d}>{d}</th>)}</tr>
         </thead>
@@ -193,7 +193,7 @@ const ScheduleTable = ({ schedule, setSchedule }) => {
             const today = isSameDay(new Date(dateKey), new Date());
             return (
                 <td key={dateKey}
-                    className={`droppable ${conflict ? 'conflict' : ''} ${today ? 'today' : ''}`}
+                    className={`schedule-planner__cell--droppable ${conflict ? 'schedule-planner__cell--conflict' : ''} ${today ? 'schedule-planner__cell--today' : ''}`}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={() => onDrop(dateKey)}>
                   {user ? user.username : '—'}
@@ -238,8 +238,8 @@ const AdminSchedulePlannerPage = () => {
   return (
       <>
         <Navbar />
-        <div className="admin-schedule-planner-page scoped-dashboard">
-          <div className="main-content">
+        <div className="schedule-planner scoped-dashboard">
+          <div className="schedule-planner__main">
             <WeekNavigator />
             {isLoading ? (
                 <div className="loading-indicator">Lade Arbeitsplan...</div>

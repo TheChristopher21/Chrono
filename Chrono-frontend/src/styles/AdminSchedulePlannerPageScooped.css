@@ -13,6 +13,28 @@
   box-sizing: border-box;
 }
 
+.schedule-planner__main {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+/* Dark Mode Farben */
+[data-theme="dark"] .schedule-planner {
+  --c-primary: #58a6ff;
+  --c-danger: #f87171;
+  --c-text: var(--brand-gray-200);
+  --c-text-muted: var(--brand-gray-400);
+  --c-bg: #0d1117;
+  --c-bg-surface: #161b22;
+  --c-border: #30363d;
+  --shadow-color: rgb(0 0 0 / 0.4);
+  --shadow-sm: 0 1px 2px 0 var(--shadow-color);
+  --shadow-md: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
+  --shadow-lg: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -4px var(--shadow-color);
+}
+
 /* ─ Steuerung der Woche ───────────────── */
 .schedule-planner__controls {
   display: flex;
