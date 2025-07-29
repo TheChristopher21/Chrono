@@ -1,0 +1,16 @@
+.schedule-planner.scoped {
+  padding: var(--u-gap-md);
+}
+
+.schedule-planner.scoped table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: var(--u-gap-sm);
+}
+
+.schedule-planner.scoped th,
+.schedule-planner.scoped td {
+  border: 1px solid var(--c-line);
+  padding: 4px;
+  text-align: center;
+}
