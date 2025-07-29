@@ -64,12 +64,29 @@ const AdminSchedulePlannerPage = () => {
     const epochMonday = new Date(2020, 0, 6);
     const weekIndex = Math.abs(differenceInCalendarWeeks(weekStart, epochMonday));
     const startIndex = weekIndex % users.length;
-    const newSchedule = {};
+
+    const newSchedule = { ...schedule };
+    const assigned = new Set(Object.values(newSchedule).map(e => e.userId).filter(Boolean));
+    let userIdx = 0;
+
     days.forEach((_, i) => {
       const dateKey = formatISO(addDays(weekStart, i), { representation: 'date' });
-      const user = users[(startIndex + i) % users.length];
-      if (user) newSchedule[dateKey] = { userId: user.id };
+      if (newSchedule[dateKey] && newSchedule[dateKey].userId) return;
+
+      let attempts = 0;
+      let user;
+      while (attempts < users.length) {
+        user = users[(startIndex + userIdx) % users.length];
+        userIdx += 1;
+        attempts += 1;
+        if (!assigned.has(user.id)) break;
+      }
+
+      if (!user) user = users[(startIndex + userIdx++) % users.length];
+      newSchedule[dateKey] = { ...(newSchedule[dateKey] || {}), userId: user.id };
+      assigned.add(user.id);
     });
+
     setSchedule(newSchedule);
   };
 
