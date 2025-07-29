@@ -1,5 +1,5 @@
 // src/pages/UserDashboard/UserDashboard.jsx
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import  { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
 import VacationCalendar from '../../components/VacationCalendar';
 import { useAuth } from '../../context/AuthContext';

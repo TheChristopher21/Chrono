@@ -3,6 +3,10 @@
    ========================================================================= */
 
 /* ---------- 0)  CSS-Reset / Normalisieren ------------------------------ */
+/* --- Tailwind‑Override: Körperfarbe folgt Theme --- */
+html[data-theme="dark"] body {
+  background: var(--c-bg) !important;
+}
 
 *,
 *::before,

@@ -1,45 +1,152 @@
-.admin-schedule-planner-page {
+/* AdminSchedulePlannerPage – token‑rein, Dark/Light‑ready */
+.admin-schedule-planner-page.scoped-dashboard {
+  min-height: calc(100vh - var(--nav-height, 60px));
+  width: 100%;
+  max-width: 1440px;
+  margin-inline: auto;
   padding: var(--ud-gap-lg);
   display: flex;
   gap: var(--ud-gap-lg);
+  background: var(--c-bg);
+  box-sizing: border-box;
 }
 
+/* ───────────────── Users‑Liste ───────────────── */
 .admin-schedule-planner-page .users-list {
-  width: 220px;
+  flex: 0 0 250px;
   border: 1px solid var(--c-border);
-  border-radius: var(--ud-radius-sm);
+  border-radius: var(--ud-radius-md);
   background: var(--c-card);
-  padding: var(--ud-gap-sm);
+  padding: var(--ud-gap-md);
   display: flex;
   flex-direction: column;
   gap: var(--ud-gap-sm);
-  height: fit-content;
+  box-shadow: var(--ud-shadow-card);
 }
 
 .admin-schedule-planner-page .user-item {
   border: 1px solid var(--c-line);
-  padding: var(--ud-gap-xs) var(--ud-gap-sm);
-  border-radius: var(--ud-radius-xs);
+  padding: .65em .9em;
+  border-radius: var(--ud-radius-sm);
   background: var(--c-surface);
   cursor: grab;
+  font-weight: 500;
+  transition: border-color .15s, background .12s;
+}
+.admin-schedule-planner-page .user-item:hover {
+  border-color: var(--c-pri);
+  background: color-mix(in srgb, var(--c-surface) 85%, var(--c-pri) 15%);
 }
 
-.admin-schedule-planner-page .schedule-table {
-  width: 100%;
-  border-collapse: collapse;
+/* Buttons in der Liste */
+.admin-schedule-planner-page .users-list button {
+  margin-top: auto;
+  padding: .65em 1.2em;
+  border-radius: var(--ud-radius-sm);
+  font-weight: 600;
+  font-size: .95rem;
+  border: none;
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s;
 }
+.admin-schedule-planner-page .users-list button:first-of-type {
+  background: var(--c-muted);
+  color: var(--c-card);
+}
+.admin-schedule-planner-page .users-list button:last-of-type {
+  background: var(--c-pri);
+  color: #fff;
+}
+.admin-schedule-planner-page .users-list button:hover {
+  filter: brightness(.92);
+  box-shadow: 0 2px 8px var(--shadow-color);
+}
+
+/* ───────────────── Wochen‑Tabelle ───────────────── */
+.admin-schedule-planner-page .schedule-table {
+  flex: 1 1 0;
+  min-width: 520px;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--ud-radius-md);
+  box-shadow: var(--ud-shadow-card);
+  table-layout: fixed;
+  overflow: hidden;
+}
+
 .admin-schedule-planner-page th,
 .admin-schedule-planner-page td {
-  border: 1px solid var(--c-line);
-  padding: var(--ud-gap-sm);
+  padding: 1em .4em;
   text-align: center;
+  border: 1px solid var(--c-line);
+  font-size: .97rem;
 }
 
+.admin-schedule-planner-page th {
+  background: var(--c-surface);
+  color: var(--c-pri);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  border-bottom: 2px solid var(--c-pri);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.admin-schedule-planner-page td {
+  background: var(--c-bg);
+  font-weight: 500;
+}
+
+/* Drop‑Zellen */
 .admin-schedule-planner-page td.droppable {
-  min-height: 40px;
+  min-height: 42px;
+  background: var(--c-surface);
+  border-radius: var(--ud-radius-xs);
+  cursor: pointer;
+  transition: background .14s, box-shadow .15s;
+}
+.admin-schedule-planner-page td.droppable:hover {
+  background: color-mix(in srgb, var(--c-surface) 85%, var(--c-pri) 15%);
+  box-shadow: 0 0 0 2px var(--c-pri),
+  0 2px 8px var(--shadow-color);
 }
 
+/* Konflikt‑Zelle */
 .admin-schedule-planner-page td.conflict {
   background: var(--c-error);
   color: #fff;
+  animation: shake .18s 2;
+}
+@keyframes shake {
+  25% { transform: translateX(-3px); }
+  50% { transform: translateX( 3px); }
+  75% { transform: translateX(-2px); }
+}
+
+/* ───────────────── Responsive ───────────────── */
+@media (max-width: 1024px) {
+  .admin-schedule-planner-page { flex-direction: column; }
+  .admin-schedule-planner-page .users-list { flex-direction: row; flex-wrap: wrap; gap: var(--ud-gap-xs); }
+}
+
+@media (max-width: 600px) {
+  .admin-schedule-planner-page .schedule-table { min-width: 320px; font-size: .9rem; }
+}
+
+/* ───────────────── Scrollbar ───────────────── */
+.admin-schedule-planner-page ::-webkit-scrollbar {
+  width: 8px;
+  background: var(--c-surface);
+}
+.admin-schedule-planner-page ::-webkit-scrollbar-thumb {
+  background: var(--c-line);
+  border-radius: 6px;
+}
+.admin-schedule-planner-page {
+  isolation: isolate;            /* neuer Stacking‑Context */
+  background: var(--c-bg);       /* eigenes volldeckendes BG */
 }

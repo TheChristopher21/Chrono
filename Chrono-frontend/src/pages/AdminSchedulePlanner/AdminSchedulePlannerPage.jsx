@@ -5,15 +5,16 @@ import '../../styles/AdminSchedulePlannerPage.css';
 import { useTranslation } from '../../context/LanguageContext';
 import { startOfWeek, addDays, formatISO } from 'date-fns';
 
-const days = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 const AdminSchedulePlannerPage = () => {
   const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [schedule, setSchedule] = useState({});
-  const [weekStart, setWeekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const [weekStart] = useState(startOfWeek(new Date(), { weekStartsOn: 1 }));
   const [dragUser, setDragUser] = useState(null);
 
+  /* ---------------------------------- Daten laden ---------------------------------- */
   useEffect(() => {
     api.get('/api/admin/users').then(res => {
       setUsers(Array.isArray(res.data) ? res.data : []);
@@ -23,28 +24,27 @@ const AdminSchedulePlannerPage = () => {
   useEffect(() => {
     const start = formatISO(weekStart, { representation: 'date' });
     const end = formatISO(addDays(weekStart, 6), { representation: 'date' });
-    api.get('/api/admin/schedule', { params: { start, end } })
-      .then(res => {
-        const map = {};
-        (res.data || []).forEach(e => {
-          const dayKey = formatISO(new Date(e.date), { representation: 'date' });
-          map[dayKey] = { userId: e.userId, id: e.id };
+    api
+        .get('/api/admin/schedule', { params: { start, end } })
+        .then(res => {
+          const map = {};
+          (res.data || []).forEach(e => {
+            const dayKey = formatISO(new Date(e.date), { representation: 'date' });
+            map[dayKey] = { userId: e.userId, id: e.id };
+          });
+          setSchedule(map);
         });
-        setSchedule(map);
-      });
   }, [weekStart]);
 
-  const assign = (dateKey, userId) => {
-    setSchedule(prev => ({ ...prev, [dateKey]: { ...prev[dateKey], userId } }));
-  };
-
-  const onDragStart = (u) => setDragUser(u);
-  const onDrop = (dateKey) => {
-    if (dragUser) assign(dateKey, dragUser.id);
+  /* -------------------------------- Drag & Drop ------------------------------------ */
+  const onDragStart = user => setDragUser(user);
+  const allowDrop = e => e.preventDefault();
+  const onDrop = dateKey => {
+    if (dragUser) setSchedule(prev => ({ ...prev, [dateKey]: { ...prev[dateKey], userId: dragUser.id } }));
     setDragUser(null);
   };
-  const allowDrop = e => e.preventDefault();
 
+  /* ----------------------------- Auto‑Fill & Speichern ----------------------------- */
   const autoFill = () => {
     const newSchedule = {};
     days.forEach((_, i) => {
@@ -61,59 +61,63 @@ const AdminSchedulePlannerPage = () => {
     });
   };
 
-  const weekDates = days.map((_, i) => addDays(weekStart, i));
-  const dateKeys = weekDates.map(d => formatISO(d, { representation: 'date' }));
-
-  const conflictMap = Object.values(schedule).reduce((acc, entry) => {
-    if (!entry?.userId) return acc;
-    acc[entry.userId] = (acc[entry.userId] || 0) + 1;
+  /* --------------------------- Hilfs‑Berechnungen ---------------------------------- */
+  const dateKeys = days.map((_, i) => formatISO(addDays(weekStart, i), { representation: 'date' }));
+  const conflictMap = Object.values(schedule).reduce((acc, { userId }) => {
+    if (!userId) return acc;
+    acc[userId] = (acc[userId] || 0) + 1;
     return acc;
   }, {});
 
+  /* ----------------------------------- Render -------------------------------------- */
   return (
-    <div className="admin-schedule-planner-page scoped-dashboard">
-      <Navbar />
-      <div className="users-list">
-        {users.map(u => (
-          <div
-            key={u.id}
-            className="user-item"
-            draggable
-            onDragStart={() => onDragStart(u)}
-          >
-            {u.username}
-          </div>
-        ))}
-        <button onClick={autoFill}>{t('schedulePlanner.auto', 'Auto Fill')}</button>
-        <button onClick={save}>{t('schedulePlanner.save', 'Save')}</button>
-      </div>
-      <table className="schedule-table">
-        <thead>
-          <tr>
-            {days.map((d, idx) => <th key={d}>{d}</th>)}
-          </tr>
-        </thead>
-        <tbody>
-          <tr>
-            {dateKeys.map(dateKey => {
-              const entry = schedule[dateKey] || {};
-              const conflict = entry.userId && conflictMap[entry.userId] > 1;
-              const user = users.find(u => u.id === entry.userId);
-              return (
-                <td
-                  key={dateKey}
-                  className={`droppable ${conflict ? 'conflict' : ''}`}
-                  onDragOver={allowDrop}
-                  onDrop={() => onDrop(dateKey)}
+      <>
+        <Navbar />
+
+        <div className="admin-schedule-planner-page scoped-dashboard">
+          {/* Users Liste */}
+          <div className="users-list">
+            {users.map(u => (
+                <div
+                    key={u.id}
+                    className="user-item"
+                    draggable
+                    onDragStart={() => onDragStart(u)}
                 >
-                  {user ? user.username : '-'}
-                </td>
-              );
-            })}
-          </tr>
-        </tbody>
-      </table>
-    </div>
+                  {u.username}
+                </div>
+            ))}
+            <button onClick={autoFill}>{t('schedulePlanner.auto', 'Auto&nbsp;Fill')}</button>
+            <button onClick={save}>{t('schedulePlanner.save', 'Save')}</button>
+          </div>
+
+          {/* Wochen‑Tabelle */}
+          <table className="schedule-table">
+            <thead>
+            <tr>{days.map(d => <th key={d}>{d}</th>)}</tr>
+            </thead>
+            <tbody>
+            <tr>
+              {dateKeys.map(dateKey => {
+                const entry = schedule[dateKey] || {};
+                const conflict = entry.userId && conflictMap[entry.userId] > 1;
+                const user = users.find(u => u.id === entry.userId);
+                return (
+                    <td
+                        key={dateKey}
+                        className={`droppable${conflict ? ' conflict' : ''}`}
+                        onDragOver={allowDrop}
+                        onDrop={() => onDrop(dateKey)}
+                    >
+                      {user ? user.username : '—'}
+                    </td>
+                );
+              })}
+            </tr>
+            </tbody>
+          </table>
+        </div>
+      </>
   );
 };
 
