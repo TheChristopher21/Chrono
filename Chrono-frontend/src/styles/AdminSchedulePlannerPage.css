@@ -19,6 +19,37 @@
   margin-bottom: var(--ud-gap-md);
 }
 
+.admin-schedule-planner-page .week-display {
+  font-weight: 600;
+}
+.admin-schedule-planner-page .week-display.current {
+  color: var(--c-pri);
+}
+
+.admin-schedule-planner-page .week-controls .copy-weeks {
+  display: flex;
+  align-items: center;
+  gap: var(--ud-gap-xs);
+}
+.admin-schedule-planner-page .week-controls .copy-weeks input {
+  width: 3.5rem;
+  padding: .4em;
+  border: 1px solid var(--c-border);
+  border-radius: var(--ud-radius-sm);
+  background: var(--c-surface);
+  text-align: center;
+}
+.admin-schedule-planner-page .week-controls .copy-weeks button {
+  padding: .4em .8em;
+  border: none;
+  border-radius: var(--ud-radius-sm);
+  background: var(--c-muted);
+  color: var(--c-card);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+
 .admin-schedule-planner-page .week-controls button {
   padding: .4em .8em;
   border: none;
@@ -139,6 +170,11 @@
   background: color-mix(in srgb, var(--c-surface) 85%, var(--c-pri) 15%);
   box-shadow: 0 0 0 2px var(--c-pri),
   0 2px 8px var(--shadow-color);
+}
+
+.admin-schedule-planner-page td.today {
+  background: var(--c-pri-dim);
+  color: #fff;
 }
 
 /* Konflikt‑Zelle */

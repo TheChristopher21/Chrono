@@ -608,7 +608,10 @@ const translations = {
             auto: "Automatisch",
             save: "Speichern",
             prevWeek: "Vorherige Woche",
-            nextWeek: "Nächste Woche"
+            nextWeek: "Nächste Woche",
+            copyWeeks: "Kopieren",
+            weekShort: "KW"
+
         },
         quickStart: {
             title: "Quick Start",
@@ -1290,7 +1293,10 @@ const translations = {
             auto: "Auto Fill",
             save: "Save",
             prevWeek: "Prev Week",
-            nextWeek: "Next Week"
+            nextWeek: "Next Week",
+            copyWeeks: "Copy",
+            weekShort: "Week"
+
         },
         quickStart: {
             title: "Quick Start",
