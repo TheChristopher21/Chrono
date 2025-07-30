@@ -28,6 +28,8 @@ public class UserDTO {
     private String healthInsurance;
     private String personnelNumber;
     private String email;
+    private String mobilePhone;
+    private String landlinePhone;
     private Boolean emailNotifications;
     private List<String> roles;
     private Integer expectedWorkDays;
@@ -78,6 +80,8 @@ public class UserDTO {
         this.healthInsurance = user.getHealthInsurance();
         this.personnelNumber = user.getPersonnelNumber();
         this.email = user.getEmail();
+        this.mobilePhone = user.getMobilePhone();
+        this.landlinePhone = user.getLandlinePhone();
         this.emailNotifications = user.isEmailNotifications();
         this.roles = user.getRoles().stream()
                 .map(Role::getRoleName)
@@ -113,7 +117,8 @@ public class UserDTO {
                    String taxClass, String tarifCode, String canton, String civilStatus,
                    Integer children, String religion,
                    String healthInsurance, String personnelNumber,
-                   String email, Boolean emailNotifications, List<String> roles,
+                   String email, String mobilePhone, String landlinePhone,
+                   Boolean emailNotifications, List<String> roles,
                    Integer expectedWorkDays, Double dailyWorkHours, Integer breakDuration, String color,
                    Integer scheduleCycle, List<Map<String, Double>> weeklySchedule, LocalDate scheduleEffectiveDate,
                    Boolean isHourly, Integer annualVacationDays, Integer trackingBalanceInMinutes,
@@ -139,6 +144,8 @@ public class UserDTO {
         this.healthInsurance = healthInsurance;
         this.personnelNumber = personnelNumber;
         this.email = email;
+        this.mobilePhone = mobilePhone;
+        this.landlinePhone = landlinePhone;
         this.emailNotifications = emailNotifications != null ? emailNotifications : true;
         this.roles = roles != null ? roles : new ArrayList<>();
         this.expectedWorkDays = expectedWorkDays;
@@ -184,6 +191,8 @@ public class UserDTO {
     public String getHealthInsurance() { return healthInsurance; }
     public String getPersonnelNumber() { return personnelNumber; }
     public String getEmail() { return email; }
+    public String getMobilePhone() { return mobilePhone; }
+    public String getLandlinePhone() { return landlinePhone; }
     public Boolean getEmailNotifications() { return emailNotifications; }
     public List<String> getRoles() { return roles; }
     public Integer getExpectedWorkDays() { return expectedWorkDays; }
@@ -229,6 +238,8 @@ public class UserDTO {
     public void setHealthInsurance(String healthInsurance) { this.healthInsurance = healthInsurance; }
     public void setPersonnelNumber(String personnelNumber) { this.personnelNumber = personnelNumber; }
     public void setEmail(String email) { this.email = email; }
+    public void setMobilePhone(String mobilePhone) { this.mobilePhone = mobilePhone; }
+    public void setLandlinePhone(String landlinePhone) { this.landlinePhone = landlinePhone; }
     public void setEmailNotifications(Boolean emailNotifications) { this.emailNotifications = emailNotifications; }
     public void setRoles(List<String> roles) { this.roles = roles; }
     public void setExpectedWorkDays(Integer expectedWorkDays) { this.expectedWorkDays = expectedWorkDays; }

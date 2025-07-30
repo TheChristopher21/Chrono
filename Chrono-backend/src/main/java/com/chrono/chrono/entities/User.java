@@ -56,6 +56,12 @@ public class User {
     @Column(name = "email_notifications", nullable = false)
     private boolean emailNotifications = true;
 
+    @Column(name = "mobile_phone")
+    private String mobilePhone;
+
+    @Column(name = "landline_phone")
+    private String landlinePhone;
+
 
     @Convert(converter = com.chrono.chrono.utils.EncryptionConverter.class)
     private String bankAccount;
@@ -219,6 +225,12 @@ public class User {
 
     public boolean isEmailNotifications() { return emailNotifications; }
     public void setEmailNotifications(boolean emailNotifications) { this.emailNotifications = emailNotifications; }
+
+    public String getMobilePhone() { return mobilePhone; }
+    public void setMobilePhone(String mobilePhone) { this.mobilePhone = mobilePhone; }
+
+    public String getLandlinePhone() { return landlinePhone; }
+    public void setLandlinePhone(String landlinePhone) { this.landlinePhone = landlinePhone; }
 
 
     public String getBankAccount() { return bankAccount; }
