@@ -14,6 +14,7 @@ import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.EmailService;
 import com.chrono.chrono.services.PdfService;
+import com.chrono.chrono.services.TaxCalculationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -39,9 +40,9 @@ public class PayrollService {
     private PdfService pdfService;
     @Autowired
     private PayslipScheduleRepository payslipScheduleRepository;
+    @Autowired
+    private TaxCalculationService taxCalculationService;
 
-    private static final double TAX_RATE = 0.15; // simple example tax
-    private static final double SOCIAL_RATE = 0.05; // social deductions
     private static final double OVERTIME_BONUS = 0.25;
 
     private void audit(Payslip ps, String action, String author, String comment) {
@@ -83,10 +84,12 @@ public class PayrollService {
             }
         }
         double gross = basePay + overtimePay;
-        double tax = gross * TAX_RATE;
-        double social = gross * SOCIAL_RATE;
-        double deductions = tax + social;
+        TaxCalculationService.Result res = taxCalculationService.calculate(user, gross);
+        double tax = res.getTax();
+        double social = res.getSocial();
+        double deductions = res.getTotal();
         double net = gross - deductions;
+        double employer = res.getEmployer();
         Payslip ps = new Payslip();
         ps.setUser(user);
         ps.setPeriodStart(start);
@@ -107,7 +110,7 @@ public class PayrollService {
         }
         ps.getDeductionsList().add(new PayComponent("Tax", tax));
         ps.getDeductionsList().add(new PayComponent("Social", social));
-        ps.setEmployerContributions(0.0);
+        ps.setEmployerContributions(employer);
         if (payoutDate != null) {
             ps.setPayoutDate(payoutDate);
         } else {
