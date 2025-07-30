@@ -49,6 +49,8 @@ const AdminUserManagementPage = () => {
         healthInsurance: '',
         personnelNumber: '',
         email: '',
+        mobilePhone: '',
+        landlinePhone: '',
         password: '',
         roles: ['ROLE_USER'],
         expectedWorkDays: 5.0, // Default für alle neuen User
@@ -87,6 +89,8 @@ const AdminUserManagementPage = () => {
                 religion: user.religion || '',
                 bankAccount: user.bankAccount || '',
                 socialSecurityNumber: user.socialSecurityNumber || '',
+                mobilePhone: user.mobilePhone || '',
+                landlinePhone: user.landlinePhone || '',
                 isHourly: user.isHourly || false,
                 isPercentage: user.isPercentage || false,
                 workPercentage: user.workPercentage !== null && user.workPercentage !== undefined ? user.workPercentage : (user.isPercentage ? 100 : null),
@@ -327,6 +331,8 @@ const AdminUserManagementPage = () => {
             religion: userToEdit.religion || '',
             bankAccount: userToEdit.bankAccount || '',
             socialSecurityNumber: userToEdit.socialSecurityNumber || '',
+            mobilePhone: userToEdit.mobilePhone || '',
+            landlinePhone: userToEdit.landlinePhone || '',
             workPercentage: userToEdit.workPercentage !== null && userToEdit.workPercentage !== undefined ? userToEdit.workPercentage : (userToEdit.isPercentage ? 100 : null),
             expectedWorkDays: userToEdit.expectedWorkDays !== null && userToEdit.expectedWorkDays !== undefined ? userToEdit.expectedWorkDays : (userToEdit.isHourly ? null : 5.0) // Wichtig für Edit
             ,hourlyWage: userToEdit.hourlyRate ?? null

@@ -255,6 +255,25 @@ const AdminUserForm = ({
                         required
                     />
                 </div>
+                <div className="form-group">
+                    <label htmlFor="mobilePhone">{t("userManagement.mobilePhone", "Handynummer")}</label>
+                    <input
+                        id="mobilePhone"
+                        type="tel"
+                        value={userData.mobilePhone || ""}
+                        onChange={(e) => handleChange("mobilePhone", e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="landlinePhone">{t("userManagement.landlinePhone", "Festnetz (optional)")}</label>
+                    <input
+                        id="landlinePhone"
+                        type="tel"
+                        value={userData.landlinePhone || ""}
+                        onChange={(e) => handleChange("landlinePhone", e.target.value)}
+                    />
+                </div>
 
                 <div className="form-group">
                     <label htmlFor="roles">{t("userManagement.role", "Rolle")}:</label>

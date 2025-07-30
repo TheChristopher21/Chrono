@@ -83,6 +83,8 @@ public class UserController {
         user.setHealthInsurance(dto.getHealthInsurance());
         user.setPersonnelNumber(dto.getPersonnelNumber());
         user.setEmail(dto.getEmail());
+        user.setMobilePhone(dto.getMobilePhone());
+        user.setLandlinePhone(dto.getLandlinePhone());
         if (dto.getEmailNotifications() != null) {
             user.setEmailNotifications(dto.getEmailNotifications());
         }
@@ -124,6 +126,8 @@ public class UserController {
         dto.setHealthInsurance(user.getHealthInsurance());
         dto.setPersonnelNumber(user.getPersonnelNumber());
         dto.setEmail(user.getEmail());
+        dto.setMobilePhone(user.getMobilePhone());
+        dto.setLandlinePhone(user.getLandlinePhone());
         dto.setIsHourly(user.getIsHourly());
         dto.setIsPercentage(user.getIsPercentage());
         dto.setAnnualVacationDays(user.getAnnualVacationDays());

@@ -156,6 +156,8 @@ public class AdminUserController {
         newUser.setHealthInsurance(userDTO.getHealthInsurance());
         newUser.setPersonnelNumber(userDTO.getPersonnelNumber());
         newUser.setEmail(userDTO.getEmail());
+        newUser.setMobilePhone(userDTO.getMobilePhone());
+        newUser.setLandlinePhone(userDTO.getLandlinePhone());
         newUser.setPassword(passwordEncoder.encode(userDTO.getPassword()));
 
         if (targetCompany != null) {
@@ -345,6 +347,8 @@ public class AdminUserController {
         existingUser.setHealthInsurance(userDTO.getHealthInsurance());
         existingUser.setPersonnelNumber(userDTO.getPersonnelNumber());
         existingUser.setEmail(userDTO.getEmail());
+        existingUser.setMobilePhone(userDTO.getMobilePhone());
+        existingUser.setLandlinePhone(userDTO.getLandlinePhone());
         existingUser.setColor(userDTO.getColor());
         existingUser.setAnnualVacationDays(userDTO.getAnnualVacationDays() != null ? userDTO.getAnnualVacationDays() : existingUser.getAnnualVacationDays());
         existingUser.setBreakDuration(userDTO.getBreakDuration() != null ? userDTO.getBreakDuration() : existingUser.getBreakDuration());
