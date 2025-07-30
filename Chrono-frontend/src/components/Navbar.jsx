@@ -104,40 +104,41 @@ const Navbar = () => {
                 <ul className="navbar-links">
                     {!authToken || isPublicPage ? (
                         <>
-                            {/* ... Ihre öffentlichen Links (Login, Register) bleiben unverändert ... */}
                             <li><Link to="/login">{t('navbar.login', 'Login')}</Link></li>
                             <li><Link to="/register">{t('navbar.register', 'Registrieren')}</Link></li>
                         </>
                     ) : (
                         <>
-                            {/* Rollenspezifische Links */}
-                            {currentUser?.roles?.includes('ROLE_SUPERADMIN') ? (
-                                <li><Link to="/superadmin/companies">{t('navbar.companyManagement', 'Firmen')}</Link></li>
-                            ) : currentUser?.roles?.includes('ROLE_ADMIN') ? (
-                                <>
-                                    <li><Link to="/admin">{t('navbar.adminStart', 'Admin‑Start')}</Link></li>
-                                    <li><Link to="/admin/users">{t('navbar.userManagement', 'Benutzerverwaltung')}</Link></li>
+                            {/* FIX: Stellt sicher, dass currentUser geladen ist, bevor die Links gerendert werden */}
+                            {currentUser && (<>
+                                {/* Rollenspezifische Links */}
+                                {currentUser.roles?.includes('ROLE_SUPERADMIN') ? (
+                                    <li><Link to="/superadmin/companies">{t('navbar.companyManagement', 'Firmen')}</Link></li>
+                                ) : currentUser.roles?.includes('ROLE_ADMIN') ? (
+                                    <>
+                                        <li><Link to="/admin/dashboard">{t('navbar.adminStart', 'Admin‑Start')}</Link></li>
+                                        <li><Link to="/admin/users">{t('navbar.userManagement', 'Benutzerverwaltung')}</Link></li>
+                                        {currentUser.customerTrackingEnabled && (
+                                            <>
+                                                <li><Link to="/admin/customers">{t('navbar.customerManagement', 'Kunden')}</Link></li>
+                                                <li><Link to="/admin/projects">{t('navbar.projectManagement', 'Projekte')}</Link></li>
+                                            </>
+                                        )}
+                                        <li><Link to="/admin/payslips">{t('navbar.payslips', 'Abrechnungen')}</Link></li>
+                                        <li><Link to="/admin/schedule">{t('navbar.schedulePlanner', 'Dienstplan')}</Link></li>
+                                        <li><Link to="/admin/change-password">{t('admin.changePasswordTitle', 'Passwort ändern')}</Link></li>
+                                    </>
+                                ) : (
+                                    <>
+                                        <li><Link to={currentUser.isPercentage ? "/percentage-punch" : "/dashboard"}>{t('navbar.myDashboard', 'Mein Dashboard')}</Link></li>
+                                        <li><Link to="/payslips">{t('navbar.payslips', 'Abrechnungen')}</Link></li>
+                                        <li><Link to="/personal-data">{t('navbar.profile', 'Mein Profil')}</Link></li>
+                                        <li><Link to="/chat">{t('navbar.chatbot', 'Chatbot')}</Link></li>
+                                    </>
+                                )}
+                            </>)}
 
-                                    {currentUser?.customerTrackingEnabled && (
-                                        <>
-                                            <li><Link to="/admin/customers">{t('navbar.customerManagement', 'Kunden')}</Link></li>
-                                            <li><Link to="/admin/projects">{t('navbar.projectManagement', 'Projekte')}</Link></li>
-                                        </>
-                                    )}
-                                    <li><Link to="/admin/payslips">{t('navbar.payslips', 'Abrechnungen')}</Link></li>
-                                    <li><Link to="/admin/schedule">{t('navbar.schedulePlanner', 'Dienstplan')}</Link></li>
-                                    <li><Link to="/admin/change-password">{t('admin.changePasswordTitle', 'Passwort ändern')}</Link></li>
-                                </>
-                            ) : (
-                                <>
-                                    <li><Link to="/user">{t('navbar.myDashboard', 'Mein Dashboard')}</Link></li>
-                                    <li><Link id="payslips-link" to="/payslips">{t('navbar.payslips', 'Abrechnungen')}</Link></li>
-                                    <li><Link to="/profile">{t('navbar.profile', 'Mein Profil')}</Link></li>
-                                    <li><Link to="/chat">{t('navbar.chatbot', 'Chatbot')}</Link></li>
-                                </>
-                            )}
-
-                            {/* NEU START: Changelog Links für eingeloggte User */}
+                            {/* Changelog Links für eingeloggte User */}
                             <li>
                                 <a href="#" onClick={handleChangelogClick} className="changelog-link">
                                     {t('navbar.whatsNew', 'Was ist neu?')}
@@ -147,7 +148,6 @@ const Navbar = () => {
                             <li>
                                 <Link to="/whats-new">{t('navbar.history', 'Update-Verlauf')}</Link>
                             </li>
-                            {/* NEU ENDE */}
 
                             {/* Username + Logout */}
                             <li className="navbar-username">
@@ -191,14 +191,12 @@ const Navbar = () => {
                 </ul>
             </nav>
 
-            {/* NEU START: Das Modal wird hier gerendert, wenn es aktiv ist */}
             {showChangelogModal && (
                 <ChangelogModal
                     changelog={latestChangelog}
                     onClose={() => setShowChangelogModal(false)}
                 />
             )}
-            {/* NEU ENDE */}
         </div>
     );
 };

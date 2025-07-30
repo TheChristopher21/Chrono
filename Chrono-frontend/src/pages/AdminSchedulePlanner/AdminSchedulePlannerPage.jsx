@@ -7,6 +7,7 @@ import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
 import '../../styles/AdminSchedulePlannerPageScooped.css';
 import { useTranslation } from '../../context/LanguageContext';
+import { useNotification } from '../../context/NotificationContext'; // NEU
 import { useAuth } from '../../context/AuthContext';
 
 const days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
@@ -20,6 +21,7 @@ const fetchVacations = async () => {
   const { data } = await api.get('/api/vacation/all');
   return Array.isArray(data) ? data : [];
 };
+
 
 const usePlannerStore = create((set) => ({
   weekStart: startOfWeek(new Date(), { weekStartsOn: 1 }),
@@ -104,6 +106,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
   const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
   const { data: shifts = [], isLoading: isLoadingShifts } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
   const { weekStart, dragUser, setDragUser } = usePlannerStore();
+  const { notify } = useNotification(); // NEU
   const { t } = useTranslation();
   const [hoveredCell, setHoveredCell] = React.useState(null);
   const queryClient = useQueryClient();
@@ -121,8 +124,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
     if (!dragUser) return;
 
     const vacForUser = vacationMap?.[dragUser.username]?.[dateKey];
-    if (vacForUser) {
-      alert(t('schedulePlanner.userOnVacation', 'Dieser Mitarbeiter ist an diesem Tag im Urlaub'));
+    if (vacForUser) { // Verhindert das Ablegen, wenn der User im Urlaub ist
       setDragUser(null);
       return;
     }
@@ -156,13 +158,24 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
             {dateKeys.map(dateKey => {
               const today = isSameDay(new Date(dateKey), new Date());
               const holidayName = holidays[dateKey];
+              // NEU: Prüfen, ob der gezogene User an diesem Tag Urlaub hat
+              const isVacationDayForDraggedUser = dragUser && vacationMap?.[dragUser.username]?.[dateKey];
+
               return (
-                  <td key={dateKey} className={`day-cell ${today ? 'day-cell-today' : ''}`}>
+                  <td key={dateKey}
+                      // NEU: Fügt die "on-vacation" Klasse hinzu, wenn der User im Urlaub ist
+                      className={`day-cell ${today ? 'day-cell-today' : ''} ${isVacationDayForDraggedUser ? 'on-vacation' : ''}`}
+                      title={holidayName || ''} // NEU: Fügt den Tooltip für den ganzen Tag hinzu
+                  >
                     <div className="day-header">
                       {holidayName && <span className="holiday-indicator">{holidayName}</span>}
                       <span className="day-date">{format(new Date(dateKey), 'd.')}</span>
                     </div>
                     <div className="day-content-shifts">
+                      {/* NEU: Zeigt "Im Urlaub" anstelle der Schichten an */}
+                      {isVacationDayForDraggedUser ? (
+                          <div className="vacation-blocker">{t('schedulePlanner.onVacationText', 'Im Urlaub')}</div>
+                      ) : (<>
                       {shifts.filter(shift => shift.isActive).map(({ shiftKey, label, startTime, endTime }) => {
                         const entriesForShift = (schedule[dateKey] || []).filter(e => e.shift === shiftKey);
                         const isHovered = hoveredCell?.dateKey === dateKey && hoveredCell?.shiftKey === shiftKey;
@@ -198,6 +211,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
                             </div>
                         );
                       })}
+                      </>)}
                     </div>
                   </td>
               );

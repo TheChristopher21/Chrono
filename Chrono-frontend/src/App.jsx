@@ -2,6 +2,10 @@ import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
+// NEU: Imports für Auth-Status und ActionButtons
+import { useAuth } from "./context/AuthContext.jsx";
+import ActionButtons from "./components/ActionButtons.jsx";
+
 // Globale Styles
 import "./styles/global.css";
 import "./styles/Button.css";
@@ -38,6 +42,9 @@ import PrivateRoute from "./components/PrivateRoute.jsx";
 const queryClient = new QueryClient();
 
 function App() {
+    // NEU: Auth-Token prüfen, um zu entscheiden, ob der Chatbot angezeigt wird
+    const { authToken } = useAuth();
+
     return (
         <QueryClientProvider client={queryClient}>
             <div className="App">
@@ -79,6 +86,9 @@ function App() {
                     <Route path="/print-report" element={<PrintReport />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
+
+                {/* NEU: Fügt den Chatbot (via ActionButtons) auf allen Seiten für eingeloggte User hinzu */}
+                {authToken && <ActionButtons />}
             </div>
         </QueryClientProvider>
     );

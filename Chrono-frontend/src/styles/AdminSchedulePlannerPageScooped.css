@@ -137,6 +137,38 @@
   color: var(--ud-c-text-muted);
 }
 
+/* NEU: Styling für die roten Urlaubs-Blocker-Tage */
+.day-cell.on-vacation {
+  background-color: var(--ud-c-error-light-bg);
+  border-color: var(--ud-c-error-dim);
+}
+.vacation-blocker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-height: 150px;
+  font-weight: 600;
+  font-size: 1.2rem;
+  color: var(--ud-c-error-dim);
+  text-align: center;
+  border-radius: var(--ud-radius-md);
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-weight: 600;
+  font-size: 0.9em;
+  margin-bottom: var(--ud-gap-sm);
+  padding-bottom: var(--ud-gap-xs);
+  border-bottom: 1px solid var(--ud-c-line);
+}
+.day-header .day-date {
+  color: var(--ud-c-text-muted);
+}
+
 /* NEU: Styling für die Feiertags-Anzeige */
 .day-header .holiday-indicator {
   font-size: 0.8em;
