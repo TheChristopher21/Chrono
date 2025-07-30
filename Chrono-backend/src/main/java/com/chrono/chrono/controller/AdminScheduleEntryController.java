@@ -34,15 +34,20 @@ public class AdminScheduleEntryController {
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> saveEntry(@RequestBody ScheduleEntryDTO dto) {
-        Optional<User> userOpt = userRepo.findById(dto.getUserId());
-        if (userOpt.isEmpty()) {
-            return ResponseEntity.badRequest().body("User not found");
+        User user = null;
+        if (dto.getUserId() != null) {
+            Optional<User> userOpt = userRepo.findById(dto.getUserId());
+            if (userOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body("User not found");
+            }
+            user = userOpt.get();
         }
         ScheduleEntry entry = (dto.getId() != null) ?
                 entryRepo.findById(dto.getId()).orElse(new ScheduleEntry()) : new ScheduleEntry();
-        entry.setUser(userOpt.get());
+        entry.setUser(user);
         entry.setDate(dto.getDate());
         entry.setShift(dto.getShift());
+        entry.setNote(dto.getNote());
         entryRepo.save(entry);
         return ResponseEntity.ok(new ScheduleEntryDTO(entry));
     }

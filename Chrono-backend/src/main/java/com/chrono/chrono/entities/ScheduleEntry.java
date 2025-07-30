@@ -18,6 +18,9 @@ public class ScheduleEntry {
 
     private String shift;
 
+    @Column(length = 1000)
+    private String note;
+
     public ScheduleEntry() {}
 
     public ScheduleEntry(User user, LocalDate date, String shift) {
@@ -37,4 +40,7 @@ public class ScheduleEntry {
 
     public String getShift() { return shift; }
     public void setShift(String shift) { this.shift = shift; }
+
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
 }
