@@ -16,6 +16,11 @@ const fetchScheduleRules = async () => {
   return Array.isArray(data) ? data : [];
 };
 
+const fetchVacations = async () => {
+  const { data } = await api.get('/api/vacation/all');
+  return Array.isArray(data) ? data : [];
+};
+
 const usePlannerStore = create((set) => ({
   weekStart: startOfWeek(new Date(), { weekStartsOn: 1 }),
   dragUser: null,
@@ -95,10 +100,11 @@ const UserList = () => {
   );
 };
 
-const ScheduleTable = ({ schedule, holidays }) => {
+const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
   const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
   const { data: shifts = [], isLoading: isLoadingShifts } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
   const { weekStart, dragUser, setDragUser } = usePlannerStore();
+  const { t } = useTranslation();
   const [hoveredCell, setHoveredCell] = React.useState(null);
   const queryClient = useQueryClient();
   const mutationOptions = {
@@ -113,6 +119,13 @@ const ScheduleTable = ({ schedule, holidays }) => {
   const onDrop = (dateKey, shiftKey) => {
     setHoveredCell(null);
     if (!dragUser) return;
+
+    const vacForUser = vacationMap?.[dragUser.username]?.[dateKey];
+    if (vacForUser) {
+      alert(t('schedulePlanner.userOnVacation', 'Dieser Mitarbeiter ist an diesem Tag im Urlaub'));
+      setDragUser(null);
+      return;
+    }
 
     const dayEntries = schedule[dateKey] || [];
     const userAlreadyInShift = dayEntries.some(e => e.shift === shiftKey && e.userId === dragUser.id);
@@ -231,6 +244,23 @@ const AdminSchedulePlannerPage = () => {
     enabled: !!currentUser,
   });
 
+  const { data: vacations = [] } = useQuery({ queryKey: ['vacations'], queryFn: fetchVacations });
+
+  const vacationMap = React.useMemo(() => {
+    const map = {};
+    (Array.isArray(vacations) ? vacations : []).filter(v => v.approved).forEach(v => {
+      if (!map[v.username]) map[v.username] = {};
+      let d = new Date(v.startDate);
+      const end = new Date(v.endDate);
+      while (d <= end) {
+        const key = formatISO(d, { representation: 'date' });
+        map[v.username][key] = v;
+        d = addDays(d, 1);
+      }
+    });
+    return map;
+  }, [vacations]);
+
 
   const autoFillMutation = useMutation({
     mutationFn: autoFillSchedule,
@@ -343,7 +373,7 @@ const AdminSchedulePlannerPage = () => {
               {isLoading ? (
                   <div className="loading-indicator">Lade Arbeitsplan...</div>
               ) : (
-                  <ScheduleTable schedule={schedule} holidays={holidays} />
+                  <ScheduleTable schedule={schedule} holidays={holidays} vacationMap={vacationMap} />
               )}
             </div>
             <UserList />

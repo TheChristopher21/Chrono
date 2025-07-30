@@ -610,7 +610,8 @@ const translations = {
             prevWeek: "Vorherige Woche",
             nextWeek: "Nächste Woche",
             copyWeeks: "Kopieren",
-            weekShort: "KW"
+            weekShort: "KW",
+            userOnVacation: "Dieser Mitarbeiter ist an diesem Tag im Urlaub"
 
         },
         quickStart: {
@@ -1295,7 +1296,8 @@ const translations = {
             prevWeek: "Prev Week",
             nextWeek: "Next Week",
             copyWeeks: "Copy",
-            weekShort: "Week"
+            weekShort: "Week",
+            userOnVacation: "This employee is on vacation on this day"
 
         },
         quickStart: {
