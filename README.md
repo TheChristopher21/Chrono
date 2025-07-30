@@ -4,7 +4,8 @@ Chrono ist eine Zeiterfassungsanwendung, die aus einem Spring Boot Backend und e
 
 ## Technischer Überblick
 
-- **Backend:** Spring Boot 3 mit Maven Wrapper. Enthält REST‑APIs, Datenbankzugriff per JPA und Sicherheit über JWT.
+- **Backend:** Spring Boot 3 mit Maven Wrapper. Enthält REST‑APIs, Datenbankzugriff per JPA und Sicherheit über JWT. Die Payroll‑Logik berücksichtigt gesetzliche Abzüge für Deutschland und die Schweiz. Dazu zählen Soli/Kirchensteuer, Beitragsbemessungsgrenzen, Mini‑/Midi‑Job‑Reduktionen sowie koordinierter BVG‑Lohn und Arbeitgeberumlagen.
+- Dabei wird auch die BVG-Eintrittsschwelle von 22'680 CHF/Jahr geprüft.
 - **Frontend:** React 19 mit Vite. Entwicklung und Build werden über npm gesteuert. Für den Desktop‑Einsatz steht eine Electron-Integration bereit.
 
 ## Voraussetzungen
