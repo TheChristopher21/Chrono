@@ -9,6 +9,7 @@ public class ScheduleEntryDTO {
     private Long userId;
     private LocalDate date;
     private String shift;
+    private String note;
 
     public ScheduleEntryDTO() {}
 
@@ -17,6 +18,7 @@ public class ScheduleEntryDTO {
         this.userId = entry.getUser() != null ? entry.getUser().getId() : null;
         this.date = entry.getDate();
         this.shift = entry.getShift();
+        this.note = entry.getNote();
     }
 
     public Long getId() { return id; }
@@ -30,4 +32,7 @@ public class ScheduleEntryDTO {
 
     public String getShift() { return shift; }
     public void setShift(String shift) { this.shift = shift; }
+
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
 }

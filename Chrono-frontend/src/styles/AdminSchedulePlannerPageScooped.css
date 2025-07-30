@@ -136,6 +136,11 @@
   animation: shake 0.2s 2;
 }
 
+.schedule-planner.scoped-dashboard .note-icon {
+  margin-left: 4px;
+  cursor: pointer;
+}
+
 @keyframes shake {
   25% { transform: translateX(-3px); }
   50% { transform: translateX(3px); }
@@ -153,3 +158,4 @@
     flex: 0 0 auto;
   }
 }
+

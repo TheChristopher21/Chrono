@@ -4,8 +4,9 @@ import { create } from 'zustand';
 import { startOfWeek, addDays, formatISO, format, differenceInCalendarWeeks, isSameWeek, isSameDay } from 'date-fns';
 
 import Navbar from '../../components/Navbar';
+import ModalOverlay from '../../components/ModalOverlay';
 import api from '../../utils/api';
-import '../../styles/AdminSchedulePlannerPageScooped.css'; // Stellen Sie sicher, dass dieser Pfad korrekt ist
+import '../../styles/AdminSchedulePlannerPageScooped.css';
 import { useTranslation } from '../../context/LanguageContext';
 
 const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -34,7 +35,7 @@ const fetchSchedule = async (weekStart) => {
   const map = {};
   (res.data || []).forEach(e => {
     const dayKey = formatISO(new Date(e.date), { representation: 'date' });
-    map[dayKey] = { userId: e.userId, id: e.id };
+    map[dayKey] = { userId: e.userId, id: e.id, note: e.note };
   });
   return map;
 };
@@ -141,7 +142,7 @@ const UserList = ({ setSchedule }) => {
   );
 };
 
-const ScheduleTable = ({ schedule, setSchedule }) => {
+const ScheduleTable = ({ schedule, setSchedule, onEditNote }) => {
   const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
   const { weekStart, dragUser, setDragUser } = usePlannerStore();
   const queryClient = useQueryClient();
@@ -179,6 +180,7 @@ const ScheduleTable = ({ schedule, setSchedule }) => {
     return acc;
   }, {});
 
+
   return (
       <table className="schedule-planner__table">
         <thead>
@@ -191,12 +193,14 @@ const ScheduleTable = ({ schedule, setSchedule }) => {
             const user = users.find(u => u.id === entry.userId);
             const conflict = entry.userId && conflictMap[entry.userId] > 1;
             const today = isSameDay(new Date(dateKey), new Date());
+            const note = schedule[dateKey]?.note;
             return (
                 <td key={dateKey}
                     className={`schedule-planner__cell--droppable ${conflict ? 'schedule-planner__cell--conflict' : ''} ${today ? 'schedule-planner__cell--today' : ''}`}
                     onDragOver={(e) => e.preventDefault()}
-                    onDrop={() => onDrop(dateKey)}>
-                  {user ? user.username : '—'}
+                    onDrop={() => onDrop(dateKey)}
+                    onDoubleClick={() => onEditNote(dateKey)}>
+                  {user ? user.username : '—'} {note && <span className="note-icon" title={note}>📝</span>}
                 </td>
             );
           })}
@@ -214,6 +218,7 @@ const AdminSchedulePlannerPage = () => {
   });
 
   const [schedule, setSchedule] = React.useState({});
+  const [noteModal, setNoteModal] = React.useState({ open: false, dateKey: null, text: '' });
   React.useEffect(() => {
     if (initialSchedule) {
       setSchedule(initialSchedule);
@@ -221,10 +226,26 @@ const AdminSchedulePlannerPage = () => {
   }, [initialSchedule]);
 
   const queryClient = useQueryClient();
+  const handleEditNote = (dateKey) => {
+    setNoteModal({ open: true, dateKey, text: schedule[dateKey]?.note || '' });
+  };
+
+  const closeModal = () => setNoteModal({ open: false, dateKey: null, text: '' });
+
+  const saveNote = () => {
+    const { dateKey, text } = noteModal;
+    const entry = schedule[dateKey] || { date: dateKey };
+    const payload = { id: entry.id, userId: entry.userId, date: dateKey, note: text };
+    setSchedule(prev => ({ ...prev, [dateKey]: { ...entry, note: text } }));
+    saveScheduleEntry(payload).then(() => {
+      queryClient.invalidateQueries({ queryKey: ['schedule', weekStart] });
+    });
+    closeModal();
+  };
   const saveAllMutation = useMutation({
     mutationFn: (scheduleToSave) => {
-      const promises = Object.entries(scheduleToSave).map(([dateKey, { userId, id }]) =>
-          saveScheduleEntry({ id, userId, date: dateKey })
+      const promises = Object.entries(scheduleToSave).map(([dateKey, { userId, id, note }]) =>
+          saveScheduleEntry({ id, userId, date: dateKey, note })
       );
       return Promise.all(promises);
     },
@@ -244,7 +265,7 @@ const AdminSchedulePlannerPage = () => {
             {isLoading ? (
                 <div className="loading-indicator">Lade Arbeitsplan...</div>
             ) : (
-                <ScheduleTable schedule={schedule} setSchedule={setSchedule} />
+                <ScheduleTable schedule={schedule} setSchedule={setSchedule} onEditNote={handleEditNote} />
             )}
             <div className="save-panel">
               <button onClick={() => saveAllMutation.mutate(schedule)} disabled={saveAllMutation.isLoading}>
@@ -254,8 +275,26 @@ const AdminSchedulePlannerPage = () => {
           </div>
           <UserList setSchedule={setSchedule} />
         </div>
+        {noteModal.open && (
+          <ModalOverlay visible onClose={closeModal} className="scoped-dashboard">
+            <div className="modal-content">
+              <h3>Notiz</h3>
+              <textarea
+                value={noteModal.text}
+                onChange={e => setNoteModal({ ...noteModal, text: e.target.value })}
+                rows="4"
+                style={{ width: '100%' }}
+              />
+              <div className="modal-buttons">
+                <button onClick={closeModal} className="button-secondary">Abbrechen</button>
+                <button onClick={saveNote} className="button-primary">Speichern</button>
+              </div>
+            </div>
+          </ModalOverlay>
+        )}
       </>
   );
 };
 
 export default AdminSchedulePlannerPage;
+
