@@ -1,6 +1,6 @@
 /* src/styles/AdminSchedulePlannerPageScooped.css (Refaktorisierte Version) */
 
-.schedule-planner {
+.schedule-planner.scoped-dashboard {
   min-height: calc(100vh - var(--spacing-xl) * 2);
   width: 100%;
   max-width: var(--container-width);
@@ -13,7 +13,7 @@
   box-sizing: border-box;
 }
 
-.schedule-planner__main {
+.schedule-planner.scoped-dashboard .schedule-planner__main {
   flex-grow: 1;
   display: flex;
   flex-direction: column;
@@ -21,7 +21,7 @@
 }
 
 /* Dark Mode Farben */
-[data-theme="dark"] .schedule-planner {
+[data-theme="dark"] .schedule-planner.scoped-dashboard {
   --c-primary: #58a6ff;
   --c-danger: #f87171;
   --c-text: var(--brand-gray-200);
@@ -36,7 +36,7 @@
 }
 
 /* ─ Steuerung der Woche ───────────────── */
-.schedule-planner__controls {
+.schedule-planner.scoped-dashboard .schedule-planner__controls {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -44,15 +44,15 @@
   margin-bottom: var(--spacing-md);
 }
 
-.schedule-planner__week-display {
+.schedule-planner.scoped-dashboard .schedule-planner__week-display {
   font-weight: var(--font-weight-bold);
 }
-.schedule-planner__week-display--current {
+.schedule-planner.scoped-dashboard .schedule-planner__week-display--current {
   color: var(--c-primary);
 }
 
 /* ─ Benutzerliste ───────────────── */
-.schedule-planner__users {
+.schedule-planner.scoped-dashboard .schedule-planner__users {
   flex: 0 0 250px;
   border: 1px solid var(--c-border);
   border-radius: var(--radius-md);
@@ -64,7 +64,7 @@
   box-shadow: var(--shadow-md);
 }
 
-.schedule-planner__user-item {
+.schedule-planner.scoped-dashboard .schedule-planner__user-item {
   border: 1px solid var(--c-border);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: var(--radius-sm);
@@ -73,7 +73,7 @@
   font-weight: var(--font-weight-medium);
   transition: all var(--transition-fast);
 }
-.schedule-planner__user-item:hover {
+.schedule-planner.scoped-dashboard .schedule-planner__user-item:hover {
   border-color: var(--c-primary);
   background: color-mix(in srgb, var(--c-bg) 85%, var(--c-primary) 15%);
   transform: translateY(-2px);
@@ -81,7 +81,7 @@
 }
 
 /* ─ Wochen-Tabelle ───────────────── */
-.schedule-planner__table {
+.schedule-planner.scoped-dashboard .schedule-planner__table {
   flex-grow: 1;
   border-collapse: separate;
   border-spacing: 0;
@@ -93,14 +93,14 @@
   overflow: hidden; /* Für Radien */
 }
 
-.schedule-planner__table th,
-.schedule-planner__table td {
+.schedule-planner.scoped-dashboard .schedule-planner__table th,
+.schedule-planner.scoped-dashboard .schedule-planner__table td {
   padding: var(--spacing-md) var(--spacing-sm);
   text-align: center;
   border-bottom: 1px solid var(--c-border);
 }
 
-.schedule-planner__table th {
+.schedule-planner.scoped-dashboard .schedule-planner__table th {
   background: var(--c-bg);
   color: var(--c-primary);
   font-weight: var(--font-weight-bold);
@@ -108,29 +108,29 @@
   letter-spacing: .05em;
 }
 
-.schedule-planner__table td {
+.schedule-planner.scoped-dashboard .schedule-planner__table td {
   background: var(--c-bg);
   font-weight: var(--font-weight-medium);
 }
 
 /* Modifikatoren für Tabellenzellen */
-.schedule-planner__cell--droppable {
+.schedule-planner.scoped-dashboard .schedule-planner__cell--droppable {
   min-height: 50px;
   cursor: pointer;
   transition: background var(--transition-fast);
 }
-.schedule-planner__cell--droppable:hover {
+.schedule-planner.scoped-dashboard .schedule-planner__cell--droppable:hover {
   background: color-mix(in srgb, var(--c-bg) 85%, var(--c-primary) 15%);
   box-shadow: inset 0 0 0 2px var(--c-primary);
 }
 
-.schedule-planner__cell--today {
+.schedule-planner.scoped-dashboard .schedule-planner__cell--today {
   background: color-mix(in srgb, var(--c-primary) 15%, white);
   color: var(--c-primary);
   font-weight: var(--font-weight-bold);
 }
 
-.schedule-planner__cell--conflict {
+.schedule-planner.scoped-dashboard .schedule-planner__cell--conflict {
   background: var(--c-danger) !important;
   color: white !important;
   animation: shake 0.2s 2;
@@ -144,10 +144,10 @@
 
 /* ─ Responsive Anpassungen ─────────── */
 @media (max-width: 1024px) {
-  .schedule-planner {
+  .schedule-planner.scoped-dashboard {
     flex-direction: column;
   }
-  .schedule-planner__users {
+  .schedule-planner.scoped-dashboard .schedule-planner__users {
     flex-direction: row;
     flex-wrap: wrap;
     flex: 0 0 auto;
