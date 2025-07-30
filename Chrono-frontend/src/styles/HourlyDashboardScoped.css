@@ -1171,7 +1171,7 @@
    Verbesserte Stile für Korrektur-Modal
    ========================================================================= */
 
-.scoped-dashboard .modal-content .entry-row {
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row {
   display: flex;
   gap: var(--ud-gap-sm);
   align-items: center;
@@ -1182,21 +1182,21 @@
   border: 1px solid var(--ud-c-border);
 }
 
-.scoped-dashboard .modal-content .entry-row input,
-.scoped-dashboard .modal-content .entry-row select {
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row input,
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row select {
   margin-bottom: 0;
 }
 
-.scoped-dashboard .modal-content .entry-row input[type="time"] {
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row input[type="time"] {
   flex-basis: 150px;
   flex-grow: 0;
 }
 
-.scoped-dashboard .modal-content .entry-row select {
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row select {
   flex-grow: 1;
 }
 
-.scoped-dashboard .modal-content .button-remove {
+.hourly-dashboard.scoped-dashboard .modal-content .button-remove {
   flex-shrink: 0;
   background-color: transparent;
   color: var(--ud-c-text-muted);
@@ -1214,14 +1214,14 @@
   justify-content: center;
 }
 
-.scoped-dashboard .modal-content .button-remove:hover {
+.hourly-dashboard.scoped-dashboard .modal-content .button-remove:hover {
   background-color: var(--ud-c-error-light-bg);
   color: var(--ud-c-error-dim);
   border-color: transparent;
   transform: none;
 }
 
-.scoped-dashboard .modal-content .button-add-entry {
+.hourly-dashboard.scoped-dashboard .modal-content .button-add-entry {
   width: 100%;
   margin-top: var(--ud-gap-sm);
   margin-bottom: var(--ud-gap-lg);
@@ -1234,7 +1234,7 @@
   font-weight: 500;
 }
 
-.scoped-dashboard .modal-content .button-add-entry:hover {
+.hourly-dashboard.scoped-dashboard .modal-content .button-add-entry:hover {
   background-color: var(--ud-c-primary-light-bg);
   border-style: solid;
   color: var(--ud-c-primary-dim);
@@ -1252,7 +1252,7 @@
   -webkit-backdrop-filter: blur(8px);
 }
 
-/* Fallback-Regel, falls .scoped-dashboard direkt auf dem Overlay sitzt */
-.scoped-dashboard.modal-overlay {
+/* Fallback-Regel, falls .hourly-dashboard.scoped-dashboard direkt auf dem Overlay sitzt */
+.hourly-dashboard.scoped-dashboard.modal-overlay {
   background-color: var(--modal-backdrop-color, rgba(30, 30, 30, 0.6));
 }
