@@ -8,6 +8,7 @@ public class ScheduleEntryDTO {
     private Long id;
     private Long userId;
     private LocalDate date;
+    // --- NEU: Feld für die Schicht ---
     private String shift;
     private String note;
 
@@ -17,7 +18,7 @@ public class ScheduleEntryDTO {
         this.id = entry.getId();
         this.userId = entry.getUser() != null ? entry.getUser().getId() : null;
         this.date = entry.getDate();
-        this.shift = entry.getShift();
+        this.shift = entry.getShift(); // Mappen des neuen Feldes
         this.note = entry.getNote();
     }
 

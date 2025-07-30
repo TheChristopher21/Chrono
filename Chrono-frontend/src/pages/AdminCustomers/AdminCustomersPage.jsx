@@ -1,148 +1,112 @@
-// src/pages/AdminProjects/AdminProjectsPage.jsx
-import React, { useState, useEffect } from 'react';
+// src/pages/AdminCustomers/AdminCustomersPage.jsx
+import React, { useState } from 'react';
 import Navbar from '../../components/Navbar';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
-import { useProjects } from '../../context/ProjectContext';
 import { useCustomers } from '../../context/CustomerContext';
 
 // Importiere die zentralen, einheitlichen Dashboard-Styles
 import '../../styles/HourlyDashboardScoped.css';
 // Importiere die spezifischen Styles für diese Seite
-import '../../styles/AdminProjectsPageScoped.css'; // NEUE DATEI
+import '../../styles/AdminProjectsPageScoped.css';
 
-const AdminProjectsPage = () => {
+const AdminCustomersPage = () => {
     const { notify } = useNotification();
     const { t } = useTranslation();
 
-    const { projects, createProject, updateProject, deleteProject } = useProjects();
-    const { customers } = useCustomers();
-
-    // State für das Erstellen-Formular
+    const { customers, createCustomer, updateCustomer, deleteCustomer } = useCustomers();
     const [newName, setNewName] = useState('');
-    const [selectedCustomerId, setSelectedCustomerId] = useState('');
-
-    // State für das Bearbeiten-Formular
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState('');
-    const [editingCustomerId, setEditingCustomerId] = useState('');
-
-    useEffect(() => {
-        // Wenn Kunden geladen sind, wähle den ersten als Standard aus
-        if (customers.length > 0 && !selectedCustomerId) {
-            setSelectedCustomerId(customers[0].id);
-        }
-    }, [customers, selectedCustomerId]);
-
 
     const handleCreate = async (e) => {
         e.preventDefault();
-        if (!newName.trim() || !selectedCustomerId) {
-            notify(t('project.create.validationError', 'Bitte Projektname und Kunde auswählen.'), 'warning');
-            return;
-        }
+        if (!newName.trim()) return;
         try {
-            await createProject(newName, selectedCustomerId);
+            await createCustomer(newName);
             setNewName('');
-            notify(t('project.create.success', 'Projekt erfolgreich angelegt!'), 'success');
+            notify(t('customer.createSuccess', 'Kunde erfolgreich angelegt!'), 'success');
         } catch (err) {
-            notify(t('project.create.error', 'Fehler beim Anlegen des Projekts.'), 'error');
+            console.error('Error creating customer', err);
+            notify(t('customer.createError', 'Fehler beim Anlegen des Kunden.'), 'error');
         }
     };
 
     const handleUpdate = async (e) => {
         e.preventDefault();
-        if (!editingName.trim() || !editingCustomerId) {
-            notify(t('project.update.validationError', 'Bitte Projektname und Kunde auswählen.'), 'warning');
-            return;
-        }
         try {
-            await updateProject(editingId, editingName, editingCustomerId);
+            await updateCustomer(editingId, editingName);
             setEditingId(null);
-            notify(t('project.update.success', 'Projekt erfolgreich gespeichert!'), 'success');
+            setEditingName('');
+            notify(t('customer.updateSuccess', 'Kunde erfolgreich gespeichert!'), 'success');
         } catch (err) {
-            notify(t('project.update.error', 'Fehler beim Speichern des Projekts.'), 'error');
+            console.error('Error updating customer', err);
+            notify(t('customer.updateError', 'Fehler beim Speichern des Kunden.'), 'error');
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm(t('project.delete.confirm', 'Sind Sie sicher, dass Sie dieses Projekt löschen möchten?'))) return;
+        if (!window.confirm(t('customer.deleteConfirm', 'Sind Sie sicher, dass Sie diesen Kunden löschen möchten?'))) return;
         try {
-            await deleteProject(id);
-            notify(t('project.delete.success', 'Projekt erfolgreich gelöscht!'), 'success');
+            await deleteCustomer(id);
+            notify(t('customer.deleteSuccess', 'Kunde erfolgreich gelöscht!'), 'success');
         } catch (err) {
-            notify(t('project.delete.error', 'Fehler beim Löschen des Projekts.'), 'error');
+            console.error('Error deleting customer', err);
+            notify(t('customer.deleteError', 'Fehler beim Löschen des Kunden.'), 'error');
         }
     };
 
-    const startEdit = (project) => {
-        setEditingId(project.id);
-        setEditingName(project.name);
-        setEditingCustomerId(project.customer?.id || '');
+    const startEdit = (c) => {
+        setEditingId(c.id);
+        setEditingName(c.name);
     };
 
     const cancelEdit = () => {
         setEditingId(null);
         setEditingName('');
-        setEditingCustomerId('');
     };
 
     return (
         <>
             <Navbar />
-            <div className="admin-projects-page scoped-dashboard">
+            <div className="admin-customers-page scoped-dashboard">
                 <header className="dashboard-header">
-                    <h1>{t('project.management.title', 'Projektverwaltung')}</h1>
+                    <h1>{t('customer.management.title', 'Kundenverwaltung')}</h1>
                 </header>
 
                 <section className="content-section">
-                    <h3 className="section-title">{t('project.create.title', 'Neues Projekt anlegen')}</h3>
+                    <h3 className="section-title">{t('customer.create.title', 'Neuen Kunden anlegen')}</h3>
                     <form onSubmit={handleCreate} className="create-form">
                         <input
                             type="text"
-                            placeholder={t('project.create.namePlaceholder', 'Name des neuen Projekts')}
+                            placeholder={t('customer.create.placeholder', 'Name des neuen Kunden')}
                             value={newName}
                             onChange={(e) => setNewName(e.target.value)}
                             required
                         />
-                        <select
-                            value={selectedCustomerId}
-                            onChange={(e) => setSelectedCustomerId(e.target.value)}
-                            required
-                        >
-                            <option value="" disabled>{t('project.create.customerPlaceholder', 'Kunde auswählen...')}</option>
-                            {customers.map(c => (
-                                <option key={c.id} value={c.id}>{c.name}</option>
-                            ))}
-                        </select>
+                        {/* Leeres div für Grid-Layout Konsistenz */}
+                        <div></div>
                         <button type="submit" className="button-primary">{t('create', 'Anlegen')}</button>
                     </form>
                 </section>
 
                 <section className="content-section">
-                    <h3 className="section-title">{t('project.list.title', 'Bestehende Projekte')}</h3>
+                    <h3 className="section-title">{t('customer.list.title', 'Bestehende Kunden')}</h3>
                     <div className="item-list-container">
-                        <ul className="item-list project-list">
-                            {projects.map(p => (
-                                <li key={p.id} className="list-item">
-                                    {editingId === p.id ? (
+                        <ul className="item-list customer-list">
+                            {customers.map(c => (
+                                <li key={c.id} className="list-item">
+                                    {editingId === c.id ? (
                                         <form onSubmit={handleUpdate} className="edit-form">
                                             <input
                                                 type="text"
                                                 value={editingName}
                                                 onChange={(e) => setEditingName(e.target.value)}
-                                                required autoFocus
-                                            />
-                                            <select
-                                                value={editingCustomerId}
-                                                onChange={(e) => setEditingCustomerId(e.target.value)}
                                                 required
-                                            >
-                                                <option value="" disabled>{t('project.edit.customerPlaceholder', 'Kunde auswählen...')}</option>
-                                                {customers.map(c => (
-                                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                                ))}
-                                            </select>
+                                                autoFocus
+                                            />
+                                            {/* Leeres div für Grid-Layout Konsistenz */}
+                                            <div></div>
                                             <div className="form-actions">
                                                 <button type="submit" className="button-primary">{t('save', 'Speichern')}</button>
                                                 <button type="button" onClick={cancelEdit} className="button-secondary">
@@ -152,13 +116,10 @@ const AdminProjectsPage = () => {
                                         </form>
                                     ) : (
                                         <>
-                                            <div className="item-details">
-                                                <span className="item-name">{p.name}</span>
-                                                <span className="item-meta">{p.customer?.name || t('project.noCustomer', 'Kein Kunde zugewiesen')}</span>
-                                            </div>
+                                            <span className="item-name">{c.name}</span>
                                             <div className="item-actions">
-                                                <button onClick={() => startEdit(p)} className="button-secondary">{t('edit', 'Bearbeiten')}</button>
-                                                <button onClick={() => handleDelete(p.id)} className="button-danger">{t('delete', 'Löschen')}</button>
+                                                <button onClick={() => startEdit(c)} className="button-secondary">{t('edit', 'Bearbeiten')}</button>
+                                                <button onClick={() => handleDelete(c.id)} className="button-danger">{t('delete', 'Löschen')}</button>
                                             </div>
                                         </>
                                     )}
@@ -172,4 +133,4 @@ const AdminProjectsPage = () => {
     );
 };
 
-export default AdminProjectsPage;
+export default AdminCustomersPage;

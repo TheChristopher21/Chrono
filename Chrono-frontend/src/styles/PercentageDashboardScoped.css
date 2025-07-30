@@ -10,7 +10,10 @@
 .admin-customers-page.scoped-dashboard,
 .admin-projects-page.scoped-dashboard,
 .payslips-page.scoped-dashboard,
-.admin-payslips-page.scoped-dashboard {
+.admin-payslips-page.scoped-dashboard,
+.schedule-planner-page.scoped-dashboard,
+.schedule-rules-page.scoped-dashboard { /* <--- DIESE ZEILE HINZUFÜGEN */
+  /* <--- DIESE ZEILE IST DIE KORREKTUR */
   --ud-font-family: "Poppins", system-ui, sans-serif;
   --ud-fz-base: 1rem;
   --ud-fz-sm: 0.875rem;
@@ -97,7 +100,10 @@
 [data-theme="dark"] .admin-customers-page.scoped-dashboard,
 [data-theme="dark"] .admin-projects-page.scoped-dashboard,
 [data-theme="dark"] .payslips-page.scoped-dashboard,
-[data-theme="dark"] .admin-payslips-page.scoped-dashboard {
+[data-theme="dark"] .admin-payslips-page.scoped-dashboard,
+[data-theme="dark"] .schedule-planner-page.scoped-dashboard,
+[data-theme="dark"] .schedule-rules-page.scoped-dashboard { /* <--- UND AUCH HIER HINZUFÜGEN */
+  /* <--- DIESE ZEILE IST DIE KORREKTUR */
   --ud-c-text: #e9ecef;
   --ud-c-text-muted: #adb5bd;
   --ud-c-text-secondary: #9ca3af;
@@ -136,6 +142,7 @@
   --ud-c-time: #f8f9fa;
   --ud-c-bg-input: var(--ud-c-surface);
 }
+
 
 /* =========================================================================
    Allgemeine Element-Styles (Inputs, Selects etc.)

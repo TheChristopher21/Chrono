@@ -16,18 +16,15 @@ public class ScheduleEntry {
 
     private LocalDate date;
 
-    private String shift;
+    // --- NEU: Feld für die Schicht ---
+    private String shift; // z.B. "EARLY", "LATE", "NIGHT"
 
     @Column(length = 1000)
     private String note;
 
     public ScheduleEntry() {}
 
-    public ScheduleEntry(User user, LocalDate date, String shift) {
-        this.user = user;
-        this.date = date;
-        this.shift = shift;
-    }
+    // Konstruktor wurde zur Klarheit entfernt, da er nicht mehr alle Felder abdeckt.
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

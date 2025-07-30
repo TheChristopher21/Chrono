@@ -1,0 +1,150 @@
+/* =========================================================================
+   AdminScheduleRulesPage.css · V2.3 (Final & Polished Dark Mode Fix)
+   ========================================================================= */
+
+/* --- 1. Grundlayout der Seite --- */
+.schedule-rules-page.scoped-dashboard {
+    max-width: 950px;
+    margin: 0 auto;
+}
+
+.rules-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--ud-gap-lg);
+}
+
+/* --- 2. Styling der Regel-Karten --- */
+.rule-card {
+    background-color: var(--ud-c-card);
+    border: 1px solid var(--ud-c-border);
+    border-radius: var(--ud-radius-xl);
+    padding: var(--ud-gap-lg);
+    box-shadow: var(--ud-shadow-card);
+    transition: all 0.25s ease-in-out;
+}
+.rule-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--ud-shadow-interactive);
+    border-color: var(--ud-c-primary);
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: var(--ud-gap-md);
+    align-items: flex-end;
+}
+
+/* --- 3. Formular-Elemente --- */
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group:nth-child(1) { grid-column: 1 / 3; }
+.form-group:nth-child(2) { grid-column: 3 / 5; }
+.form-group:nth-child(3) { grid-column: 1 / 2; }
+.form-group:nth-child(4) { grid-column: 2 / 3; }
+.form-group:nth-child(5) { grid-column: 3 / 4; }
+.form-group:nth-child(6) { grid-column: 5 / 7; }
+
+.form-group label {
+    font-size: var(--ud-fz-sm);
+    color: var(--ud-c-text-muted);
+    margin-bottom: var(--ud-gap-xs);
+    font-weight: 500;
+}
+
+.form-group.checkbox-group {
+    align-items: center;
+    padding-bottom: 5px;
+}
+.form-group.checkbox-group label {
+    font-weight: 500;
+    color: var(--ud-c-text);
+}
+.form-group.checkbox-group input[type="checkbox"] {
+    appearance: none; -webkit-appearance: none;
+    width: 40px; height: 22px;
+    background-color: var(--ud-c-border);
+    border-radius: 11px;
+    position: relative; cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+}
+.form-group.checkbox-group input[type="checkbox"]::before {
+    content: ''; position: absolute;
+    top: 2px; left: 2px;
+    width: 18px; height: 18px;
+    background-color: white; border-radius: 50%;
+    transition: transform 0.2s ease-in-out;
+}
+.form-group.checkbox-group input[type="checkbox"]:checked {
+    background-color: var(--ud-c-success);
+}
+.form-group.checkbox-group input[type="checkbox"]:checked::before {
+    transform: translateX(18px);
+}
+
+.form-group-actions button {
+    width: 100%;
+}
+
+.add-new-button {
+    margin-top: var(--ud-gap-lg);
+    width: 100%;
+    padding: 0.9rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: 2px dashed var(--ud-c-primary);
+    background-color: transparent;
+    color: var(--ud-c-primary);
+    border-radius: var(--ud-radius-xl);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+.add-new-button:hover {
+    background-color: var(--ud-c-primary-light-bg);
+    border-style: solid;
+    color: var(--ud-c-primary-dim);
+}
+
+/* --- 4. Responsive Anpassungen --- */
+@media (max-width: 900px) {
+    .form-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+            "label key"
+            "start end"
+            "active save";
+    }
+
+    .form-group:nth-child(1) { grid-area: label; grid-column: auto; }
+    .form-group:nth-child(2) { grid-area: key; grid-column: auto; }
+    .form-group:nth-child(3) { grid-area: start; grid-column: auto; }
+    .form-group:nth-child(4) { grid-area: end; grid-column: auto; }
+    .form-group:nth-child(5) { grid-area: active; grid-column: auto; }
+    .form-group:nth-child(6) { grid-area: save; grid-column: auto; }
+}
+
+@media (max-width: 520px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "label" "key" "start" "end" "active" "save";
+    }
+    .form-group.checkbox-group {
+        padding-bottom: 0;
+        justify-content: flex-start;
+        align-items: flex-start;
+    }
+}
+
+/* --- 5. DARK MODE FIX FÜR EINGABEFELDER --- */
+[data-theme="dark"] .schedule-rules-page.scoped-dashboard .form-group input[type="text"],
+[data-theme="dark"] .schedule-rules-page.scoped-dashboard .form-group input[type="time"] {
+    background-color: var(--ud-c-surface);
+    color: var(--ud-c-text);
+    border-color: var(--ud-c-border);
+    color-scheme: dark;
+}

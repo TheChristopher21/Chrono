@@ -37,14 +37,17 @@ const AdminPayslipsPage = () => {
     const val = prompt(t('payslips.enterPayoutDate'), current || '');
     if (val) {
       api.post(`/api/payslips/set-payout/${id}`, null, { params: { payoutDate: val } })
-        .then(() => fetchPending());
+          .then(() => fetchPending());
     }
   };
 
 
   const approveAll = () => {
     const comment = prompt(t('payslips.approveAll'));
-    api.post('/api/payslips/approve-all', null, { params: { comment } }).then(() => fetchPending());
+    // Nur fortfahren, wenn der Benutzer einen Kommentar eingegeben hat oder auf OK geklickt hat (comment ist nicht null)
+    if (comment !== null) {
+      api.post('/api/payslips/approve-all', null, { params: { comment } }).then(() => fetchPending());
+    }
   };
 
   const scheduleAll = () => {
@@ -54,7 +57,6 @@ const AdminPayslipsPage = () => {
   const confirmScheduleAll = (day) => {
     api.post('/api/payslips/schedule-all', null, { params: { day } });
     setScheduleVisible(false);
-
   };
 
   const exportCsv = () => {
@@ -65,18 +67,21 @@ const AdminPayslipsPage = () => {
       link.setAttribute('download', 'payslips.csv');
       document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
     });
   };
 
   const printPdf = (id) => {
     api.get(`/api/payslips/admin/pdf/${id}`, { responseType: 'blob', params: { lang: printLang } })
-      .then(res => {
-        const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-        const win = window.open(url);
-        win?.print();
-      })
-      .catch(() => alert(t('payslips.printError')));
-
+        .then(res => {
+          const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
+          const win = window.open(url);
+          // Kleiner Timeout, um sicherzustellen, dass der PDF-Viewer geladen ist
+          setTimeout(() => {
+            win?.print();
+          }, 500);
+        })
+        .catch(() => alert(t('payslips.printError')));
   };
 
   const createPayslip = () => {
@@ -116,108 +121,157 @@ const AdminPayslipsPage = () => {
   return (
       <div className="admin-payslips-page scoped-dashboard">
         <Navbar />
-        <div className="logo-upload">
-          <input type="file" accept="image/*" onChange={e => setLogoFile(e.target.files[0])} />
-          <button onClick={uploadLogo}>{t('payslips.saveLogo', 'Logo speichern')}</button>
+        <div className="top-sections-grid">
+          {/* === Lohnabrechnung erstellen === */}
+          <div className="dashboard-card">
+            <h2>{t('payslips.generateTitle', 'Lohnabrechnung erstellen')}</h2>
+            <p className="section-description">{t('payslips.generateDesc', 'Manuell eine Lohnabrechnung für einen Benutzer erstellen.')}</p>
+            <div className="generate-form">
+              <div className="form-group">
+                <label>{t('payslips.selectUser', 'Benutzer wählen')}</label>
+                <select value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })}>
+                  <option value="">{t('payslips.selectUser', 'Benutzer wählen')}</option>
+                  {users.map(u => (
+                      <option key={u.id} value={u.id}>{u.username}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>{t('payslips.periodStart', 'Startdatum')}</label>
+                <input type="date" value={form.start} onChange={e => setForm({ ...form, start: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label>{t('payslips.periodEnd', 'Enddatum')}</label>
+                <input type="date" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} />
+              </div>
+              <div className="form-group">
+                <label>{t('payslips.payoutDate', 'Auszahlungsdatum')}</label>
+                <input type="date" value={form.payoutDate} onChange={e => setForm({ ...form, payoutDate: e.target.value })} />
+              </div>
+              <button onClick={createPayslip} className="primary-btn">{t('payslips.generate', 'Erstellen')}</button>
+            </div>
+          </div>
+          {/* === Logo Upload === */}
+          <div className="dashboard-card">
+            <h2>{t('payslips.logoTitle', 'Firmenlogo')}</h2>
+            <p className="section-description">{t('payslips.logoDesc', 'Logo für die PDF-Abrechnungen hochladen.')}</p>
+            <div className="logo-upload-form">
+              <input id="file-upload" type="file" accept="image/*" onChange={e => setLogoFile(e.target.files[0])} style={{display: 'none'}}/>
+              <label htmlFor="file-upload" className="custom-file-upload">
+                {logoFile ? logoFile.name : t('payslips.selectFile', 'Datei wählen...')}
+              </label>
+              <button onClick={uploadLogo} disabled={!logoFile}>{t('payslips.saveLogo', 'Logo speichern')}</button>
+            </div>
+          </div>
         </div>
-        <h2>{t('payslips.pendingTitle')}</h2>
-        {/* NEU: Formular zum Erstellen */}
-        <div className="generate-form">
-          <select value={form.userId} onChange={e => setForm({ ...form, userId: e.target.value })}>
-            <option value="">{t('payslips.selectUser', 'Benutzer wählen')}</option>
-            {users.map(u => (
-                <option key={u.id} value={u.id}>{u.username}</option>
-            ))}
-          </select>
-          <input type="date" value={form.start} onChange={e => setForm({ ...form, start: e.target.value })} />
-          <input type="date" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} />
-          <input type="date" value={form.payoutDate} onChange={e => setForm({ ...form, payoutDate: e.target.value })} />
-          <button onClick={createPayslip}>{t('payslips.generate', 'Erstellen')}</button>
-        </div>
-        {/* --- */}
-        <button className="approve-all" onClick={approveAll}>{t('payslips.approveAll')}</button>
-        <button className="approve-all" onClick={exportCsv}>{t('payslips.exportCsv')}</button>
-        <button className="approve-all" onClick={backup}>{t('payslips.backup')}</button>
-        <button className="approve-all" onClick={scheduleAll}>{t('payslips.scheduleAll')}</button>
-        <ScheduleAllModal
-          visible={scheduleVisible}
-          onConfirm={confirmScheduleAll}
-          onClose={() => setScheduleVisible(false)}
-        />
 
-        <table className="payslip-table">
-          <thead>
-          <tr>
-            <th>{t('payslips.user')}</th>
-            <th>{t('payslips.period', 'Zeitraum')}</th>
-            <th>{t('payslips.gross')}</th>
-            <th>{t('payslips.net')}</th>
-            <th>{t('payslips.payoutDate')}</th>
-            <th></th>
-          </tr>
-          </thead>
-          <tbody>
-          {payslips.map(ps => (
-              <tr key={ps.id}>
-                <td>{ps.firstName} {ps.lastName}</td>
-                <td>{ps.periodStart} - {ps.periodEnd}</td>
-                <td>{ps.grossSalary?.toFixed(2)} CHF</td>
-                <td>{ps.netSalary?.toFixed(2)} CHF</td>
-                <td>{ps.payoutDate}</td>
-                <td>
-                  <button onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout')}</button>
-                  <button onClick={() => approve(ps.id)}>{t('payslips.approve')}</button>
-                </td>
 
-              </tr>
-          ))}
-          </tbody>
-        </table>
-
-        <h2>{t('payslips.approvedTitle')}</h2>
-        <div className="print-lang-select">
-          <label>{t('navbar.languageLabel', 'Sprache')}:</label>
-          <select value={printLang} onChange={e => setPrintLang(e.target.value)}>
-            <option value="de">DE</option>
-            <option value="en">EN</option>
-          </select>
-        </div>
-        <div className="filter-form">
-          <input
-            placeholder={t('payslips.filterName', 'Name')}
-            value={filter.name}
-            onChange={e => setFilter({ ...filter, name: e.target.value })}
+        {/* === Ausstehende Lohnabrechnungen === */}
+        <div className="dashboard-card">
+          <h2>{t('payslips.pendingTitle', 'Ausstehende Lohnabrechnungen')}</h2>
+          <div className="controls-bar">
+            <button className="action-btn" onClick={approveAll}>{t('payslips.approveAll', 'Alle freigeben')}</button>
+            <button className="action-btn" onClick={scheduleAll}>{t('payslips.scheduleAll', 'Alle planen')}</button>
+            <button className="action-btn" onClick={exportCsv}>{t('payslips.exportCsv', 'CSV Export')}</button>
+            <button className="action-btn" onClick={backup}>{t('payslips.backup', 'Backup erstellen')}</button>
+          </div>
+          <ScheduleAllModal
+              visible={scheduleVisible}
+              onConfirm={confirmScheduleAll}
+              onClose={() => setScheduleVisible(false)}
           />
-          <input type="date" value={filter.start}
-            onChange={e => setFilter({ ...filter, start: e.target.value })} />
-          <input type="date" value={filter.end}
-            onChange={e => setFilter({ ...filter, end: e.target.value })} />
-          <button onClick={fetchApproved}>{t('payslips.filter', 'Filtern')}</button>
-        </div>
-        <table className="payslip-table">
-          <thead>
-          <tr>
-            <th>{t('payslips.user')}</th>
-            <th>{t('payslips.period', 'Zeitraum')}</th>
-            <th>{t('payslips.gross')}</th>
-            <th>{t('payslips.net')}</th>
-            <th>{t('payslips.payoutDate')}</th>
-            <th></th>
-          </tr>
-          </thead>
-          <tbody>
-          {approvedSlips.map(ps => (
-              <tr key={ps.id}>
-                <td>{ps.firstName} {ps.lastName}</td>
-                <td>{ps.periodStart} - {ps.periodEnd}</td>
-                <td>{ps.grossSalary?.toFixed(2)} CHF</td>
-                <td>{ps.netSalary?.toFixed(2)} CHF</td>
-                <td>{ps.payoutDate}</td>
-                <td><button onClick={() => printPdf(ps.id)}>{t('payslips.print')}</button></td>
+          <div className="table-wrapper">
+            <table className="payslip-table">
+              <thead>
+              <tr>
+                <th>{t('payslips.user', 'Benutzer')}</th>
+                <th>{t('payslips.period', 'Zeitraum')}</th>
+                <th>{t('payslips.gross', 'Brutto')}</th>
+                <th>{t('payslips.net', 'Netto')}</th>
+                <th>{t('payslips.payoutDate', 'Auszahlungsdatum')}</th>
+                <th className="actions-col">{t('payslips.actions', 'Aktionen')}</th>
               </tr>
-          ))}
-          </tbody>
-        </table>
+              </thead>
+              <tbody>
+              {payslips.map(ps => (
+                  <tr key={ps.id}>
+                    <td data-label={t('payslips.user', 'Benutzer')}>{ps.firstName} {ps.lastName}</td>
+                    <td data-label={t('payslips.period', 'Zeitraum')}>{ps.periodStart} - {ps.periodEnd}</td>
+                    <td data-label={t('payslips.gross', 'Brutto')}>{ps.grossSalary?.toFixed(2)} CHF</td>
+                    <td data-label={t('payslips.net', 'Netto')}>{ps.netSalary?.toFixed(2)} CHF</td>
+                    <td data-label={t('payslips.payoutDate', 'Auszahlungsdatum')}>{ps.payoutDate}</td>
+                    <td data-label={t('payslips.actions', 'Aktionen')} className="actions-col">
+                      <button onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout', 'Datum ändern')}</button>
+                      <button onClick={() => approve(ps.id)}>{t('payslips.approve', 'Freigeben')}</button>
+                    </td>
+                  </tr>
+              ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* === Genehmigte Lohnabrechnungen === */}
+        <div className="dashboard-card">
+          <h2>{t('payslips.approvedTitle', 'Genehmigte Lohnabrechnungen')}</h2>
+          <div className="controls-bar">
+            <div className="form-group">
+              <label>{t('payslips.filterName', 'Filter nach Name')}</label>
+              <input
+                  className="filter-input"
+                  placeholder={t('payslips.filterName', 'Name')}
+                  value={filter.name}
+                  onChange={e => setFilter({ ...filter, name: e.target.value })}
+              />
+            </div>
+            <div className="form-group">
+              <label>{t('payslips.periodStart', 'Startdatum')}</label>
+              <input type="date" value={filter.start} className="filter-input"
+                     onChange={e => setFilter({ ...filter, start: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label>{t('payslips.periodEnd', 'Enddatum')}</label>
+              <input type="date" value={filter.end} className="filter-input"
+                     onChange={e => setFilter({ ...filter, end: e.target.value })} />
+            </div>
+            <div className="form-group">
+              <label>{t('navbar.languageLabel', 'Drucksprache')}</label>
+              <select value={printLang} onChange={e => setPrintLang(e.target.value)}>
+                <option value="de">DE</option>
+                <option value="en">EN</option>
+              </select>
+            </div>
+            <button onClick={fetchApproved} className="primary-btn">{t('payslips.filter', 'Filtern')}</button>
+          </div>
+          <div className="table-wrapper">
+            <table className="payslip-table">
+              <thead>
+              <tr>
+                <th>{t('payslips.user', 'Benutzer')}</th>
+                <th>{t('payslips.period', 'Zeitraum')}</th>
+                <th>{t('payslips.gross', 'Brutto')}</th>
+                <th>{t('payslips.net', 'Netto')}</th>
+                <th>{t('payslips.payoutDate', 'Auszahlungsdatum')}</th>
+                <th className="actions-col">{t('payslips.actions', 'Aktionen')}</th>
+              </tr>
+              </thead>
+              <tbody>
+              {approvedSlips.map(ps => (
+                  <tr key={ps.id}>
+                    <td data-label={t('payslips.user', 'Benutzer')}>{ps.firstName} {ps.lastName}</td>
+                    <td data-label={t('payslips.period', 'Zeitraum')}>{ps.periodStart} - {ps.periodEnd}</td>
+                    <td data-label={t('payslips.gross', 'Brutto')}>{ps.grossSalary?.toFixed(2)} CHF</td>
+                    <td data-label={t('payslips.net', 'Netto')}>{ps.netSalary?.toFixed(2)} CHF</td>
+                    <td data-label={t('payslips.payoutDate', 'Auszahlungsdatum')}>{ps.payoutDate}</td>
+                    <td data-label={t('payslips.actions', 'Aktionen')} className="actions-col">
+                      <button onClick={() => printPdf(ps.id)}>{t('payslips.print', 'Drucken')}</button>
+                    </td>
+                  </tr>
+              ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
   );
 };

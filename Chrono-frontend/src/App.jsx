@@ -1,19 +1,15 @@
-/* ------------------------------------------------------------------------
-    App.jsx · zentrale Routen‐Definition (Korrigiert)
-    ------------------------------------------------------------------------ */
 import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-// NEU: Imports für TanStack Query
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
-/* ---------- globale Styles -------------------------------------------- */
+// Globale Styles
 import "./styles/global.css";
 import "./styles/Button.css";
 import "./styles/Login.css";
 import "./styles/Navbar.css";
 import "./styles/PercentageDashboardScoped.css";
 
-/* ---------- Seiten‐Komponenten ---------------------------------------- */
+// Seiten-Komponenten
 import LandingPage from "./pages/LandingPage.jsx";
 import Login from "./pages/Login.jsx";
 import Registration from "./pages/Registration.jsx";
@@ -25,164 +21,61 @@ import AdminUserManagementPage from "./pages/AdminUserManagement/AdminUserManage
 import AdminChangePassword from "./pages/AdminChangePassword.jsx";
 import AdminCustomersPage from "./pages/AdminCustomers/AdminCustomersPage.jsx";
 import AdminProjectsPage from "./pages/AdminProjects/AdminProjectsPage.jsx";
-import CompanyManagementPage from "./pages/CompanyManagementPage.jsx";
-import PrintReport from "./pages/PrintReport.jsx";
-import Impressum from "./pages/Impressum.jsx";
-import AGB from "./pages/AGB.jsx";
-import PayslipsPage from "./pages/PayslipsPage.jsx";
 import AdminPayslipsPage from "./pages/AdminPayslipsPage.jsx";
 import AdminSchedulePlannerPage from "./pages/AdminSchedulePlanner/AdminSchedulePlannerPage.jsx";
-import PrivateRoute from "./components/PrivateRoute";
-import { useAuth } from "./context/AuthContext";
-import WhatsNewPage from "./pages/WhatsNewPage.jsx";
+// NEU: Import der Seite für Schichtregeln
+import AdminShiftRulesPage from "./pages/AdminSchedulePlanner/AdminScheduleRulesPage.jsx";
+import CompanyManagementPage from "./pages/CompanyManagementPage.jsx";
 import TimeTrackingImport from "./TimeTrackingImport.jsx";
-import ActionButtons from "./components/ActionButtons.jsx";
+import PrintReport from "./pages/PrintReport.jsx";
+import WhatsNewPage from "./pages/WhatsNewPage.jsx";
+import AGB from "./pages/AGB.jsx";
+import Impressum from "./pages/Impressum.jsx";
 
+// Hilfs-Komponenten
+import PrivateRoute from "./components/PrivateRoute.jsx";
 
-// NEU: Eine Instanz des QueryClient erstellen
 const queryClient = new QueryClient();
 
 function App() {
-    const { currentUser } = useAuth();
-
     return (
-        // NEU: Die gesamte App mit dem Provider umschliessen
         <QueryClientProvider client={queryClient}>
             <div className="App">
-                <ActionButtons />
-
                 <Routes>
-                    {/* Public routes */}
+                    {/* Öffentliche Routen */}
                     <Route path="/" element={<LandingPage />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/register" element={<Registration />} />
-                    <Route path="/impressum" element={<Impressum />} />
                     <Route path="/agb" element={<AGB />} />
-                    {/* Private routes */}
+                    <Route path="/impressum" element={<Impressum />} />
+
+                    {/* Geschützte Benutzer-Routen */}
+                    <Route path="/dashboard" element={<PrivateRoute><UserDashboard /></PrivateRoute>} />
+                    <Route path="/percentage-punch" element={<PrivateRoute><PercentagePunch /></PrivateRoute>} />
+                    <Route path="/personal-data" element={<PrivateRoute><PersonalDataPage /></PrivateRoute>} />
+
+                    {/* Admin-Routen */}
+                    <Route path="/admin/dashboard" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminDashboard /></PrivateRoute>} />
+                    <Route path="/admin/users" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminUserManagementPage /></PrivateRoute>} />
+                    <Route path="/admin/change-password" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminChangePassword /></PrivateRoute>} />
+                    <Route path="/admin/customers" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminCustomersPage /></PrivateRoute>} />
+                    <Route path="/admin/projects" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminProjectsPage /></PrivateRoute>} />
+                    <Route path="/admin/company" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CompanyManagementPage /></PrivateRoute>} />
+                    <Route path="/admin/payslips" element={<PrivateRoute requiredRole={["ROLE_ADMIN","ROLE_PAYROLL_ADMIN"]}><AdminPayslipsPage /></PrivateRoute>} />
+                    <Route path="/admin/schedule" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminSchedulePlannerPage /></PrivateRoute>} />
+
+                    {/* NEU: Route für die Schicht-Einstellungsseite */}
                     <Route
-                        path="/user"
+                        path="/admin/shift-rules"
                         element={
-                            <PrivateRoute>
-                                <UserDashboard />
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/percentage-punch"
-                        element={
-                            <PrivateRoute>
-                                <PercentagePunch />
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/profile"
-                        element={
-                            <PrivateRoute>
-                                <PersonalDataPage />
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/payslips"
-                        element={
-                            <PrivateRoute>
-                                <PayslipsPage />
+                            <PrivateRoute requiredRole="ROLE_ADMIN">
+                                <AdminShiftRulesPage />
                             </PrivateRoute>
                         }
                     />
 
-                    {/* Admin routes */}
-                    <Route
-                        path="/superadmin/companies"
-                        element={
-                            <PrivateRoute requiredRole="ROLE_SUPERADMIN">
-                                <CompanyManagementPage />
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin"
-                        element={
-                            <PrivateRoute requiredRole="ROLE_ADMIN">
-                                <AdminDashboard />
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/users"
-                        element={
-                            <PrivateRoute requiredRole="ROLE_ADMIN">
-                                <AdminUserManagementPage />
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/customers"
-                        element={
-                            <PrivateRoute requiredRole="ROLE_ADMIN">
-                                {currentUser?.customerTrackingEnabled ? (
-                                    <AdminCustomersPage />
-                                ) : (
-                                    <Navigate to="/admin" replace />
-                                )}
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/projects"
-                        element={
-                            <PrivateRoute requiredRole="ROLE_ADMIN">
-                                {currentUser?.customerTrackingEnabled ? (
-                                    <AdminProjectsPage />
-                                ) : (
-                                    <Navigate to="/admin" replace />
-                                )}
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/change-password"
-                        element={
-                            <PrivateRoute requiredRole="ROLE_ADMIN">
-                                <AdminChangePassword />
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/payslips"
-                        element={
-                            <PrivateRoute requiredRole={["ROLE_ADMIN","ROLE_PAYROLL_ADMIN"]}>
-                                <AdminPayslipsPage />
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/schedule"
-                        element={
-                            <PrivateRoute requiredRole="ROLE_ADMIN">
-                                <AdminSchedulePlannerPage />
-                            </PrivateRoute>
-                        }
-                    />
-                    <Route
-                        path="/admin/import-times"
-                        element={
-                            <PrivateRoute requiredRole="ROLE_ADMIN">
-                                <TimeTrackingImport />
-                            </PrivateRoute>
-                        }
-                    />
-
-                    <Route
-                        path="/whats-new"
-                        element={
-                            <PrivateRoute>
-                                <WhatsNewPage />
-                            </PrivateRoute>
-                        }
-                    />
-
+                    <Route path="/admin/import-times" element={<PrivateRoute requiredRole="ROLE_ADMIN"><TimeTrackingImport /></PrivateRoute>} />
+                    <Route path="/whats-new" element={<PrivateRoute><WhatsNewPage /></PrivateRoute>} />
                     <Route path="/print-report" element={<PrintReport />} />
                     <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>

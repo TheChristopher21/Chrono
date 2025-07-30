@@ -49,4 +49,11 @@ input, button, textarea, select {
   font: inherit;
   margin: 0;
   border-radius: var(--radius-sm);
+}/* src/styles/global.css -- am Ende hinzufügen */
+
+[data-theme="dark"] body {
+  --c-text: #e9ecef;
+  --c-bg: #0e101c; /* Dunkler Hintergrund für die ganze Seite */
+  background-color: var(--c-bg);
+  color: var(--c-text);
 }

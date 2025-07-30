@@ -1,13 +1,58 @@
 /* =========================================================================
-   AdminProjectsPageScoped.css (Neues Design, Juli 2025)
-   Scope: .admin-projects-page.scoped-dashboard
+   AdminProjectsPageScoped.css (FINAL v3 - Select Field Fixed)
+   Scope: .admin-projects-page.scoped-dashboard, .admin-customers-page.scoped-dashboard
    ========================================================================= */
 
-/* Da diese Seite .scoped-dashboard verwendet, erbt sie automatisch
-   alle Basis-Stile (Farben, Fonts, Abstände) aus der einheitlichen
-   Dashboard-CSS-Datei. Wir müssen nur noch spezifische Layouts definieren. */
+/* --- 1. Eigene Theme-Variablen --- */
+.admin-projects-page.scoped-dashboard,
+.admin-customers-page.scoped-dashboard {
+  /* Light Theme Defaults */
+  --ud-c-bg: #f8f9fa;
+  --ud-c-card: #ffffff;
+  --ud-c-surface: #e9ecef;
+  --ud-c-border: #dee2e6;
+  --ud-c-line: #e2e8f0;
+  --ud-c-text: #212529;
+  --ud-c-text-muted: #6c757d;
+  --ud-c-primary: #007bff;
+  --ud-c-primary-dim: #0056b3;
+  --ud-c-primary-text: var(--ud-c-primary);
+  --ud-c-primary-light-bg: rgba(0, 123, 255, 0.1);
+  --ud-c-success: #28a745;
+  --ud-c-danger: #dc3545;
+  --ud-shadow-card: 0 10px 30px rgba(0, 0, 0, 0.07);
+  --ud-shadow-interactive: 0 6px 15px rgba(0, 123, 255, 0.15);
+  --ud-radius-lg: 18px;
+  --ud-radius-md: 12px;
+  --ud-gap-lg: 2rem;
+  --ud-gap-md: 1.25rem;
+  --ud-gap-sm: 0.75rem;
+  --ud-gap-xs: 0.5rem;
+}
 
-.admin-projects-page .create-form {
+[data-theme="dark"] .admin-projects-page.scoped-dashboard,
+[data-theme="dark"] .admin-customers-page.scoped-dashboard {
+  /* Dark Theme Overrides */
+  --ud-c-bg: #0e101c;
+  --ud-c-card: #1c1e2e;
+  --ud-c-surface: #232539;
+  --ud-c-border: #3a3f58;
+  --ud-c-line: #2a2d40;
+  --ud-c-text: #e9ecef;
+  --ud-c-text-muted: #adb5bd;
+  --ud-c-primary: #4dabf7;
+  --ud-c-primary-dim: #3690f5;
+  --ud-c-primary-text: var(--ud-c-primary);
+  --ud-c-primary-light-bg: rgba(77, 171, 247, 0.15);
+  --ud-c-success: #51cf66;
+  --ud-c-danger: #ff6b6b;
+  --ud-shadow-card: 0 10px 35px rgba(0, 0, 0, 0.25);
+  --ud-shadow-interactive: 0 8px 20px rgba(77, 171, 247, 0.2);
+}
+
+/* --- 2. Spezifisches Seiten-Layout --- */
+.admin-projects-page .create-form,
+.admin-customers-page .create-form {
   display: grid;
   grid-template-columns: 2fr 1fr auto;
   gap: var(--ud-gap-md);
@@ -15,19 +60,29 @@
   max-width: 800px;
 }
 
-.admin-projects-page .create-form input,
-.admin-projects-page .create-form select {
-  margin: 0;
+/* KORREKTUR: Styling für Select-Felder hinzugefügt */
+.admin-projects-page select,
+.admin-customers-page select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-repeat: no-repeat;
+  background-position: right var(--ud-gap-md) center;
+  background-size: 12px 8px;
+  padding-right: calc(var(--ud-gap-md) + 1.5rem);
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59L6 5.17L10.59.59L12 2L6 8L0 2L1.41.59Z' fill='%236B7280'/%3E%3C/svg%3E");
 }
 
-/* Liste der Projekte */
-.admin-projects-page .item-list-container {
+
+.admin-projects-page .item-list-container,
+.admin-customers-page .item-list-container {
   max-height: 60vh;
   overflow-y: auto;
   padding-right: var(--ud-gap-sm);
 }
 
-.admin-projects-page .item-list.project-list {
+.admin-projects-page .item-list,
+.admin-customers-page .item-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -36,7 +91,8 @@
   gap: var(--ud-gap-md);
 }
 
-.admin-projects-page .list-item {
+.admin-projects-page .list-item,
+.admin-customers-page .list-item {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -49,20 +105,23 @@
   transition: all 0.2s ease-in-out;
 }
 
-.admin-projects-page .list-item:hover {
+.admin-projects-page .list-item:hover,
+.admin-customers-page .list-item:hover {
   border-color: var(--ud-c-primary);
   transform: translateY(-2px);
   box-shadow: var(--ud-shadow-interactive);
 }
 
-.admin-projects-page .item-details {
+.admin-projects-page .item-details,
+.admin-customers-page .item-details {
   display: flex;
   flex-direction: column;
   gap: var(--ud-gap-xs);
   flex-grow: 1;
 }
 
-.admin-projects-page .item-name {
+.admin-projects-page .item-name,
+.admin-customers-page .item-name {
   font-weight: 600;
   font-size: 1.05rem;
   color: var(--ud-c-text);
@@ -74,14 +133,15 @@
   font-style: italic;
 }
 
-.admin-projects-page .item-actions {
+.admin-projects-page .item-actions,
+.admin-customers-page .item-actions {
   display: flex;
   gap: var(--ud-gap-sm);
   flex-shrink: 0;
 }
 
-/* Inline-Formular für die Bearbeitung */
-.admin-projects-page .edit-form {
+.admin-projects-page .edit-form,
+.admin-customers-page .edit-form {
   display: grid;
   grid-template-columns: 2fr 1fr auto;
   gap: var(--ud-gap-md);
@@ -89,12 +149,8 @@
   align-items: center;
 }
 
-.admin-projects-page .edit-form input,
-.admin-projects-page .edit-form select {
-  background-color: var(--ud-c-card);
-}
-
-.admin-projects-page .edit-form .form-actions {
+.admin-projects-page .edit-form .form-actions,
+.admin-customers-page .edit-form .form-actions {
   display: flex;
   gap: var(--ud-gap-sm);
 }
@@ -102,20 +158,43 @@
 /* Responsive Anpassungen */
 @media (max-width: 768px) {
   .admin-projects-page .create-form,
-  .admin-projects-page .edit-form {
+  .admin-projects-page .edit-form,
+  .admin-customers-page .create-form,
+  .admin-customers-page .edit-form {
     grid-template-columns: 1fr;
   }
-
-  .admin-projects-page .list-item {
+  .admin-projects-page .list-item,
+  .admin-customers-page .list-item {
     flex-direction: column;
     align-items: stretch;
     padding: var(--ud-gap-md);
   }
-
   .admin-projects-page .item-actions,
-  .admin-projects-page .edit-form .form-actions {
+  .admin-projects-page .edit-form .form-actions,
+  .admin-customers-page .item-actions,
+  .admin-customers-page .edit-form .form-actions {
     width: 100%;
     justify-content: flex-end;
     margin-top: var(--ud-gap-md);
   }
+}
+
+/* =========================================================================
+   DARK MODE FIXES
+   ========================================================================= */
+
+[data-theme="dark"] .admin-projects-page .create-form input,
+[data-theme="dark"] .admin-projects-page .create-form select,
+[data-theme="dark"] .admin-projects-page .edit-form input,
+[data-theme="dark"] .admin-projects-page .edit-form select,
+[data-theme="dark"] .admin-customers-page .create-form input,
+[data-theme="dark"] .admin-customers-page .edit-form input {
+  background-color: var(--ud-c-surface);
+  color: var(--ud-c-text);
+  border-color: var(--ud-c-border);
+}
+
+[data-theme="dark"] .admin-projects-page select,
+[data-theme="dark"] .admin-customers-page select {
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59L6 5.17L10.59.59L12 2L6 8L0 2L1.41.59Z' fill='%23adb5bd'/%3E%3C/svg%3E");
 }
