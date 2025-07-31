@@ -80,6 +80,7 @@ public class UserController {
         user.setCivilStatus(dto.getCivilStatus());
         user.setChildren(dto.getChildren());
         user.setReligion(dto.getReligion());
+        user.setBankAccount(dto.getBankAccount());
         user.setHealthInsurance(dto.getHealthInsurance());
         user.setPersonnelNumber(dto.getPersonnelNumber());
         user.setEmail(dto.getEmail());

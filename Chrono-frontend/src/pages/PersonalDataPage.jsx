@@ -14,6 +14,12 @@ const PersonalDataPage = () => {
         firstName: currentUser?.firstName || '',
         lastName: currentUser?.lastName || '',
         email: currentUser?.email || '',
+        address: currentUser?.address || '',
+        mobilePhone: currentUser?.mobilePhone || '',
+        landlinePhone: currentUser?.landlinePhone || '',
+        civilStatus: currentUser?.civilStatus || '',
+        children: currentUser?.children ?? 0,
+        bankAccount: currentUser?.bankAccount || '',
         emailNotifications: currentUser?.emailNotifications ?? true,
     });
     const [passwordData, setPasswordData] = useState({
@@ -39,6 +45,12 @@ const PersonalDataPage = () => {
                 firstName: res.data.firstName,
                 lastName: res.data.lastName,
                 email: res.data.email,
+                address: res.data.address,
+                mobilePhone: res.data.mobilePhone,
+                landlinePhone: res.data.landlinePhone,
+                civilStatus: res.data.civilStatus,
+                children: res.data.children,
+                bankAccount: res.data.bankAccount,
                 emailNotifications: res.data.emailNotifications,
             });
         } catch (err) {
@@ -55,6 +67,12 @@ const PersonalDataPage = () => {
                 firstName: personalData.firstName,
                 lastName: personalData.lastName,
                 email: personalData.email,
+                address: personalData.address,
+                mobilePhone: personalData.mobilePhone,
+                landlinePhone: personalData.landlinePhone,
+                civilStatus: personalData.civilStatus,
+                children: personalData.children,
+                bankAccount: personalData.bankAccount,
                 emailNotifications: personalData.emailNotifications,
             });
             notify(t("personalData.saved", "Gespeichert"));
@@ -131,6 +149,79 @@ const PersonalDataPage = () => {
                                 setPersonalData({ ...personalData, email: e.target.value })
                             }
                             required
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>{t("personalData.address", "Adresse")}:</label>
+                        <input
+                            type="text"
+                            name="address"
+                            value={personalData.address}
+                            onChange={(e) =>
+                                setPersonalData({ ...personalData, address: e.target.value })
+                            }
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>{t("personalData.mobilePhone", "Handynummer")}:</label>
+                        <input
+                            type="text"
+                            name="mobilePhone"
+                            value={personalData.mobilePhone}
+                            onChange={(e) =>
+                                setPersonalData({ ...personalData, mobilePhone: e.target.value })
+                            }
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>{t("personalData.landlinePhone", "Festnetz (optional)")}:</label>
+                        <input
+                            type="text"
+                            name="landlinePhone"
+                            value={personalData.landlinePhone}
+                            onChange={(e) =>
+                                setPersonalData({ ...personalData, landlinePhone: e.target.value })
+                            }
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>{t("personalData.civilStatus", "Zivilstand")}:</label>
+                        <input
+                            type="text"
+                            name="civilStatus"
+                            value={personalData.civilStatus}
+                            onChange={(e) =>
+                                setPersonalData({ ...personalData, civilStatus: e.target.value })
+                            }
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>{t("personalData.children", "Kinder")}:</label>
+                        <input
+                            type="number"
+                            name="children"
+                            min="0"
+                            value={personalData.children}
+                            onChange={(e) =>
+                                setPersonalData({ ...personalData, children: parseInt(e.target.value, 10) })
+                            }
+                        />
+                    </div>
+
+                    <div className="form-group">
+                        <label>{t("personalData.bankAccount", "Bankverbindung")}:</label>
+                        <input
+                            type="text"
+                            name="bankAccount"
+                            value={personalData.bankAccount}
+                            onChange={(e) =>
+                                setPersonalData({ ...personalData, bankAccount: e.target.value })
+                            }
                         />
                     </div>
 
