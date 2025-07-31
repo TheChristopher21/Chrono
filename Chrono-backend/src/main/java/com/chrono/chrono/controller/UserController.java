@@ -73,6 +73,7 @@ public class UserController {
         if (dto.getLandlinePhone() != null) user.setLandlinePhone(dto.getLandlinePhone());
         if (dto.getEmailNotifications() != null) user.setEmailNotifications(dto.getEmailNotifications());
 
+
         userRepository.save(user);
         return ResponseEntity.ok(convertToDTO(user));
     }
