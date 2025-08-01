@@ -225,6 +225,7 @@ const translations = {
             companyManagement: "Firmen",
             payslips: "Abrechnungen",
             schedulePlanner: "Dienstplan",
+            knowledge: "Dokumente",
             payments: "Zahlungen",
             myDashboard: "Mein Dashboard",
             chatbot: "Chatbot",
@@ -622,6 +623,21 @@ const translations = {
             userOnVacation: "Dieser Mitarbeiter ist an diesem Tag im Urlaub"
 
         },
+        knowledge: {
+            managementTitle: "Wissensdokumente",
+            createTitle: "Neues Dokument",
+            titleLabel: "Titel",
+            contentLabel: "Inhalt",
+            accessLabel: "Zugriff",
+            accessAll: "Alle",
+            accessAdmin: "Nur Admins",
+            listTitle: "Dokumente",
+            createSuccess: "Dokument gespeichert",
+            createError: "Fehler beim Speichern",
+            deleteConfirm: "Dokument wirklich löschen?",
+            deleteError: "Fehler beim Löschen",
+            noDocs: "Keine Dokumente"
+        },
         quickStart: {
             title: "Quick Start",
             profile: "Profil ausfüllen",
@@ -924,6 +940,7 @@ const translations = {
             companyManagement: "Companies",
             payslips: "Payslips",
             schedulePlanner: "Schedule",
+            knowledge: "Documents",
             payments: "Payments",
             myDashboard: "My Dashboard",
             chatbot: "Chatbot",
@@ -1315,6 +1332,21 @@ const translations = {
             weekShort: "Week",
             userOnVacation: "This employee is on vacation on this day"
 
+        },
+        knowledge: {
+            managementTitle: "Knowledge Documents",
+            createTitle: "New Document",
+            titleLabel: "Title",
+            contentLabel: "Content",
+            accessLabel: "Access",
+            accessAll: "All",
+            accessAdmin: "Admins only",
+            listTitle: "Documents",
+            createSuccess: "Document saved",
+            createError: "Error while saving",
+            deleteConfirm: "Delete this document?",
+            deleteError: "Error while deleting",
+            noDocs: "No documents"
         },
         quickStart: {
             title: "Quick Start",
