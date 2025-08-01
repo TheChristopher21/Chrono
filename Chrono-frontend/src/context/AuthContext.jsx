@@ -25,6 +25,7 @@ export const AuthProvider = ({ children }) => {
     // Logout-Funktion, die Zustände zurücksetzt
     const logout = useCallback(() => {
         localStorage.removeItem('token');
+        sessionStorage.removeItem('chatMessages'); // remove persisted chat
         setAuthToken(null);
         setCurrentUser(null);
         delete api.defaults.headers.common.Authorization;
