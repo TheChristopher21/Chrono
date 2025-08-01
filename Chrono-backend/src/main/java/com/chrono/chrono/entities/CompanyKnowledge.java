@@ -1,9 +1,12 @@
 package com.chrono.chrono.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 @Entity
 @Table(name = "company_knowledge")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class CompanyKnowledge {
 
     public enum AccessLevel {
@@ -17,6 +20,7 @@ public class CompanyKnowledge {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false)
+    @JsonIgnore
     private Company company;
 
     @Column(nullable = false)
