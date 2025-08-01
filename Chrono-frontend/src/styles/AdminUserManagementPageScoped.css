@@ -29,6 +29,9 @@
   --u-gap: clamp(1.5rem, 3vw, 2.2rem); /* Großer Abstand */
   --u-gap-md: clamp(1rem, 2vw, 1.5rem); /* Mittlerer Abstand */
   --u-gap-sm: clamp(0.5rem, 1vw, 0.8rem); /* Kleiner Abstand */
+  /* HINZUGEFÜGT: Fehlende Variablen für konsistentes Spacing */
+  --u-gap-xs: clamp(0.25rem, 0.5vw, 0.4rem); /* Sehr kleiner Abstand */
+  --u-gap-lg: clamp(2rem, 4vw, 3rem); /* Sehr großer Abstand */
 
   --u-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
   --u-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
@@ -179,21 +182,11 @@
 }
 
 /* Das <form> Element selbst */
-.admin-user-management-page.scoped-dashboard .user-form form {
+.admin-user-management-page.scoped-dashboard .user-form .admin-user-form-grid {
   display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--u-gap-sm) var(--u-gap-md);
-}
-
-@media (min-width: 768px) {
-  .admin-user-management-page.scoped-dashboard .user-form form {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (min-width: 1024px) {
-  .admin-user-management-page.scoped-dashboard .user-form form {
-    grid-template-columns: repeat(3, 1fr);
-  }
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  /* GEÄNDERT: Einheitlicher und ausgewogenerer Abstand für das Grid */
+  gap: var(--u-gap-md) var(--u-gap);
 }
 
 .admin-user-management-page.scoped-dashboard .user-form .form-section-title {
@@ -201,43 +194,19 @@
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--c-pri);
-  margin-top: var(--u-gap-sm);
+  margin-top: var(--u-gap); /* Erhöhter Abstand für bessere Sektionstrennung */
   margin-bottom: var(--u-gap-sm);
   padding-bottom: 0.25rem;
-  border-bottom: 1px dashed var(--c-line);
+  /* GEÄNDERT: Sauberere durchgezogene Linie */
+  border-bottom: 1px solid var(--c-line);
 }
-
 .admin-user-management-page.scoped-dashboard .user-form .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
+  gap: var(--u-gap-xs);
 }
 .admin-user-management-page.scoped-dashboard .user-form .form-group.full-width {
   grid-column: 1 / -1;
-}
-.admin-user-management-page.scoped-dashboard .user-form .form-group.col-span-2 {
-  grid-column: span 2;
-}
-.admin-user-management-page.scoped-dashboard .user-form .form-group.col-span-3 {
-  grid-column: span 3;
-}
-
-@media (max-width: 1023px) and (min-width: 768px) {
-  .admin-user-management-page.scoped-dashboard
-  .user-form
-  .form-group.col-span-3 {
-    grid-column: 1 / -1;
-  }
-}
-@media (max-width: 767px) {
-  .admin-user-management-page.scoped-dashboard
-  .user-form
-  .form-group.col-span-2,
-  .admin-user-management-page.scoped-dashboard
-  .user-form
-  .form-group.col-span-3 {
-    grid-column: 1 / -1;
-  }
 }
 
 .admin-user-management-page.scoped-dashboard .user-form label {
@@ -264,6 +233,8 @@ label {
 .admin-user-management-page.scoped-dashboard .user-form input[type="password"],
 .admin-user-management-page.scoped-dashboard .user-form input[type="number"],
 .admin-user-management-page.scoped-dashboard .user-form input[type="date"],
+/* HINZUGEFÜGT: Telefonnummern-Input für konsistentes Styling */
+.admin-user-management-page.scoped-dashboard .user-form input[type="tel"],
 .admin-user-management-page.scoped-dashboard .user-form select,
 .admin-user-management-page.scoped-dashboard .user-form textarea {
   font-family: inherit;
@@ -293,6 +264,10 @@ input[type="email"],
 .admin-user-management-page.scoped-dashboard
 .user-form
 input[type="password"],
+[data-theme="dark"]
+.admin-user-management-page.scoped-dashboard
+.user-form
+input[type="tel"],
 [data-theme="dark"]
 .admin-user-management-page.scoped-dashboard
 .user-form
@@ -357,11 +332,12 @@ option:hover {
   color: #fff;
 }
 
+/* GEÄNDERT: Verbesserte Ausrichtung der Checkboxen */
 .admin-user-management-page.scoped-dashboard .user-form .form-group-checkbox {
-  display: flex;
+  flex-direction: row; /* Überschreibt .form-group */
   align-items: center;
   gap: var(--u-gap-sm);
-  margin-top: var(--u-gap-sm);
+  padding-top: 1.8rem; /* Richtet Checkbox an der Grundlinie von Text-Inputs aus */
 }
 .admin-user-management-page.scoped-dashboard
 .user-form
@@ -483,41 +459,35 @@ input[type="checkbox"]:checked::after {
   box-shadow: 0 0 0 3px var(--c-pri-dim);
 }
 
-/* Weekly Schedule */
-.admin-user-management-page.scoped-dashboard
-.user-form
-.weekly-schedule-config {
+/* NEU: Stile für den gesamten Wochenplan-Block */
+/* Stile für das verschachtelte Grid im Wochenplan (Tagessoll, Gültig ab, etc.) */
+.admin-user-management-page.scoped-dashboard .user-form .full-width > .admin-user-form-grid {
   grid-column: 1 / -1;
-  margin-top: var(--u-gap-sm);
-  padding-top: var(--u-gap-sm);
-  border-top: 1px solid var(--c-line);
+  /* Kompakteres Grid für die untergeordneten Einstellungen */
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: var(--u-gap-sm) var(--u-gap-md);
 }
 .admin-user-management-page.scoped-dashboard
-.user-form
-.weekly-schedule-config
-h4 {
-  font-size: 1.05rem;
-  font-weight: 600;
-  margin-bottom: var(--u-gap-sm);
-  color: var(--c-text-light);
-}
 .admin-user-management-page.scoped-dashboard
 .user-form
 .schedule-week-container {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: var(--u-gap-md);
+  margin-top: var(--u-gap-md);
 }
 .admin-user-management-page.scoped-dashboard .user-form .schedule-week {
   background: var(--c-surface);
   border: 1px solid var(--c-line);
   border-radius: var(--u-radius-sm);
   padding: var(--u-gap-sm);
+  /* NEU: Grid-Layout für kompakte Darstellung der Tage */
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--u-gap-sm) var(--u-gap-md);
 }
 [data-theme="dark"]
-.admin-user-management-page.scoped-dashboard
-.user-form
-.schedule-week {
+.admin-user-management-page.scoped-dashboard .user-form .schedule-week {
   background: var(--c-line);
   border-color: var(--c-border);
 }
@@ -527,22 +497,16 @@ h4 {
   font-weight: 600;
   padding-bottom: 0.3rem;
   border-bottom: 1px solid var(--c-border);
+  grid-column: 1 / -1; /* Titel erstreckt sich über beide Spalten */
 }
-.admin-user-management-page.scoped-dashboard
-.user-form
-.schedule-week
-.day-input-group {
+.admin-user-management-page.scoped-dashboard .user-form .schedule-week .day-input-group {
+  /* GEÄNDERT: Flex-Layout für Label und Input */
   display: flex;
-  align-items: center;
-  gap: var(--u-gap-sm);
+  flex-direction: column;
+  gap: var(--u-gap-xs);
   margin-bottom: 0.4rem;
 }
-.admin-user-management-page.scoped-dashboard
-.user-form
-.schedule-week
-.day-input-group
-label {
-  flex-basis: 90px;
+.admin-user-management-page.scoped-dashboard .user-form .schedule-week .day-input-group label {
   font-size: 0.8rem;
   color: var(--c-muted);
   margin-bottom: 0;

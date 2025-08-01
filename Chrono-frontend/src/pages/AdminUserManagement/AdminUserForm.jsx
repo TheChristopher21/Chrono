@@ -32,7 +32,8 @@ const AdminUserForm = ({
                 {isEditing ? t("userManagement.editUser", "Benutzer bearbeiten") : t("userManagement.newUser", "Neuen Benutzer anlegen")}
             </h3>
 
-            <form onSubmit={onSubmit}>
+            <form onSubmit={onSubmit} className="admin-user-form-grid">
+                {/* Sektion: Basisinformationen */}
                 <h4 className="form-section-title full-width">{t('userManagement.section.basicInfo', 'Basisinformationen')}</h4>
 
                 <div className="form-group">
@@ -80,6 +81,35 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
+                    <label htmlFor="email">{t("userManagement.email", "E-Mail")}:</label>
+                    <input
+                        id="email"
+                        type="email"
+                        value={userData.email || ""}
+                        onChange={(e) => handleChange("email", e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="mobilePhone">{t("userManagement.mobilePhone", "Handynummer")}</label>
+                    <input
+                        id="mobilePhone"
+                        type="tel"
+                        value={userData.mobilePhone || ""}
+                        onChange={(e) => handleChange("mobilePhone", e.target.value)}
+                        required
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="landlinePhone">{t("userManagement.landlinePhone", "Festnetz (optional)")}</label>
+                    <input
+                        id="landlinePhone"
+                        type="tel"
+                        value={userData.landlinePhone || ""}
+                        onChange={(e) => handleChange("landlinePhone", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
                     <label htmlFor="address">{t("userManagement.address", "Adresse")}</label>
                     <input
                         id="address"
@@ -106,6 +136,17 @@ const AdminUserForm = ({
                         pattern="\\d{4}-\\d{2}-\\d{2}"
                         value={userData.entryDate || ""}
                         onChange={(e) => handleChange("entryDate", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    <label htmlFor="personnelNumber">{t("userManagement.personnelNumber", "Personalnummer")}</label>
+                    <input
+                        id="personnelNumber"
+                        type="text"
+                        pattern="[0-9]{1,10}"
+                        value={userData.personnelNumber || ""}
+                        onChange={(e) => handleChange("personnelNumber", e.target.value)}
+                        required
                     />
                 </div>
                 <div className="form-group">
@@ -196,7 +237,6 @@ const AdminUserForm = ({
                     </>
                 )}
 
-
                 <div className="form-group">
                     <label htmlFor="civilStatus">{t("userManagement.civilStatus", "Zivilstand")}</label>
                     <input
@@ -234,46 +274,6 @@ const AdminUserForm = ({
                         onChange={(e) => handleChange("healthInsurance", e.target.value)}
                     />
                 </div>
-                <div className="form-group">
-                    <label htmlFor="personnelNumber">{t("userManagement.personnelNumber", "Personalnummer")}</label>
-                    <input
-                        id="personnelNumber"
-                        type="text"
-                        pattern="[0-9]{1,10}"
-                        value={userData.personnelNumber || ""}
-                        onChange={(e) => handleChange("personnelNumber", e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="email">{t("userManagement.email", "E-Mail")}:</label>
-                    <input
-                        id="email"
-                        type="email"
-                        value={userData.email || ""}
-                        onChange={(e) => handleChange("email", e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="mobilePhone">{t("userManagement.mobilePhone", "Handynummer")}</label>
-                    <input
-                        id="mobilePhone"
-                        type="tel"
-                        value={userData.mobilePhone || ""}
-                        onChange={(e) => handleChange("mobilePhone", e.target.value)}
-                        required
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="landlinePhone">{t("userManagement.landlinePhone", "Festnetz (optional)")}</label>
-                    <input
-                        id="landlinePhone"
-                        type="tel"
-                        value={userData.landlinePhone || ""}
-                        onChange={(e) => handleChange("landlinePhone", e.target.value)}
-                    />
-                </div>
 
                 <div className="form-group">
                     <label htmlFor="roles">{t("userManagement.role", "Rolle")}:</label>
@@ -305,7 +305,9 @@ const AdminUserForm = ({
                     </div>
                 </div>
 
+                {/* Sektion: Arbeitsmodell */}
                 <h4 className="form-section-title full-width">{t('userManagement.section.workModel', 'Arbeitsmodell')}</h4>
+
                 <div className="form-group form-group-checkbox">
                     <input
                         type="checkbox"
@@ -315,6 +317,7 @@ const AdminUserForm = ({
                     />
                     <label htmlFor="isHourly">{t("userManagement.isHourly", "Stundenbasiert abrechnen")}</label>
                 </div>
+
                 <div className="form-group form-group-checkbox">
                     <input
                         type="checkbox"
@@ -372,7 +375,10 @@ const AdminUserForm = ({
                     </div>
                 )}
 
+
+                {/* Sektion: Allgemeine Einstellungen */}
                 <h4 className="form-section-title full-width">{t('userManagement.section.generalSettings', 'Allgemeine Einstellungen')}</h4>
+
                 <div className="form-group">
                     <label htmlFor="annualVacationDays">{t("userManagement.annualVacationDays", "Urlaubstage/Jahr")}:</label>
                     <input
@@ -404,7 +410,6 @@ const AdminUserForm = ({
                     />
                 </div>
 
-                {/* ANPASSUNG HIER: expectedWorkDays für Standard- und Prozent-Nutzer (nicht für Stunden-Nutzer) */}
                 {!userData.isHourly && (
                     <div className="form-group">
                         <label htmlFor="expectedWorkDays">{t("userManagement.expectedWorkDays", "Erw. Arbeitstage/Woche")}:</label>
@@ -419,10 +424,10 @@ const AdminUserForm = ({
                 )}
 
 
-                {/* Wochenplan-Konfiguration (nur für Standard-User) */}
-                {!userData.isPercentage && !userData.isHourly && (
-                    <div className="weekly-schedule-config full-width">
-                        <h4 className="form-section-title">{t("userManagement.scheduleConfig", "Wochenplan & Sollzeiten")}</h4>
+                {/* Sektion: Wochenplan-Konfiguration */}
+                <div className="full-width">
+                    <h4 className="form-section-title">{t("userManagement.scheduleConfig", "Wochenplan & Sollzeiten")}</h4>
+                    <div className="admin-user-form-grid"> {/* Nested grid for this section's own layout */}
                         <div className="form-group">
                             <label htmlFor="dailyWorkHours">{t("userManagement.dailyWorkHours", "Standard Tagessoll (Std)")}:</label>
                             <input
@@ -433,7 +438,6 @@ const AdminUserForm = ({
                                 placeholder="z.B. 8.5"
                             />
                         </div>
-                        {/* expectedWorkDays wurde nach oben verschoben, um Duplizierung zu vermeiden */}
                         <div className="form-group">
                             <label htmlFor="scheduleEffectiveDate">{t("userManagement.scheduleEffectiveDate", "Plan gültig ab")}:</label>
                             <input
@@ -453,30 +457,31 @@ const AdminUserForm = ({
                                 onChange={(e) => onScheduleCycleChange(Number(e.target.value))}
                             />
                         </div>
-
-                        <div className="schedule-week-container">
-                            {(userData.weeklySchedule || []).map((week, weekIdx) => (
-                                <div key={weekIdx} className="schedule-week">
-                                    <h5>{t("userManagement.week", "Woche")} {weekIdx + 1}</h5>
-                                    {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((dayKey) => (
-                                        <div key={dayKey} className="day-input-group">
-                                            <label htmlFor={`schedule-${weekIdx}-${dayKey}`}>{t(`days.${dayKey}`)}:</label>
-                                            <input
-                                                type="number"
-                                                id={`schedule-${weekIdx}-${dayKey}`}
-                                                min="0" max="24" step="0.01"
-                                                value={week[dayKey] !== null && week[dayKey] !== undefined ? week[dayKey] : ""}
-                                                placeholder="Std."
-                                                onChange={(e) => onWeeklyScheduleDayChange(weekIdx, dayKey, e.target.value)}
-                                            />
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
                     </div>
-                )}
+                    <div className="schedule-week-container full-width">
+                        {(userData.weeklySchedule || []).map((week, weekIdx) => (
+                            <div key={weekIdx} className="schedule-week">
+                                <h5>{t("userManagement.week", "Woche")} {weekIdx + 1}</h5>
+                                {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((dayKey) => (
+                                    <div key={dayKey} className="day-input-group">
+                                        <label htmlFor={`schedule-${weekIdx}-${dayKey}`}>{t(`days.${dayKey}`)}:</label>
+                                        <input
+                                            type="number"
+                                            id={`schedule-${weekIdx}-${dayKey}`}
+                                            min="0" max="24" step="0.01"
+                                            value={week[dayKey] !== null && week[dayKey] !== undefined ? week[dayKey] : ""}
+                                            placeholder="Std."
+                                            onChange={(e) => onWeeklyScheduleDayChange(weekIdx, dayKey, e.target.value)}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        ))}
+                    </div>
+                </div>
 
+
+                {/* Sektion: Formular-Aktionen */}
                 <div className="form-actions full-width">
                     <button type="submit" className="button-primary">
                         {isEditing ? t("userManagement.button.saveChanges", "Änderungen speichern") : t("userManagement.button.createUser", "Benutzer erstellen")}
@@ -485,8 +490,6 @@ const AdminUserForm = ({
                         {t("userManagement.button.cancel", "Abbrechen")}
                     </button>
                 </div>
-
-
             </form>
         </section>
     );

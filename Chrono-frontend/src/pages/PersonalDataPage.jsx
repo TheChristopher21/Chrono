@@ -285,7 +285,6 @@ const PersonalDataPage = () => {
 
                 {message && <p>{message}</p>}
 
-                <button type="button" onClick={() => start(true)}>Tutorial erneut anzeigen</button>
             </section>
         </div>
     );
