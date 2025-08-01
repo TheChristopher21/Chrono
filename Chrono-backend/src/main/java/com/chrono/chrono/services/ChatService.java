@@ -18,8 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
 import com.chrono.chrono.entities.User;
-import com.chrono.chrono.entities.CompanyKnowledge;
-import com.chrono.chrono.services.CompanyKnowledgeService;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -45,7 +43,6 @@ public class ChatService {
     private final RestTemplate restTemplate;
     private final RestTemplate longTimeoutRestTemplate; // The special patient RestTemplate
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final CompanyKnowledgeService companyKnowledgeService;
     private String knowledgeBaseContent = "";
     private static final List<String> FALLBACKS = Arrays.asList(
             "Das habe ich leider nicht im Repertoire, aber ich lerne gerne dazu! Versuche es gerne nochmal anders oder schau in die Hilfeseite.",
@@ -59,13 +56,10 @@ public class ChatService {
             "Gute Frage! Im Moment kann ich darauf nicht antworten, aber ich kann dich an einen echten Menschen weiterleiten."
     );
 
-    // Modified constructor to accept both RestTemplates and the knowledge service
-    public ChatService(RestTemplate restTemplate,
-                       @Qualifier("longTimeoutRestTemplate") RestTemplate longTimeoutRestTemplate,
-                       CompanyKnowledgeService companyKnowledgeService) {
+    // Modified constructor to accept both RestTemplates
+    public ChatService(RestTemplate restTemplate, @Qualifier("longTimeoutRestTemplate") RestTemplate longTimeoutRestTemplate) {
         this.restTemplate = restTemplate;
         this.longTimeoutRestTemplate = longTimeoutRestTemplate;
-        this.companyKnowledgeService = companyKnowledgeService;
         loadKnowledgeBaseFromResources();
     }
 
@@ -160,12 +154,10 @@ public class ChatService {
                     ? "Der Benutzer ist eingeloggt mit dem Benutzernamen '" + user.getUsername() + "'."
                     : "Es ist kein Benutzer eingeloggt.";
 
-            String companyKnowledge = getCompanyKnowledgeForUser(user);
             String fullPrompt = "Antworte auf die folgende Frage nur basierend auf dem untenstehenden Kontext. Antworte in der gleichen Sprache wie die Frage.\n\n" +
                     "Benutzerkontext: " + userContext + "\n\n" +
                     "--- KONTEXT ---\n" +
                     this.knowledgeBaseContent +
-                    companyKnowledge +
                     "\n--- FRAGE ---\n" +
                     message;
 
@@ -198,23 +190,5 @@ public class ChatService {
 
     private String getRandomFallback() {
         return FALLBACKS.get(ThreadLocalRandom.current().nextInt(FALLBACKS.size()));
-    }
-
-    private String getCompanyKnowledgeForUser(User user) {
-        if (user == null || user.getCompany() == null) {
-            return "";
-        }
-        boolean isAdmin = user.getRoles().stream()
-                .anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
-        List<CompanyKnowledge> docs = companyKnowledgeService.findByCompany(user.getCompany());
-        StringBuilder sb = new StringBuilder();
-        for (CompanyKnowledge d : docs) {
-            if (d.getAccessLevel() == CompanyKnowledge.AccessLevel.ALL || isAdmin) {
-                sb.append("\n\n---\n\n");
-                sb.append(d.getTitle()).append("\n");
-                sb.append(d.getContent());
-            }
-        }
-        return sb.toString();
     }
 }
