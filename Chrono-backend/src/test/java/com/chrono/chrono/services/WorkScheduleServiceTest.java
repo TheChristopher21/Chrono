@@ -2,6 +2,7 @@ package com.chrono.chrono.services;
 
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.UserScheduleRule;
+
 import com.chrono.chrono.repositories.SickLeaveRepository;
 import com.chrono.chrono.repositories.UserHolidayOptionRepository;
 import com.chrono.chrono.repositories.UserScheduleRuleRepository;
@@ -18,6 +19,7 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.when;
 
+
 @ExtendWith(MockitoExtension.class)
 class WorkScheduleServiceTest {
 
@@ -25,6 +27,7 @@ class WorkScheduleServiceTest {
     private UserScheduleRuleRepository ruleRepo;
 
     @Mock
+
     private HolidayService holidayService;
 
     @Mock
@@ -72,6 +75,7 @@ class WorkScheduleServiceTest {
         int minutes = workScheduleService.computeExpectedWorkMinutes(user, date, Collections.emptyList());
 
         assertEquals(240, minutes);
+
     }
 }
 
