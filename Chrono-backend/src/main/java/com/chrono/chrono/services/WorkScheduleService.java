@@ -105,6 +105,10 @@ public class WorkScheduleService {
         logger.info("[CHRONO-DEBUG] Für Benutzer: '{}', Datum: {}, berechnete Soll-Stunden: {}", user.getUsername(), date.toString(), baseHours);
         // ======================= ENDE DEBUG-CODE =======================
 
+        if (isHalfDay(user, date)) {
+            baseHours = baseHours / 2.0;
+        }
+
         return applyPercentage(user, baseHours);
     }
     public int getExpectedWeeklyMinutesForPercentageUser(User user, LocalDate dateInWeek, List<VacationRequest> approvedVacationsInWeek) {
@@ -324,16 +328,6 @@ public class WorkScheduleService {
                 }
             }
         }
-
-        // UserScheduleRule für halbe Tage (muss noch implementiert werden, falls benötigt über isHalfDay())
-        if (isHalfDay(user, date)) { // Diese Methode ist noch ein TODO
-            int halfDaySollFromRule = (int) Math.round((expectedHoursFullDay / 2.0) * 60);
-            if ("Chantale".equals(user.getUsername())) {
-                logger.info("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, halber Tag per UserScheduleRule -> Soll: {} Min.", user.getUsername(), date, halfDaySollFromRule);
-            }
-            return halfDaySollFromRule;
-        }
-
 
         // 6. Wenn keine der obigen Bedingungen zutrifft, volles Tagessoll
         int finalSoll = (int) Math.round(expectedHoursFullDay * 60);
