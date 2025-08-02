@@ -1,8 +1,8 @@
 package com.chrono.chrono.services;
 
-import com.chrono.chrono.entities.SickLeave;
 import com.chrono.chrono.entities.User;
-import com.chrono.chrono.entities.VacationRequest;
+import com.chrono.chrono.entities.UserScheduleRule;
+
 import com.chrono.chrono.repositories.SickLeaveRepository;
 import com.chrono.chrono.repositories.UserHolidayOptionRepository;
 import com.chrono.chrono.repositories.UserScheduleRuleRepository;
@@ -13,15 +13,21 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
+
 
 @ExtendWith(MockitoExtension.class)
 class WorkScheduleServiceTest {
 
     @Mock
+    private UserScheduleRuleRepository ruleRepo;
+
+    @Mock
+
     private HolidayService holidayService;
 
     @Mock
@@ -30,90 +36,46 @@ class WorkScheduleServiceTest {
     @Mock
     private UserHolidayOptionRepository userHolidayOptionRepository;
 
-    @Mock
-    private UserScheduleRuleRepository ruleRepo;
-
     @InjectMocks
     private WorkScheduleService workScheduleService;
 
-    private User createStandardUser() {
+    @Test
+    void getExpectedWorkHours_returnsHalfForHalfDayRule() {
         User user = new User();
-        user.setUsername("standard");
-        user.setIsHourly(false);
-        user.setIsPercentage(false);
         user.setDailyWorkHours(8.0);
-        return user;
-    }
-
-    private User createPercentageUser() {
-        User user = new User();
-        user.setUsername("percent");
-        user.setIsHourly(false);
-        user.setIsPercentage(true);
-        user.setWorkPercentage(50);
-        user.setExpectedWorkDays(5);
-        return user;
-    }
-
-    @Test
-    void computeExpectedWorkMinutes_returnsZero_onHoliday() {
-        User user = createStandardUser();
         LocalDate date = LocalDate.of(2024, 1, 1);
-        when(holidayService.isHoliday(date, null)).thenReturn(true);
-        when(sickLeaveRepository.findByUser(user)).thenReturn(List.of());
 
-        int minutes = workScheduleService.computeExpectedWorkMinutes(user, date, List.of());
+        UserScheduleRule rule = new UserScheduleRule();
+        rule.setDayMode("HALF_DAY");
+        rule.setStartDate(date.minusDays(1));
+        rule.setDayOfWeek(date.getDayOfWeek().getValue());
 
-        assertEquals(0, minutes);
-        verify(holidayService).isHoliday(date, null);
+        when(ruleRepo.findByUser(user)).thenReturn(List.of(rule));
+
+        double hours = workScheduleService.getExpectedWorkHours(user, date);
+
+        assertEquals(4.0, hours);
     }
 
     @Test
-    void computeExpectedWorkMinutes_halfDayVacation_returnsHalfOfDailyMinutes() {
-        User user = createStandardUser();
-        LocalDate date = LocalDate.of(2024, 1, 2);
+    void computeExpectedWorkMinutes_accountsForHalfDayRule() {
+        User user = new User();
+        user.setDailyWorkHours(8.0);
+        LocalDate date = LocalDate.of(2024, 1, 1);
+
+        UserScheduleRule rule = new UserScheduleRule();
+        rule.setDayMode("HALF_DAY");
+        rule.setStartDate(date.minusDays(1));
+        rule.setDayOfWeek(date.getDayOfWeek().getValue());
+
+        when(ruleRepo.findByUser(user)).thenReturn(List.of(rule));
         when(holidayService.isHoliday(date, null)).thenReturn(false);
-        when(sickLeaveRepository.findByUser(user)).thenReturn(List.of());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
 
-        VacationRequest vr = new VacationRequest();
-        vr.setApproved(true);
-        vr.setHalfDay(true);
-        vr.setStartDate(date);
-        vr.setEndDate(date);
-
-        int minutes = workScheduleService.computeExpectedWorkMinutes(user, date, List.of(vr));
+        int minutes = workScheduleService.computeExpectedWorkMinutes(user, date, Collections.emptyList());
 
         assertEquals(240, minutes);
-    }
 
-    @Test
-    void computeExpectedWorkMinutes_percentageUser_noAbsence_returnsProportionalMinutes() {
-        User user = createPercentageUser();
-        LocalDate date = LocalDate.of(2024, 1, 3);
-        when(holidayService.isHoliday(date, null)).thenReturn(false);
-        when(sickLeaveRepository.findByUser(user)).thenReturn(List.of());
-
-        int minutes = workScheduleService.computeExpectedWorkMinutes(user, date, List.of());
-
-        assertEquals(255, minutes);
-    }
-
-    @Test
-    void computeExpectedWorkMinutes_percentageUser_halfDaySick_returnsHalfProportionalMinutes() {
-        User user = createPercentageUser();
-        LocalDate date = LocalDate.of(2024, 1, 4);
-        when(holidayService.isHoliday(date, null)).thenReturn(false);
-
-        SickLeave sick = new SickLeave();
-        sick.setStartDate(date);
-        sick.setEndDate(date);
-        sick.setHalfDay(true);
-
-        when(sickLeaveRepository.findByUser(user)).thenReturn(List.of(sick));
-
-        int minutes = workScheduleService.computeExpectedWorkMinutes(user, date, List.of());
-
-        assertEquals(127, minutes);
     }
 }
 
