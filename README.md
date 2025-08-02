@@ -89,3 +89,9 @@ Der Endpunkt sollte JSON im Format `{ "prompt": "Nachricht" }` akzeptieren und m
 
 Im Frontend befindet sich auf jeder Seite unten rechts ein ausklappbarer Chat-Button. Darüber lassen sich Fragen direkt an den lokalen Chatbot stellen.
 
+
+## Lizenz
+
+Copyright (c) 2024 Christopher Siefert. Alle Rechte vorbehalten.
+
+Der gesamte Code dieses Projekts ist proprietär. Eine Nutzung, Vervielfältigung, Veränderung oder Weitergabe ist ohne vorherige schriftliche Genehmigung von Christopher Siefert nicht gestattet. Weitere Informationen stehen in der [LICENSE](LICENSE).
