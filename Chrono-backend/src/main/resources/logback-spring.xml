@@ -10,14 +10,13 @@
         <CacheExpiration>60</CacheExpiration>
     </turboFilter>
 
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder>
-            <pattern>${CONSOLE_LOG_PATTERN}</pattern>
-        </encoder>
+    <appender name="JSON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
     </appender>
 
     <logger name="org.hibernate.SQL" level="DEBUG"/>
 
-    <root level="INFO"> <appender-ref ref="STDOUT"/>
+    <root level="INFO">
+        <appender-ref ref="JSON"/>
     </root>
 </configuration>

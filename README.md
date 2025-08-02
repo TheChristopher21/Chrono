@@ -71,6 +71,33 @@ Im Backend befinden sich unter `com.chrono.chrono` die Pakete `controller`, `ser
 | `Chrono-frontend` | `npm run build`                 | Produktionsbuild des Frontends  |
 | `Chrono-frontend` | `npm run electron`              | Electron-App inklusive Backend  |
 
+## Monitoring & Logging
+
+Das Backend stellt über Spring Boot Actuator Metriken unter `/actuator/prometheus` bereit und gibt Logs im JSON-Format auf `STDOUT` aus.
+
+### Prometheus und Grafana
+
+```bash
+docker network create monitoring
+
+docker run -d --name=prometheus --network=monitoring \
+  -v $(pwd)/prometheus.yml:/etc/prometheus/prometheus.yml \
+  -p 9090:9090 prom/prometheus
+
+docker run -d --name=grafana --network=monitoring \
+  -p 3000:3000 grafana/grafana
+```
+
+Die `prometheus.yml` sollte das Backend unter `http://<server>:8080/actuator/prometheus` scrapen.
+
+### Log-Sammlung (optional)
+
+```bash
+docker run -d --name=loki --network=monitoring -p 3100:3100 grafana/loki
+docker run -d --name=promtail --network=monitoring \
+  -v $(pwd)/promtail-config.yml:/etc/promtail/config.yml grafana/promtail
+```
+
 ## Weiterführendes
 
 Für Code-Qualitätsanalysen liegen `qodana.yaml`‑Dateien in beiden Teilprojekten. Die Einstellungen in `application.properties` geben Hinweise auf benötigte Umgebungsvariablen für die Datenbank- und Mailkonfiguration.
