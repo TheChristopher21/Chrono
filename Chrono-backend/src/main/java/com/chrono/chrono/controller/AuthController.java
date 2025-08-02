@@ -21,21 +21,24 @@ import org.springframework.web.server.ResponseStatusException;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    @Autowired
-    private AuthService authService;
+    private final AuthService authService;
+    private final JwtUtil jwtUtil;
+    private final UserDetailsService userDetailsService;
+    private final UserRepository userRepository;
+    private final UserService userService;
 
     @Autowired
-    private JwtUtil jwtUtil;
-
-    @Autowired
-    private UserDetailsService userDetailsService;
-
-    @Autowired
-    private UserRepository userRepository;
-
-    // ✅ Neu hinzugefügt
-    @Autowired
-    private UserService userService;
+    public AuthController(AuthService authService,
+                          JwtUtil jwtUtil,
+                          UserDetailsService userDetailsService,
+                          UserRepository userRepository,
+                          UserService userService) {
+        this.authService = authService;
+        this.jwtUtil = jwtUtil;
+        this.userDetailsService = userDetailsService;
+        this.userRepository = userRepository;
+        this.userService = userService;
+    }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody AuthRequest request) {
