@@ -1,9 +1,12 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.dto.ChangePasswordRequest;
 import com.chrono.chrono.dto.UserDTO;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.UserService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,17 +30,15 @@ public class UserController {
 
     // KORRIGIERT: Voller Pfad für die Passwortänderung, wie vom Frontend aufgerufen.
     @PutMapping("/api/user/change-password")
-    public ResponseEntity<String> changePassword(@RequestParam String username,
-                                                 @RequestParam String currentPassword,
-                                                 @RequestParam String newPassword) {
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+    public ResponseEntity<String> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+        User user = userRepository.findByUsername(request.getUsername())
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + request.getUsername()));
 
-        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
             return ResponseEntity.badRequest().body("Current password is incorrect");
         }
 
-        user.setPassword(passwordEncoder.encode(newPassword));
+        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
         userRepository.save(user);
         return ResponseEntity.ok("Password updated successfully");
     }
