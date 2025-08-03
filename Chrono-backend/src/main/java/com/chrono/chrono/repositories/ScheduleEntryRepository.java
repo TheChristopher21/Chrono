@@ -12,4 +12,6 @@ public interface ScheduleEntryRepository extends JpaRepository<ScheduleEntry, Lo
 
     // Verhindert doppelte Einträge pro Nutzer und Datum
     Optional<ScheduleEntry> findByUserAndDate(User user, LocalDate date);
+
+    List<ScheduleEntry> findByUserAndDateBetween(User user, LocalDate start, LocalDate end);
 }

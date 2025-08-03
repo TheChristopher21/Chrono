@@ -211,8 +211,19 @@ public class WorkScheduleService {
 
         int netExpectedMinutes = Math.max(0, expectedWeeklyMinutesTotal - absenceMinutesToDeduct);
         logger.debug("User: {}, Week starting: {}, Base Expected ({}%): {}min, Total Absence Deduction (Vacation+Sick+Holiday): {}min, Net Expected: {}min",
-                user.getUsername(), startOfWeek, user.getWorkPercentage(),expectedWeeklyMinutesTotal, absenceMinutesToDeduct, netExpectedMinutes);
+                user.getUsername(), startOfWeek, user.getWorkPercentage(), expectedWeeklyMinutesTotal, absenceMinutesToDeduct, netExpectedMinutes);
         return netExpectedMinutes;
+    }
+
+    public int getExpectedWeeklyMinutes(User user, LocalDate dateInWeek) {
+        LocalDate startOfWeek = dateInWeek.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        int total = 0;
+        for (int i = 0; i < 7; i++) {
+            LocalDate d = startOfWeek.plusDays(i);
+            double hours = getExpectedWorkHours(user, d);
+            total += (int) Math.round(hours * 60);
+        }
+        return total;
     }
 
 
