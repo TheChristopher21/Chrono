@@ -75,6 +75,7 @@ public class SecurityConfig {
 
                     // Öffentliche Endpunkte
                     auth.requestMatchers("/api/auth/**").permitAll();
+                    auth.requestMatchers("/actuator/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/nfc/command").permitAll();
                     auth.requestMatchers(HttpMethod.PUT, "/api/nfc/command/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/timetracking/punch").permitAll();
