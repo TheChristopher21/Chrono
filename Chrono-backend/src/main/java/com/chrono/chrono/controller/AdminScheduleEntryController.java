@@ -2,9 +2,12 @@ package com.chrono.chrono.controller;
 
 import com.chrono.chrono.repositories.ScheduleEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.repositories.ScheduleRuleRepository;
 import com.chrono.chrono.dto.ScheduleEntryDTO;
 import com.chrono.chrono.entities.ScheduleEntry;
+import com.chrono.chrono.entities.ScheduleRule;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.services.WorkScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,7 +15,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.Duration;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -25,6 +32,20 @@ public class AdminScheduleEntryController {
     private ScheduleEntryRepository entryRepo;
     @Autowired
     private UserRepository userRepo;
+    @Autowired
+    private ScheduleRuleRepository ruleRepo;
+    @Autowired
+    private WorkScheduleService workScheduleService;
+
+    private int getShiftDurationMinutes(String shiftKey) {
+        return ruleRepo.findByShiftKey(shiftKey)
+                .map(rule -> {
+                    LocalTime start = LocalTime.parse(rule.getStartTime());
+                    LocalTime end = LocalTime.parse(rule.getEndTime());
+                    return (int) Duration.between(start, end).toMinutes();
+                })
+                .orElse(0);
+    }
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
@@ -47,9 +68,24 @@ public class AdminScheduleEntryController {
         }
         User user = userOpt.get();
 
+        if (workScheduleService.isDayOff(user, dto.getDate())
+                || workScheduleService.getExpectedWorkHours(user, dto.getDate()) <= 0) {
+            return ResponseEntity.badRequest().body("User is not scheduled to work on this day");
+        }
+
         Optional<ScheduleEntry> existingEntry = entryRepo.findByUserAndDate(user, dto.getDate());
         if(existingEntry.isPresent()) {
             return ResponseEntity.ok(new ScheduleEntryDTO(existingEntry.get()));
+        }
+
+        LocalDate weekStart = dto.getDate().with(DayOfWeek.MONDAY);
+        LocalDate weekEnd = weekStart.plusDays(6);
+        List<ScheduleEntry> weekEntries = entryRepo.findByUserAndDateBetween(user, weekStart, weekEnd);
+        int existingMinutes = weekEntries.stream().mapToInt(e -> getShiftDurationMinutes(e.getShift())).sum();
+        int newEntryMinutes = getShiftDurationMinutes(dto.getShift());
+        int maxMinutes = workScheduleService.getExpectedWeeklyMinutes(user, dto.getDate());
+        if (existingMinutes + newEntryMinutes > maxMinutes) {
+            return ResponseEntity.badRequest().body("Weekly work hours limit exceeded");
         }
 
         ScheduleEntry newEntry = new ScheduleEntry();
@@ -65,15 +101,33 @@ public class AdminScheduleEntryController {
     @PostMapping("/autofill")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> autoFillSchedule(@RequestBody List<ScheduleEntryDTO> entries) {
+        Map<String, Integer> weeklyMinutes = new HashMap<>();
         List<ScheduleEntry> newEntries = entries.stream().map(dto -> {
             User user = userRepo.findById(dto.getUserId()).orElse(null);
             if (user == null) {
+                return null;
+            }
+            if (workScheduleService.isDayOff(user, dto.getDate())
+                    || workScheduleService.getExpectedWorkHours(user, dto.getDate()) <= 0) {
                 return null;
             }
             Optional<ScheduleEntry> existing = entryRepo.findByUserAndDate(user, dto.getDate());
             if (existing.isPresent()) {
                 return null;
             }
+            LocalDate weekStart = dto.getDate().with(DayOfWeek.MONDAY);
+            String key = user.getId() + ":" + weekStart;
+            int current = weeklyMinutes.computeIfAbsent(key, k -> {
+                List<ScheduleEntry> weekEntries = entryRepo.findByUserAndDateBetween(user, weekStart, weekStart.plusDays(6));
+                return weekEntries.stream().mapToInt(e -> getShiftDurationMinutes(e.getShift())).sum();
+            });
+            int newMinutes = getShiftDurationMinutes(dto.getShift());
+            int max = workScheduleService.getExpectedWeeklyMinutes(user, dto.getDate());
+            if (current + newMinutes > max) {
+                return null;
+            }
+            weeklyMinutes.put(key, current + newMinutes);
+
             ScheduleEntry newEntry = new ScheduleEntry();
             newEntry.setUser(user);
             newEntry.setDate(dto.getDate());

@@ -60,6 +60,29 @@ const deleteScheduleEntry = (id) => api.delete(`/api/admin/schedule/${id}`);
 const autoFillSchedule = (entries) => api.post('/api/admin/schedule/autofill', entries);
 const copyScheduleRequest = (entries) => api.post('/api/admin/schedule/copy', entries);
 
+const getExpectedHoursForDate = (user, dateKey) => {
+  const dateObj = new Date(dateKey);
+  const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const dayName = dayNames[dateObj.getDay()];
+  if (user.weeklySchedule && Array.isArray(user.weeklySchedule) && user.weeklySchedule.length > 0 && user.scheduleCycle > 0) {
+    try {
+      const epochMonday = startOfWeek(new Date('2020-01-06'), { weekStartsOn: 1 });
+      const currentMonday = startOfWeek(dateObj, { weekStartsOn: 1 });
+      const weeksSinceEpoch = Math.floor(differenceInDays(currentMonday, epochMonday) / 7);
+      let cycleIndex = weeksSinceEpoch % user.scheduleCycle;
+      if (cycleIndex < 0) cycleIndex += user.scheduleCycle;
+      const scheduleWeek = user.weeklySchedule[cycleIndex];
+      if (scheduleWeek && typeof scheduleWeek[dayName] === 'number') {
+        return scheduleWeek[dayName];
+      }
+    } catch (e) {
+      // ignore and fall back
+    }
+  }
+  if (dayName === 'saturday' || dayName === 'sunday') return 0;
+  return user.dailyWorkHours ?? 8.5;
+};
+
 const WeekNavigator = ({ onAutoFill, onCopyWeek, onPasteWeek }) => {
   const { t } = useTranslation();
   const { weekStart, changeWeek, setWeekStart, copiedWeek } = usePlannerStore();
@@ -313,7 +336,11 @@ const AdminSchedulePlannerPage = () => {
           let attempts = 0;
           while (!assigned && attempts < users.length) {
             const userToAssign = users[userIndex % users.length];
-            if (!assignedUsersToday.has(userToAssign.id)) {
+            const username = userToAssign.username;
+            const onVacation = username && vacationMap[username] && vacationMap[username][dateKey];
+            if (!assignedUsersToday.has(userToAssign.id)
+                && getExpectedHoursForDate(userToAssign, dateKey) > 0
+                && !onVacation) {
               newEntries.push({
                 userId: userToAssign.id,
                 date: dateKey,

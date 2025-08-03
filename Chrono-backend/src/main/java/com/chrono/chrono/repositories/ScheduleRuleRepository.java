@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface ScheduleRuleRepository extends JpaRepository<ScheduleRule, Long> {
     List<ScheduleRule> findByIsActiveTrueOrderByStartTime();
+
+    java.util.Optional<ScheduleRule> findByShiftKey(String shiftKey);
 }
