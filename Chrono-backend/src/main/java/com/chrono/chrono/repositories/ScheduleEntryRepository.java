@@ -10,6 +10,6 @@ import java.util.Optional;
 public interface ScheduleEntryRepository extends JpaRepository<ScheduleEntry, Long> {
     List<ScheduleEntry> findByDateBetween(LocalDate start, LocalDate end);
 
-    // --- NEU: Methode zur Prüfung auf doppelte Einträge ---
-    Optional<ScheduleEntry> findByUserAndDateAndShift(User user, LocalDate date, String shift);
+    // Verhindert doppelte Einträge pro Nutzer und Datum
+    Optional<ScheduleEntry> findByUserAndDate(User user, LocalDate date);
 }

@@ -4,7 +4,12 @@ import jakarta.persistence.*;
 import java.time.LocalDate;
 
 @Entity
-@Table(name = "schedule_entries")
+@Table(
+        name = "schedule_entries",
+        uniqueConstraints = {
+                @UniqueConstraint(columnNames = {"user_id", "date"})
+        }
+)
 public class ScheduleEntry {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
