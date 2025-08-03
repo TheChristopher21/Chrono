@@ -47,7 +47,7 @@ public class AdminScheduleEntryController {
         }
         User user = userOpt.get();
 
-        Optional<ScheduleEntry> existingEntry = entryRepo.findByUserAndDateAndShift(user, dto.getDate(), dto.getShift());
+        Optional<ScheduleEntry> existingEntry = entryRepo.findByUserAndDate(user, dto.getDate());
         if(existingEntry.isPresent()) {
             return ResponseEntity.ok(new ScheduleEntryDTO(existingEntry.get()));
         }
@@ -70,7 +70,7 @@ public class AdminScheduleEntryController {
             if (user == null) {
                 return null;
             }
-            Optional<ScheduleEntry> existing = entryRepo.findByUserAndDateAndShift(user, dto.getDate(), dto.getShift());
+            Optional<ScheduleEntry> existing = entryRepo.findByUserAndDate(user, dto.getDate());
             if (existing.isPresent()) {
                 return null;
             }
