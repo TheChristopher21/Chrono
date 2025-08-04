@@ -137,7 +137,10 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['schedule', weekStart] });
     },
-    onError: (err) => alert(`Fehler: ${err.response?.data?.message || err.message}`),
+    onError: (err) => {
+      const message = err?.response?.data?.message || err?.response?.data || err.message;
+      notify(message);
+    },
   };
   const saveMutation = useMutation({ mutationFn: saveScheduleEntry, ...mutationOptions });
   const deleteMutation = useMutation({ mutationFn: deleteScheduleEntry, ...mutationOptions });
@@ -154,6 +157,13 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
 
     const dayEntries = schedule[dateKey] || [];
     const userAlreadyInShift = dayEntries.some(e => e.shift === shiftKey && e.userId === dragUser.id);
+
+    const expectedHours = getExpectedHoursForDate(dragUser, dateKey);
+    if (expectedHours <= 0) {
+      notify(t('schedulePlanner.userDayOff', 'Der Nutzer hat an diesem Tag frei'));
+      setDragUser(null);
+      return;
+    }
 
     if (!userAlreadyInShift) {
       saveMutation.mutate({ userId: dragUser.id, date: dateKey, shift: shiftKey });
