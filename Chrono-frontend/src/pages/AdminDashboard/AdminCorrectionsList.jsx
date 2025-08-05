@@ -87,11 +87,19 @@ const AdminCorrectionsList = ({
     const isScrollable = groupedAndFilteredCorrections.length > 20;
 
     return (
-        <div className="content-section">
-            <header className="section-header" onClick={() => setIsExpanded(!isExpanded)}>
-                <h3 className="section-title">{t('Kurrektur Anträge')}</h3>
-                <span className="toggle-icon">{isExpanded ? '−' : '+'}</span>
-            </header>
+        <section className="correction-section content-section">
+            <div
+                className="section-header"
+                onClick={() => setIsExpanded(!isExpanded)}
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e) => e.key === 'Enter' && setIsExpanded(!isExpanded)}
+            >
+                <h3 className="section-title">
+                    {t('adminDashboard.correctionRequestsTitle', 'Korrekturanträge')}
+                </h3>
+                <span className="toggle-icon">{isExpanded ? '▲' : '▼'}</span>
+            </div>
 
             {isExpanded && (
                 <div className="section-content">
@@ -109,65 +117,90 @@ const AdminCorrectionsList = ({
                             onChange={(e) => setSearchDate(e.target.value)}
                             className="date-input"
                         />
-                        <button onClick={() => { setSearchTerm(''); setSearchDate(''); }} className="button-reset-filter">
+                        <button
+                            onClick={() => {
+                                setSearchTerm('');
+                                setSearchDate('');
+                            }}
+                            className="button-reset-filter"
+                        >
                             {t('adminDashboard.resetFilters', 'Filter zurücksetzen')}
                         </button>
                     </div>
-                    <div className="corrections-list-container" style={{ maxHeight: isScrollable ? '70vh' : 'none' }}>
-                        <table className="corrections-table">
-                            <thead>
-                            <tr>
-                                <th>{t('adminCorrections.header.user', 'Benutzer')}</th>
-                                <th>{t('adminCorrections.header.date', 'Antragsdatum')}</th>
-                                <th>{t('adminCorrections.header.request', 'Anfrage')}</th>
-                                <th className="reason-col">{t('adminCorrections.header.reason', 'Grund')}</th>
-                                <th>{t('adminCorrections.header.status', 'Status')}</th>
-                                <th>{t('adminCorrections.header.actions', 'Aktionen')}</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {groupedAndFilteredCorrections.length > 0 ? (
-                                groupedAndFilteredCorrections.map(group => (
-                                    <tr key={group.id} className={`status-${group.status.toLowerCase()}`}>
-                                        <td data-label={t('adminCorrections.header.user')}>{group.username}</td>
-                                        <td data-label={t('adminCorrections.header.date')}>{formatDate(group.requestDate)}</td>
-                                        <td data-label={t('adminCorrections.header.request')}>
-                                            {group.entries.map(req => (
-                                                <div className="request-detail" key={req.id}>
-                                                    {req.originalTimestamp ? (
-                                                        <span>
-                                                                <s className="original-time">{formatTime(req.originalTimestamp)} {req.originalPunchType}</s> &rarr; <strong className="desired-time">{formatTime(req.desiredTimestamp)} {req.desiredPunchType}</strong>
-                                                            </span>
-                                                    ) : (
-                                                        <strong className="desired-time">Neu: {formatTime(req.desiredTimestamp)} {req.desiredPunchType}</strong>
-                                                    )}
+
+                    {groupedAndFilteredCorrections.length === 0 ? (
+                        <p>{t('adminCorrections.noRequestsFound', 'Keine Anträge gefunden.')}</p>
+                    ) : (
+                        <div
+                            className="corrections-list-container"
+                            style={{ maxHeight: isScrollable ? '70vh' : 'none' }}
+                        >
+                            <ul className="correction-request-list">
+                                {groupedAndFilteredCorrections.map((group) => {
+                                    const statusClass = `status-${group.status.toLowerCase()}`;
+                                    return (
+                                        <li
+                                            key={group.id}
+                                            className={`list-item correction-item ${statusClass}`}
+                                        >
+                                            <div className="item-info">
+                                                <strong className="username">{group.username}</strong>
+                                                <span className="request-date">{formatDate(group.requestDate)}</span>
+                                                <div className="correction-details">
+                                                    {group.entries.map((req) => (
+                                                        <div className="request-detail" key={req.id}>
+                                                            {req.originalTimestamp ? (
+                                                                <span>
+                                                                    <s className="original-time">
+                                                                        {formatTime(req.originalTimestamp)} {req.originalPunchType}
+                                                                    </s>{' '}
+                                                                    &rarr;{' '}
+                                                                    <strong className="desired-time">
+                                                                        {formatTime(req.desiredTimestamp)} {req.desiredPunchType}
+                                                                    </strong>
+                                                                </span>
+                                                            ) : (
+                                                                <strong className="desired-time">
+                                                                    Neu: {formatTime(req.desiredTimestamp)} {req.desiredPunchType}
+                                                                </strong>
+                                                            )}
+                                                        </div>
+                                                    ))}
+
                                                 </div>
-                                            ))}
-                                        </td>
-                                        <td data-label={t('adminCorrections.header.reason')} className="reason-cell">{group.reason}</td>
-                                        <td data-label={t('adminCorrections.header.status')}>
-                                                <span className={`status-badge status-${group.status.toLowerCase()}`}>
+                                                <span className="reason-text">{group.reason}</span>
+                                                <span className={`status-badge ${statusClass}`}>
                                                     {t(`status.${group.status.toLowerCase()}`, group.status)}
                                                 </span>
-                                        </td>
-                                        <td data-label={t('adminCorrections.header.actions')}>
-                                            {group.status === 'PENDING' ? (
-                                                <div className="action-buttons">
-                                                    <button onClick={() => openModal(group.entries.map(e => e.id), 'approve')} className="button-approve" title={t('adminDashboard.acceptButton')}>✓</button>
-                                                    <button onClick={() => openModal(group.entries.map(e => e.id), 'deny')} className="button-deny" title={t('adminDashboard.rejectButton')}>×</button>
-                                                </div>
-                                            ) : t('done', 'Erledigt')}
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="6" className="no-entries">{t('adminCorrections.noRequestsFound', 'Keine Anträge gefunden.')}</td>
-                                </tr>
-                            )}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </div>
+                                            <div className="item-actions">
+                                                {group.status === 'PENDING' ? (
+                                                    <>
+                                                        <button
+                                                            className="button-confirm-small"
+                                                            onClick={() => openModal(group.entries.map((e) => e.id), 'approve')}
+                                                            title={t('adminDashboard.acceptButton')}
+                                                        >
+                                                            {t('adminDashboard.approveButton', 'Genehmigen')}
+                                                        </button>
+                                                        <button
+                                                            className="button-deny-small"
+                                                            onClick={() => openModal(group.entries.map((e) => e.id), 'deny')}
+                                                            title={t('adminDashboard.rejectButton')}
+                                                        >
+                                                            {t('adminDashboard.rejectButton', 'Ablehnen')}
+                                                        </button>
+                                                    </>
+                                                ) : (
+                                                    t('done', 'Erledigt')
+                                                )}
+                                            </div>
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </div>
+                    )}
                 </div>
             )}
             <CorrectionDecisionModal
@@ -179,7 +212,7 @@ const AdminCorrectionsList = ({
                 onClose={() => setModalOpen(false)}
                 t={t}
             />
-        </div>
+        </section>
     );
 };
 
