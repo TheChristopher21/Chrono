@@ -22,7 +22,7 @@ const AdminCorrectionsList = ({
     // Wird jetzt ein Array von IDs für die Gruppenverarbeitung halten
     const [targetIds, setTargetIds] = useState([]);
     const [adminComment, setAdminComment] = useState("");
-    const [isExpanded, setIsExpanded] = useState(true);
+    const [isExpanded, setIsExpanded] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
     const [searchDate, setSearchDate] = useState('');
 
@@ -84,6 +84,8 @@ const AdminCorrectionsList = ({
         return Array.from(groups.values()).sort((a, b) => b.id - a.id);
     }, [allCorrections, searchTerm, searchDate]);
 
+    const isScrollable = groupedAndFilteredCorrections.length > 20;
+
     return (
         <div className="content-section">
             <header className="section-header" onClick={() => setIsExpanded(!isExpanded)}>
@@ -111,7 +113,7 @@ const AdminCorrectionsList = ({
                             {t('adminDashboard.resetFilters', 'Filter zurücksetzen')}
                         </button>
                     </div>
-                    <div className="corrections-list-container">
+                    <div className="corrections-list-container" style={{ maxHeight: isScrollable ? '70vh' : 'none' }}>
                         <table className="corrections-table">
                             <thead>
                             <tr>
@@ -126,7 +128,7 @@ const AdminCorrectionsList = ({
                             <tbody>
                             {groupedAndFilteredCorrections.length > 0 ? (
                                 groupedAndFilteredCorrections.map(group => (
-                                    <tr key={group.id}>
+                                    <tr key={group.id} className={`status-${group.status.toLowerCase()}`}>
                                         <td data-label={t('adminCorrections.header.user')}>{group.username}</td>
                                         <td data-label={t('adminCorrections.header.date')}>{formatDate(group.requestDate)}</td>
                                         <td data-label={t('adminCorrections.header.request')}>
