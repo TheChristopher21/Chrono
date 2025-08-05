@@ -74,6 +74,8 @@ const AdminVacationRequests = ({
         (formatDate(v.endDate) || '').includes(searchTerm)
     );
 
+    const sortedVacations = [...filteredVacations].sort((a, b) => b.id - a.id);
+
     return (
         <div className="admin-dashboard scoped-dashboard"> {/* Stellt sicher, dass CSS-Variablen verfügbar sind */}
             <section className="vacation-section content-section"> {/* Allgemeine Klasse für Sektionen */}
@@ -101,11 +103,12 @@ const AdminVacationRequests = ({
                             onChange={handleSearch}
                             className="search-input"
                         />
-                        {filteredVacations.length === 0 ? (
+                        {sortedVacations.length === 0 ? (
                             <p>{t('adminDashboard.noVacationRequests', 'Keine Urlaubsanträge gefunden.')}</p>
                         ) : (
+                            <div className="vacation-requests-container" style={{ maxHeight: sortedVacations.length > 20 ? '70vh' : 'none' }}>
                             <ul className="item-list vacation-request-list">
-                                {filteredVacations.map((v) => {
+                                {sortedVacations.map((v) => {
                                     const status = v.approved
                                         ? t('adminDashboard.statusApproved', 'Genehmigt')
                                         : v.denied
@@ -118,7 +121,7 @@ const AdminVacationRequests = ({
                                             : 'status-pending';
 
                                     return (
-                                        <li key={v.id} className="list-item vacation-item">
+                                        <li key={v.id} className={`list-item vacation-item ${statusClass}`}>
                                             <div className="item-info">
                                                 <strong className="username">{v.username || t('adminVacation.unknownUser', 'Unbekannt')}</strong>
                                                 <span>
@@ -159,6 +162,7 @@ const AdminVacationRequests = ({
                                     );
                                 })}
                             </ul>
+                            </div>
                         )}
                     </div>
                 )}
