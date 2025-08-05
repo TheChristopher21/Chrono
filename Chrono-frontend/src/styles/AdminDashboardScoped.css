@@ -1804,6 +1804,15 @@
   background-color: var(--ad-c-bg-card);
 }
 
+.vacation-requests-container {
+  overflow-y: auto;
+  max-height: 70vh;
+  border: 1px solid var(--ad-c-border);
+  border-radius: var(--ad-radius-lg);
+  box-shadow: var(--ad-shadow-sm);
+  background-color: var(--ad-c-bg-card);
+}
+
 .corrections-table {
   width: 100%;
   border-collapse: collapse;
@@ -1878,6 +1887,33 @@
   background-color: var(--ad-c-danger, #ef4444);
 }
 
+.vacation-request-list .vacation-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ad-c-border);
+}
+
+.vacation-request-list .vacation-item:last-child {
+  border-bottom: none;
+}
+
+.corrections-table tr.status-approved,
+.vacation-request-list .vacation-item.status-approved {
+  border-left: 4px solid var(--ad-c-success);
+}
+
+.corrections-table tr.status-denied,
+.vacation-request-list .vacation-item.status-denied {
+  border-left: 4px solid var(--ad-c-danger);
+}
+
+.corrections-table tr.status-pending,
+.vacation-request-list .vacation-item.status-pending {
+  border-left: 4px solid var(--ad-c-warn);
+}
+
 .corrections-table .action-buttons {
   display: flex;
   gap: 10px;
@@ -1939,6 +1975,11 @@
 }
 
 [data-theme="dark"] .corrections-list-container {
+  border-color: var(--c-border);
+  background-color: var(--c-card);
+}
+
+[data-theme="dark"] .vacation-requests-container {
   border-color: var(--c-border);
   background-color: var(--c-card);
 }
