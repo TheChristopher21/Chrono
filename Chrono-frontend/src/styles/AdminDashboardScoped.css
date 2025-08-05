@@ -1912,6 +1912,7 @@
   background-color: var(--ad-c-danger, #ef4444);
 }
 
+
 /* --- DARK MODE STYLES --- */
 
 [data-theme="dark"] .search-input,
@@ -1942,6 +1943,7 @@
 }
 
 [data-theme="dark"] .vacation-requests-container {
+
   border-color: var(--c-border);
   background-color: var(--c-card);
 }

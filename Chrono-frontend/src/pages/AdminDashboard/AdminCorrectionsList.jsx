@@ -166,6 +166,7 @@ const AdminCorrectionsList = ({
                                                             )}
                                                         </div>
                                                     ))}
+
                                                 </div>
                                                 <span className="reason-text">{group.reason}</span>
                                                 <span className={`status-badge ${statusClass}`}>
