@@ -183,12 +183,12 @@ public class CorrectionRequestService {
     }
 
     public List<CorrectionRequest> getAllRequests() {
-        // Lädt alle Anfragen, ideal für Super-Admins.
-        return correctionRepo.findAll();
+        // Lädt alle Anfragen, inklusive Originalzeiten und Benutzer, ideal für Super-Admins.
+        return correctionRepo.findAllWithDetails();
     }
 
     public List<CorrectionRequest> getRequestsByCompany(Long companyId) {
-        // Lädt alle Anfragen für eine spezifische Company-ID.
+        // Lädt alle Anfragen für eine spezifische Company-ID inklusive Originalzeiten.
         return correctionRepo.findAllByCompanyId(companyId);
     }
 

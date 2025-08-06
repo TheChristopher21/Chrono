@@ -1871,11 +1871,20 @@
   padding-bottom: 10px;
 }
 
+
 .correction-request-list
   .correction-item
   .correction-details
   .original-time {
-  color: var(--ad-c-text-muted);
+  color: var(--c-muted);
+}
+
+.correction-request-list
+  .correction-item
+  .correction-details
+  .desired-time {
+  color: var(--c-text);
+  font-weight: 600;
 }
 
 .correction-request-list .correction-item .reason-text {

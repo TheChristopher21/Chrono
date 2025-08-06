@@ -151,17 +151,17 @@ const AdminCorrectionsList = ({
                                                         <div className="request-detail" key={req.id}>
                                                             {req.originalTimestamp ? (
                                                                 <span>
-                                                                    <s className="original-time">
+                                                                    {t('correction.oldTime', 'Alt')}: <s className="original-time">
                                                                         {formatTime(req.originalTimestamp)} {req.originalPunchType}
                                                                     </s>{' '}
                                                                     &rarr;{' '}
-                                                                    <strong className="desired-time">
+                                                                    {t('correction.newTime', 'Neu')}: <strong className="desired-time">
                                                                         {formatTime(req.desiredTimestamp)} {req.desiredPunchType}
                                                                     </strong>
                                                                 </span>
                                                             ) : (
                                                                 <strong className="desired-time">
-                                                                    Neu: {formatTime(req.desiredTimestamp)} {req.desiredPunchType}
+                                                                    {t('correction.newTime', 'Neu')}: {formatTime(req.desiredTimestamp)} {req.desiredPunchType}
                                                                 </strong>
                                                             )}
                                                         </div>
@@ -218,7 +218,20 @@ const AdminCorrectionsList = ({
 
 AdminCorrectionsList.propTypes = {
     t: PropTypes.func.isRequired,
-    allCorrections: PropTypes.array.isRequired,
+    allCorrections: PropTypes.arrayOf(
+        PropTypes.shape({
+            id: PropTypes.number.isRequired,
+            username: PropTypes.string.isRequired,
+            requestDate: PropTypes.string.isRequired,
+            reason: PropTypes.string.isRequired,
+            desiredTimestamp: PropTypes.string.isRequired,
+            desiredPunchType: PropTypes.string.isRequired,
+            originalTimestamp: PropTypes.string,
+            originalPunchType: PropTypes.string,
+            approved: PropTypes.bool,
+            denied: PropTypes.bool,
+        })
+    ).isRequired,
     onApprove: PropTypes.func.isRequired,
     onDeny: PropTypes.func.isRequired,
 };
