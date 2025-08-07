@@ -10,6 +10,7 @@ import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.entities.DailyNote;
+import com.chrono.chrono.entities.Task;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.SickLeaveRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
@@ -18,6 +19,7 @@ import com.chrono.chrono.repositories.VacationRequestRepository;
 import com.chrono.chrono.repositories.CustomerRepository;
 import com.chrono.chrono.repositories.ProjectRepository;
 import com.chrono.chrono.repositories.DailyNoteRepository;
+import com.chrono.chrono.repositories.TaskRepository;
 import org.apache.poi.ss.usermodel.*; // Für Excel-Verarbeitung
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -58,6 +60,8 @@ public class TimeTrackingService {
     private ProjectRepository projectRepository;
     @Autowired
     private DailyNoteRepository dailyNoteRepository;
+    @Autowired
+    private TaskRepository taskRepository;
 
     private User loadUserByUsername(String username) {
         return userRepository.findByUsername(username)
@@ -65,7 +69,7 @@ public class TimeTrackingService {
     }
 
     @Transactional
-    public TimeTrackingEntryDTO handlePunch(String username, TimeTrackingEntry.PunchSource source, Long customerId, Long projectId) {
+    public TimeTrackingEntryDTO handlePunch(String username, TimeTrackingEntry.PunchSource source, Long customerId, Long projectId, Long taskId, Integer durationMinutes, String description) {
         User user = loadUserByUsername(username);
         Customer customer = null;
         if (customerId != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
@@ -74,6 +78,10 @@ public class TimeTrackingService {
         Project project = null;
         if (projectId != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
             project = projectRepository.findById(projectId).orElse(null);
+        }
+        Task task = null;
+        if (taskId != null) {
+            task = taskRepository.findById(taskId).orElse(null);
         }
         // Default to CET/Berlin timezone for all automatic timestamps
         LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
@@ -103,8 +111,22 @@ public class TimeTrackingService {
         }
 
         TimeTrackingEntry newEntry = new TimeTrackingEntry(user, customer, project, now, nextPunchType, source);
+        newEntry.setTask(task);
         if (nextPunchType == TimeTrackingEntry.PunchType.ENDE && source == TimeTrackingEntry.PunchSource.SYSTEM_AUTO_END) {
             newEntry.setSystemGeneratedNote("Automatischer Arbeitsende-Stempel. Bitte korrigieren.");
+        }
+
+        if (description != null) {
+            newEntry.setDescription(description);
+        }
+        if (durationMinutes != null) {
+            newEntry.setDurationMinutes(durationMinutes);
+        } else if (nextPunchType == TimeTrackingEntry.PunchType.ENDE && lastEntryOpt.isPresent()) {
+            TimeTrackingEntry last = lastEntryOpt.get();
+            if (last.getPunchType() == TimeTrackingEntry.PunchType.START) {
+                int mins = (int) java.time.Duration.between(last.getEntryTimestamp(), now).toMinutes();
+                newEntry.setDurationMinutes(mins);
+            }
         }
 
         TimeTrackingEntry savedEntry = timeTrackingEntryRepository.save(newEntry);
@@ -138,6 +160,22 @@ public class TimeTrackingService {
             timeTrackingEntryRepository.save(autoEndEntry);
             rebuildUserBalance(user); // Saldo neu berechnen
         }
+    }
+
+    @Transactional
+    public TimeTrackingEntryDTO approveEntry(Long id) {
+        TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Entry not found"));
+        entry.setApproved(true);
+        return TimeTrackingEntryDTO.fromEntity(timeTrackingEntryRepository.save(entry));
+    }
+
+    @Transactional
+    public TimeTrackingEntryDTO revokeApproval(Long id) {
+        TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Entry not found"));
+        entry.setApproved(false);
+        return TimeTrackingEntryDTO.fromEntity(timeTrackingEntryRepository.save(entry));
     }
 
     public DailyTimeSummaryDTO getDailySummary(String username, LocalDate date) {

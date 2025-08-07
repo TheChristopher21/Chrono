@@ -48,6 +48,8 @@ const HourlyDashboard = () => {
     const [projects, setProjects] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [selectedProjectId, setSelectedProjectId] = useState('');
+    const [tasks, setTasks] = useState([]);
+    const [selectedTaskId, setSelectedTaskId] = useState('');
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
     const [vacationRequests, setVacationRequests] = useState([]);
     const [correctionRequests, setCorrectionRequests] = useState([]);
@@ -73,6 +75,7 @@ const HourlyDashboard = () => {
             const params = { username: currentUser.username, source: 'MANUAL_PUNCH' };
             if (selectedCustomerId) params.customerId = selectedCustomerId;
             if (selectedProjectId) params.projectId = selectedProjectId;
+            if (selectedTaskId) params.taskId = selectedTaskId;
             const response = await api.post('/api/timetracking/punch', null, { params });
             const newEntry = response.data;
             setPunchMessage(`${t("manualPunchMessage", "Erfolgreich gestempelt")} ${currentUser.username} (${t('punchTypes.' + newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
@@ -188,6 +191,17 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             setProjects([]);
         }
     }, [currentUser, fetchCustomers]);
+
+    useEffect(() => {
+        if (selectedProjectId) {
+            api.get('/api/tasks', { params: { projectId: selectedProjectId } })
+                .then(res => setTasks(Array.isArray(res.data) ? res.data : []))
+                .catch(err => { console.error('Error loading tasks', err); setTasks([]); });
+        } else {
+            setTasks([]);
+            setSelectedTaskId('');
+        }
+    }, [selectedProjectId]);
 
     useEffect(() => {
         if (currentUser) {
@@ -317,10 +331,13 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 customers={customers}
                 recentCustomers={recentCustomers}
                 projects={projects}
+                tasks={tasks}
                 selectedCustomerId={selectedCustomerId}
                 setSelectedCustomerId={setSelectedCustomerId}
                 selectedProjectId={selectedProjectId}
                 setSelectedProjectId={setSelectedProjectId}
+                selectedTaskId={selectedTaskId}
+                setSelectedTaskId={setSelectedTaskId}
                 assignCustomerForDay={assignCustomerForDay}
                 assignCustomerForRange={assignCustomerForRange}
                 assignProjectForDay={assignProjectForDay}

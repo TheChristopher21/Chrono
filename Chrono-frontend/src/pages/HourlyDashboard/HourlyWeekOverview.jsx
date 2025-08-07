@@ -30,10 +30,13 @@ const HourlyWeekOverview = ({
                                 customers,
                                 recentCustomers,
                                 projects,
+                                tasks,
                                 selectedCustomerId,
                                 setSelectedCustomerId,
                                 selectedProjectId,
                                 setSelectedProjectId,
+                                selectedTaskId,
+                                setSelectedTaskId,
                                 assignCustomerForDay,
                                 assignProjectForDay,
                                 // Diese Props müssten vom HourlyDashboard kommen, um Speichern & Benachrichtigungen zu ermöglichen:
@@ -129,6 +132,12 @@ const HourlyWeekOverview = ({
                             <option value="">{t('noProject','Kein Projekt')}</option>
                             {projects.map(p => (
                                 <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
+                        </select>
+                        <select value={selectedTaskId} onChange={e => setSelectedTaskId(e.target.value)}>
+                            <option value="">{t('noTask','Keine Aufgabe')}</option>
+                            {tasks.map(task => (
+                                <option key={task.id} value={task.id}>{task.name}</option>
                             ))}
                         </select>
                     </>
@@ -316,10 +325,13 @@ HourlyWeekOverview.propTypes = {
     customers: PropTypes.array,
     recentCustomers: PropTypes.array,
     projects: PropTypes.array,
+    tasks: PropTypes.array,
     selectedCustomerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     setSelectedCustomerId: PropTypes.func,
     selectedProjectId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     setSelectedProjectId: PropTypes.func,
+    selectedTaskId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    setSelectedTaskId: PropTypes.func,
     assignCustomerForDay: PropTypes.func,
     assignProjectForDay: PropTypes.func,
     reloadData: PropTypes.func

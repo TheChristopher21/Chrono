@@ -21,11 +21,13 @@ const AdminProjectsPage = () => {
   // State für das Erstellen-Formular
   const [newName, setNewName] = useState('');
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
+  const [newBudget, setNewBudget] = useState('');
 
   // State für das Bearbeiten-Formular
   const [editingId, setEditingId] = useState(null);
   const [editingName, setEditingName] = useState('');
   const [editingCustomerId, setEditingCustomerId] = useState('');
+  const [editingBudget, setEditingBudget] = useState('');
 
   useEffect(() => {
     if (customers.length > 0 && !selectedCustomerId) {
@@ -41,8 +43,9 @@ const AdminProjectsPage = () => {
       return;
     }
     try {
-      await createProject(newName, selectedCustomerId);
+      await createProject(newName, selectedCustomerId, newBudget ? parseInt(newBudget, 10) : null);
       setNewName('');
+      setNewBudget('');
       notify(t('project.create.success', 'Projekt erfolgreich angelegt!'), 'success');
     } catch (err) {
       notify(t('project.create.error', 'Fehler beim Anlegen des Projekts.'), 'error');
@@ -56,7 +59,7 @@ const AdminProjectsPage = () => {
       return;
     }
     try {
-      await updateProject(editingId, editingName, editingCustomerId);
+      await updateProject(editingId, editingName, editingCustomerId, editingBudget ? parseInt(editingBudget, 10) : null);
       setEditingId(null);
       notify(t('project.update.success', 'Projekt erfolgreich gespeichert!'), 'success');
     } catch (err) {
@@ -78,12 +81,14 @@ const AdminProjectsPage = () => {
     setEditingId(project.id);
     setEditingName(project.name);
     setEditingCustomerId(project.customer?.id || '');
+    setEditingBudget(project.budgetMinutes ?? '');
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditingName('');
     setEditingCustomerId('');
+    setEditingBudget('');
   };
 
   return (
@@ -114,6 +119,12 @@ const AdminProjectsPage = () => {
                     <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </select>
+              <input
+                  type="number"
+                  placeholder={t('project.create.budgetPlaceholder', 'Budget (Minuten)')}
+                  value={newBudget}
+                  onChange={(e) => setNewBudget(e.target.value)}
+              />
               <button type="submit" className="button-primary">{t('create', 'Anlegen')}</button>
             </form>
           </section>
@@ -142,6 +153,12 @@ const AdminProjectsPage = () => {
                                   <option key={c.id} value={c.id}>{c.name}</option>
                               ))}
                             </select>
+                            <input
+                                type="number"
+                                placeholder={t('project.edit.budgetPlaceholder', 'Budget (Minuten)')}
+                                value={editingBudget}
+                                onChange={(e) => setEditingBudget(e.target.value)}
+                            />
                             <div className="form-actions">
                               <button type="submit" className="button-primary">{t('save', 'Speichern')}</button>
                               <button type="button" onClick={cancelEdit} className="button-secondary">
@@ -151,10 +168,13 @@ const AdminProjectsPage = () => {
                           </form>
                       ) : (
                           <>
-                            <div className="item-details">
-                              <span className="item-name">{p.name}</span>
+                          <div className="item-details">
+                            <span className="item-name">{p.name}</span>
                               <span className="item-meta">{p.customer?.name || t('project.noCustomer', 'Kein Kunde zugewiesen')}</span>
-                            </div>
+                              {p.budgetMinutes !== undefined && p.budgetMinutes !== null && (
+                                <span className="item-meta">{p.budgetMinutes} {t('project.budget.unit','Min')}</span>
+                              )}
+                          </div>
                             <div className="item-actions">
                               <button onClick={() => startEdit(p)} className="button-secondary">{t('edit', 'Bearbeiten')}</button>
                               <button onClick={() => handleDelete(p.id)} className="button-danger">{t('delete', 'Löschen')}</button>

@@ -2,10 +2,16 @@ package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
+import com.chrono.chrono.dto.ProjectReportDTO;
+import com.chrono.chrono.dto.TaskReportDTO;
 import com.chrono.chrono.entities.TimeTrackingEntry;
+import com.chrono.chrono.entities.Project;
+import com.chrono.chrono.entities.Task;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.repositories.ProjectRepository;
+import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.lowagie.text.Document;
 import com.lowagie.text.Font;
 import com.lowagie.text.PageSize;
@@ -24,6 +30,8 @@ import java.time.*;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,8 +43,46 @@ public class ReportService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Autowired
+    private TimeTrackingEntryRepository timeTrackingEntryRepository;
+
     private static final DateTimeFormatter DATE_FORMATTER_REPORT = DateTimeFormatter.ofPattern("EEEE, dd.MM.yyyy", Locale.GERMAN);
     private static final DateTimeFormatter TIME_FORMATTER_REPORT = DateTimeFormatter.ofPattern("HH:mm");
+
+    public ProjectReportDTO generateProjectReport(Long projectId, LocalDate start, LocalDate end) {
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found: " + projectId));
+        LocalDateTime startDt = start.atStartOfDay();
+        LocalDateTime endDt = end.plusDays(1).atStartOfDay();
+        List<TimeTrackingEntry> entries = timeTrackingEntryRepository
+                .findByProjectAndEntryTimestampBetween(project, startDt, endDt);
+
+        Map<Task, Long> totals = new LinkedHashMap<>();
+        long totalMinutes = 0;
+        for (TimeTrackingEntry e : entries) {
+            int mins = e.getDurationMinutes() != null ? e.getDurationMinutes() : 0;
+            totalMinutes += mins;
+            Task task = e.getTask();
+            totals.merge(task, (long) mins, Long::sum);
+        }
+
+        List<TaskReportDTO> taskDtos = totals.entrySet().stream()
+                .map(en -> {
+                    Task t = en.getKey();
+                    Long mins = en.getValue();
+                    Long taskId = t != null ? t.getId() : null;
+                    String taskName = t != null ? t.getName() : "Unassigned";
+                    Integer budget = t != null ? t.getBudgetMinutes() : null;
+                    return new TaskReportDTO(taskId, taskName, mins, budget);
+                })
+                .collect(Collectors.toList());
+
+        return new ProjectReportDTO(project.getId(), project.getName(), totalMinutes,
+                project.getBudgetMinutes(), taskDtos);
+    }
 
     public byte[] generatePdf(String username, LocalDate start, LocalDate end) throws IOException {
         User user = userRepository.findByUsername(username)

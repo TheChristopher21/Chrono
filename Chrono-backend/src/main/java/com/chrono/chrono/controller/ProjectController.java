@@ -79,6 +79,7 @@ public class ProjectController {
 
         existing.setName(projectDetails.getName());
         existing.setCustomer(customer);
+        existing.setBudgetMinutes(projectDetails.getBudgetMinutes());
         Project saved = projectService.save(existing);
 
         return ResponseEntity.ok(saved);

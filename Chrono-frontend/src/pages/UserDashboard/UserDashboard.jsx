@@ -68,6 +68,8 @@ function UserDashboard() {
     const [projects, setProjects] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [selectedProjectId, setSelectedProjectId] = useState('');
+    const [tasks, setTasks] = useState([]);
+    const [selectedTaskId, setSelectedTaskId] = useState('');
 
     const [printModalVisible, setPrintModalVisible] = useState(false);
     const [printStartDate, setPrintStartDate] = useState(formatLocalDate(new Date(new Date().getFullYear(), new Date().getMonth(), 1)));
@@ -149,6 +151,17 @@ function UserDashboard() {
         }
     }, [userProfile, currentUser, fetchCustomers]);
 
+    useEffect(() => {
+        if (selectedProjectId) {
+            api.get('/api/tasks', { params: { projectId: selectedProjectId } })
+                .then(res => setTasks(Array.isArray(res.data) ? res.data : []))
+                .catch(err => { console.error('Error loading tasks', err); setTasks([]); });
+        } else {
+            setTasks([]);
+            setSelectedTaskId('');
+        }
+    }, [selectedProjectId]);
+
     const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
         if (holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
@@ -216,6 +229,7 @@ function UserDashboard() {
             const params = { username: userProfile.username, source: 'MANUAL_PUNCH' };
             if (selectedCustomerId) params.customerId = selectedCustomerId;
             if (selectedProjectId) params.projectId = selectedProjectId;
+            if (selectedTaskId) params.taskId = selectedTaskId;
             const response = await api.post('/api/timetracking/punch', null, { params });
             const newEntry = response.data;
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.' + newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
@@ -447,6 +461,10 @@ function UserDashboard() {
                                 <select value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}>
                                     <option value="">{t('noProject','Kein Projekt')}</option>
                                     {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                                <select value={selectedTaskId} onChange={e => setSelectedTaskId(e.target.value)}>
+                                    <option value="">{t('noTask','Keine Aufgabe')}</option>
+                                    {tasks.map(task => <option key={task.id} value={task.id}>{task.name}</option>)}
                                 </select>
                             </>
                         )}
