@@ -184,9 +184,9 @@
 /* Das <form> Element selbst */
 .admin-user-management-page.scoped-dashboard .user-form .admin-user-form-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  /* GEÄNDERT: Einheitlicher und ausgewogenerer Abstand für das Grid */
-  gap: var(--u-gap-md) var(--u-gap);
+  /* NEU: Explizites 4-Spalten-Grid für eine strukturierte Anordnung */
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--u-gap-sm) var(--u-gap-md); /* Feinerer Abstand: Zeile Spalte */
 }
 
 .admin-user-management-page.scoped-dashboard .user-form .form-section-title {
@@ -194,10 +194,9 @@
   font-size: 1.1rem;
   font-weight: 600;
   color: var(--c-pri);
-  margin-top: var(--u-gap); /* Erhöhter Abstand für bessere Sektionstrennung */
-  margin-bottom: var(--u-gap-sm);
+  margin-top: var(--u-gap-lg); /* Mehr Abstand zwischen den Sektionen */
+  margin-bottom: 0;
   padding-bottom: 0.25rem;
-  /* GEÄNDERT: Sauberere durchgezogene Linie */
   border-bottom: 1px solid var(--c-line);
 }
 .admin-user-management-page.scoped-dashboard .user-form .form-group {
@@ -291,7 +290,7 @@ textarea {
 .admin-user-management-page.scoped-dashboard .user-form select:focus,
 .admin-user-management-page.scoped-dashboard .user-form textarea:focus {
   border-color: var(--c-pri);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-pri) 20%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-pri) 20%, transparent);
   outline: none;
 }
 .admin-user-management-page.scoped-dashboard .user-form select {
@@ -337,7 +336,7 @@ option:hover {
   flex-direction: row; /* Überschreibt .form-group */
   align-items: center;
   gap: var(--u-gap-sm);
-  padding-top: 1.8rem; /* Richtet Checkbox an der Grundlinie von Text-Inputs aus */
+  padding-top: 1.5rem; /* Richtet Checkbox an der Grundlinie von Text-Inputs aus */
 }
 .admin-user-management-page.scoped-dashboard
 .user-form
@@ -421,7 +420,7 @@ input[type="checkbox"]:checked::after {
   background-color: var(--c-surface);
   border-radius: var(--u-radius-sm);
   border: 1px solid var(--c-line);
-  margin-top: 0.2rem;
+  margin-top: 0.2rem; /* Behält den kleinen Abstand zur Label bei */
 }
 [data-theme="dark"]
 .admin-user-management-page.scoped-dashboard
@@ -463,8 +462,7 @@ input[type="checkbox"]:checked::after {
 /* Stile für das verschachtelte Grid im Wochenplan (Tagessoll, Gültig ab, etc.) */
 .admin-user-management-page.scoped-dashboard .user-form .full-width > .admin-user-form-grid {
   grid-column: 1 / -1;
-  /* Kompakteres Grid für die untergeordneten Einstellungen */
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
   gap: var(--u-gap-sm) var(--u-gap-md);
 }
 .admin-user-management-page.scoped-dashboard
@@ -528,7 +526,9 @@ input[type="number"] {
   display: flex;
   justify-content: flex-end;
   gap: var(--u-gap-sm);
-  margin-top: var(--u-gap-md);
+  margin-top: var(--u-gap-lg);
+  border-top: 1px solid var(--c-line);
+  padding-top: var(--u-gap-md);
 }
 .admin-user-management-page.scoped-dashboard
 .user-form
@@ -759,6 +759,41 @@ td
   padding-bottom: var(--u-gap-sm);
   border-bottom: 1px solid var(--c-line);
 }
+
+.admin-user-management-page.scoped-dashboard .user-form .form-section-title:first-of-type {
+  margin-top: var(--u-gap-sm); /* Weniger Abstand für den ersten Titel */
+}
+
+/* --- NEU: Spezifische Platzierung der Felder für eine saubere Sortierung --- */
+
+/* Basisinformationen */
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #username),
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #password),
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #firstName),
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #lastName),
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #birthDate),
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #entryDate),
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #personnelNumber),
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #country) {
+  grid-column: span 2;
+}
+
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #email),
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #address) {
+  grid-column: span 4;
+}
+
+/* Arbeitsmodell */
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #isHourly) {
+  grid-column: 1 / 3;
+  align-self: center;
+}
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #isPercentage) {
+  grid-column: 3 / 5;
+  align-self: center;
+}
+
+.admin-user-management-page.scoped-dashboard div.form-group:has(> #hourlyWage),
 .admin-user-management-page.scoped-dashboard .delete-confirm-modal p {
   font-size: 0.95rem;
   color: var(--c-text-light);

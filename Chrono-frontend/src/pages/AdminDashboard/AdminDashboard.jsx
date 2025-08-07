@@ -21,7 +21,7 @@ import {
     formatLocalDateYMD,
     addDays,
     minutesToHHMM,
-    formatDate, processEntriesForReport, // utils formatDate
+    formatDate, processEntriesForReport,
 } from './adminDashboardUtils';
 
 const AdminDashboard = () => {
@@ -329,7 +329,6 @@ const AdminDashboard = () => {
         const contentWidth = pageWidth - (2 * pageMargin);
         let yPos = 20;
 
-        // --- PDF Header ---
         doc.setFontSize(22);
         doc.setFont("helvetica", "bold");
         doc.text("Zeitenbericht", pageWidth / 2, yPos, { align: "center" });
@@ -342,11 +341,10 @@ const AdminDashboard = () => {
         doc.text(`Zeitraum: ${formatDate(new Date(printUserStartDate))} - ${formatDate(new Date(printUserEndDate))}`, pageWidth / 2, yPos, { align: "center" });
         yPos += 15;
 
-        // --- PDF Summary Box ---
         const totalWork = sortedSummaries.reduce((sum, day) => sum + day.workedMinutes, 0);
         const totalPause = sortedSummaries.reduce((sum, day) => sum + day.breakMinutes, 0);
 
-        doc.setFillColor(248, 249, 250); // Helles Grau
+        doc.setFillColor(248, 249, 250);
         doc.rect(pageMargin, yPos, contentWidth, 25, 'F');
         const summaryTextY = yPos + 15;
         const summaryCol1 = pageMargin + contentWidth / 4;
@@ -365,25 +363,23 @@ const AdminDashboard = () => {
         doc.text(minutesToHHMM(totalPause), summaryCol2, summaryTextY, { align: 'center' });
         yPos += 35;
 
-        // --- Day Cards ---
         sortedSummaries.forEach(day => {
             const dayData = {
                 date: day.date,
                 workedMinutes: day.workedMinutes,
                 breakMinutes: day.breakMinutes,
-                blocks: processEntriesForReport(day.entries), // NEU: Blöcke berechnen
+                blocks: processEntriesForReport(day.entries),
                 note: day.dailyNote || ""
             };
 
             const cardHeight = calculateCardHeight(doc, dayData, contentWidth);
 
-            if (yPos + cardHeight > pageHeight - pageMargin) { // Seitenumbruch, wenn nicht mehr genug Platz
+            if (yPos + cardHeight > pageHeight - pageMargin) {
                 doc.addPage();
                 yPos = 20;
             }
 
             const cardStartY = yPos;
-            // Card Header
             doc.setFillColor(236, 240, 241);
             doc.roundedRect(pageMargin, yPos, contentWidth, 10, 3, 3, 'F');
             doc.setFontSize(14);
@@ -392,13 +388,11 @@ const AdminDashboard = () => {
             doc.text(formatDate(new Date(dayData.date)), pageMargin + 5, yPos + 7);
             yPos += 10;
 
-            // Card Body
             const bodyYStart = yPos;
             let leftColY = bodyYStart + 10;
             let rightColY = bodyYStart + 10;
             const rightColX = pageMargin + contentWidth / 2.5;
 
-            // Linke Spalte (Übersicht)
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
             doc.text("Übersicht", pageMargin + 5, leftColY);
@@ -421,7 +415,6 @@ const AdminDashboard = () => {
                 leftColY += noteLines.length * 5;
             }
 
-            // Rechte Spalte (Blöcke)
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
             doc.text("Arbeitsblöcke", rightColX, rightColY);
@@ -437,7 +430,7 @@ const AdminDashboard = () => {
             });
 
             const cardEndY = Math.max(leftColY, rightColY) + 5;
-            doc.setDrawColor(222, 226, 230); // Hellerer Rand
+            doc.setDrawColor(222, 226, 230);
             doc.roundedRect(pageMargin, cardStartY, contentWidth, cardEndY - cardStartY, 3, 3, 'S');
 
             yPos = cardEndY + 10;
@@ -465,8 +458,9 @@ const AdminDashboard = () => {
                     {t('adminDashboard.reloadDataButton', 'Daten neu laden')}
                 </button>
             </div>
-            <div className="dashboard-conten">
-                <div className="left-column lg:col-span-2 flex flex-col gap-4">
+
+            <div className="dashboard-layout">
+                <div className="main-content">
                     <AdminWeekSection
                         t={t}
                         weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
@@ -487,6 +481,8 @@ const AdminDashboard = () => {
                         openNewEntryModal={openNewEntryModal}
                         onDataReloadNeeded={handleDataReloadNeeded}
                     />
+                </div>
+                <div className="side-content">
                     <AdminVacationRequests
                         t={t}
                         allVacations={allVacations}
@@ -494,7 +490,6 @@ const AdminDashboard = () => {
                         handleDenyVacation={handleDenyVacation}
                         onReloadVacations={handleDataReloadNeeded}
                     />
-                    {/* AdminCorrectionsList moved here for full width */}
                     <AdminCorrectionsList
                         t={t}
                         allCorrections={allCorrections}
@@ -502,11 +497,8 @@ const AdminDashboard = () => {
                         onDeny={handleDenyCorrection}
                     />
                 </div>
-                <div className="right-column lg:col-span-1 flex flex-col gap-4">
-                    {/* Content for the right column can be added here if needed in future, or it can be removed if not used */}
-                    {/* For now, it's empty as AdminCorrectionsList was moved */}
-                </div>
             </div>
+
             <div className="mt-8">
                 <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
                 <VacationCalendarAdmin
@@ -523,7 +515,7 @@ const AdminDashboard = () => {
                 targetUsername={editTargetUsername}
                 onSubmit={handleEditSubmit}
                 onClose={() => setEditModalVisible(false)}
-                users={users} // Pass users for break duration logic
+                users={users}
             />
             <PrintUserTimesModal
                 printUserModalVisible={printUserModalVisible}

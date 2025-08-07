@@ -25,32 +25,37 @@ public class EmailService {
         message.setTo("siefertchristopher@chrono-logisch.ch");
         message.setSubject("Neue Firmenbewerbung: " + data.getCompanyName());
 
-        String mailText = "Es hat eine neue Firmenbewerbung stattgefunden:\n\n"
-                + "Firma: " + data.getCompanyName() + "\n"
-                + "Ansprechpartner: " + data.getContactName() + "\n"
-                + "E-Mail: " + data.getEmail() + "\n"
-                + "Telefon: " + data.getPhone() + "\n"
-                + "Gewähltes Paket: " + data.getChosenPackage() + "\n";
+        StringBuilder mailText = new StringBuilder();
+        mailText.append("Es hat eine neue Firmenbewerbung stattgefunden:\n\n")
+                .append("Firma: ").append(data.getCompanyName()).append("\n")
+                .append("Ansprechpartner: ").append(data.getContactName()).append("\n")
+                .append("E-Mail: ").append(data.getEmail()).append("\n")
+                .append("Telefon: ").append(data.getPhone()).append("\n");
 
-        // Nur anzeigen, falls nicht null / Enterprise
-        if (data.getEmployeeCount() != null && data.getChosenPackage() != null && !data.getChosenPackage().equals("Enterprise")) {
-            mailText += "Mitarbeiteranzahl: " + data.getEmployeeCount() + "\n";
+        // Baukastenmodell: Features ausgeben
+        if (data.getSelectedFeatureNames() != null && !data.getSelectedFeatureNames().isEmpty()) {
+            mailText.append("Gewählte Module: ").append(String.join(", ", data.getSelectedFeatureNames())).append("\n");
+        } else if (data.getFeatureSummary() != null) {
+            mailText.append("Gewählte Module: ").append(data.getFeatureSummary()).append("\n");
+        } else if (data.getSelectedFeatures() != null) {
+            mailText.append("Gewählte Module (Keys): ").append(String.join(", ", data.getSelectedFeatures())).append("\n");
+        }
+
+        if (data.getEmployeeCount() != null) {
+            mailText.append("Mitarbeiteranzahl: ").append(data.getEmployeeCount()).append("\n");
         }
         if (data.getBillingPeriod() != null) {
-            mailText += "Abrechnung: " + data.getBillingPeriod() + "\n"; // monthly/yearly
+            mailText.append("Abrechnung: ").append(data.getBillingPeriod()).append("\n");
         }
         if (data.getCalculatedPrice() != null) {
-            mailText += "Geschätzter Preis: " + data.getCalculatedPrice() + " €\n";
+            mailText.append("Geschätzter Preis: ").append(data.getCalculatedPrice()).append(" CHF\n");
         }
-
         if (Boolean.TRUE.equals(data.getIncludeOptionalTraining())) {
-            mailText += "Optionales Intensiv-Onboarding: " + data.getOptionalTrainingCost() + " CHF\n";
+            mailText.append("Optionales Intensiv-Onboarding: ").append(data.getOptionalTrainingCost()).append(" CHF\n");
         }
+        mailText.append("\nWeitere Infos:\n").append(data.getAdditionalInfo());
 
-        mailText += "\nWeitere Infos:\n" + data.getAdditionalInfo();
-
-        message.setText(mailText);
-
+        message.setText(mailText.toString());
         mailSender.send(message);
     }
 

@@ -1,4 +1,3 @@
-// src/pages/Registration.jsx
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
@@ -7,54 +6,69 @@ import { Link } from "react-router-dom";
 import api from "../utils/api";
 import { useNotification } from "../context/NotificationContext";
 
-// 🟦 Pakete neu benannt und Micro-Paket integriert
-const PACKAGE_CONFIG = {
-    Micro: {
-        name: "Micro",
-        baseMonthly: 0,
-        perEmployeeMonthly: 7,
-        min: 1,
-        max: 3,
-        support: "E-Mail Support (Antwort i.d.R. innerhalb 48h)",
-        color: "#7952b3",
-        bestFor: "Ideal für Startups & Kleinstbetriebe bis 3 Mitarbeiter.",
-        badge: "Neu & günstig für kleine Teams!"
-    },
-    Starter: {
-        name: "Starter",
-        baseMonthly: 20,
-        perEmployeeMonthly: 5,
-        min: 1,
-        max: 20,
-        support: "Standard E-Mail Support (Antwort i.d.R. innerhalb 48h)",
-        color: "#007bff",
-        bestFor: "Für kleine Teams und Handwerksbetriebe.",
-    },
-    Business: {
-        name: "Business",
-        baseMonthly: 60,
-        perEmployeeMonthly: 4.5,
-        min: 5,
-        max: 50,
-        support: "Priorisierter E-Mail Support (Antwort i.d.R. innerhalb 24h)",
-        color: "#17a2b8",
-        bestFor: "Für Unternehmen mit mehreren Teams & klaren Prozessen.",
-        badge: "Beliebteste Wahl"
-    },
-    Premium: {
-        name: "Premium",
-        baseMonthly: 160,
-        perEmployeeMonthly: 4,
-        min: 15,
-        max: 100,
-        support: "Premium E-Mail & Telefon-Support (Schnelle Reaktionszeiten), Persönlicher Ansprechpartner.",
-        color: "#28a745",
-        bestFor: "Für wachsende Unternehmen & höchste Ansprüche.",
-    }
+// Baukasten-Features (anpassbar)
+const BASE_FEATURE = {
+    key: "base",
+    name: "Zeiterfassung (Basis)",
+    price: 5,
+    required: true,
+    description: "Digitale Zeiterfassung für alle Mitarbeiter (Pflichtmodul).",
 };
+const FEATURES = [
+    {
+        key: "vacation",
+        name: "Urlaubs- & Abwesenheitsmodul",
+        price: 1,
+        required: false,
+        description: "Digitale Urlaubsanträge, Abwesenheitsübersicht, Freigabe-Workflow.",
+    },
+    {
+        key: "payroll",
+        name: "Lohnabrechnung",
+        price: 4,
+        required: false,
+        description: "Lohnabrechnung (DE & CH), Gehaltsabrechnungen als PDF, Abrechnungsexport.",
+    },
+    {
+        key: "projects",
+        name: "Projektzeiten & Kundenverwaltung",
+        price: 1,
+        required: false,
+        description: "Erfassen von Projektzeiten und Kunden, Berichte & Auswertungen.",
+    },
+    {
+        key: "nfc",
+        name: "NFC-Stempeluhr",
+        price: 0.5,
+        required: false,
+        description: "Stempeln per NFC-Karte oder Chip am Terminal oder Smartphone.",
+    },
+    {
+        key: "chatbot",
+        name: "Integrierter Support-Chatbot",
+        price: 0.5,
+        required: false,
+        description: "KI-basierte Hilfe & Erklärungen direkt in der App.",
+    },
+    {
+        key: "premiumSupport",
+        name: "Premium-Support",
+        price: 1,
+        required: false,
+        description: "Telefonischer Support & priorisierte Bearbeitung.",
+    },
+    {
+        key: "roster",
+        name: "Dienstplan & Schichtplanung",
+        price: 1.20,
+        required: false,
+        description: "Intelligente Schichtplanung mit Drag & Drop, Konflikterkennung, Mitarbeiterwünschen, Urlaubsabgleich und Export als PDF/Excel."
+    }
+];
 
 const INSTALL_FEE = 150;
 const OPTIONAL_TRAINING_COST = 120;
+const YEARLY_DISCOUNT_FACTOR = 10; // 2 Monate geschenkt
 
 const Registration = () => {
     const navigate = useNavigate();
@@ -68,100 +82,79 @@ const Registration = () => {
         additionalInfo: "",
     });
 
-    const [selectedPackageName, setSelectedPackageName] = useState("");
     const [employeeCount, setEmployeeCount] = useState(1);
+    const [selectedFeatures, setSelectedFeatures] = useState(
+        FEATURES.filter((f) => f.required).map((f) => f.key)
+    );
     const [billingPeriod, setBillingPeriod] = useState("monthly");
-    const [calculatedPrice, setCalculatedPrice] = useState(0);
-    const [priceBreakdown, setPriceBreakdown] = useState(null);
-
     const [includeOptionalTraining, setIncludeOptionalTraining] = useState(false);
 
+    const [calculatedPrice, setCalculatedPrice] = useState(0);
+    const [priceBreakdown, setPriceBreakdown] = useState(null);
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
 
-    // -------- Preislogik angepasst für Micro-Paket
-    function calculatePriceDetails(pkgName, empCount, period, trainingSelected) {
-        if (!pkgName || !PACKAGE_CONFIG[pkgName]) {
-            return { total: 0, breakdown: null };
-        }
-
-        const pkg = PACKAGE_CONFIG[pkgName];
-
-        // Paketlimits prüfen
-        if (empCount < pkg.min || empCount > pkg.max) {
-            return { total: 0, breakdown: null };
-        }
-
-        const serviceFeeMonthly = pkg.baseMonthly;
-        const employeeCostMonthly = empCount * pkg.perEmployeeMonthly;
-        let packageMonthlyTotal = serviceFeeMonthly + employeeCostMonthly;
-
-        let currentPeriodFactor = 1;
-        let periodText = "/ Monat";
-        if (period === "yearly") {
-            packageMonthlyTotal *= 10;
-            currentPeriodFactor = 10;
-            periodText = "/ Jahr (entspricht 10 Monatsraten)";
-        }
-
-        let optionalTrainingCostTotal = trainingSelected ? OPTIONAL_TRAINING_COST : 0;
-        const totalForFirstPayment = packageMonthlyTotal + INSTALL_FEE + optionalTrainingCostTotal;
-
-        return {
-            total: totalForFirstPayment,
-            breakdown: {
-                serviceFee: period === 'yearly' ? serviceFeeMonthly * currentPeriodFactor : serviceFeeMonthly,
-                employeeCost: period === 'yearly' ? employeeCostMonthly * currentPeriodFactor : employeeCostMonthly,
-                packageSubtotal: packageMonthlyTotal,
-                installationFee: INSTALL_FEE,
-                optionalTrainingCost: optionalTrainingCostTotal,
-                billingPeriodText: periodText,
-                isYearly: period === 'yearly',
-            }
-        };
-    }
-
+    // Preisberechnung
     useEffect(() => {
-        if (!selectedPackageName) {
-            setCalculatedPrice(0);
-            setPriceBreakdown(null);
-            return;
+        // Alle gewählten Features: Pflicht + Zusatz
+        let allFeatures = [BASE_FEATURE, ...FEATURES.filter(f => selectedFeatures.includes(f.key))];
+        let sumFeaturesPerEmployee = allFeatures.reduce((acc, f) => acc + f.price, 0);
+        let totalPerPeriod = sumFeaturesPerEmployee * employeeCount;
+
+        let periodText = "/ Monat";
+        let periodFactor = 1;
+        let displayTotalPeriod = totalPerPeriod;
+        if (billingPeriod === "yearly") {
+            displayTotalPeriod = totalPerPeriod * YEARLY_DISCOUNT_FACTOR;
+            periodText = "/ Jahr (entspricht 10 Monatsraten)";
+            periodFactor = YEARLY_DISCOUNT_FACTOR;
         }
-        const { total, breakdown } = calculatePriceDetails(
-            selectedPackageName,
-            employeeCount,
-            billingPeriod,
-            includeOptionalTraining
+
+        const installationFee = INSTALL_FEE;
+        const optionalTraining = includeOptionalTraining ? OPTIONAL_TRAINING_COST : 0;
+        const totalFirstPayment = displayTotalPeriod + installationFee + optionalTraining;
+
+        setCalculatedPrice(totalFirstPayment);
+        setPriceBreakdown({
+            sumFeaturesPerEmployee,
+            totalPerPeriod: displayTotalPeriod,
+            installationFee,
+            optionalTraining,
+            periodText,
+            isYearly: billingPeriod === "yearly",
+            perPeriodSingle: totalPerPeriod,
+        });
+    }, [selectedFeatures, employeeCount, billingPeriod, includeOptionalTraining]);
+
+    const handleChange = (e) =>
+        setForm({ ...form, [e.target.name]: e.target.value });
+
+    const handleFeatureChange = (featureKey) => {
+        const featureObj = FEATURES.find((f) => f.key === featureKey);
+        if (featureObj.required) return; // Pflichtmodul, nicht abwählbar
+        setSelectedFeatures((prev) =>
+            prev.includes(featureKey)
+                ? prev.filter((k) => k !== featureKey)
+                : [...prev, featureKey]
         );
-        setCalculatedPrice(total);
-        setPriceBreakdown(breakdown);
-    }, [selectedPackageName, employeeCount, billingPeriod, includeOptionalTraining]);
-
-    // Paket- und Mitarbeiter-Validierung
-    const getPackageLimits = (pkg) => [pkg.min, pkg.max];
-
-    const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-    const handlePackageSelect = (pkgName) => setSelectedPackageName(pkgName);
+    };
 
     const handleEmployeeCountChange = (e) => {
         let val = parseInt(e.target.value, 10);
         if (isNaN(val) || val < 1) val = 1;
-        if (val > 100) val = 100;
+        if (val > 200) val = 200;
         setEmployeeCount(val);
     };
-    const handleBillingPeriodChange = (e) => setBillingPeriod(e.target.value);
-    const handleOptionalTrainingChange = (e) => setIncludeOptionalTraining(e.target.checked);
+    const handleBillingPeriodChange = (e) =>
+        setBillingPeriod(e.target.value);
+    const handleOptionalTrainingChange = (e) =>
+        setIncludeOptionalTraining(e.target.checked);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!selectedPackageName) {
-            setError("Bitte wählen Sie ein Paket aus.");
-            return;
-        }
-        const pkg = PACKAGE_CONFIG[selectedPackageName];
-        if (employeeCount < pkg.min || employeeCount > pkg.max) {
-            setError(`Das gewählte Paket ist für ${pkg.min}-${pkg.max} Mitarbeiter verfügbar.`);
+        if (employeeCount < 1) {
+            setError("Bitte geben Sie mindestens 1 Mitarbeiter an.");
             return;
         }
         setIsSubmitting(true);
@@ -169,16 +162,12 @@ const Registration = () => {
         try {
             const payload = {
                 ...form,
-                chosenPackage: selectedPackageName,
+                selectedFeatures,
                 employeeCount,
                 billingPeriod,
                 includeOptionalTraining,
-                optionalTrainingCost: includeOptionalTraining ? OPTIONAL_TRAINING_COST : 0,
-                totalCalculatedFirstPayment: calculatedPrice,
-                priceBreakdown: priceBreakdown,
-                installationFee: INSTALL_FEE,
-                packageBaseFeeMonthly: pkg.baseMonthly,
-                packagePerEmployeeMonthly: pkg.perEmployeeMonthly,
+                priceBreakdown,
+                calculatedPrice,
             };
             await api.post("/api/apply", payload);
             setSuccess(true);
@@ -205,25 +194,41 @@ const Registration = () => {
             <div className="registration-page scoped-registration">
                 <div className="registration-content">
                     <section className="hero-section">
-                        <h1>Alles drin. Alles einfach. Alles Chrono.</h1>
+                        <h1>Baukasten-Preismodell – Zahle nur, was du brauchst!</h1>
                         <p className="hero-subline">
-                            <strong>Zeiterfassung, Urlaubsmanagement und Lohnabrechnung in einem modernen, sicheren System.</strong>
-                            <br />Wählen Sie das passende Paket und erhalten Sie unverbindlich Ihr Angebot.
+                            <strong>Wähle individuell die Module für deine perfekte Zeiterfassungslösung.</strong>
+                            <br />
+                            Sofort transparent, jederzeit unverbindlich anfragen.
                         </p>
                     </section>
 
                     <section className="unique-sell-callout">
                         <span role="img" aria-label="star">⭐</span>
-                        <strong>Lohnabrechnung & Gehalts-PDFs inklusive!</strong> Kein Aufpreis – alles schon im Preis.
-                        <span className="unique-badge">Ihr Rundum-sorglos-Paket.</span>
+                        <strong>Modular, fair und flexibel!</strong>
+                        <span className="unique-badge">Jetzt zusammenstellen & sparen.</span>
                     </section>
 
                     <section className="pricing-section">
-                        <h2>Pakete & Preise</h2>
+                        <h2>Baukasten & Preise</h2>
                         <p className="pricing-intro">
-                            Für jede Unternehmensgröße das passende Modell – monatlich oder jährlich, jederzeit kündbar.
-                            <br /><span className="money-back">100 % unverbindlich – Sie zahlen erst nach Vertragsabschluss!</span>
+                            Wähle deine Wunsch-Module und erhalte sofort den Preis.<br />
+                            <span className="money-back">100 % unverbindlich – keine Zahlung bis Vertragsabschluss.</span>
                         </p>
+
+                        <div className="central-employee-input">
+                            <label htmlFor="employeeCount">Anzahl Mitarbeiter (1–200):</label>
+                            <input
+                                type="number"
+                                id="employeeCount"
+                                name="employeeCount"
+                                min={1}
+                                max={200}
+                                value={employeeCount}
+                                onChange={handleEmployeeCountChange}
+                                disabled={isSubmitting}
+                            />
+                        </div>
+
                         <div className="billing-toggle">
                             <label>
                                 <input
@@ -247,59 +252,45 @@ const Registration = () => {
                             </label>
                         </div>
 
-                        <div className="pricing-cards">
-                            {Object.values(PACKAGE_CONFIG).map((pkg) => {
-                                const [min, max] = getPackageLimits(pkg);
-                                const active = selectedPackageName === pkg.name;
-                                return (
-                                    <div
-                                        key={pkg.name}
-                                        className={`pricing-card ${active ? "selected" : ""}`}
-                                        onClick={() => setEmployeeCount(Math.max(employeeCount, min)) || handlePackageSelect(pkg.name)}
-                                        style={{ '--card-accent-color': active ? pkg.color : 'var(--c-border)' }}
-                                    >
-                                        <div className="card-badge-row">
-                                            {pkg.badge && <span className="card-badge">{pkg.badge}</span>}
-                                            {active && <span className="selected-badge">Ausgewählt</span>}
-                                        </div>
-                                        <h3 style={{ color: active ? pkg.color : 'var(--c-text-strong)' }}>{pkg.name}</h3>
-                                        <p className="price-line base-fee">
-                                            Grundgebühr:<br /><strong>{formatCHF(pkg.baseMonthly)} / Monat</strong>
-                                        </p>
-                                        <p className="price-line employee-rate">
-                                            Pro Mitarbeiter:<br /><strong>+ {formatCHF(pkg.perEmployeeMonthly)} / Monat</strong>
-                                        </p>
-                                        <p className="card-hint">
-                                            <span>Mitarbeiterzahl: {min}–{max}</span>
-                                        </p>
-                                        {billingPeriod === "yearly" &&
-                                            <div className="yearly-hint-card">
-                                                Bei jährl. Zahlung: <strong>{formatCHF(pkg.baseMonthly * 10)}</strong> Grundgebühr + <strong>{formatCHF(pkg.perEmployeeMonthly * 10)}</strong> pro MA / Jahr
-                                            </div>
-                                        }
-                                        <ul className="features-list">
-                                            <li><strong>Support:</strong> {pkg.support}</li>
-                                            <li>Alle Features inkl. Lohnabrechnung, Urlaubsmanagement, NFC-Zeiterfassung</li>
-                                            <li>DSGVO-konform, Schweizer Hosting</li>
-                                            {pkg.bestFor && <li className="best-for">{pkg.bestFor}</li>}
-                                        </ul>
+                        <div className="pricing-cards" style={{ flexWrap: "wrap", justifyContent: "flex-start" }}>
+                            {/* Pflichtmodul */}
+                            <div className="pricing-card selected" style={{ '--card-accent-color': '#475bff' }}>
+                                <div className="card-badge-row">
+                                    <span className="selected-badge">Pflichtmodul</span>
+                                </div>
+                                <h3>{BASE_FEATURE.name}</h3>
+                                <p className="price-line base-fee">
+                                    <strong>{formatCHF(BASE_FEATURE.price)} / Monat je MA</strong>
+                                </p>
+                                <ul className="features-list">
+                                    <li>{BASE_FEATURE.description}</li>
+                                </ul>
+                            </div>
+                            {/* Zusatzmodule */}
+                            {FEATURES.map((feature) => (
+                                <div
+                                    key={feature.key}
+                                    className={`pricing-card${selectedFeatures.includes(feature.key) ? " selected" : ""}`}
+                                    onClick={() => handleFeatureChange(feature.key)}
+                                    style={{ '--card-accent-color': selectedFeatures.includes(feature.key) ? "#2ecc71" : "var(--c-border)" }}
+                                >
+                                    <div className="card-badge-row">
+                                        {feature.required && <span className="selected-badge">Pflicht</span>}
+                                        {selectedFeatures.includes(feature.key) && !feature.required && (
+                                            <span className="selected-badge">Gewählt</span>
+                                        )}
                                     </div>
-                                );
-                            })}
-                        </div>
-
-                        <div className="central-employee-input">
-                            <label htmlFor="employeeCount">Anzahl Mitarbeiter ({PACKAGE_CONFIG[selectedPackageName]?.min || 1}–{PACKAGE_CONFIG[selectedPackageName]?.max || 100}):</label>
-                            <input
-                                type="number"
-                                id="employeeCount"
-                                name="employeeCount"
-                                min={PACKAGE_CONFIG[selectedPackageName]?.min || 1}
-                                max={PACKAGE_CONFIG[selectedPackageName]?.max || 100}
-                                value={employeeCount}
-                                onChange={handleEmployeeCountChange}
-                                disabled={isSubmitting || !selectedPackageName}
-                            />
+                                    <h3>{feature.name}</h3>
+                                    <p className="price-line base-fee">
+                                        <strong>
+                                            +{formatCHF(feature.price)} / Monat je MA
+                                        </strong>
+                                    </p>
+                                    <ul className="features-list">
+                                        <li>{feature.description}</li>
+                                    </ul>
+                                </div>
+                            ))}
                         </div>
 
                         <div className="training-option-section">
@@ -316,17 +307,16 @@ const Registration = () => {
                             </label>
                         </div>
                         <p className="pricing-footnote">
-                            * Alle Preise zzgl. MwSt. | Jährliche Zahlung = 2 Monate geschenkt.
-                            <br />
+                            * Alle Preise zzgl. MwSt. | Jährliche Zahlung = 2 Monate geschenkt.<br />
                             Einmalige Installationspauschale: {formatCHF(INSTALL_FEE)} (inkl. System-Setup und Ersteinrichtung)
                         </p>
                     </section>
 
                     <section className="application-section">
                         <h2>Unverbindliche Angebotsanfrage senden</h2>
-                        {selectedPackageName && priceBreakdown && (
+                        {priceBreakdown && (
                             <div className="price-preview card">
-                                <h4>Ihre Konfiguration: <span className="preview-package">{selectedPackageName}</span></h4>
+                                <h4>Ihre Konfiguration:</h4>
                                 <p className="price-item">
                                     <span className="label">Mitarbeiter:</span>
                                     <span className="value">{employeeCount}</span>
@@ -337,29 +327,25 @@ const Registration = () => {
                                 </p>
                                 <hr />
                                 <p className="price-item">
-                                    <span className="label">Service-Grundgebühr:</span>
+                                    <span className="label">Ausgewählte Features:</span>
                                     <span className="value">
-                                        {formatCHF(priceBreakdown.serviceFee)} {priceBreakdown.billingPeriodText.replace(" (entspricht 10 Monatsraten)", "")}
-                                    </span>
+                    {[BASE_FEATURE, ...FEATURES.filter(f => selectedFeatures.includes(f.key))]
+                        .map(f => f.name)
+                        .join(", ")}
+                  </span>
                                 </p>
                                 <p className="price-item">
-                                    <span className="label">Kosten für Mitarbeiter:</span>
+                                    <span className="label">Gesamtkosten {billingPeriod === "monthly" ? "pro Monat" : "pro Jahr"}:</span>
                                     <span className="value">
-                                        {formatCHF(priceBreakdown.employeeCost)} {priceBreakdown.billingPeriodText.replace(" (entspricht 10 Monatsraten)", "")}
-                                    </span>
-                                </p>
-                                <p className="price-item prominent-subtotal">
-                                    <span className="label">
-                                        Paketkosten {billingPeriod === "monthly" ? "monatlich" : "jährlich"}:
-                                    </span>
-                                    <span className="value">{formatCHF(priceBreakdown.packageSubtotal)}</span>
+                    {formatCHF(priceBreakdown.totalPerPeriod)} {priceBreakdown.periodText.replace(" (entspricht 10 Monatsraten)", "")}
+                  </span>
                                 </p>
                                 {priceBreakdown.isYearly && (
                                     <p className="price-item sub-hint">
                                         <span className="label">(entspricht pro Monat):</span>
                                         <span className="value">
-                                            {formatCHF(priceBreakdown.packageSubtotal / 10)}
-                                        </span>
+                      {formatCHF(priceBreakdown.perPeriodSingle)}
+                    </span>
                                     </p>
                                 )}
                                 <hr />
@@ -370,23 +356,23 @@ const Registration = () => {
                                 {includeOptionalTraining && (
                                     <p className="price-item">
                                         <span className="label">Onboarding (optional):</span>
-                                        <span className="value">{formatCHF(priceBreakdown.optionalTrainingCost)}</span>
+                                        <span className="value">{formatCHF(priceBreakdown.optionalTraining)}</span>
                                     </p>
                                 )}
                                 <hr />
                                 <div className="total-price-wrapper">
                                     <p className="price-item total-price">
-                                        <span className="label">
-                                            Gesamtbetrag für erste Zahlung:
-                                        </span>
+                    <span className="label">
+                      Gesamtbetrag für erste Zahlung:
+                    </span>
                                         <span className="value">{formatCHF(calculatedPrice)}</span>
                                     </p>
                                 </div>
                                 <p className="price-item sub-hint">
                                     <span className="label">Folgezahlungen:</span>
                                     <span className="value">
-                                        {formatCHF(priceBreakdown.packageSubtotal)} {billingPeriod === "monthly" ? "monatlich" : "jährlich"}
-                                    </span>
+                    {formatCHF(priceBreakdown.totalPerPeriod)} {billingPeriod === "monthly" ? "monatlich" : "jährlich"}
+                  </span>
                                 </p>
                             </div>
                         )}
@@ -445,7 +431,7 @@ const Registration = () => {
                                     placeholder="Weitere Informationen oder Fragen zu Ihrer Anfrage..."
                                     rows="4"
                                 />
-                                <button type="submit" disabled={isSubmitting || !selectedPackageName || calculatedPrice <= 0}>
+                                <button type="submit" disabled={isSubmitting || calculatedPrice <= 0}>
                                     {isSubmitting ? "Anfrage wird gesendet..." : "Angebotsanfrage senden"}
                                 </button>
                             </form>

@@ -1,0 +1,159 @@
+/* =============================================
+   AdminProjectReportPageScoped.css
+   ============================================= */
+
+/* Grundlayout und Container
+   --------------------------------------------- */
+.admin-project-report-page {
+    /* Übernimmt das bekannte Layout aus anderen Admin-Seiten */
+    padding: 2rem;
+    max-width: 1200px;
+    margin: 2rem auto;
+    background-color: var(--background-color-light);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    color: var(--text-color-primary);
+}
+
+.admin-project-report-page h1,
+.admin-project-report-page h2 {
+    color: var(--text-color-dark);
+    border-bottom: 2px solid var(--primary-color-light);
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Filter-Bereich
+   --------------------------------------------- */
+.report-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    align-items: center;
+    padding: 1.5rem;
+    background-color: var(--background-color-medium);
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.report-filters select,
+.report-filters input[type="date"] {
+    padding: 0.75rem;
+    border: 1px solid var(--border-color-light);
+    border-radius: 6px;
+    font-size: 1rem;
+    background-color: var(--background-color-light);
+    color: var(--text-color-primary);
+    min-width: 180px; /* Sorgt für einheitliche Größe */
+}
+
+.report-filters button {
+    /* Nutzt den primären Button-Stil der App */
+    padding: 0.75rem 1.5rem;
+}
+
+/* Report-Anzeige
+   --------------------------------------------- */
+.report-content {
+    margin-top: 2rem;
+    animation: fadeIn 0.5s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Zusammenfassungs-Karten */
+.report-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.summary-card {
+    background-color: var(--background-color-medium);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 5px solid var(--primary-color);
+}
+
+.summary-card .label {
+    font-size: 0.9rem;
+    color: var(--text-color-secondary);
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.summary-card .value {
+    font-size: 2rem;
+    font-weight: 600;
+    color: var(--text-color-dark);
+}
+
+/* Fortschrittsbalken */
+.progress-bar-container {
+    background-color: var(--border-color-light);
+    border-radius: 10px;
+    height: 25px;
+    overflow: hidden;
+    margin-bottom: 1rem;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.progress-bar {
+    height: 100%;
+    background-color: var(--primary-color);
+    border-radius: 10px;
+    transition: width 0.5s ease-in-out;
+    text-align: center;
+    color: white;
+    font-weight: bold;
+    line-height: 25px;
+    font-size: 0.8rem;
+}
+
+.progress-bar.over-budget {
+    background-color: var(--danger-color); /* Warnfarbe bei Budget-Überschreitung */
+}
+
+
+/* Detail-Tabelle
+   --------------------------------------------- */
+.report-table-container {
+    overflow-x: auto; /* Sorgt für Scrollbarkeit auf kleinen Bildschirmen */
+}
+
+.report-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+}
+
+.report-table th,
+.report-table td {
+    padding: 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color-light);
+}
+
+.report-table thead th {
+    background-color: var(--background-color-medium);
+    color: var(--text-color-dark);
+    font-weight: 600;
+}
+
+.report-table tbody tr:hover {
+    background-color: var(--primary-color-x-light);
+}
+
+.report-table td:nth-child(3), /* Ist */
+.report-table td:nth-child(4)  /* Verbleibend */ {
+    font-weight: 500;
+}
+
+.report-table .remaining-negative {
+    color: var(--danger-color);
+    font-weight: bold;
+}

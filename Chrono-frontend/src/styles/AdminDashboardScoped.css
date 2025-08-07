@@ -1956,3 +1956,165 @@
   border-color: var(--c-border);
   background-color: var(--c-card);
 }
+.correction-details{
+    display:grid;
+    grid-template-columns:auto auto;
+    gap:.25rem 1rem;
+}
+/* =========================================================================
+   AdminCorrectionsTable.css · Ergänzt die neue Tabellen-Version  (v1.1)
+   Scope:  .admin-dashboard.scoped-dashboard .correction-section
+   ========================================================================= */
+
+/* ---------- 1) Container ------------------------------------------------- */
+.admin-dashboard.scoped-dashboard .correction-section .table-wrapper {
+    max-height: 70vh;
+    overflow-y: auto;
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius-sm);
+}
+
+/* ---------- 2) Tabelle --------------------------------------------------- */
+.admin-dashboard.scoped-dashboard .corrections-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 720px;
+    font-size: 0.85rem;
+}
+.admin-dashboard.scoped-dashboard .corrections-table thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background-color: var(--c-surface);
+    padding: 0.75rem 0.9rem;
+    border-bottom: 2px solid var(--c-border);
+    text-align: left;
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .corrections-table thead th {
+    background-color: var(--c-line);
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tbody td {
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid var(--c-line);
+    vertical-align: middle;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .corrections-table tbody td {
+    border-bottom-color: var(--c-border);
+}
+
+/* Zebra-Streifen */
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr:nth-child(even) {
+    background-color: var(--c-surface);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .corrections-table tbody tr:nth-child(even) {
+    background-color: var(--c-line);
+}
+
+/* ---------- 3) Status-Badges & Zeilenfarben ----------------------------- */
+.status-badge {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #fff;
+    text-transform: uppercase;
+    display: inline-block;
+    min-width: 80px;
+    text-align: center;
+}
+/*
+  Neues, satteres Grün (#22c55e) – entspricht Tailwind green-500.
+  Bietet im Dark‑Mode deutlich besseren Kontrast als der sehr helle
+  Pastellton zuvor.
+*/
+.status-badge.status-approved  { background-color: #22c55e; }
+.status-badge.status-denied    { background-color: var(--stat-denied-text); }
+.status-badge.status-pending   { background-color: var(--stat-pending-text); }
+
+/* komplette Zeile leicht einfärben, aber nur, wenn nicht :hover */
+.corrections-table tr.status-approved:not(:hover) { background-color: var(--stat-approved-bg); }
+.corrections-table tr.status-denied:not(:hover)   { background-color: var(--stat-denied-bg); }
+.corrections-table tr.status-pending:not(:hover)  { background-color: var(--stat-pending-bg); }
+
+/* ---------- 4) Action-Buttons ------------------------------------------- */
+.actions-cell {
+    text-align: right;
+    white-space: nowrap;
+}
+.actions-cell .button-confirm-small,
+.actions-cell .button-deny-small {
+    border: none;
+    border-radius: var(--u-radius-xs);
+    font-size: 0.8rem;
+    line-height: 1;
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: background-color var(--u-dur), transform var(--u-dur);
+    margin-left: 4px;
+}
+.actions-cell .button-confirm-small { background-color: var(--c-success); color: #fff; }
+.actions-cell .button-deny-small   { background-color: var(--c-error);   color: #fff; }
+.actions-cell .button-confirm-small:hover { background-color: color-mix(in srgb, var(--c-success) 80%, black); transform: translateY(-1px); }
+.actions-cell .button-deny-small:hover   { background-color: color-mix(in srgb, var(--c-error) 80%, black);   transform: translateY(-1px); }
+
+/* ---------- 5) Detail-Zeile --------------------------------------------- */
+.detail-row td {
+    padding: 0;
+    background-color: var(--c-surface);
+    border-bottom: none;
+}
+[data-theme="dark"] .detail-row td { background-color: var(--c-line); }
+.detail-row .detail-line {
+    padding: 0.4rem 0.9rem;
+    border-bottom: 1px dashed var(--c-line);
+    font-size: 0.8rem;
+}
+.detail-row .detail-line:last-child {
+    border-bottom: none;
+}
+
+/* ---------- 6) Responsive (Mobil) --------------------------------------- */
+@media (max-width: 768px) {
+    .admin-dashboard.scoped-dashboard .corrections-table {
+        display: block;
+    }
+    .admin-dashboard.scoped-dashboard .corrections-table thead {
+        display: none;
+    }
+    .admin-dashboard.scoped-dashboard .corrections-table tbody,
+    .admin-dashboard.scoped-dashboard .corrections-table tr,
+    .admin-dashboard.scoped-dashboard .corrections-table td {
+        display: block;
+        width: 100%;
+    }
+    .admin-dashboard.scoped-dashboard .corrections-table tr {
+        margin-bottom: 1rem;
+        border: 1px solid var(--c-border);
+        border-radius: var(--u-radius-sm);
+        overflow: hidden;
+    }
+    .admin-dashboard.scoped-dashboard .corrections-table td {
+        text-align: right;
+        padding-left: 50%;
+        position: relative;
+        border: none;
+    }
+    .admin-dashboard.scoped-dashboard .corrections-table td::before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0.9rem;
+        top: 50%;
+        transform: translateY(-50%);
+        font-weight: 600;
+        text-align: left;
+        color: var(--c-muted);
+    }
+    .detail-row { display: none; }
+}
