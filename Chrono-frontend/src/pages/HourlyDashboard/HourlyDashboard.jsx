@@ -178,7 +178,8 @@ const assignCustomerForDay = async (isoDate, customerId) => {
     }, [fetchCurrentUser]);
 
     useEffect(() => {
-        if (currentUser?.customerTrackingEnabled) {
+        const trackingEnabled = userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled;
+        if (trackingEnabled) {
             fetchCustomers();
             api.get('/api/customers/recent')
                 .then(res => setRecentCustomers(Array.isArray(res.data) ? res.data : []))
@@ -190,7 +191,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             setRecentCustomers([]);
             setProjects([]);
         }
-    }, [currentUser, fetchCustomers]);
+    }, [userProfile, currentUser, fetchCustomers]);
 
     useEffect(() => {
         if (selectedProjectId) {
