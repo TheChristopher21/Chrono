@@ -128,6 +128,7 @@ public class ChatService {
             links.put("abrechnung", "/payslips");
             links.put("projekte", "/admin/projects");
             links.put("kunden", "/admin/customers");
+            links.put("aufgaben", "/admin/tasks");
 
             for (Map.Entry<String, String> e : links.entrySet()) {
                 if (lower.contains("wo") && lower.contains(e.getKey())) {

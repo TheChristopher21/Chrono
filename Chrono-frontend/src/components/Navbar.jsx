@@ -122,8 +122,7 @@ const Navbar = () => {
                                             <>
                                                 <li><Link to="/admin/customers">{t('navbar.customerManagement', 'Kunden')}</Link></li>
                                                 <li><Link to="/admin/projects">{t('navbar.projectManagement', 'Projekte')}</Link></li>
-                                                <li><Link to="/admin/project-report">{t('navbar.projectReport', 'Projektauswertung')}</Link></li>
-
+                                                <li><Link to="/admin/tasks">{t('navbar.taskManagement', 'Aufgaben')}</Link></li>
                                             </>
                                         )}
                                         <li><Link to="/admin/payslips">{t('navbar.payslips', 'Abrechnungen')}</Link></li>

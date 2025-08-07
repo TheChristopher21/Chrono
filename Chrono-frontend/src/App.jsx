@@ -26,6 +26,7 @@ import AdminChangePassword from "./pages/AdminChangePassword.jsx";
 import AdminCustomersPage from "./pages/AdminCustomers/AdminCustomersPage.jsx";
 import AdminProjectsPage from "./pages/AdminProjects/AdminProjectsPage.jsx";
 import AdminProjectReportPage from "./pages/AdminProjectReport/AdminProjectReportPage.jsx";
+import AdminTasksPage from "./pages/AdminTasks/AdminTasksPage.jsx";
 import AdminPayslipsPage from "./pages/AdminPayslipsPage.jsx";
 import AdminSchedulePlannerPage from "./pages/AdminSchedulePlanner/AdminSchedulePlannerPage.jsx";
 // NEU: Import der Seite für Schichtregeln
@@ -71,6 +72,7 @@ function App() {
                         <Route path="/admin/change-password" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminChangePassword /></PrivateRoute>} />
                         <Route path="/admin/customers" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminCustomersPage /></PrivateRoute>} />
                         <Route path="/admin/projects" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminProjectsPage /></PrivateRoute>} />
+                        <Route path="/admin/tasks" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminTasksPage /></PrivateRoute>} />
                         <Route path="/admin/project-report" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminProjectReportPage /></PrivateRoute>} />
                         <Route path="/admin/company" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CompanyManagementPage /></PrivateRoute>} />
                         <Route path="/admin/payslips" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_PAYROLL_ADMIN"]}><AdminPayslipsPage /></PrivateRoute>} />
