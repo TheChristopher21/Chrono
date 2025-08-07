@@ -48,6 +48,8 @@ const PercentageDashboard = () => {
     const [projects, setProjects] = useState([]);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [selectedProjectId, setSelectedProjectId] = useState('');
+    const [tasks, setTasks] = useState([]);
+    const [selectedTaskId, setSelectedTaskId] = useState('');
     const [punchMessage, setPunchMessage] = useState('');
     const lastPunchTimeRef = useRef(0);
 
@@ -120,6 +122,17 @@ const PercentageDashboard = () => {
             setProjects([]);
         }
     }, [userProfile, currentUser, fetchCustomers]);
+
+    useEffect(() => {
+        if (selectedProjectId) {
+            api.get('/api/tasks', { params: { projectId: selectedProjectId } })
+                .then(res => setTasks(Array.isArray(res.data) ? res.data : []))
+                .catch(err => { console.error('Error loading tasks', err); setTasks([]); });
+        } else {
+            setTasks([]);
+            setSelectedTaskId('');
+        }
+    }, [selectedProjectId]);
 
     const fetchDataForUser = useCallback(async () => {
         if (!userProfile?.username) return;
@@ -200,6 +213,7 @@ const PercentageDashboard = () => {
             const params = { username: userProfile.username, source: 'MANUAL_PUNCH' };
             if (selectedCustomerId) params.customerId = selectedCustomerId;
             if (selectedProjectId) params.projectId = selectedProjectId;
+            if (selectedTaskId) params.taskId = selectedTaskId;
             const response = await api.post('/api/timetracking/punch', null, { params });
             const newEntry = response.data;
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.'+newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
@@ -371,9 +385,12 @@ const PercentageDashboard = () => {
                     customers={customers}
                     recentCustomers={recentCustomers}
                     projects={projects}
+                    tasks={tasks}
                     selectedCustomerId={selectedCustomerId}
                     setSelectedCustomerId={setSelectedCustomerId}
                     selectedProjectId={selectedProjectId}
+                    selectedTaskId={selectedTaskId}
+                    setSelectedTaskId={setSelectedTaskId}
                     vacationRequests={vacationRequests}
                     sickLeaves={sickLeaves}
                     holidaysForUserCanton={holidaysForUserCanton?.data}

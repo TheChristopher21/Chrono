@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.dto.ProjectReportDTO;
 import com.chrono.chrono.services.ReportService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -14,6 +15,20 @@ public class ReportController {
 
     @Autowired
     private ReportService reportService;
+
+    @GetMapping("/project/{projectId}")
+    public ResponseEntity<ProjectReportDTO> projectReport(
+            @PathVariable Long projectId,
+            @RequestParam String startDate,
+            @RequestParam String endDate
+    ) {
+        ProjectReportDTO dto = reportService.generateProjectReport(
+                projectId,
+                LocalDate.parse(startDate),
+                LocalDate.parse(endDate)
+        );
+        return ResponseEntity.ok(dto);
+    }
 
     @GetMapping("/timesheet/pdf")
     public ResponseEntity<byte[]> downloadPdf(

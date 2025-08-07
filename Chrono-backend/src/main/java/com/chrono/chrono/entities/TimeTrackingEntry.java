@@ -8,6 +8,7 @@ import java.time.LocalTime; // Import für getEntryTime
 
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.Project;
+import com.chrono.chrono.entities.Task;
 
 @Entity
 @Table(name = "time_tracking_entries",
@@ -34,6 +35,10 @@ public class TimeTrackingEntry {
     @JoinColumn(name = "project_id")
     private Project project;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "task_id")
+    private Task task;
+
     @Column(name = "entry_timestamp", nullable = false)
     private LocalDateTime entryTimestamp; // Präziser Zeitstempel für das Ereignis
 
@@ -50,6 +55,15 @@ public class TimeTrackingEntry {
 
     @Column(name = "system_generated_note", length = 255)
     private String systemGeneratedNote; // z.B. "Automatischer Arbeitsende-Stempel"
+
+    @Column(name = "duration_minutes")
+    private Integer durationMinutes;
+
+    @Column(name = "description", length = 1000)
+    private String description;
+
+    @Column(name = "approved", nullable = false)
+    private boolean approved = false;
 
     public enum PunchType {
         START,
@@ -107,6 +121,8 @@ public class TimeTrackingEntry {
     public void setCustomer(Customer customer) { this.customer = customer; }
     public Project getProject() { return project; }
     public void setProject(Project project) { this.project = project; }
+    public Task getTask() { return task; }
+    public void setTask(Task task) { this.task = task; }
     public LocalDateTime getEntryTimestamp() { return entryTimestamp; }
     public void setEntryTimestamp(LocalDateTime entryTimestamp) { this.entryTimestamp = entryTimestamp; }
     public PunchType getPunchType() { return punchType; }
@@ -117,6 +133,12 @@ public class TimeTrackingEntry {
     public void setCorrectedByUser(boolean correctedByUser) { this.correctedByUser = correctedByUser; }
     public String getSystemGeneratedNote() { return systemGeneratedNote; }
     public void setSystemGeneratedNote(String systemGeneratedNote) { this.systemGeneratedNote = systemGeneratedNote; }
+    public Integer getDurationMinutes() { return durationMinutes; }
+    public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public boolean isApproved() { return approved; }
+    public void setApproved(boolean approved) { this.approved = approved; }
 
     @Transient
     public LocalDate getEntryDate() {

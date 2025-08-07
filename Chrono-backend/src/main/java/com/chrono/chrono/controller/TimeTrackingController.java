@@ -39,6 +39,9 @@ public class TimeTrackingController {
         @RequestParam String username,
         @RequestParam(value = "customerId", required = false) Long customerId,
         @RequestParam(value = "projectId", required = false) Long projectId,
+        @RequestParam(value = "taskId", required = false) Long taskId,
+        @RequestParam(value = "durationMinutes", required = false) Integer durationMinutes,
+        @RequestParam(value = "description", required = false) String description,
         Principal principal,
         @RequestHeader(value = "X-NFC-Agent-Request", required = false) String nfcAgentHeader,
         @RequestParam(value = "source", required = false) String sourceStr
@@ -85,7 +88,7 @@ public class TimeTrackingController {
         }
 
         try {
-            TimeTrackingEntryDTO newEntry = timeTrackingService.handlePunch(username, punchSource, customerId, projectId);
+            TimeTrackingEntryDTO newEntry = timeTrackingService.handlePunch(username, punchSource, customerId, projectId, taskId, durationMinutes, description);
             return ResponseEntity.ok(newEntry);
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
@@ -196,6 +199,22 @@ public class TimeTrackingController {
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    @PostMapping("/entry/{id}/approve")
+    public ResponseEntity<TimeTrackingEntryDTO> approveEntry(@PathVariable Long id, Principal principal) {
+        User requestingUser = userService.getUserByUsername(principal.getName());
+        boolean allowed = requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
+        if (!allowed) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(timeTrackingService.approveEntry(id));
+    }
+
+    @PostMapping("/entry/{id}/revoke-approval")
+    public ResponseEntity<TimeTrackingEntryDTO> revokeApproval(@PathVariable Long id, Principal principal) {
+        User requestingUser = userService.getUserByUsername(principal.getName());
+        boolean allowed = requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
+        if (!allowed) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(timeTrackingService.revokeApproval(id));
     }
 
     @PutMapping("/range/customer")

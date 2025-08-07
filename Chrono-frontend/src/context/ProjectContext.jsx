@@ -22,9 +22,9 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [notify, t]);
 
-  const createProject = useCallback(async (name, customerId) => {
+  const createProject = useCallback(async (name, customerId, budgetMinutes) => {
     try {
-      const res = await api.post('/api/projects', { name: name.trim(), customer: { id: customerId } });
+      const res = await api.post('/api/projects', { name: name.trim(), customer: { id: customerId }, budgetMinutes });
       setProjects(prev => [...prev, res.data]);
       return res.data;
     } catch (err) {
@@ -34,9 +34,9 @@ export const ProjectProvider = ({ children }) => {
     }
   }, [notify, t]);
 
-  const updateProject = useCallback(async (id, name, customerId) => {
+  const updateProject = useCallback(async (id, name, customerId, budgetMinutes) => {
     try {
-      const res = await api.put(`/api/projects/${id}`, { name: name.trim(), customer: { id: customerId } });
+      const res = await api.put(`/api/projects/${id}`, { name: name.trim(), customer: { id: customerId }, budgetMinutes });
       setProjects(prev => prev.map(p => p.id === id ? res.data : p));
       return res.data;
     } catch (err) {

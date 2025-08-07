@@ -2,6 +2,7 @@ package com.chrono.chrono.repositories;
 
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.entities.Project;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -43,4 +44,10 @@ public interface TimeTrackingEntryRepository extends JpaRepository<TimeTrackingE
 
     @Query("SELECT t.customer.id FROM TimeTrackingEntry t WHERE t.user.id = :userId AND t.customer IS NOT NULL GROUP BY t.customer.id ORDER BY MAX(t.entryTimestamp) DESC")
     List<Long> findRecentCustomerIds(@Param("userId") Long userId, org.springframework.data.domain.Pageable pageable);
+
+    List<TimeTrackingEntry> findByProjectAndEntryTimestampBetween(
+            Project project,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime
+    );
 }
