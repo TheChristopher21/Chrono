@@ -39,6 +39,7 @@ import WhatsNewPage from "./pages/WhatsNewPage.jsx";
 import AGB from "./pages/AGB.jsx";
 import Impressum from "./pages/Impressum.jsx";
 import CompanySettingsPage from "./pages/CompanySettingsPage.jsx";
+import PayslipsPage from "./pages/PayslipsPage.jsx";
 
 // Hilfs-Komponenten
 import PrivateRoute from "./components/PrivateRoute.jsx";
@@ -66,6 +67,7 @@ function App() {
                         <Route path="/dashboard" element={<PrivateRoute><UserDashboard /></PrivateRoute>} />
                         <Route path="/percentage-punch" element={<PrivateRoute><PercentagePunch /></PrivateRoute>} />
                         <Route path="/personal-data" element={<PrivateRoute><PersonalDataPage /></PrivateRoute>} />
+                        <Route path="/payslips" element={<PrivateRoute><PayslipsPage /></PrivateRoute>} />
 
                         {/* Admin-Routen */}
                         <Route path="/admin/dashboard" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminDashboard /></PrivateRoute>} />
