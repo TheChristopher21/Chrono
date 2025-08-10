@@ -128,6 +128,7 @@ const Navbar = () => {
                                         <li><Link to="/admin/payslips">{t('navbar.payslips', 'Abrechnungen')}</Link></li>
                                         <li><Link to="/admin/schedule">{t('navbar.schedulePlanner', 'Dienstplan')}</Link></li>
                                         <li><Link to="/admin/knowledge">{t('navbar.knowledge', 'Dokumente')}</Link></li>
+                                        <li><Link to="/admin/company-settings">{t('navbar.companySettings', 'Firmeneinstellungen')}</Link></li>
                                         <li><Link to="/admin/change-password">{t('admin.changePasswordTitle', 'Passwort ändern')}</Link></li>
                                     </>
                                 ) : (

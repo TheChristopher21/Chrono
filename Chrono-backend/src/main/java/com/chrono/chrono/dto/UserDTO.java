@@ -16,6 +16,7 @@ public class UserDTO {
     private String firstName;
     private String lastName;
     private String address;
+    private String department;
     private LocalDate birthDate;
     private LocalDate entryDate;
     private String country;
@@ -71,6 +72,7 @@ public class UserDTO {
         this.firstName = user.getFirstName();
         this.lastName = user.getLastName();
         this.address = user.getAddress();
+        this.department = user.getDepartment();
         this.birthDate = user.getBirthDate();
         this.entryDate = user.getEntryDate();
         this.country = user.getCountry();
@@ -119,7 +121,7 @@ public class UserDTO {
 
     // All-Args-Constructor
     public UserDTO(Long id, String username, String password, String firstName, String lastName,
-                   String address, LocalDate birthDate, LocalDate entryDate, String country,
+                   String address, String department, LocalDate birthDate, LocalDate entryDate, String country,
                    String taxClass, String tarifCode, String canton, String civilStatus,
                    Integer children, String religion, String federalState, Boolean churchTax,
                    String healthInsurance, Double gkvAdditionalRate, String personnelNumber,
@@ -138,6 +140,7 @@ public class UserDTO {
         this.firstName = firstName;
         this.lastName = lastName;
         this.address = address;
+        this.department = department;
         this.birthDate = birthDate;
         this.entryDate = entryDate;
         this.country = country;
@@ -188,6 +191,7 @@ public class UserDTO {
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
     public String getAddress() { return address; }
+    public String getDepartment() { return department; }
     public LocalDate getBirthDate() { return birthDate; }
     public LocalDate getEntryDate() { return entryDate; }
     public String getCountry() { return country; }
@@ -238,6 +242,7 @@ public class UserDTO {
     public void setFirstName(String firstName) { this.firstName = firstName; }
     public void setLastName(String lastName) { this.lastName = lastName; }
     public void setAddress(String address) { this.address = address; }
+    public void setDepartment(String department) { this.department = department; }
     public void setBirthDate(LocalDate birthDate) { this.birthDate = birthDate; }
     public void setEntryDate(LocalDate entryDate) { this.entryDate = entryDate; }
     public void setCountry(String country) { this.country = country; }

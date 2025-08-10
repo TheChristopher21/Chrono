@@ -110,6 +110,9 @@ public class PayrollService {
         for (Map.Entry<String, Double> entry : res.getEmployee().entrySet()) {
             ps.getDeductionsList().add(new PayComponent(entry.getKey(), entry.getValue()));
         }
+        for (Map.Entry<String, Double> entry : res.getEmployer().entrySet()) {
+            ps.getEmployerContribList().add(new PayComponent(entry.getKey(), entry.getValue()));
+        }
         ps.setEmployerContributions(employer);
         if (payoutDate != null) {
             ps.setPayoutDate(payoutDate);

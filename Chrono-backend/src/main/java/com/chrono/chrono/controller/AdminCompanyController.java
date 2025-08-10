@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import com.chrono.chrono.dto.CompanySettingsDTO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -42,6 +44,30 @@ public class AdminCompanyController {
                 "name", company.getName(),
                 "logoPath", company.getLogoPath()
         ));
+    }
+
+    @GetMapping("/settings")
+    public ResponseEntity<?> getSettings(Principal principal) {
+        User admin = userRepository.findByUsername(principal.getName()).orElse(null);
+        if (admin == null || admin.getCompany() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Admin has no company");
+        }
+        Company company = admin.getCompany();
+        return ResponseEntity.ok(CompanySettingsDTO.fromEntity(company));
+    }
+
+    @PutMapping("/settings")
+    public ResponseEntity<?> updateSettings(@RequestBody CompanySettingsDTO dto, Principal principal) {
+        User admin = userRepository.findByUsername(principal.getName()).orElse(null);
+        if (admin == null || admin.getCompany() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Admin has no company");
+        }
+        Company company = admin.getCompany();
+        dto.applyToEntity(company);
+        companyRepository.save(company);
+        return ResponseEntity.ok(CompanySettingsDTO.fromEntity(company));
     }
 
     @PutMapping("/logo")

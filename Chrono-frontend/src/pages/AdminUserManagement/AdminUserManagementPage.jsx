@@ -35,6 +35,7 @@ const AdminUserManagementPage = () => {
         firstName: '',
         lastName: '',
         address: '',
+        department: '',
         birthDate: '',
         entryDate: '',
         country: 'DE',

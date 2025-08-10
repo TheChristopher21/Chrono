@@ -38,6 +38,7 @@ import PrintReport from "./pages/PrintReport.jsx";
 import WhatsNewPage from "./pages/WhatsNewPage.jsx";
 import AGB from "./pages/AGB.jsx";
 import Impressum from "./pages/Impressum.jsx";
+import CompanySettingsPage from "./pages/CompanySettingsPage.jsx";
 
 // Hilfs-Komponenten
 import PrivateRoute from "./components/PrivateRoute.jsx";
@@ -79,6 +80,7 @@ function App() {
                         <Route path="/admin/schedule" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminSchedulePlannerPage /></PrivateRoute>} />
 
                         <Route path="/admin/knowledge" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminKnowledgePage /></PrivateRoute>} />
+                        <Route path="/admin/company-settings" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CompanySettingsPage /></PrivateRoute>} />
 
                         {/* NEU: Route für die Schicht-Einstellungsseite */}
                         <Route

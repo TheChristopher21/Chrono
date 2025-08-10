@@ -119,6 +119,15 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
+                    <label htmlFor="department">{t("userManagement.department", "Abteilung")}</label>
+                    <input
+                        id="department"
+                        type="text"
+                        value={userData.department || ""}
+                        onChange={(e) => handleChange("department", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
                     <label htmlFor="birthDate">{t("userManagement.birthDate", "Geburtsdatum")}</label>
                     <input
                         id="birthDate"
