@@ -143,6 +143,20 @@ public class PayslipController {
     }
 
     @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        payrollService.deletePayslip(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
+    @PostMapping("/reopen/{id}")
+    public ResponseEntity<Void> reopen(@PathVariable Long id) {
+        payrollService.reopenPayslip(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PAYROLL_ADMIN')")
     @GetMapping("/admin/all")
     public ResponseEntity<List<PayslipDTO>> all() {
         return ResponseEntity.ok(payrollService.getAllPayslips().stream().map(PayslipDTO::new).toList());

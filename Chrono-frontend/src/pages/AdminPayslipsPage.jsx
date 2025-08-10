@@ -33,6 +33,12 @@ const AdminPayslipsPage = () => {
     api.post(`/api/payslips/approve/${id}`).then(() => fetchPending());
   };
 
+  const deletePayslip = (id) => {
+    if (window.confirm(t('payslips.deleteConfirm', 'Abrechnung wirklich löschen?'))) {
+      api.delete(`/api/payslips/${id}`).then(() => fetchPending());
+    }
+  };
+
   const editPayoutDate = (id, current) => {
     const val = prompt(t('payslips.enterPayoutDate'), current || '');
     if (val) {
@@ -82,6 +88,13 @@ const AdminPayslipsPage = () => {
           }, 500);
         })
         .catch(() => alert(t('payslips.printError')));
+  };
+
+  const reopen = (id) => {
+    api.post(`/api/payslips/reopen/${id}`).then(() => {
+      fetchApproved();
+      fetchPending();
+    });
   };
 
   const createPayslip = () => {
@@ -203,6 +216,7 @@ const AdminPayslipsPage = () => {
                     <td data-label={t('payslips.actions', 'Aktionen')} className="actions-col">
                       <button onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout', 'Datum ändern')}</button>
                       <button onClick={() => approve(ps.id)}>{t('payslips.approve', 'Freigeben')}</button>
+                      <button className="danger-btn" onClick={() => deletePayslip(ps.id)}>{t('payslips.delete', 'Löschen')}</button>
                     </td>
                   </tr>
               ))}
@@ -265,6 +279,7 @@ const AdminPayslipsPage = () => {
                     <td data-label={t('payslips.payoutDate', 'Auszahlungsdatum')}>{ps.payoutDate}</td>
                     <td data-label={t('payslips.actions', 'Aktionen')} className="actions-col">
                       <button onClick={() => printPdf(ps.id)}>{t('payslips.print', 'Drucken')}</button>
+                      <button className="warning-btn" onClick={() => reopen(ps.id)}>{t('payslips.reopen', 'Zurückziehen')}</button>
                     </td>
                   </tr>
               ))}

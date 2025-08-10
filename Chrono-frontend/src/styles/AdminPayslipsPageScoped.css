@@ -16,6 +16,10 @@
   --ud-c-text-muted: #a0a0b8;
   --ud-c-primary: #4a69ff; /* Neue Akzentfarbe für primäre Buttons */
   --ud-c-primary-hover: #6c8cff;
+  --ud-c-danger: #e53935;
+  --ud-c-danger-hover: #b71c1c;
+  --ud-c-warning: #ffc741;
+  --ud-c-warning-hover: #e0a800;
   --ud-fz-sm: 0.875rem;
   --ud-fz-lg: 1.25rem;
 }
@@ -190,6 +194,28 @@
   background-color: var(--ud-c-primary);
   border-color: var(--ud-c-primary);
   color: #fff;
+}
+
+/* Spezielle Button-Varianten */
+.admin-payslips-page .danger-btn {
+  background-color: var(--ud-c-danger);
+  border-color: var(--ud-c-danger);
+  color: #fff;
+}
+.admin-payslips-page .danger-btn:hover {
+  background-color: var(--ud-c-danger-hover);
+  border-color: var(--ud-c-danger-hover);
+}
+
+.admin-payslips-page .warning-btn {
+  background-color: var(--ud-c-warning);
+  border-color: var(--ud-c-warning);
+  color: #000;
+}
+.admin-payslips-page .warning-btn:hover {
+  background-color: var(--ud-c-warning-hover);
+  border-color: var(--ud-c-warning-hover);
+  color: #000;
 }
 
 /* Deaktivierte Buttons */
