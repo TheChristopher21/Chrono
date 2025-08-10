@@ -30,7 +30,10 @@ const AdminPayslipsPage = () => {
   };
 
   const approve = (id) => {
-    api.post(`/api/payslips/approve/${id}`).then(() => fetchPending());
+    api.post(`/api/payslips/approve/${id}`).then(() => {
+      fetchPending();
+      fetchApproved();
+    });
   };
 
   const deletePayslip = (id) => {
@@ -52,7 +55,10 @@ const AdminPayslipsPage = () => {
     const comment = prompt(t('payslips.approveAll'));
     // Nur fortfahren, wenn der Benutzer einen Kommentar eingegeben hat oder auf OK geklickt hat (comment ist nicht null)
     if (comment !== null) {
-      api.post('/api/payslips/approve-all', null, { params: { comment } }).then(() => fetchPending());
+      api.post('/api/payslips/approve-all', null, { params: { comment } }).then(() => {
+        fetchPending();
+        fetchApproved();
+      });
     }
   };
 
