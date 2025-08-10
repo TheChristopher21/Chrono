@@ -49,6 +49,14 @@ public class Company {
     @Column(name = "canton_abbreviation", length = 2)
     private String cantonAbbreviation;
 
+    // Sozialversicherungsraten (konfigurierbar je Firma)
+    private Double uvgBuRate;       // Unfallversicherung Betrieb (AG)
+    private Double uvgNbuRate;      // Nichtberufsunfall (AN)
+    private Double ktgRateEmployee; // Krankentaggeld AN-Anteil
+    private Double ktgRateEmployer; // Krankentaggeld AG-Anteil
+    private Double fakRate;         // Familienausgleichskasse
+    private Double midijobFactor;   // Faktor für Midijob-Reduktion in DE
+
 
     // Beispiel: Jeder Company kann beliebig viele Users haben
     @OneToMany(mappedBy = "company")
@@ -115,4 +123,22 @@ public class Company {
 
     public String getLogoPath() { return logoPath; }
     public void setLogoPath(String logoPath) { this.logoPath = logoPath; }
+
+    public Double getUvgBuRate() { return uvgBuRate; }
+    public void setUvgBuRate(Double uvgBuRate) { this.uvgBuRate = uvgBuRate; }
+
+    public Double getUvgNbuRate() { return uvgNbuRate; }
+    public void setUvgNbuRate(Double uvgNbuRate) { this.uvgNbuRate = uvgNbuRate; }
+
+    public Double getKtgRateEmployee() { return ktgRateEmployee; }
+    public void setKtgRateEmployee(Double ktgRateEmployee) { this.ktgRateEmployee = ktgRateEmployee; }
+
+    public Double getKtgRateEmployer() { return ktgRateEmployer; }
+    public void setKtgRateEmployer(Double ktgRateEmployer) { this.ktgRateEmployer = ktgRateEmployer; }
+
+    public Double getFakRate() { return fakRate; }
+    public void setFakRate(Double fakRate) { this.fakRate = fakRate; }
+
+    public Double getMidijobFactor() { return midijobFactor; }
+    public void setMidijobFactor(Double midijobFactor) { this.midijobFactor = midijobFactor; }
 }

@@ -66,8 +66,11 @@ public class UserController {
         if (dto.getCivilStatus() != null) user.setCivilStatus(dto.getCivilStatus());
         if (dto.getChildren() != null) user.setChildren(dto.getChildren());
         if (dto.getReligion() != null) user.setReligion(dto.getReligion());
+        if (dto.getFederalState() != null) user.setFederalState(dto.getFederalState());
+        if (dto.getChurchTax() != null) user.setChurchTax(dto.getChurchTax());
         if (dto.getBankAccount() != null) user.setBankAccount(dto.getBankAccount());
         if (dto.getHealthInsurance() != null) user.setHealthInsurance(dto.getHealthInsurance());
+        if (dto.getGkvAdditionalRate() != null) user.setGkvAdditionalRate(dto.getGkvAdditionalRate());
         if (dto.getPersonnelNumber() != null) user.setPersonnelNumber(dto.getPersonnelNumber());
         if (dto.getEmail() != null) user.setEmail(dto.getEmail());
         if (dto.getMobilePhone() != null) user.setMobilePhone(dto.getMobilePhone());
@@ -110,7 +113,10 @@ public class UserController {
         dto.setCivilStatus(user.getCivilStatus());
         dto.setChildren(user.getChildren());
         dto.setReligion(user.getReligion());
+        dto.setFederalState(user.getFederalState());
+        dto.setChurchTax(user.getChurchTax());
         dto.setHealthInsurance(user.getHealthInsurance());
+        dto.setGkvAdditionalRate(user.getGkvAdditionalRate());
         dto.setPersonnelNumber(user.getPersonnelNumber());
         dto.setEmail(user.getEmail());
         dto.setMobilePhone(user.getMobilePhone());
