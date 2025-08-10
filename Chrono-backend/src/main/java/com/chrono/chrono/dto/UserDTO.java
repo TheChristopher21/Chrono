@@ -25,7 +25,10 @@ public class UserDTO {
     private String civilStatus;
     private Integer children;
     private String religion;
+    private String federalState;
+    private Boolean churchTax;
     private String healthInsurance;
+    private Double gkvAdditionalRate;
     private String personnelNumber;
     private String email;
     private String mobilePhone;
@@ -77,7 +80,10 @@ public class UserDTO {
         this.civilStatus = user.getCivilStatus();
         this.children = user.getChildren();
         this.religion = user.getReligion();
+        this.federalState = user.getFederalState();
+        this.churchTax = user.getChurchTax();
         this.healthInsurance = user.getHealthInsurance();
+        this.gkvAdditionalRate = user.getGkvAdditionalRate();
         this.personnelNumber = user.getPersonnelNumber();
         this.email = user.getEmail();
         this.mobilePhone = user.getMobilePhone();
@@ -115,8 +121,8 @@ public class UserDTO {
     public UserDTO(Long id, String username, String password, String firstName, String lastName,
                    String address, LocalDate birthDate, LocalDate entryDate, String country,
                    String taxClass, String tarifCode, String canton, String civilStatus,
-                   Integer children, String religion,
-                   String healthInsurance, String personnelNumber,
+                   Integer children, String religion, String federalState, Boolean churchTax,
+                   String healthInsurance, Double gkvAdditionalRate, String personnelNumber,
                    String email, String mobilePhone, String landlinePhone,
                    Boolean emailNotifications, List<String> roles,
                    Integer expectedWorkDays, Double dailyWorkHours, Integer breakDuration, String color,
@@ -141,7 +147,10 @@ public class UserDTO {
         this.civilStatus = civilStatus;
         this.children = children;
         this.religion = religion;
+        this.federalState = federalState;
+        this.churchTax = churchTax;
         this.healthInsurance = healthInsurance;
+        this.gkvAdditionalRate = gkvAdditionalRate;
         this.personnelNumber = personnelNumber;
         this.email = email;
         this.mobilePhone = mobilePhone;
@@ -188,7 +197,10 @@ public class UserDTO {
     public String getCivilStatus() { return civilStatus; }
     public Integer getChildren() { return children; }
     public String getReligion() { return religion; }
+    public String getFederalState() { return federalState; }
+    public Boolean getChurchTax() { return churchTax; }
     public String getHealthInsurance() { return healthInsurance; }
+    public Double getGkvAdditionalRate() { return gkvAdditionalRate; }
     public String getPersonnelNumber() { return personnelNumber; }
     public String getEmail() { return email; }
     public String getMobilePhone() { return mobilePhone; }
@@ -235,7 +247,10 @@ public class UserDTO {
     public void setCivilStatus(String civilStatus) { this.civilStatus = civilStatus; }
     public void setChildren(Integer children) { this.children = children; }
     public void setReligion(String religion) { this.religion = religion; }
+    public void setFederalState(String federalState) { this.federalState = federalState; }
+    public void setChurchTax(Boolean churchTax) { this.churchTax = churchTax; }
     public void setHealthInsurance(String healthInsurance) { this.healthInsurance = healthInsurance; }
+    public void setGkvAdditionalRate(Double gkvAdditionalRate) { this.gkvAdditionalRate = gkvAdditionalRate; }
     public void setPersonnelNumber(String personnelNumber) { this.personnelNumber = personnelNumber; }
     public void setEmail(String email) { this.email = email; }
     public void setMobilePhone(String mobilePhone) { this.mobilePhone = mobilePhone; }

@@ -193,6 +193,56 @@ const AdminUserForm = ({
                                 onChange={(e) => handleChange("religion", e.target.value)}
                             />
                         </div>
+                        <div className="form-group">
+                            <label htmlFor="federalState">Bundesland</label>
+                            <select
+                                id="federalState"
+                                value={userData.federalState || ""}
+                                onChange={(e) => handleChange("federalState", e.target.value)}
+                            >
+                                <option value="">– bitte wählen –</option>
+                                <option value="BW">Baden-Württemberg</option>
+                                <option value="BY">Bayern</option>
+                                <option value="BE">Berlin</option>
+                                <option value="BB">Brandenburg</option>
+                                <option value="HB">Bremen</option>
+                                <option value="HH">Hamburg</option>
+                                <option value="HE">Hessen</option>
+                                <option value="MV">Mecklenburg-Vorpommern</option>
+                                <option value="NI">Niedersachsen</option>
+                                <option value="NW">Nordrhein-Westfalen</option>
+                                <option value="RP">Rheinland-Pfalz</option>
+                                <option value="SL">Saarland</option>
+                                <option value="SN">Sachsen</option>
+                                <option value="ST">Sachsen-Anhalt</option>
+                                <option value="SH">Schleswig-Holstein</option>
+                                <option value="TH">Thüringen</option>
+                            </select>
+                        </div>
+
+                        <div className="form-group form-group-checkbox">
+                            <input
+                                type="checkbox"
+                                id="churchTax"
+                                checked={!!userData.churchTax}
+                                onChange={(e) => handleCheckboxChange("churchTax", e.target.checked)}
+                            />
+                            <label htmlFor="churchTax">Kirchensteuerpflichtig</label>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="gkvAdditionalRate">GKV-Zusatzbeitrag (AN-Hälfte)</label>
+                            <input
+                                id="gkvAdditionalRate"
+                                type="number"
+                                step="0.0005"
+                                min="0"
+                                max="0.03"
+                                value={userData.gkvAdditionalRate ?? ""}
+                                onChange={(e) => handleChange("gkvAdditionalRate", e.target.value ? parseFloat(e.target.value) : null)}
+                                placeholder="z. B. 0.0125"
+                            />
+                        </div>
                     </>
                 )}
 

@@ -46,7 +46,11 @@ public class User {
     private String civilStatus;     // CH
     private Integer children;
     private String religion;        // DE/CH
+    private String federalState;    // DE
+    private Boolean churchTax;      // DE
     private String healthInsurance;
+    // Anteil des kassenabhängigen Zusatzbeitrags der gesetzlichen Krankenversicherung (AN-Hälfte)
+    private Double gkvAdditionalRate;
     @Column(nullable = false)
     private String personnelNumber;
 
@@ -214,8 +218,17 @@ public class User {
     public String getReligion() { return religion; }
     public void setReligion(String religion) { this.religion = religion; }
 
+    public String getFederalState() { return federalState; }
+    public void setFederalState(String federalState) { this.federalState = federalState; }
+
+    public Boolean getChurchTax() { return churchTax; }
+    public void setChurchTax(Boolean churchTax) { this.churchTax = churchTax; }
+
     public String getHealthInsurance() { return healthInsurance; }
     public void setHealthInsurance(String healthInsurance) { this.healthInsurance = healthInsurance; }
+
+    public Double getGkvAdditionalRate() { return gkvAdditionalRate; }
+    public void setGkvAdditionalRate(Double gkvAdditionalRate) { this.gkvAdditionalRate = gkvAdditionalRate; }
 
     public String getPersonnelNumber() { return personnelNumber; }
     public void setPersonnelNumber(String personnelNumber) { this.personnelNumber = personnelNumber; }

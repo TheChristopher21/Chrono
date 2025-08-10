@@ -151,9 +151,12 @@ public class AdminUserController {
         newUser.setCivilStatus(userDTO.getCivilStatus());
         newUser.setChildren(userDTO.getChildren());
         newUser.setReligion(userDTO.getReligion());
+        newUser.setFederalState(userDTO.getFederalState());
+        newUser.setChurchTax(userDTO.getChurchTax());
         newUser.setBankAccount(userDTO.getBankAccount());
         newUser.setSocialSecurityNumber(userDTO.getSocialSecurityNumber());
         newUser.setHealthInsurance(userDTO.getHealthInsurance());
+        newUser.setGkvAdditionalRate(userDTO.getGkvAdditionalRate());
         newUser.setPersonnelNumber(userDTO.getPersonnelNumber());
         newUser.setEmail(userDTO.getEmail());
         newUser.setMobilePhone(userDTO.getMobilePhone());
@@ -342,9 +345,12 @@ public class AdminUserController {
         existingUser.setCivilStatus(userDTO.getCivilStatus());
         existingUser.setChildren(userDTO.getChildren());
         existingUser.setReligion(userDTO.getReligion());
+        existingUser.setFederalState(userDTO.getFederalState());
+        existingUser.setChurchTax(userDTO.getChurchTax());
         existingUser.setBankAccount(userDTO.getBankAccount());
         existingUser.setSocialSecurityNumber(userDTO.getSocialSecurityNumber());
         existingUser.setHealthInsurance(userDTO.getHealthInsurance());
+        existingUser.setGkvAdditionalRate(userDTO.getGkvAdditionalRate());
         existingUser.setPersonnelNumber(userDTO.getPersonnelNumber());
         existingUser.setEmail(userDTO.getEmail());
         existingUser.setMobilePhone(userDTO.getMobilePhone());

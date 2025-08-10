@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class PayrollService {
@@ -85,11 +86,9 @@ public class PayrollService {
         }
         double gross = basePay + overtimePay;
         TaxCalculationService.Result res = taxCalculationService.calculate(user, gross);
-        double tax = res.getTax();
-        double social = res.getSocial();
-        double deductions = res.getTotal();
+        double deductions = res.getEmployeeTotal();
         double net = gross - deductions;
-        double employer = res.getEmployer();
+        double employer = res.getEmployerTotal();
         Payslip ps = new Payslip();
         ps.setUser(user);
         ps.setPeriodStart(start);
@@ -108,8 +107,9 @@ public class PayrollService {
         if (overtimePay > 0) {
             ps.getEarnings().add(new PayComponent("Overtime", overtimePay));
         }
-        ps.getDeductionsList().add(new PayComponent("Tax", tax));
-        ps.getDeductionsList().add(new PayComponent("Social", social));
+        for (Map.Entry<String, Double> entry : res.getEmployee().entrySet()) {
+            ps.getDeductionsList().add(new PayComponent(entry.getKey(), entry.getValue()));
+        }
         ps.setEmployerContributions(employer);
         if (payoutDate != null) {
             ps.setPayoutDate(payoutDate);
