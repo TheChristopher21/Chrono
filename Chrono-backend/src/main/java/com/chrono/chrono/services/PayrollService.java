@@ -182,6 +182,26 @@ public class PayrollService {
         payslipRepository.saveAll(slips);
     }
 
+    @Transactional
+    public void deletePayslip(Long id) {
+        Payslip ps = payslipRepository.findById(id).orElseThrow();
+        if (ps.isApproved()) {
+            throw new IllegalStateException("Cannot delete approved payslip");
+        }
+        payslipAuditRepository.deleteByPayslip(ps);
+        payslipRepository.delete(ps);
+    }
+
+    @Transactional
+    public void reopenPayslip(Long id) {
+        Payslip ps = payslipRepository.findById(id).orElseThrow();
+        ps.setApproved(false);
+        ps.setLocked(false);
+        ps.setPdfPath(null);
+        payslipRepository.save(ps);
+        audit(ps, "REOPENED", "ADMIN", null);
+    }
+
     public List<Payslip> getAllPayslips() {
         return payslipRepository.findAll();
     }
