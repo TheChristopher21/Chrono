@@ -36,6 +36,7 @@ public class User {
     private String firstName;
     private String lastName;
     private String address;
+    private String department;
     private LocalDate birthDate;
     private LocalDate entryDate;
     @Column(nullable = false)
@@ -190,6 +191,9 @@ public class User {
 
     public String getAddress() { return address; }
     public void setAddress(String address) { this.address = address; }
+
+    public String getDepartment() { return department; }
+    public void setDepartment(String department) { this.department = department; }
 
     public LocalDate getBirthDate() { return birthDate; }
     public void setBirthDate(LocalDate birthDate) { this.birthDate = birthDate; }

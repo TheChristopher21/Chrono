@@ -1,0 +1,9 @@
+.company-settings-card {
+  max-width: 500px;
+  margin: 20px auto;
+}
+.company-settings-form .form-group {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}

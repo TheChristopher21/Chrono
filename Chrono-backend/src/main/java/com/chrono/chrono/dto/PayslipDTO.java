@@ -19,8 +19,10 @@ public class PayslipDTO {
     private Double bonuses;
     private Double oneTimePayments;
     private Double taxFreeAllowances;
+    private String currency;
     private List<PayComponent> earnings;
     private List<PayComponent> deductionsList;
+    private List<PayComponent> employerContribList;
     private Double employerContributions;
     private LocalDate payoutDate;
     private String bankAccount;
@@ -45,8 +47,10 @@ public class PayslipDTO {
         this.bonuses = ps.getBonuses();
         this.oneTimePayments = ps.getOneTimePayments();
         this.taxFreeAllowances = ps.getTaxFreeAllowances();
+        this.currency = (ps.getUser() != null && "DE".equalsIgnoreCase(ps.getUser().getCountry())) ? "EUR" : "CHF";
         this.earnings = ps.getEarnings();
         this.deductionsList = ps.getDeductionsList();
+        this.employerContribList = ps.getEmployerContribList();
         this.employerContributions = ps.getEmployerContributions();
         this.payoutDate = ps.getPayoutDate();
         this.bankAccount = ps.getBankAccount();
@@ -71,6 +75,7 @@ public class PayslipDTO {
     public Double getTaxFreeAllowances() { return taxFreeAllowances; }
     public List<PayComponent> getEarnings() { return earnings; }
     public List<PayComponent> getDeductionsList() { return deductionsList; }
+    public List<PayComponent> getEmployerContribList() { return employerContribList; }
     public Double getEmployerContributions() { return employerContributions; }
     public LocalDate getPayoutDate() { return payoutDate; }
     public String getBankAccount() { return bankAccount; }
@@ -82,4 +87,5 @@ public class PayslipDTO {
     public boolean isApproved() { return approved; }
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
+    public String getCurrency() { return currency; }
 }

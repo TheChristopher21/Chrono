@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from 'react';
+import { useState, useEffect, useContext, Fragment } from 'react';
 import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import '../styles/AdminPayslipsPageScoped.css';
@@ -207,18 +207,37 @@ const AdminPayslipsPage = () => {
               </thead>
               <tbody>
               {payslips.map(ps => (
-                  <tr key={ps.id}>
-                    <td data-label={t('payslips.user', 'Benutzer')}>{ps.firstName} {ps.lastName}</td>
-                    <td data-label={t('payslips.period', 'Zeitraum')}>{ps.periodStart} - {ps.periodEnd}</td>
-                    <td data-label={t('payslips.gross', 'Brutto')}>{ps.grossSalary?.toFixed(2)} CHF</td>
-                    <td data-label={t('payslips.net', 'Netto')}>{ps.netSalary?.toFixed(2)} CHF</td>
-                    <td data-label={t('payslips.payoutDate', 'Auszahlungsdatum')}>{ps.payoutDate}</td>
-                    <td data-label={t('payslips.actions', 'Aktionen')} className="actions-col">
-                      <button onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout', 'Datum ändern')}</button>
-                      <button onClick={() => approve(ps.id)}>{t('payslips.approve', 'Freigeben')}</button>
-                      <button className="danger-btn" onClick={() => deletePayslip(ps.id)}>{t('payslips.delete', 'Löschen')}</button>
-                    </td>
-                  </tr>
+                  <Fragment key={ps.id}>
+                    <tr>
+                      <td data-label={t('payslips.user', 'Benutzer')}>{ps.firstName} {ps.lastName}</td>
+                      <td data-label={t('payslips.period', 'Zeitraum')}>{ps.periodStart} - {ps.periodEnd}</td>
+                      <td data-label={t('payslips.gross', 'Brutto')}>{ps.grossSalary?.toFixed(2)} {ps.currency || 'CHF'}</td>
+                      <td data-label={t('payslips.net', 'Netto')}>{ps.netSalary?.toFixed(2)} {ps.currency || 'CHF'}</td>
+                      <td data-label={t('payslips.payoutDate', 'Auszahlungsdatum')}>{ps.payoutDate}</td>
+                      <td data-label={t('payslips.actions', 'Aktionen')} className="actions-col">
+                        <button onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout', 'Datum ändern')}</button>
+                        <button onClick={() => approve(ps.id)}>{t('payslips.approve', 'Freigeben')}</button>
+                        <button className="danger-btn" onClick={() => deletePayslip(ps.id)}>{t('payslips.delete', 'Löschen')}</button>
+                      </td>
+                    </tr>
+                    {(ps.employerContribList && ps.employerContribList.length > 0) || ps.employerContributions ? (
+                      <tr className="employer-details">
+                        <td colSpan="6">
+                          <strong>{t('payslips.employerContrib', 'Arbeitgeberbeiträge')}:</strong>
+                          {ps.employerContribList && ps.employerContribList.length > 0 && (
+                            <ul>
+                              {ps.employerContribList.map((ec, idx) => (
+                                <li key={idx}>{ec.type}: {ec.amount?.toFixed(2)} {ps.currency || 'CHF'}</li>
+                              ))}
+                            </ul>
+                          )}
+                          {ps.employerContributions != null && (
+                            <div>{t('payslips.employerTotal', 'Summe')}: {ps.employerContributions.toFixed(2)} {ps.currency || 'CHF'}</div>
+                          )}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
               ))}
               </tbody>
             </table>
@@ -271,17 +290,36 @@ const AdminPayslipsPage = () => {
               </thead>
               <tbody>
               {approvedSlips.map(ps => (
-                  <tr key={ps.id}>
-                    <td data-label={t('payslips.user', 'Benutzer')}>{ps.firstName} {ps.lastName}</td>
-                    <td data-label={t('payslips.period', 'Zeitraum')}>{ps.periodStart} - {ps.periodEnd}</td>
-                    <td data-label={t('payslips.gross', 'Brutto')}>{ps.grossSalary?.toFixed(2)} CHF</td>
-                    <td data-label={t('payslips.net', 'Netto')}>{ps.netSalary?.toFixed(2)} CHF</td>
-                    <td data-label={t('payslips.payoutDate', 'Auszahlungsdatum')}>{ps.payoutDate}</td>
-                    <td data-label={t('payslips.actions', 'Aktionen')} className="actions-col">
-                      <button onClick={() => printPdf(ps.id)}>{t('payslips.print', 'Drucken')}</button>
-                      <button className="warning-btn" onClick={() => reopen(ps.id)}>{t('payslips.reopen', 'Zurückziehen')}</button>
-                    </td>
-                  </tr>
+                  <Fragment key={ps.id}>
+                    <tr>
+                      <td data-label={t('payslips.user', 'Benutzer')}>{ps.firstName} {ps.lastName}</td>
+                      <td data-label={t('payslips.period', 'Zeitraum')}>{ps.periodStart} - {ps.periodEnd}</td>
+                      <td data-label={t('payslips.gross', 'Brutto')}>{ps.grossSalary?.toFixed(2)} {ps.currency || 'CHF'}</td>
+                      <td data-label={t('payslips.net', 'Netto')}>{ps.netSalary?.toFixed(2)} {ps.currency || 'CHF'}</td>
+                      <td data-label={t('payslips.payoutDate', 'Auszahlungsdatum')}>{ps.payoutDate}</td>
+                      <td data-label={t('payslips.actions', 'Aktionen')} className="actions-col">
+                        <button onClick={() => printPdf(ps.id)}>{t('payslips.print', 'Drucken')}</button>
+                        <button className="warning-btn" onClick={() => reopen(ps.id)}>{t('payslips.reopen', 'Zurückziehen')}</button>
+                      </td>
+                    </tr>
+                    {(ps.employerContribList && ps.employerContribList.length > 0) || ps.employerContributions ? (
+                      <tr className="employer-details">
+                        <td colSpan="6">
+                          <strong>{t('payslips.employerContrib', 'Arbeitgeberbeiträge')}:</strong>
+                          {ps.employerContribList && ps.employerContribList.length > 0 && (
+                            <ul>
+                              {ps.employerContribList.map((ec, idx) => (
+                                <li key={idx}>{ec.type}: {ec.amount?.toFixed(2)} {ps.currency || 'CHF'}</li>
+                              ))}
+                            </ul>
+                          )}
+                          {ps.employerContributions != null && (
+                            <div>{t('payslips.employerTotal', 'Summe')}: {ps.employerContributions.toFixed(2)} {ps.currency || 'CHF'}</div>
+                          )}
+                        </td>
+                      </tr>
+                    ) : null}
+                  </Fragment>
               ))}
               </tbody>
             </table>

@@ -74,6 +74,15 @@ const translations = {
             errorChangingPassword: "Fehler beim Ändern des Passworts",
         },
         // ----------------------------------------------------------------------
+        // Company Settings
+        // ----------------------------------------------------------------------
+        companySettings: {
+            title: "Firmenparameter",
+            save: "Speichern",
+            saved: "Einstellungen gespeichert",
+            saveError: "Fehler beim Speichern"
+        },
+        // ----------------------------------------------------------------------
         // Admin Dashboard
         // ----------------------------------------------------------------------
         adminDashboard: {
@@ -157,6 +166,7 @@ const translations = {
             landlinePhone: "Festnetz (optional)",
             role: "Rolle",
             taxClass: "Steuerklasse",
+            department: "Abteilung",
             tarifCode: "Tarifcode",
             canton: "Kanton",
             civilStatus: "Zivilstand",
@@ -227,6 +237,7 @@ const translations = {
             schedulePlanner: "Dienstplan",
             knowledge: "Dokumente",
             payments: "Zahlungen",
+            companySettings: "Firmeneinstellungen",
             myDashboard: "Mein Dashboard",
             chatbot: "Chatbot",
             profile: "Profil",
@@ -602,6 +613,8 @@ const translations = {
             saveLogo: "Logo speichern",
             logoSaved: "Logo gespeichert",
             logoSaveError: "Fehler beim Speichern",
+            employerContrib: "Arbeitgeberbeiträge",
+            employerTotal: "Summe",
             scheduleDay: "Automatisch am Tag",
             scheduleButton: "Planen",
             scheduleAll: "Automatische Abrechnung für alle aktivieren",
@@ -794,6 +807,15 @@ const translations = {
             errorChangingPassword: "Error changing password",
         },
         // ----------------------------------------------------------------------
+        // Company Settings
+        // ----------------------------------------------------------------------
+        companySettings: {
+            title: "Company Parameters",
+            save: "Save",
+            saved: "Settings saved",
+            saveError: "Error saving settings"
+        },
+        // ----------------------------------------------------------------------
         // Admin Dashboard
         // ----------------------------------------------------------------------
         adminDashboard: {
@@ -876,6 +898,7 @@ const translations = {
             landlinePhone: "Landline (optional)",
             role: "Role",
             taxClass: "Tax Class",
+            department: "Department",
             tarifCode: "Tariff Code",
             canton: "Canton",
             civilStatus: "Civil Status",
@@ -945,6 +968,7 @@ const translations = {
             schedulePlanner: "Schedule",
             knowledge: "Documents",
             payments: "Payments",
+            companySettings: "Company settings",
             myDashboard: "My Dashboard",
             chatbot: "Chatbot",
             profile: "Profile",
@@ -1315,6 +1339,8 @@ const translations = {
             saveLogo: "Save logo",
             logoSaved: "Logo saved",
             logoSaveError: "Failed to save logo",
+            employerContrib: "Employer contributions",
+            employerTotal: "Total",
             scheduleDay: "Automatically on day",
             scheduleButton: "Schedule",
             scheduleAll: "Enable automatic payslips for all",

@@ -201,17 +201,19 @@ public class PayslipController {
     public ResponseEntity<String> exportCsv(@RequestParam(defaultValue = "en") String lang) {
         StringBuilder sb = new StringBuilder();
         if ("de".equalsIgnoreCase(lang)) {
-            sb.append("BenutzerID,Start,Ende,Brutto,Abzuege,Netto\n");
+            sb.append("BenutzerID,Start,Ende,Brutto,Abzuege,Netto,Waehrung\n");
         } else {
-            sb.append("userId,periodStart,periodEnd,gross,deductions,net\n");
+            sb.append("userId,periodStart,periodEnd,gross,deductions,net,currency\n");
         }
         payrollService.getAllPayslips().forEach(ps -> {
+            String currency = (ps.getUser() != null && "DE".equalsIgnoreCase(ps.getUser().getCountry())) ? "EUR" : "CHF";
             sb.append(ps.getUser().getId()).append(',')
               .append(ps.getPeriodStart()).append(',')
               .append(ps.getPeriodEnd()).append(',')
               .append(ps.getGrossSalary()).append(',')
               .append(ps.getDeductions()).append(',')
-              .append(ps.getNetSalary()).append('\n');
+              .append(ps.getNetSalary()).append(',')
+              .append(currency).append('\n');
         });
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.TEXT_PLAIN);

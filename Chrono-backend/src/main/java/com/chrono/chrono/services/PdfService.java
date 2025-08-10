@@ -32,6 +32,10 @@ public class PdfService {
             doc.open();
 
             boolean en = "en".equalsIgnoreCase(lang);
+            String currency = "CHF";
+            if (ps.getUser() != null && "DE".equalsIgnoreCase(ps.getUser().getCountry())) {
+                currency = "EUR";
+            }
             String titleText = en ? "Payslip" : "Lohnabrechnung";
             String employeeLabel = en ? "Employee" : "Mitarbeiter";
             String personnelLabel = en ? "Personnel no." : "Personalnummer";
@@ -70,6 +74,22 @@ public class PdfService {
             compTrans.put("Overtime", en ? "Overtime" : "Überstunden");
             compTrans.put("Tax", en ? "Tax" : "Steuer");
             compTrans.put("Social", en ? "Social" : "Sozialabgaben");
+            compTrans.put("Income tax", en ? "Income tax" : "Einkommensteuer");
+            compTrans.put("Solidarity surcharge", en ? "Solidarity surcharge" : "Solidaritätszuschlag");
+            compTrans.put("Church tax", en ? "Church tax" : "Kirchensteuer");
+            compTrans.put("Pension insurance", en ? "Pension insurance" : "Rentenversicherung");
+            compTrans.put("Health insurance", en ? "Health insurance" : "Krankenversicherung");
+            compTrans.put("Nursing insurance", en ? "Nursing insurance" : "Pflegeversicherung");
+            compTrans.put("Unemployment insurance", en ? "Unemployment insurance" : "Arbeitslosenversicherung");
+            compTrans.put("Insolvency levy", en ? "Insolvency levy" : "Insolvenzgeldumlage");
+            compTrans.put("AHV/IV/EO", "AHV/IV/EO");
+            compTrans.put("ALV", "ALV");
+            compTrans.put("BVG", "BVG");
+            compTrans.put("NBU", "NBU");
+            compTrans.put("KTG", "KTG");
+            compTrans.put("Withholding tax", en ? "Withholding tax" : "Quellensteuer");
+            compTrans.put("BU", "BU");
+            compTrans.put("FAK", "FAK");
 
 
             // ---- Header mit Firmenlogo und Firmendaten ----
@@ -218,7 +238,7 @@ public class PdfService {
                 }
                 earningsTable.addCell(cell(etype, normalFont, false));
                 earningsTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
-                earningsTable.addCell(cell("CHF", normalFont, false));
+                earningsTable.addCell(cell(currency, normalFont, false));
 
             }
             doc.add(earningsTable);
@@ -237,13 +257,37 @@ public class PdfService {
                 }
                 dedTable.addCell(cell(dtype, normalFont, false));
                 dedTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
-                dedTable.addCell(cell("CHF", normalFont, false));
+                dedTable.addCell(cell(currency, normalFont, false));
 
             }
             doc.add(dedTable);
             doc.add(new Paragraph(" "));
 
-            if (ps.getEmployerContributions() != null) {
+            if (ps.getEmployerContribList() != null && !ps.getEmployerContribList().isEmpty()) {
+                PdfPTable empTable = new PdfPTable(new float[]{4,2,2});
+                empTable.setWidthPercentage(70);
+                empTable.setSpacingAfter(10);
+                empTable.addCell(headerCell(employerHeader));
+                empTable.addCell(headerCell(amountHeader));
+                empTable.addCell(headerCell(currencyHeader));
+                for (var comp : ps.getEmployerContribList()) {
+                    String etype = comp.getType();
+                    if (!en && compTrans.containsKey(etype)) {
+                        etype = compTrans.get(etype);
+                    }
+                    empTable.addCell(cell(etype, normalFont, false));
+                    empTable.addCell(cell(String.format("%.2f", comp.getAmount()), normalFont, false));
+                    empTable.addCell(cell(currency, normalFont, false));
+                }
+                if (ps.getEmployerContributions() != null) {
+                    var bold = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
+                    empTable.addCell(cell(en ? "Total" : "Summe", bold, false));
+                    empTable.addCell(cell(String.format("%.2f", ps.getEmployerContributions()), bold, false));
+                    empTable.addCell(cell(currency, bold, false));
+                }
+                doc.add(empTable);
+                doc.add(new Paragraph(" "));
+            } else if (ps.getEmployerContributions() != null) {
                 PdfPTable empTable = new PdfPTable(new float[]{4,2,2});
                 empTable.setWidthPercentage(70);
                 empTable.setSpacingAfter(10);
@@ -251,9 +295,8 @@ public class PdfService {
                 empTable.addCell(headerCell(amountHeader));
                 empTable.addCell(headerCell(currencyHeader));
                 empTable.addCell(cell(pensionLabel, normalFont, false));
-
                 empTable.addCell(cell(String.format("%.2f", ps.getEmployerContributions()), normalFont, false));
-                empTable.addCell(cell("CHF", normalFont, false));
+                empTable.addCell(cell(currency, normalFont, false));
                 doc.add(empTable);
                 doc.add(new Paragraph(" "));
             }
@@ -270,13 +313,15 @@ public class PdfService {
                 PdfPTable saldoTable = new PdfPTable(2);
                 saldoTable.setWidthPercentage(55);
                 saldoTable.setSpacingAfter(8);
+                String overtimeUnit = en ? "hrs" : "Std.";
+                String vacationUnit = en ? "days" : "Tage";
                 if (overtimeMinutes != 0) {
                     saldoTable.addCell(cell(overtimeLabel, labelFont, true));
-                    saldoTable.addCell(cell(String.format("%.1f Std.", overtimeHours), normalFont, false));
+                    saldoTable.addCell(cell(String.format("%.1f %s", overtimeHours, overtimeUnit), normalFont, false));
                 }
                 if (vacationDays > 0) {
                     saldoTable.addCell(cell(vacationLabel, labelFont, true));
-                    saldoTable.addCell(cell(String.format("%.1f Tage", vacationDays), normalFont, false));
+                    saldoTable.addCell(cell(String.format("%.1f %s", vacationDays, vacationUnit), normalFont, false));
                 }
                 doc.add(saldoTable);
             }
@@ -292,15 +337,15 @@ public class PdfService {
 
             totals.addCell(cell(grossLabel, normalFont, false));
             totals.addCell(cell(String.format("%.2f", ps.getGrossSalary()), normalFont, false));
-            totals.addCell(cell("CHF", normalFont, false));
+            totals.addCell(cell(currency, normalFont, false));
 
             totals.addCell(cell(deductionsLabel, normalFont, false));
             totals.addCell(cell(String.format("%.2f", ps.getDeductions()), normalFont, false));
-            totals.addCell(cell("CHF", normalFont, false));
+            totals.addCell(cell(currency, normalFont, false));
 
             totals.addCell(cell(netLabel, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
             totals.addCell(cell(String.format("%.2f", ps.getNetSalary()), FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
-            totals.addCell(cell("CHF", FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
+            totals.addCell(cell(currency, FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11), false));
 
 
             doc.add(totals);

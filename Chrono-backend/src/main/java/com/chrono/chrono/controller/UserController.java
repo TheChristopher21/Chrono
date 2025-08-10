@@ -57,6 +57,7 @@ public class UserController {
         if (dto.getFirstName() != null) user.setFirstName(dto.getFirstName());
         if (dto.getLastName() != null) user.setLastName(dto.getLastName());
         if (dto.getAddress() != null) user.setAddress(dto.getAddress());
+        if (dto.getDepartment() != null) user.setDepartment(dto.getDepartment());
         if (dto.getBirthDate() != null) user.setBirthDate(dto.getBirthDate());
         if (dto.getEntryDate() != null) user.setEntryDate(dto.getEntryDate());
         if (dto.getCountry() != null) user.setCountry(dto.getCountry());
@@ -104,6 +105,7 @@ public class UserController {
         dto.setFirstName(user.getFirstName());
         dto.setLastName(user.getLastName());
         dto.setAddress(user.getAddress());
+        dto.setDepartment(user.getDepartment());
         dto.setBirthDate(user.getBirthDate());
         dto.setEntryDate(user.getEntryDate());
         dto.setCountry(user.getCountry());

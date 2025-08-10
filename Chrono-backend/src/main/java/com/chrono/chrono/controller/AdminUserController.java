@@ -142,6 +142,7 @@ public class AdminUserController {
         newUser.setFirstName(userDTO.getFirstName());
         newUser.setLastName(userDTO.getLastName());
         newUser.setAddress(userDTO.getAddress());
+        newUser.setDepartment(userDTO.getDepartment());
         newUser.setBirthDate(userDTO.getBirthDate());
         newUser.setEntryDate(userDTO.getEntryDate());
         newUser.setCountry(userDTO.getCountry());
@@ -336,6 +337,7 @@ public class AdminUserController {
         existingUser.setFirstName(userDTO.getFirstName());
         existingUser.setLastName(userDTO.getLastName());
         existingUser.setAddress(userDTO.getAddress());
+        existingUser.setDepartment(userDTO.getDepartment());
         existingUser.setBirthDate(userDTO.getBirthDate());
         existingUser.setEntryDate(userDTO.getEntryDate());
         existingUser.setCountry(userDTO.getCountry());

@@ -35,6 +35,10 @@ public class Payslip {
     @CollectionTable(name = "payslip_deductions", joinColumns = @JoinColumn(name = "payslip_id"))
     private List<PayComponent> deductionsList = new ArrayList<>();
 
+    @ElementCollection
+    @CollectionTable(name = "payslip_employer_contribs", joinColumns = @JoinColumn(name = "payslip_id"))
+    private List<PayComponent> employerContribList = new ArrayList<>();
+
     private Double employerContributions;
     private LocalDate payoutDate;
 
@@ -91,6 +95,9 @@ public class Payslip {
 
     public List<PayComponent> getDeductionsList() { return deductionsList; }
     public void setDeductionsList(List<PayComponent> deductionsList) { this.deductionsList = deductionsList; }
+
+    public List<PayComponent> getEmployerContribList() { return employerContribList; }
+    public void setEmployerContribList(List<PayComponent> employerContribList) { this.employerContribList = employerContribList; }
 
     public Double getEmployerContributions() { return employerContributions; }
     public void setEmployerContributions(Double employerContributions) { this.employerContributions = employerContributions; }
