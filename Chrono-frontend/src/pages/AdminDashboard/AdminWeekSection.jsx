@@ -569,7 +569,9 @@ const AdminWeekSection = ({
                                                                     </div>
                                                                 );
                                                             } else if (!dailySummary || !dailySummary.entries || dailySummary.entries.length === 0) {
-                                                                let showNewEntryButton = expectedMinsToday > 0 || (userData.userConfig.isPercentage && (d.getDay() >= 1 && d.getDay() <= (userData.userConfig.expectedWorkDays || 5) )); // Zeige Button, wenn Soll oder potenzieller Arbeitstag für %
+                                                                let showNewEntryButton = expectedMinsToday > 0
+                                                                    || (userData.userConfig.isPercentage && (d.getDay() >= 1 && d.getDay() <= (userData.userConfig.expectedWorkDays || 5)))
+                                                                    || (userData.userConfig.isHourly && (d.getDay() >= 1 && d.getDay() <= 5)); // Zeige Button, wenn Soll oder potenzieller Arbeitstag für % oder Stundenlohn
                                                                 // Check against scheduleEffectiveDate
                                                                 const effectiveDate = userData.userConfig.scheduleEffectiveDate ? parseISO(userData.userConfig.scheduleEffectiveDate) : null;
                                                                 if (effectiveDate && d < effectiveDate) {
