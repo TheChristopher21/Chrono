@@ -235,6 +235,33 @@
   transition: all 0.2s ease;
 }
 
+.planner-header .header-actions {
+  display: flex;
+  gap: var(--ud-gap-sm);
+}
+
+.planner-header .button-print {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: transparent;
+  color: var(--ud-c-primary-text);
+  border: 1px solid var(--ud-c-border);
+  padding: 0.6rem 1.2rem;
+  font-weight: 500;
+  border-radius: var(--ud-radius-md);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.planner-header .button-print:hover {
+  background-color: var(--ud-c-primary-light-bg);
+  border-color: var(--ud-c-primary);
+  color: var(--ud-c-primary);
+  transform: translateY(-1px);
+  box-shadow: var(--ud-shadow-interactive);
+}
+
 .planner-header .button-settings:hover {
   background-color: var(--ud-c-primary-light-bg);
   border-color: var(--ud-c-primary);
