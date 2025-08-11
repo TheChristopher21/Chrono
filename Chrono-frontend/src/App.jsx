@@ -31,6 +31,7 @@ import AdminPayslipsPage from "./pages/AdminPayslipsPage.jsx";
 import AdminSchedulePlannerPage from "./pages/AdminSchedulePlanner/AdminSchedulePlannerPage.jsx";
 // NEU: Import der Seite für Schichtregeln
 import AdminShiftRulesPage from "./pages/AdminSchedulePlanner/AdminScheduleRulesPage.jsx";
+import PrintSchedule from "./pages/AdminSchedulePlanner/PrintSchedule.jsx";
 import AdminKnowledgePage from "./pages/AdminKnowledge/AdminKnowledgePage.jsx";
 import CompanyManagementPage from "./pages/CompanyManagementPage.jsx";
 import TimeTrackingImport from "./TimeTrackingImport.jsx";
@@ -80,6 +81,7 @@ function App() {
                         <Route path="/admin/company" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CompanyManagementPage /></PrivateRoute>} />
                         <Route path="/admin/payslips" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_PAYROLL_ADMIN"]}><AdminPayslipsPage /></PrivateRoute>} />
                         <Route path="/admin/schedule" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminSchedulePlannerPage /></PrivateRoute>} />
+                        <Route path="/admin/print-schedule" element={<PrivateRoute requiredRole="ROLE_ADMIN"><PrintSchedule /></PrivateRoute>} />
 
                         <Route path="/admin/knowledge" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminKnowledgePage /></PrivateRoute>} />
                         <Route path="/admin/company-settings" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CompanySettingsPage /></PrivateRoute>} />
