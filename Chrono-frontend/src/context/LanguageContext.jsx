@@ -72,6 +72,10 @@ const translations = {
             errorUpdating: "Fehler beim Aktualisieren des Profils",
             passwordChanged: "Passwort erfolgreich geändert",
             errorChangingPassword: "Fehler beim Ändern des Passworts",
+            calendarFeed: "Kalender-Feed",
+            calendarFeedInfo: "Nutze diese URL, um deinen Kalender zu abonnieren.",
+            copyLink: "Link kopieren",
+            linkCopied: "Link kopiert",
         },
         // ----------------------------------------------------------------------
         // Company Settings
@@ -805,6 +809,10 @@ const translations = {
             errorUpdating: "Error updating profile",
             passwordChanged: "Password changed successfully",
             errorChangingPassword: "Error changing password",
+            calendarFeed: "Calendar Feed",
+            calendarFeedInfo: "Use this URL to subscribe to your calendar.",
+            copyLink: "Copy link",
+            linkCopied: "Link copied",
         },
         // ----------------------------------------------------------------------
         // Company Settings
