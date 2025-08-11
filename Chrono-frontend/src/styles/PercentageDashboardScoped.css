@@ -638,3 +638,240 @@
   transform: none;
   box-shadow: none;
 }
+/* =========================================================================
+   FIXES · Percentage-Dashboard (Modals + Button-Kontrast Light)
+   Leg diese Block ANS ENDE von PercentageDashboardScoped.css
+   ========================================================================= */
+
+/* --- MODAL: Overlay + Content (global, auch wenn via Portal gerendert) --- */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background-color: rgba(17, 24, 39, 0.55); /* dunkles Overlay */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 9999;
+}
+
+/* Solide Karten-Optik wie im Dashboard – NICHT transparent */
+.modal-content {
+    background: #ffffff;                 /* Light */
+    color: #212529;
+    border: 1px solid #dee2e6;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+}
+
+/* Dark Theme Variante */
+[data-theme="dark"] .modal-content {
+    background: #1c1e2e;                 /* var(--ud-c-card) dark */
+    color: #e9ecef;
+    border: 1px solid #3a3f58;
+}
+
+/* Eingabezeilen im Korrektur-Modal sollen immer auf einer soliden Fläche sein */
+.modal-content .entry-row {
+    background-color: #f3f4f6;           /* Light: neutrale Fläche */
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+}
+[data-theme="dark"] .modal-content .entry-row {
+    background-color: #232539;           /* Dark: surface */
+    border-color: #3a3f58;
+}
+
+/* Inputs im Modal sicher kontrastreich */
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+    background-color: #ffffff;
+    color: #111827;
+    border: 1px solid #cbd5e1;
+}
+[data-theme="dark"] .modal-content input,
+[data-theme="dark"] .modal-content select,
+[data-theme="dark"] .modal-content textarea {
+    background-color: #232539;
+    color: #e5e7eb;
+    border-color: #3a3f58;
+}
+
+/* --- BUTTON-KONTRAST (Light Mode) für Weak-Buttons/Outlines --- */
+/* Woche-Navigation, Korrektur anfragen, Abbrechen in Notizen etc. */
+.percentage-dashboard.scoped-dashboard .button-secondary {
+    background: #f1f5f9;     /* Slate-100 */
+    color: #111827;          /* Fast schwarz -> sehr guter Kontrast */
+    border: 1px solid #cbd5e1;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+}
+.percentage-dashboard.scoped-dashboard .button-secondary:hover {
+    background: #e2e8f0;     /* Slate-200 */
+    border-color: #cbd5e1;
+}
+
+/* Outline-Variante gut lesbar im Light Mode */
+.percentage-dashboard.scoped-dashboard .button-primary-outline {
+    background: transparent;
+    color: var(--ud-c-primary-dim, #0056b3);
+    border: 1.5px solid var(--ud-c-primary, #007bff);
+}
+.percentage-dashboard.scoped-dashboard .button-primary-outline:hover {
+    background: var(--ud-c-primary-light-bg, rgba(0,123,255,0.08));
+}
+
+/* Notiz-Buttons (Speichern/Abbrechen) explizit mitziehen */
+.percentage-dashboard.scoped-dashboard .note-buttons .button-secondary {
+    background: #f1f5f9;
+    color: #111827;
+    border: 1px solid #cbd5e1;
+}
+.percentage-dashboard.scoped-dashboard .note-buttons .button-secondary:hover {
+    background: #e2e8f0;
+}
+
+/* Edit-Stift neben der Notiz */
+.percentage-dashboard.scoped-dashboard .button-edit-note {
+    color: var(--ud-c-text-muted, #6b7280);
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .button-edit-note {
+    color: #adb5bd;
+}
+
+/* Optional: Woche-Navigation Buttons leicht verstärken */
+.percentage-dashboard.scoped-dashboard .week-navigation .button-secondary {
+    font-weight: 500;
+}
+
+/* Für Konsistenz im Dark Mode (falls von globalen Styles überschrieben) */
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .button-secondary {
+    background: #2a2d40;     /* dark surface */
+    color: #e9ecef;
+    border: 1px solid #3a3f58;
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .button-secondary:hover {
+    background: #323651;
+}
+/* ===== LIGHT MODE · HARTE OVERRIDES FÜR LESBARKEIT (Percentage only) ===== */
+
+/* Sekundär-Buttons: ← Vorige Woche, Nächste Woche →, "Korrektur anfragen",
+   sowie "Abbrechen" in den Tagesnotizen */
+.percentage-dashboard.scoped-dashboard .week-navigation .button-secondary,
+.percentage-dashboard.scoped-dashboard .note-buttons .button-secondary,
+.percentage-dashboard.scoped-dashboard .correction-button-row .button-secondary {
+    background: #f1f5f9 !important; /* helles Grau */
+    color: #0f172a !important;       /* fast Schwarz */
+    border: 1px solid #cbd5e1 !important;
+    box-shadow: 0 1px 0 rgba(0,0,0,0.02) !important;
+}
+.percentage-dashboard.scoped-dashboard .week-navigation .button-secondary:hover,
+.percentage-dashboard.scoped-dashboard .note-buttons .button-secondary:hover,
+.percentage-dashboard.scoped-dashboard .correction-button-row .button-secondary:hover {
+    background: #e2e8f0 !important;
+}
+
+/* Outline-Variante: "Kunden & Zeiten bearbeiten" etc. */
+.percentage-dashboard.scoped-dashboard .button-primary-outline {
+    background: transparent !important;
+    color: #0b5ed7 !important;
+    border: 1.5px solid #0b5ed7 !important;
+}
+.percentage-dashboard.scoped-dashboard .button-primary-outline:hover {
+    background: rgba(13,110,253,0.08) !important;
+}
+
+/* Sicherstellen, dass Modals im Light-Mode nicht transparent wirken */
+.modal-content {
+    background: #ffffff !important;
+    color: #212529 !important;
+    border: 1px solid #dee2e6 !important;
+}
+.modal-content .entry-row {
+    background-color: #f3f4f6 !important;
+    border-color: #e5e7eb !important;
+}
+/* ===========================
+   PERCENTAGE · LIGHT CONTRAST
+   =========================== */
+
+/* 1) Grundtext im Percentage-Bereich deutlich dunkler */
+.percentage-dashboard.scoped-dashboard,
+.percentage-dashboard.scoped-dashboard .content-section,
+.percentage-dashboard.scoped-dashboard .section-title,
+.percentage-dashboard.scoped-dashboard .summary-label,
+.percentage-dashboard.scoped-dashboard .summary-value,
+.percentage-dashboard.scoped-dashboard .daily-summary-times,
+.percentage-dashboard.scoped-dashboard .time-entry-list,
+.percentage-dashboard.scoped-dashboard .entry-label,
+.percentage-dashboard.scoped-dashboard .entry-time,
+.percentage-dashboard.scoped-dashboard .note-content {
+    color: #0f172a !important; /* sehr dunkles Blau/Schwarz */
+}
+
+/* 2) Platzhalter/„Keine Einträge“ gut lesbar auf hellgrau */
+.percentage-dashboard.scoped-dashboard .no-data-message,
+.percentage-dashboard.scoped-dashboard .no-entries,
+.percentage-dashboard.scoped-dashboard .time-entry-list .empty,
+.percentage-dashboard.scoped-dashboard .time-entry-list .placeholder {
+    color: #334155 !important;      /* Slate-700 */
+    background: #e5e7eb !important; /* helles Grau hinterlegt */
+}
+
+/* 3) Buttons (Woche ←/→, Korrektur anfragen, Abbrechen, Edit-Note) */
+.percentage-dashboard.scoped-dashboard .button-secondary {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 600 !important;
+}
+.percentage-dashboard.scoped-dashboard .button-secondary:hover {
+    background: #f8fafc !important;
+}
+
+/* Primärknopf (z. B. „Korrektur anfragen“ wenn aktiv) */
+.percentage-dashboard.scoped-dashboard .button-primary {
+    background: #2563eb !important;     /* kräftiges Blau */
+    color: #ffffff !important;
+    border: 1px solid #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+.percentage-dashboard.scoped-dashboard .button-primary:hover {
+    background: #1d4ed8 !important;
+}
+
+/* Outline-Variante (links in den Karten unten) */
+.percentage-dashboard.scoped-dashboard .button-primary-outline {
+    background: transparent !important;
+    color: #1d4ed8 !important;
+    border: 1.5px solid #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+.percentage-dashboard.scoped-dashboard .button-primary-outline:hover {
+    background: rgba(29,78,216,0.08) !important;
+}
+
+/* Disabled-Zustände nicht „ausgrauen“ – lesbar halten */
+.percentage-dashboard.scoped-dashboard .button-secondary:disabled,
+.percentage-dashboard.scoped-dashboard .button-primary:disabled,
+.percentage-dashboard.scoped-dashboard .button-primary-outline:disabled {
+    opacity: 1 !important;
+    color: #64748b !important;        /* Slate-500 (gut lesbar) */
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* 4) Wochennavigation explizit kräftig */
+.percentage-dashboard.scoped-dashboard .week-navigation .button-secondary {
+    font-weight: 700 !important;
+}
+
+/* 5) Modal-Flächen im Light-Mode nie transparent */
+.percentage-dashboard.scoped-dashboard .modal-content,
+.modal-content {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #dee2e6 !important;
+}
+.percentage-dashboard.scoped-dashboard .modal-content .entry-row,
+.modal-content .entry-row {
+    background-color: #f3f4f6 !important;
+    border-color: #e5e7eb !important;
+}

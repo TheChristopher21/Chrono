@@ -1,6 +1,7 @@
 // src/pages/HourlyDashboard/HourlyWeekOverview.jsx
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+import { useAuth } from '../../context/AuthContext.jsx';
 import {
     addDays,
     formatLocalDate,
@@ -42,9 +43,9 @@ const HourlyWeekOverview = ({
                                 // Diese Props müssten vom HourlyDashboard kommen, um Speichern & Benachrichtigungen zu ermöglichen:
                                 // notify,
                                 // fetchDataForUser,
-                                reloadData,
+                            reloadData,
                             }) => {
-
+    const { currentUser } = useAuth();
     const [editingNote, setEditingNote] = useState(null); // Speichert das Datum des Tages, dessen Notiz bearbeitet wird
     const [noteContent, setNoteContent] = useState('');   // Speichert den Inhalt der Notiz während der Bearbeitung
     const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
@@ -113,7 +114,7 @@ const HourlyWeekOverview = ({
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
-                {userProfile?.customerTrackingEnabled && (
+                {(userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled) && (
                     <>
                         <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                             <option value="">{t('noCustomer')}</option>

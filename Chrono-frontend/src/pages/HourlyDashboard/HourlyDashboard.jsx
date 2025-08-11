@@ -178,7 +178,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
     }, [fetchCurrentUser]);
 
     useEffect(() => {
-        const trackingEnabled = userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled;
+        const trackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
         if (trackingEnabled) {
             fetchCustomers();
             api.get('/api/customers/recent')

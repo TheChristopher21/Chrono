@@ -33,6 +33,8 @@ import PrintReportModal from "../../components/PrintReportModal.jsx";
 // Einheitliche Styles importieren
 import '../../styles/UserDashboardScoped.css';
 import '../../styles/HourlyDashboardScoped.css'; // Haupt-Design-Quelle
+import '../../styles/PercentageDashboardScoped.css'; // <— NEU: spezifische Fixes für Percentage
+
 
 const PercentageDashboard = () => {
     const { t } = useTranslation();
@@ -108,7 +110,7 @@ const PercentageDashboard = () => {
     }, [loadProfileAndInitialData]);
 
     useEffect(() => {
-        const trackingEnabled = userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled;
+        const trackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
         if (trackingEnabled) {
             fetchCustomers();
             api.get('/api/customers/recent')

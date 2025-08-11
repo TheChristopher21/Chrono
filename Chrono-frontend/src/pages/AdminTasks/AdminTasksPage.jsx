@@ -7,9 +7,9 @@ import { useProjects } from '../../context/ProjectContext';
 import { useTasks } from '../../context/TaskContext';
 
 // Importiere die zentralen, einheitlichen Dashboard-Styles
-import '../../styles/HourlyDashboardScoped.css';
 // Importiere die spezifischen Styles für diese Seite
-import '../../styles/AdminProjectsPageScoped.css';
+import '../../styles/AdminTasksPageScoped.css';
+
 
 const AdminTasksPage = () => {
   const { notify } = useNotification();

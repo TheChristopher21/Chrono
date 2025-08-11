@@ -646,3 +646,100 @@ li:last-child {
     grid-template-columns: 1fr;
   }
 }
+/* ===========================
+   USER · LIGHT MODE CONTRAST
+   =========================== */
+
+/* 1) Grundtext deutlich dunkler */
+.user-dashboard.scoped-dashboard,
+.user-dashboard.scoped-dashboard .content-section,
+.user-dashboard.scoped-dashboard .section-title,
+.user-dashboard.scoped-dashboard .summary-label,
+.user-dashboard.scoped-dashboard .summary-value,
+.user-dashboard.scoped-dashboard .daily-summary-times,
+.user-dashboard.scoped-dashboard .time-entry-list,
+.user-dashboard.scoped-dashboard .entry-label,
+.user-dashboard.scoped-dashboard .entry-time,
+.user-dashboard.scoped-dashboard .note-content {
+    color: #0f172a !important;
+}
+
+/* 2) Platzhalter/„Keine Einträge“ lesbar */
+.user-dashboard.scoped-dashboard .no-data-message,
+.user-dashboard.scoped-dashboard .no-entries,
+.user-dashboard.scoped-dashboard .time-entry-list .empty,
+.user-dashboard.scoped-dashboard .time-entry-list .placeholder {
+    color: #334155 !important;
+    background: #e5e7eb !important;
+}
+
+/* 3) Buttons (←/→ Woche, Korrektur anfragen, Abbrechen, Edit-Note) */
+.user-dashboard.scoped-dashboard .button-secondary {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 600 !important;
+}
+.user-dashboard.scoped-dashboard .button-secondary:hover {
+    background: #f8fafc !important;
+}
+
+.user-dashboard.scoped-dashboard .button-primary {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: 1px solid #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+.user-dashboard.scoped-dashboard .button-primary:hover {
+    background: #1d4ed8 !important;
+}
+
+/* Outline-Variante (z. B. in Karten unten) */
+.user-dashboard.scoped-dashboard .button-primary-outline {
+    background: transparent !important;
+    color: #1d4ed8 !important;
+    border: 1.5px solid #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+.user-dashboard.scoped-dashboard .button-primary-outline:hover {
+    background: rgba(29,78,216,0.08) !important;
+}
+
+/* Disabled klar lesbar lassen */
+.user-dashboard.scoped-dashboard .button-secondary:disabled,
+.user-dashboard.scoped-dashboard .button-primary:disabled,
+.user-dashboard.scoped-dashboard .button-primary-outline:disabled {
+    opacity: 1 !important;
+    color: #64748b !important;
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Wochennavigation explizit kräftig */
+.user-dashboard.scoped-dashboard .week-navigation .button-secondary {
+    font-weight: 700 !important;
+}
+
+/* 4) Modal nie transparent (Korrekturanfrage) */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background-color: rgba(17, 24, 39, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 9999;
+}
+
+.user-dashboard.scoped-dashboard .modal-content,
+.modal-content {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
+}
+.user-dashboard.scoped-dashboard .modal-content .entry-row,
+.modal-content .entry-row {
+    background-color: #f3f4f6 !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px;
+}

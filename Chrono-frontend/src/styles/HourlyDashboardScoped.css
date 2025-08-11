@@ -1256,3 +1256,100 @@
 .hourly-dashboard.scoped-dashboard.modal-overlay {
   background-color: var(--modal-backdrop-color, rgba(30, 30, 30, 0.6));
 }
+/* ===========================
+   HOURLY · LIGHT MODE CONTRAST
+   =========================== */
+
+/* 1) Grundtext kräftig */
+.hourly-dashboard.scoped-dashboard,
+.hourly-dashboard.scoped-dashboard .content-section,
+.hourly-dashboard.scoped-dashboard .section-title,
+.hourly-dashboard.scoped-dashboard .summary-label,
+.hourly-dashboard.scoped-dashboard .summary-value,
+.hourly-dashboard.scoped-dashboard .daily-summary-times,
+.hourly-dashboard.scoped-dashboard .time-entry-list,
+.hourly-dashboard.scoped-dashboard .entry-label,
+.hourly-dashboard.scoped-dashboard .entry-time,
+.hourly-dashboard.scoped-dashboard .daily-note-display .note-content {
+    color: #0f172a !important;
+}
+
+/* 2) Platzhalter/Leerflächen gut lesbar */
+.hourly-dashboard.scoped-dashboard .no-data-message,
+.hourly-dashboard.scoped-dashboard .no-entries,
+.hourly-dashboard.scoped-dashboard .time-entry-list .empty,
+.hourly-dashboard.scoped-dashboard .time-entry-list .placeholder {
+    color: #334155 !important;      /* Slate-700 */
+    background: #e5e7eb !important; /* helles Grau */
+}
+
+/* 3) Buttons (←/→ Woche, Korrektur anfragen, Abbrechen, Edit-Note) */
+.hourly-dashboard.scoped-dashboard .button-secondary {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: 600 !important;
+}
+.hourly-dashboard.scoped-dashboard .button-secondary:hover {
+    background: #f8fafc !important;
+}
+
+/* Primärknopf */
+.hourly-dashboard.scoped-dashboard .button-primary {
+    background: #2563eb !important;
+    color: #ffffff !important;
+    border: 1px solid #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+.hourly-dashboard.scoped-dashboard .button-primary:hover {
+    background: #1d4ed8 !important;
+}
+
+/* Outline */
+.hourly-dashboard.scoped-dashboard .button-primary-outline {
+    background: transparent !important;
+    color: #1d4ed8 !important;
+    border: 1.5px solid #1d4ed8 !important;
+    font-weight: 600 !important;
+}
+.hourly-dashboard.scoped-dashboard .button-primary-outline:hover {
+    background: rgba(29,78,216,0.08) !important;
+}
+
+/* Disabled-Zustände lesbar */
+.hourly-dashboard.scoped-dashboard .button-secondary:disabled,
+.hourly-dashboard.scoped-dashboard .button-primary:disabled,
+.hourly-dashboard.scoped-dashboard .button-primary-outline:disabled {
+    opacity: 1 !important;
+    color: #64748b !important;        /* Slate-500 */
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+}
+
+/* Wochen-Navigation betonen */
+.hourly-dashboard.scoped-dashboard .week-navigation .button-secondary {
+    font-weight: 700 !important;
+}
+
+/* 4) Modal im Light-Mode nie transparent */
+.modal-overlay {
+    position: fixed; inset: 0;
+    background-color: rgba(17, 24, 39, 0.55) !important; /* dunkles Overlay */
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    z-index: 10000;
+}
+.hourly-dashboard.scoped-dashboard .modal-content,
+.modal-content {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    border: 1px solid #dee2e6 !important;
+    border-radius: 16px;
+    box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+}
+.hourly-dashboard.scoped-dashboard .modal-content .entry-row,
+.modal-content .entry-row {
+    background: #f3f4f6 !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px;
+}

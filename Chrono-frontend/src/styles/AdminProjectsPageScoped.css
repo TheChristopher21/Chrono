@@ -1,200 +1,336 @@
 /* =========================================================================
-   AdminProjectsPageScoped.css (FINAL v3 - Select Field Fixed)
-   Scope: .admin-projects-page.scoped-dashboard, .admin-customers-page.scoped-dashboard
+   AdminProjectsPageScoped.css
+   Scope: .admin-projects-page.scoped-dashboard
+   Styling an Admin-Dashboard angelehnt (Light & Dark)
    ========================================================================= */
 
-/* --- 1. Eigene Theme-Variablen --- */
-.admin-projects-page.scoped-dashboard,
-.admin-customers-page.scoped-dashboard {
-  /* Light Theme Defaults */
-  --ud-c-bg: #f8f9fa;
-  --ud-c-card: #ffffff;
-  --ud-c-surface: #e9ecef;
-  --ud-c-border: #dee2e6;
-  --ud-c-line: #e2e8f0;
-  --ud-c-text: #212529;
-  --ud-c-text-muted: #6c757d;
-  --ud-c-primary: #007bff;
-  --ud-c-primary-dim: #0056b3;
-  --ud-c-primary-text: var(--ud-c-primary);
-  --ud-c-primary-light-bg: rgba(0, 123, 255, 0.1);
-  --ud-c-success: #28a745;
-  --ud-c-danger: #dc3545;
-  --ud-shadow-card: 0 10px 30px rgba(0, 0, 0, 0.07);
-  --ud-shadow-interactive: 0 6px 15px rgba(0, 123, 255, 0.15);
-  --ud-radius-lg: 18px;
-  --ud-radius-md: 12px;
-  --ud-gap-lg: 2rem;
-  --ud-gap-md: 1.25rem;
-  --ud-gap-sm: 0.75rem;
-  --ud-gap-xs: 0.5rem;
+/* ----------------------------- */
+/* 1) Theme Tokens (Light)       */
+/* ----------------------------- */
+.admin-projects-page.scoped-dashboard {
+    --pg-bg: #f7f8fb;
+    --pg-card: #ffffff;
+    --pg-surface: #eef1f6;
+    --pg-border: #e3e7ee;
+    --pg-line: #e6ebf3;
+
+    --pg-text: #111827;            /* etwas dunkler für Kontrast */
+    --pg-text-muted: #6b7280;
+
+    --pg-primary: #2563eb;         /* Blau */
+    --pg-primary-600: #1d4ed8;
+    --pg-primary-200t: rgba(37, 99, 235, 0.12);
+
+    --pg-success: #16a34a;
+    --pg-danger: #ef4444;
+
+    --pg-shadow-card: 0 10px 28px rgba(31, 41, 55, 0.06);
+    --pg-shadow-hover: 0 12px 32px rgba(37, 99, 235, 0.18);
+
+    --pg-radius-xl: 18px;
+    --pg-radius-lg: 14px;
+    --pg-radius-md: 10px;
+
+    --pg-gap-xl: 2.25rem;
+    --pg-gap-lg: 1.5rem;
+    --pg-gap-md: 1rem;
+    --pg-gap-sm: 0.625rem;
+
+    background: var(--pg-bg);
+    min-height: 100vh;
+    padding: var(--pg-gap-lg);
 }
 
-[data-theme="dark"] .admin-projects-page.scoped-dashboard,
-[data-theme="dark"] .admin-customers-page.scoped-dashboard {
-  /* Dark Theme Overrides */
-  --ud-c-bg: #0e101c;
-  --ud-c-card: #1c1e2e;
-  --ud-c-surface: #232539;
-  --ud-c-border: #3a3f58;
-  --ud-c-line: #2a2d40;
-  --ud-c-text: #e9ecef;
-  --ud-c-text-muted: #adb5bd;
-  --ud-c-primary: #4dabf7;
-  --ud-c-primary-dim: #3690f5;
-  --ud-c-primary-text: var(--ud-c-primary);
-  --ud-c-primary-light-bg: rgba(77, 171, 247, 0.15);
-  --ud-c-success: #51cf66;
-  --ud-c-danger: #ff6b6b;
-  --ud-shadow-card: 0 10px 35px rgba(0, 0, 0, 0.25);
-  --ud-shadow-interactive: 0 8px 20px rgba(77, 171, 247, 0.2);
+/* ----------------------------- */
+/* 2) Theme Tokens (Dark)        */
+/* ----------------------------- */
+[data-theme="dark"] .admin-projects-page.scoped-dashboard {
+    --pg-bg: #0e1017;
+    --pg-card: #141826;
+    --pg-surface: #1b2134;
+    --pg-border: #2a3147;
+    --pg-line: #242b40;
+
+    --pg-text: #e6eaf2;
+    --pg-text-muted: #aab2c5;
+
+    --pg-primary: #5aa3ff;
+    --pg-primary-600: #3a88f6;
+    --pg-primary-200t: rgba(90, 163, 255, 0.16);
+
+    --pg-success: #41d18a;
+    --pg-danger: #ff6b6b;
+
+    --pg-shadow-card: 0 12px 36px rgba(0, 0, 0, 0.28);
+    --pg-shadow-hover: 0 12px 34px rgba(90, 163, 255, 0.22);
 }
 
-/* --- 2. Spezifisches Seiten-Layout --- */
+/* ----------------------------- */
+/* 3) Header & Sections          */
+/* ----------------------------- */
+.admin-projects-page .dashboard-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--pg-gap-md);
+    margin: 0 0 var(--pg-gap-lg);
+}
+
+.admin-projects-page .dashboard-header h1 {
+    margin: 0;
+    font-size: clamp(1.25rem, 2vw, 1.6rem);
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: var(--pg-text);
+}
+
+.admin-projects-page .content-section {
+    background: var(--pg-card);
+    border: 1px solid var(--pg-border);
+    border-radius: var(--pg-radius-xl);
+    padding: var(--pg-gap-lg);
+    box-shadow: var(--pg-shadow-card);
+    margin-bottom: var(--pg-gap-lg);
+}
+
+.admin-projects-page .section-title {
+    margin: 0 0 var(--pg-gap-md);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--pg-text);
+}
+
+/* ----------------------------- */
+/* 4) Forms (create / edit)      */
+/* ----------------------------- */
 .admin-projects-page .create-form,
-.admin-customers-page .create-form {
-  display: grid;
-  grid-template-columns: 2fr 1fr auto;
-  gap: var(--ud-gap-md);
-  align-items: center;
-  max-width: 800px;
+.admin-projects-page .edit-form {
+    display: grid;
+    grid-template-columns: 2fr 1.4fr 1fr auto;
+    gap: var(--pg-gap-md);
+    align-items: center;
 }
 
-/* KORREKTUR: Styling für Select-Felder hinzugefügt */
-.admin-projects-page select,
-.admin-customers-page select {
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  background-repeat: no-repeat;
-  background-position: right var(--ud-gap-md) center;
-  background-size: 12px 8px;
-  padding-right: calc(var(--ud-gap-md) + 1.5rem);
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59L6 5.17L10.59.59L12 2L6 8L0 2L1.41.59Z' fill='%236B7280'/%3E%3C/svg%3E");
+@media (max-width: 960px) {
+    .admin-projects-page .create-form,
+    .admin-projects-page .edit-form {
+        grid-template-columns: 1fr;
+    }
 }
 
-
-.admin-projects-page .item-list-container,
-.admin-customers-page .item-list-container {
-  max-height: 60vh;
-  overflow-y: auto;
-  padding-right: var(--ud-gap-sm);
+.admin-projects-page input,
+.admin-projects-page select {
+    width: 100%;
+    height: 44px;
+    border-radius: var(--pg-radius-md);
+    border: 1px solid var(--pg-border);
+    background: var(--pg-surface);
+    color: var(--pg-text);
+    padding: 0 0.95rem;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.05s ease;
 }
 
-.admin-projects-page .item-list,
-.admin-customers-page .item-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--ud-gap-md);
+.admin-projects-page input:hover,
+.admin-projects-page select:hover {
+    transform: translateY(-0.5px);
 }
 
-.admin-projects-page .list-item,
-.admin-customers-page .list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: var(--ud-gap-md);
-  padding: var(--ud-gap-md) var(--ud-gap-lg);
-  background-color: var(--ud-c-surface);
-  border: 1px solid var(--ud-c-border);
-  border-radius: var(--ud-radius-lg);
-  transition: all 0.2s ease-in-out;
+.admin-projects-page input:focus,
+.admin-projects-page select:focus {
+    border-color: var(--pg-primary);
+    box-shadow: 0 0 0 4px var(--pg-primary-200t);
 }
 
-.admin-projects-page .list-item:hover,
-.admin-customers-page .list-item:hover {
-  border-color: var(--ud-c-primary);
-  transform: translateY(-2px);
-  box-shadow: var(--ud-shadow-interactive);
+/* Custom select arrow */
+.admin-projects-page select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59 6 5.17 10.59.59 12 2 6 8 0 2 1.41.59Z' fill='%236b7280'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 0.85rem center;
+    background-size: 12px 8px;
+    padding-right: 2.2rem;
+}
+[data-theme="dark"] .admin-projects-page select {
+    background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59 6 5.17 10.59.59 12 2 6 8 0 2 1.41.59Z' fill='%23aab2c5'/%3E%3C/svg%3E");
 }
 
-.admin-projects-page .item-details,
-.admin-customers-page .item-details {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ud-gap-xs);
-  flex-grow: 1;
+/* ----------------------------- */
+/* 5) Buttons                    */
+/* ----------------------------- */
+.admin-projects-page .button-primary,
+.admin-projects-page .button-secondary,
+.admin-projects-page .button-danger {
+    height: 44px;
+    border: 1px solid transparent;
+    border-radius: var(--pg-radius-md);
+    padding: 0 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.05s ease, box-shadow 0.2s ease, background 0.2s ease, border 0.2s ease;
+    white-space: nowrap;
 }
 
-.admin-projects-page .item-name,
-.admin-customers-page .item-name {
-  font-weight: 600;
-  font-size: 1.05rem;
-  color: var(--ud-c-text);
+.admin-projects-page .button-primary {
+    background: var(--pg-primary);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(37, 99, 235, 0.18);
+}
+.admin-projects-page .button-primary:hover {
+    background: var(--pg-primary-600);
+    box-shadow: var(--pg-shadow-hover);
+    transform: translateY(-1px);
+}
+
+.admin-projects-page .button-secondary {
+    background: transparent;
+    color: var(--pg-text);
+    border-color: var(--pg-border);
+}
+.admin-projects-page .button-secondary:hover {
+    border-color: var(--pg-primary);
+    box-shadow: 0 6px 18px var(--pg-primary-200t);
+    transform: translateY(-1px);
+}
+
+.admin-projects-page .button-danger {
+    background: var(--pg-danger);
+    color: #fff;
+    box-shadow: 0 6px 18px rgba(239, 68, 68, 0.18);
+}
+.admin-projects-page .button-danger:hover {
+    filter: brightness(0.95);
+    transform: translateY(-1px);
+}
+
+/* ----------------------------- */
+/* 6) Liste / Items              */
+/* ----------------------------- */
+.admin-projects-page .item-list-container {
+    max-height: 60vh;
+    overflow: auto;
+    padding-right: 2px; /* Raum für Scrollbar */
+}
+
+.admin-projects-page .item-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: var(--pg-gap-md);
+}
+
+.admin-projects-page .list-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: center;
+    gap: var(--pg-gap-md);
+    padding: 1rem 1.25rem;
+    background: var(--pg-surface);
+    border: 1px solid var(--pg-border);
+    border-radius: var(--pg-radius-xl);
+    transition: transform 0.08s ease, box-shadow 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.admin-projects-page .list-item:hover {
+    border-color: var(--pg-primary);
+    box-shadow: var(--pg-shadow-hover);
+    transform: translateY(-1px);
+}
+
+.admin-projects-page .item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0; /* ellipsis support */
+}
+
+.admin-projects-page .item-name {
+    font-weight: 700;
+    color: var(--pg-text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .admin-projects-page .item-meta {
-  font-size: 0.85rem;
-  color: var(--ud-c-text-muted);
-  font-style: italic;
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.admin-projects-page .item-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.85rem;
+    color: var(--pg-text);
+    background: var(--pg-card);
+    border: 1px solid var(--pg-border);
+    padding: 0.25rem 0.55rem;
+    border-radius: 999px;
 }
 
 .admin-projects-page .item-actions,
-.admin-customers-page .item-actions {
-  display: flex;
-  gap: var(--ud-gap-sm);
-  flex-shrink: 0;
+.admin-projects-page .edit-form .form-actions {
+    display: inline-flex;
+    gap: var(--pg-gap-sm);
 }
 
-.admin-projects-page .edit-form,
-.admin-customers-page .edit-form {
-  display: grid;
-  grid-template-columns: 2fr 1fr auto;
-  gap: var(--ud-gap-md);
-  width: 100%;
-  align-items: center;
+@media (max-width: 720px) {
+    .admin-projects-page .list-item {
+        grid-template-columns: 1fr;
+    }
+    .admin-projects-page .item-actions {
+        justify-content: flex-end;
+    }
 }
 
-.admin-projects-page .edit-form .form-actions,
-.admin-customers-page .edit-form .form-actions {
-  display: flex;
-  gap: var(--ud-gap-sm);
+/* ----------------------------- */
+/* 7) Empty state                */
+/* ----------------------------- */
+.admin-projects-page .empty-state {
+    border: 1px dashed var(--pg-border);
+    border-radius: var(--pg-radius-lg);
+    background: var(--pg-surface);
+    padding: 1rem;
+    color: var(--pg-text-muted);
+}
+.admin-projects-page .empty-state h4 {
+    margin: 0 0 0.35rem;
+    color: var(--pg-text);
+    font-weight: 700;
 }
 
-/* Responsive Anpassungen */
-@media (max-width: 768px) {
-  .admin-projects-page .create-form,
-  .admin-projects-page .edit-form,
-  .admin-customers-page .create-form,
-  .admin-customers-page .edit-form {
-    grid-template-columns: 1fr;
-  }
-  .admin-projects-page .list-item,
-  .admin-customers-page .list-item {
-    flex-direction: column;
-    align-items: stretch;
-    padding: var(--ud-gap-md);
-  }
-  .admin-projects-page .item-actions,
-  .admin-projects-page .edit-form .form-actions,
-  .admin-customers-page .item-actions,
-  .admin-customers-page .edit-form .form-actions {
-    width: 100%;
-    justify-content: flex-end;
-    margin-top: var(--ud-gap-md);
-  }
+/* ----------------------------- */
+/* 8) Focus & A11y               */
+/* ----------------------------- */
+.admin-projects-page .button-primary:focus,
+.admin-projects-page .button-secondary:focus,
+.admin-projects-page .button-danger:focus,
+.admin-projects-page input:focus,
+.admin-projects-page select:focus {
+    outline: none;
+    box-shadow: 0 0 0 4px var(--pg-primary-200t);
 }
 
-/* =========================================================================
-   DARK MODE FIXES
-   ========================================================================= */
-
-[data-theme="dark"] .admin-projects-page .create-form input,
-[data-theme="dark"] .admin-projects-page .create-form select,
-[data-theme="dark"] .admin-projects-page .edit-form input,
-[data-theme="dark"] .admin-projects-page .edit-form select,
-[data-theme="dark"] .admin-customers-page .create-form input,
-[data-theme="dark"] .admin-customers-page .edit-form input {
-  background-color: var(--ud-c-surface);
-  color: var(--ud-c-text);
-  border-color: var(--ud-c-border);
+/* Screenreader-only labels */
+.admin-projects-page .sr-only {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
 }
 
-[data-theme="dark"] .admin-projects-page select,
-[data-theme="dark"] .admin-customers-page select {
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59L6 5.17L10.59.59L12 2L6 8L0 2L1.41.59Z' fill='%23adb5bd'/%3E%3C/svg%3E");
+/* Dünne Trennlinie – falls benötigt */
+.admin-projects-page .hr {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--pg-line), transparent);
+    border: 0;
+    margin: var(--pg-gap-md) 0;
 }

@@ -136,7 +136,6 @@ const Navbar = () => {
                                         <li><Link to={currentUser.isPercentage ? "/percentage-punch" : "/dashboard"}>{t('navbar.myDashboard', 'Mein Dashboard')}</Link></li>
                                         <li><Link to="/payslips">{t('navbar.payslips', 'Abrechnungen')}</Link></li>
                                         <li><Link to="/personal-data">{t('navbar.profile', 'Mein Profil')}</Link></li>
-                                        <li><Link to="/chat">{t('navbar.chatbot', 'Chatbot')}</Link></li>
                                     </>
                                 )}
                             </>)}

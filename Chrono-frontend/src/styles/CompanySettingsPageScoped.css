@@ -1,9 +1,204 @@
-.company-settings-card {
-  max-width: 500px;
-  margin: 20px auto;
+/* CompanySettingsPageScoped.css */
+/* Light/Dark Mode, orientiert am AdminDashboard-Design */
+
+.scoped-dashboard .company-settings-card {
+    /* Design-Variablen (Light) */
+    --c-pri: #475bff;
+    --c-pri-dim: #6b7cff;
+
+    --c-text: #1e1f22;
+    --c-text-light: #6b7180;
+    --c-muted: #595e6b;
+
+    --c-bg: #f4f6ff;
+    --c-card: #ffffff;
+    --c-surface: #f9fafb;
+    --c-border: #d5d8e5;
+    --c-line: #e7e8f1;
+
+    --c-success: #2ecc71;
+    --c-error: #ef4444;
+    --c-info: #3b82f6;
+
+    --u-radius: 14px;
+    --u-radius-md: 10px;
+    --u-radius-sm: 8px;
+    --u-gap: clamp(1rem, 2vw, 1.4rem);
+    --u-gap-sm: clamp(0.6rem, 1vw, 0.9rem);
+    --u-gap-xs: 0.35rem;
+
+    --u-shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    box-shadow: var(--u-shadow-md);
+    padding: calc(var(--u-gap) + 2px);
 }
-.company-settings-form .form-group {
-  display: flex;
-  flex-direction: column;
-  margin-bottom: 1rem;
+
+/* Dark Mode Variablen anpassen */
+[data-theme="dark"] .scoped-dashboard .company-settings-card {
+    --c-text: #e5e7ec;
+    --c-text-light: #a0a4b4;
+    --c-muted: #a0a4b4;
+
+    --c-bg: #15171c;
+    --c-card: #1f2127;
+    --c-surface: #252830;
+    --c-border: #373b46;
+    --c-line: #2c2f37;
+
+    --u-shadow-md: 0 8px 18px rgba(0,0,0,0.35);
+}
+
+/* Titel */
+.scoped-dashboard .company-settings-card h2 {
+    margin: 0 0 var(--u-gap);
+    font-size: clamp(1.4rem, 2.5vw, 1.7rem);
+    font-weight: 700;
+    color: var(--c-text);
+}
+
+/* Info-Kästen */
+.scoped-dashboard .company-settings-card .info-box {
+    background: var(--c-surface);
+    border: 1px solid var(--c-line);
+    border-radius: var(--u-radius-sm);
+    padding: var(--u-gap);
+    color: var(--c-text);
+    margin-bottom: var(--u-gap);
+    line-height: 1.5;
+}
+.scoped-dashboard .company-settings-card .info-box.subtle {
+    margin-top: var(--u-gap);
+    font-size: 0.9rem;
+    color: var(--c-text-light);
+}
+.scoped-dashboard .company-settings-card .info-box code {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: 6px;
+    padding: 0.12rem 0.35rem;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* Formular-Layout */
+.scoped-dashboard .company-settings-form {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--u-gap);
+    margin-bottom: var(--u-gap);
+}
+@media (min-width: 860px) {
+    .scoped-dashboard .company-settings-form {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.scoped-dashboard .company-settings-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: var(--u-gap-xs);
+}
+
+/* Labels + Badges */
+.scoped-dashboard .company-settings-form label {
+    font-weight: 600;
+    color: var(--c-text);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+.scoped-dashboard .company-settings-form .badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    padding: 0.12rem 0.45rem;
+    border-radius: 999px;
+    color: #fff;
+    background: var(--c-pri);
+}
+
+/* Erklärzeile unter dem Label */
+.scoped-dashboard .company-settings-form .hint {
+    color: var(--c-text-light);
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+/* Inputs */
+.scoped-dashboard .company-settings-form input[type="number"] {
+    appearance: textfield;
+}
+.scoped-dashboard .company-settings-form input::-webkit-outer-spin-button,
+.scoped-dashboard .company-settings-form input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.scoped-dashboard .company-settings-form input {
+    background: var(--c-card);
+    color: var(--c-text);
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    padding: 0.7rem 0.9rem;
+    font-size: 0.95rem;
+    transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
+}
+.scoped-dashboard .company-settings-form input::placeholder {
+    color: var(--c-text-light);
+}
+.scoped-dashboard .company-settings-form input:focus {
+    outline: none;
+    border-color: var(--c-pri);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-pri) 20%, transparent);
+}
+
+/* Live-Vorschau „= 1,25 %“ */
+.scoped-dashboard .company-settings-form .preview {
+    font-size: 0.85rem;
+    color: var(--c-text-light);
+}
+
+/* Fehlertext */
+.scoped-dashboard .company-settings-form .error {
+    color: var(--c-error);
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Speichern-Button */
+.scoped-dashboard .company-settings-card .primary-btn {
+    background: var(--c-pri);
+    color: #fff;
+    border: 1px solid var(--c-pri);
+    border-radius: 12px;
+    padding: 0.75rem 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s ease, transform .2s ease, border-color .2s ease;
+}
+.scoped-dashboard .company-settings-card .primary-btn:hover {
+    background: var(--c-pri-dim);
+    border-color: var(--c-pri-dim);
+    transform: translateY(-1px);
+}
+
+/* Status/Feedback unter dem Button */
+.scoped-dashboard .company-settings-card > p {
+    margin-top: 0.7rem;
+    color: var(--c-text-light);
+    font-size: 0.95rem;
+}
+
+/* Kleinere Screens: einspaltig, etwas dichter */
+@media (max-width: 520px) {
+    .scoped-dashboard .company-settings-card {
+        padding: var(--u-gap);
+    }
+    .scoped-dashboard .company-settings-form {
+        gap: var(--u-gap-sm);
+    }
 }

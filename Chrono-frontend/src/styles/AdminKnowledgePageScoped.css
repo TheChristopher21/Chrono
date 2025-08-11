@@ -1,69 +1,232 @@
 /* =========================================================================
-   AdminKnowledgePageScoped.css
+   AdminKnowledgePageScoped.css — Light & Dark (admin dashboard style)
    Scope: .admin-knowledge-page.scoped-dashboard
    ========================================================================= */
 
 .admin-knowledge-page.scoped-dashboard {
-  --ud-c-bg: #f8f9fa;
-  --ud-c-card: #ffffff;
-  --ud-c-surface: #e9ecef;
-  --ud-c-border: #dee2e6;
-  --ud-c-line: #e2e8f0;
-  --ud-c-text: #212529;
-  --ud-c-text-muted: #6c757d;
-  --ud-c-primary: #007bff;
-  --ud-c-danger: #dc3545;
-  --ud-shadow-card: 0 10px 30px rgba(0, 0, 0, 0.07);
-  --ud-radius-md: 12px;
-  --ud-gap-md: 1.25rem;
+    /* Light theme tokens */
+    --ud-bg: #f7f8fb;
+    --ud-card: #ffffff;
+    --ud-surface: #eef1f6;
+    --ud-border: #e5e8ef;
+    --ud-line: #e8ecf3;
+    --ud-text: #1f2532;
+    --ud-text-muted: #6b7280;
+
+    --ud-primary: #2563eb;            /* buttons, links */
+    --ud-primary-weak: #e8f0ff;       /* subtle bg */
+    --ud-primary-hover: #1e4fd6;
+
+    --ud-danger: #e11d48;
+    --ud-danger-hover: #c0123a;
+
+    --ud-success: #059669;
+
+    --ud-shadow-card: 0 12px 40px rgba(0, 0, 0, 0.06);
+    --ud-radius: 14px;
+    --ud-pad: 1rem;
+    --ud-gap: 1.1rem;
+    --ud-ring: 0 0 0 3px rgba(37, 99, 235, 0.25);
+
+    background: linear-gradient(180deg, var(--ud-surface), var(--ud-bg));
+    min-height: 100vh;
 }
 
+/* Dark mode overrides */
 [data-theme="dark"] .admin-knowledge-page.scoped-dashboard {
-  --ud-c-bg: #0e101c;
-  --ud-c-card: #1c1e2e;
-  --ud-c-surface: #232539;
-  --ud-c-border: #3a3f58;
-  --ud-c-line: #2a2d40;
-  --ud-c-text: #e9ecef;
-  --ud-c-text-muted: #adb5bd;
-  --ud-c-primary: #4dabf7;
-  --ud-c-danger: #ff6b6b;
-  --ud-shadow-card: 0 10px 35px rgba(0, 0, 0, 0.25);
+    --ud-bg: #0e101c;
+    --ud-card: #16192a;
+    --ud-surface: #121427;
+    --ud-border: #262b42;
+    --ud-line: #1c2140;
+    --ud-text: #e9edf7;
+    --ud-text-muted: #9aa3b2;
+
+    --ud-primary: #4f8cff;
+    --ud-primary-weak: #152143;
+    --ud-primary-hover: #3f79ee;
+
+    --ud-danger: #ff5a7a;
+    --ud-danger-hover: #e74a69;
+
+    --ud-success: #21c086;
+
+    --ud-shadow-card: 0 16px 45px rgba(0, 0, 0, 0.35);
 }
 
+/* Page header */
+.admin-knowledge-page .dashboard-header {
+    padding: calc(var(--ud-pad) * 1.25) calc(var(--ud-pad) * 1.5);
+    margin: 0 auto calc(var(--ud-pad) * 1.25);
+    max-width: 1100px;
+}
+.admin-knowledge-page .dashboard-header h1 {
+    margin: 0;
+    font-size: clamp(1.25rem, 1.8vw, 1.6rem);
+    font-weight: 700;
+    letter-spacing: 0.2px;
+    color: var(--ud-text);
+}
+
+/* Sections */
+.admin-knowledge-page .content-section {
+    max-width: 1100px;
+    margin: 0 auto calc(var(--ud-pad) * 1.25);
+    background: var(--ud-card);
+    border: 1px solid var(--ud-border);
+    border-radius: var(--ud-radius);
+    box-shadow: var(--ud-shadow-card);
+    padding: calc(var(--ud-pad) * 1.25);
+}
+
+.admin-knowledge-page .section-title {
+    margin: 0 0 var(--ud-gap);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--ud-text);
+}
+
+/* Create form */
 .admin-knowledge-page .create-form {
-  display: grid;
-  grid-template-columns: 2fr 1fr auto;
-  gap: var(--ud-gap-md);
-  align-items: center;
-  max-width: 800px;
-  margin-bottom: var(--ud-gap-md);
+    display: grid;
+    grid-template-columns: minmax(200px, 1.6fr) minmax(140px, 0.8fr) auto;
+    gap: var(--ud-gap);
+    align-items: center;
+    margin-bottom: var(--ud-gap);
 }
 
+.admin-knowledge-page .create-form input[type="text"],
+.admin-knowledge-page textarea.content-input,
+.admin-knowledge-page .create-form select {
+    width: 100%;
+    border: 1px solid var(--ud-border);
+    background: var(--ud-card);
+    color: var(--ud-text);
+    border-radius: 12px;
+    padding: 0.75rem 0.85rem;
+    outline: none;
+    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+
+.admin-knowledge-page .create-form input[type="text"]:focus,
+.admin-knowledge-page textarea.content-input:focus,
+.admin-knowledge-page .create-form select:focus {
+    border-color: var(--ud-primary);
+    box-shadow: var(--ud-ring);
+}
+
+.admin-knowledge-page .create-form select {
+    appearance: none;
+    background-image:
+            linear-gradient(45deg, transparent 50%, currentColor 50%),
+            linear-gradient(135deg, currentColor 50%, transparent 50%);
+    background-position:
+            calc(100% - 18px) calc(50% - 3px),
+            calc(100% - 12px) calc(50% - 3px);
+    background-size: 6px 6px, 6px 6px;
+    background-repeat: no-repeat;
+    color: var(--ud-text);
+}
+
+/* Content textarea */
 .admin-knowledge-page textarea.content-input {
-  width: 100%;
-  max-width: 800px;
-  margin-top: var(--ud-gap-md);
+    min-height: 180px;
+    resize: vertical;
+    margin-top: var(--ud-gap);
 }
 
+/* Buttons */
+.admin-knowledge-page .button-primary,
+.admin-knowledge-page .item-actions .button-danger {
+    appearance: none;
+    border: 0;
+    border-radius: 12px;
+    padding: 0.7rem 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform .06s ease, filter .2s ease, background .2s ease;
+    will-change: transform;
+}
+
+.admin-knowledge-page .button-primary {
+    background: var(--ud-primary);
+    color: #fff;
+}
+.admin-knowledge-page .button-primary:hover { background: var(--ud-primary-hover); }
+.admin-knowledge-page .button-primary:active { transform: translateY(1px); }
+
+.admin-knowledge-page .item-actions .button-danger {
+    background: var(--ud-danger);
+    color: #fff;
+}
+.admin-knowledge-page .item-actions .button-danger:hover { background: var(--ud-danger-hover); }
+.admin-knowledge-page .item-actions .button-danger:active { transform: translateY(1px); }
+
+/* List */
 .admin-knowledge-page .item-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: var(--ud-gap);
 }
 
 .admin-knowledge-page .list-item {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: var(--ud-gap-md);
-  background: var(--ud-c-card);
-  border: 1px solid var(--ud-c-border);
-  border-radius: var(--ud-radius-md);
-  box-shadow: var(--ud-shadow-card);
-  margin-bottom: var(--ud-gap-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--ud-gap);
+    padding: calc(var(--ud-pad) * 0.9) var(--ud-pad);
+    background: var(--ud-card);
+    border: 1px solid var(--ud-border);
+    border-radius: 12px;
+    box-shadow: var(--ud-shadow-card);
 }
 
-.admin-knowledge-page .item-actions button {
-  margin-left: var(--ud-gap-md);
+.admin-knowledge-page .item-details {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+}
+
+.admin-knowledge-page .item-name {
+    font-weight: 600;
+    color: var(--ud-text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.admin-knowledge-page .item-meta {
+    font-size: 0.85rem;
+    color: var(--ud-text-muted);
+    background: var(--ud-primary-weak);
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+}
+
+/* Actions */
+.admin-knowledge-page .item-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+/* Subtle separators within sections */
+.admin-knowledge-page .item-list-container {
+    border-top: 1px dashed var(--ud-line);
+    padding-top: var(--ud-gap);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .admin-knowledge-page .create-form {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+    .admin-knowledge-page .item-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
 }

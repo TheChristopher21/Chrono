@@ -13,6 +13,7 @@ import {
 
 import '../../styles/HourlyDashboardScoped.css'; // Einheitliches Design verwenden
 import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
+import '../../styles/PercentageDashboardScoped.css';
 
 const PercentageWeekOverview = ({
                                     t,
@@ -62,7 +63,7 @@ const PercentageWeekOverview = ({
 
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
-                {(userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled) && (
+                {(userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled) && (
                     <div className="customer-project-selectors">
                         <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                             <option value="">{t('noCustomer')}</option>

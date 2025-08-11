@@ -136,7 +136,7 @@ function UserDashboard() {
     }, [loadProfileAndInitialData]);
 
     useEffect(() => {
-        const trackingEnabled = userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled;
+        const trackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
         if (trackingEnabled) {
             fetchCustomers();
             api.get('/api/customers/recent')
@@ -447,7 +447,7 @@ function UserDashboard() {
 
                     <div className="punch-section">
                         <h4>{t("manualPunchTitle")}</h4>
-                        {(userProfile?.customerTrackingEnabled ?? currentUser?.customerTrackingEnabled) && (
+                        {(userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled) && (
                             <>
                                 <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                                     <option value="">{t('noCustomer')}</option>
