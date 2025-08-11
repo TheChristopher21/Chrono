@@ -87,4 +87,12 @@ public class ReportController {
 
         return new ResponseEntity<>(ics, headers, HttpStatus.OK);
     }
+
+    @GetMapping("/timesheet/ics-feed/{username}")
+    public ResponseEntity<byte[]> icsFeed(@PathVariable String username) {
+        byte[] ics = reportService.generateIcsFeed(username);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/calendar"));
+        return new ResponseEntity<>(ics, headers, HttpStatus.OK);
+    }
 }

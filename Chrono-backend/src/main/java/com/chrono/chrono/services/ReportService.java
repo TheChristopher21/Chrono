@@ -287,4 +287,16 @@ public class ReportService {
         sb.append("END:VCALENDAR\r\n");
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
+
+    /**
+     * Convenience wrapper to generate an iCalendar feed for a user without
+     * specifying a date range. The feed covers a wide time span so that new
+     * entries will appear automatically when subscribed from external calendar
+     * applications.
+     */
+    public byte[] generateIcsFeed(String username) {
+        LocalDate start = LocalDate.now().minusYears(1);
+        LocalDate end = LocalDate.now().plusYears(1);
+        return generateIcs(username, start, end);
+    }
 }

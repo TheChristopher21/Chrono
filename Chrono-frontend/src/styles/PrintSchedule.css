@@ -15,8 +15,18 @@
   margin-bottom: var(--ud-gap-lg);
 }
 
+@page {
+  size: landscape;
+}
+
 @media print {
   .schedule-print-page .btnRow {
     display: none;
   }
+  .schedule-print-page .schedule-table {
+    width: 100%;
+    min-width: unset;
+    table-layout: fixed;
+  }
+
 }
