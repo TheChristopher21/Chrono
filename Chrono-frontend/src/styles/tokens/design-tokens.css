@@ -31,6 +31,8 @@
   --c-bg: #fff;
   --c-bg-surface: var(--brand-gray-100); /* Für Elemente auf dem BG */
   --c-bg-muted: var(--brand-gray-200);
+  --c-card: var(--c-bg-surface);
+  --modal-backdrop-color: rgba(0, 0, 0, 0.6);
 
   /* Rahmenfarben */
   --c-border: var(--brand-gray-300);
@@ -85,6 +87,8 @@
     --c-bg: #0d1117; /* Dunkler Hintergrund für die Seite */
     --c-bg-surface: #161b22; /* Etwas hellerer Hintergrund für Karten */
     --c-bg-muted: #21262d;
+    --c-card: var(--c-bg-surface);
+    --modal-backdrop-color: rgba(0, 0, 0, 0.6);
 
     /* Rahmenfarben */
     --c-border: #30363d;

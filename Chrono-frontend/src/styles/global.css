@@ -49,7 +49,20 @@ input, button, textarea, select {
   font: inherit;
   margin: 0;
   border-radius: var(--radius-sm);
-}/* src/styles/global.css -- am Ende hinzufügen */
+}
+
+/* Modal overlay defaults */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--modal-backdrop-color, rgba(0, 0, 0, 0.6));
+  z-index: 1000;
+}
+
+/* src/styles/global.css -- am Ende hinzufügen */
 
 [data-theme="dark"] body {
   --c-text: #e9ecef;
