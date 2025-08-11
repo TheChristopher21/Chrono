@@ -91,7 +91,6 @@ const Login = () => {
         const user = res.user || {}; // Fallback auf leeres Objekt, falls res.user undefiniert ist
         const roles = user.roles || [];
         const isPercentageUser = user.isPercentage || false;
-        const isHourlyUser = user.isHourly || false; // NEU: Direkte Prüfung
 
         /* optional redirect */
         const next = new URLSearchParams(location.search).get('next');
@@ -99,15 +98,13 @@ const Login = () => {
         if (next) {
             navigate(next, { replace: true });
         } else if (roles.includes('ROLE_SUPERADMIN')) {
-            navigate('/superadmin/companies', { replace: true });
+            navigate('/admin/company', { replace: true });
         } else if (roles.includes('ROLE_ADMIN')) {
-            navigate('/admin', { replace: true });
+            navigate('/admin/dashboard', { replace: true });
         } else if (isPercentageUser) {
             navigate('/percentage-punch', { replace: true });
-        } else if (isHourlyUser) { // NEU: Explizite Weiterleitung für Stundenlöhner
-            navigate('/user', { replace: true }); // Das UserDashboard rendert dann das HourlyDashboard
-        } else { // Standard-Benutzer
-            navigate('/user', { replace: true });
+        } else {
+            navigate('/dashboard', { replace: true });
         }
     };
 
