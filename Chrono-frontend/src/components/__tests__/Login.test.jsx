@@ -44,6 +44,6 @@ describe('Login', () => {
         await userEvent.click(screen.getByRole('button', { name: /Login/i }));
 
         expect(loginMock).toHaveBeenCalledWith('alice', 'secret');
-        expect(mockNavigate).toHaveBeenCalledWith('/user', { replace: true });
+        expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
     });
 });

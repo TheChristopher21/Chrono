@@ -113,7 +113,7 @@ const Navbar = () => {
                             {currentUser && (<>
                                 {/* Rollenspezifische Links */}
                                 {currentUser.roles?.includes('ROLE_SUPERADMIN') ? (
-                                    <li><Link to="/superadmin/companies">{t('navbar.companyManagement', 'Firmen')}</Link></li>
+                                    <li><Link to="/admin/company">{t('navbar.companyManagement', 'Firmen')}</Link></li>
                                 ) : currentUser.roles?.includes('ROLE_ADMIN') ? (
                                     <>
                                         <li><Link to="/admin/dashboard">{t('navbar.adminStart', 'Admin‑Start')}</Link></li>
