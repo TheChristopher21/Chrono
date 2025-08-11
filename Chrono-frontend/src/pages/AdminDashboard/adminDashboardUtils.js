@@ -318,8 +318,10 @@ export function getDetailedGlobalProblemIndicators(
 
         if (isPotentiallyWorkDay && !vacationToday && !sickToday) {
             if (!summary || summary.entries.length === 0) {
-                indicators.missingEntriesCount++;
-                indicators.problematicDays.push({ dateIso: isoDate, type: 'missing' });
+                if (!userConfig.isPercentage) {
+                    indicators.missingEntriesCount++;
+                    indicators.problematicDays.push({ dateIso: isoDate, type: 'missing' });
+                }
             } else {
                 if (summary.primaryTimes.isOpen) {
                     indicators.incompleteDaysCount++;
