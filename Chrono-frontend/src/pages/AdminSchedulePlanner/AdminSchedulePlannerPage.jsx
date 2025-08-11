@@ -99,7 +99,6 @@ const WeekNavigator = ({ onAutoFill, onCopyWeek, onPasteWeek }) => {
         </div>
         <div className="tools-group">
           <input type="date" value={format(weekStart, 'yyyy-MM-dd')} onChange={(e) => setWeekStart(new Date(e.target.value))} />
-          <button onClick={() => window.print()} className="button-print">{t('schedulePlanner.print', 'Drucken')}</button>
           <button onClick={onCopyWeek} className="button-copy">Woche kopieren</button>
           {copiedWeek && <button onClick={onPasteWeek} className="button-paste">Einfügen</button>}
           <button onClick={onAutoFill} className="button-autofill">Automatisch auffüllen</button>

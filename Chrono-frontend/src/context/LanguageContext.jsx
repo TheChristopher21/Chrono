@@ -635,7 +635,6 @@ const translations = {
             prevWeek: "Vorherige Woche",
             nextWeek: "Nächste Woche",
             copyWeeks: "Kopieren",
-            print: "Drucken",
             weekShort: "KW",
             userOnVacation: "Dieser Mitarbeiter ist an diesem Tag im Urlaub"
 
@@ -1362,7 +1361,6 @@ const translations = {
             prevWeek: "Prev Week",
             nextWeek: "Next Week",
             copyWeeks: "Copy",
-            print: "Print",
             weekShort: "Week",
             userOnVacation: "This employee is on vacation on this day"
 
