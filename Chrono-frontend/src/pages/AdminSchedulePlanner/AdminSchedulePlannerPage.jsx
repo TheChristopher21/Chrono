@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { create } from 'zustand';
 import { startOfWeek, addDays, formatISO, format, isSameDay, differenceInDays } from 'date-fns';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
 import '../../styles/AdminSchedulePlannerPageScooped.css';
@@ -264,6 +264,7 @@ const AdminSchedulePlannerPage = () => {
   const weekStart = usePlannerStore(state => state.weekStart);
   const copiedWeek = usePlannerStore(state => state.copiedWeek);
   const setCopiedWeek = usePlannerStore(state => state.setCopiedWeek);
+  const navigate = useNavigate();
 
   const queryClient = useQueryClient();
 
@@ -403,6 +404,13 @@ const AdminSchedulePlannerPage = () => {
     copyWeekMutation.mutate(newEntries);
   };
 
+  const handlePrintSchedule = () => {
+    const weeks = parseInt(prompt(t('schedulePlanner.printWeeksPrompt', 'Wie viele Wochen möchten Sie drucken?'), '1'), 10);
+    if (!weeks || weeks < 1) return;
+    const start = formatISO(weekStart, { representation: 'date' });
+    navigate(`/admin/print-schedule?start=${start}&weeks=${weeks}`);
+  };
+
   return (
       <>
         <Navbar />
@@ -411,10 +419,16 @@ const AdminSchedulePlannerPage = () => {
             <div className="planner-main">
               <div className="planner-header">
                 <h2 className="cmp-title">Dienstplan</h2>
-                <Link to="/admin/shift-rules" className="button-settings">
-                  <span role="img" aria-label="settings">⚙️</span>
-                  Schicht-Einstellungen
-                </Link>
+                <div className="header-actions">
+                  <Link to="/admin/shift-rules" className="button-settings">
+                    <span role="img" aria-label="settings">⚙️</span>
+                    Schicht-Einstellungen
+                  </Link>
+                  <button onClick={handlePrintSchedule} className="button-print">
+                    <span role="img" aria-label="print">🖨️</span>
+                    Drucken
+                  </button>
+                </div>
               </div>
               <WeekNavigator
                   onAutoFill={handleAutoFill}
