@@ -103,6 +103,16 @@ const PersonalDataPage = () => {
         }
     }
 
+    const baseUrl = api.defaults.baseURL.replace(/\/$/, "");
+    const icsUrl = currentUser
+        ? `${baseUrl}/api/report/timesheet/ics-feed/${currentUser.username}`
+        : '';
+
+    function handleCopyLink() {
+        navigator.clipboard.writeText(icsUrl);
+        notify(t("personalData.linkCopied", "Link kopiert"));
+    }
+
     return (
         <div className="personal-data-page scoped-personal-data">
             <Navbar />
@@ -242,12 +252,28 @@ const PersonalDataPage = () => {
                         {t("personalData.saveButton", "Speichern")}
                     </button>
                 </form>
-            </section>
+              </section>
 
-            <section className="password-change-section">
-                <h3>{t("personalData.changePassword", "Passwort ändern")}</h3>
-                <form onSubmit={handlePasswordChange} className="form-password">
-                    <div className="form-group">
+              <section className="calendar-feed-section">
+                  <h3>{t("personalData.calendarFeed", "Kalender-Feed")}</h3>
+                  <p>{t("personalData.calendarFeedInfo", "Nutze diese URL, um deinen Kalender zu abonnieren.")}</p>
+                  <div className="form-group">
+                      <input
+                          type="text"
+                          readOnly
+                          value={icsUrl}
+                          onFocus={(e) => e.target.select()}
+                      />
+                      <button type="button" onClick={handleCopyLink}>
+                          {t("personalData.copyLink", "Link kopieren")}
+                      </button>
+                  </div>
+              </section>
+
+              <section className="password-change-section">
+                  <h3>{t("personalData.changePassword", "Passwort ändern")}</h3>
+                  <form onSubmit={handlePasswordChange} className="form-password">
+                      <div className="form-group">
                         <label>
                             {t("personalData.currentPassword", "Aktuelles Passwort")}:
                         </label>
