@@ -338,14 +338,16 @@
 }
 
 .week-controls .button-copy,
-.week-controls .button-paste {
+.week-controls .button-paste,
+.week-controls .button-print {
   color: var(--ud-c-primary-text);
   background-color: transparent;
   border: 1px solid var(--ud-c-primary);
   transition: all 0.2s ease;
 }
 
-.week-controls .button-copy:hover {
+.week-controls .button-copy:hover,
+.week-controls .button-print:hover {
   background-color: var(--ud-c-primary-light-bg);
   transform: translateY(-1px);
 }
@@ -378,4 +380,11 @@
   .schedule-table th, .schedule-table td { min-width: 200px; }
   .week-controls { flex-direction: column; align-items: stretch; }
   .week-controls .navigation-group, .week-controls .tools-group { justify-content: space-between; width: 100%; }
+}
+
+@media print {
+  .week-controls,
+  .planner-sidebar {
+    display: none;
+  }
 }
