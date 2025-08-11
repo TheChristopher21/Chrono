@@ -1,0 +1,31 @@
+.schedule-print-page .btnRow {
+  margin-bottom: var(--ud-gap-lg);
+}
+
+.schedule-print-page .btnRow button {
+  background: var(--ud-c-primary);
+  color: #fff;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  border-radius: var(--ud-radius-md);
+  cursor: pointer;
+}
+
+.print-week {
+  margin-bottom: var(--ud-gap-lg);
+}
+
+@page {
+  size: landscape;
+}
+
+@media print {
+  .schedule-print-page .btnRow {
+    display: none;
+  }
+  .schedule-print-page .schedule-table {
+    width: 100%;
+    min-width: unset;
+    table-layout: fixed;
+  }
+}
