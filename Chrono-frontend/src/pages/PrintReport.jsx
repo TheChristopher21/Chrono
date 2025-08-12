@@ -53,11 +53,15 @@ export default function PrintReport() {
 
     const [reportData, setReportData] = useState([]);
     const [totals, setTotals] = useState({ work: 0, pause: 0 });
+    const [userProfile, setUserProfile] = useState(null);
 
-    useEffect(() => {
-        if (!username || !startDate || !endDate) return;
-        api.get("/api/timetracking/history", { params: { username } })
-            .then((res) => {
+useEffect(() => {
+    if (!username || !startDate || !endDate) return;
+    Promise.all([
+        api.get("/api/timetracking/history", { params: { username } }),
+        api.get(`/api/users/profile/${username}`)
+    ])
+        .then(([res, profileRes]) => {
                 const filtered = (res.data || [])
                     .filter((r) => r.date >= startDate && r.date <= endDate)
                     .sort((a, b) => a.date.localeCompare(b.date));
@@ -79,6 +83,7 @@ export default function PrintReport() {
 
                 setReportData(mapped);
                 setTotals({ work: totalWorkMinutes, pause: totalBreakMinutes });
+                setUserProfile(profileRes.data);
             })
             .catch((err) => console.error("Report-Fehler:", err));
     }, [username, startDate, endDate]);
@@ -101,6 +106,9 @@ export default function PrintReport() {
         doc.text(`für ${username}`, pageWidth / 2, yPos, { align: "center" });
         yPos += 6;
         doc.text(`Zeitraum: ${formatDate(startDate)} - ${formatDate(endDate)}`, pageWidth / 2, yPos, { align: "center" });
+        yPos += 6;
+        const overtimeStr = minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0);
+        doc.text(`${t('overtimeBalance')}: ${overtimeStr}`, pageWidth / 2, yPos, { align: "center" });
         yPos += 15;
 
         // Summary Box
@@ -202,6 +210,7 @@ export default function PrintReport() {
                 <h1>{t("printReport.title", "Zeitenbericht")}</h1>
                 <p>{t("printReport.userLabel", "User")}: {username}</p>
                 <p>{t("printReport.periodLabel", "Zeitraum")}: {formatDate(startDate)} – {formatDate(endDate)}</p>
+                <p>{t('overtimeBalance')}: {minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0)}</p>
             </header>
 
             <section className="report-summary">
