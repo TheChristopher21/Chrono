@@ -31,8 +31,6 @@ import CorrectionModal from '../../components/CorrectionModal';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 
 // Einheitliche Styles importieren
-import '../../styles/UserDashboardScoped.css';
-import '../../styles/HourlyDashboardScoped.css'; // Haupt-Design-Quelle
 import '../../styles/PercentageDashboardScoped.css'; // <— NEU: spezifische Fixes für Percentage
 
 

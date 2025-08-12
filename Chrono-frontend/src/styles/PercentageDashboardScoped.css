@@ -1,877 +1,333 @@
 /* =========================================================================
-   UnifiedDashboardStyles.css · V4.0 (Juli 2025) - Final Unified Version
-   Scope: Gilt für alle Dashboards und Admin-Seiten der App
+   PercentageDashboardScoped.css · Isoliert (nur .percentage-dashboard.scoped-dashboard)
+   Keine globalen Selektoren; Light & Dark via [data-theme="dark"].
    ========================================================================= */
 
-/* Basisvariablen für alle Dashboards */
-.user-dashboard.scoped-dashboard,
-.hourly-dashboard.scoped-dashboard,
-.percentage-dashboard.scoped-dashboard,
-.admin-customers-page.scoped-dashboard,
-.admin-projects-page.scoped-dashboard,
-.payslips-page.scoped-dashboard,
-.admin-payslips-page.scoped-dashboard,
-.schedule-planner-page.scoped-dashboard,
-.schedule-rules-page.scoped-dashboard { /* <--- DIESE ZEILE HINZUFÜGEN */
-  /* <--- DIESE ZEILE IST DIE KORREKTUR */
-  --ud-font-family: "Poppins", system-ui, sans-serif;
-  --ud-fz-base: 1rem;
-  --ud-fz-sm: 0.875rem;
-  --ud-fz-md: 1rem;
-  --ud-fz-lg: 1.125rem;
-  --ud-fz-xl: 1.5rem;
-  --ud-fz-xxl: 2.25rem;
-  --customer-color-saturation: 70%;
-  --customer-color-lightness: 90%;
-  --ud-radius-xl: 24px;
-  --ud-radius-lg: 18px;
-  --ud-radius-md: 12px;
-  --ud-radius-sm: 8px;
-  --ud-radius-xs: 5px;
-  --ud-gap-xl: 2.5rem;
-  --ud-gap-lg: 2rem;
-  --ud-gap-md: 1.25rem;
-  --ud-gap-sm: 0.75rem;
-  --ud-gap-xs: 0.5rem;
+/* ---------- Root / Tokens ---------- */
+.percentage-dashboard.scoped-dashboard {
+    /* Typo & Layout */
+    --ud-font-family: "Poppins", system-ui, sans-serif;
+    --ud-fz-base: 1rem; --ud-fz-sm: .875rem; --ud-fz-md: 1rem; --ud-fz-lg: 1.125rem;
+    --ud-fz-xl: 1.5rem; --ud-fz-xxl: 2.25rem;
+    --ud-radius-xl: 24px; --ud-radius-lg: 18px; --ud-radius-md: 12px; --ud-radius-sm: 8px; --ud-radius-xs: 5px;
+    --ud-gap-xl: 2.5rem; --ud-gap-lg: 2rem; --ud-gap-md: 1.25rem; --ud-gap-sm: .75rem; --ud-gap-xs: .5rem;
 
-  /* Farben (Light Theme) - MIT KONTRAST-ANPASSUNGEN */
-  --ud-c-text: var(--c-text, #212529);
-  --ud-c-text-muted: var(--c-muted, #6c757d);
-  --ud-c-text-secondary: var(--c-muted, #6b7280);
-  --ud-c-bg: var(--c-bg, #f8f9fa);
-  --ud-c-card: var(--c-card, #ffffff);
-  --ud-c-border: var(--c-border, #dee2e6);
-  --ud-c-line: var(--c-border);
-  --ud-c-surface: var(--c-surface, #e9ecef);
-  --ud-c-primary: var(--c-pri, #007bff);
-  --ud-c-primary-dim: var(--c-pri-dim, #0056b3);
-  --ud-c-primary-rgb: var(--c-pri-rgb, 0, 123, 255);
-  --ud-c-primary-light-bg: rgba(var(--ud-c-primary-rgb), 0.1);
-  --ud-c-primary-text: var(--ud-c-primary-dim, #0056b3);
-  --ud-c-success: var(--c-success, #28a745);
-  --ud-c-success-dim: var(--c-success-dim, #1e7e34);
-  --ud-c-success-light-bg: rgba(var(--c-success-rgb, 40, 167, 69), 0.1);
-  --ud-c-success-text: var(--c-success-text, #155724);
-  --ud-c-error: var(--c-error, #dc3545);
-  --ud-c-error-dim: var(--c-error-dim, #bd2130);
-  --ud-c-error-light-bg: rgba(var(--c-error-rgb, 220, 53, 69), 0.1);
-  --ud-c-error-text: var(--c-error-text, #721c24);
-  --ud-c-warn: var(--c-warn, #ffc107);
-  --ud-c-warn-dim: var(--c-warn-dim, #d39e00);
-  --ud-c-warn-light-bg: rgba(var(--c-warn-rgb, 255, 193, 7), 0.15);
-  --ud-c-warn-text: var(--c-warn-text, #856404);
-  --ud-c-late-time: var(--ud-c-error);
-  --ud-c-late-time-bg: var(--ud-c-error-light-bg);
-  --ud-c-time: var(--ud-c-text);
-  --ud-c-bg-vacation: rgba(var(--ud-c-primary-rgb), 0.08);
-  --ud-c-text-vacation: var(--ud-c-primary-dim, #0056b3);
-  --ud-c-border-vacation: var(--ud-c-primary);
-  --ud-c-bg-sick: rgba(var(--c-error-rgb), 0.08);
-  --ud-c-text-sick: var(--ud-c-error-text, #721c24);
-  --ud-c-border-sick: var(--ud-c-error);
-  --ud-c-bg-holiday: rgba(var(--c-warn-rgb), 0.1);
-  --ud-c-text-holiday: var(--c-warn-text);
-  --ud-c-border-holiday: var(--ud-c-warn);
-  --ud-shadow-card: 0 10px 30px rgba(0, 0, 0, 0.07);
-  --ud-shadow-interactive: 0 6px 15px rgba(var(--ud-c-primary-rgb), 0.15);
-  --ud-shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.1);
-  --ud-shadow-hover: 0 6px 18px rgba(var(--ud-c-primary-rgb), 0.15);
-  --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card) 90%, #000);
-  --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 95%, #000);
-  --ud-c-bg-input: var(--ud-c-card);
+    /* Kundenfarbe für farbige Zeilen (HSL) */
+    --customer-color-saturation: 70%;
+    --customer-color-lightness: 90%;
 
-  min-height: 100vh;
-  font-family: var(--ud-font-family);
-  background: var(--ud-c-bg);
-  color: var(--ud-c-text);
-  font-size: var(--ud-fz-base);
-  line-height: 1.6;
-  padding: var(--ud-gap-lg);
-  box-sizing: border-box;
-  transition:
-          background 0.3s ease,
-          color 0.3s ease;
+    /* Light */
+    --ud-c-text:#0f172a; --ud-c-text-muted:#334155; --ud-c-text-secondary:#475569;
+    --ud-c-bg:#f8f9fa; --ud-c-card:#ffffff; --ud-c-border:#dee2e6; --ud-c-line:#e5e7eb; --ud-c-surface:#eef2f7;
+    --ud-c-primary:#2563eb; --ud-c-primary-dim:#1d4ed8; --ud-c-primary-rgb:37,99,235;
+    --ud-c-primary-light-bg:rgba(37,99,235,.10); --ud-c-primary-text:#1d4ed8;
+    --ud-c-success:#22c55e; --ud-c-error:#ef4444; --ud-c-warn:#f59e0b;
+    --ud-c-late-time: var(--ud-c-error); --ud-c-late-time-bg: color-mix(in srgb, var(--ud-c-error) 15%, #fff);
+    --ud-c-time: var(--ud-c-text); --ud-c-bg-input: var(--ud-c-card);
+
+    --ud-shadow-card: 0 10px 30px rgba(0,0,0,.07);
+    --ud-shadow-hover: 0 6px 18px rgba(0,0,0,.12);
+
+    min-height: 100vh;
+    font-family: var(--ud-font-family);
+    background: var(--ud-c-bg);
+    color: var(--ud-c-text);
+    font-size: var(--ud-fz-base);
+    line-height: 1.6;
+    padding: var(--ud-gap-lg);
+    box-sizing: border-box;
+    transition: background .3s ease, color .3s ease;
 }
 
-/* Dark Mode Anpassungen */
-[data-theme="dark"] .user-dashboard.scoped-dashboard,
-[data-theme="dark"] .hourly-dashboard.scoped-dashboard,
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard,
-[data-theme="dark"] .admin-customers-page.scoped-dashboard,
-[data-theme="dark"] .admin-projects-page.scoped-dashboard,
-[data-theme="dark"] .payslips-page.scoped-dashboard,
-[data-theme="dark"] .admin-payslips-page.scoped-dashboard,
-[data-theme="dark"] .schedule-planner-page.scoped-dashboard,
-[data-theme="dark"] .schedule-rules-page.scoped-dashboard { /* <--- UND AUCH HIER HINZUFÜGEN */
-  /* <--- DIESE ZEILE IST DIE KORREKTUR */
-  --ud-c-text: #e9ecef;
-  --ud-c-text-muted: #adb5bd;
-  --ud-c-text-secondary: #9ca3af;
-  --ud-c-bg: #0e101c;
-  --ud-c-card: #1c1e2e;
-  --ud-c-border: #3a3f58;
-  --ud-c-line: #2a2d40;
-  --ud-c-surface: #232539;
-  --customer-color-saturation: 35%;
-  --customer-color-lightness: 25%;
-  --ud-c-primary: #4dabf7;
-  --ud-c-primary-dim: #3690f5;
-  --ud-c-primary-rgb: 77, 171, 247;
-  --ud-c-primary-light-bg: rgba(var(--ud-c-primary-rgb), 0.15);
-  --ud-c-primary-text: var(--ud-c-primary);
-  --ud-c-success: #51cf66;
-  --ud-c-success-text: #c3fae8;
-  --ud-c-error: #ff6b6b;
-  --ud-c-error-text: #ffe3e3;
-  --ud-c-warn: #fab005;
-  --ud-c-warn-text: #fff9db;
-  --ud-c-bg-vacation: rgba(var(--ud-c-primary-rgb), 0.1);
-  --ud-c-text-vacation: var(--ud-c-primary);
-  --ud-c-border-vacation: var(--ud-c-primary);
-  --ud-c-bg-sick: rgba(255, 107, 107, 0.1);
-  --ud-c-text-sick: var(--ud-c-error);
-  --ud-c-border-sick: var(--ud-c-error);
-  --ud-c-bg-holiday: rgba(250, 176, 5, 0.1);
-  --ud-c-text-holiday: var(--ud-c-warn);
-  --ud-c-border-holiday: var(--ud-c-warn);
-  --ud-shadow-card: 0 10px 35px rgba(0, 0, 0, 0.25);
-  --ud-shadow-interactive: 0 8px 20px rgba(var(--ud-c-primary-rgb), 0.2);
-  --ud-shadow-hover: 0 6px 18px rgba(0, 0, 0, 0.5);
-  --ud-c-card-hover: color-mix(in srgb, var(--ud-c-card) 92%, #fff);
-  --ud-c-bg-hover: color-mix(in srgb, var(--ud-c-surface) 92%, #fff);
-  --ud-c-time: #f8f9fa;
-  --ud-c-bg-input: var(--ud-c-surface);
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard {
+    --ud-c-text:#e9ecef; --ud-c-text-muted:#adb5bd; --ud-c-text-secondary:#9ca3af;
+    --ud-c-bg:#0e101c; --ud-c-card:#1c1e2e; --ud-c-border:#3a3f58; --ud-c-line:#2a2d40; --ud-c-surface:#232539;
+    --customer-color-saturation: 35%; --customer-color-lightness: 25%;
+    --ud-c-primary:#4dabf7; --ud-c-primary-dim:#3690f5; --ud-c-primary-rgb:77,171,247;
+    --ud-c-primary-light-bg:rgba(77,171,247,.15); --ud-c-primary-text:#4dabf7;
+    --ud-c-success:#51cf66; --ud-c-error:#ff6b6b; --ud-c-warn:#fab005;
+    --ud-c-late-time: var(--ud-c-error); --ud-c-late-time-bg: color-mix(in srgb, var(--ud-c-error) 20%, transparent);
+    --ud-c-time:#f8f9fa; --ud-c-bg-input: var(--ud-c-surface);
+
+    --ud-shadow-card: 0 10px 35px rgba(0,0,0,.25);
+    --ud-shadow-hover: 0 6px 18px rgba(0,0,0,.5);
 }
 
-
-/* =========================================================================
-   Allgemeine Element-Styles (Inputs, Selects etc.)
-   ========================================================================= */
+/* ---------- Inputs ---------- */
 .percentage-dashboard.scoped-dashboard input,
 .percentage-dashboard.scoped-dashboard select,
-.percentage-dashboard.scoped-dashboard textarea {
-  font-family: inherit;
-  border: 1px solid var(--ud-c-border);
-  border-radius: var(--ud-radius-md);
-  color: var(--ud-c-text);
-  background-color: var(--ud-c-bg-input);
-  padding: var(--ud-gap-sm) var(--ud-gap-md);
-  font-size: var(--ud-fz-md);
-  width: 100%;
-  box-sizing: border-box;
-  transition:
-          border-color 0.25s,
-          background-color 0.25s,
-          color 0.25s,
-          box-shadow 0.25s;
+.percentage-dashboard.scoped-dashboard textarea{
+    font-family: inherit;
+    border: 1px solid var(--ud-c-border);
+    border-radius: var(--ud-radius-md);
+    color: var(--ud-c-text);
+    background-color: var(--ud-c-bg-input);
+    padding: var(--ud-gap-sm) var(--ud-gap-md);
+    font-size: var(--ud-fz-md);
+    width: 100%;
+    transition: border-color .25s, background-color .25s, color .25s, box-shadow .25s;
+    box-sizing: border-box;
 }
 .percentage-dashboard.scoped-dashboard input:focus,
 .percentage-dashboard.scoped-dashboard select:focus,
-.percentage-dashboard.scoped-dashboard textarea:focus {
-  outline: none;
-  border-color: var(--ud-c-primary);
-  box-shadow: 0 0 0 3px var(--ud-c-primary-light-bg);
+.percentage-dashboard.scoped-dashboard textarea:focus{
+    outline: none; border-color: var(--ud-c-primary); box-shadow: 0 0 0 3px var(--ud-c-primary-light-bg);
 }
-.percentage-dashboard.scoped-dashboard select {
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59L6 5.17L10.59.59L12 2L6 8L0 2L1.41.59Z' fill='%236B7280'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right var(--ud-gap-md) center;
-  background-size: 12px 8px;
-  padding-right: calc(var(--ud-gap-md) + 1.5rem);
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard select {
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1.41.59L6 5.17L10.59.59L12 2L6 8L0 2L1.41.59Z' fill='%23adb5bd'/%3E%3C/svg%3E");
-  background-color: var(--ud-c-surface);
-  color: var(--ud-c-text);
-  border-color: var(--ud-c-border);
-}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard select{ background-color: var(--ud-c-surface); }
 
-/* =========================================================================
-   Dashboard Header
-   ========================================================================= */
-.percentage-dashboard.scoped-dashboard .dashboard-header {
-  background: var(--ud-c-card);
-  padding: var(--ud-gap-lg);
-  border-radius: var(--ud-radius-xl);
-  box-shadow: var(--ud-shadow-card);
-  margin-bottom: var(--ud-gap-xl);
-  border: 1px solid var(--ud-c-border);
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--ud-gap-md);
+/* ---------- Header ---------- */
+.percentage-dashboard.scoped-dashboard .dashboard-header{
+    background: var(--ud-c-card); color: var(--ud-c-text);
+    padding: var(--ud-gap-lg); border-radius: var(--ud-radius-xl);
+    box-shadow: var(--ud-shadow-card); margin-bottom: var(--ud-gap-xl);
+    border: 1px solid var(--ud-c-border);
+    display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap: var(--ud-gap-md);
 }
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .dashboard-header {
-  background: linear-gradient(145deg, var(--ud-c-card) 0%, var(--ud-c-surface) 100%);
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .dashboard-header{
+    background: linear-gradient(145deg, var(--ud-c-card) 0%, var(--ud-c-surface) 100%);
 }
 .percentage-dashboard.scoped-dashboard .dashboard-header h1,
-.percentage-dashboard.scoped-dashboard .dashboard-header h2 {
-  margin: 0;
-  font-size: var(--ud-fz-xxl);
-  font-weight: 700;
-  color: var(--ud-c-primary-text);
-  letter-spacing: -0.5px;
-  flex-grow: 1;
+.percentage-dashboard.scoped-dashboard .dashboard-header h2{
+    margin:0; font-size: var(--ud-fz-xxl); font-weight:700; color: var(--ud-c-primary-text); letter-spacing:-.5px; flex-grow:1;
 }
-.percentage-dashboard.scoped-dashboard .personal-info {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-items: center;
-  gap: var(--ud-gap-sm) var(--ud-gap-md);
+.percentage-dashboard.scoped-dashboard .personal-info{
+    display:flex; flex-wrap:wrap; justify-content:center; align-items:center; gap: var(--ud-gap-sm) var(--ud-gap-md);
 }
-.percentage-dashboard.scoped-dashboard .personal-info p {
-  margin: 0;
-  font-size: var(--ud-fz-md);
-  background-color: var(--ud-c-surface);
-  padding: var(--ud-gap-xs) var(--ud-gap-md);
-  border-radius: var(--ud-radius-md);
-  border: 1px solid var(--ud-c-line);
-  color: var(--ud-c-text-muted);
+.percentage-dashboard.scoped-dashboard .personal-info p{
+    margin:0; font-size: var(--ud-fz-md); background-color: var(--ud-c-surface);
+    padding: var(--ud-gap-xs) var(--ud-gap-md); border-radius: var(--ud-radius-md); border:1px solid var(--ud-c-line); color: var(--ud-c-text-muted);
 }
-.percentage-dashboard.scoped-dashboard .personal-info p strong {
-  color: var(--ud-c-text);
-  font-weight: 600;
+.percentage-dashboard.scoped-dashboard .personal-info p strong{ color: var(--ud-c-text); font-weight:600; }
+.percentage-dashboard.scoped-dashboard .balance-negative{ color: var(--ud-c-error); }
+.percentage-dashboard.scoped-dashboard .balance-positive{ color: var(--ud-c-success); }
+.percentage-dashboard.scoped-dashboard .header-actions{ display:flex; gap: var(--ud-gap-sm); }
+
+/* ---------- Sektionen ---------- */
+.percentage-dashboard.scoped-dashboard .content-section{
+    background: var(--ud-c-card); border:1px solid var(--ud-c-border); border-radius: var(--ud-radius-xl);
+    padding: var(--ud-gap-lg); box-shadow: var(--ud-shadow-card); margin-bottom: var(--ud-gap-xl);
 }
-.percentage-dashboard.scoped-dashboard .balance-negative {
-  color: var(--ud-c-error-text) !important;
-}
-.percentage-dashboard.scoped-dashboard .balance-positive {
-  color: var(--ud-c-success-text) !important;
-}
-.percentage-dashboard.scoped-dashboard .header-actions {
-  display: flex;
-  gap: var(--ud-gap-sm);
+.percentage-dashboard.scoped-dashboard .content-section > .section-title{
+    margin: 0 0 var(--ud-gap-lg) 0; font-size: var(--ud-fz-xl); font-weight:600; color: var(--ud-c-primary-text);
+    padding-bottom: var(--ud-gap-md); border-bottom:1px solid var(--ud-c-line); display:flex; align-items:center; gap: var(--ud-gap-sm);
 }
 
-/* =========================================================================
-   Allgemeine Sektionen & Karten
-   ========================================================================= */
-.percentage-dashboard.scoped-dashboard .content-section {
-  background: var(--ud-c-card);
-  border: 1px solid var(--ud-c-border);
-  border-radius: var(--ud-radius-xl);
-  padding: var(--ud-gap-lg);
-  box-shadow: var(--ud-shadow-card);
-  margin-bottom: var(--ud-gap-xl);
+/* Punch-Box */
+.percentage-dashboard.scoped-dashboard .punch-section{
+    text-align:center; padding: var(--ud-gap-lg); margin: var(--ud-gap-lg) 0;
+    background: var(--ud-c-surface); border-radius: var(--ud-radius-xl); border:1px solid var(--ud-c-border);
 }
-.percentage-dashboard.scoped-dashboard .content-section > .section-title {
-  margin: 0 0 var(--ud-gap-lg) 0;
-  font-size: var(--ud-fz-xl);
-  font-weight: 600;
-  color: var(--ud-c-primary-text);
-  padding-bottom: var(--ud-gap-md);
-  border-bottom: 1px solid var(--ud-c-line);
-  display: flex;
-  align-items: center;
-  gap: var(--ud-gap-sm);
-}
-.percentage-dashboard.scoped-dashboard .punch-section {
-  text-align: center;
-  padding: var(--ud-gap-lg);
-  margin-top: var(--ud-gap-lg);
-  margin-bottom: var(--ud-gap-lg);
-  background: var(--ud-c-surface);
-  border-radius: var(--ud-radius-xl);
-  border: 1px solid var(--ud-c-border);
-}
-.percentage-dashboard.scoped-dashboard .punch-section h4 {
-  font-size: var(--ud-fz-lg);
-  margin-bottom: var(--ud-gap-md);
-  color: var(--ud-c-text);
-}
-.percentage-dashboard.scoped-dashboard .punch-section .customer-project-selectors {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ud-gap-sm);
-  max-width: 400px;
-  margin: 0 auto var(--ud-gap-md) auto;
-}
-.percentage-dashboard.scoped-dashboard .week-navigation {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: var(--ud-gap-md);
-  margin-bottom: var(--ud-gap-lg);
-  flex-wrap: wrap;
-  padding: var(--ud-gap-md);
-  background-color: var(--ud-c-surface);
-  border-radius: var(--ud-radius-lg);
-}
-.percentage-dashboard.scoped-dashboard .week-navigation input[type="date"] {
-  text-align: center;
-  width: auto;
-  min-width: 180px;
-  background-color: var(--ud-c-card);
-}
-.percentage-dashboard.scoped-dashboard .weekly-monthly-totals,
-.percentage-dashboard.scoped-dashboard .weekly-summary {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: var(--ud-gap-md);
-  margin-bottom: var(--ud-gap-lg);
-}
-.percentage-dashboard.scoped-dashboard .summary-item {
-  background: var(--ud-c-card);
-  border: 1px solid var(--ud-c-border);
-  border-radius: var(--ud-radius-md);
-  padding: var(--ud-gap-md);
-  text-align: center;
-  box-shadow: var(--ud-shadow-card);
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .summary-item {
-  background: var(--ud-c-surface);
-}
-.percentage-dashboard.scoped-dashboard .summary-label {
-  display: block;
-  font-size: var(--ud-fz-sm);
-  color: var(--ud-c-text-muted);
-  margin-bottom: var(--ud-gap-xs);
-}
-.percentage-dashboard.scoped-dashboard .summary-value {
-  font-size: var(--ud-fz-lg);
-  font-weight: 600;
-  color: var(--ud-c-text);
-}
-.percentage-dashboard.scoped-dashboard .week-display {
-  display: grid;
-  gap: var(--ud-gap-lg);
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr));
-}
-.percentage-dashboard.scoped-dashboard .week-day-card,
-.percentage-dashboard.scoped-dashboard .day-card {
-  background: var(--ud-c-card);
-  border: 1px solid var(--ud-c-border);
-  border-radius: var(--ud-radius-lg);
-  padding: var(--ud-gap-md);
-  box-shadow: var(--ud-shadow-card);
-  display: flex;
-  flex-direction: column;
-  transition: all 0.2s ease-in-out;
-  position: relative;
-}
-.percentage-dashboard.scoped-dashboard .week-day-card:hover,
-.percentage-dashboard.scoped-dashboard .day-card:hover {
-  border-color: var(--ud-c-primary);
-  background: var(--ud-c-card-hover);
-  box-shadow: var(--ud-shadow-hover);
-  transform: translateY(-4px);
-}
-.percentage-dashboard.scoped-dashboard .week-day-header,
-.percentage-dashboard.scoped-dashboard .day-card-header {
-  margin-bottom: var(--ud-gap-md);
-}
-.percentage-dashboard.scoped-dashboard .week-day-header h4,
-.percentage-dashboard.scoped-dashboard .day-card-header h3 {
-  font-size: var(--ud-fz-lg);
-  margin: 0 0 var(--ud-gap-xs) 0;
-  font-weight: 600;
-  color: var(--ud-c-text);
-}
-.percentage-dashboard.scoped-dashboard .week-day-content,
-.percentage-dashboard.scoped-dashboard .day-card-body {
-  flex-grow: 1;
-}
-.percentage-dashboard.scoped-dashboard .time-entry-list {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 var(--ud-gap-md) 0;
-  font-size: var(--ud-fz-sm);
-}
-.percentage-dashboard.scoped-dashboard .time-entry-list li {
-  padding: var(--ud-gap-xs) var(--ud-gap-sm);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px dashed var(--ud-c-line);
-  border-radius: var(--ud-radius-sm);
-}
-.percentage-dashboard.scoped-dashboard .time-entry-list li:last-child {
-  border-bottom: none;
-}
-.percentage-dashboard.scoped-dashboard .entry-label {
-  color: var(--ud-c-text-muted);
-  margin-right: var(--ud-gap-sm);
-}
-.percentage-dashboard.scoped-dashboard .entry-time {
-  font-weight: 500;
-  color: var(--ud-c-time);
-}
-.percentage-dashboard.scoped-dashboard .late-time {
-  color: var(--ud-c-late-time);
-  font-weight: 600;
-  background-color: var(--ud-c-late-time-bg);
-  padding: 0.15em 0.4em;
-  border-radius: var(--ud-radius-sm);
-}
-.percentage-dashboard.scoped-dashboard .no-entries {
-  font-size: var(--ud-fz-sm);
-  color: var(--ud-c-text-muted);
-  font-style: italic;
-  margin: var(--ud-gap-md) 0;
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 80px;
-  background-color: var(--ud-c-surface);
-  border-radius: var(--ud-radius-md);
-  padding: var(--ud-gap-md);
-  border: 1px dashed var(--ud-c-border);
-}
-.percentage-dashboard.scoped-dashboard .daily-summary-times {
-  margin-top: var(--ud-gap-sm);
-  padding-top: var(--ud-gap-sm);
-  border-top: 1px solid var(--ud-c-line);
-  font-size: var(--ud-fz-sm);
-}
-.percentage-dashboard.scoped-dashboard .daily-summary-times p {
-  margin: var(--ud-gap-xs) 0;
-  display: flex;
-  justify-content: space-between;
-}
-.percentage-dashboard.scoped-dashboard .daily-summary-times p strong {
-  color: var(--ud-c-text-muted);
-}
-.percentage-dashboard.scoped-dashboard .correction-button-row {
-  margin-top: auto;
-  padding-top: var(--ud-gap-md);
-  border-top: 1px solid var(--ud-c-line);
-}
-.percentage-dashboard.scoped-dashboard .correction-button-row button {
-  width: 100%;
-  font-size: var(--ud-fz-sm);
-}
-.percentage-dashboard.scoped-dashboard .week-day-card.vacation-day, .day-card.vacation-day {
-  background-color: var(--ud-c-bg-vacation);
-  border-color: var(--ud-c-border-vacation);
-}
-.percentage-dashboard.scoped-dashboard .week-day-card.sick-day, .day-card.sick-day {
-  background-color: var(--ud-c-bg-sick);
-  border-color: var(--ud-c-border-sick);
-}
-.percentage-dashboard.scoped-dashboard .week-day-card.holiday-day, .day-card.holiday-day {
-  background-color: var(--ud-c-bg-holiday);
-  border-color: var(--ud-c-border-holiday);
-}
-.day-card-badge, .day-card-info {
-  text-align: center;
-  padding: var(--ud-gap-md);
-  font-size: 1.1rem;
-  font-weight: 500;
-  border-radius: var(--ud-radius-md);
-}
-.day-card-badge.holiday-badge, .holiday-indicator { background-color: var(--ud-c-bg-holiday); color: var(--ud-c-text-holiday); }
-.day-card-badge.vacation-badge, .vacation-indicator { background-color: var(--ud-c-bg-vacation); color: var(--ud-c-text-vacation); }
-.day-card-badge.sick-badge, .sick-leave-indicator { background-color: var(--ud-c-bg-sick); color: var(--ud-c-text-sick); }
+.percentage-dashboard.scoped-dashboard .punch-section h4{ font-size: var(--ud-fz-lg); margin-bottom: var(--ud-gap-md); color: var(--ud-c-text); }
+.percentage-dashboard.scoped-dashboard .customer-project-selectors{ display:flex; flex-direction:column; gap: var(--ud-gap-sm); max-width:400px; margin:0 auto var(--ud-gap-md); }
 
+/* Week-Navigation & Summary */
+.percentage-dashboard.scoped-dashboard .week-navigation{
+    display:flex; justify-content:space-between; align-items:center; gap: var(--ud-gap-md);
+    margin-bottom: var(--ud-gap-lg); flex-wrap:wrap; padding: var(--ud-gap-md);
+    background-color: var(--ud-c-surface); border-radius: var(--ud-radius-lg);
+}
+.percentage-dashboard.scoped-dashboard .week-navigation input[type="date"]{
+    text-align:center; width:auto; min-width:180px; padding: var(--ud-gap-sm) var(--ud-gap-md); background: var(--ud-c-card);
+    font-size: var(--ud-fz-md); border-color: var(--ud-c-border); border-radius: var(--ud-radius-md);
+}
+.percentage-dashboard.scoped-dashboard .weekly-summary{
+    display:grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: var(--ud-gap-md); margin-bottom: var(--ud-gap-lg);
+}
+.percentage-dashboard.scoped-dashboard .summary-item{
+    background: var(--ud-c-card); border:1px solid var(--ud-c-border); border-radius: var(--ud-radius-md); padding: var(--ud-gap-md); text-align:center; box-shadow: var(--ud-shadow-card);
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .summary-item{ background: var(--ud-c-surface); }
+.percentage-dashboard.scoped-dashboard .summary-label{ display:block; font-size: var(--ud-fz-sm); color: var(--ud-c-text-muted); margin-bottom: var(--ud-gap-xs); }
+.percentage-dashboard.scoped-dashboard .summary-value{ font-size: var(--ud-fz-lg); font-weight:600; color: var(--ud-c-text); }
 
-/* Notiz-Funktion */
-.daily-note-container {
-  margin-top: 15px;
-  padding-top: 10px;
-  border-top: 1px solid var(--ud-c-line);
+/* ---------- Week Grid / Day Cards ---------- */
+.percentage-dashboard.scoped-dashboard .week-display{ display:grid; gap: var(--ud-gap-lg); grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
+.percentage-dashboard.scoped-dashboard .day-card,
+.percentage-dashboard.scoped-dashboard .week-day-card{
+    background: var(--ud-c-card); border:1px solid var(--ud-c-border); border-radius: var(--ud-radius-lg);
+    padding: var(--ud-gap-md); box-shadow: var(--ud-shadow-card); display:flex; flex-direction:column; position:relative; transition: all .2s ease-in-out;
 }
-.daily-note-display {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 10px;
+.percentage-dashboard.scoped-dashboard .day-card:hover,
+.percentage-dashboard.scoped-dashboard .week-day-card:hover{
+    border-color: var(--ud-c-primary); background: color-mix(in srgb, var(--ud-c-card) 90%, #000); box-shadow: var(--ud-shadow-hover); transform: translateY(-4px);
 }
-.daily-note-display .note-content {
-  flex-grow: 1;
-  word-break: break-word;
+.percentage-dashboard.scoped-dashboard .day-card-header,
+.percentage-dashboard.scoped-dashboard .week-day-header{ margin-bottom: var(--ud-gap-md); }
+.percentage-dashboard.scoped-dashboard .day-card-header h3,
+.percentage-dashboard.scoped-dashboard .week-day-header h4{ font-size: var(--ud-fz-lg); margin:0 0 var(--ud-gap-xs) 0; font-weight:600; color: var(--ud-c-text); }
+
+.percentage-dashboard.scoped-dashboard .day-card-body,
+.percentage-dashboard.scoped-dashboard .week-day-content{ flex-grow:1; }
+
+.percentage-dashboard.scoped-dashboard .time-entry-list{ list-style:none; padding:0; margin:0 0 var(--ud-gap-md) 0; font-size: var(--ud-fz-sm); }
+.percentage-dashboard.scoped-dashboard .time-entry-list li{
+    padding: var(--ud-gap-xs) var(--ud-gap-sm); display:flex; justify-content:space-between; align-items:center;
+    border-bottom:1px dashed var(--ud-c-line); border-radius: var(--ud-radius-sm);
 }
-.daily-note-display p {
-  margin: 0;
-  font-size: var(--ud-fz-sm);
-  color: var(--ud-c-text-secondary);
-  white-space: pre-wrap;
-}
-.daily-note-display strong {
-  font-weight: 500;
-  display: block;
-  margin-bottom: 4px;
-}
-.button-edit-note {
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 5px;
-  border-radius: 50%;
-  line-height: 1;
-  font-size: 1.2rem;
-  flex-shrink: 0;
-  transition: background-color 0.2s;
-}
-.button-edit-note:hover {
-  background-color: var(--ud-c-bg-hover);
-}
-.daily-note-editor {
-  width: 100%;
-  box-sizing: border-box;
-  margin-bottom: 10px;
-  min-height: 80px;
-}
-.note-buttons {
-  display: flex;
-  gap: 10px;
+.percentage-dashboard.scoped-dashboard .time-entry-list li:last-child{ border-bottom:none; }
+.percentage-dashboard.scoped-dashboard .entry-label{ color: var(--ud-c-text-muted); margin-right: var(--ud-gap-sm); }
+.percentage-dashboard.scoped-dashboard .entry-time{ font-weight:500; color: var(--ud-c-time); }
+.percentage-dashboard.scoped-dashboard .late-time{ color: var(--ud-c-late-time); font-weight:600; background-color: var(--ud-c-late-time-bg); padding: .15em .4em; border-radius: var(--ud-radius-sm); }
+
+.percentage-dashboard.scoped-dashboard .no-entries{
+    font-size: var(--ud-fz-sm); color: var(--ud-c-text-muted); font-style: italic; margin: var(--ud-gap-md) 0; flex-grow:1;
+    display:flex; align-items:center; justify-content:center; min-height:80px; background: var(--ud-c-surface);
+    border-radius: var(--ud-radius-md); padding: var(--ud-gap-md); border:1px dashed var(--ud-c-border);
 }
 
+.percentage-dashboard.scoped-dashboard .daily-summary-times{ margin-top: var(--ud-gap-sm); padding-top: var(--ud-gap-sm); border-top:1px solid var(--ud-c-line); font-size: var(--ud-fz-sm); }
+.percentage-dashboard.scoped-dashboard .daily-summary-times p{ margin: var(--ud-gap-xs) 0; display:flex; justify-content:space-between; }
+.percentage-dashboard.scoped-dashboard .daily-summary-times p strong{ color: var(--ud-c-text-muted); }
 
-/* =========================================================================
-   Responsive & Modals
-   ========================================================================= */
-@media (max-width: 768px) {
-  .percentage-dashboard.scoped-dashboard {
-    padding: var(--ud-gap-md);
-  }
-  .percentage-dashboard.scoped-dashboard .content-section,
-  .percentage-dashboard.scoped-dashboard .dashboard-header {
-    padding: var(--ud-gap-md);
-  }
-  .percentage-dashboard.scoped-dashboard .dashboard-header h1,
-  .percentage-dashboard.scoped-dashboard .dashboard-header h2 {
-    font-size: var(--ud-fz-xl);
-  }
-  .percentage-dashboard.scoped-dashboard .personal-info {
-    flex-direction: column;
-    gap: var(--ud-gap-sm);
-    align-items: stretch;
-    width: 100%;
-  }
-  .percentage-dashboard.scoped-dashboard .header-actions {
-    width: 100%;
-    justify-content: center;
-  }
-  .percentage-dashboard.scoped-dashboard .week-navigation {
-    flex-direction: column;
-    gap: var(--ud-gap-sm);
-  }
-  .percentage-dashboard.scoped-dashboard .week-navigation input[type="date"],
-  .percentage-dashboard.scoped-dashboard .week-navigation button {
-    width: 100%;
-  }
-}
-@media (max-width: 480px) {
-  .percentage-dashboard.scoped-dashboard {
-    --ud-fz-base: 0.9rem;
-  }
-}
-/* =========================================================================
-   KORREKTUR für transparenten Modal-Hintergrund
-   ========================================================================= */
-.modal-overlay {
-  background-color: var(--modal-backdrop-color, rgba(30, 30, 30, 0.6));
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-}
-.percentage-dashboard.scoped-dashboard.modal-overlay {
-  background-color: var(--modal-backdrop-color, rgba(30, 30, 30, 0.6));
-}
-/* =========================================================================
-   Verbesserte Stile für Korrektur-Modal
-   ========================================================================= */
-.percentage-dashboard.scoped-dashboard .modal-content .entry-row {
-  display: flex;
-  gap: var(--ud-gap-sm);
-  align-items: center;
-  margin-bottom: var(--ud-gap-md);
-  background-color: var(--ud-c-surface);
-  padding: var(--ud-gap-sm);
-  border-radius: var(--ud-radius-md);
-  border: 1px solid var(--ud-c-border);
-}
-.percentage-dashboard.scoped-dashboard .modal-content .entry-row input,
-.percentage-dashboard.scoped-dashboard .modal-content .entry-row select {
-  margin-bottom: 0;
-}
-.percentage-dashboard.scoped-dashboard .modal-content .entry-row input[type="time"] {
-  flex-basis: 150px;
-  flex-grow: 0;
-}
-.percentage-dashboard.scoped-dashboard .modal-content .entry-row select {
-  flex-grow: 1;
-}
-.percentage-dashboard.scoped-dashboard .modal-content .button-remove {
-  flex-shrink: 0;
-  background-color: transparent;
-  color: var(--ud-c-text-muted);
-  border: 1px solid transparent;
-  border-radius: 50%;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  font-size: 1.6rem;
-  line-height: 1;
-  font-weight: 300;
-  box-shadow: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.percentage-dashboard.scoped-dashboard .modal-content .button-remove:hover {
-  background-color: var(--ud-c-error-light-bg);
-  color: var(--ud-c-error-dim);
-  border-color: transparent;
-  transform: none;
-}
-.percentage-dashboard.scoped-dashboard .modal-content .button-add-entry {
-  width: 100%;
-  margin-top: var(--ud-gap-sm);
-  margin-bottom: var(--ud-gap-lg);
-  padding-top: var(--ud-gap-sm);
-  padding-bottom: var(--ud-gap-sm);
-  background-color: transparent;
-  color: var(--ud-c-primary-text);
-  border: 2px dashed var(--ud-c-primary);
-  box-shadow: none;
-  font-weight: 500;
-}
-.percentage-dashboard.scoped-dashboard .modal-content .button-add-entry:hover {
-  background-color: var(--ud-c-primary-light-bg);
-  border-style: solid;
-  color: var(--ud-c-primary-dim);
-  transform: none;
-  box-shadow: none;
-}
-/* =========================================================================
-   FIXES · Percentage-Dashboard (Modals + Button-Kontrast Light)
-   Leg diese Block ANS ENDE von PercentageDashboardScoped.css
-   ========================================================================= */
+.percentage-dashboard.scoped-dashboard .correction-button-row{ margin-top:auto; padding-top: var(--ud-gap-md); border-top:1px solid var(--ud-c-line); }
+.percentage-dashboard.scoped-dashboard .correction-button-row button{ width:100%; font-size: var(--ud-fz-sm); }
 
-/* --- MODAL: Overlay + Content (global, auch wenn via Portal gerendert) --- */
-.modal-overlay {
-    position: fixed; inset: 0;
-    background-color: rgba(17, 24, 39, 0.55); /* dunkles Overlay */
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-    z-index: 9999;
-}
+/* Status-Badges */
+.day-card-badge{ position:absolute; top:10px; right:10px; font-size:.75rem; padding:.25rem .5rem; border-radius:999px; border:1px solid currentColor; opacity:.95; }
+.holiday-indicator{ background-color: color-mix(in srgb, var(--ud-c-warn) 10%, transparent); color: var(--ud-c-warn); }
+.vacation-indicator{ background-color: color-mix(in srgb, var(--ud-c-primary) 10%, transparent); color: var(--ud-c-primary); }
+.sick-leave-indicator{ background-color: color-mix(in srgb, var(--ud-c-error) 10%, transparent); color: var(--ud-c-error); }
 
-/* Solide Karten-Optik wie im Dashboard – NICHT transparent */
-.modal-content {
-    background: #ffffff;                 /* Light */
-    color: #212529;
-    border: 1px solid #dee2e6;
-    border-radius: 16px;
-    box-shadow: 0 20px 50px rgba(0,0,0,0.25);
-}
+/* ---------- Notizen ---------- */
+.percentage-dashboard.scoped-dashboard .daily-note-container{ margin-top:15px; padding-top:10px; border-top:1px solid var(--ud-c-line); }
+.percentage-dashboard.scoped-dashboard .daily-note-display{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+.percentage-dashboard.scoped-dashboard .daily-note-display .note-content{ flex-grow:1; word-break: break-word; }
+.percentage-dashboard.scoped-dashboard .daily-note-display p{ margin:0; font-size: var(--ud-fz-sm); color: var(--ud-c-text-secondary); white-space: pre-wrap; }
+.percentage-dashboard.scoped-dashboard .daily-note-display strong{ font-weight:500; display:block; margin-bottom:4px; }
+.percentage-dashboard.scoped-dashboard .daily-note-editor{ width:100%; box-sizing:border-box; margin-bottom:10px; min-height:80px; }
+.percentage-dashboard.scoped-dashboard .button-edit-note{ background:transparent; border:none; cursor:pointer; padding:5px; border-radius:50%; line-height:1; font-size:1.2rem; flex-shrink:0; transition: background-color .2s; }
+.percentage-dashboard.scoped-dashboard .button-edit-note:hover{ background-color: color-mix(in srgb, var(--ud-c-surface) 95%, #000); }
+.percentage-dashboard.scoped-dashboard .note-buttons{ display:flex; gap:10px; }
 
-/* Dark Theme Variante */
-[data-theme="dark"] .modal-content {
-    background: #1c1e2e;                 /* var(--ud-c-card) dark */
-    color: #e9ecef;
-    border: 1px solid #3a3f58;
+/* ---------- Corrections Panel ---------- */
+.percentage-dashboard.scoped-dashboard .correction-panel .corrections-header{
+    background: var(--ud-c-surface); color: var(--ud-c-text); font-weight:600; padding: var(--ud-gap-md);
+    border-radius: var(--ud-radius-lg) var(--ud-radius-lg) 0 0; border:1px solid var(--ud-c-border); border-bottom:none;
+    display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition: background-color .2s;
 }
+.percentage-dashboard.scoped-dashboard .correction-panel .corrections-header:hover{ background-color: var(--ud-c-line); }
+.percentage-dashboard.scoped-dashboard .corrections-header .toggle-icon{ font-size: var(--ud-fz-md); transition: transform .2s; }
+.percentage-dashboard.scoped-dashboard .correction-panel .corrections-content{
+    background: var(--ud-c-card); border:1px solid var(--ud-c-border); border-top:none; border-radius:0 0 var(--ud-radius-lg) var(--ud-radius-lg); padding: var(--ud-gap-lg);
+}
+.percentage-dashboard.scoped-dashboard .corrections-list{
+    list-style:none; padding:0; margin:0; max-height:400px; overflow-y:auto; border:1px solid var(--ud-c-line);
+    border-radius: var(--ud-radius-md); background: var(--ud-c-surface);
+}
+.percentage-dashboard.scoped-dashboard .corrections-list li{ padding: var(--ud-gap-md); border-bottom:1px solid var(--ud-c-border); font-size: var(--ud-fz-sm); line-height:1.6; }
+.percentage-dashboard.scoped-dashboard .correction-header-info{ display:flex; justify-content:space-between; align-items:center; margin-bottom: var(--ud-gap-xs); }
+.percentage-dashboard.scoped-dashboard .correction-detail-block{ background: var(--ud-c-card); padding: var(--ud-gap-sm); border-radius: var(--ud-radius-md); border:1px solid var(--ud-c-line); margin-bottom: var(--ud-gap-sm); }
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .correction-detail-block{ background: var(--ud-c-surface); border-color: var(--ud-c-border); }
 
-/* Eingabezeilen im Korrektur-Modal sollen immer auf einer soliden Fläche sein */
-.modal-content .entry-row {
-    background-color: #f3f4f6;           /* Light: neutrale Fläche */
-    border: 1px solid #e5e7eb;
-    border-radius: 12px;
-}
-[data-theme="dark"] .modal-content .entry-row {
-    background-color: #232539;           /* Dark: surface */
-    border-color: #3a3f58;
-}
+/* Status-Farben */
+.status-is-approved .status-indicator{ color: var(--ud-c-success); }
+.status-is-denied .status-indicator{ color: var(--ud-c-error); }
+.status-is-pending .status-indicator{ color: var(--ud-c-warn); }
 
-/* Inputs im Modal sicher kontrastreich */
-.modal-content input,
-.modal-content select,
-.modal-content textarea {
-    background-color: #ffffff;
-    color: #111827;
-    border: 1px solid #cbd5e1;
+/* ---------- Buttons (nur im Percentage-Scope) ---------- */
+.percentage-dashboard.scoped-dashboard .button-secondary{
+    background:#ffffff; color:#0f172a; border:1px solid #cbd5e1; font-weight:600; box-shadow: 0 1px 0 rgba(0,0,0,.02);
 }
-[data-theme="dark"] .modal-content input,
-[data-theme="dark"] .modal-content select,
-[data-theme="dark"] .modal-content textarea {
-    background-color: #232539;
-    color: #e5e7eb;
-    border-color: #3a3f58;
-}
+.percentage-dashboard.scoped-dashboard .button-secondary:hover{ background:#f8fafc; }
+.percentage-dashboard.scoped-dashboard .week-navigation .button-secondary{ font-weight:700; }
 
-/* --- BUTTON-KONTRAST (Light Mode) für Weak-Buttons/Outlines --- */
-/* Woche-Navigation, Korrektur anfragen, Abbrechen in Notizen etc. */
-.percentage-dashboard.scoped-dashboard .button-secondary {
-    background: #f1f5f9;     /* Slate-100 */
-    color: #111827;          /* Fast schwarz -> sehr guter Kontrast */
-    border: 1px solid #cbd5e1;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+.percentage-dashboard.scoped-dashboard .button-primary{
+    background: var(--ud-c-primary); color:#fff; border:1px solid var(--ud-c-primary-dim); font-weight:600;
 }
-.percentage-dashboard.scoped-dashboard .button-secondary:hover {
-    background: #e2e8f0;     /* Slate-200 */
-    border-color: #cbd5e1;
-}
+.percentage-dashboard.scoped-dashboard .button-primary:hover{ background: var(--ud-c-primary-dim); }
 
-/* Outline-Variante gut lesbar im Light Mode */
-.percentage-dashboard.scoped-dashboard .button-primary-outline {
-    background: transparent;
-    color: var(--ud-c-primary-dim, #0056b3);
-    border: 1.5px solid var(--ud-c-primary, #007bff);
+.percentage-dashboard.scoped-dashboard .button-primary-outline{
+    background:transparent; color: var(--ud-c-primary-text); border:1.5px solid var(--ud-c-primary); font-weight:600;
 }
-.percentage-dashboard.scoped-dashboard .button-primary-outline:hover {
-    background: var(--ud-c-primary-light-bg, rgba(0,123,255,0.08));
-}
+.percentage-dashboard.scoped-dashboard .button-primary-outline:hover{ background: var(--ud-c-primary-light-bg); }
 
-/* Notiz-Buttons (Speichern/Abbrechen) explizit mitziehen */
-.percentage-dashboard.scoped-dashboard .note-buttons .button-secondary {
-    background: #f1f5f9;
-    color: #111827;
-    border: 1px solid #cbd5e1;
-}
-.percentage-dashboard.scoped-dashboard .note-buttons .button-secondary:hover {
-    background: #e2e8f0;
-}
-
-/* Edit-Stift neben der Notiz */
-.percentage-dashboard.scoped-dashboard .button-edit-note {
-    color: var(--ud-c-text-muted, #6b7280);
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .button-edit-note {
-    color: #adb5bd;
-}
-
-/* Optional: Woche-Navigation Buttons leicht verstärken */
-.percentage-dashboard.scoped-dashboard .week-navigation .button-secondary {
-    font-weight: 500;
-}
-
-/* Für Konsistenz im Dark Mode (falls von globalen Styles überschrieben) */
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .button-secondary {
-    background: #2a2d40;     /* dark surface */
-    color: #e9ecef;
-    border: 1px solid #3a3f58;
-}
-[data-theme="dark"] .percentage-dashboard.scoped-dashboard .button-secondary:hover {
-    background: #323651;
-}
-/* ===== LIGHT MODE · HARTE OVERRIDES FÜR LESBARKEIT (Percentage only) ===== */
-
-/* Sekundär-Buttons: ← Vorige Woche, Nächste Woche →, "Korrektur anfragen",
-   sowie "Abbrechen" in den Tagesnotizen */
-.percentage-dashboard.scoped-dashboard .week-navigation .button-secondary,
-.percentage-dashboard.scoped-dashboard .note-buttons .button-secondary,
-.percentage-dashboard.scoped-dashboard .correction-button-row .button-secondary {
-    background: #f1f5f9 !important; /* helles Grau */
-    color: #0f172a !important;       /* fast Schwarz */
-    border: 1px solid #cbd5e1 !important;
-    box-shadow: 0 1px 0 rgba(0,0,0,0.02) !important;
-}
-.percentage-dashboard.scoped-dashboard .week-navigation .button-secondary:hover,
-.percentage-dashboard.scoped-dashboard .note-buttons .button-secondary:hover,
-.percentage-dashboard.scoped-dashboard .correction-button-row .button-secondary:hover {
-    background: #e2e8f0 !important;
-}
-
-/* Outline-Variante: "Kunden & Zeiten bearbeiten" etc. */
-.percentage-dashboard.scoped-dashboard .button-primary-outline {
-    background: transparent !important;
-    color: #0b5ed7 !important;
-    border: 1.5px solid #0b5ed7 !important;
-}
-.percentage-dashboard.scoped-dashboard .button-primary-outline:hover {
-    background: rgba(13,110,253,0.08) !important;
-}
-
-/* Sicherstellen, dass Modals im Light-Mode nicht transparent wirken */
-.modal-content {
-    background: #ffffff !important;
-    color: #212529 !important;
-    border: 1px solid #dee2e6 !important;
-}
-.modal-content .entry-row {
-    background-color: #f3f4f6 !important;
-    border-color: #e5e7eb !important;
-}
-/* ===========================
-   PERCENTAGE · LIGHT CONTRAST
-   =========================== */
-
-/* 1) Grundtext im Percentage-Bereich deutlich dunkler */
-.percentage-dashboard.scoped-dashboard,
-.percentage-dashboard.scoped-dashboard .content-section,
-.percentage-dashboard.scoped-dashboard .section-title,
-.percentage-dashboard.scoped-dashboard .summary-label,
-.percentage-dashboard.scoped-dashboard .summary-value,
-.percentage-dashboard.scoped-dashboard .daily-summary-times,
-.percentage-dashboard.scoped-dashboard .time-entry-list,
-.percentage-dashboard.scoped-dashboard .entry-label,
-.percentage-dashboard.scoped-dashboard .entry-time,
-.percentage-dashboard.scoped-dashboard .note-content {
-    color: #0f172a !important; /* sehr dunkles Blau/Schwarz */
-}
-
-/* 2) Platzhalter/„Keine Einträge“ gut lesbar auf hellgrau */
-.percentage-dashboard.scoped-dashboard .no-data-message,
-.percentage-dashboard.scoped-dashboard .no-entries,
-.percentage-dashboard.scoped-dashboard .time-entry-list .empty,
-.percentage-dashboard.scoped-dashboard .time-entry-list .placeholder {
-    color: #334155 !important;      /* Slate-700 */
-    background: #e5e7eb !important; /* helles Grau hinterlegt */
-}
-
-/* 3) Buttons (Woche ←/→, Korrektur anfragen, Abbrechen, Edit-Note) */
-.percentage-dashboard.scoped-dashboard .button-secondary {
-    background: #ffffff !important;
-    color: #0f172a !important;
-    border: 1px solid #cbd5e1 !important;
-    font-weight: 600 !important;
-}
-.percentage-dashboard.scoped-dashboard .button-secondary:hover {
-    background: #f8fafc !important;
-}
-
-/* Primärknopf (z. B. „Korrektur anfragen“ wenn aktiv) */
-.percentage-dashboard.scoped-dashboard .button-primary {
-    background: #2563eb !important;     /* kräftiges Blau */
-    color: #ffffff !important;
-    border: 1px solid #1d4ed8 !important;
-    font-weight: 600 !important;
-}
-.percentage-dashboard.scoped-dashboard .button-primary:hover {
-    background: #1d4ed8 !important;
-}
-
-/* Outline-Variante (links in den Karten unten) */
-.percentage-dashboard.scoped-dashboard .button-primary-outline {
-    background: transparent !important;
-    color: #1d4ed8 !important;
-    border: 1.5px solid #1d4ed8 !important;
-    font-weight: 600 !important;
-}
-.percentage-dashboard.scoped-dashboard .button-primary-outline:hover {
-    background: rgba(29,78,216,0.08) !important;
-}
-
-/* Disabled-Zustände nicht „ausgrauen“ – lesbar halten */
 .percentage-dashboard.scoped-dashboard .button-secondary:disabled,
 .percentage-dashboard.scoped-dashboard .button-primary:disabled,
-.percentage-dashboard.scoped-dashboard .button-primary-outline:disabled {
-    opacity: 1 !important;
-    color: #64748b !important;        /* Slate-500 (gut lesbar) */
-    background: #f8fafc !important;
-    border-color: #cbd5e1 !important;
+.percentage-dashboard.scoped-dashboard .button-primary-outline:disabled{
+    opacity:1; color:#64748b; background:#f8fafc; border-color:#cbd5e1;
+}
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .button-secondary{ background:#2a2d40; color:#e9ecef; border:1px solid #3a3f58; }
+[data-theme="dark"] .percentage-dashboard.scoped-dashboard .button-secondary:hover{ background:#323651; }
+
+/* ---------- Modal (isoliert) ----------
+   Falls das CorrectionModal via Portal rendert: im Modal-Root
+   `data-context="percentage"` setzen, dann greifen die Regeln sicher. */
+.percentage-dashboard.scoped-dashboard .modal-overlay{ position:fixed; inset:0; background:rgba(17,24,39,.55); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:10000; }
+.percentage-dashboard.scoped-dashboard .modal-content{
+    background: var(--ud-c-card); color: var(--ud-c-text); border:1px solid var(--ud-c-border);
+    border-radius:16px; box-shadow:0 20px 50px rgba(0,0,0,.25);
+}
+.percentage-dashboard.scoped-dashboard .modal-content .entry-row{ background-color: var(--ud-c-surface); border:1px solid var(--ud-c-line); border-radius:12px; }
+.modal-overlay[data-context="percentage"]{ position:fixed; inset:0; background:rgba(17,24,39,.55); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); z-index:10000; }
+.modal-content[data-context="percentage"]{ background: var(--ud-c-card); color: var(--ud-c-text); border:1px solid var(--ud-c-border); border-radius:16px; box-shadow:0 20px 50px rgba(0,0,0,.25); }
+.modal-content[data-context="percentage"] .entry-row{ background-color: var(--ud-c-surface); border:1px solid var(--ud-c-line); border-radius:12px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 768px){
+    .percentage-dashboard.scoped-dashboard{ padding: var(--ud-gap-md); }
+    .percentage-dashboard.scoped-dashboard .content-section,
+    .percentage-dashboard.scoped-dashboard .dashboard-header{ padding: var(--ud-gap-md); }
+    .percentage-dashboard.scoped-dashboard .dashboard-header h1,
+    .percentage-dashboard.scoped-dashboard .dashboard-header h2{ font-size: var(--ud-fz-xl); }
+    .percentage-dashboard.scoped-dashboard .personal-info{ flex-direction:column; gap: var(--ud-gap-sm); align-items:stretch; width:100%; }
+    .percentage-dashboard.scoped-dashboard .header-actions{ width:100%; justify-content:center; }
+    .percentage-dashboard.scoped-dashboard .week-navigation{ flex-direction:column; gap: var(--ud-gap-sm); }
+    .percentage-dashboard.scoped-dashboard .week-navigation input[type="date"],
+    .percentage-dashboard.scoped-dashboard .week-navigation button{ width:100%; }
+}
+@media (max-width: 480px){
+    .percentage-dashboard.scoped-dashboard{ --ud-fz-base:.9rem; }
+}
+/* ===== Correction Modal · PERCENTAGE ===== */
+.modal-overlay[data-context="correction-percentage"]{
+    position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+    padding:1rem; background:rgba(17,24,39,.55);
+    backdrop-filter:blur(10px) saturate(150%); -webkit-backdrop-filter:blur(10px) saturate(150%);
+    z-index:10000;
+}
+.modal-content[data-context="correction-percentage"]{
+    background:#ffffff; color:#0f172a; border:1px solid #e5e7eb;
+    border-radius:18px; box-shadow:0 24px 60px rgba(0,0,0,.25);
+    width:100%; max-width:620px; max-height:90vh; overflow:hidden;
+    display:grid; grid-template-rows:auto 1fr auto;
+}
+[data-theme="dark"] .modal-content[data-context="correction-percentage"]{
+    background:#1c1e2e; color:#e9ecef; border-color:#3a3f58;
+}
+.modal-content[data-context="correction-percentage"] .modal-header{padding:1rem 1.25rem .5rem;border-bottom:1px solid #e5e7eb;}
+[data-theme="dark"] .modal-content[data-context="correction-percentage"] .modal-header{border-color:#3a3f58;}
+.modal-content[data-context="correction-percentage"] .modal-header h3{margin:0;font-size:1.25rem;font-weight:700;}
+.modal-content[data-context="correction-percentage"] .modal-body{padding:1rem 1.25rem;overflow-y:auto;}
+.modal-content[data-context="correction-percentage"] .modal-footer{
+    position:sticky; bottom:0; padding:.9rem 1.25rem; display:flex; gap:.75rem; justify-content:flex-end;
+    border-top:1px solid #e5e7eb; background:linear-gradient(to top,#fff 85%,transparent);
+}
+[data-theme="dark"] .modal-content[data-context="correction-percentage"] .modal-footer{
+    border-color:#3a3f58; background:linear-gradient(to top,#1c1e2e 85%,transparent);
 }
 
-/* 4) Wochennavigation explizit kräftig */
-.percentage-dashboard.scoped-dashboard .week-navigation .button-secondary {
-    font-weight: 700 !important;
-}
+/* Einträge/Inputs/Add-Entry */
+.correction-entries{display:grid;gap:.75rem;margin-bottom:1rem;}
+.correction-entry{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:.75rem;display:grid;grid-template-columns:1fr 1fr auto;gap:.5rem .75rem;align-items:center;}
+[data-theme="dark"] .correction-entry{background:#232539;border-color:#3a3f58;}
+.correction-entry .remove-entry-btn{justify-self:end;background:transparent;border:0;cursor:pointer;color:inherit;opacity:.6;padding:.25rem .4rem;border-radius:8px;}
+.correction-entry .remove-entry-btn:hover{opacity:1;background:rgba(0,0,0,.05);}
+[data-theme="dark"] .correction-entry .remove-entry-btn:hover{background:rgba(255,255,255,.06);}
 
-/* 5) Modal-Flächen im Light-Mode nie transparent */
-.percentage-dashboard.scoped-dashboard .modal-content,
-.modal-content {
-    background: #ffffff !important;
-    color: #0f172a !important;
-    border: 1px solid #dee2e6 !important;
-}
-.percentage-dashboard.scoped-dashboard .modal-content .entry-row,
-.modal-content .entry-row {
-    background-color: #f3f4f6 !important;
-    border-color: #e5e7eb !important;
+.modal-content[data-context="correction-percentage"] .entry-row,
+.modal-content[data-context="correction-percentage"] input,
+.modal-content[data-context="correction-percentage"] select,
+.modal-content[data-context="correction-percentage"] textarea{background:#f8fafc;color:inherit;border:1px solid #e5e7eb;border-radius:10px;padding:.6rem .8rem;}
+[data-theme="dark"] .modal-content[data-context="correction-percentage"] .entry-row,
+[data-theme="dark"] .modal-content[data-context="correction-percentage"] input,
+[data-theme="dark"] .modal-content[data-context="correction-percentage"] select,
+[data-theme="dark"] .modal-content[data-context="correction-percentage"] textarea{background:#232539;border-color:#3a3f58;}
+.modal-content[data-context="correction-percentage"] label{display:block;font-size:.85rem;font-weight:600;margin:.5rem 0 .25rem;opacity:.9;}
+.modal-content[data-context="correction-percentage"] textarea{min-height:110px;resize:vertical;}
+
+.add-correction-entry{display:inline-flex;align-items:center;gap:.4rem;font-weight:600;color:#1d4ed8;background:rgba(37,99,235,.10);border:1px solid rgba(37,99,235,.22);border-radius:999px;padding:.35rem .65rem;}
+
+@media (max-width:560px){
+    .correction-entry{grid-template-columns:1fr;}
+    .modal-content[data-context="correction-percentage"]{max-width:calc(100vw - 1rem);}
 }

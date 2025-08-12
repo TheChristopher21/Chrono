@@ -310,12 +310,20 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
 
     return (
         <div className="scoped-vacation">
-            {/* ... (Rest des JSX bleibt gleich, nur tileContent wurde oben korrigiert) ... */}
             <div className="vacation-calendar-wrapper">
                 <div className="vacation-info-header">
-                    <h4><strong>{t('vacationCalendarTitle', 'Urlaub gesamt')}:</strong> {totalVacation.toFixed(1)} {t('daysLabel', 'Tage')}</h4>
-                    <h4><strong>{t('myVacations', 'Bereits genommen')}:</strong> {usedDays.toFixed(1)} {t('daysLabel', 'Tage')}</h4>
-                    <h4><strong>{t('remainingVacation', 'Verbleibend')}:</strong> {remainingDays.toFixed(1)} {t('daysLabel', 'Tage')}</h4>
+                    <h4>
+                        <strong>{t('vacationCalendarTitle', 'Urlaub gesamt')}:</strong>{' '}
+                        {totalVacation.toFixed(1)} {t('daysLabel', 'Tage')}
+                    </h4>
+                    <h4>
+                        <strong>{t('myVacations', 'Bereits genommen')}:</strong>{' '}
+                        {usedDays.toFixed(1)} {t('daysLabel', 'Tage')}
+                    </h4>
+                    <h4>
+                        <strong>{t('remainingVacation', 'Verbleibend')}:</strong>{' '}
+                        {remainingDays.toFixed(1)} {t('daysLabel', 'Tage')}
+                    </h4>
                 </div>
 
                 <Calendar
@@ -324,63 +332,134 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
                     onActiveStartDateChange={onActiveStartDateChange}
                     activeStartDate={activeStartDate}
                 />
+
                 <div className="calendar-action-buttons">
-                    <button id="vacation-request-button" onClick={handleOpenVacationModal} className="button-primary request-vacation-button">
+                    <button
+                        id="vacation-request-button"
+                        onClick={handleOpenVacationModal}
+                        className="button-primary request-vacation-button"
+                    >
                         {t('requestVacationButton', 'Urlaub beantragen')}
                     </button>
-                    <button onClick={handleOpenSickLeaveModal} className="button-secondary report-sick-leave-button">
+                    <button
+                        onClick={handleOpenSickLeaveModal}
+                        className="button-secondary report-sick-leave-button"
+                    >
                         {t('sickLeave.reportButtonShort', 'Krank melden')}
                     </button>
                 </div>
             </div>
 
             {showVacationModal && (
-                <ModalOverlay visible className="vacation-modal-overlay">
-                    <div className="vacation-modal-content">
+                <ModalOverlay
+                    visible
+                    className="modal-overlay vacation-modal-overlay"
+                    data-context="vacation"
+                >
+                    <div
+                        className="modal-content vacation-modal-content"
+                        data-context="vacation"
+                    >
                         <h3>{t('vacationModalTitle', 'Urlaubsantrag stellen')}</h3>
                         <form onSubmit={handleVacationSubmit}>
                             <div className="form-group">
                                 <label htmlFor="vacStartDate">{t('fromDate', 'Von')}:</label>
-                                <input id="vacStartDate" type="date" value={vacationStartDate} onChange={(e) => setVacationStartDate(e.target.value)} required />
+                                <input
+                                    id="vacStartDate"
+                                    type="date"
+                                    value={vacationStartDate}
+                                    onChange={(e) => setVacationStartDate(e.target.value)}
+                                    required
+                                />
                             </div>
+
                             <div className="form-group">
                                 <label htmlFor="vacEndDate">{t('toDate', 'Bis')}:</label>
-                                <input id="vacEndDate" type="date" value={vacationEndDate} onChange={(e) => setVacationEndDate(e.target.value)} required />
+                                <input
+                                    id="vacEndDate"
+                                    type="date"
+                                    value={vacationEndDate}
+                                    onChange={(e) => setVacationEndDate(e.target.value)}
+                                    required
+                                />
                             </div>
+
                             <div className="form-group">
                                 <label htmlFor="vacDayScope">{t('dayScope', 'Zeitraum')}:</label>
-                                <select id="vacDayScope" value={vacationType} onChange={(e) => setVacationType(e.target.value)}>
+                                <select
+                                    id="vacDayScope"
+                                    value={vacationType}
+                                    onChange={(e) => setVacationType(e.target.value)}
+                                >
                                     <option value="full">{t('fullDay', 'Ganztags')}</option>
                                     <option value="half">{t('halfDay', 'Halbtags')}</option>
                                 </select>
                             </div>
+
                             <div className="form-group">
                                 <label htmlFor="vacTypeSelect">{t('vacationType', 'Urlaubsart')}:</label>
-                                <select id="vacTypeSelect" value={useOvertime ? 'overtime' : 'normal'}
-                                        onChange={(e) => {
-                                            const isOvertime = e.target.value === 'overtime';
-                                            setUseOvertime(isOvertime);
-                                            if (!isOvertime || !userProfile?.isPercentage) {
-                                                setOvertimeDeductionHours('');
-                                            }
-                                        }}>
+                                <select
+                                    id="vacTypeSelect"
+                                    value={useOvertime ? 'overtime' : 'normal'}
+                                    onChange={(e) => {
+                                        const isOvertime = e.target.value === 'overtime';
+                                        setUseOvertime(isOvertime);
+                                        if (!isOvertime || !userProfile?.isPercentage) {
+                                            setOvertimeDeductionHours('');
+                                        }
+                                    }}
+                                >
                                     <option value="normal">{t('normalVacation', 'Normaler Urlaub')}</option>
-                                    {!userProfile?.isHourly && (<option value="overtime">{t('overtimeVacation', 'Überstundenfrei')}</option>)}
+                                    {!userProfile?.isHourly && (
+                                        <option value="overtime">{t('overtimeVacation', 'Überstundenfrei')}</option>
+                                    )}
                                 </select>
                             </div>
+
                             {userProfile?.isPercentage && useOvertime && (
                                 <div className="form-group">
-                                    <label htmlFor="overtimeHoursInput">{t('vacation.deductOvertimeHoursLabel', 'Abzuziehende Überstunden (Stunden):')}</label>
-                                    <input type="number" id="overtimeHoursInput" value={overtimeDeductionHours} onChange={(e) => setOvertimeDeductionHours(e.target.value)} placeholder={t('vacation.hoursPlaceholder', 'z.B. 4 oder 8.5')} step="0.01" min="0.01" required />
+                                    <label htmlFor="overtimeHoursInput">
+                                        {t('vacation.deductOvertimeHoursLabel', 'Abzuziehende Überstunden (Stunden):')}
+                                    </label>
+                                    <input
+                                        type="number"
+                                        id="overtimeHoursInput"
+                                        value={overtimeDeductionHours}
+                                        onChange={(e) => setOvertimeDeductionHours(e.target.value)}
+                                        placeholder={t('vacation.hoursPlaceholder', 'z.B. 4 oder 8.5')}
+                                        step="0.01"
+                                        min="0.01"
+                                        required
+                                    />
                                     <small className="form-text text-muted">
-                                        {t('vacation.overtimeInfoPercentage', 'Geben Sie an, wie viele Überstunden für diesen Zeitraum verwendet werden sollen.')}
-                                        {vacationType === 'half' && vacationStartDate === vacationEndDate && (<><br />{t('vacation.halfDayOvertimeNotice', 'Für diesen halben Tag geben Sie die Stunden für den halben Tag an.')}</>)}
+                                        {t(
+                                            'vacation.overtimeInfoPercentage',
+                                            'Geben Sie an, wie viele Überstunden für diesen Zeitraum verwendet werden sollen.'
+                                        )}
+                                        {vacationType === 'half' && vacationStartDate === vacationEndDate && (
+                                            <>
+                                                <br />
+                                                {t(
+                                                    'vacation.halfDayOvertimeNotice',
+                                                    'Für diesen halben Tag geben Sie die Stunden für den halben Tag an.'
+                                                )}
+                                            </>
+                                        )}
                                     </small>
                                 </div>
                             )}
+
                             <div className="modal-buttons">
-                                <button type="submit" className="button-primary">{t('submitButton', 'Absenden')}</button>
-                                <button type="button" onClick={() => setShowVacationModal(false)} className="button-secondary">{t('cancelButton', 'Abbrechen')}</button>
+                                <button type="submit" className="button-primary">
+                                    {t('submitButton', 'Absenden')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowVacationModal(false)}
+                                    className="button-secondary"
+                                >
+                                    {t('cancelButton', 'Abbrechen')}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -388,29 +467,75 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
             )}
 
             {showSickLeaveModal && (
-                <ModalOverlay visible className="vacation-modal-overlay sick-leave-modal-overlay">
-                    <div className="vacation-modal-content sick-leave-modal-content">
+                <ModalOverlay
+                    visible
+                    className="modal-overlay vacation-modal-overlay sick-leave-modal-overlay"
+                    data-context="vacation"
+                >
+                    <div
+                        className="modal-content vacation-modal-content sick-leave-modal-content"
+                        data-context="vacation"
+                    >
                         <h3>{t('sickLeave.modalTitle', 'Krankheit melden')}</h3>
                         <form onSubmit={handleSickLeaveSubmit}>
                             <div className="form-group">
                                 <label htmlFor="sickStartDate">{t('fromDate', 'Von')}:</label>
-                                <input id="sickStartDate" type="date" value={sickStartDate} onChange={e => setSickStartDate(e.target.value)} required />
+                                <input
+                                    id="sickStartDate"
+                                    type="date"
+                                    value={sickStartDate}
+                                    onChange={(e) => setSickStartDate(e.target.value)}
+                                    required
+                                />
                             </div>
+
                             <div className="form-group">
                                 <label htmlFor="sickEndDate">{t('toDate', 'Bis')}:</label>
-                                <input id="sickEndDate" type="date" value={sickEndDate} onChange={e => setSickEndDate(e.target.value)} required />
+                                <input
+                                    id="sickEndDate"
+                                    type="date"
+                                    value={sickEndDate}
+                                    onChange={(e) => setSickEndDate(e.target.value)}
+                                    required
+                                />
                             </div>
+
                             <div className="form-group form-group-checkbox">
-                                <input id="sickIsHalfDay" type="checkbox" checked={isSickHalfDay} onChange={e => setIsSickHalfDay(e.target.checked)} />
-                                <label htmlFor="sickIsHalfDay" className="checkbox-label">{t('sickLeave.halfDayLabel', 'Halbtag')}</label>
+                                <input
+                                    id="sickIsHalfDay"
+                                    type="checkbox"
+                                    checked={isSickHalfDay}
+                                    onChange={(e) => setIsSickHalfDay(e.target.checked)}
+                                />
+                                <label htmlFor="sickIsHalfDay" className="checkbox-label">
+                                    {t('sickLeave.halfDayLabel', 'Halbtag')}
+                                </label>
                             </div>
+
                             <div className="form-group">
-                                <label htmlFor="sickComment">{t('comment', 'Kommentar (optional)')}:</label>
-                                <textarea id="sickComment" value={sickComment} onChange={e => setSickComment(e.target.value)} rows="3" placeholder={t('sickLeave.commentPlaceholder', 'Grund, Arztbesuch etc.')}></textarea>
+                                <label htmlFor="sickComment">
+                                    {t('comment', 'Kommentar (optional)')}:
+                                </label>
+                                <textarea
+                                    id="sickComment"
+                                    value={sickComment}
+                                    onChange={(e) => setSickComment(e.target.value)}
+                                    rows="3"
+                                    placeholder={t('sickLeave.commentPlaceholder', 'Grund, Arztbesuch etc.')}
+                                />
                             </div>
+
                             <div className="modal-buttons">
-                                <button type="submit" className="button-primary">{t('submitButton', 'Senden')}</button>
-                                <button type="button" onClick={() => setShowSickLeaveModal(false)} className="button-secondary">{t('cancelButton', 'Abbrechen')}</button>
+                                <button type="submit" className="button-primary">
+                                    {t('submitButton', 'Senden')}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setShowSickLeaveModal(false)}
+                                    className="button-secondary"
+                                >
+                                    {t('cancelButton', 'Abbrechen')}
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -418,6 +543,7 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
             )}
         </div>
     );
+
 }
 
 VacationCalendar.propTypes = {

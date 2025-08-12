@@ -12,7 +12,6 @@ import '../../styles/global.css';
 // Beide Scoped-Styles werden referenziert, um sicherzustellen, dass alle Designs verfügbar sind.
 // Das UserDashboard übernimmt nun primär die Ästhetik des HourlyDashboards.
 import '../../styles/UserDashboardScoped.css';
-import '../../styles/HourlyDashboardScoped.css';
 
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";

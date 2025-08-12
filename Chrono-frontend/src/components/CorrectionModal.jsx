@@ -5,134 +5,177 @@ import ModalOverlay from './ModalOverlay';
 import { formatDate } from '../utils/dateUtils';
 import { formatTime } from '../utils/timeUtils';
 
-const CorrectionModal = ({ visible, correctionDate, dailySummary, onClose, onSubmit, t }) => {
-  const [entries, setEntries] = useState([]);
-  const [reason, setReason] = useState('');
+const CorrectionModal = ({
+                             visible,
+                             correctionDate,
+                             dailySummary,
+                             onClose,
+                             onSubmit,
+                             t,
+                             dashboard = 'user', // 'user' | 'hourly' | 'percentage'
+                         }) => {
+    const [entries, setEntries] = useState([]);
+    const [reason, setReason] = useState('');
 
-  useEffect(() => {
-    if (visible && dailySummary) {
-      const initialEntries = dailySummary.entries?.map(entry => ({
-        time: formatTime(new Date(entry.entryTimestamp)),
-        type: entry.punchType
-      })) || [];
+    useEffect(() => {
+        if (visible) {
+            const initialEntries =
+                dailySummary?.entries?.map((entry) => ({
+                    time: formatTime(new Date(entry.entryTimestamp)),
+                    type: entry.punchType,
+                })) || [];
 
-      // Wenn keine Einträge vorhanden sind, füge ein leeres Start/Ende Paar hinzu
-      if (initialEntries.length === 0) {
-        setEntries([
-          { time: '08:00', type: 'START' },
-          { time: '17:00', type: 'ENDE' }
-        ]);
-      } else {
-        setEntries(initialEntries);
-      }
-      setReason(''); // Grund bei jedem Öffnen zurücksetzen
-    }
-  }, [visible, dailySummary]);
+            if (initialEntries.length === 0) {
+                setEntries([
+                    { time: '08:00', type: 'START' },
+                    { time: '17:00', type: 'ENDE' },
+                ]);
+            } else {
+                setEntries(initialEntries);
+            }
+            setReason('');
+        }
+    }, [visible, dailySummary]);
 
-  if (!visible) return null;
+    if (!visible) return null;
 
-  const handleEntryChange = (index, field, value) => {
-    const newEntries = [...entries];
-    newEntries[index][field] = value;
-    setEntries(newEntries);
-  };
+    const handleEntryChange = (index, field, value) => {
+        setEntries((prev) => {
+            const next = [...prev];
+            next[index][field] = value;
+            return next;
+        });
+    };
 
-  const addEntry = () => {
-    const lastEntry = entries[entries.length - 1];
-    const newType = lastEntry?.type === 'START' ? 'ENDE' : 'START';
-    setEntries([...entries, { time: '', type: newType }]);
-  };
+    const addEntry = () => {
+        const last = entries[entries.length - 1];
+        const nextType = last?.type === 'START' ? 'ENDE' : 'START';
+        setEntries([...entries, { time: '', type: nextType }]);
+    };
 
-  const removeEntry = (index) => {
-    const newEntries = entries.filter((_, i) => i !== index);
-    setEntries(newEntries);
-  };
+    const removeEntry = (index) => {
+        setEntries((prev) => prev.filter((_, i) => i !== index));
+    };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!reason.trim()) {
-      alert(t('correctionModal.reasonRequired', 'Bitte geben Sie einen Grund an.'));
-      return;
-    }
-    if (entries.some(entry => !entry.time)) {
-      alert(t('correctionModal.timeRequired', 'Bitte füllen Sie alle Zeitfelder aus.'));
-      return;
-    }
-    onSubmit(entries, reason);
-  };
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        if (!reason.trim()) {
+            alert(t('correctionModal.reasonRequired', 'Bitte geben Sie einen Grund an.'));
+            return;
+        }
+        if (entries.some((e) => !e.time)) {
+            alert(t('correctionModal.timeRequired', 'Bitte füllen Sie alle Zeitfelder aus.'));
+            return;
+        }
+        onSubmit(entries, reason);
+    };
 
-  return (
-      <ModalOverlay visible={visible} onClose={onClose} className="scoped-dashboard">
-        <div className="modal-content user-correction-modal-content">
-          <h3>{t("userCorrectionModal.title", "Korrekturantrag für")} {formatDate(new Date(correctionDate + "T00:00:00"))}</h3>
-          <form onSubmit={handleSubmit}>
-            <div className="entries-list">
-              {entries.map((entry, index) => (
-                  <div key={index} className="entry-row">
-                    <input
-                        type="time"
-                        value={entry.time}
-                        onChange={(e) => handleEntryChange(index, 'time', e.target.value)}
-                        required
-                        aria-label={t('correctionModal.timeLabel', 'Zeit')}
-                    />
-                    <select
-                        value={entry.type}
-                        onChange={(e) => handleEntryChange(index, 'type', e.target.value)}
-                        aria-label={t('correctionModal.typeLabel', 'Typ')}
-                    >
-                      <option value="START">START</option>
-                      <option value="ENDE">ENDE</option>
-                    </select>
-                    <button type="button" className="button-remove" onClick={() => removeEntry(index)} aria-label={t('correctionModal.removeEntry', 'Eintrag entfernen')}>
-                      &times;
-                    </button>
-                  </div>
-              ))}
+    // map dashboard -> data-context expected by the isolated CSS
+    const contextMap = {
+        user: 'correction-user',
+        hourly: 'correction-hourly',
+        percentage: 'correction-percentage',
+    };
+    const dataContext = contextMap[dashboard] || contextMap.user;
+
+    return (
+        <ModalOverlay
+            visible={visible}
+            onClose={onClose}
+            className="modal-overlay"
+            data-context={dataContext}
+        >
+            <div className="modal-content" data-context={dataContext}>
+                <div className="modal-header">
+                    <h3>
+                        {t('userCorrectionModal.title', 'Korrekturantrag für')}{' '}
+                        {formatDate(new Date(`${correctionDate}T00:00:00`))}
+                    </h3>
+                </div>
+
+                <div className="modal-body">
+                    <form onSubmit={handleSubmit}>
+                        <div className="correction-entries">
+                            {entries.map((entry, index) => (
+                                <div key={index} className="correction-entry entry-row">
+                                    <input
+                                        type="time"
+                                        value={entry.time}
+                                        onChange={(e) => handleEntryChange(index, 'time', e.target.value)}
+                                        required
+                                        aria-label={t('correctionModal.timeLabel', 'Zeit')}
+                                    />
+                                    <select
+                                        value={entry.type}
+                                        onChange={(e) => handleEntryChange(index, 'type', e.target.value)}
+                                        aria-label={t('correctionModal.typeLabel', 'Typ')}
+                                    >
+                                        <option value="START">START</option>
+                                        <option value="ENDE">ENDE</option>
+                                    </select>
+                                    <button
+                                        type="button"
+                                        className="remove-entry-btn"
+                                        onClick={() => removeEntry(index)}
+                                        aria-label={t('correctionModal.removeEntry', 'Eintrag entfernen')}
+                                        title={t('correctionModal.removeEntry', 'Eintrag entfernen')}
+                                    >
+                                        &times;
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button type="button" className="add-correction-entry" onClick={addEntry}>
+                            + {t('correctionModal.addEntry', 'Eintrag hinzufügen')}
+                        </button>
+
+                        <div className="form-group" style={{ marginTop: '1rem' }}>
+                            <label htmlFor="reason-textarea">{t('reason', 'Grund')}:</label>
+                            <textarea
+                                id="reason-textarea"
+                                value={reason}
+                                onChange={(e) => setReason(e.target.value)}
+                                placeholder={t(
+                                    'userCorrectionModal.reasonPlaceholder',
+                                    'Begründung für die Korrektur...'
+                                )}
+                                required
+                                rows={4}
+                            />
+                        </div>
+
+                        {/* Footer (sticky via CSS) */}
+                        <div className="modal-footer">
+                            <button type="submit" className="button-primary">
+                                {t('submitCorrection', 'Antrag senden')}
+                            </button>
+                            <button type="button" onClick={onClose} className="button-secondary">
+                                {t('cancel', 'Abbrechen')}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
-
-            <button type="button" className="button-add-entry" onClick={addEntry}>
-              + {t('correctionModal.addEntry', 'Eintrag hinzufügen')}
-            </button>
-
-            <div className="form-group">
-              <label htmlFor="reason-textarea">{t("reason", "Grund")}:</label>
-              <textarea
-                  id="reason-textarea"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder={t('userCorrectionModal.reasonPlaceholder', 'Begründung für die Korrektur...')}
-                  required
-                  rows="4"
-              />
-            </div>
-
-            <div className="modal-buttons">
-              <button type="submit" className="button-primary">
-                {t("submitCorrection", "Antrag senden")}
-              </button>
-              <button type="button" onClick={onClose} className="button-secondary">
-                {t("cancel", "Abbrechen")}
-              </button>
-            </div>
-          </form>
-        </div>
-      </ModalOverlay>
-  );
+        </ModalOverlay>
+    );
 };
 
 CorrectionModal.propTypes = {
-  visible: PropTypes.bool.isRequired,
-  correctionDate: PropTypes.string.isRequired,
-  dailySummary: PropTypes.shape({
-    entries: PropTypes.arrayOf(PropTypes.shape({
-      entryTimestamp: PropTypes.string,
-      punchType: PropTypes.string,
-    })),
-  }),
-  onClose: PropTypes.func.isRequired,
-  onSubmit: PropTypes.func.isRequired,
-  t: PropTypes.func.isRequired,
+    visible: PropTypes.bool.isRequired,
+    correctionDate: PropTypes.string.isRequired,
+    dailySummary: PropTypes.shape({
+        entries: PropTypes.arrayOf(
+            PropTypes.shape({
+                entryTimestamp: PropTypes.string,
+                punchType: PropTypes.string,
+            })
+        ),
+    }),
+    onClose: PropTypes.func.isRequired,
+    onSubmit: PropTypes.func.isRequired,
+    t: PropTypes.func.isRequired,
+    dashboard: PropTypes.oneOf(['user', 'hourly', 'percentage']),
 };
 
 export default CorrectionModal;

@@ -31,7 +31,6 @@ import HourlyCorrectionsPanel from './HourlyCorrectionsPanel';
 import CorrectionModal from '../../components/CorrectionModal';
 import PrintReportModal from '../../components/PrintReportModal.jsx';
 
-import '../../styles/UserDashboardScoped.css';
 import '../../styles/HourlyDashboardScoped.css';
 
 const HourlyDashboard = () => {

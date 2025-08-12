@@ -1,72 +1,71 @@
-/* src/styles/global.css (Optimierte Version) */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700&display=swap');
-
-/* 1. Ein besseres Box-Modell für alle Elemente */
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
+/* ==== Modal Tokens (global, greifen auch bei Portals) ==== */
+:root {
+    --modal-backdrop-color: rgba(17, 24, 39, .55); /* dim */
+    --modal-surface: #ffffff;
+    --modal-surface-2: #f8fafc;
+    --modal-text: #0f172a;
+    --modal-border: #e5e7eb;
+    --modal-shadow: 0 24px 60px rgba(0,0,0,.25);
 }
-
-/* 2. Basis-Stile für den Body */
-body {
-  margin: 0;
-  font-family: var(--font-family-base);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-normal);
-  line-height: 1.6;
-  color: var(--c-text);
-  background-color: var(--c-bg);
-  -webkit-font-smoothing: antialiased;
-}
-
-/* 3. Globale Stile für häufige Elemente */
-h1, h2, h3, h4, h5, h6 {
-  margin-top: 0;
-  margin-bottom: 0.5rem;
-  font-weight: var(--font-weight-bold);
-  line-height: 1.2;
-}
-
-a {
-  color: var(--c-primary);
-  text-decoration: none;
-  transition: color var(--transition-fast);
-}
-
-a:hover {
-  text-decoration: underline;
-  color: color-mix(in srgb, var(--c-primary) 80%, black);
-}
-
-img, picture, video, canvas, svg {
-  display: block;
-  max-width: 100%;
-}
-
-/* 4. Konsistente Formular-Stile */
-input, button, textarea, select {
-  font: inherit;
-  margin: 0;
-  border-radius: var(--radius-sm);
-}
-
-/* Modal overlay defaults */
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background-color: var(--modal-backdrop-color, rgba(0, 0, 0, 0.6));
-  z-index: 1000;
-}
-
-/* src/styles/global.css -- am Ende hinzufügen */
 
 [data-theme="dark"] body {
-  --c-text: #e9ecef;
-  --c-bg: #0e101c; /* Dunkler Hintergrund für die ganze Seite */
-  background-color: var(--c-bg);
-  color: var(--c-text);
+    /* schon vorhanden in deiner Datei – ergänzen um Modal-Variablen */
+    --modal-backdrop-color: rgba(2, 6, 23, .72);
+    --modal-surface: #1c1e2e;
+    --modal-surface-2: #232539;
+    --modal-text: #e9ecef;
+    --modal-border: #3a3f58;
+    --modal-shadow: 0 30px 70px rgba(0,0,0,.45);
+}
+
+/* ==== Modal Overlay & Content (global) ==== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-color: var(--modal-backdrop-color, rgba(17,24,39,.55));
+    backdrop-filter: blur(8px) saturate(140%);
+    -webkit-backdrop-filter: blur(8px) saturate(140%);
+    z-index: 10000; /* höher als Header/Nav etc. */
+}
+
+.modal-content {
+    background: var(--modal-surface);
+    color: var(--modal-text);
+    border: 1px solid var(--modal-border);
+    border-radius: 16px;
+    box-shadow: var(--modal-shadow);
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 1.25rem;
+}
+
+/* Inputs im Modal zuverlässig themenrichtig */
+.modal-content input,
+.modal-content select,
+.modal-content textarea {
+    background: var(--modal-surface-2);
+    color: var(--modal-text);
+    border: 1px solid var(--modal-border);
+    border-radius: 10px;
+    padding: .6rem .8rem;
+}
+
+.modal-content .entry-row {
+    background: var(--modal-surface-2);
+    border: 1px solid var(--modal-border);
+    border-radius: 12px;
+}
+
+/* Button-Bar unten im Modal */
+.modal-content .modal-buttons {
+    display: flex;
+    gap: .75rem;
+    justify-content: flex-end;
+    margin-top: 1rem;
 }
