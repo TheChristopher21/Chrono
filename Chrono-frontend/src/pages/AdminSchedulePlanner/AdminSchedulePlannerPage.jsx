@@ -133,6 +133,8 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
   const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
   const { data: shifts = [], isLoading: isLoadingShifts } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
   const weekStart = usePlannerStore(state => state.weekStart);
+  const weekKey = formatISO(weekStart, { representation: 'date' });
+
   const dragUser = usePlannerStore(state => state.dragUser);
   const dragEntry = usePlannerStore(state => state.dragEntry);
   const clearDrag = usePlannerStore(state => state.clearDrag);
@@ -142,7 +144,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
   const queryClient = useQueryClient();
   const mutationOptions = {
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['schedule', weekStart] });
+      queryClient.invalidateQueries({ queryKey: ['schedule', weekKey] });
     },
     onError: (err) => {
       const message = err?.response?.data?.message || err?.response?.data || err.message;
@@ -176,6 +178,19 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
       const payload = { userId: dragUser.id, date: dateKey, shift: shiftKey };
       if (dragEntry?.id) {
         payload.id = dragEntry.id;
+        // optimistic UI update
+        queryClient.setQueryData(['schedule', weekKey], old => {
+          const newSchedule = { ...(old || {}) };
+          if (dragEntry.date) {
+            const from = (newSchedule[dragEntry.date] || []).filter(e => e.id !== dragEntry.id);
+            newSchedule[dragEntry.date] = from;
+          }
+          const to = (newSchedule[dateKey] || []).filter(e => e.id !== dragEntry.id);
+          to.push({ ...dragEntry, date: dateKey, shift: shiftKey });
+          newSchedule[dateKey] = to;
+          return newSchedule;
+        });
+
       }
       saveMutation.mutate(payload);
     }
@@ -283,11 +298,12 @@ const AdminSchedulePlannerPage = () => {
   const copiedWeek = usePlannerStore(state => state.copiedWeek);
   const setCopiedWeek = usePlannerStore(state => state.setCopiedWeek);
   const navigate = useNavigate();
+  const weekKey = formatISO(weekStart, { representation: 'date' });
 
   const queryClient = useQueryClient();
 
   const { data: schedule, isLoading } = useQuery({
-    queryKey: ['schedule', weekStart],
+    queryKey: ['schedule', weekKey],
     queryFn: () => fetchSchedule(weekStart),
     initialData: {},
   });
@@ -331,7 +347,7 @@ const AdminSchedulePlannerPage = () => {
   const autoFillMutation = useMutation({
     mutationFn: autoFillSchedule,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['schedule', weekStart] });
+      queryClient.invalidateQueries({ queryKey: ['schedule', weekKey] });
     },
     onError: (err) => alert(`Fehler beim automatischen Füllen: ${err.response?.data?.message || err.message}`),
   });
@@ -339,7 +355,7 @@ const AdminSchedulePlannerPage = () => {
   const copyWeekMutation = useMutation({
     mutationFn: copyScheduleRequest,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['schedule', weekStart] });
+      queryClient.invalidateQueries({ queryKey: ['schedule', weekKey] });
       alert("Woche erfolgreich eingefügt!");
     },
     onError: (err) => alert(`Fehler beim Einfügen der Woche: ${err.response?.data?.message || err.message}`),
