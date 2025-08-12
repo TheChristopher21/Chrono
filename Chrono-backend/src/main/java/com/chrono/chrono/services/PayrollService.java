@@ -221,6 +221,15 @@ public class PayrollService {
         if (ps.isApproved()) {
             throw new IllegalStateException("Cannot delete approved payslip");
         }
+        if (ps.isPayoutOvertime() && ps.getOvertimeHours() != null && ps.getOvertimeHours() > 0) {
+            User user = ps.getUser();
+            int minutesToRestore = (int) Math.round(ps.getOvertimeHours() * 60);
+            int currentBalance = user.getTrackingBalanceInMinutes() != null
+                    ? user.getTrackingBalanceInMinutes()
+                    : 0;
+            user.setTrackingBalanceInMinutes(currentBalance + minutesToRestore);
+            userRepository.save(user);
+        }
         payslipAuditRepository.deleteByPayslip(ps);
         payslipRepository.delete(ps);
     }
