@@ -1,7 +1,7 @@
 // src/context/NotificationContext.jsx
 import React, { createContext, useState, useContext, useRef, useEffect } from 'react';
 import { useTranslation } from './LanguageContext';
-import "../styles/Notification.css"; // Styles für Light/Dark + Background
+import "../styles/Notification.css";
 
 export const NotificationContext = createContext({
     notify: () => {},
@@ -55,28 +55,48 @@ export function NotificationProvider({ children }) {
     }, [visible]);
 
     const ariaLive = toast.type === "error" ? "assertive" : "polite";
+    const ariaRole = toast.type === "error" ? "alert" : "status";
 
     return (
         <NotificationContext.Provider value={{ notify }}>
             {children}
 
-            {/* Top-centered Toast (nicht blockierend) */}
-            <div
-                className="notification-portal scoped-notification"
-                aria-live={ariaLive}
-                aria-atomic="true"
-            >
-                <div className={`notification-toast ${visible ? "show" : "hide"} ${toast.type}`}>
-                    <div className="notification-content">
-                        <p className="notification-text">{toast.message}</p>
-                        <button
-                            type="button"
-                            className="notification-close"
-                            aria-label={t('close', 'Schließen')}
-                            onClick={close}
-                        >
-                            ×
-                        </button>
+            {/* Korrigierte Struktur: .scoped-notification -> .notification-portal -> .notification-toast */}
+            <div className="scoped-notification">
+                <div
+                    className="notification-portal"
+                    aria-live={ariaLive}
+                    aria-atomic="true"
+                    role={ariaRole}
+                >
+                    <div
+                        className={`notification-toast ${visible ? "show" : "hide"} ${toast.type}`}
+                        onMouseEnter={() => {
+                            if (timerRef.current) {
+                                clearTimeout(timerRef.current);
+                                timerRef.current = null;
+                            }
+                        }}
+                        onMouseLeave={() => {
+                            if (!timerRef.current && visible) {
+                                timerRef.current = setTimeout(() => {
+                                    setVisible(false);
+                                    timerRef.current = null;
+                                }, 1200);
+                            }
+                        }}
+                    >
+                        <div className="notification-content">
+                            <p className="notification-text">{toast.message}</p>
+                            <button
+                                type="button"
+                                className="notification-close"
+                                aria-label={t('close', 'Schließen')}
+                                onClick={close}
+                            >
+                                ×
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

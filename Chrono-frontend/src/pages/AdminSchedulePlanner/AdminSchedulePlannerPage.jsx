@@ -5,7 +5,7 @@ import { startOfWeek, addDays, formatISO, format, isSameDay, differenceInDays } 
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import api from '../../utils/api';
-import '../../styles/AdminSchedulePlannerPageScooped.css';
+import '../../styles/AdminSchedulePlannerPageScoped.css';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext'; // NEU
 import { useAuth } from '../../context/AuthContext';

@@ -3,18 +3,22 @@
    - Top-zentriert, fixed, nicht blockierend
    - Light & Dark Mode über Tokens
    - Deutlicher Hintergrund + border + Shadow
-   - sanfte Animation + Auto-Hide
+   - sanfte Animation + Auto-Hide + Safe-Area Support
 */
 
 /* ----------------------------- Container ----------------------------- */
+/* Greift sowohl bei gleicher Ebene (.scoped-notification.notification-portal)
+   als auch bei verschachtelter Struktur (.scoped-notification .notification-portal) */
+.scoped-notification.notification-portal,
 .scoped-notification .notification-portal {
     position: fixed;
-    z-index: 9999;
-    top: 16px;
+    z-index: 10990; /* über Header, unter Modal (Modal nutzt 10000+ in global.css) */
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
     left: 50%;
     transform: translateX(-50%);
     width: min(720px, calc(100vw - 32px));
     pointer-events: none; /* klickt nicht in die Seite rein */
+    box-sizing: border-box;
 }
 
 /* ------------------------------ Toast -------------------------------- */
@@ -22,9 +26,6 @@
     pointer-events: auto;
     display: inline-block;
     background: var(--c-card, #ffffff);
-    /* subtiler, moderner Kartenlook */
-    backdrop-filter: saturate(140%) blur(6px);
-    -webkit-backdrop-filter: saturate(140%) blur(6px);
     color: var(--c-text, #111827);
     border: 1px solid var(--c-border, rgba(0,0,0,0.12));
     border-radius: 12px;
@@ -33,6 +34,9 @@
     transition: transform 160ms var(--u-ease, ease), opacity 160ms var(--u-ease, ease);
     transform: translateY(-12px);
     opacity: 0;
+    backdrop-filter: saturate(140%) blur(6px);
+    -webkit-backdrop-filter: saturate(140%) blur(6px);
+    will-change: transform, opacity;
 }
 
 /* Animation in/out */
@@ -124,12 +128,22 @@
     border-color: var(--c-border, rgba(255,255,255,0.14));
 }
 
+/* -------------------------- Accessibility ---------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .scoped-notification .notification-toast,
+    .scoped-notification .notification-close {
+        transition: none !important;
+    }
+}
+
 /* Responsive Kleinigkeiten */
 @media (max-width: 420px) {
     .scoped-notification .notification-text {
         font-size: 0.9rem;
     }
     .scoped-notification .notification-close {
-        width: 30px; height: 30px; font-size: 1.05rem;
+        width: 30px;
+        height: 30px;
+        font-size: 1.05rem;
     }
 }

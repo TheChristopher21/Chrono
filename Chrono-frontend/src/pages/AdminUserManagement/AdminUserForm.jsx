@@ -458,16 +458,6 @@ const AdminUserForm = ({
                         placeholder="z.B. 30"
                     />
                 </div>
-                <div className="form-group">
-                    <label htmlFor="trackingBalanceInMinutes">{t('userManagement.balanceMinutes', 'Überstundensaldo (Minuten)')}:</label>
-                    <input
-                        type="number"
-                        id="trackingBalanceInMinutes"
-                        value={userData.trackingBalanceInMinutes === null || userData.trackingBalanceInMinutes === undefined ? "" : userData.trackingBalanceInMinutes}
-                        onChange={(e) => handleChange('trackingBalanceInMinutes', e.target.value ? parseInt(e.target.value, 10) : 0)}
-                        placeholder={t('userManagement.balanceMinutesPlaceholder', 'z.B. 120 oder -60')}
-                    />
-                </div>
 
                 {!userData.isHourly && (
                     <div className="form-group">
