@@ -1,266 +1,216 @@
-/* src/styles/AdminTasksPageScoped.css */
+/* =========================================================================
+   AdminScheduleRulesPageScoped.css — scoped & isoliert
+   Fixes:
+   - Endzeit/Time-Inputs schneiden keine Ziffern mehr ab
+   - Grid-Spalten per Klassen statt :nth-child (stabil)
+   - Volle Seitenbreite + korrektes Page-Background (Light/Dark)
+   ========================================================================= */
 
-/* ---------- Theme Tokens ---------- */
-:root {
-    --bg: #f6f7fb;
-    --card-bg: #ffffff;
-    --text: #1f2937;            /* slate-800 */
-    --muted: #6b7280;           /* slate-500 */
-    --border: #e5e7eb;          /* slate-200 */
-    --primary: #3b82f6;         /* blue-500 */
-    --primary-contrast: #ffffff;
-    --success: #10b981;         /* emerald-500 */
-    --warning: #f59e0b;         /* amber-500 */
-    --danger: #ef4444;          /* red-500 */
-    --input-bg: #ffffff;
-
-    --radius: 16px;
-    --radius-sm: 12px;
-    --radius-lg: 20px;
-    --shadow: 0 10px 22px rgba(0, 0, 0, 0.06);
-    --shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.05);
-    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.08);
-
-    --gap: 14px;
-    --gap-lg: 22px;
-}
-
-/* Dark theme: automatisch + via .dark */
-@media (prefers-color-scheme: dark) {
-    :root {
-        --bg: #0f172a;            /* slate-900 */
-        --card-bg: #111827;       /* gray-900 */
-        --text: #e5e7eb;          /* slate-200 */
-        --muted: #9ca3af;         /* slate-400 */
-        --border: #1f2937;        /* slate-800 */
-        --input-bg: #0b1220;
-        --shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
-        --shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.3);
-        --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.35);
-    }
-}
-.dark :root,
-.dark {
-    --bg: #0f172a;
-    --card-bg: #111827;
-    --text: #e5e7eb;
-    --muted: #9ca3af;
-    --border: #1f2937;
-    --input-bg: #0b1220;
-    --shadow: 0 10px 22px rgba(0, 0, 0, 0.35);
-    --shadow-sm: 0 6px 16px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.35);
-}
-
-/* ---------- Page Shell ---------- */
-.scoped-dashboard.admin-projects-page {
-    background: var(--bg);
+/* Seite / Tokens */
+.schedule-rules-page.scoped-dashboard {
+    /* Seitenhintergrund + Breite */
+    --c-page-bg: #f7f8fb;              /* Light default */
+    width: 100%;
+    max-width: none;
     min-height: 100vh;
-    padding: 20px clamp(12px, 2vw, 28px) 60px;
-    color: var(--text);
+    background: var(--c-page-bg);
+
+    /* Abstände */
+    padding: var(--gap-lg, 1.25rem);
+
+    /* Theme-Tokens (Light) */
+    --c-card: #ffffff;
+    --c-surface: #eef1f6;
+    --c-border: #e3e7ee;
+    --c-text: #111827;
+    --c-text-muted: #6b7280;
+    --c-primary: #2563eb;
+    --c-primary-200t: rgba(37,99,235,.14);
+
+    --radius-xl: 18px;
+    --radius-md: 10px;
+    --gap-xl: 2rem;
+    --gap-lg: 1.25rem;
+    --gap-md: .9rem;
+    --gap-sm: .5rem;
+}
+
+/* Dark Mode Tokens */
+[data-theme="dark"] .schedule-rules-page.scoped-dashboard {
+    --c-page-bg: #0e1017;
+    --c-card: #141826;
+    --c-surface: #1b2134;
+    --c-border: #2a3147;
+    --c-text: #e6eaf2;
+    --c-text-muted: #aab2c5;
+    --c-primary: #5aa3ff;
+    --c-primary-200t: rgba(90,163,255,.16);
 }
 
 /* Header */
-.scoped-dashboard .dashboard-header {
-    margin: 12px 0 18px;
+.schedule-rules-page .dashboard-header { margin: 0 0 var(--gap-lg); }
+.schedule-rules-page .dashboard-header h1 {
+    margin: 0 0 .25rem; font-weight: 800; color: var(--c-text);
 }
-.scoped-dashboard .dashboard-header h1 {
-    font-size: clamp(20px, 2.4vw, 26px);
-    font-weight: 700;
-    letter-spacing: .2px;
-    margin: 0;
+.schedule-rules-page .dashboard-header p {
+    margin: 0; color: var(--c-text-muted);
 }
 
-/* ---------- Sections (Cards) ---------- */
-.scoped-dashboard .content-section {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: clamp(16px, 2.2vw, 24px);
-    margin-bottom: 18px;
-    transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+/* Karten */
+.schedule-rules-page .rules-list { display: flex; flex-direction: column; gap: var(--gap-lg); }
+.schedule-rules-page .rule-card {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 12px 36px rgba(0,0,0,.10);
+    padding: var(--gap-lg);
+    transition: box-shadow .2s ease, transform .08s ease, border-color .2s ease;
 }
-.scoped-dashboard .content-section:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-lg);
+[data-theme="dark"] .schedule-rules-page .rule-card { box-shadow: 0 12px 36px rgba(0,0,0,.28); }
+.schedule-rules-page .rule-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--c-primary);
+    box-shadow: 0 12px 34px rgba(37,99,235,.14);
 }
+[data-theme="dark"] .schedule-rules-page .rule-card:hover { box-shadow: 0 12px 34px rgba(90,163,255,.22); }
 
-/* Section Title */
-.scoped-dashboard .section-title {
-    font-size: 15px;
-    font-weight: 600;
-    margin: 0 0 14px;
-    color: var(--text);
-    opacity: .95;
-}
-
-/* ---------- Controls / Inputs ---------- */
-.scoped-dashboard .project-selector,
-.scoped-dashboard .create-form input[type="text"],
-.scoped-dashboard .create-form input[type="number"],
-.scoped-dashboard .edit-form input[type="text"],
-.scoped-dashboard .edit-form input[type="number"] {
-    background: var(--input-bg);
-    color: var(--text);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 12px;
-    outline: none;
-    box-shadow: var(--shadow-sm);
-    transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
-    width: 100%;
-}
-.scoped-dashboard .project-selector:focus,
-.scoped-dashboard .create-form input:focus,
-.scoped-dashboard .edit-form input:focus {
-    border-color: var(--primary);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
-}
-
-/* Checkbox field */
-.scoped-dashboard .checkbox-field {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    color: var(--muted);
-    user-select: none;
-}
-
-/* ---------- Forms Layout ---------- */
-.scoped-dashboard .create-form,
-.scoped-dashboard .edit-form {
+/* Grid – stabile Spalten (Desktop) */
+.schedule-rules-page .form-grid {
     display: grid;
-    grid-template-columns: 1fr 180px auto;
-    gap: var(--gap);
+    grid-template-columns: 2fr 1.2fr 0.9fr 0.9fr auto 1.2fr; /* label | key | start | end | active | save */
+    gap: var(--gap-md);
+    align-items: end;
 }
-.scoped-dashboard .create-form {
-    grid-template-columns: 2fr 160px auto auto auto;
+.schedule-rules-page .form-group { display: flex; flex-direction: column; }
+
+/* Zuweisung via Klassen (kein nth-child) */
+.schedule-rules-page .fg-label  { grid-column: 1; }
+.schedule-rules-page .fg-key    { grid-column: 2; }
+.schedule-rules-page .fg-start  { grid-column: 3; }
+.schedule-rules-page .fg-end    { grid-column: 4; }
+.schedule-rules-page .fg-active { grid-column: 5; display: flex; align-items: center; gap: .75rem; }
+.schedule-rules-page .fg-save   { grid-column: 6; }
+
+/* Responsive Umschaltung */
+@media (max-width: 980px) {
+    .schedule-rules-page .form-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+      "label key"
+      "start end"
+      "active save";
+    }
+    .schedule-rules-page .fg-label  { grid-area: label; }
+    .schedule-rules-page .fg-key    { grid-area: key; }
+    .schedule-rules-page .fg-start  { grid-area: start; }
+    .schedule-rules-page .fg-end    { grid-area: end; }
+    .schedule-rules-page .fg-active { grid-area: active; }
+    .schedule-rules-page .fg-save   { grid-area: save; }
 }
-@media (max-width: 880px) {
-    .scoped-dashboard .create-form,
-    .scoped-dashboard .edit-form {
+@media (max-width: 560px) {
+    .schedule-rules-page .form-grid {
         grid-template-columns: 1fr;
+        grid-template-areas: "label" "key" "start" "end" "active" "save";
     }
 }
 
-/* ---------- Buttons ---------- */
-.scoped-dashboard .button-primary,
-.scoped-dashboard .button-secondary,
-.scoped-dashboard .button-danger {
-    border: 1px solid transparent;
-    border-radius: 12px;
+/* Labels */
+.schedule-rules-page .form-group label {
+    color: var(--c-text-muted);
+    font-size: .9rem;
+    margin: 0 0 .35rem;
     font-weight: 600;
-    padding: 10px 14px;
-    cursor: pointer;
-    transition: transform .08s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, opacity .2s ease;
-    box-shadow: var(--shadow-sm);
-    white-space: nowrap;
 }
 
-/* Primary */
-.scoped-dashboard .button-primary {
-    background: var(--primary);
-    color: var(--primary-contrast);
+/* Inputs – Text/Time */
+.schedule-rules-page input[type="text"],
+.schedule-rules-page input[type="time"] {
+    height: 44px;
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text);
+    padding: 0 .95rem;
+    transition: border-color .15s ease, box-shadow .2s ease, background .2s ease, transform .05s ease;
+    box-sizing: border-box;
 }
-.scoped-dashboard .button-primary:hover {
+
+/* Fix fürs Abschneiden bei Time-Inputs */
+.schedule-rules-page input[type="time"] {
+    letter-spacing: normal;
+    font-variant-numeric: tabular-nums;
+    padding-right: 2.6rem;   /* Platz fürs Icon */
+    min-width: 9.5ch;        /* HH:MM */
+    overflow: visible;
+    color-scheme: dark light;
+}
+.schedule-rules-page input[type="time"]::-webkit-calendar-picker-indicator { opacity: .9; cursor: pointer; margin-right: .35rem; }
+.schedule-rules-page input[type="time"]::-webkit-datetime-edit { padding: 0; }
+.schedule-rules-page input[type="time"]::-webkit-datetime-edit-text { padding: 0 .1em; }
+
+/* Hover/Focus */
+.schedule-rules-page input:hover { transform: translateY(-1px); }
+.schedule-rules-page input:focus {
+    outline: none;
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 4px var(--c-primary-200t);
+}
+
+/* Toggle (scoped) */
+.schedule-rules-page .fg-active input[type="checkbox"]{
+    appearance: none; -webkit-appearance: none;
+    width: 40px; height: 22px; border-radius: 11px; position: relative;
+    background: var(--c-border); cursor: pointer; transition: background .2s ease;
+    border: none;
+}
+.schedule-rules-page .fg-active input[type="checkbox"]::before{
+    content:''; position:absolute; top:2px; left:2px; width:18px; height:18px;
+    background:#fff; border-radius:50%; transition: transform .2s ease;
+}
+.schedule-rules-page .fg-active input[type="checkbox"]:checked{ background: #16a34a; }
+.schedule-rules-page .fg-active input[type="checkbox"]:checked::before{ transform: translateX(18px); }
+
+/* Actions */
+.schedule-rules-page .fg-save button {
+    width: 100%;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: var(--c-primary);
+    color: #fff; font-weight: 700; border: none;
+    box-shadow: 0 6px 18px rgba(37,99,235,.18);
+    transition: transform .05s ease, box-shadow .2s ease, filter .2s ease;
+}
+.schedule-rules-page .fg-save button:hover {
     transform: translateY(-1px);
-    box-shadow: var(--shadow);
-}
-.scoped-dashboard .button-primary:active {
-    transform: translateY(0);
-    opacity: .95;
+    box-shadow: 0 10px 24px rgba(37,99,235,.24);
+    filter: brightness(.98);
 }
 
-/* Secondary */
-.scoped-dashboard .button-secondary {
-    background: transparent;
-    color: var(--text);
-    border-color: var(--border);
+/* Add-Button */
+.schedule-rules-page .add-new-button {
+    width: 100%;
+    padding: .9rem;
+    font-size: 1.05rem; font-weight: 700;
+    border: 2px dashed var(--c-primary);
+    background: transparent; color: var(--c-primary);
+    border-radius: var(--radius-xl);
+    cursor: pointer; transition: all .2s ease;
 }
-.scoped-dashboard .button-secondary:hover {
-    background: color-mix(in srgb, var(--text) 6%, transparent);
-}
-
-/* Danger */
-.scoped-dashboard .button-danger {
-    background: var(--danger);
-    color: #fff;
-}
-.scoped-dashboard .button-danger:hover {
-    filter: brightness(1.05);
+.schedule-rules-page .add-new-button:hover {
+    background: rgba(37,99,235,.08);
+    border-style: solid;
 }
 
-/* Form actions row */
-.scoped-dashboard .form-actions {
-    display: flex;
-    gap: 10px;
+/* Skeleton */
+.schedule-rules-page .skeleton {
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, rgba(0,0,0,.04), rgba(0,0,0,.08), rgba(0,0,0,.04));
+    border: 1px solid var(--c-border);
+    animation: skel 1.2s infinite;
 }
-
-/* ---------- List ---------- */
-.scoped-dashboard .item-list-container {
-    margin-top: 8px;
+[data-theme="dark"] .schedule-rules-page .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.13), rgba(255,255,255,.06));
 }
-.scoped-dashboard .item-list.project-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-    gap: var(--gap);
-}
-.scoped-dashboard .list-item {
-    background: var(--card-bg);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    box-shadow: var(--shadow-sm);
-    display: grid;
-    grid-template-columns: 1fr auto;
-    align-items: center;
-    gap: 10px;
-    transition: transform .15s ease, box-shadow .2s ease, border-color .2s ease;
-}
-.scoped-dashboard .list-item:hover {
-    transform: translateY(-1px);
-    box-shadow: var(--shadow);
-}
-
-/* Item content */
-.scoped-dashboard .item-details {
-    display: flex;
-    align-items: center;
-    gap: 10px 14px;
-    flex-wrap: wrap;
-}
-.scoped-dashboard .item-name {
-    font-weight: 600;
-    color: var(--text);
-}
-.scoped-dashboard .item-meta {
-    font-size: 12px;
-    color: var(--muted);
-    background: color-mix(in srgb, var(--text) 6%, transparent);
-    padding: 4px 8px;
-    border-radius: 999px;
-    border: 1px solid var(--border);
-}
-
-/* Item actions */
-.scoped-dashboard .item-actions {
-    display: flex;
-    gap: 8px;
-}
-
-/* Editing form inside list-item */
-.scoped-dashboard .list-item .edit-form {
-    grid-column: 1 / -1;
-}
-
-/* Small helpers */
-.scoped-dashboard .content-section .project-selector {
-    max-width: 420px;
-}
-.scoped-dashboard .create-form .button-primary {
-    justify-self: start;
-}
+@keyframes skel { 0%{background-position:-200px 0} 100%{background-position:200px 0} }
