@@ -32,6 +32,8 @@ public class PayslipDTO {
     private String pdfPath;
     private Integer version;
     private boolean approved;
+    private Double overtimeHours;
+    private boolean payoutOvertime;
 
     public PayslipDTO(Payslip ps) {
         this.id = ps.getId();
@@ -46,20 +48,22 @@ public class PayslipDTO {
         this.allowances = ps.getAllowances();
         this.bonuses = ps.getBonuses();
         this.oneTimePayments = ps.getOneTimePayments();
-        this.taxFreeAllowances = ps.getTaxFreeAllowances();
-        this.currency = (ps.getUser() != null && "DE".equalsIgnoreCase(ps.getUser().getCountry())) ? "EUR" : "CHF";
-        this.earnings = ps.getEarnings();
-        this.deductionsList = ps.getDeductionsList();
-        this.employerContribList = ps.getEmployerContribList();
-        this.employerContributions = ps.getEmployerContributions();
-        this.payoutDate = ps.getPayoutDate();
-        this.bankAccount = ps.getBankAccount();
-        this.socialSecurityNumber = ps.getSocialSecurityNumber();
-        this.payType = ps.getPayType();
-        this.locked = ps.isLocked();
-        this.pdfPath = ps.getPdfPath();
-        this.version = ps.getVersion();
+         this.taxFreeAllowances = ps.getTaxFreeAllowances();
+         this.currency = (ps.getUser() != null && "DE".equalsIgnoreCase(ps.getUser().getCountry())) ? "EUR" : "CHF";
+         this.earnings = ps.getEarnings();
+         this.deductionsList = ps.getDeductionsList();
+         this.employerContribList = ps.getEmployerContribList();
+         this.employerContributions = ps.getEmployerContributions();
+         this.payoutDate = ps.getPayoutDate();
+         this.bankAccount = ps.getBankAccount();
+         this.socialSecurityNumber = ps.getSocialSecurityNumber();
+         this.payType = ps.getPayType();
+         this.locked = ps.isLocked();
+         this.pdfPath = ps.getPdfPath();
+         this.version = ps.getVersion();
         this.approved = ps.isApproved();
+        this.overtimeHours = ps.getOvertimeHours();
+        this.payoutOvertime = ps.isPayoutOvertime();
     }
 
     public Long getId() { return id; }
@@ -88,4 +92,6 @@ public class PayslipDTO {
     public String getFirstName() { return firstName; }
     public String getLastName() { return lastName; }
     public String getCurrency() { return currency; }
+    public Double getOvertimeHours() { return overtimeHours; }
+    public boolean isPayoutOvertime() { return payoutOvertime; }
 }

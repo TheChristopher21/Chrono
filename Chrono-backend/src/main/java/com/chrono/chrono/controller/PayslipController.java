@@ -37,8 +37,10 @@ public class PayslipController {
             @RequestParam Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
-            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate payoutDate) {
-        Payslip ps = payrollService.generatePayslip(userId, start, end, payoutDate);
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate payoutDate,
+            @RequestParam(defaultValue = "false") boolean payoutOvertime,
+            @RequestParam(required = false) Double overtimeHours) {
+        Payslip ps = payrollService.generatePayslip(userId, start, end, payoutDate, overtimeHours, payoutOvertime);
         return ResponseEntity.ok(new PayslipDTO(ps));
     }
 

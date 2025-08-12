@@ -53,6 +53,11 @@ public class PayrollService {
 
     @Transactional
     public Payslip generatePayslip(Long userId, LocalDate start, LocalDate end, LocalDate payoutDate) {
+        return generatePayslip(userId, start, end, payoutDate, null, false);
+    }
+
+    @Transactional
+    public Payslip generatePayslip(Long userId, LocalDate start, LocalDate end, LocalDate payoutDate, Double overtimeHours, boolean payoutOvertime) {
         User user = userRepository.findById(userId).orElseThrow();
         LocalDateTime startDt = start.atStartOfDay();
         LocalDateTime endDt = end.plusDays(1).atStartOfDay();
@@ -73,18 +78,30 @@ public class PayrollService {
         double overtimePay = 0.0;
         if (user.getIsHourly() != null && user.getIsHourly()) {
             double rate = user.getHourlyRate() != null ? user.getHourlyRate() : 0.0;
-            double overtimeHours = Math.max(0, hours - 160);
-            double baseHours = hours - overtimeHours;
+            double autoOvertimeHours = Math.max(0, hours - 160);
+            double baseHours = hours - autoOvertimeHours;
             basePay = baseHours * rate;
-            overtimePay = overtimeHours * rate * (1 + OVERTIME_BONUS);
+            overtimePay = autoOvertimeHours * rate * (1 + OVERTIME_BONUS);
         } else {
             basePay = user.getMonthlySalary() != null ? user.getMonthlySalary() : 0.0;
             if (hours > 160 && user.getHourlyRate() != null) {
-                double overtimeHours = hours - 160;
-                overtimePay = overtimeHours * user.getHourlyRate() * (1 + OVERTIME_BONUS);
+                double autoOvertimeHours = hours - 160;
+                overtimePay = autoOvertimeHours * user.getHourlyRate() * (1 + OVERTIME_BONUS);
             }
         }
-        double gross = basePay + overtimePay;
+
+        double manualOvertimePay = 0.0;
+        double paidOvertimeHours = 0.0;
+        if (payoutOvertime && overtimeHours != null && overtimeHours > 0 && user.getHourlyRate() != null) {
+            double available = user.getTrackingBalanceInMinutes() != null ? user.getTrackingBalanceInMinutes() / 60.0 : 0.0;
+            paidOvertimeHours = Math.min(overtimeHours, available);
+            manualOvertimePay = paidOvertimeHours * user.getHourlyRate() * (1 + OVERTIME_BONUS);
+            int minutesToDeduct = (int) Math.round(paidOvertimeHours * 60);
+            user.setTrackingBalanceInMinutes(user.getTrackingBalanceInMinutes() - minutesToDeduct);
+            userRepository.save(user);
+        }
+
+        double gross = basePay + overtimePay + manualOvertimePay;
         TaxCalculationService.Result res = taxCalculationService.calculate(user, gross);
         double deductions = res.getEmployeeTotal();
         double net = gross - deductions;
@@ -106,6 +123,11 @@ public class PayrollService {
         ps.getEarnings().add(new PayComponent("Base salary", basePay));
         if (overtimePay > 0) {
             ps.getEarnings().add(new PayComponent("Overtime", overtimePay));
+        }
+        if (manualOvertimePay > 0) {
+            ps.getEarnings().add(new PayComponent("Overtime payout", manualOvertimePay));
+            ps.setOvertimeHours(paidOvertimeHours);
+            ps.setPayoutOvertime(true);
         }
         for (Map.Entry<String, Double> entry : res.getEmployee().entrySet()) {
             ps.getDeductionsList().add(new PayComponent(entry.getKey(), entry.getValue()));
