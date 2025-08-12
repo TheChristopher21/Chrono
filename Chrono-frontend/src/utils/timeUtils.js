@@ -43,3 +43,9 @@ export function isLateTime(timeString) {
         return false;
     }
 }
+
+export function sortEntries(entries) {
+    return [...(entries || [])].sort(
+        (a, b) => new Date(a.entryTimestamp) - new Date(b.entryTimestamp)
+    );
+}

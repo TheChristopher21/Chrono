@@ -21,7 +21,8 @@ import {
     minutesToHHMM,
     computeTotalWorkedMinutesInRange,
     expectedDayMinutesForPercentageUser,
-    parseHex16
+    parseHex16,
+    sortEntries
 } from './percentageDashUtils';
 
 import PercentageWeekOverview from './PercentageWeekOverview';
@@ -303,7 +304,7 @@ const PercentageDashboard = () => {
             const workEnd    = primary.lastEndTime ? primary.lastEndTime.substring(0,5) : (primary.isOpen ? t('printReport.open') : "-");
             const breakTimeStr = minutesToHHMM(summary.breakMinutes);
             const totalWorkedStr = minutesToHHMM(summary.workedMinutes);
-            const punches = summary.entries.map(e => `${t('punchTypes.'+e.punchType, e.punchType).substring(0,1)}:${formatTime(e.entryTimestamp)}${e.source === 'SYSTEM_AUTO_END' && !e.correctedByUser ? '(A)' : ''}`).join(' | ');
+            const punches = sortEntries(summary.entries).map(e => `${t('punchTypes.'+e.punchType, e.punchType).substring(0,1)}:${formatTime(e.entryTimestamp)}${e.source === 'SYSTEM_AUTO_END' && !e.correctedByUser ? '(A)' : ''}`).join(' | ');
             return [displayDate, workStart, workEnd, breakTimeStr, totalWorkedStr, punches, summary.dailyNote || ""];
         });
         autoTable(doc, {

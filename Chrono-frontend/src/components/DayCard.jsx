@@ -5,6 +5,7 @@ import {
   formatTime,
   formatPunchedTimeFromEntry,
   isLateTime,
+  sortEntries,
 } from '../utils/timeUtils';
 
 const DayCard = ({
@@ -22,13 +23,17 @@ const DayCard = ({
   children,
 }) => {
   const correctionDisabled = holidayName || vacationInfo || sickInfo;
+  const sortedEntries = useMemo(
+    () => sortEntries(summary?.entries),
+    [summary]
+  );
 
   const customerRanges = useMemo(() => {
-    if (!summary || !Array.isArray(summary.entries)) return [];
+    if (!sortedEntries || !Array.isArray(sortedEntries)) return [];
     const ranges = [];
     let currentCustomer = null;
     let start = null;
-    summary.entries.forEach(entry => {
+    sortedEntries.forEach(entry => {
       const time = formatTime(entry.entryTimestamp);
       if (entry.punchType === 'START') {
         currentCustomer = entry.customerName || null;
@@ -40,7 +45,7 @@ const DayCard = ({
       }
     });
     return ranges;
-  }, [summary]);
+  }, [sortedEntries]);
 
   const uniqueCustomers = useMemo(() => {
     return Array.from(
@@ -113,7 +118,7 @@ const DayCard = ({
         ) : (
           <>
             <ul className="time-entry-list">
-              {summary.entries.map((entry) => (
+              {sortedEntries.map((entry) => (
                   <li
                       key={entry.id || entry.entryTimestamp}
                       style={{
