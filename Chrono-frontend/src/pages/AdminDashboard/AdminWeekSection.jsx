@@ -553,7 +553,54 @@ const AdminWeekSection = ({
                                                                 );
                                                             } else if (vacationOnThisDay) {
                                                                 cardClass += ' admin-day-card-vacation';
-                                                                dayCardContent = <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>;
+                                                                if (vacationOnThisDay.companyVacation && dailySummary && dailySummary.entries && dailySummary.entries.length > 0) {
+                                                                    dayCardContent = (
+                                                                        <>
+                                                                            <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>
+                                                                            <div className="admin-day-card-header justify-between items-start mb-1">
+                                                                                <div className="text-xs">
+                                                                                    {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {minutesToHHMM(expectedMinsToday)})</span>}
+                                                                                    {!userData.userConfig.isHourly && <span className={`daily-diff ml-1 ${diffMinsToday < 0 ? 'text-red-600' : 'text-green-600'}`}>({t('diffTimeShort', 'Diff')}: {minutesToHHMM(diffMinsToday)})</span>}
+                                                                                    {dailySummary.needsCorrection && <span className="auto-completed-tag ml-1 text-red-600 font-bold" title={t('adminDashboard.needsCorrectionTooltip', 'Automatisch beendet und unkorrigiert')}>KORR?</span>}
+                                                                                </div>
+                                                                                <button className="edit-day-button text-xs py-0.5 px-1 bg-gray-200 hover:bg-gray-300 rounded" onClick={() => openEditModal(userData.username, d, dailySummary)}>
+                                                                                    {t("adminDashboard.editButton", "Bearb.")}
+                                                                                </button>
+                                                                            </div>
+                                                                            <ul className="time-entry-list-condensed text-xs">
+                                                                                {dailySummary.entries.map(entry => {
+                                                                                    let typeLabel = entry.punchType;
+                                                                                    try {
+                                                                                        typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
+                                                                                    } catch (e) { /* Fallback */ }
+
+                                                                                    let sourceIndicator = '';
+                                                                                    if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
+                                                                                        sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
+                                                                                    } else if (entry.source === 'ADMIN_CORRECTION') {
+                                                                                        sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
+                                                                                    } else if (entry.source === 'USER_CORRECTION') {
+                                                                                        sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
+                                                                                    } else if (entry.source === 'MANUAL_IMPORT') {
+                                                                                        sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
+                                                                                    }
+
+                                                                                    return (
+                                                                                        <li key={entry.id || entry.key} className="py-0.5">
+                                                                                            {`${typeLabel}: ${formatTime(entry.entryTimestamp)}${sourceIndicator}`}
+                                                                                        </li>
+                                                                                    );
+                                                                                })}
+                                                                            </ul>
+                                                                            <p className="text-xs mt-1">
+                                                                                <strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(actualMinsToday)} | <strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(dailySummary.breakMinutes)}
+                                                                            </p>
+                                                                            {dailySummary.dailyNote && <p className="text-xs mt-1 italic">📝 {dailySummary.dailyNote}</p>}
+                                                                        </>
+                                                                    );
+                                                                } else {
+                                                                    dayCardContent = <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>;
+                                                                }
                                                             } else if (sickOnThisDay) {
                                                                 cardClass += ' admin-day-card-sick';
                                                                 dayCardContent = (

@@ -39,6 +39,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const [overtimeDeductionHours, setOvertimeDeductionHours] = useState('');
     const [vacationStartDate, setVacationStartDate] = useState('');
     const [vacationEndDate, setVacationEndDate] = useState('');
+    const [isCompanyVacation, setIsCompanyVacation] = useState(false);
 
     const [showSickLeaveModal, setShowSickLeaveModal] = useState(false);
     const [sickLeaveUser, setSickLeaveUser] = useState('');
@@ -171,6 +172,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         setNewVacationHalfDay(false);
         setNewVacationUsesOvertime(false);
         setOvertimeDeductionHours('');
+        setIsCompanyVacation(false);
     }, []);
 
     const resetSickLeaveForm = useCallback(() => {
@@ -182,22 +184,42 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     }, []);
 
     async function handleCreateVacation() {
-        // ... (Logik bleibt gleich)
         if (!currentUser || !currentUser.username) {
             notify(t("errors.notLoggedIn", "Nicht eingeloggt oder Benutzername fehlt."), 'error');
-            return;
-        }
-        if (!newVacationUser) {
-            notify(t("adminVacation.noUserSelected", "Bitte einen Benutzer auswählen"), 'warning');
             return;
         }
         if (!vacationStartDate || !vacationEndDate) {
             notify(t("adminVacation.datesMissing", "Bitte Start- und Enddatum angeben"), 'warning');
             return;
         }
-
         if (new Date(vacationEndDate) < new Date(vacationStartDate)) {
             notify(t("adminVacation.endDateBeforeStart", "Das Enddatum darf nicht vor dem Startdatum liegen."), 'error');
+            return;
+        }
+
+        if (isCompanyVacation) {
+            try {
+                const params = {
+                    adminUsername: currentUser.username,
+                    startDate: vacationStartDate,
+                    endDate: vacationEndDate,
+                    halfDay: newVacationHalfDay,
+                };
+                await api.post('/api/vacation/companyCreate', null, { params });
+                notify(t("adminVacation.createdSuccess", "Urlaub erfolgreich erstellt und direkt genehmigt"), 'success');
+                if (onReloadVacations) onReloadVacations();
+                setShowVacationModal(false);
+                resetVacationForm();
+            } catch (err) {
+                console.error('Error creating company vacation', err);
+                const errorMsg = err.response?.data?.message || err.response?.data || err.message || t('errors.unknownError');
+                notify(t("adminVacation.createError", "Fehler beim Anlegen des Urlaubs") + `: ${errorMsg}`, 'error');
+            }
+            return;
+        }
+
+        if (!newVacationUser) {
+            notify(t("adminVacation.noUserSelected", "Bitte einen Benutzer auswählen"), 'warning');
             return;
         }
 
@@ -214,8 +236,8 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         const params = {
             adminUsername: currentUser.username,
             username: newVacationUser,
-            startDate: vacationStartDate, // Bereits YYYY-MM-DD
-            endDate: vacationEndDate,   // Bereits YYYY-MM-DD
+            startDate: vacationStartDate,
+            endDate: vacationEndDate,
             halfDay: newVacationHalfDay,
             usesOvertime: newVacationUsesOvertime,
         };
@@ -430,13 +452,19 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                     <div className="modal-content large-calendar-modal">
                         <h3>{t('adminVacation.modalTitle', 'Neuen Urlaub für Mitarbeiter anlegen')}</h3>
                         <form onSubmit={(e) => { e.preventDefault(); handleCreateVacation(); }}>
-                            <div className="form-group">
-                                <label htmlFor="vacationUserSelect">{t('adminVacation.userSelection', 'Benutzer Auswahl')}:</label>
-                                <select id="vacationUserSelect" value={newVacationUser} onChange={handleVacationUserChange} required>
-                                    <option value="">{t('adminVacation.selectUserPlaceholder', 'Bitte Benutzer auswählen')}</option>
-                                    {users.map((u) => (<option key={u.id} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
-                                </select>
+                            <div className="form-group form-group-checkbox">
+                                <input type="checkbox" id="companyVacationCheckbox" checked={isCompanyVacation} onChange={(e) => setIsCompanyVacation(e.target.checked)} />
+                                <label htmlFor="companyVacationCheckbox">{t('adminVacation.companyVacationLabel', 'Betriebsurlaub')}</label>
                             </div>
+                            {!isCompanyVacation && (
+                                <div className="form-group">
+                                    <label htmlFor="vacationUserSelect">{t('adminVacation.userSelection', 'Benutzer Auswahl')}:</label>
+                                    <select id="vacationUserSelect" value={newVacationUser} onChange={handleVacationUserChange} required>
+                                        <option value="">{t('adminVacation.selectUserPlaceholder', 'Bitte Benutzer auswählen')}</option>
+                                        {users.map((u) => (<option key={u.id} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
+                                    </select>
+                                </div>
+                            )}
                             <Calendar
                                 selectRange
                                 onChange={(range) => {
@@ -461,11 +489,13 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                 <input type="checkbox" id="vacHalfDayCheckbox" checked={newVacationHalfDay} onChange={(e) => setNewVacationHalfDay(e.target.checked)} />
                                 <label htmlFor="vacHalfDayCheckbox">{t('adminVacation.halfDayLabel', 'Halbtags Urlaub')}</label>
                             </div>
-                            <div className="form-group form-group-checkbox">
-                                <input type="checkbox" id="vacUsesOvertimeCheckbox" checked={newVacationUsesOvertime} onChange={handleUsesOvertimeChange} disabled={!selectedUserDetailsForVacation} />
-                                <label htmlFor="vacUsesOvertimeCheckbox">{t('adminVacation.usesOvertimeLabel', 'Überstunden nutzen')}</label>
-                            </div>
-                            {newVacationUsesOvertime && selectedUserDetailsForVacation?.isPercentage && (
+                            {!isCompanyVacation && (
+                                <div className="form-group form-group-checkbox">
+                                    <input type="checkbox" id="vacUsesOvertimeCheckbox" checked={newVacationUsesOvertime} onChange={handleUsesOvertimeChange} disabled={!selectedUserDetailsForVacation} />
+                                    <label htmlFor="vacUsesOvertimeCheckbox">{t('adminVacation.usesOvertimeLabel', 'Überstunden nutzen')}</label>
+                                </div>
+                            )}
+                            {!isCompanyVacation && newVacationUsesOvertime && selectedUserDetailsForVacation?.isPercentage && (
                                 <div className="form-group">
                                     <label htmlFor="vacOvertimeDeductionHoursInput">{t('adminVacation.overtimeDeductionHoursLabel', 'Abzuziehende Überstunden Insgesamt (in Stunden):')}</label>
                                     <input type="number" id="vacOvertimeDeductionHoursInput" value={overtimeDeductionHours} onChange={(e) => setOvertimeDeductionHours(e.target.value)} placeholder={t('adminVacation.hoursPlaceholder', 'z.B. 4 oder 8.5')} step="0.01" min="0.01" required />
