@@ -132,9 +132,10 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny }) {
 
     /* ──────────────────────────────────── render */
     const scrollable = sortedRows.length > 25;
+    const hasPending = allCorrections.some(c => !c.approved && !c.denied);
 
     return (
-        <section className="correction-section content-section">
+        <section className={`correction-section content-section${(!isExpanded && hasPending) ? ' has-pending' : ''}`}>
             {/* Header ----------------------------------------------------------------*/}
             <div
                 className="section-header"
