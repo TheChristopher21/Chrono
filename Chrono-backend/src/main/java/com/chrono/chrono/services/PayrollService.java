@@ -92,12 +92,20 @@ public class PayrollService {
 
         double manualOvertimePay = 0.0;
         double paidOvertimeHours = 0.0;
-        if (payoutOvertime && overtimeHours != null && overtimeHours > 0 && user.getHourlyRate() != null) {
-            double available = user.getTrackingBalanceInMinutes() != null ? user.getTrackingBalanceInMinutes() / 60.0 : 0.0;
+        if (payoutOvertime && overtimeHours != null && overtimeHours > 0) {
+            double rate = user.getHourlyRate() != null
+                    ? user.getHourlyRate()
+                    : (user.getMonthlySalary() != null ? user.getMonthlySalary() / 160.0 : 0.0);
+            double available = user.getTrackingBalanceInMinutes() != null
+                    ? user.getTrackingBalanceInMinutes() / 60.0
+                    : overtimeHours;
             paidOvertimeHours = Math.min(overtimeHours, available);
-            manualOvertimePay = paidOvertimeHours * user.getHourlyRate() * (1 + OVERTIME_BONUS);
+            manualOvertimePay = paidOvertimeHours * rate * (1 + OVERTIME_BONUS);
             int minutesToDeduct = (int) Math.round(paidOvertimeHours * 60);
-            user.setTrackingBalanceInMinutes(user.getTrackingBalanceInMinutes() - minutesToDeduct);
+            int currentBalance = user.getTrackingBalanceInMinutes() != null
+                    ? user.getTrackingBalanceInMinutes()
+                    : 0;
+            user.setTrackingBalanceInMinutes(currentBalance - minutesToDeduct);
             userRepository.save(user);
         }
 

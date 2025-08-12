@@ -99,6 +99,39 @@ class PayrollServiceTest {
     }
 
     @Test
+    void generatePayslip_payoutOvertimeAdjustsBalanceAndPay() {
+        User user = new User();
+        user.setId(1L);
+        user.setUsername("john");
+        user.setIsHourly(true);
+        user.setHourlyRate(10.0);
+        user.setTrackingBalanceInMinutes(120);
+
+        LocalDate start = LocalDate.of(2024, 1, 1);
+        LocalDate end = LocalDate.of(2024, 1, 31);
+
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository
+                .findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(eq(user), any(), any()))
+                .thenReturn(Collections.emptyList());
+        when(payslipRepository.findByUserAndPeriodStartAndPeriodEnd(user, start, end))
+                .thenReturn(Collections.emptyList());
+
+        Map<String, Double> emp = Map.of();
+        Map<String, Double> empEr = Map.of();
+        TaxCalculationService.Result res = new TaxCalculationService.Result(emp, empEr);
+        when(taxCalculationService.calculate(eq(user), anyDouble())).thenReturn(res);
+        when(payslipRepository.save(any(Payslip.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Payslip ps = payrollService.generatePayslip(1L, start, end, null, 1.5, true);
+
+        assertEquals(18.75, ps.getGrossSalary());
+        assertEquals(1.5, ps.getOvertimeHours());
+        assertTrue(ps.isPayoutOvertime());
+        assertEquals(30, user.getTrackingBalanceInMinutes());
+    }
+
+    @Test
     void approvePayslip_marksApprovedAndSendsMail() {
         Payslip ps = new Payslip();
         ps.setId(2L);
