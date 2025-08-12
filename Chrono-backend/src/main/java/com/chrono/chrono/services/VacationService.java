@@ -88,14 +88,9 @@ public class VacationService {
         vr.setHalfDay(halfDay); //
         vr.setUsesOvertime(usesOvertime); //
 
-        // Auto approve if enough remaining vacation days and no conflicts
-        boolean autoApprove = false;
-        if (!usesOvertime) {
-            double requested = calculateRequestedVacationDays(user, start, end, halfDay);
-            double remaining = calculateRemainingVacationDays(username, start.getYear());
-            autoApprove = requested <= remaining;
-        }
-        vr.setApproved(autoApprove);
+        // User-submitted vacation requests should not be auto-approved.
+        // An admin must explicitly approve or deny the request later.
+        vr.setApproved(false);
 
         if (usesOvertime && Boolean.TRUE.equals(user.getIsPercentage())) { //
             if (overtimeDeductionMinutes != null && overtimeDeductionMinutes > 0) { //
