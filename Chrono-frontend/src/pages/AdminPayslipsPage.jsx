@@ -9,7 +9,7 @@ const AdminPayslipsPage = () => {
   const [payslips, setPayslips] = useState([]);
   const [approvedSlips, setApprovedSlips] = useState([]);
   const [users, setUsers] = useState([]);
-  const [form, setForm] = useState({ userId: '', start: '', end: '', payoutDate: '' });
+  const [form, setForm] = useState({ userId: '', start: '', end: '', payoutDate: '', payoutOvertime: false, overtimeHours: '' });
   const [filter, setFilter] = useState({ name: '', start: '', end: '' });
   const [logoFile, setLogoFile] = useState(null);
   const { t } = useTranslation();
@@ -105,13 +105,20 @@ const AdminPayslipsPage = () => {
 
   const createPayslip = () => {
     if (!form.userId || !form.start || !form.end) return;
-    api.post('/api/payslips/generate', null, {
-      params: { userId: form.userId, start: form.start, end: form.end, payoutDate: form.payoutDate }
-    }).then(() => {
-      setForm({ userId: '', start: '', end: '', payoutDate: '' });
-      fetchPending();
-    });
-  };
+      api.post('/api/payslips/generate', null, {
+        params: {
+          userId: form.userId,
+          start: form.start,
+          end: form.end,
+          payoutDate: form.payoutDate,
+          payoutOvertime: form.payoutOvertime,
+          overtimeHours: form.payoutOvertime ? form.overtimeHours : null
+        }
+      }).then(() => {
+        setForm({ userId: '', start: '', end: '', payoutDate: '', payoutOvertime: false, overtimeHours: '' });
+        fetchPending();
+      });
+    };
 
   useEffect(() => {
     fetchPending();
@@ -163,10 +170,22 @@ const AdminPayslipsPage = () => {
                 <label>{t('payslips.periodEnd', 'Enddatum')}</label>
                 <input type="date" value={form.end} onChange={e => setForm({ ...form, end: e.target.value })} />
               </div>
-              <div className="form-group">
-                <label>{t('payslips.payoutDate', 'Auszahlungsdatum')}</label>
-                <input type="date" value={form.payoutDate} onChange={e => setForm({ ...form, payoutDate: e.target.value })} />
-              </div>
+                <div className="form-group">
+                  <label>{t('payslips.payoutDate', 'Auszahlungsdatum')}</label>
+                  <input type="date" value={form.payoutDate} onChange={e => setForm({ ...form, payoutDate: e.target.value })} />
+                </div>
+                <div className="form-group">
+                  <label>
+                    <input type="checkbox" checked={form.payoutOvertime} onChange={e => setForm({ ...form, payoutOvertime: e.target.checked })} />
+                    {t('payslips.payoutOvertime', 'Überstunden auszahlen')}
+                  </label>
+                </div>
+                {form.payoutOvertime && (
+                  <div className="form-group">
+                    <label>{t('payslips.overtimeHours', 'Überstunden (Std.)')}</label>
+                    <input type="number" min="0" step="0.25" value={form.overtimeHours} onChange={e => setForm({ ...form, overtimeHours: e.target.value })} />
+                  </div>
+                )}
               <button onClick={createPayslip} className="primary-btn">{t('payslips.generate', 'Erstellen')}</button>
             </div>
           </div>

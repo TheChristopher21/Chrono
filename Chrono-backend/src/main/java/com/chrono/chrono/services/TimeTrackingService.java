@@ -11,6 +11,7 @@ import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.entities.DailyNote;
 import com.chrono.chrono.entities.Task;
+import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.SickLeaveRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
@@ -20,6 +21,7 @@ import com.chrono.chrono.repositories.CustomerRepository;
 import com.chrono.chrono.repositories.ProjectRepository;
 import com.chrono.chrono.repositories.DailyNoteRepository;
 import com.chrono.chrono.repositories.TaskRepository;
+import com.chrono.chrono.repositories.PayslipRepository;
 import org.apache.poi.ss.usermodel.*; // Für Excel-Verarbeitung
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +64,8 @@ public class TimeTrackingService {
     private DailyNoteRepository dailyNoteRepository;
     @Autowired
     private TaskRepository taskRepository;
+    @Autowired
+    private PayslipRepository payslipRepository;
 
     private User loadUserByUsername(String username) {
         return userRepository.findByUsername(username)
@@ -320,6 +324,14 @@ public class TimeTrackingService {
                 }
             }
 
+            int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
+                    .filter(Payslip::isPayoutOvertime)
+                    .map(Payslip::getOvertimeHours)
+                    .filter(Objects::nonNull)
+                    .mapToInt(h -> (int) Math.round(h * 60))
+                    .sum();
+            totalWorkedMinutes -= paidOvertimeMinutes;
+
             freshUser.setTrackingBalanceInMinutes((int) totalWorkedMinutes);
             userRepository.save(freshUser);
             logger.info("Saldo für Stundenlöhner {} auf die Summe der gearbeiteten Zeit aktualisiert: {} Minuten.", freshUser.getUsername(), totalWorkedMinutes);
@@ -391,6 +403,13 @@ public class TimeTrackingService {
                     }
                 }
             }
+            int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
+                    .filter(Payslip::isPayoutOvertime)
+                    .map(Payslip::getOvertimeHours)
+                    .filter(Objects::nonNull)
+                    .mapToInt(h -> (int) Math.round(h * 60))
+                    .sum();
+            totalMinutesBalance -= paidOvertimeMinutes;
             if (freshUser.getTrackingBalanceInMinutes() != totalMinutesBalance) {
                 logger.info("Saldo für {} aktualisiert von {} auf {} Minuten.", freshUser.getUsername(), freshUser.getTrackingBalanceInMinutes(), totalMinutesBalance);
                 freshUser.setTrackingBalanceInMinutes(totalMinutesBalance);

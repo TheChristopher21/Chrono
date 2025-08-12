@@ -141,7 +141,7 @@ const PayslipsPage = () => {
                                 {pendingSlips.map(ps => (
                                     <tr key={ps.id}>
                                         <td data-label={t('payslips.user')}>{ps.firstName} {ps.lastName}</td><td data-label={t('payslips.period')}>{ps.periodStart} – {ps.periodEnd}</td>
-                                        <td data-label={t('payslips.gross')}>{ps.grossSalary?.toFixed(2)} CHF</td><td data-label={t('payslips.net')}>{ps.netSalary?.toFixed(2)} CHF</td>
+                                        <td data-label={t('payslips.gross')}>{ps.grossSalary?.toFixed(2)} {ps.currency || 'CHF'}</td><td data-label={t('payslips.net')}>{ps.netSalary?.toFixed(2)} {ps.currency || 'CHF'}</td>
                                         <td data-label={t('payslips.payoutDate')}>{ps.payoutDate}</td>
                                         <td className="actions-col">
                                             <button type="button" className="button-secondary" onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout')}</button>
@@ -205,7 +205,7 @@ const PayslipsPage = () => {
                                         <tr key={ps.id}>
                                             {isAdmin && <td data-label={t('payslips.user')}>{ps.firstName} {ps.lastName}</td>}
                                             <td data-label={t('payslips.period')}>{ps.periodStart} – {ps.periodEnd}</td>
-                                            <td data-label={t('payslips.gross')}>{ps.grossSalary?.toFixed(2)} CHF</td><td data-label={t('payslips.net')}>{ps.netSalary?.toFixed(2)} CHF</td>
+                                            <td data-label={t('payslips.gross')}>{ps.grossSalary?.toFixed(2)} {ps.currency || 'CHF'}</td><td data-label={t('payslips.net')}>{ps.netSalary?.toFixed(2)} {ps.currency || 'CHF'}</td>
                                             <td data-label={t('payslips.payoutDate')}>{ps.payoutDate}</td>
                                             <td className="actions-col">
                                                 <button type="button" className="button-primary" onClick={() => printPdf(ps.id)}>{t('payslips.print')}</button>
