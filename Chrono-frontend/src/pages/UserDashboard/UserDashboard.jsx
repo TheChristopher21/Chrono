@@ -362,6 +362,12 @@ function UserDashboard() {
             14,
             22
         );
+        const overtimeStr = minutesToHHMM(userProfile.trackingBalanceInMinutes || 0);
+        doc.text(
+            `${t('overtimeBalance')}: ${overtimeStr}`,
+            14,
+            28
+        );
 
         const tableBody = summariesToPrint.map(summary => {
             const displayDate = formatDate(summary.date);
@@ -387,7 +393,7 @@ function UserDashboard() {
                 t('printReport.note'),
             ]],
             body: tableBody,
-            startY: 30,
+            startY: 36,
             margin: { left: 10, right: 10 },
             styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
             headStyles: { fillColor: [71, 91, 255], textColor: 255, fontStyle: 'bold', halign: 'center' },
