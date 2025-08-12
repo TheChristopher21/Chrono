@@ -199,6 +199,10 @@ const AdminDashboard = () => {
         }
     }
 
+    function handleCurrentWeek() {
+        setSelectedMonday(getMondayOfWeek(new Date()));
+    }
+
     async function handleApproveVacation(id) {
         try {
             await api.post(`/api/vacation/approve/${id}`);
@@ -472,6 +476,7 @@ const AdminDashboard = () => {
                         handlePrevWeek={handlePrevWeek}
                         handleNextWeek={handleNextWeek}
                         handleWeekJump={handleWeekJump}
+                        handleCurrentWeek={handleCurrentWeek}
                         onFocusProblemWeek={focusWeekForProblem}
                         dailySummariesForWeekSection={dailySummaries}
                         allVacations={allVacations}
