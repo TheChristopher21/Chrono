@@ -26,10 +26,12 @@ const fetchVacations = async () => {
 const usePlannerStore = create((set) => ({
   weekStart: startOfWeek(new Date(), { weekStartsOn: 1 }),
   dragUser: null,
+  dragEntry: null,
   copiedWeek: null,
   setWeekStart: (date) => set({ weekStart: startOfWeek(date, { weekStartsOn: 1 }) }),
   changeWeek: (offset) => set((state) => ({ weekStart: addDays(state.weekStart, offset * 7) })),
-  setDragUser: (user) => set({ dragUser: user }),
+  setDragUser: (user, entry = null) => set({ dragUser: user, dragEntry: entry }),
+  clearDrag: () => set({ dragUser: null, dragEntry: null }),
   setCopiedWeek: (schedule) => set({ copiedWeek: schedule }),
 }));
 
@@ -110,13 +112,15 @@ const WeekNavigator = ({ onAutoFill, onCopyWeek, onPasteWeek }) => {
 const UserList = () => {
   const { t } = useTranslation();
   const { data: users = [], isLoading: isLoadingUsers } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
-  const { dragUser, setDragUser } = usePlannerStore();
+  const dragUser = usePlannerStore(state => state.dragUser);
+  const setDragUser = usePlannerStore(state => state.setDragUser);
+  const clearDrag = usePlannerStore(state => state.clearDrag);
   return (
       <div className="planner-sidebar">
         <h3>{t('schedulePlanner.availableUsers', 'Mitarbeiter')}</h3>
         <div className="user-list">
           {isLoadingUsers ? <p>Lade...</p> : users.map(u => (
-              <div key={u.id} className={`user-list-item ${dragUser?.id === u.id ? 'dragging' : ''}`} draggable onDragStart={() => setDragUser(u)} onDragEnd={() => setDragUser(null)}>
+              <div key={u.id} className={`user-list-item ${dragUser?.id === u.id ? 'dragging' : ''}`} draggable onDragStart={() => setDragUser(u)} onDragEnd={() => clearDrag()}>
                 {u.firstName} {u.lastName}
               </div>
           ))}
@@ -128,7 +132,10 @@ const UserList = () => {
 const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
   const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
   const { data: shifts = [], isLoading: isLoadingShifts } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
-  const { weekStart, dragUser, setDragUser } = usePlannerStore();
+  const weekStart = usePlannerStore(state => state.weekStart);
+  const dragUser = usePlannerStore(state => state.dragUser);
+  const dragEntry = usePlannerStore(state => state.dragEntry);
+  const clearDrag = usePlannerStore(state => state.clearDrag);
   const { notify } = useNotification(); // NEU
   const { t } = useTranslation();
   const [hoveredCell, setHoveredCell] = React.useState(null);
@@ -151,7 +158,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
 
     const vacForUser = vacationMap?.[dragUser.username]?.[dateKey];
     if (vacForUser) { // Verhindert das Ablegen, wenn der User im Urlaub ist
-      setDragUser(null);
+      clearDrag();
       return;
     }
 
@@ -161,15 +168,19 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
     const expectedHours = getExpectedHoursForDate(dragUser, dateKey);
     if (expectedHours <= 0) {
       notify(t('schedulePlanner.userDayOff', 'Der Nutzer hat an diesem Tag frei'));
-      setDragUser(null);
+      clearDrag();
       return;
     }
 
     if (!userAlreadyInShift) {
-      saveMutation.mutate({ userId: dragUser.id, date: dateKey, shift: shiftKey });
+      const payload = { userId: dragUser.id, date: dateKey, shift: shiftKey };
+      if (dragEntry?.id) {
+        payload.id = dragEntry.id;
+      }
+      saveMutation.mutate(payload);
     }
 
-    setDragUser(null);
+    clearDrag();
   };
 
   const clearEntry = (entryId) => {
@@ -231,7 +242,14 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
                                       const user = users.find(u => u.id === entry.userId);
                                       if (!user) return null;
                                       return (
-                                          <div key={entry.id} className="assigned-user" style={{ backgroundColor: user.color || 'var(--ud-c-primary)' }}>
+                                          <div
+                                              key={entry.id}
+                                              className="assigned-user"
+                                              style={{ backgroundColor: user.color || 'var(--ud-c-primary)' }}
+                                              draggable
+                                              onDragStart={() => setDragUser(user, entry)}
+                                              onDragEnd={() => clearDrag()}
+                                          >
                                             <span>{user.firstName} {user.lastName}</span>
                                             <button className="clear-cell-btn" onClick={() => clearEntry(entry.id)}>×</button>
                                           </div>
