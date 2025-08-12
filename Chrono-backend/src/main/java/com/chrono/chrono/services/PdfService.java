@@ -72,6 +72,7 @@ public class PdfService {
             java.util.Map<String, String> compTrans = new java.util.HashMap<>();
             compTrans.put("Base salary", en ? "Base salary" : "Grundlohn");
             compTrans.put("Overtime", en ? "Overtime" : "Überstunden");
+            compTrans.put("Overtime payout", en ? "Overtime payout" : "Überstundenauszahlung");
             compTrans.put("Tax", en ? "Tax" : "Steuer");
             compTrans.put("Social", en ? "Social" : "Sozialabgaben");
             compTrans.put("Income tax", en ? "Income tax" : "Einkommensteuer");
