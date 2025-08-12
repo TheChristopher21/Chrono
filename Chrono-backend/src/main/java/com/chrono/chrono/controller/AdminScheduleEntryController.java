@@ -73,6 +73,39 @@ public class AdminScheduleEntryController {
             return ResponseEntity.badRequest().body("User is not scheduled to work on this day");
         }
 
+        // Update existing entry if ID is provided
+        if (dto.getId() != null) {
+            Optional<ScheduleEntry> entryOpt = entryRepo.findById(dto.getId());
+            if (entryOpt.isEmpty()) {
+                return ResponseEntity.badRequest().body("Entry not found");
+            }
+            ScheduleEntry entry = entryOpt.get();
+
+            Optional<ScheduleEntry> conflict = entryRepo.findByUserAndDate(user, dto.getDate());
+            if (conflict.isPresent() && !conflict.get().getId().equals(entry.getId())) {
+                return ResponseEntity.badRequest().body("User already scheduled to work on this day");
+            }
+
+            LocalDate weekStart = dto.getDate().with(DayOfWeek.MONDAY);
+            LocalDate weekEnd = weekStart.plusDays(6);
+            List<ScheduleEntry> weekEntries = entryRepo.findByUserAndDateBetween(user, weekStart, weekEnd);
+            int existingMinutes = weekEntries.stream()
+                    .filter(e -> !e.getId().equals(entry.getId()))
+                    .mapToInt(e -> getShiftDurationMinutes(e.getShift()))
+                    .sum();
+            int newEntryMinutes = getShiftDurationMinutes(dto.getShift());
+            int maxMinutes = workScheduleService.getExpectedWeeklyMinutes(user, dto.getDate());
+            if (existingMinutes + newEntryMinutes > maxMinutes) {
+                return ResponseEntity.badRequest().body("Weekly work hours limit exceeded");
+            }
+
+            entry.setDate(dto.getDate());
+            entry.setShift(dto.getShift());
+            entry.setNote(dto.getNote());
+            entryRepo.save(entry);
+            return ResponseEntity.ok(new ScheduleEntryDTO(entry));
+        }
+
         Optional<ScheduleEntry> existingEntry = entryRepo.findByUserAndDate(user, dto.getDate());
         if(existingEntry.isPresent()) {
             return ResponseEntity.ok(new ScheduleEntryDTO(existingEntry.get()));
