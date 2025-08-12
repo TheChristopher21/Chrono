@@ -254,13 +254,12 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny }) {
             {/* Modal ---------------------------------------------------------------*/}
             {modalOpen && (
                 <CorrectionDecisionModal
-                    isOpen={modalOpen}
+                    visible={modalOpen}
                     mode={modalMode}
-                    adminComment={adminComment}
-                    onAdminCommentChange={setAdminComment}
+                    comment={adminComment}
+                    setComment={setAdminComment}
                     onClose={() => setModalOpen(false)}
                     onSubmit={submitDecision}
-                    t={t}
                 />
             )}
         </section>
