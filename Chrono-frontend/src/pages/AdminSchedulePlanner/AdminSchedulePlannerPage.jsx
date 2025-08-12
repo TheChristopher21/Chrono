@@ -134,6 +134,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
   const { data: shifts = [], isLoading: isLoadingShifts } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
   const weekStart = usePlannerStore(state => state.weekStart);
   const weekKey = formatISO(weekStart, { representation: 'date' });
+
   const dragUser = usePlannerStore(state => state.dragUser);
   const dragEntry = usePlannerStore(state => state.dragEntry);
   const clearDrag = usePlannerStore(state => state.clearDrag);
@@ -189,6 +190,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
           newSchedule[dateKey] = to;
           return newSchedule;
         });
+
       }
       saveMutation.mutate(payload);
     }
