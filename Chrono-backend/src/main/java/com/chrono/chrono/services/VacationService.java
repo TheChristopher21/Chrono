@@ -176,6 +176,39 @@ public class VacationService {
     }
 
     @Transactional
+    public List<VacationRequest> adminCreateCompanyVacation(String adminUsername,
+                                                            LocalDate start, LocalDate end,
+                                                            boolean halfDay) {
+        User admin = userRepo.findByUsername(adminUsername)
+                .orElseThrow(() -> new UserNotFoundException("Admin user " + adminUsername + " not found"));
+        Company company = admin.getCompany();
+        if (company == null) {
+            throw new SecurityException("Admin user " + adminUsername + " is not assigned to a company.");
+        }
+        if (end.isBefore(start)) {
+            throw new IllegalArgumentException("Das Enddatum darf nicht vor dem Startdatum liegen.");
+        }
+        if (halfDay && !start.isEqual(end)) {
+            throw new IllegalArgumentException("Halbtags Urlaub kann nur für einen einzelnen Tag beantragt werden.");
+        }
+        List<User> users = userRepo.findByCompany_Id(company.getId());
+        List<VacationRequest> created = new ArrayList<>();
+        for (User user : users) {
+            VacationRequest vr = new VacationRequest();
+            vr.setUser(user);
+            vr.setStartDate(start);
+            vr.setEndDate(end);
+            vr.setApproved(true);
+            vr.setDenied(false);
+            vr.setHalfDay(halfDay);
+            vr.setUsesOvertime(false);
+            vr.setCompanyVacation(true);
+            created.add(vacationRepo.save(vr));
+        }
+        return created;
+    }
+
+    @Transactional
     public VacationRequest approveVacation(Long vacationId, String adminName) {
         VacationRequest vr = vacationRepo.findById(vacationId)
                 .orElseThrow(() -> new RuntimeException("Vacation request " + vacationId + " not found")); //
@@ -398,7 +431,7 @@ public class VacationService {
 
 
         for (VacationRequest vr : vacations) { //
-            if (!vr.isUsesOvertime()) { //
+            if (!vr.isUsesOvertime() && !vr.isCompanyVacation()) { //
                 LocalDate startDate = vr.getStartDate(); //
                 LocalDate endDate = vr.getEndDate(); //
 

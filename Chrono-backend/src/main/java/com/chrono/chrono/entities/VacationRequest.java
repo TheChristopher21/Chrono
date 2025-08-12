@@ -19,6 +19,8 @@ public class VacationRequest {
     private boolean denied;
     private boolean halfDay;
     private boolean usesOvertime;
+    @Column(name = "company_vacation")
+    private boolean companyVacation;
 
     @Column(name = "overtime_deduction_minutes") // NEUES FELD
     private Integer overtimeDeductionMinutes; // Nur für usesOvertime = true & prozentuale User
@@ -51,6 +53,9 @@ public class VacationRequest {
 
     public boolean isUsesOvertime() { return usesOvertime; }
     public void setUsesOvertime(boolean usesOvertime) { this.usesOvertime = usesOvertime; }
+
+    public boolean isCompanyVacation() { return companyVacation; }
+    public void setCompanyVacation(boolean companyVacation) { this.companyVacation = companyVacation; }
 
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }

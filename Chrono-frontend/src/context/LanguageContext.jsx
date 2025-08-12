@@ -404,6 +404,7 @@ const translations = {
             unknownUser: "Unbekannt",
             halfDayShort: "½",
             overtimeVacationShort: "ÜS",
+            companyVacationLabel: "Betriebsurlaub",
             endDateLabel: "Enddatum",
             halfDayLabel: "Halbtags Urlaub",
             confirmButton: "Bestätigen",
@@ -1143,6 +1144,7 @@ const translations = {
             unknownUser: "Unknown",
             halfDayShort: "1/2",
             overtimeVacationShort: "OT",
+            companyVacationLabel: "Company vacation",
             delete: {
                 noSelection: "No vacation selected to delete.",
                 success: "Vacation request deleted successfully.",

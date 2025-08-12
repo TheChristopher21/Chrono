@@ -94,6 +94,35 @@ public class VacationController {
         }
     }
 
+    @PostMapping("/companyCreate")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<?> adminCreateCompanyVacation(@RequestParam String adminUsername,
+                                                        @RequestParam String startDate,
+                                                        @RequestParam String endDate,
+                                                        @RequestParam(required = false, defaultValue = "false") boolean halfDay,
+                                                        Principal principal) {
+        if (!principal.getName().equals(adminUsername)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Aktion nicht erlaubt. Admin-Username stimmt nicht mit angemeldetem User überein."));
+        }
+        try {
+            LocalDate start = LocalDate.parse(startDate);
+            LocalDate end = LocalDate.parse(endDate);
+            List<VacationRequest> created = vacationService.adminCreateCompanyVacation(adminUsername, start, end, halfDay);
+            return ResponseEntity.ok(created);
+        } catch (IllegalArgumentException e) {
+            logger.warn("IllegalArgumentException in adminCreateCompanyVacation by admin {}: {}", adminUsername, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (SecurityException e) {
+            logger.warn("SecurityException in adminCreateCompanyVacation by admin {}: {}", adminUsername, e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        } catch (RuntimeException e) {
+            logger.error("RuntimeException in adminCreateCompanyVacation by admin {}: {}", adminUsername, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Fehler beim Erstellen des Betriebsurlaubs: " + e.getMessage()));
+        }
+    }
+
     @GetMapping("/my")
     public ResponseEntity<List<VacationRequest>> getMyVacations(Principal principal) {
         return ResponseEntity.ok(vacationService.getUserVacations(principal.getName()));

@@ -44,6 +44,7 @@ const HourlyWeekOverview = ({
                                 // notify,
                                 // fetchDataForUser,
                             reloadData,
+                            vacationRequests,
                             }) => {
     const { currentUser } = useAuth();
     const [editingNote, setEditingNote] = useState(null); // Speichert das Datum des Tages, dessen Notiz bearbeitet wird
@@ -179,13 +180,17 @@ const HourlyWeekOverview = ({
                 {weekDates.map((dayObj) => {
                     const isoDate = formatLocalDate(dayObj);
                     const summary = dailySummaries.find(s => s.date === isoDate);
+                    const vacationToday = vacationRequests?.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
                     const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
                     const formattedDisplayDate = formatDate(dayObj);
 
+                    const dayClasses = `week-day-card day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''} ${vacationToday ? 'vacation-day' : ''}`;
+
                     return (
-                        <div key={isoDate} className={`week-day-card day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''}`}>
+                        <div key={isoDate} className={dayClasses}>
                         <div className="week-day-header day-card-header">
                                 <h4>{dayName}, {formattedDisplayDate}</h4>
+                                {vacationToday && <div className="day-card-badge vacation-badge">{t('vacation')}</div>}
 
                                 {summary && summary.entries.length > 0 && (
                                     <div className="day-card-actions">
@@ -197,6 +202,9 @@ const HourlyWeekOverview = ({
                             </div>
 
                             <div className="week-day-content day-card-content">
+                                {vacationToday?.companyVacation && (
+                                    <div className="day-card-info vacation-indicator">🏖️ {t('onVacation', 'Im Urlaub')} {vacationToday.halfDay && `(${t('halfDayShort', '½ Tag')})`}</div>
+                                )}
                                 {(!summary || summary.entries.length === 0) ? (
                                     <p className="no-entries">{t("noEntries", "Keine Einträge")}</p>
                                 ) : (
@@ -335,7 +343,8 @@ HourlyWeekOverview.propTypes = {
     setSelectedTaskId: PropTypes.func,
     assignCustomerForDay: PropTypes.func,
     assignProjectForDay: PropTypes.func,
-    reloadData: PropTypes.func
+    reloadData: PropTypes.func,
+    vacationRequests: PropTypes.array
 };
 
 export default HourlyWeekOverview;

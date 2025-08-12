@@ -525,9 +525,16 @@ function UserDashboard() {
                             if (sickToday) dayClass += ' sick-day';
                             if (holidayName) dayClass += ' holiday-day';
 
-                            const expectedMinsToday = Math.round(getExpectedHoursForDay(
+                            let expectedMinsToday = Math.round(getExpectedHoursForDay(
                                 dayObj, userProfile, defaultExpectedHours, holidaysForUserCanton?.data, vacationRequests, sickLeaves
                             ) * 60);
+                            if (holidayName) {
+                                expectedMinsToday = 0;
+                            } else if (vacationToday) {
+                                expectedMinsToday = vacationToday.halfDay ? expectedMinsToday / 2 : 0;
+                            } else if (sickToday) {
+                                expectedMinsToday = sickToday.halfDay ? expectedMinsToday / 2 : 0;
+                            }
 
                             const dailyDiffMinutes = summary ? summary.workedMinutes - expectedMinsToday : (holidayName || vacationToday || sickToday ? 0 : -expectedMinsToday);
 
@@ -541,6 +548,9 @@ function UserDashboard() {
                                     </div>
 
                                     <div className="week-day-content day-card-content">
+                                        {vacationToday?.companyVacation && (
+                                            <div className="day-card-info vacation-indicator">🏖️ {t('onVacation', 'Im Urlaub')} {vacationToday.halfDay && `(${t('halfDayShort', '½ Tag')})`}</div>
+                                        )}
                                         {(!summary || summary.entries.length === 0) && !vacationToday && !sickToday && !holidayName ? (
                                             <p className="no-entries">{t("noEntries")}</p>
                                         ) : (
@@ -595,6 +605,9 @@ function UserDashboard() {
                                                     )}
                                                 </div>
                                             </>
+                                        )}
+                                        {vacationToday?.companyVacation && (!summary || summary.entries.length === 0) && (
+                                            <p className="no-entries">{t('noEntries')}</p>
                                         )}
                                     </div>
                                     <div className="correction-button-row">
