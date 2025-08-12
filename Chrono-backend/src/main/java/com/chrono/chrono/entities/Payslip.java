@@ -26,6 +26,8 @@ public class Payslip {
     private Double bonuses;
     private Double oneTimePayments;
     private Double taxFreeAllowances;
+    private Double overtimeHours;
+    private boolean payoutOvertime = false;
 
     @ElementCollection
     @CollectionTable(name = "payslip_earnings", joinColumns = @JoinColumn(name = "payslip_id"))
@@ -89,6 +91,12 @@ public class Payslip {
 
     public Double getTaxFreeAllowances() { return taxFreeAllowances; }
     public void setTaxFreeAllowances(Double taxFreeAllowances) { this.taxFreeAllowances = taxFreeAllowances; }
+
+    public Double getOvertimeHours() { return overtimeHours; }
+    public void setOvertimeHours(Double overtimeHours) { this.overtimeHours = overtimeHours; }
+
+    public boolean isPayoutOvertime() { return payoutOvertime; }
+    public void setPayoutOvertime(boolean payoutOvertime) { this.payoutOvertime = payoutOvertime; }
 
     public List<PayComponent> getEarnings() { return earnings; }
     public void setEarnings(List<PayComponent> earnings) { this.earnings = earnings; }
