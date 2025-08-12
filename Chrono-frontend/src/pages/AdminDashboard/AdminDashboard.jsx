@@ -321,6 +321,8 @@ const AdminDashboard = () => {
 
         const userDetails = users.find(u => u.username === printUser);
         const userNameDisplay = userDetails ? `${userDetails.firstName} ${userDetails.lastName} (${printUser})` : printUser;
+        const balanceRecord = weeklyBalances.find(b => b.username === printUser);
+        const overtimeStr = minutesToHHMM(balanceRecord?.trackingBalance || 0);
 
         const doc = new jsPDF("p", "mm", "a4");
         const pageMargin = 15;
@@ -339,6 +341,8 @@ const AdminDashboard = () => {
         doc.text(`für ${userNameDisplay}`, pageWidth / 2, yPos, { align: "center" });
         yPos += 6;
         doc.text(`Zeitraum: ${formatDate(new Date(printUserStartDate))} - ${formatDate(new Date(printUserEndDate))}`, pageWidth / 2, yPos, { align: "center" });
+        yPos += 6;
+        doc.text(`${t('overtimeBalance', 'Überstundensaldo')}: ${overtimeStr}`, pageWidth / 2, yPos, { align: "center" });
         yPos += 15;
 
         const totalWork = sortedSummaries.reduce((sum, day) => sum + day.workedMinutes, 0);
