@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import ModalOverlay from './ModalOverlay';
 import { formatDate } from '../utils/dateUtils';
-import { formatTime } from '../utils/timeUtils';
+import { formatTime, sortEntries } from '../utils/timeUtils';
 
 const CorrectionModal = ({
                              visible,
@@ -20,7 +20,7 @@ const CorrectionModal = ({
     useEffect(() => {
         if (visible) {
             const initialEntries =
-                dailySummary?.entries?.map((entry) => ({
+                sortEntries(dailySummary?.entries).map((entry) => ({
                     time: formatTime(new Date(entry.entryTimestamp)),
                     type: entry.punchType,
                 })) || [];

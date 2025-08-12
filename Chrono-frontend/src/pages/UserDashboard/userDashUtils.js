@@ -11,6 +11,7 @@ import {
     formatPunchedTimeFromEntry,
     minutesToHHMM,
     isLateTime,
+    sortEntries,
 } from '../../utils/timeUtils';
 
 export {
@@ -22,6 +23,7 @@ export {
     formatPunchedTimeFromEntry,
     minutesToHHMM,
     isLateTime,
+    sortEntries,
 };
 
 export function parseHex16(hexString) {

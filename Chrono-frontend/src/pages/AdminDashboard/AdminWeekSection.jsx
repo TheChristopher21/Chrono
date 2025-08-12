@@ -21,6 +21,7 @@ import {
     getMondayOfWeek,
 } from "./adminDashboardUtils"; // Ensure this path is correct
 import {parseISO} from "date-fns"; // Make sure date-fns is installed
+import { sortEntries } from '../../utils/timeUtils';
 
 
 const AdminWeekSection = ({
@@ -570,7 +571,7 @@ const AdminWeekSection = ({
                                                                                 </button>
                                                                             </div>
                                                                             <ul className="time-entry-list-condensed text-xs">
-                                                                                {dailySummary.entries.map(entry => {
+                                                                                {sortEntries(dailySummary.entries).map(entry => {
                                                                                     let typeLabel = entry.punchType;
                                                                                     try {
                                                                                         typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
@@ -650,7 +651,7 @@ const AdminWeekSection = ({
                                                                             </button>
                                                                         </div>
                                                                         <ul className="time-entry-list-condensed text-xs">
-                                                                            {dailySummary.entries.map(entry => {
+                                                                            {sortEntries(dailySummary.entries).map(entry => {
                                                                                 let typeLabel = entry.punchType;
                                                                                 try {
                                                                                     typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);

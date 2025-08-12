@@ -12,6 +12,7 @@ import {
     minutesToHours,
     formatPunchedTimeFromEntry,
     isLateTime,
+    sortEntries,
 } from '../../utils/timeUtils';
 
 export {
@@ -25,6 +26,7 @@ export {
     minutesToHours,
     formatPunchedTimeFromEntry,
     isLateTime,
+    sortEntries,
 };
 
 // Holt gearbeitete Minuten aus einem DailyTimeSummaryDTO

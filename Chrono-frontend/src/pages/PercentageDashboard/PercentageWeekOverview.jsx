@@ -8,7 +8,8 @@ import {
     formatLocalDate,
     minutesToHHMM,
     formatDate,
-    getMondayOfWeek
+    getMondayOfWeek,
+    sortEntries
 } from './percentageDashUtils';
 
 import '../../styles/HourlyDashboardScoped.css'; // Einheitliches Design verwenden
@@ -159,7 +160,7 @@ const PercentageWeekOverview = ({
                                                 <p><strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(summary?.breakMinutes || 0)}</p>
                                             </div>
                                             <ul className="time-entry-list" style={{marginTop: '1rem'}}>
-                                                {(summary?.entries || []).map(entry => (
+                                                {sortEntries(summary?.entries).map(entry => (
                                                     <li key={entry.id || entry.entryTimestamp} style={{backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57) % 360}, var(--customer-color-saturation), var(--customer-color-lightness))` : 'transparent'}}>
                                                         <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
                                                         <span className="entry-time">{entry.entryTimestamp ? new Date(entry.entryTimestamp).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }) : ''}</span>
@@ -180,7 +181,7 @@ const PercentageWeekOverview = ({
                                             <p><strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(summary?.breakMinutes || 0)}</p>
                                         </div>
                                         <ul className="time-entry-list" style={{marginTop: '1rem'}}>
-                                            {(summary?.entries || []).map(entry => (
+                                            {sortEntries(summary?.entries).map(entry => (
                                                 <li key={entry.id || entry.entryTimestamp} style={{backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57) % 360}, var(--customer-color-saturation), var(--customer-color-lightness))` : 'transparent'}}>
                                                     <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
                                                     <span className="entry-time">{entry.entryTimestamp ? new Date(entry.entryTimestamp).toLocaleTimeString('de-CH', { hour: '2-digit', minute: '2-digit' }) : ''}</span>

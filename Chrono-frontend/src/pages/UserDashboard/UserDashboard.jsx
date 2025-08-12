@@ -29,6 +29,7 @@ import {
     isLateTime,
     formatPunchedTimeFromEntry,
     parseHex16,
+    sortEntries,
 } from './userDashUtils';
 
 import CorrectionModal from '../../components/CorrectionModal';
@@ -376,7 +377,7 @@ function UserDashboard() {
             const workEnd = primary.lastEndTime ? primary.lastEndTime.substring(0, 5) : (primary.isOpen ? t('printReport.open') : '-');
             const breakTimeStr = minutesToHHMM(summary.breakMinutes);
             const totalWorkedStr = minutesToHHMM(summary.workedMinutes);
-            const punches = summary.entries
+            const punches = sortEntries(summary.entries)
                 .map(e => `${t('punchTypes.' + e.punchType, e.punchType).substring(0,1)}:${formatTime(e.entryTimestamp)}${e.source === 'SYSTEM_AUTO_END' && !e.correctedByUser ? '(A)' : ''}`)
                 .join(' | ');
             return [displayDate, workStart, workEnd, breakTimeStr, totalWorkedStr, punches, summary.dailyNote || ''];
@@ -564,7 +565,7 @@ function UserDashboard() {
                                         ) : (
                                             <>
                                                 <ul className="time-entry-list">
-                                                    {summary?.entries.map(entry => (
+                                                    {sortEntries(summary?.entries).map(entry => (
                                                         <li key={entry.id || entry.entryTimestamp} style={{backgroundColor: entry.customerId ? `hsl(${(entry.customerId * 57) % 360}, var(--customer-color-saturation), var(--customer-color-lightness))` : 'transparent'}}>
                                                             <span className="entry-label">{t(`punchTypes.${entry.punchType}`, entry.punchType)}:</span>
                                                             <span className={`entry-time ${isLateTime(formatTime(new Date(entry.entryTimestamp))) ? 'late-time' : ''}`}>
