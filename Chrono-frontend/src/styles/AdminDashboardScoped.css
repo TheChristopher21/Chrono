@@ -272,6 +272,18 @@
   border-bottom: 1px solid var(--c-line);
   padding-bottom: var(--u-gap-sm);
 }
+.admin-dashboard.scoped-dashboard section.content-section.has-pending .section-header {
+  background-color: var(--stat-pending-bg);
+  animation: pendingGlow 2s ease-in-out infinite;
+}
+@keyframes pendingGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 var(--stat-pending-bg);
+  }
+  50% {
+    box-shadow: 0 0 10px 2px var(--stat-pending-bg);
+  }
+}
 .admin-dashboard.scoped-dashboard
   section.content-section
   .section-header
