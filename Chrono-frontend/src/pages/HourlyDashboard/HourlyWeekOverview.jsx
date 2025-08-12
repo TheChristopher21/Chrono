@@ -82,6 +82,10 @@ const HourlyWeekOverview = ({
         }
     }
 
+    function handleCurrentWeek() {
+        setSelectedMonday(getMondayOfWeek(new Date()));
+    }
+
     const handleNoteSave = async (isoDate, content) => {
         if (!userProfile?.username) return;
         try {
@@ -156,6 +160,7 @@ const HourlyWeekOverview = ({
                     value={formatLocalDate(selectedMonday)}
                 />
                 <button onClick={handleNextWeek} className="button-secondary">{t("nextWeek", "Nächste Woche")} →</button>
+                <button onClick={handleCurrentWeek} className="button-secondary">{t('currentWeek', 'Aktuelle Woche')}</button>
             </div>
             <div className="weekly-monthly-totals">
                 <div className="summary-item">

@@ -30,6 +30,7 @@ const AdminWeekSection = ({
                               handlePrevWeek,
                               handleNextWeek,
                               handleWeekJump,
+                              handleCurrentWeek,
                               onFocusProblemWeek,
                               dailySummariesForWeekSection, // This will be DailyTimeSummaryDTO[]
                               allVacations,
@@ -375,6 +376,7 @@ const AdminWeekSection = ({
                             aria-label={t('adminDashboard.jumpToDate', 'Datum auswählen')}
                         />
                         <button onClick={handleNextWeek} aria-label={t('adminDashboard.nextWeek', 'Nächste Woche')}>→</button>
+                        <button onClick={handleCurrentWeek} aria-label={t('adminDashboard.currentWeek', 'Aktuelle Woche')}>{t('currentWeek', 'Aktuelle Woche')}</button>
                     </div>
                 </div>
 
@@ -742,6 +744,7 @@ AdminWeekSection.propTypes = {
     handlePrevWeek: PropTypes.func.isRequired,
     handleNextWeek: PropTypes.func.isRequired,
     handleWeekJump: PropTypes.func.isRequired,
+    handleCurrentWeek: PropTypes.func.isRequired,
     onFocusProblemWeek: PropTypes.func.isRequired,
     dailySummariesForWeekSection: PropTypes.arrayOf(
         PropTypes.shape({ // This should match DailyTimeSummaryDTO

@@ -495,6 +495,9 @@ function UserDashboard() {
                         <button onClick={() => setSelectedMonday(prev => addDays(prev, 7))} className="button-secondary">
                             {t("nextWeek")} →
                         </button>
+                        <button onClick={() => setSelectedMonday(getMondayOfWeek(new Date()))} className="button-secondary">
+                            {t('currentWeek', 'Aktuelle Woche')}
+                        </button>
                     </div>
 
                     <div className="weekly-monthly-totals">

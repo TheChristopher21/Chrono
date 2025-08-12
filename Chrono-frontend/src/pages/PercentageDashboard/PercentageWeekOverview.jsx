@@ -52,9 +52,13 @@ const PercentageWeekOverview = ({
 
     function handleWeekJump(e) {
         const picked = new Date(e.target.value + "T00:00:00");
-        if (!isNaN(picked.getTime())) {
-            setMonday(getMondayOfWeek(picked));
-        }
+       if (!isNaN(picked.getTime())) {
+           setMonday(getMondayOfWeek(picked));
+       }
+    }
+
+    function handleCurrentWeek() {
+        setMonday(getMondayOfWeek(new Date()));
     }
 
     return (
@@ -101,6 +105,7 @@ const PercentageWeekOverview = ({
                 <button onClick={() => setMonday(prev => addDays(prev, 7))} className="button-secondary">
                     {t('nextWeek', "Nächste Woche")} →
                 </button>
+                <button onClick={handleCurrentWeek} className="button-secondary">{t('currentWeek', 'Aktuelle Woche')}</button>
             </div>
 
             <div className="weekly-summary">
