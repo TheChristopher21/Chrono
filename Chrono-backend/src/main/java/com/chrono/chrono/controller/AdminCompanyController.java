@@ -14,6 +14,7 @@ import com.chrono.chrono.dto.CompanySettingsDTO;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
@@ -88,7 +89,9 @@ public class AdminCompanyController {
                     .map(n -> n.substring(n.lastIndexOf('.')))
                     .orElse(".png");
             Path target = dir.resolve("company-" + company.getId() + ext);
-            file.transferTo(target);
+            try (InputStream in = file.getInputStream()) {
+                Files.copy(in, target, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            }
             company.setLogoPath(target.toString());
             companyRepository.save(company);
             return ResponseEntity.ok(Map.of("logoPath", company.getLogoPath()));
