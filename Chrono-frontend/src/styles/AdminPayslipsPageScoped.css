@@ -1,314 +1,311 @@
-/* AdminPayslipsPageScoped.css · NEUES DESIGN mit verbesserten Buttons */
+/* AdminPayslipsPageScoped.css · Light/Dark fix + Tokens scoped
+   — Die Farb-Variablen sind nun standardmäßig HELL
+   — und werden nur im Darkmode überschrieben. */
 
-/* Grundstruktur und Layout-Variablen (angenommen) */
-:root {
-  --ud-gap-xs: 0.25rem;
-  --ud-gap-sm: 0.5rem;
-  --ud-gap-md: 1rem;
-  --ud-gap-lg: 1.5rem;
-  --ud-gap-xl: 2rem;
-  --ud-radius-md: 8px;
-  --ud-c-card: #2c2c3e;
-  --ud-c-surface: #242433;
-  --ud-c-border: #404058;
-  --ud-c-line: #3a3a4c;
-  --ud-c-text: #ffffff;
-  --ud-c-text-muted: #a0a0b8;
-  --ud-c-primary: #4a69ff; /* Neue Akzentfarbe für primäre Buttons */
-  --ud-c-primary-hover: #6c8cff;
-  --ud-c-danger: #e53935;
-  --ud-c-danger-hover: #b71c1c;
-  --ud-c-warning: #ffc741;
-  --ud-c-warning-hover: #e0a800;
-  --ud-fz-sm: 0.875rem;
-  --ud-fz-lg: 1.25rem;
-}
-
-[data-theme="dark"] {
-  /* Dark mode variables would go here if they differ from root */
-}
-
-
+/* ---------------- Tokens (scoped) ---------------- */
 .admin-payslips-page.scoped-dashboard {
-  padding: var(--ud-gap-lg);
-  background-color: var(--ud-c-surface);
-  color: var(--ud-c-text);
+    /* Spacing / Radius */
+    --ud-gap-xs: 0.25rem;
+    --ud-gap-sm: 0.5rem;
+    --ud-gap-md: 1rem;
+    --ud-gap-lg: 1.5rem;
+    --ud-gap-xl: 2rem;
+    --ud-radius-md: 8px;
+
+    /* LIGHT palette (Default) */
+    --ud-c-card: #ffffff;
+    --ud-c-surface: #f5f7fb;          /* Seitenhintergrund */
+    --ud-c-border: #e5e7eb;
+    --ud-c-line: #e9edf5;
+    --ud-c-text: #111827;
+    --ud-c-text-muted: #6b7280;
+    --ud-c-primary: #475bff;
+    --ud-c-primary-hover: #6b7cff;
+    --ud-c-danger: #e53935;
+    --ud-c-danger-hover: #b71c1c;
+    --ud-c-warning: #ffc741;
+    --ud-c-warning-hover: #e0a800;
+    --ud-c-hover: #eef2ff;            /* zarte Hover-Fläche in Tabellen */
 }
 
-/* Karten-Layout für Abschnitte */
+/* DARK palette (nur wenn Darkmode aktiv ist) */
+[data-theme="dark"] .admin-payslips-page.scoped-dashboard {
+    --ud-c-card: #2c2c3e;
+    --ud-c-surface: #242433;
+    --ud-c-border: #404058;
+    --ud-c-line: #3a3a4c;
+    --ud-c-text: #ffffff;
+    --ud-c-text-muted: #a0a0b8;
+    --ud-c-hover: #3a3a4c;
+}
+
+/* ---------------- Seite / Layout ---------------- */
+.admin-payslips-page.scoped-dashboard {
+    padding: var(--ud-gap-lg);
+    background-color: var(--ud-c-surface);
+    color: var(--ud-c-text);
+
+    /* Vollhöhe, damit unten nichts weiß bleibt bei wenig Inhalt */
+    min-height: 100vh;   /* Fallback */
+    min-height: 100dvh;  /* modernes Viewport-Height */
+    display: flex;
+    flex-direction: column;
+}
+.admin-payslips-page.scoped-dashboard > :last-child {
+    margin-bottom: 1.5rem;
+}
+
+/* (Nur Darkmode) Body angleichen, falls global anders gesetzt ist */
+[data-theme="dark"] body {
+    background-color: var(--ud-c-surface);
+}
+
+/* ---------------- Cards / Sektionen ---------------- */
 .admin-payslips-page .dashboard-card {
-  background-color: var(--ud-c-card);
-  border-radius: var(--ud-radius-md);
-  padding: var(--ud-gap-lg);
-  margin-bottom: var(--ud-gap-xl);
-  border: 1px solid var(--ud-c-border);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    background-color: var(--ud-c-card);
+    border-radius: var(--ud-radius-md);
+    padding: var(--ud-gap-lg);
+    margin-bottom: var(--ud-gap-xl);
+    border: 1px solid var(--ud-c-border);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
 }
-
 .admin-payslips-page h2 {
-  margin-top: 0;
-  margin-bottom: var(--ud-gap-sm);
-  border-bottom: 1px solid var(--ud-c-line);
-  padding-bottom: var(--ud-gap-md);
+    margin-top: 0;
+    margin-bottom: var(--ud-gap-sm);
+    border-bottom: 1px solid var(--ud-c-line);
+    padding-bottom: var(--ud-gap-md);
 }
-
 .admin-payslips-page .section-description {
-  font-size: var(--ud-fz-sm);
-  color: var(--ud-c-text-muted);
-  margin-top: -0.5rem;
-  margin-bottom: var(--ud-gap-lg);
-  max-width: 80ch;
+    font-size: 0.875rem;
+    color: var(--ud-c-text-muted);
+    margin-top: -0.5rem;
+    margin-bottom: var(--ud-gap-lg);
+    max-width: 80ch;
 }
-
 
 /* Grid für die oberen Sektionen (Erstellen & Logo) */
 .admin-payslips-page .top-sections-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-  gap: var(--ud-gap-lg);
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: var(--ud-gap-lg);
 }
 
-
-/* Formulare */
+/* ---------------- Formulare ---------------- */
 .admin-payslips-page .generate-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--ud-gap-md);
-  align-items: flex-end;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: var(--ud-gap-md);
+    align-items: flex-end;
 }
 .admin-payslips-page .form-group {
-  display: flex;
-  flex-direction: column;
-  gap: var(--ud-gap-sm);
+    display: flex;
+    flex-direction: column;
+    gap: var(--ud-gap-sm);
 }
 .admin-payslips-page label {
-  font-size: var(--ud-fz-sm);
-  font-weight: 500;
-  color: var(--ud-c-text-muted);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--ud-c-text-muted);
 }
 .admin-payslips-page input,
 .admin-payslips-page select {
-  padding: 0.6rem var(--ud-gap-md);
-  border-radius: var(--ud-radius-md);
-  border: 1px solid var(--ud-c-border);
-  background-color: var(--ud-c-surface);
-  color: var(--ud-c-text);
-  font-size: var(--ud-fz-sm);
+    padding: 0.6rem var(--ud-gap-md);
+    border-radius: var(--ud-radius-md);
+    border: 1px solid var(--ud-c-border);
+    background-color: var(--ud-c-surface);
+    color: var(--ud-c-text);
+    font-size: 0.875rem;
 }
 [data-theme="dark"] .admin-payslips-page input[type="date"] {
-  color-scheme: dark;
+    color-scheme: dark;
 }
 
 /* Logo Upload */
 .admin-payslips-page .logo-upload-form {
-  display: flex;
-  align-items: center;
-  gap: var(--ud-gap-md);
+    display: flex;
+    align-items: center;
+    gap: var(--ud-gap-md);
 }
 .admin-payslips-page .custom-file-upload {
-  flex-grow: 1;
-  text-align: center;
-  padding: 0.6rem var(--ud-gap-md);
-  border: 1px dashed var(--ud-c-border);
-  border-radius: var(--ud-radius-md);
-  background-color: var(--ud-c-surface);
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  color: var(--ud-c-text-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+    flex-grow: 1;
+    text-align: center;
+    padding: 0.6rem var(--ud-gap-md);
+    border: 1px dashed var(--ud-c-border);
+    border-radius: var(--ud-radius-md);
+    background-color: var(--ud-c-surface);
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    color: var(--ud-c-text-muted);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 .admin-payslips-page .custom-file-upload:hover {
-  background-color: var(--ud-c-line);
-  border-color: var(--ud-c-primary);
-  color: var(--ud-c-text);
-  border-style: solid;
+    background-color: var(--ud-c-line);
+    border-color: var(--ud-c-primary);
+    color: var(--ud-c-text);
+    border-style: solid;
 }
 
-
-/* Steuerleiste für Filter und Aktionen */
+/* ---------------- Steuerleiste / Aktionen ---------------- */
 .admin-payslips-page .controls-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--ud-gap-md);
-  margin: var(--ud-gap-md) 0;
-  padding-bottom: var(--ud-gap-md);
-  align-items: flex-end;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--ud-gap-md);
+    margin: var(--ud-gap-md) 0;
+    padding-bottom: var(--ud-gap-md);
+    align-items: flex-end;
 }
 .admin-payslips-page .controls-bar .form-group {
-  flex-grow: 1;
-  min-width: 160px;
+    flex-grow: 1;
+    min-width: 160px;
 }
 .admin-payslips-page .controls-bar .action-btn,
 .admin-payslips-page .controls-bar .primary-btn {
-  margin-top: auto;
+    margin-top: auto;
 }
 
-/* ======================================== */
-/* === NEU: Verbesserte Button-Styles === */
-/* ======================================== */
-
-/* Allgemeiner Button-Style */
+/* ---------------- Buttons ---------------- */
 .admin-payslips-page button {
-  padding: 0.6rem var(--ud-gap-md);
-  border-radius: var(--ud-radius-md);
-  border: 1px solid var(--ud-c-border);
-  background-color: var(--ud-c-surface);
-  color: var(--ud-c-text);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  font-size: var(--ud-fz-sm);
+    padding: 0.6rem var(--ud-gap-md);
+    border-radius: var(--ud-radius-md);
+    border: 1px solid var(--ud-c-border);
+    background-color: var(--ud-c-surface);
+    color: var(--ud-c-text);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    font-size: 0.875rem;
 }
-
 .admin-payslips-page button:hover {
-  border-color: var(--ud-c-primary);
-  background-color: var(--ud-c-primary);
-  color: #fff;
+    border-color: var(--ud-c-primary);
+    background-color: var(--ud-c-primary);
+    color: #fff;
 }
 
-/* Primäre Buttons (z.B. Erstellen, Filtern) */
+/* Primär */
 .admin-payslips-page .primary-btn,
 .admin-payslips-page .generate-form button {
-  background-color: var(--ud-c-primary);
-  border-color: var(--ud-c-primary);
-  color: #fff;
+    background-color: var(--ud-c-primary);
+    border-color: var(--ud-c-primary);
+    color: #fff;
 }
-
 .admin-payslips-page .primary-btn:hover,
 .admin-payslips-page .generate-form button:hover {
-  background-color: var(--ud-c-primary-hover);
-  border-color: var(--ud-c-primary-hover);
+    background-color: var(--ud-c-primary-hover);
+    border-color: var(--ud-c-primary-hover);
 }
 
-/* Buttons in den Tabellen-Aktionen */
-.admin-payslips-page .payslip-table button {
-  padding: var(--ud-gap-xs) var(--ud-gap-sm);
-  font-size: 0.8rem;
-  background-color: var(--ud-c-line);
-  border-color: var(--ud-c-line);
-}
-
-.admin-payslips-page .payslip-table button:hover {
-  background-color: var(--ud-c-primary);
-  border-color: var(--ud-c-primary);
-  color: #fff;
-}
-
-/* Spezielle Button-Varianten */
+/* Danger / Warning */
 .admin-payslips-page .danger-btn {
-  background-color: var(--ud-c-danger);
-  border-color: var(--ud-c-danger);
-  color: #fff;
+    background-color: var(--ud-c-danger);
+    border-color: var(--ud-c-danger);
+    color: #fff;
 }
 .admin-payslips-page .danger-btn:hover {
-  background-color: var(--ud-c-danger-hover);
-  border-color: var(--ud-c-danger-hover);
+    background-color: var(--ud-c-danger-hover);
+    border-color: var(--ud-c-danger-hover);
 }
-
 .admin-payslips-page .warning-btn {
-  background-color: var(--ud-c-warning);
-  border-color: var(--ud-c-warning);
-  color: #000;
+    background-color: var(--ud-c-warning);
+    border-color: var(--ud-c-warning);
+    color: #000;
 }
 .admin-payslips-page .warning-btn:hover {
-  background-color: var(--ud-c-warning-hover);
-  border-color: var(--ud-c-warning-hover);
-  color: #000;
+    background-color: var(--ud-c-warning-hover);
+    border-color: var(--ud-c-warning-hover);
+    color: #000;
 }
 
-/* Deaktivierte Buttons */
+/* Disabled */
 .admin-payslips-page button:disabled {
-  background-color: var(--ud-c-line);
-  border-color: var(--ud-c-border);
-  color: var(--ud-c-text-muted);
-  opacity: 0.6;
-  cursor: not-allowed;
+    background-color: var(--ud-c-line);
+    border-color: var(--ud-c-border);
+    color: var(--ud-c-text-muted);
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
-
-/* Tabellen */
+/* ---------------- Tabellen ---------------- */
 .admin-payslips-page .table-wrapper {
-  max-height: 500px;
-  overflow-y: auto;
-  border: 1px solid var(--ud-c-border);
-  border-radius: var(--ud-radius-md);
+    max-height: 500px;
+    overflow-y: auto;
+    border: 1px solid var(--ud-c-border);
+    border-radius: var(--ud-radius-md);
 }
 .admin-payslips-page .payslip-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--ud-fz-sm);
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
 }
 .admin-payslips-page .payslip-table th,
 .admin-payslips-page .payslip-table td {
-  padding: var(--ud-gap-sm) var(--ud-gap-md);
-  border-bottom: 1px solid var(--ud-c-line);
-  text-align: left;
+    padding: var(--ud-gap-sm) var(--ud-gap-md);
+    border-bottom: 1px solid var(--ud-c-line);
+    text-align: left;
 }
 .admin-payslips-page .payslip-table th {
-  position: sticky;
-  top: 0;
-  background: var(--ud-c-surface);
-  z-index: 2;
-  text-transform: uppercase;
-  font-weight: 600;
-  font-size: 0.75rem;
-  color: var(--ud-c-text-muted);
+    position: sticky;
+    top: 0;
+    background: var(--ud-c-surface);
+    z-index: 2;
+    text-transform: uppercase;
+    font-weight: 600;
+    font-size: 0.75rem;
+    color: var(--ud-c-text-muted);
 }
 .admin-payslips-page .payslip-table tr:hover {
-  background: #3a3a4c;
+    background: var(--ud-c-hover); /* statt hartem #3a3a4c */
 }
 .admin-payslips-page .actions-col {
-  text-align: right;
-  white-space: nowrap;
+    text-align: right;
+    white-space: nowrap;
 }
 .admin-payslips-page .actions-col > button {
-  margin-left: var(--ud-gap-sm);
+    margin-left: var(--ud-gap-sm);
 }
 
-
-/* Responsive Design für Tabellen */
+/* ---------------- Responsive Tabellen ---------------- */
 @media (max-width: 768px) {
-  .admin-payslips-page .top-sections-grid,
-  .admin-payslips-page .generate-form {
-    grid-template-columns: 1fr;
-  }
-  .admin-payslips-page .payslip-table thead {
-    display: none;
-  }
-  .admin-payslips-page .payslip-table tr {
-    display: block;
-    margin-bottom: var(--ud-gap-lg);
-    border: 1px solid var(--ud-c-border);
-    border-radius: var(--ud-radius-md);
-    padding: var(--ud-gap-md);
-    background: var(--ud-c-surface);
-  }
-  .admin-payslips-page .payslip-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    text-align: right;
-    padding: var(--ud-gap-sm) 0;
-    border-bottom: 1px dashed var(--ud-c-line);
-  }
-  .admin-payslips-page .payslip-table tr td:last-child {
-    border-bottom: none;
-    padding-top: var(--ud-gap-md);
-  }
-  .admin-payslips-page .payslip-table td::before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: var(--ud-c-text-muted);
-    text-align: left;
-    margin-right: var(--ud-gap-md);
-  }
-  .admin-payslips-page .actions-col {
-    text-align: right;
-    justify-content: flex-end !important;
-  }
-  .admin-payslips-page .actions-col::before {
-    content: '' !important; /* Kein Label für die Aktionsspalte */
-  }
+    .admin-payslips-page .top-sections-grid,
+    .admin-payslips-page .generate-form {
+        grid-template-columns: 1fr;
+    }
+    .admin-payslips-page .payslip-table thead {
+        display: none;
+    }
+    .admin-payslips-page .payslip-table tr {
+        display: block;
+        margin-bottom: var(--ud-gap-lg);
+        border: 1px solid var(--ud-c-border);
+        border-radius: var(--ud-radius-md);
+        padding: var(--ud-gap-md);
+        background: var(--ud-c-surface);
+    }
+    .admin-payslips-page .payslip-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right;
+        padding: var(--ud-gap-sm) 0;
+        border-bottom: 1px dashed var(--ud-c-line);
+    }
+    .admin-payslips-page .payslip-table tr td:last-child {
+        border-bottom: none;
+        padding-top: var(--ud-gap-md);
+    }
+    .admin-payslips-page .payslip-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: var(--ud-c-text-muted);
+        text-align: left;
+        margin-right: var(--ud-gap-md);
+    }
+    .admin-payslips-page .actions-col {
+        text-align: right;
+        justify-content: flex-end !important;
+    }
+    .admin-payslips-page .actions-col::before {
+        content: '' !important; /* Kein Label für die Aktionsspalte */
+    }
 }

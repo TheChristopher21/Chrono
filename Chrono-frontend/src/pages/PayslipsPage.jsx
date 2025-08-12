@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import ScheduleAllModal from '../components/ScheduleAllModal';
 
 // Styles
-import '../styles/AdminPayslipsPageScoped.css';
+import "../styles/UserPayslipsPageScoped.css"; // <— NEU
 
 const PayslipsPage = () => {
     const { t } = useTranslation();
@@ -161,7 +161,7 @@ const PayslipsPage = () => {
     return (
         <>
             <Navbar />
-            <div className="admin-payslips-page scoped-dashboard">
+            <div className={`${isAdmin ? 'admin-payslips-page' : 'user-payslips-page'} scoped-dashboard`}>
                 <header className="dashboard-header">
                     <h1>{isAdmin ? t('navbar.payslips') : t('payslips.myPayslips', 'Meine Lohnabrechnungen')}</h1>
                 </header>

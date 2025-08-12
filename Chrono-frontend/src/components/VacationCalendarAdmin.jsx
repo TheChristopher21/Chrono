@@ -404,7 +404,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const openVacationModalAndReset = (dateClicked = null) => {
         resetVacationForm();
         if (dateClicked) {
-            const dateStr = formatYMD(dateClicked);
+            const dateStr = formatLocalDateYMD(dateClicked);
             setVacationStartDate(dateStr);
             setVacationEndDate(dateStr);
         }
@@ -421,21 +421,68 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         setShowSickLeaveModal(true);
     };
 
+
+
+// Monatshilfen
+    function startOfMonth(d) {
+        const date = new Date(d);
+        date.setDate(1);
+        date.setHours(0, 0, 0, 0);
+        return date;
+    }
+    function addMonths(d, m) {
+        const date = new Date(d);
+        date.setMonth(date.getMonth() + m, 1); // springt sicher zum 1. des Zielmonats
+        date.setHours(0, 0, 0, 0);
+        return date;
+    }
+    function formatMonthYear(d, locale = 'de-DE') {
+        return new Date(d).toLocaleDateString(locale, { month: 'long', year: 'numeric' });
+    }
+
+
+
+    const goToPrevMonth = () => setActiveStartDate(startOfMonth(addMonths(activeStartDate, -1)));
+    const goToNextMonth = () => setActiveStartDate(startOfMonth(addMonths(activeStartDate,  +1)));
+
     return (
         <div className="vacation-calendar-admin scoped-vacation">
-            {/* ... (Rest des JSX bleibt gleich, nur tileContent wurde oben korrigiert) ... */}
             <h2>{t('adminCalendar.title', 'Admin Kalenderübersicht')}</h2>
+            <div className="calendar-toolbar">
+                {/* Monats-Navigation */}
+                <div className="toolbar-group">
+                    <button
+                        type="button"
+                        className="btn-arrow"
+                        onClick={goToPrevMonth}
+                        aria-label={t('prevMonth', 'Vorheriger Monat')}
+                        title={t('prevMonth', 'Vorheriger Monat')}
+                    >
+                        «
+                    </button>
+
+                    <div className="toolbar-label month-label">
+                        {formatMonthYear(activeStartDate, t('calendarLocale','de-DE'))}
+                    </div>
+
+                    <button
+                        type="button"
+                        className="btn-arrow"
+                        onClick={goToNextMonth}
+                        aria-label={t('nextMonth', 'Nächster Monat')}
+                        title={t('nextMonth', 'Nächster Monat')}
+                    >
+                        »
+                    </button>
+                </div>
+            </div>
 
             <Calendar
+                className="calendar-lg"
                 value={activeStartDate}
                 tileContent={tileContent}
                 onActiveStartDateChange={onActiveStartDateChange}
-                onClickDay={(value) => {
-                    // Hier könnten Sie Logik hinzufügen, um zu entscheiden, welches Modal geöffnet wird,
-                    // oder Buttons anbieten, nachdem ein Tag geklickt wurde.
-                    // Fürs Erste: Modal für Urlaub öffnen, wenn Tag geklickt.
-                    openVacationModalAndReset(value);
-                }}
+                onClickDay={(value) => { openVacationModalAndReset(value); }}
                 locale={t('calendarLocale', 'de-DE')}
             />
             <div className="admin-calendar-actions">
@@ -466,6 +513,8 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                 </div>
                             )}
                             <Calendar
+                                className="calendar-lg"
+                                activeStartDate={activeStartDate}
                                 selectRange
                                 onChange={(range) => {
                                     if (Array.isArray(range)) {
@@ -474,7 +523,10 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                         if (endSel) setVacationEndDate(formatLocalDateYMD(endSel));
                                     }
                                 }}
-                                value={[vacationStartDate ? new Date(vacationStartDate) : new Date(), vacationEndDate ? new Date(vacationEndDate) : new Date()]}
+                                value={[
+                                    vacationStartDate ? new Date(vacationStartDate) : new Date(),
+                                    vacationEndDate ? new Date(vacationEndDate) : new Date()
+                                ]}
                                 locale={t('calendarLocale', 'de-DE')}
                             />
                             <div className="form-group">
