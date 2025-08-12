@@ -278,9 +278,11 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             const doc = new jsPDF();
             doc.text(`${t("timeReportFor")} ${userName}`, 14, 15);
             doc.text(`${t("period")}: ${formatDate(printStartDate)} - ${formatDate(printEndDate)}`, 14, 22);
+            const overtimeStr = minutesToHHMM(currentUser.trackingBalanceInMinutes || 0);
+            doc.text(`${t('overtimeBalance')}: ${overtimeStr}`, 14, 28);
 
             autoTable(doc, {
-                startY: 30,
+                startY: 36,
                 head: [[t("date"), t("start"), t("end"), t("worked"), t("pause"), t("overtime")]],
                 body: reportData.map(d => [
                     formatDate(d.date), d.startTime, d.endTime,
