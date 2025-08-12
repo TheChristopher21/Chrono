@@ -210,6 +210,11 @@ public class ReportService {
         long totalMinutes = totalWorkedMinutesOverall % 60;
         document.add(new Paragraph("Gesamte Arbeitszeit im Zeitraum: " + String.format("%d Std. %02d Min.", totalHours, totalMinutes), headerFont));
 
+        int overtimeMinutes = user.getTrackingBalanceInMinutes() != null ? user.getTrackingBalanceInMinutes() : 0;
+        long overtimeHours = overtimeMinutes / 60;
+        long overtimeRemainder = overtimeMinutes % 60;
+        document.add(new Paragraph("Aktueller Überstundensaldo: " + String.format("%d Std. %02d Min.", overtimeHours, overtimeRemainder), headerFont));
+
         document.close();
         return baos.toByteArray();
     }

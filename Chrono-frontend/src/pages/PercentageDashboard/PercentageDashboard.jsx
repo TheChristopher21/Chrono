@@ -293,6 +293,8 @@ const PercentageDashboard = () => {
         doc.text(`${t('printReport.title')} ${t('for')} ${userProfile.firstName} ${userProfile.lastName} (${userProfile.username}) - ${userProfile.workPercentage}%`, 14, 15);
         doc.setFontSize(11);
         doc.text(`${t('printReport.periodLabel')}: ${formatDate(printStartDate)} – ${formatDate(printEndDate)}`, 14, 22);
+        const overtimeStr = minutesToHHMM(userProfile.trackingBalanceInMinutes || 0);
+        doc.text(`${t('overtimeBalance')}: ${overtimeStr}`, 14, 28);
 
         const tableBody = summariesToPrint.map(summary => {
             const displayDate = formatDate(summary.date);
@@ -306,7 +308,7 @@ const PercentageDashboard = () => {
         });
         autoTable(doc, {
             head: [[t('printReport.date'), t('printReport.workStart'), t('printReport.workEnd'), t('printReport.pause'), t('printReport.total'), t('printReport.punches'), t('printReport.note')]],
-            body: tableBody, startY: 30, margin: { left: 10, right: 10 }, styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
+            body: tableBody, startY: 36, margin: { left: 10, right: 10 }, styles: { fontSize: 7, cellPadding: 1.5, overflow: 'linebreak' },
             headStyles: { fillColor: [71, 91, 255], textColor: 255, fontStyle: "bold", halign: "center" },
             columnStyles: { 5: { cellWidth: 'auto'}, 6: { cellWidth: 40 } },
             didDrawPage: (dataHooks) => {
