@@ -437,3 +437,27 @@
     }
     .schedule-rules-page.scoped-dashboard .rule-card { flex: 1 1 420px; }
 }
+/* Grabbable Chips + visuelles Feedback */
+.schedule-planner-page .assigned-user {
+    cursor: grab;
+    user-select: none;
+    border-radius: 10px;
+    padding-right: 32px; /* Platz für das X */
+    position: relative;
+}
+.schedule-planner-page .assigned-user:active { cursor: grabbing; }
+.schedule-planner-page .assigned-user.dragging { opacity: .65; filter: saturate(0.9); }
+
+/* Drop-Ziel hervorheben (existiert bereits, wird hier etwas deutlicher) */
+.schedule-planner-page .shift-slot.droppable-hover {
+    outline: 2px dashed var(--ud-c-primary, #5aa3ff);
+    outline-offset: 3px;
+    border-radius: 12px;
+}
+
+/* Remove-Button blockt Drag nicht */
+.schedule-planner-page .assigned-user .clear-cell-btn {
+    position: absolute;
+    right: 8px; top: 50%; transform: translateY(-50%);
+    pointer-events: auto;
+}

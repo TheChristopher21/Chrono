@@ -57,8 +57,12 @@ const fetchSchedule = async (weekStart) => {
   return map;
 };
 
-const saveScheduleEntry = (entry) => api.post('/api/admin/schedule', entry);
-const deleteScheduleEntry = (id) => api.delete(`/api/admin/schedule/${id}`);
+const saveScheduleEntry = (entry) => {
+    if (entry?.id) {
+        return api.put(`/api/admin/schedule/${entry.id}`, entry);
+    }
+    return api.post('/api/admin/schedule', entry);
+};const deleteScheduleEntry = (id) => api.delete(`/api/admin/schedule/${id}`);
 const autoFillSchedule = (entries) => api.post('/api/admin/schedule/autofill', entries);
 const copyScheduleRequest = (entries) => api.post('/api/admin/schedule/copy', entries);
 
@@ -84,6 +88,18 @@ const getExpectedHoursForDate = (user, dateKey) => {
   if (dayName === 'saturday' || dayName === 'sunday') return 0;
   return user.dailyWorkHours ?? 8.5;
 };
+// Drag-Helpers: sauberer Move-Drag + optische Rückmeldung
+const beginDragAssigned = (user, entry, e) => {
+    // signalisiere "move"
+    if (e?.dataTransfer) {
+        e.dataTransfer.effectAllowed = "move";
+        try {
+            e.dataTransfer.setData("application/x-chrono-schedule",
+                JSON.stringify({ userId: user.id, entryId: entry?.id, date: entry?.date, shift: entry?.shift }));
+        } catch {}
+    }
+};
+
 
 const WeekNavigator = ({ onAutoFill, onCopyWeek, onPasteWeek }) => {
   const { t } = useTranslation();
@@ -134,6 +150,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
   const { data: shifts = [], isLoading: isLoadingShifts } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
   const weekStart = usePlannerStore(state => state.weekStart);
   const weekKey = formatISO(weekStart, { representation: 'date' });
+  const setDragUser = usePlannerStore(state => state.setDragUser);
 
   const dragUser = usePlannerStore(state => state.dragUser);
   const dragEntry = usePlannerStore(state => state.dragEntry);
@@ -154,8 +171,10 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
   const saveMutation = useMutation({ mutationFn: saveScheduleEntry, ...mutationOptions });
   const deleteMutation = useMutation({ mutationFn: deleteScheduleEntry, ...mutationOptions });
 
-  const onDrop = (dateKey, shiftKey) => {
-    setHoveredCell(null);
+    const onDrop = (e, dateKey, shiftKey) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setHoveredCell(null);
     if (!dragUser) return;
 
     const vacForUser = vacationMap?.[dragUser.username]?.[dateKey];
@@ -243,7 +262,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
                             <div
                                 key={shiftKey}
                                 className={`shift-slot ${isHovered ? 'droppable-hover' : ''}`}
-                                onDragOver={(e) => { e.preventDefault(); setHoveredCell({ dateKey, shiftKey }); }}
+                                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setHoveredCell({ dateKey, shiftKey }); }}
                                 onDragLeave={() => setHoveredCell(null)}
                                 onDrop={() => onDrop(dateKey, shiftKey)}
                             >
@@ -259,14 +278,20 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
                                       return (
                                           <div
                                               key={entry.id}
-                                              className="assigned-user"
+                                              className={`assigned-user ${dragEntry?.id === entry.id ? 'dragging' : ''}`}
                                               style={{ backgroundColor: user.color || 'var(--ud-c-primary)' }}
                                               draggable
-                                              onDragStart={() => setDragUser(user, entry)}
+                                              onDragStart={(e) => { setDragUser(user, entry); beginDragAssigned(user, entry, e); }}
                                               onDragEnd={() => clearDrag()}
                                           >
-                                            <span>{user.firstName} {user.lastName}</span>
-                                            <button className="clear-cell-btn" onClick={() => clearEntry(entry.id)}>×</button>
+                                              <span>{user.firstName} {user.lastName}</span>
+                                              <button
+                                                  className="clear-cell-btn"
+                                                  onClick={(ev) => { ev.stopPropagation(); ev.preventDefault(); clearEntry(entry.id); }}
+                                                  title="Entfernen"
+                                              >
+                                                  ×
+                                              </button>
                                           </div>
                                       );
                                     })
