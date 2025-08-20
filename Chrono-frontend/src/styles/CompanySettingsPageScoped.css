@@ -1,8 +1,8 @@
 /* CompanySettingsPageScoped.css */
-/* Light/Dark Mode, orientiert am AdminDashboard-Design */
+/* vollständig: Seite (Wrapper) + Card, Light/Dark sauber */
 
-.scoped-dashboard .company-settings-card {
-    /* Design-Variablen (Light) */
+.scoped-dashboard {
+    /* ---- Design-Variablen (Light) ---- */
     --c-pri: #475bff;
     --c-pri-dim: #6b7cff;
 
@@ -10,7 +10,7 @@
     --c-text-light: #6b7180;
     --c-muted: #595e6b;
 
-    --c-bg: #f4f6ff;
+    --c-bg: #0f1117;      /* << HINTERGRUND SEITE (wird im Dark-Override ersetzt) */
     --c-card: #ffffff;
     --c-surface: #f9fafb;
     --c-border: #d5d8e5;
@@ -29,26 +29,37 @@
 
     --u-shadow-md: 0 4px 12px rgba(0,0,0,0.08);
 
-    background: var(--c-card);
-    border: 1px solid var(--c-border);
-    border-radius: var(--u-radius);
-    box-shadow: var(--u-shadow-md);
-    padding: calc(var(--u-gap) + 2px);
+    /* ---- Seitenfläche ---- */
+    background: var(--c-bg);
+    min-height: 100svh;
+    padding: clamp(12px, 2.5vw, 20px);
+    box-sizing: border-box;
 }
 
-/* Dark Mode Variablen anpassen */
-[data-theme="dark"] .scoped-dashboard .company-settings-card {
+/* ---- Dark Mode Variablen für die komplette Seite ---- */
+[data-theme="dark"] .scoped-dashboard {
     --c-text: #e5e7ec;
     --c-text-light: #a0a4b4;
     --c-muted: #a0a4b4;
 
-    --c-bg: #15171c;
+    --c-bg: #0f1117;        /* dunkler Seiten-Hintergrund */
     --c-card: #1f2127;
     --c-surface: #252830;
     --c-border: #373b46;
     --c-line: #2c2f37;
 
     --u-shadow-md: 0 8px 18px rgba(0,0,0,0.35);
+}
+
+/* ---------------- Card ---------------- */
+.scoped-dashboard .company-settings-card {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--u-radius);
+    box-shadow: var(--u-shadow-md);
+    padding: calc(var(--u-gap) + 2px);
+    max-width: 1200px;
+    margin: 0 auto;               /* schön zentriert */
 }
 
 /* Titel */
@@ -94,7 +105,6 @@
         grid-template-columns: 1fr 1fr;
     }
 }
-
 .scoped-dashboard .company-settings-form .form-group {
     display: flex;
     flex-direction: column;
@@ -121,7 +131,7 @@
     background: var(--c-pri);
 }
 
-/* Erklärzeile unter dem Label */
+/* Erklärzeile */
 .scoped-dashboard .company-settings-form .hint {
     color: var(--c-text-light);
     font-size: 0.85rem;
@@ -129,15 +139,11 @@
 }
 
 /* Inputs */
-.scoped-dashboard .company-settings-form input[type="number"] {
-    appearance: textfield;
-}
+.scoped-dashboard .company-settings-form input[type="number"] { appearance: textfield; }
 .scoped-dashboard .company-settings-form input::-webkit-outer-spin-button,
 .scoped-dashboard .company-settings-form input::-webkit-inner-spin-button {
-    -webkit-appearance: none;
-    margin: 0;
+    -webkit-appearance: none; margin: 0;
 }
-
 .scoped-dashboard .company-settings-form input {
     background: var(--c-card);
     color: var(--c-text);
@@ -147,37 +153,28 @@
     font-size: 0.95rem;
     transition: border-color .2s ease, box-shadow .2s ease, background .2s ease;
 }
-.scoped-dashboard .company-settings-form input::placeholder {
-    color: var(--c-text-light);
-}
+.scoped-dashboard .company-settings-form input::placeholder { color: var(--c-text-light); }
 .scoped-dashboard .company-settings-form input:focus {
     outline: none;
     border-color: var(--c-pri);
     box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-pri) 20%, transparent);
 }
 
-/* Live-Vorschau „= 1,25 %“ */
+/* Live-Vorschau & Fehler */
 .scoped-dashboard .company-settings-form .preview {
-    font-size: 0.85rem;
-    color: var(--c-text-light);
+    font-size: 0.85rem; color: var(--c-text-light);
 }
-
-/* Fehlertext */
 .scoped-dashboard .company-settings-form .error {
-    color: var(--c-error);
-    font-size: 0.85rem;
-    font-weight: 600;
+    color: var(--c-error); font-size: 0.85rem; font-weight: 600;
 }
 
-/* Speichern-Button */
+/* Button */
 .scoped-dashboard .company-settings-card .primary-btn {
-    background: var(--c-pri);
-    color: #fff;
+    background: var(--c-pri); color: #fff;
     border: 1px solid var(--c-pri);
     border-radius: 12px;
     padding: 0.75rem 1.2rem;
-    font-weight: 600;
-    cursor: pointer;
+    font-weight: 600; cursor: pointer;
     transition: background .2s ease, transform .2s ease, border-color .2s ease;
 }
 .scoped-dashboard .company-settings-card .primary-btn:hover {
@@ -186,15 +183,18 @@
     transform: translateY(-1px);
 }
 
-/* Status/Feedback unter dem Button */
+/* Status/Feedback */
 .scoped-dashboard .company-settings-card > p {
     margin-top: 0.7rem;
     color: var(--c-text-light);
     font-size: 0.95rem;
 }
 
-/* Kleinere Screens: einspaltig, etwas dichter */
+/* Kleinere Screens */
 @media (max-width: 520px) {
+    .scoped-dashboard {
+        padding: var(--u-gap);
+    }
     .scoped-dashboard .company-settings-card {
         padding: var(--u-gap);
     }

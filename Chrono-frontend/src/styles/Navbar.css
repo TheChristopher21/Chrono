@@ -1,111 +1,119 @@
 /* =========================================================================
-   Navbar.css · V2.1 Modern & Accessible (Juli 2025)
-   Scope: .scoped-navbar (wird von Navbar.jsx verwendet)
+   Navbar.css · Kompakte Navbar mit klaren Buttons & Symbolen (Rev. 2)
+   Scope: .scoped-navbar
    ========================================================================= */
 
 /* --------------------------- Basisvariablen --------------------------- */
 .scoped-navbar {
-  /* Farb-Aliase für Navbar-spezifische Elemente */
-  --nav-bg: var(--c-card, #ffffff);
-  --nav-bg-transparent: rgba(255, 255, 255, 0.75); /* Fester Wert für Light Mode */
-  --nav-text: var(--c-text, #212529); /* Dunkler Text für hohe Lesbarkeit */
-  --nav-text-muted: var(--c-muted, #5a6169);
-  --nav-border: var(--c-border, #dee2e6);
-  --nav-link-hover-bg: var(--c-pri, #007bff);
-  --nav-link-hover-text: #ffffff;
-  --nav-button-bg: var(--c-pri, #007bff);
-  --nav-button-text: #ffffff;
-  --nav-button-hover-bg: var(--c-pri-dim, #0056b3);
-  --nav-logout-bg: var(--c-error, #dc3545);
-  --nav-logout-text: #ffffff;
-  --nav-logout-hover-bg: var(--c-error-dim, #b02a37);
+    /* Farben (Light) */
+    --nav-bg: var(--c-card, #ffffff);
+    --nav-bg-transparent: rgba(255,255,255,0.78);
+    --nav-text: var(--c-text, #1f2430);
+    --nav-text-muted: var(--c-muted, #616b7a);
+    --nav-border: var(--c-border, #e6e8ee);
+    --nav-surface: #f7f8fb;
 
-  /* UI-Elemente */
-  --nav-height: 65px;
-  --nav-padding-x: clamp(1rem, 4vw, 2rem);
-  --nav-padding-y: 0.75rem;
-  --nav-radius: var(--u-radius-md, 10px);
-  --nav-shadow: 0 4px 15px rgba(0, 0, 0, 0.06);
-  --nav-transition: 0.25s cubic-bezier(0.4, 0.2, 0.2, 1);
+    /* Akzent */
+    --nav-accent: var(--c-pri, #3b82f6);
+    --nav-accent-600: #1d4ed8;
+    --nav-accent-300: #93c5fd;
 
-  font-family: var(--ud-font-family, "Poppins", system-ui, sans-serif);
+    /* Status */
+    --nav-error: #ef4444;
+    --nav-error-600: #dc2626;
+
+    /* Typografie & Maße */
+    --nav-height: 64px;
+    --nav-pad-x: clamp(12px, 3.5vw, 24px);
+    --nav-pad-y: 8px;
+    --nav-radius: 12px;
+    --nav-radius-sm: 10px;
+    --nav-gap: 10px;
+    --nav-gap-lg: 14px;
+
+    /* Buttons & Icons */
+    --nav-icon-size: 18px;       /* reine Icon-SVG-Größe */
+    --nav-tap: 38px;             /* Klickfläche min */
+    --nav-btn-font: 0.95rem;
+    --nav-icon-gap: 8px;         /* Gap in iconish Buttons */
+
+    /* Effekte */
+    --nav-shadow: 0 6px 22px rgba(16, 18, 27, 0.06);
+    --nav-hover: rgba(99, 102, 241, 0.08);
+    --nav-hover-strong: rgba(59, 130, 246, 0.14);
+    --ring: 0 0 0 3px rgba(59, 130, 246, 0.35);
+
+    /* Transition */
+    --nav-ease: cubic-bezier(0.2, 0.6, 0.2, 1);
+    --nav-tr: 200ms var(--nav-ease);
+
+    font-family: var(--ud-font-family, "Inter", system-ui, -apple-system, Segoe UI, Roboto, sans-serif);
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .scoped-navbar {
+        --nav-tr: 1ms linear;
+    }
 }
 
 [data-theme="dark"] .scoped-navbar {
-  --nav-bg: #1c1e2e;
-  --nav-bg-transparent: rgba(28, 30, 46, 0.75); /* Fester Wert für Dark Mode */
-  --nav-text: #e9ecef; /* Heller Text für hohe Lesbarkeit */
-  --nav-text-muted: #adb5bd;
-  --nav-border: #3a3f58;
-  --nav-link-hover-bg: var(--c-pri, #4dabf7);
-  --nav-link-hover-text: #121212; /* Dunkler Text auf hellem Hover */
-  --nav-button-bg: var(--c-pri, #4dabf7);
-  --nav-button-text: #121212;
-  --nav-button-hover-bg: var(--c-pri-dim, #74c0fc);
-  --nav-logout-bg: var(--c-error, #ff6b6b);
-  --nav-logout-text: #121212;
-  --nav-logout-hover-bg: var(--c-error-dim, #ff8787);
+    --nav-bg: #161824;
+    --nav-bg-transparent: rgba(22, 24, 36, 0.78);
+    --nav-text: #ecf0f6;
+    --nav-text-muted: #b3bdcd;
+    --nav-border: #2a2f45;
+    --nav-surface: #1c2030;
+
+    --nav-accent: #60a5fa;
+    --nav-accent-600: #93c5fd;
+    --nav-accent-300: #3b82f6;
+
+    --nav-error: #ff6b6b;
+    --nav-error-600: #ff5252;
+
+    --nav-hover: rgba(96, 165, 250, 0.12);
+    --nav-hover-strong: rgba(96, 165, 250, 0.22);
+    --ring: 0 0 0 3px rgba(96, 165, 250, 0.4);
 }
 
-/* ----------------------------- Navbar-Grundlayout ----------------------------- */
+/* ----------------------------- Layout ----------------------------- */
 .scoped-navbar .navbar {
-  position: sticky;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: var(--nav-height);
-  padding: var(--nav-padding-y) var(--nav-padding-x);
-  background: var(--nav-bg-transparent);
-  backdrop-filter: saturate(180%) blur(12px);
-  -webkit-backdrop-filter: saturate(180%) blur(12px);
-  border-bottom: 1px solid var(--nav-border);
-  box-shadow: var(--nav-shadow);
-  transition:
-          background var(--nav-transition),
-          box-shadow var(--nav-transition),
-          border-color var(--nav-transition);
+    position: sticky; top: 0; left: 0; right: 0;
+    z-index: 1000;
+    height: var(--nav-height);
+    padding: var(--nav-pad-y) var(--nav-pad-x);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--nav-bg-transparent);
+    backdrop-filter: saturate(180%) blur(10px);
+    -webkit-backdrop-filter: saturate(180%) blur(10px);
+    border-bottom: 1px solid var(--nav-border);
+    box-shadow: var(--nav-shadow);
+    transition: background var(--nav-tr), border-color var(--nav-tr), box-shadow var(--nav-tr);
 }
 
-/* Logo */
-.scoped-navbar .navbar-brand {
-  flex-shrink: 0;
-}
+/* Brand */
+.scoped-navbar .navbar-brand { flex-shrink: 0; }
 .scoped-navbar .navbar-logo {
-  font-weight: 700;
-  font-size: clamp(1.3rem, 3.5vw, 1.6rem);
-  color: var(--nav-button-bg); /* Nutzt Primärfarbe */
-  text-decoration: none;
-  letter-spacing: -0.3px;
-  transition: color var(--nav-transition);
+    display: inline-flex; align-items: center;
+    gap: 10px;
+    font-weight: 800;
+    font-size: clamp(1.2rem, 3vw, 1.5rem);
+    letter-spacing: -0.2px;
+    color: var(--nav-accent);
+    text-decoration: none;
+    transition: color var(--nav-tr), transform var(--nav-tr);
 }
-.scoped-navbar .navbar-logo:hover {
-  color: var(--nav-button-hover-bg);
-}
+.scoped-navbar .navbar-logo:hover { color: var(--nav-accent-600); transform: translateY(-1px); }
 
-/* -------------- Hamburger Toggle (Mobile) -------------- */
-.scoped-navbar .nav-toggle {
-  display: none;
-}
+/* Hamburger */
+.scoped-navbar .nav-toggle { display: none; }
 .scoped-navbar .nav-toggle-label {
-  display: none;
-  width: 28px;
-  height: 22px;
-  cursor: pointer;
-  position: relative;
-  z-index: 1001;
+    display: none;
+    width: 28px; height: 22px; cursor: pointer; position: relative; z-index: 1001;
 }
 .scoped-navbar .nav-toggle-label span {
-  position: absolute;
-  left: 0;
-  width: 100%;
-  height: 3px;
-  background: var(--nav-text);
-  border-radius: 2px;
-  transition: all 0.3s ease;
+    position: absolute; left: 0; width: 100%; height: 3px; background: var(--nav-text);
+    border-radius: 2px; transition: all var(--nav-tr);
 }
 .scoped-navbar .nav-toggle-label span:nth-child(1) { top: 0; }
 .scoped-navbar .nav-toggle-label span:nth-child(2) { top: 50%; transform: translateY(-50%); }
@@ -114,197 +122,203 @@
 .scoped-navbar .nav-toggle:checked + .nav-toggle-label span:nth-child(2) { opacity: 0; transform: translateX(-100%); }
 .scoped-navbar .nav-toggle:checked + .nav-toggle-label span:nth-child(3) { transform: rotate(-45deg); top: 50%; }
 
-/* -------------- Links-Container & Styling -------------- */
+/* Links-Container */
 .scoped-navbar .navbar-links {
-  display: flex;
-  align-items: center;
-  gap: var(--ud-gap-sm, 0.75rem);
-  list-style: none;
-  margin: 0;
-  padding: 0;
+    display: flex; align-items: center; width: 100%;
+    gap: var(--nav-gap);
+    margin: 0; padding: 0; list-style: none;
 }
-.scoped-navbar .navbar-links li {
-  display: flex;
-  align-items: center;
-}
+.scoped-navbar .navbar-links li { display: flex; align-items: center; }
+.scoped-navbar .navbar-links .flex-spacer { flex: 1; }
 
-/* Navigationslinks (<a> Tags) */
+/* ---------------------- Text-Links / Pill-Links ---------------------- */
 .scoped-navbar .navbar-links a {
-  padding: 0.6rem 1rem;
-  border-radius: var(--nav-radius);
-  color: var(--nav-text);
-  font-weight: 500;
-  font-size: 0.95rem;
-  text-decoration: none;
-  transition: background-color var(--nav-transition), color var(--nav-transition);
-  white-space: nowrap;
+    --pad-x: 12px; --pad-y: 10px;
+    display: inline-flex; align-items: center; justify-content: center;
+    height: var(--nav-tap); min-width: var(--nav-tap);
+    padding: var(--pad-y) var(--pad-x);
+    border-radius: var(--nav-radius);
+    font-weight: 600; font-size: var(--nav-btn-font);
+    color: var(--nav-text);
+    text-decoration: none; white-space: nowrap;
+    transition: background-color var(--nav-tr), color var(--nav-tr), transform var(--nav-tr);
 }
-.scoped-navbar .navbar-links a:hover,
+.scoped-navbar .navbar-links a:hover { background: var(--nav-hover); }
 .scoped-navbar .navbar-links a.active {
-  background-color: var(--nav-link-hover-bg);
-  color: var(--nav-link-hover-text);
+    background: var(--nav-hover-strong);
+    color: var(--nav-accent);
 }
 
-/* Buttons in der Navbar */
-.scoped-navbar .navbar-links button {
-  border: none;
-  border-radius: var(--nav-radius);
-  cursor: pointer;
-  font-size: 0.9rem;
-  font-weight: 600;
-  padding: 0.65rem 1.1rem;
-  transition: background-color var(--nav-transition), transform 0.2s ease;
-  white-space: nowrap;
-  background-color: var(--nav-button-bg);
-  color: var(--nav-button-text);
+/* --------------------------- Icon-Buttons --------------------------- */
+.scoped-navbar .icon-btn,
+.scoped-navbar .dropdown-trigger.iconish,
+.scoped-navbar .dropdown-trigger.user-trigger,
+.scoped-navbar .dropdown-trigger {
+    --pad: 8px;
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: var(--nav-icon-gap);
+    height: var(--nav-tap); min-width: var(--nav-tap);
+    padding: 0 var(--pad);
+    border: 1px solid transparent;
+    border-radius: var(--nav-radius);
+    background: transparent;
+    color: var(--nav-text);
+    font-weight: 700; font-size: 0.94rem;
+    cursor: pointer; user-select: none;
+    transition: background-color var(--nav-tr), border-color var(--nav-tr), transform var(--nav-tr), color var(--nav-tr);
 }
-.scoped-navbar .navbar-links button:hover {
-  background-color: var(--nav-button-hover-bg);
-  transform: translateY(-2px);
+
+/* reine Icon-Schaltfläche */
+.scoped-navbar .icon-btn .icon-wrap {
+    width: var(--nav-tap); height: var(--nav-tap);
+    display: inline-flex; align-items: center; justify-content: center;
+    border-radius: var(--nav-radius-sm);
 }
+.scoped-navbar .icon-btn svg { width: var(--nav-icon-size); height: var(--nav-icon-size); }
+
+.scoped-navbar .icon-btn:hover { background: var(--nav-hover); }
+.scoped-navbar .icon-btn:active { transform: translateY(0.5px); }
+
+/* Dropdown-Trigger (mit Label oder Icon) */
+.scoped-navbar .dropdown-trigger { padding: 0 10px; }
+.scoped-navbar .dropdown-trigger:hover { background: var(--nav-hover); }
+.scoped-navbar .dropdown-trigger svg { width: 14px; height: 14px; }
+
+/* User-Trigger (Avatar + Name) */
+.scoped-navbar .user-trigger {
+    padding-right: 12px; padding-left: 6px;
+}
+.scoped-navbar .avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    background: var(--nav-accent); color: #fff;
+    font-size: 0.85rem; font-weight: 800;
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.15);
+}
+.scoped-navbar .username {
+    max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    color: var(--nav-text-muted); font-weight: 700; font-size: 0.92rem;
+}
+
+/* Tastaturzugänglichkeit */
+.scoped-navbar .navbar a:focus-visible,
+.scoped-navbar .navbar button:focus-visible {
+    outline: none; box-shadow: var(--ring);
+}
+
+/* ----------------------------- Badges ----------------------------- */
+.notification-badge {
+    position: absolute; top: 6px; right: 6px;
+    width: 9px; height: 9px; border-radius: 999px;
+    background: var(--nav-error);
+    border: 2px solid var(--nav-bg);
+}
+
+/* ---------------------------- Dropdowns ---------------------------- */
+.scoped-navbar .dropdown { position: relative; }
+.scoped-navbar .dropdown.open > .dropdown-trigger { background: var(--nav-hover); }
+
+.scoped-navbar .dropdown .dropdown-menu {
+    position: absolute; top: calc(100% + 10px); right: 0;
+    min-width: 240px;
+    background: var(--nav-bg);
+    border: 1px solid var(--nav-border);
+    border-radius: 14px;
+    box-shadow: var(--nav-shadow);
+    padding: 6px;
+    display: none; z-index: 1002;
+}
+.scoped-navbar .dropdown.open .dropdown-menu { display: block; animation: navFadeIn var(--nav-tr); }
+
+@keyframes navFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.scoped-navbar .dropdown .dropdown-menu a,
+.scoped-navbar .dropdown .dropdown-menu button {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; text-align: left;
+    background: transparent; color: var(--nav-text);
+    border: none; padding: 10px 12px; margin: 2px 0;
+    border-radius: 10px; cursor: pointer; text-decoration: none;
+    font-weight: 600; font-size: 0.95rem;
+    transition: background-color var(--nav-tr), color var(--nav-tr);
+}
+.scoped-navbar .dropdown .dropdown-menu a:hover,
+.scoped-navbar .dropdown .dropdown-menu button:hover {
+    background: var(--nav-hover);
+}
+.scoped-navbar .dropdown .dropdown-menu .lang-item.active {
+    background: var(--nav-hover-strong);
+    color: var(--nav-accent);
+}
+
+/* Admin-Chevron (optional animiert) */
+.scoped-navbar .dropdown.open > .dropdown-trigger svg {
+    transform: rotate(180deg);
+    transition: transform var(--nav-tr);
+}
+
+/* ---------------------- Primäre Buttons (selten) --------------------- */
 .scoped-navbar .navbar-links button.navbar-logout {
-  background-color: var(--nav-logout-bg);
-  color: var(--nav-logout-text);
+    background: var(--nav-error); color: #fff; border: 1px solid transparent;
 }
 .scoped-navbar .navbar-links button.navbar-logout:hover {
-  background-color: var(--nav-logout-hover-bg);
+    background: var(--nav-error-600);
+}
+.scoped-navbar .navbar-links button {
+    font-weight: 700;
 }
 
-/* Username-Anzeige */
-.scoped-navbar .navbar-username {
-  color: var(--nav-text-muted);
-  font-weight: 500;
-  font-size: 0.9rem;
-  padding: 0 var(--ud-gap-sm, 0.75rem);
-  white-space: nowrap;
-}
-
-/* Helligkeits- und Theme-Controls */
-.scoped-navbar .brightness-control {
-  display: flex;
-  align-items: center;
-  gap: var(--ud-gap-xs, 0.5rem);
-}
-.scoped-navbar .brightness-control label,
-.scoped-navbar .language-switch label {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--nav-text-muted);
-  line-height: 1;
-  white-space: nowrap;
-}
-.scoped-navbar .brightness-control input[type="range"] {
-  -webkit-appearance: none; appearance: none;
-  width: 80px; height: 5px;
-  border-radius: 3px; background: var(--nav-border);
-  outline: none; cursor: pointer;
-}
-.scoped-navbar .brightness-control input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none; appearance: none;
-  width: 14px; height: 14px;
-  border-radius: 50%; background: var(--nav-button-bg);
-  border: 2px solid var(--nav-bg);
-}
-.scoped-navbar .brightness-control input[type="range"]::-moz-range-thumb {
-  width: 14px; height: 14px;
-  border-radius: 50%; background: var(--nav-button-bg);
-  border: 2px solid var(--nav-bg);
-}
-.scoped-navbar .brightness-control span {
-  font-size: 0.85rem;
-  color: var(--nav-text-muted);
-  min-width: 30px;
-  text-align: right;
-}
-.scoped-navbar .language-switch {
-  display: flex;
-  align-items: center;
-  gap: var(--ud-gap-xs, 0.5rem);
-}
-.scoped-navbar .language-switch select {
-  padding: 0.25rem 0.5rem;
-  border: 1px solid var(--nav-border);
-  border-radius: var(--nav-radius);
-  background-color: var(--nav-bg);
-  color: var(--nav-text);
-}
-
-/* Changelog Badge */
-.changelog-link {
-  position: relative;
-  display: inline-block;
-}
-.notification-badge {
-  position: absolute;
-  top: 2px;
-  right: -12px;
-  width: 9px;
-  height: 9px;
-  background-color: #e53935;
-  border-radius: 50%;
-  border: 2px solid var(--nav-bg);
-}
-
-/* -------------- Mobile Navigation (Hamburger-Menü) -------------- */
+/* ------------------ Mobile (Hamburger Navigation) ------------------ */
 @media (max-width: 992px) {
-  .scoped-navbar .nav-toggle-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .scoped-navbar .navbar-links {
-    display: none;
-    position: absolute;
-    top: calc(var(--nav-height) - 1px);
-    left: 0; right: 0;
-    width: 100%;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0;
-    background: var(--nav-bg);
-    border-bottom: 1px solid var(--nav-border);
-    box-shadow: var(--nav-shadow);
-    padding: var(--ud-gap-sm, 0.75rem) 0;
-    max-height: calc(100vh - var(--nav-height));
-    overflow-y: auto;
-  }
-  .scoped-navbar .nav-toggle:checked + .nav-toggle-label + .navbar-links {
-    display: flex;
-  }
-  .scoped-navbar .navbar-links li {
-    width: 100%;
-    margin: 0;
-    border-bottom: 1px solid var(--nav-border);
-  }
-  .scoped-navbar .navbar-links li:last-child {
-    border-bottom: none;
-  }
-  .scoped-navbar .navbar-links a,
-  .scoped-navbar .navbar-links button {
-    width: 100%;
-    text-align: left;
-    padding: var(--ud-gap-md, 1.25rem) var(--nav-padding-x);
-    border-radius: 0;
-    font-size: 1rem;
-  }
-  .scoped-navbar .navbar-links a:hover,
-  .scoped-navbar .navbar-links button:hover {
-    background-color: var(--nav-link-hover-bg);
-    color: var(--nav-link-hover-text);
-    transform: none;
-  }
-  .scoped-navbar .navbar-links button.navbar-logout:hover {
-    background-color: var(--nav-logout-hover-bg);
-  }
-  .scoped-navbar .navbar-username,
-  .scoped-navbar .brightness-control {
-    padding: var(--ud-gap-md, 1.25rem) var(--nav-padding-x);
-    width: 100%;
-    justify-content: space-between;
-  }
-  .scoped-navbar .brightness-control input[type="range"] {
-    flex-grow: 1;
-    margin: 0 var(--ud-gap-sm, 0.75rem);
-    max-width: 150px;
-  }
+    .scoped-navbar .nav-toggle-label { display: flex; align-items: center; justify-content: center; }
+    .scoped-navbar .navbar-links {
+        display: none; position: absolute; top: calc(var(--nav-height) - 1px); left: 0; right: 0;
+        width: 100%; flex-direction: column; align-items: stretch; gap: 0;
+        background: var(--nav-bg); border-bottom: 1px solid var(--nav-border);
+        box-shadow: var(--nav-shadow);
+        padding: 8px 0;
+        max-height: calc(100vh - var(--nav-height)); overflow-y: auto;
+    }
+    .scoped-navbar .nav-toggle:checked + .nav-toggle-label + .navbar-links { display: flex; }
+    .scoped-navbar .navbar-links li { width: 100%; border-bottom: 1px solid var(--nav-border); }
+    .scoped-navbar .navbar-links li:last-child { border-bottom: none; }
+
+    .scoped-navbar .navbar-links a,
+    .scoped-navbar .navbar-links button,
+    .scoped-navbar .dropdown-trigger,
+    .scoped-navbar .icon-btn {
+        width: 100%; text-align: left; justify-content: flex-start;
+        height: auto; min-height: var(--nav-tap);
+        padding: 12px var(--nav-pad-x);
+        border-radius: 0; transform: none !important;
+    }
+    .scoped-navbar .icon-btn .icon-wrap {
+        width: var(--nav-tap); height: var(--nav-tap);
+    }
+
+    /* Dropdown-Menü im Flow */
+    .scoped-navbar .dropdown .dropdown-menu {
+        position: static; top: auto; right: auto;
+        min-width: 100%;
+        border: none; border-radius: 0; box-shadow: none; padding: 0 0 6px;
+        animation: none;
+    }
+    .scoped-navbar .dropdown .dropdown-menu a,
+    .scoped-navbar .dropdown .dropdown-menu button {
+        padding-left: calc(var(--nav-pad-x) + 20px);
+        border-radius: 0;
+    }
+}
+
+/* --------------------------- Kleine Helfer --------------------------- */
+/* „Kompakter“ Modus optional für sehr viele Menüs */
+.scoped-navbar .is-compact .navbar-links a,
+.scoped-navbar .is-compact .dropdown-trigger,
+.scoped-navbar .is-compact .icon-btn {
+    --nav-tap: 34px;
+    --nav-icon-size: 16px;
+    --nav-btn-font: 0.9rem;
 }

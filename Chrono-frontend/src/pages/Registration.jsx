@@ -66,7 +66,7 @@ const FEATURES = [
     }
 ];
 
-const INSTALL_FEE = 150;
+const INSTALL_FEE = 250;
 const OPTIONAL_TRAINING_COST = 120;
 const YEARLY_DISCOUNT_FACTOR = 10; // 2 Monate geschenkt
 
