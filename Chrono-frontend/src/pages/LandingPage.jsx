@@ -7,12 +7,21 @@ import { useTranslation } from "../context/LanguageContext";
 import { useNotification } from "../context/NotificationContext";
 import api from "../utils/api";
 
-const FeatureCard = ({ icon, title, text }) => (
-    <div className="lp-feature-card" role="listitem">
+// Feature block supports either a single text or a list of bullet points
+const FeatureCard = ({ icon, title, text, bullets }) => (
+    <article className="lp-feature-card" role="listitem">
         <div className="lp-feature-icon" aria-hidden="true">{icon}</div>
         <h3 className="lp-h3">{title}</h3>
-        <p className="lp-text-muted">{text}</p>
-    </div>
+        {bullets ? (
+            <ul className="lp-text-muted">
+                {bullets.map((b, i) => (
+                    <li key={i}>{b}</li>
+                ))}
+            </ul>
+        ) : (
+            <p className="lp-text-muted">{text}</p>
+        )}
+    </article>
 );
 
 const StepCard = ({ n, title, text }) => (
@@ -22,6 +31,50 @@ const StepCard = ({ n, title, text }) => (
         <p className="lp-text">{text}</p>
     </div>
 );
+
+// Content definitions – keeps component lean and improves readability
+const features = [
+    {
+        icon: "🧾",
+        title: "Payroll + Zeiterfassung",
+        bullets: [
+            "Arbeitszeiten & Projekte",
+            "Urlaub und Überstunden",
+            "Eine Oberfläche für alles",
+        ],
+    },
+    {
+        icon: "🇨🇭🇩🇪",
+        title: "CH & DE Lohnabrechnung",
+        bullets: ["PDF/CSV Export", "Lohnarten anpassbar", "Beide Länder abgedeckt"],
+    },
+    {
+        icon: "👆",
+        title: "NFC-Stempeluhr & Web",
+        bullets: ["NFC-Karten", "Web & Mobil", "Offline bereit"],
+    },
+    {
+        icon: "📅",
+        title: "Urlaub & Überstunden",
+        bullets: ["Digitale Anträge", "Resttage automatisch", "Überstundenfrei rechnen"],
+    },
+    {
+        icon: "🔔",
+        title: "Benachrichtigungen",
+        bullets: ["Neue Abrechnungen", "Anträge", "Offene Stempelungen"],
+    },
+    {
+        icon: "🛡️",
+        title: "Schweizer Server & DSGVO",
+        bullets: ["Verschlüsselt", "Rollenbasiert", "2FA-bereit", "Daten in CH"],
+    },
+];
+
+const steps = [
+    { n: "1", title: "Registrieren", text: "Kostenlos starten – ohne Kreditkarte." },
+    { n: "2", title: "Team & Projekte anlegen", text: "Mitarbeitende, Projekte und Kunden hinzufügen." },
+    { n: "3", title: "Loslegen", text: "Stempeln, Urlaub beantragen, Abrechnung erstellen." },
+];
 
 const LandingPage = () => {
     const { t } = useTranslation();
@@ -46,20 +99,6 @@ const LandingPage = () => {
         }
     };
 
-    const features = [
-        { icon: "🧾", title: "Payroll + Zeiterfassung", text: "Arbeitszeiten, Projekte, Urlaub, Überstunden – alles in einer Oberfläche." },
-        { icon: "🇨🇭🇩🇪", title: "CH & DE Lohnabrechnung", text: "Schweiz & Deutschland, Export als PDF/CSV inklusive." },
-        { icon: "👆", title: "NFC-Stempeluhr & Web", text: "Stempeln per NFC oder im Web – Büro, Werkstatt, mobil." },
-        { icon: "📅", title: "Urlaub & Überstundenfrei", text: "Digitale Anträge, korrekte Resttage, „Überstundenfrei“ sauber verrechnet." },
-        { icon: "🔔", title: "Benachrichtigungen", text: "Neue Abrechnungen, Anträge, offene Stempelungen sofort im Blick." },
-        { icon: "🛡️", title: "Schweizer Server & DSGVO", text: "Verschlüsselt, rollenbasiert, 2FA-bereit. Daten in der Schweiz." },
-    ];
-
-    const steps = [
-        { n: "1", title: "Registrieren", text: "Kostenlos starten – ohne Kreditkarte." },
-        { n: "2", title: "Team & Projekte anlegen", text: "Mitarbeitende, Projekte und Kunden hinzufügen." },
-        { n: "3", title: "Loslegen", text: "Stempeln, Urlaub beantragen, Abrechnung erstellen." },
-    ];
 
     return (
         <div className="landing-page scoped-landing">
@@ -106,7 +145,7 @@ const LandingPage = () => {
                     </p>
                     <div className="lp-features-grid" role="list" aria-label="Featureliste">
                         {features.map((f, i) => (
-                            <FeatureCard key={i} icon={f.icon} title={f.title} text={f.text} />
+                            <FeatureCard key={i} icon={f.icon} title={f.title} bullets={f.bullets} text={f.text} />
                         ))}
                     </div>
                 </section>
