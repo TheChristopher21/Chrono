@@ -153,9 +153,9 @@ const LandingPage = () => {
                 <div className="lp-foot-inner">
                     <span>© {new Date().getFullYear()} Chrono</span>
                     <nav className="lp-foot-links" aria-label="Footer Navigation">
-                        <Link to="/imprint">Impressum</Link>
-                        <Link to="/privacy">Datenschutz</Link>
-                        <Link to="/terms">AGB</Link>
+                        <Link to="/impressum">Impressum</Link>
+                        <Link to="/datenschutz">Datenschutz</Link>
+                        <Link to="/agb">AGB</Link>
                     </nav>
                 </div>
             </footer>
