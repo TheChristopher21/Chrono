@@ -677,6 +677,10 @@ const translations = {
             copyright: "<strong>Copyright:</strong><br />Sämtliche Inhalte (Texte, Bilder, Grafiken) auf dieser Website sind urheberrechtlich geschützt. Jegliche Nutzung ohne ausdrückliche Zustimmung ist untersagt.",
             stand: "<em>Stand: Mai 2025</em>",
         },
+        privacyPage: {
+            title: "Datenschutz",
+            content: "Hier finden Sie Informationen zum Datenschutz.",
+        },
         agbPage: {
             title: "Allgemeine Geschäftsbedingungen",
             stand: "Stand Mai 2025",
@@ -1409,6 +1413,10 @@ const translations = {
             liability: "<strong>Disclaimer:</strong><br />We assume no liability for the content of external links. The operators of the linked pages are solely responsible for their content.",
             copyright: "<strong>Copyright:</strong><br />All content on this website is protected by copyright. Any use without explicit permission is prohibited.",
             stand: "<em>Updated: May 2025</em>",
+        },
+        privacyPage: {
+            title: "Privacy Policy",
+            content: "Here you can find information about our privacy policy.",
         },
         agbPage: {
             title: "Terms of Service",

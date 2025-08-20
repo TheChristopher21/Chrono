@@ -39,6 +39,7 @@ import PrintReport from "./pages/PrintReport.jsx";
 import WhatsNewPage from "./pages/WhatsNewPage.jsx";
 import AGB from "./pages/AGB.jsx";
 import Impressum from "./pages/Impressum.jsx";
+import Datenschutz from "./pages/Datenschutz.jsx";
 import CompanySettingsPage from "./pages/CompanySettingsPage.jsx";
 import PayslipsPage from "./pages/PayslipsPage.jsx";
 
@@ -62,6 +63,7 @@ function App() {
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Registration />} />
                         <Route path="/agb" element={<AGB />} />
+                        <Route path="/datenschutz" element={<Datenschutz />} />
                         <Route path="/impressum" element={<Impressum />} />
 
                         {/* Geschützte Benutzer-Routen */}
