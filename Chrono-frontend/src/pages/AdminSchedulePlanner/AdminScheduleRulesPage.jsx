@@ -1,19 +1,13 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import Navbar from "../../components/Navbar";
 import "../../styles/AdminScheduleRulesPageScoped.css";
+import api from "../../utils/api";
 
 export default function AdminScheduleRulesPage() {
-    const API_BASE =
-        (import.meta && import.meta.env && import.meta.env.VITE_API_URL)
-            ? import.meta.env.VITE_API_URL
-            : "";
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(true);
     const [savingId, setSavingId] = useState(null);
-    const endpoint = useMemo(
-        () => `${API_BASE}/admin/schedule/rules`.replace(/(?<!:)\/{2,}/g, "/"),
-        [API_BASE]
-    );
+    const endpoint = "/api/admin/shift-definitions";
 
     const pad2 = (n) => String(n).padStart(2, "0");
     const normalizeTime = (t) => {
@@ -30,20 +24,17 @@ export default function AdminScheduleRulesPage() {
         (async () => {
             try {
                 setLoading(true);
-                const res = await fetch(endpoint, { credentials: "include" });
-                if (!res.ok) throw new Error(`GET ${endpoint} → ${res.status}`);
-                const data = await res.json();
-                const normalized = Array.isArray(data)
-                    ? data.map((r) => ({
-                        id: r.id ?? crypto.randomUUID(),
-                        serverId: r.id ?? null,
-                        label: r.label ?? "",
-                        key: r.key ?? "",
-                        startTime: normalizeTime(r.startTime ?? "00:00"),
-                        endTime: normalizeTime(r.endTime ?? "00:00"),
-                        active: !!r.active,
-                    }))
-                    : [];
+                const res = await api.get(`${endpoint}/all`);
+                const data = Array.isArray(res.data) ? res.data : [];
+                const normalized = data.map((r) => ({
+                    id: r.id ?? crypto.randomUUID(),
+                    serverId: r.id ?? null,
+                    label: r.label ?? "",
+                    key: r.shiftKey ?? "",
+                    startTime: normalizeTime(r.startTime ?? "00:00"),
+                    endTime: normalizeTime(r.endTime ?? "00:00"),
+                    active: !!r.isActive,
+                }));
                 if (!ignore) setRules(normalized);
             } catch (e) {
                 console.error(e);
@@ -53,7 +44,7 @@ export default function AdminScheduleRulesPage() {
             }
         })();
         return () => { ignore = true; };
-    }, [endpoint]);
+    }, []);
 
     const handleField = (id, field, value) => {
         setRules((prev) => prev.map((r) => (r.id === id ? { ...r, [field]: value } : r)));
@@ -72,27 +63,28 @@ export default function AdminScheduleRulesPage() {
         try {
             setSavingId(rule.id);
             const payload = {
+                id: rule.serverId ?? undefined,
                 label: rule.label?.trim() ?? "",
-                key: (rule.key ?? "").toUpperCase().trim(),
+                shiftKey: (rule.key ?? "").toUpperCase().trim(),
                 startTime: normalizeTime(rule.startTime),
                 endTime: normalizeTime(rule.endTime),
-                active: !!rule.active,
+                isActive: !!rule.active,
             };
-            const method = rule.serverId ? "PUT" : "POST";
-            const url = rule.serverId ? `${endpoint}/${encodeURIComponent(rule.serverId)}` : endpoint;
-            const res = await fetch(url, {
-                method,
-                headers: { "Content-Type": "application/json" },
-                credentials: "include",
-                body: JSON.stringify(payload),
-            });
-            if (!res.ok) throw new Error(`${method} ${url} → ${res.status}`);
-            const saved = await res.json().catch(() => ({}));
-            setRules((prev) =>
-                prev.map((r) =>
-                    r.id === rule.id ? { ...r, ...payload, serverId: saved.id ?? rule.serverId ?? rule.id } : r
-                )
-            );
+            const res = await api.post(endpoint, payload);
+            const saved = res.data || {};
+            setRules((prev) => prev.map((r) => (
+                r.id === rule.id
+                    ? {
+                        ...r,
+                        label: payload.label,
+                        key: payload.shiftKey,
+                        startTime: payload.startTime,
+                        endTime: payload.endTime,
+                        active: payload.isActive,
+                        serverId: saved.id ?? rule.serverId ?? rule.id,
+                    }
+                    : r
+            )));
         } catch (e) {
             console.error(e);
             alert("Speichern fehlgeschlagen.");
