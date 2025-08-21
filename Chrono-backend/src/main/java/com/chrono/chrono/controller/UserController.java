@@ -34,11 +34,29 @@ public class UserController {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + request.getUsername()));
 
-        if (!passwordEncoder.matches(request.getCurrentPassword(), user.getPassword())) {
+        // Einige ältere Benutzer könnten ein Klartext- oder separates Admin-Passwort besitzen.
+        // Fallback auf adminPassword, falls das normale Passwort fehlt.
+        String storedPassword = user.getPassword() != null ? user.getPassword() : user.getAdminPassword();
+
+        try {
+            if (storedPassword == null || !passwordEncoder.matches(request.getCurrentPassword(), storedPassword)) {
+                return ResponseEntity.badRequest().body("Current password is incorrect");
+            }
+        } catch (IllegalArgumentException ex) {
+            // Tritt auf, wenn das gespeicherte Passwort nicht dem erwarteten Format (z.B. BCrypt) entspricht
             return ResponseEntity.badRequest().body("Current password is incorrect");
         }
 
-        user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+        String encodedNew = passwordEncoder.encode(request.getNewPassword());
+        user.setPassword(encodedNew);
+
+        // Bei Admins auch das adminPassword aktualisieren
+        boolean isAdmin = user.getRoles().stream()
+                .anyMatch(r -> "ROLE_ADMIN".equals(r.getRoleName()) || "ROLE_SUPERADMIN".equals(r.getRoleName()));
+        if (isAdmin) {
+            user.setAdminPassword(encodedNew);
+        }
+
         userRepository.save(user);
         return ResponseEntity.ok("Password updated successfully");
     }

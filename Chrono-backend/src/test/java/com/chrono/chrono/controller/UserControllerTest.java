@@ -56,4 +56,54 @@ public class UserControllerTest {
 
         assertThrows(UserNotFoundException.class, () -> controller.changePassword(request));
     }
+
+    @Test
+    void changePassword_invalidStoredPassword_returnsBadRequest() {
+        UserService userService = mock(UserService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+        UserController controller = new UserController(userService);
+        ReflectionTestUtils.setField(controller, "userRepository", userRepository);
+        ReflectionTestUtils.setField(controller, "passwordEncoder", passwordEncoder);
+
+        ChangePasswordRequest request = new ChangePasswordRequest("john", "old", "new");
+        User user = new User();
+        user.setUsername("john");
+        user.setPassword("plain");
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("old", "plain")).thenThrow(new IllegalArgumentException("not bcrypt"));
+
+        ResponseEntity<String> response = controller.changePassword(request);
+
+        assertEquals(400, response.getStatusCodeValue());
+        assertEquals("Current password is incorrect", response.getBody());
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void changePassword_updatesAdminPassword() {
+        UserService userService = mock(UserService.class);
+        UserRepository userRepository = mock(UserRepository.class);
+        PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+        UserController controller = new UserController(userService);
+        ReflectionTestUtils.setField(controller, "userRepository", userRepository);
+        ReflectionTestUtils.setField(controller, "passwordEncoder", passwordEncoder);
+
+        ChangePasswordRequest request = new ChangePasswordRequest("admin", "old", "new");
+        User user = new User();
+        user.setUsername("admin");
+        user.setPassword("encodedOld");
+        com.chrono.chrono.entities.Role role = new com.chrono.chrono.entities.Role("ROLE_ADMIN");
+        user.getRoles().add(role);
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("old", "encodedOld")).thenReturn(true);
+        when(passwordEncoder.encode("new")).thenReturn("encodedNew");
+
+        ResponseEntity<String> response = controller.changePassword(request);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals("Password updated successfully", response.getBody());
+        assertEquals("encodedNew", user.getPassword());
+        assertEquals("encodedNew", user.getAdminPassword());
+    }
 }
