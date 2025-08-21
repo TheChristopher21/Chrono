@@ -16,12 +16,10 @@ const AdminChangePassword = () => {
     const handlePasswordChange = async (e) => {
         e.preventDefault();
         try {
-            await api.put('/api/user/change-password', null, {
-                params: {
-                    username: currentUser.username,
-                    currentPassword: passwordData.currentPassword,
-                    newPassword: passwordData.newPassword
-                }
+            await api.put('/api/user/change-password', {
+                username: currentUser.username,
+                currentPassword: passwordData.currentPassword,
+                newPassword: passwordData.newPassword,
             });
             setMessage(t("personalData.passwordChanged", "Passwort erfolgreich geändert"));
             notify(t("personalData.passwordChanged", "Passwort erfolgreich geändert"));
