@@ -10,7 +10,6 @@ import ActionButtons from "./components/ActionButtons.jsx";
 import "./styles/global.css";
 import "./styles/Button.css";
 import "./styles/Login.css";
-import "./styles/Navbar.css";
 import "./styles/PercentageDashboardScoped.css";
 
 // Seiten-Komponenten

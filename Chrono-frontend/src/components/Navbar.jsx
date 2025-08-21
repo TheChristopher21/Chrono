@@ -5,7 +5,7 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LanguageContext, useTranslation } from '../context/LanguageContext';
-import '../styles/Navbar.css';
+import styles from '../styles/Navbar.module.css';
 import api from '../utils/api';
 import ChangelogModal from './ChangelogModal';
 
@@ -121,21 +121,21 @@ const Navbar = () => {
     const userInitial = currentUser?.username?.[0]?.toUpperCase() || 'U';
 
     return (
-        <div className="scoped-navbar">
-            <nav className="navbar" aria-label="Hauptnavigation">
+        <div className={styles['scoped-navbar']}>
+            <nav className={styles.navbar} aria-label="Hauptnavigation">
                 {/* Logo */}
-                <div className="navbar-brand">
-                    <Link to="/" className="navbar-logo">Chrono</Link>
+                <div className={styles['navbar-brand']}>
+                    <Link to="/" className={styles['navbar-logo']}>Chrono</Link>
                 </div>
 
                 {/* Hamburger Toggle (mobil) */}
-                <input type="checkbox" id="nav-toggle" className="nav-toggle" />
-                <label htmlFor="nav-toggle" className="nav-toggle-label" aria-label="Menü umschalten">
+                <input type="checkbox" id="nav-toggle" className={styles['nav-toggle']} />
+                <label htmlFor="nav-toggle" className={styles['nav-toggle-label']} aria-label="Menü umschalten">
                     <span></span><span></span><span></span>
                 </label>
 
                 {/* Links */}
-                <ul className="navbar-links">
+                <ul className={styles['navbar-links']}>
                     {!authToken || isPublicPage ? (
                         <>
                             <li><Link to="/login">{t('navbar.login', 'Login')}</Link></li>
@@ -150,16 +150,16 @@ const Navbar = () => {
                                     )}
 
                                     {isAdmin ? (
-                                        <li className={`dropdown ${openAdmin ? 'open' : ''}`} ref={adminRef}>
+                                        <li className={`${styles.dropdown} ${openAdmin ? styles.open : ''}`} ref={adminRef}>
                                             <button
-                                                className="dropdown-trigger"
+                                                className={styles['dropdown-trigger']}
                                                 onClick={() => setOpenAdmin(v => !v)}
                                                 aria-haspopup="true"
                                                 aria-expanded={openAdmin}
                                             >
                                                 {t('navbar.admin','Admin')} <IconChevronDown/>
                                             </button>
-                                            <div className="dropdown-menu">
+                                            <div className={styles['dropdown-menu']}>
                                                 <Link to="/admin/dashboard" onClick={() => setOpenAdmin(false)}>
                                                     {t('navbar.adminStart','Admin-Start')}
                                                 </Link>
@@ -207,18 +207,18 @@ const Navbar = () => {
                             )}
 
                             {/* Flex-Spacer schiebt die Controls nach rechts */}
-                            <li className="flex-spacer" aria-hidden="true"></li>
+                            <li className={styles['flex-spacer']} aria-hidden="true"></li>
 
                             {/* Changelog als Glocke */}
                             <li>
                                 <button
-                                    className="icon-btn"
+                                    className={styles['icon-btn']}
                                     aria-label={t('navbar.whatsNew','Was ist neu?')}
                                     onClick={openChangelog}
                                 >
-                  <span className="icon-wrap">
+                  <span className={styles['icon-wrap']}>
                     <IconBell/>
-                      {hasNewUpdate && <span className="notification-badge" aria-hidden="true"></span>}
+                      {hasNewUpdate && <span className={styles['notification-badge']} aria-hidden="true"></span>}
                   </span>
                                 </button>
                             </li>
@@ -226,44 +226,44 @@ const Navbar = () => {
                             {/* Theme Toggle */}
                             <li>
                                 <button
-                                    className="icon-btn"
+                                    className={styles['icon-btn']}
                                     onClick={toggleTheme}
                                     aria-label={theme === 'light' ? t('darkMode','Dark Mode') : t('lightMode','Light Mode')}
                                     title={theme === 'light' ? t('darkMode','Dark Mode') : t('lightMode','Light Mode')}
                                 >
-                                    <span className="icon-wrap">{theme === 'light' ? <IconMoon/> : <IconSun/>}</span>
+                                    <span className={styles['icon-wrap']}>{theme === 'light' ? <IconMoon/> : <IconSun/>}</span>
                                 </button>
                             </li>
 
                             {/* Sprache kompakt */}
-                            <li className={`dropdown ${openLang ? 'open' : ''}`} ref={langRef}>
+                            <li className={`${styles.dropdown} ${openLang ? styles.open : ''}`} ref={langRef}>
                                 <button
-                                    className="dropdown-trigger iconish"
+                                    className={`${styles['dropdown-trigger']} ${styles.iconish}`}
                                     onClick={() => setOpenLang(v => !v)}
                                     aria-haspopup="true"
                                     aria-expanded={openLang}
                                 >
                                     🌐 <IconChevronDown/>
                                 </button>
-                                <div className="dropdown-menu">
-                                    <button className={`lang-item ${language==='de'?'active':''}`} onClick={() => { setLanguage('de'); setOpenLang(false); }}>DE</button>
-                                    <button className={`lang-item ${language==='en'?'active':''}`} onClick={() => { setLanguage('en'); setOpenLang(false); }}>EN</button>
+                                <div className={styles['dropdown-menu']}>
+                                    <button className={`${styles['lang-item']} ${language==='de'?styles.active:''}`} onClick={() => { setLanguage('de'); setOpenLang(false); }}>DE</button>
+                                    <button className={`${styles['lang-item']} ${language==='en'?styles.active:''}`} onClick={() => { setLanguage('en'); setOpenLang(false); }}>EN</button>
                                 </div>
                             </li>
 
                             {/* User-Menü */}
-                            <li className={`dropdown ${openUser ? 'open' : ''}`} ref={userRef}>
+                            <li className={`${styles.dropdown} ${openUser ? styles.open : ''}`} ref={userRef}>
                                 <button
-                                    className="dropdown-trigger user-trigger"
+                                    className={`${styles['dropdown-trigger']} ${styles['user-trigger']}`}
                                     onClick={() => setOpenUser(v => !v)}
                                     aria-haspopup="true"
                                     aria-expanded={openUser}
                                 >
-                                    <span className="avatar" aria-hidden="true">{userInitial}</span>
-                                    <span className="username">{currentUser?.username}</span>
+                                    <span className={styles.avatar} aria-hidden="true">{userInitial}</span>
+                                    <span className={styles.username}>{currentUser?.username}</span>
                                     <IconChevronDown/>
                                 </button>
-                                <div className="dropdown-menu">
+                                <div className={styles['dropdown-menu']}>
                                     {/* Für Nicht-Admin bleibt "Mein Profil" hier; für Admin optional zusätzlich */}
                                     {!isAdmin && (
                                         <Link to="/personal-data" onClick={() => setOpenUser(false)}>
@@ -276,7 +276,7 @@ const Navbar = () => {
                                     <Link to="/admin/change-password" onClick={() => setOpenUser(false)}>
                                         {t('admin.changePasswordTitle','Passwort ändern')}
                                     </Link>
-                                    <button className="navbar-logout" onClick={() => { setOpenUser(false); logout(); }}>
+                                    <button className={styles['navbar-logout']} onClick={() => { setOpenUser(false); logout(); }}>
                                         {t('navbar.logout','Logout')}
                                     </button>
                                 </div>
