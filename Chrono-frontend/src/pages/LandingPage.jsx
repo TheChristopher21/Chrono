@@ -113,6 +113,7 @@ const LandingPage = () => {
                             <h1 className="lp-h1">
                                 {t("landing.hero.title", "Zeit erfassen, fair abrechnen – einfach, klar, zuverlässig.")}
                             </h1>
+                            <br></br>
                             <p className="lp-lead">
                                 {t("landing.hero.sub",
                                     "Chrono hilft Teams in der Schweiz & Deutschland, Zeiten korrekt zu erfassen, Urlaub sauber zu managen und Löhne sicher abzurechnen."

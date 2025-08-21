@@ -364,7 +364,7 @@ const AdminWeekSection = ({
 
 
     return (
-        <div className="admin-dashboard scoped-dashboard"> {/* Added scoped-dashboard here */}
+        <> {/* Added scoped-dashboard here */}
             <section className="week-section content-section">
                 <div className="section-header-controls"> {/* Wrapper for H3 and Navigation */}
                     <h3>{t("adminDashboard.timeTrackingCurrentWeek", "Zeiterfassung Aktuelle Woche")}</h3>
@@ -734,7 +734,7 @@ const AdminWeekSection = ({
                     </div>
                 </ModalOverlay>
             )}
-        </div>
+        </>
     );
 };
 

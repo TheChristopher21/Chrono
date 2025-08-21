@@ -136,7 +136,18 @@ const UserList = () => {
         <h3>{t('schedulePlanner.availableUsers', 'Mitarbeiter')}</h3>
         <div className="user-list">
           {isLoadingUsers ? <p>Lade...</p> : users.map(u => (
-              <div key={u.id} className={`user-list-item ${dragUser?.id === u.id ? 'dragging' : ''}`} draggable onDragStart={() => setDragUser(u)} onDragEnd={() => clearDrag()}>
+              <div
+                key={u.id}
+                className={`user-list-item ${dragUser?.id === u.id ? 'dragging' : ''}`}
+                draggable
+                onDragStart={(e) => {
+                  try {
+                    e.dataTransfer.effectAllowed = 'copyMove';
+                    e.dataTransfer.setData('text/plain', String(u.id ?? 'user'));
+                  } catch {}
+                  setDragUser(u);
+                }}
+                onDragEnd={() => clearDrag()}>
                 {u.firstName} {u.lastName}
               </div>
           ))}
@@ -264,7 +275,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
                                 className={`shift-slot ${isHovered ? 'droppable-hover' : ''}`}
                                 onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setHoveredCell({ dateKey, shiftKey }); }}
                                 onDragLeave={() => setHoveredCell(null)}
-                                onDrop={() => onDrop(dateKey, shiftKey)}
+                                onDrop={(e) => onDrop(e, dateKey, shiftKey)}
                             >
                               <div className="shift-label">
                                 <span>{label}</span>

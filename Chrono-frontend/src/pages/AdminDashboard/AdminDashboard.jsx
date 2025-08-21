@@ -491,7 +491,7 @@ const AdminDashboard = () => {
                         onDataReloadNeeded={handleDataReloadNeeded}
                     />
                 </div>
-                <div className="side-content">
+                <div className="right-column">
                     <AdminVacationRequests
                         t={t}
                         allVacations={allVacations}

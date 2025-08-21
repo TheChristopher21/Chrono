@@ -79,7 +79,7 @@ const AdminVacationRequests = ({
     const hasPending = allVacations.some(v => !v.approved && !v.denied);
 
     return (
-        <div className="admin-dashboard scoped-dashboard"> {/* Stellt sicher, dass CSS-Variablen verfügbar sind */}
+        <> {/* Stellt sicher, dass CSS-Variablen verfügbar sind */}
             <section className={`vacation-section content-section${(!isExpanded && hasPending) ? ' has-pending' : ''}`}> {/* Allgemeine Klasse für Sektionen */}
                 <div
                     className="section-header"
@@ -204,7 +204,7 @@ const AdminVacationRequests = ({
                     </div>
                 </ModalOverlay>
             )}
-        </div>
+        </>
     );
 };
 
