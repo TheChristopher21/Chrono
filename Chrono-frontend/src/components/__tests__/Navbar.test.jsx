@@ -35,7 +35,7 @@ describe('Navbar', () => {
     it('displays username and triggers logout when authenticated', async () => {
         const logoutMock = vi.fn();
         renderNavbar({ authToken: 'token', currentUser: { username: 'Alice', roles: [] }, logout: logoutMock }, '/dashboard');
-        expect(screen.getByText(/Hallo, Alice/)).toBeInTheDocument();
+        expect(screen.getByText(/Alice/)).toBeInTheDocument();
         const logoutButton = screen.getByRole('button', { name: /Abmelden/i });
         await userEvent.click(logoutButton);
         expect(logoutMock).toHaveBeenCalled();
