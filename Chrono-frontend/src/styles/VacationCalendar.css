@@ -1,207 +1,156 @@
 /* =========================================================================
-   VacationCalendar.css · Isoliert
-   Scope: .scoped-vacation  (+ Modals via [data-context="vacation"])
-   Keine globalen Selektoren, keine Überschneidungen mit anderen Dashboards.
-   Light/Dark übernimmt Tokens aus dem umgebenden Dashboard (var(--ud-*)).
+   VacationCalendar.css · Ultra v2 (drop‑in, scope-only)
+   Scope: .scoped-vacation (+ Modals via [data-context="vacation"]) 
+   JSX bleibt wie in VacationCalendar.jsx. Diese Datei ersetzt deine aktuelle.
+   Ziele: beste Lesbarkeit, klare Marker, Dark/Light, zugänglich, keine globalen Leaks.
    ========================================================================= */
 
 /* ---------- Wrapper / Card ---------- */
 .scoped-vacation .vacation-calendar-wrapper {
-    font-family: var(--ud-font-family, "Poppins", system-ui, sans-serif);
-    color: var(--ud-c-text, #0f172a);
-    background: var(--ud-c-card, #fff);
-    border: 1px solid var(--ud-c-border, #dee2e6);
-    border-radius: var(--ud-radius-xl, 24px);
-    box-shadow: var(--ud-shadow-card, 0 10px 30px rgba(0,0,0,.07));
-    padding: var(--ud-gap-lg, 1.5rem);
+    --font: var(--ud-font-family, "Inter", "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif);
+    --fz-xs: var(--ud-fz-xs, .8125rem);
+    --fz-sm: var(--ud-fz-sm, .875rem);
+    --fz-md: var(--ud-fz-md, 1rem);
+    --fz-lg: var(--ud-fz-lg, 1.125rem);
+
+    --c-text: var(--ud-c-text, #0f172a);
+    --c-muted: var(--ud-c-text-muted, #334155);
+    --c-secondary: var(--ud-c-text-secondary, #475569);
+    --c-bg: var(--ud-c-card, #ffffff);
+    --c-surface: var(--ud-c-surface, #eef2f7);
+    --c-line: var(--ud-c-line, #e5e7eb);
+    --c-border: var(--ud-c-border, #d8dee9);
+    --c-primary: var(--ud-c-primary, #2563eb);
+    --c-primary-dim: var(--ud-c-primary-dim, #1d4ed8);
+    --c-success: var(--ud-c-success, #10b981);
+    --c-warn: var(--ud-c-warn, #f59e0b);
+    --c-error: var(--ud-c-error, #ef4444);
+
+    --radius-2xl: var(--ud-radius-2xl, 22px);
+    --radius-xl: var(--ud-radius-xl, 18px);
+    --radius-lg: var(--ud-radius-lg, 14px);
+    --radius-md: var(--ud-radius-md, 10px);
+
+    --shadow-card: var(--ud-shadow-card, 0 12px 34px rgba(16,24,40,.08));
+    --shadow-hover: var(--ud-shadow-hover, 0 18px 48px rgba(16,24,40,.14));
+
+    font-family: var(--font);
+    color: var(--c-text);
+    background: linear-gradient(180deg, var(--c-bg) 0%, color-mix(in srgb, var(--c-surface) 70%, transparent) 100%);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-2xl);
+    box-shadow: var(--shadow-card);
+    padding: clamp(1rem, 2vw, 1.4rem);
 }
 [data-theme="dark"] .scoped-vacation .vacation-calendar-wrapper {
-    background: var(--ud-c-card, #1c1e2e);
-    border-color: var(--ud-c-border, #3a3f58);
+    --c-bg: var(--ud-c-card, #141a2b);
+    --c-surface: var(--ud-c-surface, #1a2137);
+    --c-border: var(--ud-c-border, #273251);
+    --c-line: var(--ud-c-line, #253153);
+    --c-text: var(--ud-c-text, #e9edf6);
+    --c-muted: var(--ud-c-text-muted, #b2bdd2);
+    --c-primary: var(--ud-c-primary, #63b3ff);
+    --c-primary-dim: var(--ud-c-primary-dim, #4aa3ff);
+    --c-success: var(--ud-c-success, #34d399);
+    --c-warn: var(--ud-c-warn, #fbbf24);
+    --c-error: var(--ud-c-error, #ff6b6b);
 }
 
 /* ---------- Info-Header ---------- */
-.scoped-vacation .vacation-info-header {
-    margin-bottom: var(--ud-gap-lg, 1.5rem);
-    padding-bottom: var(--ud-gap-md, 1rem);
-    border-bottom: 1px solid var(--ud-c-line, #e5e7eb);
-    text-align: center;
-}
-.scoped-vacation .vacation-info-header h4 {
-    margin: var(--ud-gap-xs, .5rem) 0;
-    font-size: var(--ud-fz-md, 1rem);
-    font-weight: 500;
-    color: var(--ud-c-text-muted, #334155);
-}
-.scoped-vacation .vacation-info-header h4 strong { color: var(--ud-c-text, #0f172a); }
+.scoped-vacation .vacation-info-header { margin-bottom: 1rem; padding-bottom: .8rem; border-bottom: 1px solid var(--c-line); text-align: center; }
+.scoped-vacation .vacation-info-header h4 { margin: .35rem 0; font-size: var(--fz-md); font-weight: 600; color: var(--c-muted); }
+.scoped-vacation .vacation-info-header h4 strong { color: var(--c-text); font-weight: 750; }
 
-/* ---------- React-Calendar Baseline ---------- */
-.scoped-vacation .react-calendar {
-    width: 100% !important;
-    background: transparent;
-    border: 0;
-    padding: 0;
-    box-shadow: none;
-    font-family: inherit;
-}
+/* ---------- React-Calendar Base ---------- */
+.scoped-vacation .react-calendar { width: 100% !important; background: transparent; border: 0; padding: 0; box-shadow: none; font-family: inherit; }
 
 /* Navigation (Monat/Jahr, Pfeile) */
-.scoped-vacation .react-calendar__navigation {
-    display: flex; align-items: center;
-    gap: var(--ud-gap-sm, .75rem);
-    padding: var(--ud-gap-sm, .75rem) 0;
-    border-bottom: 1px solid var(--ud-c-line, #e5e7eb);
-    margin-bottom: var(--ud-gap-md, 1rem);
-}
-.scoped-vacation .react-calendar__navigation button {
-    background: none; border: 0; cursor: pointer; font-weight: 600;
-    color: var(--ud-c-primary-text, #1d4ed8);
-    padding: var(--ud-gap-xs, .5rem) var(--ud-gap-sm, .75rem);
-    border-radius: var(--ud-radius-md, 12px);
-    transition: background-color .2s, color .2s;
-}
-.scoped-vacation .react-calendar__navigation button:hover {
-    background: var(--ud-c-primary-light-bg, rgba(37,99,235,.10));
-    color: var(--ud-c-primary, #2563eb);
-}
-.scoped-vacation .react-calendar__navigation__label {
-    flex: 1; text-align: center;
-    font-size: var(--ud-fz-lg, 1.125rem); font-weight: 700;
-    color: var(--ud-c-text, #0f172a);
-}
+.scoped-vacation .react-calendar__navigation { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: .6rem; padding: .8rem 0; border-bottom: 1px solid var(--c-line); margin-bottom: 1rem; }
+.scoped-vacation .react-calendar__navigation__prev2-button,
+.scoped-vacation .react-calendar__navigation__next2-button { display: none !important; }
+.scoped-vacation .react-calendar__navigation__prev-button { justify-self: start; }
+.scoped-vacation .react-calendar__navigation__next-button { justify-self: end; }
+.scoped-vacation .react-calendar__navigation button { background: none; border: 0; cursor: pointer; font-weight: 700; color: var(--c-primary); padding: .4rem .6rem; border-radius: 10px; }
+.scoped-vacation .react-calendar__navigation button:hover { background: rgba(37,99,235,.10); color: var(--c-primary-dim); }
+.scoped-vacation .react-calendar__navigation__label { grid-column: 2; font-size: clamp(1.05rem, 1.6vw, 1.3rem); font-weight: 800; color: var(--c-text); }
 
-/* Wochentage (Mo–So) */
-.scoped-vacation .react-calendar__month-view__weekdays {
-    text-transform: uppercase;
-    font-size: var(--ud-fz-sm, .875rem);
-    font-weight: 500;
-    color: var(--ud-c-text-muted, #334155);
-    padding-bottom: var(--ud-gap-xs, .5rem);
-}
+/* Weekdays Header */
+.scoped-vacation .react-calendar__month-view__weekdays { text-transform: uppercase; font-size: var(--fz-xs); color: var(--c-muted); border-bottom: 1px solid var(--c-line); padding: .5rem 0; margin-bottom: .4rem; }
 .scoped-vacation .react-calendar__month-view__weekdays abbr { text-decoration: none; }
 
-/* Tages-Kacheln */
-.scoped-vacation .react-calendar__tile {
-    min-height: 70px;
-    display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
-    gap: 4px;
-    padding: var(--ud-gap-xs, .4rem);
-    background: var(--ud-c-surface, #eef2f7);
-    color: var(--ud-c-text, #0f172a);
-    border-radius: var(--ud-radius-md, 12px);
-    border: 1px solid transparent;
-    transition: background-color .2s, border-color .2s, transform .15s;
-    cursor: pointer;
-}
-[data-theme="dark"] .scoped-vacation .react-calendar__tile { background: var(--ud-c-surface, #232539); }
-.scoped-vacation .react-calendar__tile abbr { font-weight: 500; font-size: var(--ud-fz-sm, .875rem); }
+/* Month grid */
+.scoped-vacation .react-calendar__month-view__days { display: grid !important; grid-template-columns: repeat(7, 1fr) !important; column-gap: .55rem !important; row-gap: .55rem !important; align-content: start; }
 
-.scoped-vacation .react-calendar__tile:enabled:hover,
-.scoped-vacation .react-calendar__tile:enabled:focus {
-    background: var(--ud-c-primary-light-bg, rgba(37,99,235,.10));
-    border-color: var(--ud-c-primary, #2563eb);
-    outline: none; transform: scale(1.03);
-}
-.scoped-vacation .react-calendar__tile--active,
-.scoped-vacation .react-calendar__tile--active:enabled:hover,
-.scoped-vacation .react-calendar__tile--active:enabled:focus {
-    background: var(--ud-c-primary, #2563eb);
-    color: #fff; border-color: var(--ud-c-primary, #2563eb);
-    box-shadow: var(--ud-shadow-interactive, 0 6px 15px rgba(37,99,235,.15));
-    transform: scale(1.05);
-}
-.scoped-vacation .react-calendar__tile--now {
-    background: var(--ud-c-surface, #eef2f7);
-    border: 2px solid var(--ud-c-primary-dim, #1d4ed8);
-}
-[data-theme="dark"] .scoped-vacation .react-calendar__tile--now {
-    background: var(--ud-c-surface, #232539);
-    border-color: var(--ud-c-primary-dim, #3690f5);
-}
+/* Day tiles */
+.scoped-vacation .react-calendar__tile { box-sizing: border-box; width: 100%; min-width: 0; min-height: 86px; display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: .35rem; padding: .5rem; border-radius: var(--radius-lg); background: var(--c-surface); color: var(--c-text); border: 1px solid transparent; transition: background-color .18s, border-color .18s, transform .12s; }
+[data-theme="dark"] .scoped-vacation .react-calendar__tile { background: var(--c-surface); }
 
-/* Marker (Urlaub/Feiertag/Krank) */
-.scoped-vacation .day-markers-container {
-    display: flex; align-items: center; justify-content: center;
-    gap: 4px; height: 10px; margin-top: 4px;
-}
-.scoped-vacation .holiday-marker { font-size: .9em; line-height: 1; }
-.scoped-vacation .holiday-dot,
-.scoped-vacation .sick-leave-dot {
-    width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0;
-}
-.scoped-vacation .holiday-dot { background: var(--ud-c-primary, #2563eb); }
-.scoped-vacation .sick-leave-dot { background: var(--ud-c-error, #ef4444); }
+/* Day number */
+.scoped-vacation .react-calendar__tile abbr { font-weight: 700; font-size: var(--fz-sm); color: var(--c-text); align-self: flex-start; }
 
-/* ---------- Buttons unter dem Kalender ---------- */
-.scoped-vacation .calendar-action-buttons {
-    display: flex; align-items: center; justify-content: space-around;
-    gap: var(--ud-gap-md, 1rem); margin-top: var(--ud-gap-lg, 1.5rem);
-}
-.scoped-vacation .request-vacation-button,
-.scoped-vacation .report-sick-leave-button { flex: 1; }
-.scoped-vacation .report-sick-leave-button {
-    background: var(--ud-c-warn, #f59e0b); color: #0e101c; border-color: var(--ud-c-warn, #f59e0b);
-}
-.scoped-vacation .report-sick-leave-button:hover {
-    background: var(--ud-c-warn-dim, #d39e00); border-color: var(--ud-c-warn-dim, #d39e00);
-}
+/* Today ring */
+.scoped-vacation .react-calendar__tile--now { background: var(--c-surface); box-shadow: inset 0 0 0 2px var(--c-primary-dim); }
 
-/* ---------- Modals (rein isoliert über data-context) ---------- */
-.modal-overlay[data-context="vacation"] {
-    position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
-    padding: 1rem;
-    background: var(--modal-backdrop-color, rgba(17,24,39,.55));
-    backdrop-filter: blur(10px) saturate(150%);
-    -webkit-backdrop-filter: blur(10px) saturate(150%);
-    z-index: 10000;
-}
-.modal-content[data-context="vacation"] {
-    background: var(--ud-c-card, #fff);
-    color: var(--ud-c-text, #0f172a);
-    border: 1px solid var(--ud-c-border, #dee2e6);
-    border-radius: var(--ud-radius-xl, 24px);
-    box-shadow: var(--ud-shadow-lg, 0 20px 40px rgba(0,0,0,.12));
-    width: 100%; max-width: 520px; max-height: 90vh; overflow-y: auto;
-    padding: var(--ud-gap-lg, 1.5rem);
-}
+/* Hover / Focus */
+.scoped-vacation .react-calendar__tile:enabled:hover, .scoped-vacation .react-calendar__tile:enabled:focus { outline: none; background: rgba(37,99,235,.10); border-color: var(--c-primary); transform: translateY(-1px); }
+.scoped-vacation .react-calendar__tile:focus-visible { box-shadow: 0 0 0 3px rgba(37,99,235,.25); }
 
-/* Formular im Modal */
-.modal-content[data-context="vacation"] .form-group { display: flex; flex-direction: column; gap: .4rem; margin-bottom: 1rem; }
-.modal-content[data-context="vacation"] label { font-size: var(--ud-fz-sm, .875rem); color: var(--ud-c-text-muted, #334155); }
-.modal-content[data-context="vacation"] input,
-.modal-content[data-context="vacation"] select,
-.modal-content[data-context="vacation"] textarea {
-    font-family: inherit; font-size: var(--ud-fz-md, 1rem);
-    background: var(--ud-c-surface, #eef2f7); color: var(--ud-c-text, #0f172a);
-    border: 1px solid var(--ud-c-border, #dee2e6); border-radius: var(--ud-radius-md, 12px);
-    padding: .6rem 1rem;
-}
-[data-theme="dark"] .modal-content[data-context="vacation"] input,
-[data-theme="dark"] .modal-content[data-context="vacation"] select,
-[data-theme="dark"] .modal-content[data-context="vacation"] textarea {
-    background: var(--ud-c-surface, #232539);
-    border-color: var(--ud-c-border, #3a3f58);
-}
+/* Active / selection range */
+.scoped-vacation .react-calendar__tile--active, .scoped-vacation .react-calendar__tile--active:enabled:hover, .scoped-vacation .react-calendar__tile--active:enabled:focus { background: var(--c-primary); color: #fff; border-color: var(--c-primary); box-shadow: 0 8px 22px rgba(37,99,235,.22); transform: translateY(0); }
+.scoped-vacation .react-calendar__tile--range { background: rgba(37,99,235,.10); border-color: rgba(37,99,235,.25); }
+.scoped-vacation .react-calendar__tile--rangeStart, .scoped-vacation .react-calendar__tile--rangeEnd { background: var(--c-primary); color: #fff; }
 
-/* Button-Reihe im Modal */
-.modal-content[data-context="vacation"] .modal-buttons {
-    display: flex; gap: .75rem; justify-content: flex-end; margin-top: 1rem;
-}
+/* Neighboring month fade */
+.scoped-vacation .react-calendar__month-view__days__day--neighboringMonth { opacity: .55; filter: saturate(.8); }
+
+/* Weekend tint */
+.scoped-vacation .react-calendar__month-view__days__day--weekend { background: color-mix(in srgb, var(--c-surface) 80%, transparent); }
+
+/* ---------- Markers (Vacation / Sick / Holiday) ---------- */
+.scoped-vacation .day-markers-container { margin-top: .2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .35rem; min-height: 1rem; }
+.scoped-vacation .holiday-marker { font-size: .9em; line-height: 1; filter: saturate(.9); }
+.scoped-vacation .holiday-dot, .scoped-vacation .sick-leave-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 1px 0 rgba(0,0,0,.15), 0 0 0 1px rgba(255,255,255,.28) inset; }
+.scoped-vacation .holiday-dot { background: var(--c-primary); }
+.scoped-vacation .sick-leave-dot { background: var(--c-error); }
+
+/* ---------- Action buttons ---------- */
+.scoped-vacation .calendar-action-buttons { display: flex; align-items: center; justify-content: space-between; gap: .9rem; margin-top: 1rem; }
+.scoped-vacation .request-vacation-button, .scoped-vacation .report-sick-leave-button { flex: 1; border-radius: var(--radius-md); font-weight: 750; font-size: var(--fz-sm); padding: .7rem 1rem; }
+.scoped-vacation .report-sick-leave-button { background: linear-gradient(180deg, var(--c-warn) 0%, color-mix(in srgb, var(--c-warn) 80%, #000) 100%); color: #0e101c; border-color: color-mix(in srgb, var(--c-warn) 70%, #000); }
+.scoped-vacation .report-sick-leave-button:hover { filter: brightness(1.05); }
+
+/* ---------- Modals (isolated via data-context) ---------- */
+.modal-overlay[data-context="vacation"] { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(17,24,39,.55); backdrop-filter: blur(10px) saturate(150%); -webkit-backdrop-filter: blur(10px) saturate(150%); z-index: 10000; }
+.modal-content[data-context="vacation"] { background: var(--c-bg); color: var(--c-text); border: 1px solid var(--c-border); border-radius: var(--radius-2xl); box-shadow: 0 24px 60px rgba(0,0,0,.28); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; padding: clamp(.9rem, 2vw, 1.4rem); }
+.modal-content[data-context="vacation"] h3 { margin: 0 0 .6rem 0; }
+.modal-content[data-context="vacation"] .form-group { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .9rem; }
+.modal-content[data-context="vacation"] label { font-size: var(--fz-sm); color: var(--c-secondary); }
+.modal-content[data-context="vacation"] input, .modal-content[data-context="vacation"] select, .modal-content[data-context="vacation"] textarea { font-family: inherit; font-size: var(--fz-md); background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: .6rem .9rem; }
+.modal-content[data-context="vacation"] .modal-buttons { display: flex; gap: .75rem; justify-content: flex-end; margin-top: .6rem; }
 
 /* ---------- Responsive ---------- */
-@media (max-width: 768px) {
-    .scoped-vacation .vacation-calendar-wrapper { padding: var(--ud-gap-md, 1rem); }
-    .scoped-vacation .react-calendar__tile { min-height: 60px; }
-    .modal-content[data-context="vacation"] { max-width: calc(100vw - 1rem); padding: var(--ud-gap-md, 1rem); }
-}
-@media (max-width: 480px) {
-    .scoped-vacation .react-calendar__tile { min-height: 46px; border-radius: var(--ud-radius-md, 10px); }
-    .scoped-vacation .calendar-action-buttons { flex-direction: column; gap: var(--ud-gap-sm, .6rem); }
+@media (max-width: 920px) { .scoped-vacation .react-calendar__tile { min-height: 72px; } }
+@media (max-width: 640px) {
+    .scoped-vacation .react-calendar__tile { min-height: 56px; }
+    .scoped-vacation .calendar-action-buttons { flex-direction: column; align-items: stretch; }
     .scoped-vacation .calendar-action-buttons button { width: 100%; }
-    .modal-content[data-context="vacation"] .modal-buttons { flex-direction: column-reverse; }
+    .modal-content[data-context="vacation"] { max-width: calc(100vw - 1rem); }
 }
 
 /* Reduced Motion */
-@media (prefers-reduced-motion: reduce) {
-    .scoped-vacation * { transition-duration: .01ms !important; animation-duration: .01ms !important; transform: none !important; }
-}
+@media (prefers-reduced-motion: reduce) { .scoped-vacation * { transition-duration: .01ms !important; animation-duration: .01ms !important; transform: none !important; } }
+
+/* ==================== ULTRA FIX PACK (layout + spacing + Sunday) ==================== */
+/* Hide double-year arrows to avoid collision under weekday row */
+.scoped-vacation .react-calendar__navigation__prev2-button,
+.scoped-vacation .react-calendar__navigation__next2-button { display: none !important; }
+
+/* Ensure clear spacing between navigation, weekdays and grid */
+.scoped-vacation .react-calendar__navigation { padding: .8rem 0; border-bottom: 1px solid var(--c-line); margin-bottom: 1rem; }
+.scoped-vacation .react-calendar__month-view__weekdays { padding: .5rem 0; margin-bottom: .4rem; }
+
+/* Force 7 equal columns and stable gaps so Sunday is filled correctly */
+.scoped-vacation .react-calendar__month-view__days { display: grid !important; grid-template-columns: repeat(7, 1fr) !important; column-gap: .55rem !important; row-gap: .55rem !important; align-content: start; }
+
+/* Box-sizing fix so tile padding/border don't push width → prevents last column overflow */
+.scoped-vacation .react-calendar__tile { box-sizing: border-box; width: 100%; min-width: 0; }
