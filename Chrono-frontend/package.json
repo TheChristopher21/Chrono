@@ -8,14 +8,14 @@
   "type": "module",
   "main": "src/electron-main.js",
   "scripts": {
-    "cypress:open": "cypress open",
     "dev": "vite --config vite.config.js",
     "build": "vite build",
     "build:prod": "vite build --config vite.config.prod.js",
+    "serve": "vite preview",
+
     "electron": "electron .",
     "dist:win": "npm run build && electron-builder --win",
     "dist:linux": "npm run build && electron-builder --linux",
-    "serve": "vite preview",
 
     "test": "vitest run",
     "test:watch": "vitest",

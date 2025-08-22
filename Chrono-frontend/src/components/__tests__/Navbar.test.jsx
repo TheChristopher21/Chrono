@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import React from 'react';
+import 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
@@ -34,10 +34,23 @@ describe('Navbar', () => {
 
     it('displays username and triggers logout when authenticated', async () => {
         const logoutMock = vi.fn();
-        renderNavbar({ authToken: 'token', currentUser: { username: 'Alice', roles: [] }, logout: logoutMock }, '/dashboard');
-        expect(screen.getByText(/Alice/)).toBeInTheDocument();
-        const logoutButton = screen.getByRole('button', { name: /Abmelden/i });
+        renderNavbar(
+            { authToken: 'token', currentUser: { username: 'Alice', roles: [] }, logout: logoutMock },
+            '/dashboard'
+        );
+
+        // Username-Button sichtbar
+        const userMenuTrigger = screen.getByRole('button', { name: /Alice/i });
+        expect(userMenuTrigger).toBeInTheDocument();
+
+        // Menü öffnen
+        await userEvent.click(userMenuTrigger);
+
+        // Jetzt Logout sichtbar
+        const logoutButton = await screen.findByRole('button', { name: /Abmelden/i });
         await userEvent.click(logoutButton);
+
         expect(logoutMock).toHaveBeenCalled();
     });
+
 });
