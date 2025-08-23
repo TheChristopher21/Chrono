@@ -36,37 +36,76 @@ const StepCard = ({ n, title, text }) => (
 const features = [
     {
         icon: "🧾",
-        title: "Payroll + Zeiterfassung",
+        title: "Arbeitszeit & Lohn in einem",
         bullets: [
-            "Arbeitszeiten & Projekte",
-            "Urlaub und Überstunden",
-            "Eine Oberfläche für alles",
+            "Arbeitsstunden festhalten",
+            "Urlaub und Extra-Zeit sehen",
+            "Alles an einem Ort",
         ],
     },
     {
         icon: "🇨🇭🇩🇪",
-        title: "CH & DE Lohnabrechnung",
-        bullets: ["PDF/CSV Export", "Lohnarten anpassbar", "Beide Länder abgedeckt"],
+        title: "Lohnzettel für CH & DE",
+        bullets: [
+            "Als Datei speichern",
+            "Angaben leicht ändern",
+            "Schweiz und Deutschland abgedeckt",
+        ],
     },
     {
         icon: "👆",
-        title: "NFC-Stempeluhr & Web",
-        bullets: ["NFC-Karten", "Web & Mobil", "Offline bereit"],
+        title: "Stempeln mit Karte oder Web",
+        bullets: [
+            "Mit Karte ein- und ausstempeln",
+            "Auch im Browser oder Handy",
+            "Geht sogar ohne Internet",
+        ],
     },
     {
         icon: "📅",
-        title: "Urlaub & Überstunden",
-        bullets: ["Digitale Anträge", "Resttage automatisch", "Überstundenfrei rechnen"],
+        title: "Urlaub & Überstunden im Blick",
+        bullets: [
+            "Urlaub online beantragen",
+            "Resttage sofort sehen",
+            "Überstunden automatisch verrechnet",
+        ],
     },
     {
         icon: "🔔",
-        title: "Benachrichtigungen",
-        bullets: ["Neue Abrechnungen", "Anträge", "Offene Stempelungen"],
+        title: "Hinweise & Erinnerungen",
+        bullets: [
+            "Info bei neuem Lohnzettel",
+            "Hinweis bei Anträgen",
+            "Erinnerung, wenn du vergisst auszustempeln",
+        ],
     },
     {
         icon: "🛡️",
-        title: "Schweizer Server & DSGVO",
-        bullets: ["Verschlüsselt", "Rollenbasiert", "2FA-bereit", "Daten in CH"],
+        title: "Sichere Daten in der Schweiz",
+        bullets: [
+            "Daten bleiben in der Schweiz",
+            "Alles ist geschützt",
+            "Nur Berechtigte sehen deine Daten",
+            "Zusätzlicher Login-Schutz möglich",
+        ],
+    },
+    {
+        icon: "👥",
+        title: "Team & Projekte verwalten",
+        bullets: [
+            "Mitarbeitende hinzufügen",
+            "Kunden und Projekte anlegen",
+            "Alles im Blick behalten",
+        ],
+    },
+    {
+        icon: "📊",
+        title: "Berichte zum Mitnehmen",
+        bullets: [
+            "Übersichtliche Dateien herunterladen",
+            "Schnell sehen, wer wie viel gearbeitet hat",
+            "Praktisch für Steuer und Abrechnung",
+        ],
     },
 ];
 
