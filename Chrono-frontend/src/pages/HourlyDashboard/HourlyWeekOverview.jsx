@@ -196,7 +196,7 @@ const HourlyWeekOverview = ({
                         <div key={isoDate} className={dayClasses}>
                         <div className="week-day-header day-card-header">
                                 <h4>{dayName}, {formattedDisplayDate}</h4>
-                                {vacationToday && <div className="day-card-badge vacation-badge">{t('vacation')}</div>}
+                                {vacationToday && <div className="day-card-badge vacation-badge">{t('onVacation', 'Im Urlaub')}</div>}
 
                                 {summary && summary.entries.length > 0 && (
                                     <div className="day-card-actions">

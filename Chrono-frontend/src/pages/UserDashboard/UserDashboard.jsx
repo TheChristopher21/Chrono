@@ -552,8 +552,8 @@ function UserDashboard() {
                                     <div className="week-day-header day-card-header">
                                         <h4>{dayName}, {formattedDisplayDate}</h4>
                                         {holidayName && <div className="day-card-badge holiday-badge">{holidayName}</div>}
-                                        {vacationToday && <div className="day-card-badge vacation-badge">{t('vacation')}</div>}
-                                        {sickToday && <div className="day-card-badge sick-badge">{t('sickLeave')}</div>}
+                                        {vacationToday && <div className="day-card-badge vacation-badge">{t('onVacation', 'Im Urlaub')}</div>}
+                                        {sickToday && <div className="day-card-badge sick-badge">{t('sickLeave.sick', 'Krank')}</div>}
                                     </div>
 
                                     <div className="week-day-content day-card-content">
