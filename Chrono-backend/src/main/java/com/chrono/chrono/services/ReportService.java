@@ -259,14 +259,15 @@ public class ReportService {
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
-    public byte[] generateIcs(String username, LocalDate start, LocalDate end) {
+    public byte[] generateIcs(String username, LocalDate start, LocalDate end, ZoneId zoneId) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
 
         List<TimeTrackingEntry> entries = timeTrackingService.getEntriesForUser(user,
                 start.atStartOfDay(), end.plusDays(1).atStartOfDay());
 
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
+        DateTimeFormatter fmtUtc = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss'Z'").withZone(ZoneOffset.UTC);
+        DateTimeFormatter fmtLocal = DateTimeFormatter.ofPattern("yyyyMMdd'T'HHmmss");
         StringBuilder sb = new StringBuilder();
         sb.append("BEGIN:VCALENDAR\r\n");
         sb.append("VERSION:2.0\r\n");
@@ -281,9 +282,19 @@ public class ReportService {
 
             sb.append("BEGIN:VEVENT\r\n");
             sb.append("UID:").append(startEntry.getId()).append("-").append(endEntry.getId()).append("@chrono\r\n");
-            sb.append("DTSTAMP:").append(fmt.format(Instant.now())).append("\r\n");
-            sb.append("DTSTART:").append(fmt.format(startEntry.getEntryTimestamp().toInstant(ZoneOffset.UTC))).append("\r\n");
-            sb.append("DTEND:").append(fmt.format(endEntry.getEntryTimestamp().toInstant(ZoneOffset.UTC))).append("\r\n");
+            sb.append("DTSTAMP:").append(fmtUtc.format(Instant.now())).append("\r\n");
+
+            ZonedDateTime startZ = startEntry.getEntryTimestamp().atZone(zoneId);
+            ZonedDateTime endZ = endEntry.getEntryTimestamp().atZone(zoneId);
+            if (ZoneOffset.UTC.equals(zoneId)) {
+                sb.append("DTSTART:").append(fmtUtc.format(startZ)).append("\r\n");
+                sb.append("DTEND:").append(fmtUtc.format(endZ)).append("\r\n");
+            } else {
+                sb.append("DTSTART;TZID=").append(zoneId.getId()).append(":")
+                        .append(fmtLocal.format(startZ)).append("\r\n");
+                sb.append("DTEND;TZID=").append(zoneId.getId()).append(":")
+                        .append(fmtLocal.format(endZ)).append("\r\n");
+            }
             sb.append("SUMMARY:Work\r\n");
             sb.append("END:VEVENT\r\n");
             i++; // skip paired end entry
@@ -293,15 +304,23 @@ public class ReportService {
         return sb.toString().getBytes(StandardCharsets.UTF_8);
     }
 
+    public byte[] generateIcs(String username, LocalDate start, LocalDate end) {
+        return generateIcs(username, start, end, ZoneId.systemDefault());
+    }
+
     /**
      * Convenience wrapper to generate an iCalendar feed for a user without
      * specifying a date range. The feed covers a wide time span so that new
      * entries will appear automatically when subscribed from external calendar
      * applications.
      */
-    public byte[] generateIcsFeed(String username) {
+    public byte[] generateIcsFeed(String username, ZoneId zoneId) {
         LocalDate start = LocalDate.now().minusYears(1);
         LocalDate end = LocalDate.now().plusYears(1);
-        return generateIcs(username, start, end);
+        return generateIcs(username, start, end, zoneId);
+    }
+
+    public byte[] generateIcsFeed(String username) {
+        return generateIcsFeed(username, ZoneId.systemDefault());
     }
 }
