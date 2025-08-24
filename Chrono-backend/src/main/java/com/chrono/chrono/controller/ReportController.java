@@ -101,6 +101,9 @@ public class ReportController {
         byte[] ics = reportService.generateIcsFeed(username, zoneId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("text/calendar"));
+        headers.add(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
+        headers.add(HttpHeaders.PRAGMA, "no-cache");
+        headers.add(HttpHeaders.EXPIRES, "0");
         return new ResponseEntity<>(ics, headers, HttpStatus.OK);
     }
 }

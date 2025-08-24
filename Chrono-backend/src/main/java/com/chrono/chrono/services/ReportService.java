@@ -272,6 +272,8 @@ public class ReportService {
         sb.append("BEGIN:VCALENDAR\r\n");
         sb.append("VERSION:2.0\r\n");
         sb.append("PRODID:-//Chrono//Time Tracking//EN\r\n");
+        sb.append("REFRESH-INTERVAL;VALUE=DURATION:PT1H\r\n");
+        sb.append("X-PUBLISHED-TTL:PT1H\r\n");
 
         for (int i = 0; i < entries.size(); i++) {
             TimeTrackingEntry startEntry = entries.get(i);
