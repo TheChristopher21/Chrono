@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import Navbar from '../components/Navbar';
 import '../styles/PersonalDataPageScoped.css';
+import CalendarExportModal from '../components/CalendarExportModal';
 
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
@@ -27,6 +28,7 @@ const PersonalDataPage = () => {
         newPassword: '',
     });
     const [message, setMessage] = useState('');
+    const [showExportModal, setShowExportModal] = useState(false);
 
     const { notify } = useNotification();
     const { t } = useTranslation();
@@ -102,8 +104,9 @@ const PersonalDataPage = () => {
     }
 
     const baseUrl = api.defaults.baseURL.replace(/\/$/, "");
+    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     const icsUrl = currentUser
-        ? `${baseUrl}/api/report/timesheet/ics-feed/${currentUser.username}`
+        ? `${baseUrl}/api/report/timesheet/ics-feed/${currentUser.username}?zone=${encodeURIComponent(timeZone)}`
         : '';
 
     function handleCopyLink() {
@@ -255,17 +258,16 @@ const PersonalDataPage = () => {
               <section className="calendar-feed-section">
                   <h3>{t("personalData.calendarFeed", "Kalender-Feed")}</h3>
                   <p>{t("personalData.calendarFeedInfo", "Nutze diese URL, um deinen Kalender zu abonnieren.")}</p>
-                  <div className="form-group">
-                      <input
-                          type="text"
-                          readOnly
-                          value={icsUrl}
-                          onFocus={(e) => e.target.select()}
+                  <button type="button" onClick={() => setShowExportModal(true)}>
+                      {t("personalData.exportButton", "Exportieren")}
+                  </button>
+                  {showExportModal && (
+                      <CalendarExportModal
+                          icsUrl={icsUrl}
+                          onClose={() => setShowExportModal(false)}
+                          onCopyLink={handleCopyLink}
                       />
-                      <button type="button" onClick={handleCopyLink}>
-                          {t("personalData.copyLink", "Link kopieren")}
-                      </button>
-                  </div>
+                  )}
               </section>
 
               <section className="password-change-section">
