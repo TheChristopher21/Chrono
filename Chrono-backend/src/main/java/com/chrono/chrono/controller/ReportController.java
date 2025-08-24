@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.ZoneId;
 
 @RestController
 @RequestMapping("/api/report")
@@ -74,12 +75,15 @@ public class ReportController {
     public ResponseEntity<byte[]> downloadIcs(
             @RequestParam String username,
             @RequestParam String startDate,
-            @RequestParam String endDate
+            @RequestParam String endDate,
+            @RequestParam(required = false) String zone
     ) {
+        ZoneId zoneId = zone != null ? ZoneId.of(zone) : ZoneId.systemDefault();
         byte[] ics = reportService.generateIcs(
                 username,
                 LocalDate.parse(startDate),
-                LocalDate.parse(endDate));
+                LocalDate.parse(endDate),
+                zoneId);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("text/calendar"));
@@ -89,10 +93,17 @@ public class ReportController {
     }
 
     @GetMapping("/timesheet/ics-feed/{username}")
-    public ResponseEntity<byte[]> icsFeed(@PathVariable String username) {
-        byte[] ics = reportService.generateIcsFeed(username);
+    public ResponseEntity<byte[]> icsFeed(
+            @PathVariable String username,
+            @RequestParam(required = false) String zone
+    ) {
+        ZoneId zoneId = zone != null ? ZoneId.of(zone) : ZoneId.systemDefault();
+        byte[] ics = reportService.generateIcsFeed(username, zoneId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.parseMediaType("text/calendar"));
+        headers.add(HttpHeaders.CACHE_CONTROL, "no-cache, no-store, must-revalidate");
+        headers.add(HttpHeaders.PRAGMA, "no-cache");
+        headers.add(HttpHeaders.EXPIRES, "0");
         return new ResponseEntity<>(ics, headers, HttpStatus.OK);
     }
 }
