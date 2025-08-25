@@ -15,7 +15,6 @@ import {
 } from './hourDashUtils';
 import '../../styles/HourlyDashboardScoped.css';
 import api from "../../utils/api.js";
-import TrendChart from '../../components/TrendChart';
 import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
 
 const HourlyWeekOverview = ({
@@ -179,7 +178,6 @@ const HourlyWeekOverview = ({
                     </div>
                 )}
             </div>
-            <TrendChart data={chartData} />
 
             {/* Deine bestehende Wochenanzeige bleibt unverändert */}
             <div className="week-display">

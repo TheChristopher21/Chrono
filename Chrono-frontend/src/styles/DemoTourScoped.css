@@ -1,0 +1,121 @@
+/* ==========================================================================
+   DemoTourScoped.css
+   Scope: .demo-tour-page.scoped-demo-tour
+   Inspiriert von UserDashboardScoped.css für einen konsistenten Look.
+   ========================================================================== */
+
+/* ---------- Root / Tokens ---------- */
+.scoped-demo-tour {
+    --dt-font-family: "Inter", "Poppins", system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+    --dt-fz-md: 1rem;
+    --dt-fz-lg: 1.125rem;
+    --dt-fz-xl: 1.5rem;
+    --dt-radius-xl: 18px;
+    --dt-radius-md: 10px;
+    --dt-shadow-card: 0 4px 6px rgba(0,0,0, .04), 0 8px 24px rgba(0,0,0, .08);
+    --dt-bg: #101418;
+    --dt-bg-card: #1a1f25;
+    --dt-border-color: #2c343c;
+    --dt-text-primary: #f0f4f8;
+    --dt-text-secondary: #a0aec0;
+    --dt-primary-accent: #38b2ac;
+    --dt-primary-accent-hover: #4fd1c5;
+}
+
+/* ---------- Page Layout ---------- */
+.demo-tour-page.scoped-demo-tour {
+    font-family: var(--dt-font-family);
+    background-color: var(--dt-bg);
+    color: var(--dt-text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column; /* NEU: Geändert für Navbar oben */
+    box-sizing: border-box;
+}
+
+/* NEU: Main-Container für den Inhalt */
+.scoped-demo-tour .demo-tour-content {
+    flex-grow: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+/* ---------- Card Styling ---------- */
+.scoped-demo-tour .demo-tour-card {
+    background-color: var(--dt-bg-card);
+    border: 1px solid var(--dt-border-color);
+    border-radius: var(--dt-radius-xl);
+    padding: 2.5rem 3rem;
+    max-width: 600px;
+    width: 100%;
+    box-shadow: var(--dt-shadow-card);
+    text-align: center;
+}
+
+/* ---------- Typography ---------- */
+.scoped-demo-tour h2 {
+    font-size: var(--dt-fz-xl);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    color: var(--dt-text-primary);
+}
+
+.scoped-demo-tour p {
+    font-size: var(--dt-fz-lg);
+    color: var(--dt-text-secondary);
+    margin-bottom: 2rem;
+    line-height: 1.6;
+}
+
+.scoped-demo-tour ol {
+    list-style-position: inside;
+    text-align: left;
+    margin-bottom: 2.5rem;
+    padding: 0;
+    color: var(--dt-text-primary);
+}
+
+.scoped-demo-tour li {
+    font-size: var(--dt-fz-md);
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
+/* ---------- Actions & Buttons ---------- */
+.scoped-demo-tour .demo-tour-actions {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.scoped-demo-tour .demo-tour-btn {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--dt-radius-md);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: var(--dt-fz-md);
+    transition: all 0.2s ease-in-out;
+    border: 1px solid var(--dt-border-color);
+    background-color: transparent;
+    color: var(--dt-text-primary);
+}
+
+.scoped-demo-tour .demo-tour-btn:hover {
+    background-color: var(--dt-border-color);
+    transform: translateY(-2px);
+}
+
+.scoped-demo-tour .demo-tour-btn.primary {
+    background-color: var(--dt-primary-accent);
+    border-color: var(--dt-primary-accent);
+    color: #fff;
+}
+
+.scoped-demo-tour .demo-tour-btn.primary:hover {
+    background-color: var(--dt-primary-accent-hover);
+    border-color: var(--dt-primary-accent-hover);
+}

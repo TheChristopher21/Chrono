@@ -33,7 +33,6 @@ import {
 } from './userDashUtils';
 
 import CorrectionModal from '../../components/CorrectionModal';
-import TrendChart from '../../components/TrendChart';
 import UserCorrectionsPanel from './UserCorrectionsPanel';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
@@ -516,7 +515,7 @@ function UserDashboard() {
                         </div>
                     </div>
 
-                    <TrendChart data={chartData} />
+
 
                     <div className="week-display">
                         {weekDates.map((dayObj) => {

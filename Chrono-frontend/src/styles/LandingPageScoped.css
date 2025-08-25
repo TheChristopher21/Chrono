@@ -147,3 +147,41 @@
 .landing-page.scoped-landing .lp-foot-links{display:flex; gap:1rem;}
 .landing-page.scoped-landing .lp-foot-links a{color:inherit; text-decoration:none;}
 .landing-page.scoped-landing .lp-foot-links a:hover{text-decoration:underline;}
+/* ===== Hero Clarity Add-ons ===== */
+.landing-page.scoped-landing .lp-hero-eyebrow{
+    display:inline-block; font-weight:800; letter-spacing:.02em;
+    font-size:.82rem; padding:.35rem .65rem; border-radius:999px;
+    color:#fff; background:linear-gradient(90deg,rgba(90,135,255,.7),rgba(90,135,255,.4));
+    border:1px solid rgba(90,135,255,.45); margin-bottom:.8rem;
+}
+
+.landing-page.scoped-landing .lp-btn.lp-link{
+    background:transparent; color:var(--c-text); border:1px dashed var(--c-border);
+}
+.landing-page.scoped-landing .lp-btn.lp-link:hover{ transform:translateY(-2px); background:var(--c-surface-2); }
+
+.landing-page.scoped-landing .lp-hero-explain{
+    margin-top:1.2rem; display:grid; gap:.75rem;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+}
+@media (max-width:900px){ .landing-page.scoped-landing .lp-hero-explain{grid-template-columns:1fr;} }
+
+.landing-page.scoped-landing .lp-explain-item{
+    display:flex; align-items:flex-start; gap:.75rem; padding:.75rem .9rem;
+    background:var(--c-surface-2); border:1px solid var(--c-border); border-radius:14px;
+}
+.landing-page.scoped-landing .lp-explain-item p{ margin:.15rem 0 0; color:var(--c-text-muted); }
+.landing-page.scoped-landing .lp-explain-ico{
+    font-size:1.25rem; line-height:1; display:inline-grid; place-items:center;
+    width:2.1rem; height:2.1rem; border-radius:12px;
+    background:rgba(66,133,255,.12); color:var(--c-primary-2); font-weight:800;
+}
+
+.landing-page.scoped-landing .lp-hero-trust{
+    display:flex; gap:.6rem; flex-wrap:wrap; padding:0; margin:1rem 0 0 0;
+}
+.landing-page.scoped-landing .lp-hero-trust li{
+    list-style:none; font-weight:600; font-size:.9rem; color:var(--c-text);
+    background:var(--c-surface-2); border:1px solid var(--c-border);
+    border-radius:999px; padding:.45rem .75rem;
+}

@@ -455,6 +455,7 @@ const AdminDashboard = () => {
                 <h2>{t('adminDashboard.titleWeekly')}</h2>
                 {currentUser && ( <p>{t('adminDashboard.loggedInAs')} {currentUser.username}</p> )}
             </header>
+
             <div className="admin-action-buttons-container">
                 <Link to="/admin/import-times" className="admin-action-button button-primary">
                     {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
