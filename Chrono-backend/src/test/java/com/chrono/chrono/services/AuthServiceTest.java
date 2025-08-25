@@ -84,8 +84,11 @@ class AuthServiceTest {
     @Test
     void demoLogin_createsUser_whenMissing() {
         when(userRepository.findByUsername("demo")).thenReturn(Optional.empty());
-        Role role = new Role("ROLE_USER");
-        when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(role));
+        Role roleUser = new Role("ROLE_USER");
+        Role roleAdmin = new Role("ROLE_ADMIN");
+        when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
+        when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
+
         when(passwordEncoder.encode("demo")).thenReturn("encoded");
 
         User saved = new User();
@@ -105,6 +108,11 @@ class AuthServiceTest {
         User user = new User();
         user.setUsername("demo");
         when(userRepository.findByUsername("demo")).thenReturn(Optional.of(user));
+        Role roleUser = new Role("ROLE_USER");
+        Role roleAdmin = new Role("ROLE_ADMIN");
+        when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
+        when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
+
         when(userRepository.save(user)).thenReturn(user);
         when(jwtUtil.generateTokenWithUser(user)).thenReturn("token");
 

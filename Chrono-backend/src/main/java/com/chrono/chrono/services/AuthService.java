@@ -71,15 +71,32 @@ public class AuthService {
             demo.setCountry("DE");
             demo.setPersonnelNumber("0");
 
-            // Ensure the user has at least ROLE_USER
-            Role role = roleRepository.findByRoleName("ROLE_USER")
+            // Ensure the user has ROLE_USER and ROLE_ADMIN
+            Role userRole = roleRepository.findByRoleName("ROLE_USER")
                     .orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
+            Role adminRole = roleRepository.findByRoleName("ROLE_ADMIN")
+                    .orElseGet(() -> roleRepository.save(new Role("ROLE_ADMIN")));
             Set<Role> roles = new HashSet<>();
-            roles.add(role);
+            roles.add(userRole);
+            roles.add(adminRole);
+
             demo.setRoles(roles);
 
             return demo;
         });
+
+        // Ensure demo user always has required roles
+        Role userRole = roleRepository.findByRoleName("ROLE_USER")
+                .orElseGet(() -> roleRepository.save(new Role("ROLE_USER")));
+        Role adminRole = roleRepository.findByRoleName("ROLE_ADMIN")
+                .orElseGet(() -> roleRepository.save(new Role("ROLE_ADMIN")));
+        Set<Role> roles = user.getRoles();
+        if (!roles.contains(userRole)) {
+            roles.add(userRole);
+        }
+        if (!roles.contains(adminRole)) {
+            roles.add(adminRole);
+        }
 
         user.setDemo(true);
         user = userRepository.save(user);
