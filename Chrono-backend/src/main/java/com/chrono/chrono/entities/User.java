@@ -80,6 +80,9 @@ public class User {
     @Column(name = "opt_out", nullable = false)
     private boolean optOut = false;
 
+    @Column(name = "demo", nullable = false)
+    private boolean demo = false;
+
     @Column(nullable = false)
     private Integer trackingBalanceInMinutes = 0; // Default-Wert direkt hier
 
@@ -261,6 +264,9 @@ public class User {
 
     public boolean isOptOut() { return optOut; }
     public void setOptOut(boolean optOut) { this.optOut = optOut; }
+
+    public boolean isDemo() { return demo; }
+    public void setDemo(boolean demo) { this.demo = demo; }
 
     public Integer getTrackingBalanceInMinutes() {
         return trackingBalanceInMinutes != null ? trackingBalanceInMinutes : 0;

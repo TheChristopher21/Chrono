@@ -10,8 +10,12 @@ public class AuditConfig implements WebMvcConfigurer {
     @Autowired
     private ReadAccessInterceptor interceptor;
 
+    @Autowired
+    private DemoUserInterceptor demoInterceptor;
+
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(interceptor);
+        registry.addInterceptor(demoInterceptor);
     }
 }

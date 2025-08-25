@@ -46,6 +46,12 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/demo")
+    public ResponseEntity<?> demoLogin() {
+        AuthResponse response = authService.demoLogin();
+        return ResponseEntity.ok(response);
+    }
+
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(HttpServletRequest request) {
         String authHeader = request.getHeader("Authorization");

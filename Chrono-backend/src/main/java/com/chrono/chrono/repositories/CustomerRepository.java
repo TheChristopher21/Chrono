@@ -8,4 +8,6 @@ import java.util.List;
 public interface CustomerRepository extends JpaRepository<Customer, Long> {
     List<Customer> findByCompanyId(Long companyId);
 
+    void deleteByCompanyId(Long companyId);
+
 }
