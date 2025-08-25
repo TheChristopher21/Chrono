@@ -14,6 +14,7 @@ const DemoTour = () => (
         <Link to="/dashboard">Zum Dashboard</Link>
         <span style={{ margin: '0 1rem' }}>|</span>
         <Link to="/admin/dashboard">Zum Admin-Dashboard</Link>
+
     </div>
 );
 

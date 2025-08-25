@@ -88,6 +88,7 @@ class AuthServiceTest {
         Role roleAdmin = new Role("ROLE_ADMIN");
         when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
         when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
+
         when(passwordEncoder.encode("demo")).thenReturn("encoded");
 
         User saved = new User();
@@ -111,6 +112,7 @@ class AuthServiceTest {
         Role roleAdmin = new Role("ROLE_ADMIN");
         when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
         when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
+
         when(userRepository.save(user)).thenReturn(user);
         when(jwtUtil.generateTokenWithUser(user)).thenReturn("token");
 

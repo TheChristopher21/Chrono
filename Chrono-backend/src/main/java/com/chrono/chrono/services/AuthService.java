@@ -79,6 +79,7 @@ public class AuthService {
             Set<Role> roles = new HashSet<>();
             roles.add(userRole);
             roles.add(adminRole);
+
             demo.setRoles(roles);
 
             return demo;
@@ -96,6 +97,7 @@ public class AuthService {
         if (!roles.contains(adminRole)) {
             roles.add(adminRole);
         }
+
         user.setDemo(true);
         user = userRepository.save(user);
 
