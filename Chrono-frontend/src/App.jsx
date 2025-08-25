@@ -41,6 +41,7 @@ import Impressum from "./pages/Impressum.jsx";
 import Datenschutz from "./pages/Datenschutz.jsx";
 import CompanySettingsPage from "./pages/CompanySettingsPage.jsx";
 import PayslipsPage from "./pages/PayslipsPage.jsx";
+import DemoTour from "./pages/DemoTour.jsx";
 
 // Hilfs-Komponenten
 import PrivateRoute from "./components/PrivateRoute.jsx";
@@ -70,6 +71,7 @@ function App() {
                         <Route path="/percentage-punch" element={<PrivateRoute><PercentagePunch /></PrivateRoute>} />
                         <Route path="/personal-data" element={<PrivateRoute><PersonalDataPage /></PrivateRoute>} />
                         <Route path="/payslips" element={<PrivateRoute><PayslipsPage /></PrivateRoute>} />
+                        <Route path="/demo-tour" element={<PrivateRoute><DemoTour /></PrivateRoute>} />
 
                         {/* Admin-Routen */}
                         <Route path="/admin/dashboard" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminDashboard /></PrivateRoute>} />
