@@ -3,6 +3,7 @@ package com.chrono.chrono.services;
 import com.chrono.chrono.dto.AuthRequest;
 import com.chrono.chrono.dto.AuthResponse;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.utils.JwtUtil;
@@ -32,6 +33,8 @@ class AuthServiceTest {
     private JwtUtil jwtUtil;
     @Mock
     private UserDetailsService userDetailsService;
+    @Mock
+    private DemoDataService demoDataService;
 
     @InjectMocks
     private AuthService authService;
@@ -76,6 +79,46 @@ class AuthServiceTest {
 
         assertThrows(RuntimeException.class, () -> authService.login(request));
         verify(userRepository).findByUsername("unknown");
+    }
+
+    @Test
+    void demoLogin_createsUser_whenMissing() {
+        when(userRepository.findByUsername("demo")).thenReturn(Optional.empty());
+        Role roleUser = new Role("ROLE_USER");
+        Role roleAdmin = new Role("ROLE_ADMIN");
+        when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
+        when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
+        when(passwordEncoder.encode("demo")).thenReturn("encoded");
+
+        User saved = new User();
+        saved.setUsername("demo");
+        when(userRepository.save(any(User.class))).thenReturn(saved);
+        when(jwtUtil.generateTokenWithUser(saved)).thenReturn("demo-token");
+
+        AuthResponse res = authService.demoLogin();
+
+        verify(userRepository, atLeastOnce()).save(any(User.class));
+        verify(demoDataService).resetDemoData(saved);
+        assertEquals("demo-token", res.getToken());
+    }
+
+    @Test
+    void demoLogin_usesExistingUser() {
+        User user = new User();
+        user.setUsername("demo");
+        when(userRepository.findByUsername("demo")).thenReturn(Optional.of(user));
+        Role roleUser = new Role("ROLE_USER");
+        Role roleAdmin = new Role("ROLE_ADMIN");
+        when(roleRepository.findByRoleName("ROLE_USER")).thenReturn(Optional.of(roleUser));
+        when(roleRepository.findByRoleName("ROLE_ADMIN")).thenReturn(Optional.of(roleAdmin));
+        when(userRepository.save(user)).thenReturn(user);
+        when(jwtUtil.generateTokenWithUser(user)).thenReturn("token");
+
+        AuthResponse res = authService.demoLogin();
+
+        verify(userRepository).save(user);
+        verify(demoDataService).resetDemoData(user);
+        assertEquals("token", res.getToken());
     }
 }
 

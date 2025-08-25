@@ -1,10 +1,11 @@
 // src/pages/LandingPage.jsx — Landing (final, ohne Mock, fully scoped)
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import "../styles/LandingPageScoped.css";
 import { useTranslation } from "../context/LanguageContext";
 import { useNotification } from "../context/NotificationContext";
+import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
 
 // Feature block supports either a single text or a list of bullet points
@@ -118,6 +119,8 @@ const steps = [
 const LandingPage = () => {
     const { t } = useTranslation();
     const { notify } = useNotification();
+    const { loginDemo } = useAuth();
+    const navigate = useNavigate();
     const [contact, setContact] = useState({ name: "", email: "", message: "" });
     const [sending, setSending] = useState(false);
 
@@ -135,6 +138,15 @@ const LandingPage = () => {
             notify(t("landingPage.contactError", "Fehler beim Senden."), "error");
         } finally {
             setSending(false);
+        }
+    };
+
+    const handleDemo = async () => {
+        const res = await loginDemo();
+        if (res.success) {
+            navigate("/demo-tour", { replace: true });
+        } else {
+            notify(res.message || t("landing.demoError", "Demo-Anmeldung fehlgeschlagen"), "error");
         }
     };
 
@@ -166,6 +178,9 @@ const LandingPage = () => {
                                 <Link className="lp-btn lp-secondary" to="/login">
                                     {t("landing.cta.login", "Anmelden")}
                                 </Link>
+                                <button className="lp-btn lp-secondary" onClick={handleDemo}>
+                                    {t("landing.cta.demo", "Demo ansehen")}
+                                </button>
                             </div>
 
                             <ul className="lp-usp-chips" role="list">

@@ -135,8 +135,25 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // Demo-Login ohne Eingabe von Zugangsdaten
+    const loginDemo = async () => {
+        try {
+            const { data } = await api.post('/api/auth/demo');
+            const { token } = data;
+
+            localStorage.setItem('token', token);
+            setAuthToken(token);
+
+            const user = await fetchCurrentUser(token);
+            return { success: true, user };
+        } catch (err) {
+            logout();
+            return { success: false, message: err.response?.data?.message || 'Demo login failed' };
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ authToken, currentUser, setCurrentUser, login, logout, fetchCurrentUser }}>
+        <AuthContext.Provider value={{ authToken, currentUser, setCurrentUser, login, loginDemo, logout, fetchCurrentUser }}>
             {children}
         </AuthContext.Provider>
     );
