@@ -119,6 +119,7 @@ const Navbar = () => {
     const isPercentage = !!currentUser?.isPercentage;
 
     const userInitial = currentUser?.username?.[0]?.toUpperCase() || 'U';
+    const onAdminRoute = location.pathname.startsWith('/admin');
 
     return (
         <div className={styles['scoped-navbar']}>
@@ -145,11 +146,11 @@ const Navbar = () => {
                         <>
                             {currentUser && (
                                 <>
-                                    {isSuperAdmin && (
+                                    {isSuperAdmin && onAdminRoute && (
                                         <li><Link to="/admin/company">{t('navbar.companyManagement','Firmen')}</Link></li>
                                     )}
 
-                                    {isAdmin ? (
+                                    {isAdmin && onAdminRoute ? (
                                         <li className={`${styles.dropdown} ${openAdmin ? styles.open : ''}`} ref={adminRef}>
                                             <button
                                                 className={styles['dropdown-trigger']}

@@ -53,4 +53,22 @@ describe('Navbar', () => {
         expect(logoutMock).toHaveBeenCalled();
     });
 
+    it('shows user navigation for admin on user dashboard', () => {
+        renderNavbar(
+            { authToken: 'token', currentUser: { username: 'Admin', roles: ['ROLE_ADMIN'] }, logout: vi.fn() },
+            '/dashboard'
+        );
+        expect(screen.getByText(/Mein Dashboard/i)).toBeInTheDocument();
+        expect(screen.queryByText(/Admin-Start/i)).toBeNull();
+    });
+
+    it('shows admin navigation for admin on admin dashboard', () => {
+        renderNavbar(
+            { authToken: 'token', currentUser: { username: 'Admin', roles: ['ROLE_ADMIN'], customerTrackingEnabled: true }, logout: vi.fn() },
+            '/admin/dashboard'
+        );
+        expect(screen.getAllByRole('button', { name: /Admin/i })[0]).toBeInTheDocument();
+        expect(screen.queryByText(/Mein Dashboard/i)).toBeNull();
+    });
+
 });
