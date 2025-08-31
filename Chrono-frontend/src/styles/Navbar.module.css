@@ -80,9 +80,19 @@
 .scoped-navbar .navbar {
     position: sticky; top: 0; left: 0; right: 0;
     z-index: 1000;
-    height: var(--nav-height);
-    padding: var(--nav-pad-y) var(--nav-pad-x);
-    display: flex; align-items: center; justify-content: space-between;
+
+    /* statt fester height -> min-height + box-sizing */
+    min-height: var(--nav-height);
+    box-sizing: border-box;
+
+    /* vertikales Padding an der Leiste selbst entfernen,
+       die Items sind hoch genug und werden sauber mittig ausgerichtet */
+    padding: 0 var(--nav-pad-x);
+
+    display: flex;
+    align-items: center;            /* garantiert zentriert */
+    justify-content: space-between;
+    line-height: 1;                 /* verhindert Baseline-Verschiebungen */
     background: var(--nav-bg-transparent);
     backdrop-filter: saturate(180%) blur(10px);
     -webkit-backdrop-filter: saturate(180%) blur(10px);
@@ -90,9 +100,13 @@
     box-shadow: var(--nav-shadow);
     transition: background var(--nav-tr), border-color var(--nav-tr), box-shadow var(--nav-tr);
 }
-
 /* Brand */
-.scoped-navbar .navbar-brand { flex-shrink: 0; }
+.scoped-navbar .navbar-brand {
+    flex-shrink: 0;
+    display: flex;          /* Hinzugefügt */
+    align-items: center;    /* Hinzugefügt */
+    align-self: stretch;    /* Hinzugefügt */
+}
 .scoped-navbar .navbar-logo {
     display: inline-flex; align-items: center;
     gap: 10px;

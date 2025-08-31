@@ -337,8 +337,18 @@
 
 /* ---------- Modals ---------- */
 .modal-overlay[data-context="hourly"] { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:1rem; background: rgba(17,24,39,.55); backdrop-filter: blur(10px) saturate(150%); -webkit-backdrop-filter: blur(10px) saturate(150%); z-index:10000; }
-.modal-content[data-context="hourly"] { width:100%; max-width:680px; max-height:90vh; overflow:auto; background: var(--ud-c-card); color: var(--ud-c-text); border:1px solid var(--ud-c-border); border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.28); padding: clamp(.9rem, 2vw, 1.4rem); }
-
+.modal-content[data-context="hourly"] {
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow: auto;
+    background: var(--modal-surface); /* Korrektur: Nutzt globale Modal-Farbe */
+    color: var(--modal-text);       /* Korrektur: Nutzt globale Modal-Farbe */
+    border: 1px solid var(--modal-border); /* Korrektur: Nutzt globale Modal-Farbe */
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.28);
+    padding: clamp(.9rem, 2vw, 1.4rem);
+}
 /* ---------- Skeleton ---------- */
 .hourly-dashboard.scoped-dashboard .skeleton-card { height: 190px; border-radius: var(--ud-radius-3xl); background: linear-gradient(90deg, rgba(0,0,0,.06) 25%, rgba(0,0,0,.12) 37%, rgba(0,0,0,.06) 63%); background-size: 400% 100%; animation: ud-shimmer 1.25s ease-in-out infinite; border:1px solid var(--ud-c-border); }
 [data-theme="dark"] .hourly-dashboard.scoped-dashboard .skeleton-card { background: linear-gradient(90deg, rgba(255,255,255,.05) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.05) 63%); }

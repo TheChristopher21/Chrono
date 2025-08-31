@@ -340,8 +340,19 @@
 
 /* ---------- Modal (portal-friendly) ---------- */
 .modal-overlay[data-context="correction-percentage"] { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; padding:1rem; background: rgba(17,24,39,.55); backdrop-filter: blur(10px) saturate(150%); -webkit-backdrop-filter: blur(10px) saturate(150%); z-index:10000; }
-.modal-content[data-context="correction-percentage"] { width:100%; max-width:680px; max-height:90vh; overflow:hidden; background: var(--ud-c-card); color: var(--ud-c-text); border:1px solid var(--ud-c-border); border-radius: 20px; box-shadow: 0 24px 60px rgba(0,0,0,.28); display:grid; grid-template-rows:auto 1fr auto; }
-[data-theme="dark"] .modal-content[data-context="correction-percentage"] { background: var(--ud-c-card); border-color: var(--ud-c-border); }
+.modal-content[data-context="correction-percentage"] {
+    width: 100%;
+    max-width: 680px;
+    max-height: 90vh;
+    overflow: hidden;
+    background: var(--modal-surface); /* Korrektur: Nutzt globale Modal-Farbe */
+    color: var(--modal-text);       /* Korrektur: Nutzt globale Modal-Farbe */
+    border: 1px solid var(--modal-border); /* Korrektur: Nutzt globale Modal-Farbe */
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,.28);
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+}
 .modal-content[data-context="correction-percentage"] .entry-row { background: var(--ud-c-surface); border:1px solid var(--ud-c-line); border-radius: 12px; }
 
 /* ---------- Micro details ---------- */

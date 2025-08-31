@@ -1,7 +1,5 @@
 /* ==========================================================================
-   DemoTourScoped.css
-   Scope: .demo-tour-page.scoped-demo-tour
-   Inspiriert von UserDashboardScoped.css für einen konsistenten Look.
+   DemoTourScoped.css (Finale Korrektur)
    ========================================================================== */
 
 /* ---------- Root / Tokens ---------- */
@@ -22,24 +20,29 @@
     --dt-primary-accent-hover: #4fd1c5;
 }
 
-/* ---------- Page Layout ---------- */
+/* ---------- Page Layout (JETZT MIT CSS GRID) ---------- */
 .demo-tour-page.scoped-demo-tour {
     font-family: var(--dt-font-family);
     background-color: var(--dt-bg);
     color: var(--dt-text-primary);
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column; /* NEU: Geändert für Navbar oben */
-    box-sizing: border-box;
+
+    /* Wir definieren die Seitenhöhe und ein Grid-Layout */
+    height: 100vh;
+    display: grid;
+    /* 1. Reihe (Navbar): Höhe automatisch. 2. Reihe (Inhalt): Füllt den Rest (1fr) */
+    grid-template-rows: auto 1fr;
+
+    /* Verhindert Scrollbalken, falls etwas überläuft */
+    overflow: hidden;
 }
 
-/* NEU: Main-Container für den Inhalt */
+/* Neuer, korrigierter Code */
 .scoped-demo-tour .demo-tour-content {
-    flex-grow: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
+    align-items: flex-start; /* ÄNDERUNG: Oben ausrichten statt zentrieren */
+    justify-content: center; /* Horizontal zentrieren */
     padding: 2rem;
+    overflow-y: auto;
 }
 
 /* ---------- Card Styling ---------- */

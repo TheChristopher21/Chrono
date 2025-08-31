@@ -325,8 +325,10 @@
     font-weight: 800; opacity: .75; transition: opacity .2s, transform .2s; font-size: 1.1rem; padding: 0 4px;
     pointer-events: auto;
 }
-.schedule-planner-page.scoped-dashboard .clear-cell-btn:hover { opacity: 1; transform: translateY(-1px); }
-
+.schedule-planner-page.scoped-dashboard .clear-cell-btn:hover {
+    opacity: 1;
+    transform: translateY(-50%) translateY(-2px); /* Kombiniert Zentrierung und Hover-Effekt */
+}
 /* Konflikt-Styles */
 .schedule-planner-page.scoped-dashboard .assigned-user.conflict-double{
     outline:2px solid #f59e0b; box-shadow:0 0 0 3px color-mix(in srgb,#f59e0b 30%, transparent);
