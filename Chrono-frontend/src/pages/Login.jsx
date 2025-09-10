@@ -25,7 +25,7 @@ const parseHex16 = (hex) => {
 };
 
 const Login = () => {
-    const { login} = useAuth();
+    const { login } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const { t } = useTranslation();
@@ -86,13 +86,10 @@ const Login = () => {
             return;
         }
 
-        // Stellen Sie sicher, dass res.user vorhanden ist und die Eigenschaften enthält.
-        // Die Logik im AuthContext sollte dies bereits sicherstellen.
-        const user = res.user || {}; // Fallback auf leeres Objekt, falls res.user undefiniert ist
+        const user = res.user || {};
         const roles = user.roles || [];
         const isPercentageUser = user.isPercentage || false;
 
-        /* optional redirect */
         const next = new URLSearchParams(location.search).get('next');
 
         if (next) {
@@ -110,66 +107,90 @@ const Login = () => {
 
     /* ---------- UI ------------------------------------------------ */
     return (
-        <div className="scoped-login"> {/* <-- Umfassender Wrapper, Flex-Kolumne */}
+        <div className="login-page scoped-login">
             <Navbar />
 
-            {/* Hauptbereich (Form + Hintergrundbild) */}
-            <div className="login-page-2col">
-                <div className="login-left">
+            {/* Hintergrund-Ornamente passend zur Landing */}
+            <div className="login-bg-orbs" aria-hidden="true" />
+
+            {/* Zwei-Spalten Layout */}
+            <main className="login-page-2col">
+                {/* Linke Spalte: Glas-Karte mit Formular */}
+                <section className="login-left" aria-labelledby="login-title">
                     <div className="login-left-content">
-                        <h1>{t('login.title', 'Willkommen zurück!')}</h1>
-                        <p>{t('login.intro', 'Melde dich an, um fortzufahren.')}</p>
+                        <h1 id="login-title" className="login-h1">
+                            {t('login.title', 'Willkommen zurück!')}
+                        </h1>
+                        <p className="login-lead">
+                            {t('login.intro', 'Melde dich an, um fortzufahren.')}
+                        </p>
 
                         {error && <p className="error-message">{error}</p>}
                         {punchMsg && <div className="punch-message">{punchMsg}</div>}
 
-
-
-                        <form onSubmit={handleSubmit}>
-                            <label htmlFor="username">
-                                {t('login.username', 'Benutzername')}
-                            </label>
+                        <form onSubmit={handleSubmit} className="login-form">
+                            <label htmlFor="username">{t('login.username', 'Benutzername')}</label>
                             <input
                                 id="username"
                                 name="username"
+                                autoComplete="username"
                                 required
                                 value={form.username}
                                 onChange={handleChange}
+                                placeholder={t('login.usernamePh', 'z. B. max.meier')}
                             />
 
-                            <label htmlFor="password">
-                                {t('login.password', 'Passwort')}
-                            </label>
+                            <label htmlFor="password">{t('login.password', 'Passwort')}</label>
                             <input
                                 type="password"
                                 id="password"
                                 name="password"
+                                autoComplete="current-password"
                                 required
                                 value={form.password}
                                 onChange={handleChange}
+                                placeholder="••••••••"
                             />
 
-                            <button type="submit">{t('login.button', 'Login')}</button>
+                            <button type="submit" className="login-btn login-primary">
+                                {t('login.button', 'Anmelden')}
+                            </button>
                         </form>
 
                         <div className="register-cta">
                             <span>{t('login.noAccount', 'Noch kein Account?')}</span>
-                            <Link to="/register">{t('login.registerHere')}</Link>
+                            <Link to="/register">{t('login.registerHere', 'Jetzt registrieren')}</Link>
                         </div>
                     </div>
-                </div>
+                </section>
 
-                <div className="login-right">
-                    <div className="colorful-area" />
-                </div>
-            </div> {/* Ende login-page-2col */}
+                {/* Rechte Spalte: Branding-Panel */}
+                <aside className="login-right" aria-label="Markenbereich">
+                    <div className="colorful-area">
+                        <ul className="login-usp-chips" role="list">
+                        </ul>
+                    </div>
+                </aside>
+            </main>
 
-            {/* FOOTER-Bereich am Seitenende */}
-            <div className="impressum-agb-footer">
-                <Link to="/impressum">{t("impressum")}</Link>
-                <Link to="/agb">{t("agb")}</Link>
-                <a href="https://www.instagram.com/itschronologisch" target="_blank" rel="noopener noreferrer">{t("instagram", "Instagram")}</a>
-            </div>
+            {/* Footer wie Landing */}
+            <footer className="login-footer">
+                <div className="login-foot-inner">
+                    <span>© {new Date().getFullYear()} Chrono</span>
+                    <nav className="login-foot-links" aria-label="Footer Navigation">
+                        <Link to="/impressum">{t('impressum', 'Impressum')}</Link>
+                        <Link to="/datenschutz">{t('datenschutz', 'Datenschutz')}</Link>
+                        <Link to="/agb">{t('agb', 'AGB')}</Link>
+                        <a
+                            href="https://www.instagram.com/itschronologisch"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                        >
+                            Instagram
+                        </a>
+                    </nav>
+                </div>
+            </footer>
         </div>
     );
 };

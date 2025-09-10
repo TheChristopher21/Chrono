@@ -1,345 +1,330 @@
 /* =========================================================================
-   Login.css · Optimiert + Scoped für Light & Dark
+   Login.css — Optik an LandingPageScoped.css angeglichen (Light & Dark)
+   Scope: .scoped-login
    ========================================================================= */
 
-/*
-   Scope: .scoped-login
-   - Hier definieren wir eigene CSS-Variablen für die Login-Seite
-   - So wird nur innerhalb dieses Containers gestylt
-*/
-
-/* --------------------------- Variablen für LIGHT --------------------------- */
-
 .scoped-login {
-  --c-text: #1e2438; /* wie LandingPage */
-  --c-bg: #f6f9ff;
-  --c-card: rgba(255, 255, 255, 0.82);
-  --c-border: #d5d8e7;
-  --c-muted: #506080;
+    /* Farbsystem wie Landing */
+    --hue: 220;
 
-  --c-primary: #4285ff;
-  --c-primary-hover: #356dff;
-  --c-danger: #ed5757;
-  --c-secondary: #48bb78; /* z.B. für Punch-Messages */
+    /* Surfaces / Farben (Dark default, Light via [data-theme="light"]) */
+    --c-bg: #0b1020;
+    --c-surface: #141a2e;
+    --c-surface-2: #0f1527;
+    --c-surface-glass: rgba(25, 28, 46, 0.78);
 
-  --radius: 16px;
-  --transition: 0.3s;
-  --font-family: "Poppins", system-ui, sans-serif;
+    --c-text: #e9eeff;
+    --c-text-muted: #9aa9ce;
+    --c-border: #31395a;
 
-  /* Du kannst hier für Light Mode ein "transparentes" Overlay definieren,
-       wenn du z.B. "rgba(255,255,255,0.7)" brauchst, dann setze --c-bg-rgb etc. */
+    --c-primary: hsl(var(--hue) 100% 70%);
+    --c-primary-2: hsl(var(--hue) 100% 60%);
+    --c-accent: linear-gradient(135deg, var(--c-primary), var(--c-primary-2));
+
+    /* Radii / Shadows / Spacing wie Landing */
+    --radius: 16px;
+    --radius-lg: 20px;
+    --shadow-sm: 0 4px 14px rgba(0, 0, 0, 0.08);
+    --shadow-md: 0 12px 30px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 22px 60px rgba(0, 0, 0, 0.22);
+
+    --space-1: 0.5rem;
+    --space-2: 0.8rem;
+    --space-3: 1.2rem;
+    --space-4: 1.8rem;
+    --space-5: 2.4rem;
+    --space-6: 3.2rem;
+    --space-7: 4.4rem;
+
+    isolation: isolate;
+    background: var(--c-bg);
+    color: var(--c-text);
+    font-family: var(--font-main, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif);
+    overflow-x: hidden;
+    min-height: 100vh;
 }
 
-/* --------------------------- Variablen für DARK --------------------------- */
-[data-theme="dark"] .scoped-login {
-  --c-text: #e6ecff;
-  --c-bg: #0b1020;
-  --c-card: rgba(25, 28, 46, 0.7);
-  --c-border: #3b3f54;
-  --c-muted: #95a3c6;
+/* Light Mode */
+[data-theme="light"] .scoped-login {
+    --c-bg: #f6f9ff;
+    --c-surface: #ffffff;
+    --c-surface-2: #f3f6ff;
+    --c-surface-glass: rgba(255, 255, 255, 0.9);
 
-  --c-primary: #5b8fff;
-  --c-primary-hover: #407bff;
-  --c-danger: #ed5757;
-  --c-secondary: #48bb78;
+    --c-text: #1e2438;
+    --c-text-muted: #5a6a90;
+    --c-border: #d6dbee;
 
-  --radius: 16px;
-  --transition: 0.3s;
-  /* Font-Family bleibt gleich */
+    --c-primary: hsl(var(--hue) 88% 60%);
+    --c-primary-2: hsl(var(--hue) 90% 52%);
 }
 
-/* --------------------------- Grund-Layout --------------------------- */
+.scoped-login,
+.scoped-login * {
+    box-sizing: border-box;
+}
+
+/* Hintergrund-Orb-Gradients wie Landing */
+.scoped-login .login-bg-orbs {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+            radial-gradient(900px 600px at 80% -10%, rgba(66, 133, 255, 0.22), transparent 70%),
+            radial-gradient(900px 600px at 10% 110%, rgba(90, 135, 255, 0.18), transparent 70%),
+            var(--c-bg);
+}
+
+/* Zwei-Spalten Layout */
 .scoped-login .login-page-2col {
-  display: flex;
-  min-height: 100vh;
-  background-color: var(--c-bg);
-  font-family: var(--font-family);
-  transition: background-color var(--transition) ease;
+    display: flex;
+    min-height: calc(100vh - 72px); /* grob: Navbar-Höhe abziehen */
 }
 
-/* -------------------------------- */
-/* Linke Spalte: Login-Formular     */
-/* -------------------------------- */
+/* Linke Spalte: Glas-Karte */
 .scoped-login .login-left {
-  flex: 1 1 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 2rem;
-  background-color: var(--c-card);
-  transition: background-color var(--transition) ease;
+    flex: 1 1 50%;
+    display: grid;
+    place-items: center;
+    padding: var(--space-6) var(--space-4);
 }
 
 .scoped-login .login-left-content {
-  width: 100%;
-  max-width: 350px;
+    width: min(480px, 92vw);
+    background: var(--c-surface-glass);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    backdrop-filter: blur(10px);
+    padding: var(--space-5);
 }
 
-.scoped-login .login-left-content h1 {
-  color: var(--c-text);
-  margin-bottom: 0.75rem;
-  font-size: 1.8rem;
+/* Eyebrow/Badge + Headline wie Landing */
+.scoped-login .login-eyebrow {
+    display: inline-block;
+    margin-bottom: 0.85rem;
+    padding: 0.35rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.82rem;
+    color: #fff;
+    background: linear-gradient(90deg, rgba(90, 135, 255, 0.7), rgba(90, 135, 255, 0.4));
+    border: 1px solid rgba(90, 135, 255, 0.45);
 }
 
-.scoped-login .login-left-content p {
-  color: var(--c-text);
-  margin-bottom: 1.5rem;
-  font-size: 0.95rem;
+.scoped-login .login-h1 {
+    font-weight: 900;
+    font-size: clamp(1.8rem, 4.2vw, 2.4rem);
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    background: linear-gradient(90deg, var(--c-primary), var(--c-primary-2));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    margin: 0 0 0.5rem 0;
 }
 
-/* Formular-Layout */
-.scoped-login .login-left-content form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
+.scoped-login .login-lead {
+    color: var(--c-text);
+    font-size: clamp(1.02rem, 1.6vw, 1.15rem);
+    margin: 0 0 var(--space-4) 0;
 }
 
-.scoped-login .login-left-content form label {
-  color: var(--c-text);
-  font-weight: 500;
-  margin-bottom: 0.2rem;
+/* Formular */
+.scoped-login .login-form {
+    display: grid;
+    gap: 0.9rem;
 }
 
-/* Inputs */
-.scoped-login .login-left-content input {
-  padding: 0.75rem;
-  border: 1px solid var(--c-border);
-  border-radius: var(--radius);
-  font-size: 1rem;
-  outline: none;
-  color: var(--c-text);
-  background-color: #fff; /* im Dark Mode überschreiben wir das */
-  transition:
-    border-color var(--transition),
-    box-shadow var(--transition);
-}
-.scoped-login .login-left-content input:focus {
-  border-color: var(--c-primary);
-  box-shadow: 0 0 4px rgba(90, 103, 216, 0.3);
+.scoped-login .login-form label {
+    color: var(--c-text);
+    font-weight: 600;
 }
 
-/* Button */
-.scoped-login .login-left-content button {
-  padding: 0.75rem;
-  border: none;
-  border-radius: var(--radius);
-  background-color: var(--c-primary);
-  color: #fff;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition:
-    background-color var(--transition),
-    transform 0.2s;
-}
-.scoped-login .login-left-content button:hover {
-  background-color: var(--c-primary-hover);
-  transform: translateY(-2px);
+.scoped-login .login-form input {
+    width: 100%;
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text);
+    border-radius: 10px;
+    padding: 0.8rem 0.9rem;
+    transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
 }
 
-/* Sprache-Selector */
-
-/* Meldungen (Fehler/Punch) */
-.scoped-login .error-message {
-  color: var(--c-danger);
-  text-align: center;
-  margin-bottom: 1rem;
+.scoped-login .login-form input::placeholder {
+    color: var(--c-text-muted);
 }
 
-.scoped-login .punch-message {
-  background-color: rgba(72, 187, 120, 0.1);
-  border: 1px solid var(--c-secondary);
-  padding: 1rem;
-  margin-bottom: 1rem;
-  text-align: center;
-  border-radius: var(--radius);
-  color: var(--c-secondary);
+.scoped-login .login-form input:focus {
+    outline: 2px solid rgba(66, 133, 255, 0.25);
+    border-color: rgba(66, 133, 255, 0.45);
+}
+
+/* Button-Stil analog Landing (.lp-btn) */
+.scoped-login .login-btn {
+    display: inline-block;
+    padding: 1rem 1.2rem;
+    border-radius: 18px;
+    border: none;
+    cursor: pointer;
+    font-weight: 800;
+    letter-spacing: 0.01em;
+    text-decoration: none;
+    transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+    width: 100%;
+    text-align: center;
+}
+
+.scoped-login .login-primary {
+    color: #fff;
+    background: var(--c-accent);
+    box-shadow: 0 12px 30px rgba(80, 120, 255, 0.35);
+}
+
+.scoped-login .login-primary:hover {
+    transform: translateY(-2px);
 }
 
 /* Registrieren-CTA */
 .scoped-login .register-cta {
-  margin-top: 1.5rem;
-  font-size: 0.9rem;
-  color: var(--c-text);
-  text-align: center;
+    margin-top: 1.2rem;
+    font-size: 0.92rem;
+    color: var(--c-text);
+    text-align: center;
 }
 
 .scoped-login .register-cta a {
-  color: var(--c-primary);
-  text-decoration: none;
-  font-weight: 500;
-  margin-left: 0.25rem;
+    color: var(--c-primary);
+    text-decoration: none;
+    font-weight: 700;
+    margin-left: 0.25rem;
 }
+
 .scoped-login .register-cta a:hover {
-  text-decoration: underline;
+    text-decoration: underline;
 }
 
-/* -------------------------------- */
-/* Rechte Spalte: Hintergrundbild   */
-/* -------------------------------- */
+/* Meldungen */
+.scoped-login .error-message {
+    color: #ff6b6b;
+    background: rgba(255, 107, 107, 0.08);
+    border: 1px solid rgba(255, 107, 107, 0.28);
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    margin-bottom: 0.8rem;
+}
+
+.scoped-login .punch-message {
+    background-color: rgba(72, 187, 120, 0.1);
+    border: 1px solid #48bb78;
+    padding: 0.9rem 1rem;
+    margin-bottom: 0.9rem;
+    text-align: center;
+    border-radius: 12px;
+    color: #48bb78;
+    font-weight: 700;
+}
+
+/* Rechte Spalte: Branding-Panel */
 .scoped-login .login-right {
-  flex: 1 1 50%;
-  position: relative;
-  padding: 2rem;
-  background: #152037 url("/public/img/komplettesLogo.png") no-repeat center
-    center;
-  background-size: cover;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background-color var(--transition) ease;
-  color: #fff;
+    flex: 1 1 50%;
+    position: relative;
+    padding: var(--space-6) var(--space-4);
+    display: grid;
+    place-items: center;
+    color: #fff;
+    /* Dark Mode: leicht abdunkeln, damit Formular links dominiert */
+    background:
+            linear-gradient(rgba(10, 16, 32, 0.55), rgba(10, 16, 32, 0.75)),
+            url("/img/komplettesLogo.png") no-repeat center center / cover;
 }
 
-.scoped-login .colorful-area {
-  text-align: center;
-  max-width: 80%;
-  margin: 0 auto;
+/* *** FIX: Kein milchiger Overlay im Light Mode *** */
+[data-theme="light"] .scoped-login .login-right {
+    /* Nur das Logo, kein weißer Verlauf oben drüber */
+    background:
+            url("/img/komplettesLogo.png") no-repeat center center / cover;
+    color: var(--c-text);
 }
 
-/* -------------------------------- */
-/* Dark Mode Overrides              */
-/* -------------------------------- */
-[data-theme="dark"] .scoped-login .login-left {
-  background-color: var(--c-card);
+/* USP Chips wie Landing */
+.scoped-login .login-usp-chips {
+    margin-top: 0;
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    padding: 0;
+    list-style: none;
 }
 
-[data-theme="dark"] .scoped-login .login-left-content h1,
-[data-theme="dark"] .scoped-login .login-left-content p,
-[data-theme="dark"] .scoped-login .login-left-content form label,
-[data-theme="dark"] .scoped-login .register-cta,
-[data-theme="dark"] .scoped-login .error-message,
-[data-theme="dark"] .scoped-login .punch-message {
-  color: var(--c-text);
+.scoped-login .login-usp-chips li {
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--c-text);
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
 }
 
-[data-theme="dark"] .scoped-login .login-left-content input {
-  background-color: #3a3b3c;
-  border: 1px solid var(--c-border);
-  color: #f0f0f0;
-}
-[data-theme="dark"] .scoped-login .login-left-content input::placeholder {
-  color: #bcbcbc;
+/* Footer analog Landing */
+.scoped-login .login-footer {
+    padding: var(--space-4) 0 var(--space-6);
+    color: var(--c-text-muted);
+    background: transparent;
 }
 
-
-/* Rechte Spalte im Dark Mode -> dunklere Overlay */
-[data-theme="dark"] .scoped-login .login-right {
-  background:
-    linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-    url("/public/img/komplettesLogo.png") no-repeat center center;
-  background-size: cover;
-  color: #f0f0f0;
+.scoped-login .login-foot-inner {
+    width: min(1180px, 92vw);
+    margin: 0 auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
-/* Footer am Seitenende */
-.scoped-login .impressum-agb-footer {
-  text-align: center;
-  padding: 10px 0;
-  background-color: var(--c-card);
-  border-top: 1px solid var(--c-border);
+.scoped-login .login-foot-links {
+    display: flex;
+    gap: 1rem;
 }
 
-/* Links styling */
-.scoped-login .impressum-agb-footer a {
-  display: inline-block;
-  margin: 0 1rem;
-  color: var(--c-text);
-  text-decoration: none;
-  font-weight: 500;
-  transition: color 0.2s;
-}
-.scoped-login .impressum-agb-footer a:hover {
-  text-decoration: underline;
+.scoped-login .login-foot-links a {
+    color: inherit;
+    text-decoration: none;
 }
 
-/* Dark Mode Override */
-[data-theme="dark"] .scoped-login .impressum-agb-footer {
-  background-color: var(--c-card);
-}
-[data-theme="dark"] .scoped-login .impressum-agb-footer a {
-  color: var(--c-text);
+.scoped-login .login-foot-links a:hover {
+    text-decoration: underline;
 }
 
-/* =========================================================================
-   Login.css – Mobile Overrides
-   Scope: .scoped-login
-   ========================================================================= */
+/* ----------------------------- Responsive ----------------------------- */
+@media (max-width: 980px) {
+    .scoped-login .login-page-2col {
+        flex-direction: column;
+    }
+    .scoped-login .login-right {
+        order: -1; /* Branding oben auf kleineren Screens */
+        min-height: 200px;
+    }
+}
 
 @media (max-width: 480px) {
-  /* Vertikale Anordnung statt 2 Spalten */
-  .scoped-login .login-page-2col {
-    flex-direction: column;
-  }
+    .scoped-login .login-left {
+        padding: var(--space-4) var(--space-2);
+    }
 
-  .scoped-login .login-left,
-  .scoped-login .login-right {
-    width: 100%;
-    flex: none;
-    min-height: auto;
-    padding: 1rem;
-  }
+    .scoped-login .login-left-content {
+        width: 100%;
+        padding: var(--space-4);
+    }
 
-  /* Linke Spalte (Formular) etwas kompakter */
-  .scoped-login .login-left-content {
-    max-width: 300px;
-  }
-  .scoped-login .login-left-content h1 {
-    font-size: 1.4rem;
-    margin-bottom: 0.5rem;
-  }
-  .scoped-login .login-left-content p {
-    font-size: 0.9rem;
-    margin-bottom: 1rem;
-  }
+    .scoped-login .login-btn {
+        padding: 0.9rem 1rem;
+    }
 
-  /* Inputs & Button enger gesetzt */
-  .scoped-login .login-left-content input {
-    font-size: 0.95rem;
-    padding: 0.6rem;
-  }
-  .scoped-login .login-left-content button {
-    width: 100%;
-    font-size: 0.95rem;
-    padding: 0.7rem;
-  }
-
-  /* Sprache-Switch in eine Zeile, minimal kleiner */
-
-
-  /* Registrierungshinweis + Error kompakter */
-  .scoped-login .register-cta,
-  .scoped-login .error-message,
-  .scoped-login .punch-message {
-    margin-top: 0.8rem;
-    font-size: 0.85rem;
-  }
-
-  /* Rechte Spalte (Bild) wird minimal */
-  .scoped-login .login-right {
-    min-height: 180px;
-    background-position: center;
-    background-size: cover;
-  }
-
-  .scoped-login .colorful-area {
-    max-width: 90%;
-  }
-  /* Umfassender Wrapper in Spaltenrichtung, füllt ganze Höhe */
-  .scoped-login {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh; /* Wichtiger Trick: Seite spannt volle Höhe */
-    background-color: var(--c-bg);
-    font-family: var(--font-family);
-    transition: background-color var(--transition) ease;
-  }
-
-  /* .login-page-2col füllt den Platz aus, den sie bekommt */
-  .scoped-login .login-page-2col {
-    flex: 1; /* Nimmt den gesamten verbleibenden Platz */
-    display: flex;
-    /* min-height kann entfernt werden, da wir min-height nun auf .scoped-login haben */
-  }
-
+    .scoped-login .login-foot-inner {
+        justify-content: center;
+    }
 }
