@@ -120,9 +120,30 @@
 .scoped-vacation .report-sick-leave-button:hover { filter: brightness(1.05); }
 
 /* ---------- Modals (isolated via data-context) ---------- */
-.modal-overlay[data-context="vacation"] { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(17,24,39,.55); backdrop-filter: blur(10px) saturate(150%); -webkit-backdrop-filter: blur(10px) saturate(150%); z-index: 10000; }
-.modal-content[data-context="vacation"] { background: var(--c-bg); color: var(--c-text); border: 1px solid var(--c-border); border-radius: var(--radius-2xl); box-shadow: 0 24px 60px rgba(0,0,0,.28); width: 100%; max-width: 560px; max-height: 90vh; overflow-y: auto; padding: clamp(.9rem, 2vw, 1.4rem); }
-.modal-content[data-context="vacation"] h3 { margin: 0 0 .6rem 0; }
+.modal-overlay[data-context="vacation"] {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: var(--modal-backdrop-color); /* Korrektur: Nutzt globale Variable */
+    backdrop-filter: blur(10px) saturate(150%);
+    -webkit-backdrop-filter: blur(10px) saturate(150%);
+    z-index: 10000;
+}
+.modal-content[data-context="vacation"] {
+    background: var(--modal-surface); /* Korrektur: Nutzt globale Variable */
+    color: var(--modal-text);         /* Korrektur: Nutzt globale Variable */
+    border: 1px solid var(--modal-border); /* Korrektur: Nutzt globale Variable */
+    border-radius: 20px;  /* Angepasst an dein Design */
+    box-shadow: var(--modal-shadow); /* Korrektur: Nutzt globale Variable */
+    width: 100%;
+    max-width: 560px;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: clamp(.9rem, 2vw, 1.4rem);
+}.modal-content[data-context="vacation"] h3 { margin: 0 0 .6rem 0; }
 .modal-content[data-context="vacation"] .form-group { display: flex; flex-direction: column; gap: .35rem; margin-bottom: .9rem; }
 .modal-content[data-context="vacation"] label { font-size: var(--fz-sm); color: var(--c-secondary); }
 .modal-content[data-context="vacation"] input, .modal-content[data-context="vacation"] select, .modal-content[data-context="vacation"] textarea { font-family: inherit; font-size: var(--fz-md); background: var(--c-surface); color: var(--c-text); border: 1px solid var(--c-border); border-radius: var(--radius-md); padding: .6rem .9rem; }
@@ -154,3 +175,72 @@
 
 /* Box-sizing fix so tile padding/border don't push width → prevents last column overflow */
 .scoped-vacation .react-calendar__tile { box-sizing: border-box; width: 100%; min-width: 0; }
+/* ===== FIX: Modal-Inputs im Light/Dark-Mode korrekt darstellen ===== */
+
+/* sichere Modal-Token für dieses Portal */
+.modal-overlay[data-context="vacation"]{
+    --modal-surface: var(--ud-c-card, #fff);
+    --modal-text:    var(--ud-c-text, #0b1220);
+    --modal-border:  var(--ud-c-border, #e5e7eb);
+    --modal-backdrop-color: rgba(17,24,39,.55);
+}
+[data-theme="dark"] .modal-overlay[data-context="vacation"]{
+    --modal-surface: var(--ud-c-card, #141a2b);
+    --modal-text:    var(--ud-c-text, #e9edf6);
+    --modal-border:  var(--ud-c-border, #273251);
+}
+
+/* Portal-sichere Inputs im Modal (übersteuert frühere Regeln) */
+.modal-content[data-context="vacation"] input,
+.modal-content[data-context="vacation"] select,
+.modal-content[data-context="vacation"] textarea{
+    background: #fff;            /* Light */
+    color: #0b1220;
+    border: 1px solid #e5e7eb;
+}
+[data-theme="dark"] .modal-content[data-context="vacation"] input,
+[data-theme="dark"] .modal-content[data-context="vacation"] select,
+[data-theme="dark"] .modal-content[data-context="vacation"] textarea{
+    background: #1a2137;         /* Dark */
+    color: var(--modal-text, #e9edf6);
+    border-color: var(--modal-border, #273251);
+}
+
+/* Datepicker-Icon lesbar */
+.modal-content[data-context="vacation"] input[type="date"]::-webkit-calendar-picker-indicator{ opacity:.9; }
+[data-theme="dark"] .modal-content[data-context="vacation"] input[type="date"]::-webkit-calendar-picker-indicator{ filter: invert(1); }
+/* ===== Global Modal Tokens (Light/Dark) ===== */
+:root{
+    --modal-surface:#fff;
+    --modal-text:#0b1220;
+    --modal-border:#e5e7eb;
+    --modal-input-bg:#fff;
+    --modal-input-text:#0b1220;
+    --modal-input-border:#e5e7eb;
+    --modal-backdrop-color:rgba(15,23,42,.45);
+}
+[data-theme="dark"]{
+    --modal-surface:#141a2b;
+    --modal-text:#e9edf6;
+    --modal-border:#273251;
+    --modal-input-bg:#1a2137;
+    --modal-input-text:#e9edf6;
+    --modal-input-border:#273251;
+    --modal-backdrop-color:rgba(2,6,23,.6);
+}
+
+/* ===== Inputs im Modal erzwingen (portal-freundlich) ===== */
+.modal-content input,
+.modal-content select,
+.modal-content textarea{
+    background: var(--modal-input-bg) !important;
+    color: var(--modal-input-text) !important;
+    border: 1px solid var(--modal-input-border) !important;
+    border-radius: 12px;
+    padding: .65rem .9rem;
+}
+
+/* Placeholder + Datepicker sichtbar */
+.modal-content ::placeholder{ opacity:.7; color: var(--modal-input-text); }
+.modal-content input[type="date"]::-webkit-calendar-picker-indicator{ opacity:.9; }
+[data-theme="dark"] .modal-content input[type="date"]::-webkit-calendar-picker-indicator{ filter: invert(1); }

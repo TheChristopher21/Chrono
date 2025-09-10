@@ -141,6 +141,33 @@ const Navbar = () => {
                         <>
                             <li><Link to="/login">{t('navbar.login', 'Login')}</Link></li>
                             <li><Link to="/register">{t('navbar.register', 'Registrieren')}</Link></li>
+
+                            {/* Spacer und Controls für ausgeloggten Zustand */}
+                            <li className={styles['flex-spacer']} aria-hidden="true"></li>
+                            <li>
+                                <button
+                                    className={styles['icon-btn']}
+                                    onClick={toggleTheme}
+                                    aria-label={theme === 'light' ? t('darkMode','Dark Mode') : t('lightMode','Light Mode')}
+                                    title={theme === 'light' ? t('darkMode','Dark Mode') : t('lightMode','Light Mode')}
+                                >
+                                    <span className={styles['icon-wrap']}>{theme === 'light' ? <IconMoon/> : <IconSun/>}</span>
+                                </button>
+                            </li>
+                            <li className={`${styles.dropdown} ${openLang ? styles.open : ''}`} ref={langRef}>
+                                <button
+                                    className={`${styles['dropdown-trigger']} ${styles.iconish}`}
+                                    onClick={() => setOpenLang(v => !v)}
+                                    aria-haspopup="true"
+                                    aria-expanded={openLang}
+                                >
+                                    🌐 <IconChevronDown/>
+                                </button>
+                                <div className={styles['dropdown-menu']}>
+                                    <button className={`${styles['lang-item']} ${language==='de'?styles.active:''}`} onClick={() => { setLanguage('de'); setOpenLang(false); }}>DE</button>
+                                    <button className={`${styles['lang-item']} ${language==='en'?styles.active:''}`} onClick={() => { setLanguage('en'); setOpenLang(false); }}>EN</button>
+                                </div>
+                            </li>
                         </>
                     ) : (
                         <>
@@ -217,10 +244,10 @@ const Navbar = () => {
                                     aria-label={t('navbar.whatsNew','Was ist neu?')}
                                     onClick={openChangelog}
                                 >
-                  <span className={styles['icon-wrap']}>
-                    <IconBell/>
-                      {hasNewUpdate && <span className={styles['notification-badge']} aria-hidden="true"></span>}
-                  </span>
+                                  <span className={styles['icon-wrap']}>
+                                    <IconBell/>
+                                      {hasNewUpdate && <span className={styles['notification-badge']} aria-hidden="true"></span>}
+                                  </span>
                                 </button>
                             </li>
 
