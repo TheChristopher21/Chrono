@@ -33,88 +33,7 @@ const StepCard = ({ n, title, text }) => (
     </div>
 );
 
-// Content definitions – keeps component lean and improves readability
-const features = [
-    {
-        icon: "🧾",
-        title: "Arbeitszeit & Lohn in einem",
-        bullets: [
-            "Arbeitsstunden festhalten",
-            "Urlaub und Extra-Zeit sehen",
-            "Alles an einem Ort",
-        ],
-    },
-    {
-        icon: "🇨🇭🇩🇪",
-        title: "Lohnzettel für CH & DE",
-        bullets: [
-            "Als Datei speichern",
-            "Angaben leicht ändern",
-            "Schweiz und Deutschland abgedeckt",
-        ],
-    },
-    {
-        icon: "👆",
-        title: "Stempeln mit Karte oder Web",
-        bullets: [
-            "Mit Karte ein- und ausstempeln",
-            "Auch im Browser oder Handy",
-            "Geht sogar ohne Internet",
-        ],
-    },
-    {
-        icon: "📅",
-        title: "Urlaub & Überstunden im Blick",
-        bullets: [
-            "Urlaub online beantragen",
-            "Resttage sofort sehen",
-            "Überstunden automatisch verrechnet",
-        ],
-    },
-    {
-        icon: "🔔",
-        title: "Hinweise & Erinnerungen",
-        bullets: [
-            "Info bei neuem Lohnzettel",
-            "Hinweis bei Anträgen",
-            "Erinnerung, wenn du vergisst auszustempeln",
-        ],
-    },
-    {
-        icon: "🛡️",
-        title: "Sichere Daten in der Schweiz",
-        bullets: [
-            "Daten bleiben in der Schweiz",
-            "Alles ist geschützt",
-            "Nur Berechtigte sehen deine Daten",
-            "Zusätzlicher Login-Schutz möglich",
-        ],
-    },
-    {
-        icon: "👥",
-        title: "Team & Projekte verwalten",
-        bullets: [
-            "Mitarbeitende hinzufügen",
-            "Kunden und Projekte anlegen",
-            "Alles im Blick behalten",
-        ],
-    },
-    {
-        icon: "📊",
-        title: "Berichte zum Mitnehmen",
-        bullets: [
-            "Übersichtliche Dateien herunterladen",
-            "Schnell sehen, wer wie viel gearbeitet hat",
-            "Praktisch für Steuer und Abrechnung",
-        ],
-    },
-];
-
-const steps = [
-    { n: "1", title: "Registrieren", text: "Kostenlos starten – ohne Kreditkarte." },
-    { n: "2", title: "Team & Projekte anlegen", text: "Mitarbeitende, Projekte und Kunden hinzufügen." },
-    { n: "3", title: "Loslegen", text: "Stempeln, Urlaub beantragen, Abrechnung erstellen." },
-];
+// Content definitions are now built inside the component using translations
 
 const LandingPage = () => {
     const { t } = useTranslation();
@@ -132,10 +51,10 @@ const LandingPage = () => {
         setSending(true);
         try {
             await api.post("/api/contact", contact);
-            notify(t("landingPage.contactSuccess", "Nachricht gesendet."), "success");
+            notify(t("landing.contact.success", "Nachricht gesendet."), "success");
             setContact({ name: "", email: "", message: "" });
         } catch {
-            notify(t("landingPage.contactError", "Fehler beim Senden."), "error");
+            notify(t("landing.contact.error", "Fehler beim Senden."), "error");
         } finally {
             setSending(false);
         }
@@ -150,6 +69,102 @@ const LandingPage = () => {
         }
     };
 
+    const features = [
+        {
+            icon: "🧾",
+            title: t("landing.features.items.0.title", "Arbeitszeit & Lohn in einem"),
+            bullets: [
+                t("landing.features.items.0.bullets.0", "Arbeitsstunden festhalten"),
+                t("landing.features.items.0.bullets.1", "Urlaub und Extra-Zeit sehen"),
+                t("landing.features.items.0.bullets.2", "Alles an einem Ort"),
+            ],
+        },
+        {
+            icon: "🇨🇭🇩🇪",
+            title: t("landing.features.items.1.title", "Lohnzettel für CH & DE"),
+            bullets: [
+                t("landing.features.items.1.bullets.0", "Als Datei speichern"),
+                t("landing.features.items.1.bullets.1", "Angaben leicht ändern"),
+                t("landing.features.items.1.bullets.2", "Schweiz und Deutschland abgedeckt"),
+            ],
+        },
+        {
+            icon: "👆",
+            title: t("landing.features.items.2.title", "Stempeln mit Karte oder Web"),
+            bullets: [
+                t("landing.features.items.2.bullets.0", "Mit Karte ein- und ausstempeln"),
+                t("landing.features.items.2.bullets.1", "Auch im Browser oder Handy"),
+                t("landing.features.items.2.bullets.2", "Geht sogar ohne Internet"),
+            ],
+        },
+        {
+            icon: "📅",
+            title: t("landing.features.items.3.title", "Urlaub & Überstunden im Blick"),
+            bullets: [
+                t("landing.features.items.3.bullets.0", "Urlaub online beantragen"),
+                t("landing.features.items.3.bullets.1", "Resttage sofort sehen"),
+                t("landing.features.items.3.bullets.2", "Überstunden automatisch verrechnet"),
+            ],
+        },
+        {
+            icon: "🔔",
+            title: t("landing.features.items.4.title", "Hinweise & Erinnerungen"),
+            bullets: [
+                t("landing.features.items.4.bullets.0", "Info bei neuem Lohnzettel"),
+                t("landing.features.items.4.bullets.1", "Hinweis bei Anträgen"),
+                t("landing.features.items.4.bullets.2", "Erinnerung, wenn du vergisst auszustempeln"),
+            ],
+        },
+        {
+            icon: "🛡️",
+            title: t("landing.features.items.5.title", "Sichere Daten in der Schweiz"),
+            bullets: [
+                t("landing.features.items.5.bullets.0", "Daten bleiben in der Schweiz"),
+                t("landing.features.items.5.bullets.1", "Alles ist geschützt"),
+                t("landing.features.items.5.bullets.2", "Nur Berechtigte sehen deine Daten"),
+                t("landing.features.items.5.bullets.3", "Zusätzlicher Login-Schutz möglich"),
+            ],
+        },
+        {
+            icon: "👥",
+            title: t("landing.features.items.6.title", "Team & Projekte verwalten"),
+            bullets: [
+                t("landing.features.items.6.bullets.0", "Mitarbeitende hinzufügen"),
+                t("landing.features.items.6.bullets.1", "Kunden und Projekte anlegen"),
+                t("landing.features.items.6.bullets.2", "Alles im Blick behalten"),
+            ],
+        },
+        {
+            icon: "📊",
+            title: t("landing.features.items.7.title", "Berichte zum Mitnehmen"),
+            bullets: [
+                t("landing.features.items.7.bullets.0", "Übersichtliche Dateien herunterladen"),
+                t("landing.features.items.7.bullets.1", "Schnell sehen, wer wie viel gearbeitet hat"),
+                t("landing.features.items.7.bullets.2", "Praktisch für Steuer und Abrechnung"),
+            ],
+        },
+    ];
+
+    const steps = [
+        {
+            n: "1",
+            title: t("landing.steps.items.0.title", "Registrieren"),
+            text: t("landing.steps.items.0.text", "Kostenlos starten – ohne Kreditkarte."),
+        },
+        {
+            n: "2",
+            title: t("landing.steps.items.1.title", "Team & Projekte anlegen"),
+            text: t("landing.steps.items.1.text", "Mitarbeitende, Projekte und Kunden hinzufügen."),
+        },
+        {
+            n: "3",
+            title: t("landing.steps.items.2.title", "Loslegen"),
+            text: t(
+                "landing.steps.items.2.text",
+                "Stempeln, Urlaub beantragen, Abrechnung erstellen."
+            ),
+        },
+    ];
 
     return (
         <div className="landing-page scoped-landing">
@@ -160,7 +175,7 @@ const LandingPage = () => {
                 <header className="lp-hero lp-section lp-section-lg" id="home">
                     <div className="lp-hero-single">
                         <div className="lp-hero-content">
-                            <div className="lp-hero-badge">Fair · Klar · Zuverlässig</div>
+                            <div className="lp-hero-badge">{t("landing.hero.badge", "Fair · Klar · Zuverlässig")}</div>
                             <h1 className="lp-h1">
                                 {t("landing.hero.title", "Zeit erfassen, fair abrechnen – einfach, klar, zuverlässig.")}
                             </h1>
@@ -184,9 +199,9 @@ const LandingPage = () => {
                             </div>
 
                             <ul className="lp-usp-chips" role="list">
-                                <li>🇨🇭 Schweizer Server</li>
-                                <li>🔐 DSGVO-konform</li>
-                                <li>🧮 Kein Excel-Chaos</li>
+                                <li>{t("landing.hero.chips.server", "🇨🇭 Schweizer Server")}</li>
+                                <li>{t("landing.hero.chips.gdpr", "🔐 DSGVO-konform")}</li>
+                                <li>{t("landing.hero.chips.noExcel", "🧮 Kein Excel-Chaos")}</li>
                             </ul>
                         </div>
                     </div>
@@ -225,7 +240,7 @@ const LandingPage = () => {
                                 <input id="name" name="name" type="text" required value={contact.name} onChange={onChange} className="lp-input" />
                             </div>
                             <div className="lp-form-group">
-                                <label htmlFor="email" className="lp-label">E-Mail</label>
+                                <label htmlFor="email" className="lp-label">{t("landing.contact.email", "E-Mail")}</label>
                                 <input id="email" name="email" type="email" required value={contact.email} onChange={onChange} className="lp-input" />
                             </div>
                         </div>
@@ -247,9 +262,9 @@ const LandingPage = () => {
                 <div className="lp-foot-inner">
                     <span>© {new Date().getFullYear()} Chrono</span>
                     <nav className="lp-foot-links" aria-label="Footer Navigation">
-                        <Link to="/impressum">Impressum</Link>
-                        <Link to="/datenschutz">Datenschutz</Link>
-                        <Link to="/agb">AGB</Link>
+                        <Link to="/impressum">{t("landing.footer.imprint", "Impressum")}</Link>
+                        <Link to="/datenschutz">{t("landing.footer.privacy", "Datenschutz")}</Link>
+                        <Link to="/agb">{t("landing.footer.terms", "AGB")}</Link>
                     </nav>
                 </div>
             </footer>

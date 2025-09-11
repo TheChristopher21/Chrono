@@ -52,8 +52,124 @@ const translations = {
         // Landing
         // ----------------------------------------------------------------------
         landing: {
+            hero: {
+                badge: "Fair · Klar · Zuverlässig",
+                title: "Zeit erfassen, fair abrechnen – einfach, klar, zuverlässig.",
+                sub: "Chrono hilft Teams in der Schweiz & Deutschland, Zeiten korrekt zu erfassen, Urlaub sauber zu managen und Löhne sicher abzurechnen.",
+                chips: {
+                    server: "🇨🇭 Schweizer Server",
+                    gdpr: "🔐 DSGVO-konform",
+                    noExcel: "🧮 Kein Excel-Chaos",
+                },
+            },
             cta: {
+                try: "Kostenlos testen",
+                login: "Anmelden",
                 demo: "Demo ansehen",
+            },
+            features: {
+                title: "Alles drin, was du brauchst – ohne Ballast.",
+                sub: "Fokussiert auf das Wesentliche: Zeiterfassung, Abrechnung, Urlaub und klare Admin-Prozesse.",
+                items: [
+                    {
+                        title: "Arbeitszeit & Lohn in einem",
+                        bullets: [
+                            "Arbeitsstunden festhalten",
+                            "Urlaub und Extra-Zeit sehen",
+                            "Alles an einem Ort",
+                        ],
+                    },
+                    {
+                        title: "Lohnzettel für CH & DE",
+                        bullets: [
+                            "Als Datei speichern",
+                            "Angaben leicht ändern",
+                            "Schweiz und Deutschland abgedeckt",
+                        ],
+                    },
+                    {
+                        title: "Stempeln mit Karte oder Web",
+                        bullets: [
+                            "Mit Karte ein- und ausstempeln",
+                            "Auch im Browser oder Handy",
+                            "Geht sogar ohne Internet",
+                        ],
+                    },
+                    {
+                        title: "Urlaub & Überstunden im Blick",
+                        bullets: [
+                            "Urlaub online beantragen",
+                            "Resttage sofort sehen",
+                            "Überstunden automatisch verrechnet",
+                        ],
+                    },
+                    {
+                        title: "Hinweise & Erinnerungen",
+                        bullets: [
+                            "Info bei neuem Lohnzettel",
+                            "Hinweis bei Anträgen",
+                            "Erinnerung, wenn du vergisst auszustempeln",
+                        ],
+                    },
+                    {
+                        title: "Sichere Daten in der Schweiz",
+                        bullets: [
+                            "Daten bleiben in der Schweiz",
+                            "Alles ist geschützt",
+                            "Nur Berechtigte sehen deine Daten",
+                            "Zusätzlicher Login-Schutz möglich",
+                        ],
+                    },
+                    {
+                        title: "Team & Projekte verwalten",
+                        bullets: [
+                            "Mitarbeitende hinzufügen",
+                            "Kunden und Projekte anlegen",
+                            "Alles im Blick behalten",
+                        ],
+                    },
+                    {
+                        title: "Berichte zum Mitnehmen",
+                        bullets: [
+                            "Übersichtliche Dateien herunterladen",
+                            "Schnell sehen, wer wie viel gearbeitet hat",
+                            "Praktisch für Steuer und Abrechnung",
+                        ],
+                    },
+                ],
+            },
+            steps: {
+                title: "So startest du in 3 Schritten",
+                items: [
+                    {
+                        title: "Registrieren",
+                        text: "Kostenlos starten – ohne Kreditkarte.",
+                    },
+                    {
+                        title: "Team & Projekte anlegen",
+                        text: "Mitarbeitende, Projekte und Kunden hinzufügen.",
+                    },
+                    {
+                        title: "Loslegen",
+                        text: "Stempeln, Urlaub beantragen, Abrechnung erstellen.",
+                    },
+                ],
+            },
+            contact: {
+                title: "Kontakt aufnehmen",
+                name: "Name",
+                email: "E-Mail",
+                msg: "Nachricht",
+                placeholder: "Wie kann ich helfen?",
+                send: "Senden",
+                hint: "Antwort in der Regel innerhalb von 24h.",
+                success: "Nachricht gesendet.",
+                error: "Fehler beim Senden.",
+            },
+            footer: {
+                imprint: "Impressum",
+                privacy: "Datenschutz",
+                terms: "AGB",
             },
             demoError: "Demo-Anmeldung fehlgeschlagen",
         },
@@ -158,6 +274,54 @@ const translations = {
             correctionDeniedMsg: "Korrektur abgelehnt",
             correctionErrorMsg: "Fehler bei Korrektur",
             correctionsTitle: "Korrekturanträge",
+            searchUserPlaceholder: "Suche nach Benutzer oder Datum...",
+            noVacationRequests: "Keine Urlaubsanträge gefunden.",
+            statusApproved: "Genehmigt",
+            statusDenied: "Abgelehnt",
+            statusPending: "Ausstehend",
+            approveButtonTitle: "Urlaubsantrag genehmigen",
+            approveButton: "Genehmigen",
+            rejectButtonTitle: "Urlaubsantrag ablehnen",
+            vacationApprovedMsg: "Urlaub genehmigt.",
+            vacationApproveErrorMsg: "Fehler beim Genehmigen des Urlaubs: ",
+            vacationDeniedMsg: "Urlaub abgelehnt.",
+            vacationDenyErrorMsg: "Fehler beim Ablehnen des Urlaubs: ",
+            noValidDateOrUser: "Kein gültiges Datum oder Benutzer ausgewählt.",
+            editSuccessfulMsg: "Zeiten erfolgreich bearbeitet.",
+            importTimeTrackingButton: "Zeiten importieren",
+            reloadDataButton: "Daten neu laden",
+            sickLeaveDeleteSuccess: "Krankmeldung erfolgreich gelöscht.",
+            holidayOptionUpdateSuccess: "Feiertagsoption erfolgreich aktualisiert.",
+            jumpToDate: "Datum auswählen",
+            allVisibleUsersHiddenOrNoData: "Alle sichtbaren Benutzer sind ausgeblendet oder es sind keine Daten für die aktuelle Woche vorhanden.",
+            noUserDataForWeek: "Keine Benutzerdaten für diese Woche.",
+            holidayOptionLabel: "Option:",
+            holidayOption: {
+                pending: "Ausstehend",
+                deduct: "Soll reduzieren",
+                doNotDeduct: "Soll nicht reduzieren",
+            },
+            needsCorrectionTooltip: "Automatisch beendet und unkorrigiert",
+            entrySource: {
+                autoSuffix: " (Auto)",
+                adminSuffix: " (AdmK)",
+                userSuffix: " (UsrK)",
+                importSuffix: " (Imp)",
+            },
+            deleteSickLeaveTitle: "Krankmeldung löschen",
+            holidayOptionPendingTooltip: "Feiertagsoption ausstehend",
+            deleteSickLeaveConfirmTitle: "Krankmeldung löschen bestätigen",
+            deleteSickLeaveConfirmMessage: "Möchten Sie die Krankmeldung für",
+            deleteSickLeaveIrreversible: " wirklich löschen? Das Tagessoll und der Saldo werden neu berechnet.",
+            printUserTimesTitle: "Zeiten drucken für",
+            searchByUser: "Nach Benutzer suchen…",
+            resetFilters: "Filter zurücksetzen",
+            statusAPPROVED: "Genehmigt",
+            statusDENIED: "Abgelehnt",
+            statusPENDING: "Ausstehend",
+            correctionRequestFor: "Antrag für",
+            adminComment: "Admin-Kommentar",
+            onVacation: "Im Urlaub",
             correctionModal: {
                 approveTitle: "Korrektur genehmigen",
                 denyTitle: "Korrektur ablehnen",
@@ -365,6 +529,27 @@ const translations = {
         addNotes: "Notizen hinzufügen",
         fillWorkTimesError: "Bitte Work Start und Work End ausfüllen",
 
+        onVacation: "Im Urlaub",
+        enterNotePlaceholder: "Notiz eingeben...",
+        dailyNoteTitle: "Notiz",
+        noNotePlaceholder: "Keine Notiz.",
+        editNote: "Notiz bearbeiten",
+        save: "Speichern",
+        noTask: "Keine Aufgabe",
+        assignCustomer: {
+            editButton: "Kunden & Zeiten bearbeiten",
+        },
+        correction: {
+            desiredChange: "Gewünschte Änderung",
+            type: "Typ",
+            time: "Zeit",
+        },
+        punchTypes: {
+            START: "Start",
+            ENDE: "Ende",
+        },
+        currentWeek: "Aktuelle Woche",
+
         // fehlende Übersetzungen
         actualTime: "Ist",
         breakTime: "Pause",
@@ -397,6 +582,11 @@ const translations = {
             mode: "Stundenbasiert",
             addEntryFirst: "Bitte mindestens einen Korrektureintrag hinzufügen.",
             userNotFound: "Benutzer nicht gefunden, bitte erneut anmelden.",
+        },
+
+        percentageDashboard: {
+            title: "Prozent-Dashboard",
+            workPercentageLabel: "Arbeits-%",
         },
 
         // ----------------------------------------------------------------------
@@ -693,50 +883,69 @@ const translations = {
             stand: "<em>Stand: Mai 2025</em>",
         },
         privacyPage: {
-            title: "Datenschutz",
-            content: "Hier finden Sie Informationen zum Datenschutz.",
+            title: "Datenschutzerklärung für Chrono",
+            content: `
+                <p><strong>Stand: 10. September 2025</strong></p>
+                <p>Wir freuen uns über Ihr Interesse an unserer Zeiterfassungsanwendung Chrono. Der Schutz Ihrer persönlichen Daten ist uns ein wichtiges Anliegen. Nachfolgend informieren wir Sie ausführlich über den Umgang mit Ihren Daten.</p>
+                <h2>1. Verantwortliche Stelle</h2>
+                <p>Verantwortlich für die Datenerhebung, -verarbeitung und -nutzung im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br/>
+                <strong>Chrono</strong><br/>
+                Lettenstrasse 20<br/>
+                9122 Mogelsberg<br/>
+                Schweiz</p>
+                <p><strong>E-Mail:</strong> siefertchristopher@chrono-logisch.ch<br/>
+                <strong>Telefon:</strong> +41 764699122</p>
+                <p>Weitere Informationen finden Sie in unserem <a href="/impressum">Impressum</a>.</p>
+                <h2>2. Art, Zweck und Umfang der Datenverarbeitung</h2>
+                <h3>a) Bei Besuch der Webseite</h3>
+                <p>Bei jedem Aufruf unserer Webseite erfasst unser System automatisiert Daten wie Browsertyp, Betriebssystem, Referrer URL, Hostname des zugreifenden Rechners, Uhrzeit der Serveranfrage und IP-Adresse. Diese Daten sind technisch erforderlich, um die Anwendung anzuzeigen und die Stabilität und Sicherheit zu gewährleisten.</p>
+                <h3>b) Bei Registrierung und Nutzung eines Benutzerkontos</h3>
+                <p>Zur Nutzung von Chrono müssen Sie sich registrieren. Dabei erheben wir Daten wie Benutzername, E-Mail-Adresse, verschlüsseltes Passwort sowie weitere optionale Profildaten. Diese Daten sind zur Verwaltung des Benutzerkontos und zur Vertragserfüllung erforderlich.</p>
+                <h3>c) Im Rahmen der Zeiterfassung und Arbeitsorganisation</h3>
+                <p>Chrono verarbeitet Arbeitszeiten, Projektzuordnungen, Korrekturanträge, NFC-Kartendaten sowie Krankmeldungen und Urlaubsanträge. Die Verarbeitung dient der Vertragserfüllung.</p>
+                <h3>d) Im Rahmen der Lohnabrechnung</h3>
+                <p>Sofern das Lohnmodul genutzt wird, verarbeiten wir Gehaltsdaten, Steuerinformationen und Bankverbindungen. Diese Daten werden vertraulich behandelt.</p>
+                <h3>e) Bei Nutzung des KI-Chatbots und der Wissensdatenbank</h3>
+                <p>Anfragen an den Chatbot werden verarbeitet, um passende Antworten zu liefern und den Dienst zu verbessern.</p>
+                <h3>f) Bei Kontaktaufnahme</h3>
+                <p>Übermittelte Daten (z.B. Name, E-Mail, Inhalt der Anfrage) werden zur Bearbeitung gespeichert.</p>
+                <h2>3. Cookies und Lokaler Speicher</h2>
+                <p>Wir verwenden lokalen Speicher, um Einstellungen wie Sprache oder Theme zu speichern. Diese Informationen werden nicht an unsere Server übertragen.</p>
+                <h2>4. Weitergabe von Daten an Dritte</h2>
+                <p>Eine Weitergabe erfolgt nur, wenn dies gesetzlich vorgeschrieben ist oder zur Vertragserfüllung notwendig wird, etwa an Zahlungsdienstleister oder nach Zustimmung an Google Calendar. Mit allen Dienstleistern bestehen Auftragsverarbeitungsverträge.</p>
+                <h2>5. Ihre Rechte als betroffene Person</h2>
+                <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch, Datenübertragbarkeit sowie ein Beschwerderecht bei einer Aufsichtsbehörde.</p>
+                <h2>6. Datensicherheit</h2>
+                <p>Wir treffen technische und organisatorische Maßnahmen, um Ihre Daten vor Verlust oder unbefugtem Zugriff zu schützen und verbessern diese laufend.</p>
+                <h2>7. Änderung dieser Datenschutzerklärung</h2>
+                <p>Wir behalten uns vor, diese Erklärung anzupassen, damit sie den aktuellen rechtlichen Anforderungen entspricht oder Änderungen unserer Leistungen umzusetzen.</p>
+            `,
         },
         agbPage: {
-            title: "Allgemeine Geschäftsbedingungen",
-            stand: "Stand Mai 2025",
-            scope: {
-                title: "1. Geltungsbereich",
-                content: "Diese Allgemeinen Geschäftsbedingungen (AGB) gelten für alle Verträge über die Nutzung der SaaS-Dienste von Chrono-Logisch (nachfolgend „Anbieter“) durch den Kunden. Abweichende Bedingungen des Kunden werden nicht anerkannt, es sei denn, der Anbieter stimmt ihrer Geltung ausdrücklich schriftlich zu."
-            },
-            services: {
-                title: "2. Leistungsgegenstand",
-                content1: "Der Anbieter stellt dem Kunden die Software „Chrono-Logisch“ als Software-as-a-Service (SaaS) zur Verfügung. Der Funktionsumfang der Software ergibt sich aus der aktuellen Leistungsbeschreibung auf der Website des Anbieters.",
-                content2: "Die Software ermöglicht die digitale Zeiterfassung, Urlaubsverwaltung und Erstellung von Berichten. Der Anbieter gewährleistet eine Verfügbarkeit der Dienste von 99.5% im Monatsmittel. Geplante Wartungsarbeiten werden hiervon ausgenommen und im Voraus angekündigt."
-            },
-            contract: {
-                title: "3. Vertragsschluss",
-                content: "Der Vertrag kommt durch die Annahme eines Angebots des Anbieters durch den Kunden oder durch die Registrierung des Kunden auf der Website und die anschließende Bestätigung durch den Anbieter zustande."
-            },
-            rights: {
-                title: "4. Nutzungsrechte",
-                content: "Der Kunde erhält ein einfaches, nicht übertragbares Recht, die Software für die Dauer des Vertrages für eigene betriebliche Zwecke zu nutzen. Eine Weitergabe der Nutzungsrechte an Dritte ist nicht gestattet."
-            },
-            obligations: {
-                title: "5. Pflichten des Kunden",
-                content: "Der Kunde ist für die Sicherung seiner Zugangsdaten verantwortlich und hat sicherzustellen, dass diese nicht von unbefugten Dritten genutzt werden. Der Kunde ist verpflichtet, die Dienste nicht missbräuchlich zu nutzen und alle anwendbaren Gesetze zu beachten."
-            },
-            liability: {
-                title: "6. Haftung",
-                content: "Für die Inhalte externer Links übernehmen wir keine Haftung. Für den Inhalt der verlinkten Seiten sind ausschließlich deren Betreiber verantwortlich. Die Haftung des Anbieters für leichte Fahrlässigkeit ist, außer bei Verletzung wesentlicher Vertragspflichten, ausgeschlossen."
-            },
-            payment: {
-                title: "7. Zahlungsbedingungen, Laufzeit und Kündigung",
-                content1: "Die Vergütung für die Nutzung der Software richtet sich nach dem vom Kunden gewählten Paket und Zahlungsintervall (monatlich oder jährlich). Die Rechnungsstellung erfolgt im Voraus für den jeweiligen Abrechnungszeitraum. Einmalige Gebühren, wie die Installationspauschale, sind mit der ersten Rechnung fällig.",
-                content2: "Der Vertrag wird auf unbestimmte Zeit geschlossen. Bei monatlicher Zahlungsweise kann der Vertrag von beiden Seiten jederzeit zum Ende des laufenden monatlichen Abrechnungszeitraums gekündigt werden. Bei jährlicher Zahlungsweise kann der Vertrag zum Ende des jährlichen Abrechnungszeitraums mit einer Frist von einem Monat gekündigt werden. Ohne Kündigung verlängert sich der Vertrag automatisch um den entsprechenden Zeitraum. Die Kündigung bedarf der Textform (z.B. per E-Mail)."
-            },
-            copyright: {
-                title: "7. Urheberrecht",
-                content: "Sämtliche Inhalte (Texte, Bilder, Grafiken) auf dieser Website und in der Anwendung sind urheberrechtlich geschützt. Jegliche Nutzung ohne ausdrückliche Zustimmung ist untersagt."
-            },
-            finalProvisions: {
-                title: "8. Schlussbestimmungen",
-                content: "Es gilt das Recht der Schweizerischen Eidgenossenschaft. Gerichtsstand ist der Sitz des Anbieters. Sollten einzelne Bestimmungen dieser AGB unwirksam sein oder werden, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt."
-            }
+            title: "Allgemeine Geschäftsbedingungen (AGB) für Chrono",
+            content: `
+                <p><strong>Stand: 10. September 2025</strong></p>
+                <h2>1. Geltungsbereich</h2>
+                <p>Diese Allgemeinen Geschäftsbedingungen (AGB) regeln das Vertragsverhältnis zwischen Chrono und den Nutzern der SaaS-Anwendung "Chrono". Abweichende Bedingungen des Kunden werden nicht anerkannt, es sei denn, der Anbieter stimmt ihrer Geltung ausdrücklich zu.</p>
+                <h2>2. Leistungsgegenstand</h2>
+                <p>Der Anbieter stellt die Software zur Zeiterfassung, Projektverwaltung, Urlaubs- und Abwesenheitsplanung sowie optional zur Lohnabrechnung über das Internet bereit. Der Funktionsumfang richtet sich nach dem gebuchten Leistungspaket. Der Anbieter kann Funktionen ändern, erweitern oder einschränken, solange die Kernfunktionalität erhalten bleibt.</p>
+                <h2>3. Vertragsschluss und Testphase</h2>
+                <p>Der Vertrag kommt durch Online-Registrierung und Annahme durch den Anbieter zustande. Kostenlos angebotene Testphasen gehen nicht automatisch in ein kostenpflichtiges Abo über.</p>
+                <h2>4. Preise und Zahlungsbedingungen</h2>
+                <p>Die Vergütung richtet sich nach der aktuellen Preisliste. Nutzungsgebühren sind je nach Abrechnungszeitraum im Voraus fällig. Bei Zahlungsverzug kann der Anbieter den Zugang sperren.</p>
+                <h2>5. Pflichten des Kunden</h2>
+                <p>Der Kunde muss seine Zugangsdaten geheim halten und ist für Aktivitäten über sein Konto verantwortlich. Er stellt sicher, dass eingegebene Daten keine Rechte Dritter verletzen.</p>
+                <h2>6. Datenschutz und Datensicherheit</h2>
+                <p>Der Anbieter verarbeitet personenbezogene Daten ausschließlich zur Vertragserfüllung unter Beachtung gesetzlicher Vorschriften. Weitere Informationen enthält die <a href="/datenschutz">Datenschutzerklärung</a>.</p>
+                <h2>7. Verfügbarkeit und Wartung</h2>
+                <p>Der Anbieter gewährleistet eine branchenübliche Verfügbarkeit und kann geplante Wartungsarbeiten durchführen, die nach Möglichkeit angekündigt werden.</p>
+                <h2>8. Haftung</h2>
+                <p>Der Anbieter haftet unbeschränkt bei Vorsatz oder grober Fahrlässigkeit sowie bei Verletzung von Leben, Körper oder Gesundheit. Bei leichter Fahrlässigkeit ist die Haftung auf typische vorhersehbare Schäden begrenzt.</p>
+                <h2>9. Vertragslaufzeit und Kündigung</h2>
+                <p>Der Vertrag läuft auf unbestimmte Zeit und kann vom Kunden jederzeit zum Ende des Abrechnungszeitraums gekündigt werden. Der Anbieter kann mit einer Frist von 30 Tagen kündigen.</p>
+                <h2>10. Schlussbestimmungen</h2>
+                <p>Es gilt Schweizer Recht. Gerichtsstand ist der Sitz des Anbieters. Unwirksame Bestimmungen berühren die Wirksamkeit der übrigen Bestimmungen nicht.</p>
+            `,
         },
         registrationPage: {
             pricingTitle: "Pakete & Preisübersicht",
@@ -811,8 +1020,124 @@ const translations = {
         // Landing
         // ----------------------------------------------------------------------
         landing: {
+            hero: {
+                badge: "Fair · Clear · Reliable",
+                title: "Track time, invoice fairly – simple, clear, reliable.",
+                sub: "Chrono helps teams in Switzerland & Germany track time accurately, manage vacation cleanly and process payroll securely.",
+                chips: {
+                    server: "🇨🇭 Swiss servers",
+                    gdpr: "🔐 GDPR compliant",
+                    noExcel: "🧮 No Excel chaos",
+                },
+            },
             cta: {
-                demo: "Try Demo",
+                try: "Try for free",
+                login: "Log in",
+                demo: "View demo",
+            },
+            features: {
+                title: "Everything you need – no clutter.",
+                sub: "Focused on the essentials: time tracking, payroll, vacation and clear admin processes.",
+                items: [
+                    {
+                        title: "Time tracking & payroll in one",
+                        bullets: [
+                            "Record working hours",
+                            "See vacation and overtime",
+                            "Everything in one place",
+                        ],
+                    },
+                    {
+                        title: "Payslips for CH & DE",
+                        bullets: [
+                            "Save as file",
+                            "Easily adjust details",
+                            "Covers Switzerland and Germany",
+                        ],
+                    },
+                    {
+                        title: "Stamp via card or web",
+                        bullets: [
+                            "Clock in/out with card",
+                            "Also in browser or phone",
+                            "Even works offline",
+                        ],
+                    },
+                    {
+                        title: "Vacation & overtime at a glance",
+                        bullets: [
+                            "Apply for vacation online",
+                            "See remaining days instantly",
+                            "Overtime deducted automatically",
+                        ],
+                    },
+                    {
+                        title: "Notifications & reminders",
+                        bullets: [
+                            "Info on new payslip",
+                            "Hint on requests",
+                            "Reminder if you forget to clock out",
+                        ],
+                    },
+                    {
+                        title: "Secure data in Switzerland",
+                        bullets: [
+                            "Data stays in Switzerland",
+                            "Everything is protected",
+                            "Only authorized people see your data",
+                            "Optional extra login protection",
+                        ],
+                    },
+                    {
+                        title: "Manage team & projects",
+                        bullets: [
+                            "Add employees",
+                            "Create customers and projects",
+                            "Keep everything in view",
+                        ],
+                    },
+                    {
+                        title: "Reports to go",
+                        bullets: [
+                            "Download clear files",
+                            "Quickly see who worked how much",
+                            "Useful for taxes and payroll",
+                        ],
+                    },
+                ],
+            },
+            steps: {
+                title: "Get started in 3 steps",
+                items: [
+                    {
+                        title: "Register",
+                        text: "Start for free – no credit card needed.",
+                    },
+                    {
+                        title: "Set up team & projects",
+                        text: "Add employees, projects and customers.",
+                    },
+                    {
+                        title: "Get going",
+                        text: "Clock time, request vacation, create payroll.",
+                    },
+                ],
+            },
+            contact: {
+                title: "Get in touch",
+                name: "Name",
+                email: "Email",
+                msg: "Message",
+                placeholder: "How can I help?",
+                send: "Send",
+                hint: "Usually replies within 24h.",
+                success: "Message sent.",
+                error: "Error sending message.",
+            },
+            footer: {
+                imprint: "Imprint",
+                privacy: "Privacy",
+                terms: "Terms",
             },
             demoError: "Demo login failed",
         },
@@ -916,6 +1241,54 @@ const translations = {
             correctionDeniedMsg: "Correction denied",
             correctionErrorMsg: "Error during correction",
             correctionsTitle: "Correction Requests",
+            searchUserPlaceholder: "Search by user or date...",
+            noVacationRequests: "No vacation requests found.",
+            statusApproved: "Approved",
+            statusDenied: "Denied",
+            statusPending: "Pending",
+            approveButtonTitle: "Approve vacation request",
+            approveButton: "Approve",
+            rejectButtonTitle: "Reject vacation request",
+            vacationApprovedMsg: "Vacation approved.",
+            vacationApproveErrorMsg: "Error approving vacation: ",
+            vacationDeniedMsg: "Vacation denied.",
+            vacationDenyErrorMsg: "Error denying vacation: ",
+            noValidDateOrUser: "No valid date or user selected.",
+            editSuccessfulMsg: "Times edited successfully.",
+            importTimeTrackingButton: "Import times",
+            reloadDataButton: "Reload data",
+            sickLeaveDeleteSuccess: "Sick leave deleted successfully.",
+            holidayOptionUpdateSuccess: "Holiday option updated successfully.",
+            jumpToDate: "Select date",
+            allVisibleUsersHiddenOrNoData: "All visible users are hidden or no data for the current week.",
+            noUserDataForWeek: "No user data for this week.",
+            holidayOptionLabel: "Option:",
+            holidayOption: {
+                pending: "Pending",
+                deduct: "Deduct from target",
+                doNotDeduct: "Do not deduct",
+            },
+            needsCorrectionTooltip: "Automatically ended and uncorrected",
+            entrySource: {
+                autoSuffix: " (Auto)",
+                adminSuffix: " (AdmC)",
+                userSuffix: " (UsrC)",
+                importSuffix: " (Imp)",
+            },
+            deleteSickLeaveTitle: "Delete sick leave",
+            holidayOptionPendingTooltip: "Holiday option pending",
+            deleteSickLeaveConfirmTitle: "Confirm delete sick leave",
+            deleteSickLeaveConfirmMessage: "Do you want to delete the sick leave for",
+            deleteSickLeaveIrreversible: "? This will recalculate daily target and balance.",
+            printUserTimesTitle: "Print times for",
+            searchByUser: "Search by user…",
+            resetFilters: "Reset filters",
+            statusAPPROVED: "Approved",
+            statusDENIED: "Denied",
+            statusPENDING: "Pending",
+            correctionRequestFor: "Request for",
+            adminComment: "Admin comment",
+            onVacation: "On vacation",
             correctionModal: {
                 approveTitle: "Approve Correction",
                 denyTitle: "Deny Correction",
@@ -1122,6 +1495,27 @@ const translations = {
         expectedWeekInfo: "Your weekly target is based on your work percentage and reduces when you are absent.",
         addNotes: "Add notes",
         fillWorkTimesError: "Please fill in Work Start and Work End",
+
+        onVacation: "On vacation",
+        enterNotePlaceholder: "Enter note...",
+        dailyNoteTitle: "Note",
+        noNotePlaceholder: "No note.",
+        editNote: "Edit note",
+        save: "Save",
+        noTask: "No task",
+        assignCustomer: {
+            editButton: "Edit customers & times",
+        },
+        correction: {
+            desiredChange: "Desired Change",
+            type: "Type",
+            time: "Time",
+        },
+        punchTypes: {
+            START: "Start",
+            ENDE: "End",
+        },
+        currentWeek: "Current Week",
 
         // missing translations
         actualTime: "Actual",
@@ -1445,50 +1839,69 @@ const translations = {
             stand: "<em>Updated: May 2025</em>",
         },
         privacyPage: {
-            title: "Privacy Policy",
-            content: "Here you can find information about our privacy policy.",
+            title: "Privacy Policy for Chrono",
+            content: `
+                <p><strong>Updated: 10 September 2025</strong></p>
+                <p>We appreciate your interest in our time tracking application Chrono. Protecting your personal data is important to us. The following provides detailed information on how we handle your data.</p>
+                <h2>1. Controller</h2>
+                <p>The controller for data collection, processing and use under the GDPR is:<br/>
+                <strong>Chrono</strong><br/>
+                Lettenstrasse 20<br/>
+                9122 Mogelsberg<br/>
+                Switzerland</p>
+                <p><strong>Email:</strong> siefertchristopher@chrono-logisch.ch<br/>
+                <strong>Phone:</strong> +41 764699122</p>
+                <p>Further details are available in our <a href="/impressum">imprint</a>.</p>
+                <h2>2. Type, Purpose and Scope of Data Processing</h2>
+                <h3>a) Visiting the website</h3>
+                <p>When visiting our website we automatically collect data such as browser type, operating system, referrer URL, hostname of the accessing computer, time of the server request and IP address. These are technically necessary to display the site and ensure stability and security.</p>
+                <h3>b) Registration and use of an account</h3>
+                <p>To use Chrono you must register. We collect username, email address, encrypted password and optional profile data. These data are required to manage the account and fulfil the contract.</p>
+                <h3>c) Time tracking and work organisation</h3>
+                <p>Chrono processes working times, project assignments, correction requests, NFC card data as well as sick notes and vacation requests. Processing is necessary for contract fulfilment.</p>
+                <h3>d) Payroll module</h3>
+                <p>If the payroll module is used we process salary data, tax information and bank details. These data are treated confidentially.</p>
+                <h3>e) AI chatbot and knowledge base</h3>
+                <p>Requests to the chatbot are processed to deliver suitable answers and to improve the service.</p>
+                <h3>f) Contacting us</h3>
+                <p>Data transmitted via contact form or email (e.g. name, email, message content) are stored to process your enquiry.</p>
+                <h2>3. Cookies and Local Storage</h2>
+                <p>We use local storage to save preferences such as language or theme. This information is not transmitted to our servers.</p>
+                <h2>4. Disclosure of Data to Third Parties</h2>
+                <p>Data are only disclosed if required by law or necessary for contract fulfilment, e.g. to payment providers or after consent to Google Calendar. Data processing agreements exist with all service providers.</p>
+                <h2>5. Your Rights</h2>
+                <p>You have the right to access, rectify, delete or restrict processing of your data, the right to object, data portability and the right to lodge a complaint with a supervisory authority.</p>
+                <h2>6. Data Security</h2>
+                <p>We take technical and organisational measures to protect your data against loss or unauthorised access and continually improve these measures.</p>
+                <h2>7. Changes to this Privacy Policy</h2>
+                <p>We reserve the right to adjust this policy so that it always meets current legal requirements or to reflect changes to our services.</p>
+            `,
         },
         agbPage: {
-            title: "Terms of Service",
-            stand: "Updated May 2025",
-            scope: {
-                title: "1. Scope of Application",
-                content: "These General Terms and Conditions (GTC) apply to all contracts for the use of the SaaS services of Chrono-Logisch (hereinafter 'Provider') by the customer. Deviating terms and conditions of the customer are not recognized unless the provider expressly agrees to their validity in writing."
-            },
-            services: {
-                title: "2. Subject of Performance",
-                content1: "The provider makes the 'Chrono-Logisch' software available to the customer as a Software-as-a-Service (SaaS). The functional scope of the software is based on the current service description on the provider's website.",
-                content2: "The software enables digital time tracking, vacation management, and report generation. The provider guarantees a service availability of 99.5% on a monthly average. Planned maintenance work is excluded from this and will be announced in advance."
-            },
-            contract: {
-                title: "3. Conclusion of Contract",
-                content: "The contract is concluded upon acceptance of an offer from the provider by the customer or through the customer's registration on the website and subsequent confirmation by the provider."
-            },
-            rights: {
-                title: "4. Rights of Use",
-                content: "The customer receives a simple, non-transferable right to use the software for their own operational purposes for the duration of the contract. A transfer of the rights of use to third parties is not permitted."
-            },
-            obligations: {
-                title: "5. Customer's Obligations",
-                content: "The customer is responsible for securing their access data and must ensure that they are not used by unauthorized third parties. The customer is obliged not to misuse the services and to comply with all applicable laws."
-            },
-            liability: {
-                title: "6. Liability",
-                content: "We assume no liability for the content of external links. The operators of the linked pages are solely responsible for their content. The provider's liability for slight negligence is excluded, except in cases of breach of essential contractual obligations."
-            },
-            payment: {
-                title: "7. Payment Terms, Term, and Termination",
-                content1: "The fee for the use of the software is based on the package and payment interval (monthly or yearly) selected by the customer. Invoicing is done in advance for the respective billing period. One-time fees, such as the installation fee, are due with the first invoice.",
-                content2: "The contract is concluded for an indefinite period. With monthly payment, the contract can be terminated by either party at any time to the end of the current monthly billing period. With annual payment, the contract can be terminated at the end of the annual billing period with one month's notice. Without termination, the contract is automatically extended by the corresponding period. Termination must be in text form (e.g., by email)."
-            },
-            copyright: {
-                title: "7. Copyright",
-                content: "All content (texts, images, graphics) on this website and in the application is protected by copyright. Any use without express permission is prohibited."
-            },
-            finalProvisions: {
-                title: "8. Final Provisions",
-                content: "The law of the Swiss Confederation shall apply. The place of jurisdiction is the provider's registered office. Should individual provisions of these GTC be or become invalid, the validity of the remaining provisions shall remain unaffected."
-            }
+            title: "Terms and Conditions for Chrono",
+            content: `
+                <p><strong>Updated: 10 September 2025</strong></p>
+                <h2>1. Scope</h2>
+                <p>These terms and conditions govern the contractual relationship between Chrono and users of the "Chrono" SaaS application. Deviating conditions are not accepted unless expressly agreed by the provider.</p>
+                <h2>2. Services</h2>
+                <p>The provider offers software for time tracking, project management, vacation and absence planning and optionally payroll via the Internet. The scope depends on the selected package. The provider may modify functions as long as core functionality remains.</p>
+                <h2>3. Contract and Trial</h2>
+                <p>The contract is concluded through online registration and acceptance by the provider. Free trials do not automatically convert into paid subscriptions.</p>
+                <h2>4. Prices and Payment</h2>
+                <p>Fees are based on the current price list. Charges are due in advance for the chosen billing period. The provider may block access in case of payment default.</p>
+                <h2>5. Customer Obligations</h2>
+                <p>Customers must keep login data confidential and are responsible for all activities under their account. They must ensure that entered data do not violate third-party rights.</p>
+                <h2>6. Data Protection and Security</h2>
+                <p>The provider processes personal data solely for contract fulfilment in accordance with legal requirements. Further details are provided in the <a href="/datenschutz">privacy policy</a>.</p>
+                <h2>7. Availability and Maintenance</h2>
+                <p>The provider ensures customary availability and may perform planned maintenance, which will be announced where possible.</p>
+                <h2>8. Liability</h2>
+                <p>The provider is fully liable for intent or gross negligence and for injury to life, body or health. For slight negligence liability is limited to typical, foreseeable damages.</p>
+                <h2>9. Term and Termination</h2>
+                <p>The contract runs indefinitely and may be terminated by the customer at the end of the billing period. The provider may terminate with 30 days' notice.</p>
+                <h2>10. Final Provisions</h2>
+                <p>Swiss law applies. Place of jurisdiction is the provider's seat. Invalid provisions do not affect the validity of the remaining terms.</p>
+            `,
         },
         registrationPage: {
             pricingTitle: "Packages & Pricing",
@@ -1510,6 +1923,10 @@ const translations = {
         hourlyDashboard: {
             addEntryFirst: "Please add at least one correction entry.",
             userNotFound: "User not found, please log in again.",
+        },
+        percentageDashboard: {
+            title: "Percentage Dashboard",
+            workPercentageLabel: "Work %",
         },
     },
 };
