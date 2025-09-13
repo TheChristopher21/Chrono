@@ -224,7 +224,7 @@ const Navbar = () => {
                                     ) : (
                                         <>
                                             <li>
-                                                <Link to={isPercentage ? "/percentage-punch" : "/dashboard"}>
+                                                <Link to={(isAdmin || isSuperAdmin) ? "/admin/dashboard" : isPercentage ? "/percentage-punch" : "/dashboard"}>
                                                     {t('navbar.myDashboard','Mein Dashboard')}
                                                 </Link>
                                             </li>
