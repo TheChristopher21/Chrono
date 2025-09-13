@@ -16,6 +16,9 @@ public class UserService {
     public User getUserByUsername(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+        if (user.isDeleted()) {
+            throw new UserNotFoundException("User not found: " + username);
+        }
 
         // Sicherstellen, dass Null nicht vorkommt
         if (user.getTrackingBalanceInMinutes() == null) {

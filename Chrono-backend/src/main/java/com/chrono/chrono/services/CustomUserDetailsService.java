@@ -24,6 +24,9 @@ public class CustomUserDetailsService implements UserDetailsService {
         // Weitere Aufrufe innerhalb der Cache-TTL liefern dann den gecachten User.
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        if (user.isDeleted()) {
+            throw new UsernameNotFoundException("User not found");
+        }
         List<SimpleGrantedAuthority> authorities = (user.getRoles() != null && !user.getRoles().isEmpty())
                 ? user.getRoles().stream()
                 .map(role -> new SimpleGrantedAuthority(role.getRoleName()))

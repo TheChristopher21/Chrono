@@ -464,7 +464,7 @@ const AdminUserManagementPage = () => {
             <DeleteConfirmModal
                 visible={deleteConfirm.show}
                 title={t("userManagement.deleteConfirmTitle", "Benutzer löschen")}
-                message={t("userManagement.deleteConfirmMessage", "Möchten Sie diesen Benutzer wirklich löschen?")}
+                message={t("userManagement.deleteConfirmMessage", "Dieser Benutzer wird deaktiviert. Seine Daten bleiben bis zu einem Jahr gespeichert und werden danach endgültig gelöscht. Fortfahren?")}
                 userName={deleteConfirm.username}
                 onConfirm={confirmDelete}
                 onCancel={cancelDelete}

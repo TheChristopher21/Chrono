@@ -397,7 +397,7 @@ const translations = {
             // Neue Keys
             percentageTracking: "Prozentbasierte Zeiterfassung",
             deleteConfirmTitle: "Benutzer löschen",
-            deleteConfirmMessage: "Soll der Benutzer wirklich gelöscht werden? (Alle Daten werden gelöscht inkl. Zeiten!)",
+            deleteConfirmMessage: "Soll der Benutzer wirklich gelöscht werden? Der Benutzer wird deaktiviert, und seine Daten bleiben bis zu einem Jahr gespeichert, bevor sie endgültig gelöscht werden.",
             nfcProgramStart: "Programmierung gestartet. Bitte Karte auflegen...",
             programCardErrorTimeout: "Zeitüberschreitung beim Kartenprogrammieren.",
             deleteConfirmConfirm: "Ja, löschen",
@@ -1363,7 +1363,7 @@ const translations = {
 
             percentageTracking: "Percentage-based tracking",
             deleteConfirmTitle: "Delete User",
-            deleteConfirmMessage: "Do you really want to delete this user? (All data including times will be removed!)",
+            deleteConfirmMessage: "Do you really want to delete this user? The account will be disabled and its data retained for up to one year before permanent deletion.",
             nfcProgramStart: "Programming started. Please place the card...",
             programCardErrorTimeout: "Timeout while programming the card.",
             deleteConfirmConfirm: "Yes, delete",
