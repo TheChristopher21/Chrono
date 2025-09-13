@@ -73,15 +73,15 @@ public class AdminUserController {
 
         List<User> users;
         if (admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) && admin.getCompany() == null) {
-            users = userRepository.findAll(); // SUPERADMIN ohne Firma sieht alle User
+            users = userRepository.findByDeletedFalse(); // SUPERADMIN ohne Firma sieht alle nicht gelöschten User
         } else if (admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) && admin.getCompany() != null) {
             // SUPERADMIN with a company might see all users or just their company's users based on policy.
             // Assuming SUPERADMIN always sees all users regardless of their own company assignment for this example.
-            users = userRepository.findAll();
+            users = userRepository.findByDeletedFalse();
         }
         else { // Regular Admin
             Long companyId = admin.getCompany().getId();
-            users = userRepository.findByCompany_Id(companyId); // Regulärer Admin sieht User seiner Firma
+            users = userRepository.findByCompany_IdAndDeletedFalse(companyId); // Regulärer Admin sieht User seiner Firma
         }
 
 
@@ -513,19 +513,9 @@ public class AdminUserController {
             return ResponseEntity.status(403).body(Map.of("message", "Admin cannot delete themselves."));
         }
 
-        try {
-            // Deleting associated data.
-            vacationService.deleteVacationsByUser(userToDelete); //
-            correctionRequestRepository.deleteByUser(userToDelete); //
-            sickLeaveRepository.deleteByUser(userToDelete); // NEU: Krankmeldungen löschen
-            timeTrackingService.deleteTimeTrackingEntriesByUser(userToDelete);
-
-            userRepository.delete(userToDelete); //
-            logger.info("Admin {} deleted user: {}", adminUser.getUsername(), userToDelete.getUsername()); //
-            return ResponseEntity.ok(Map.of("message", "User deleted successfully")); //
-        } catch (Exception ex) {
-            logger.error("Error deleting user {} by admin {}: {}", userToDelete.getUsername(), adminUser.getUsername(), ex.getMessage(), ex); //
-            return ResponseEntity.status(500).body(Map.of("message", "An error occurred while deleting the user and their associated data.")); //
-        }
+        userToDelete.setDeleted(true);
+        userRepository.save(userToDelete);
+        logger.info("Admin {} marked user {} as deleted", adminUser.getUsername(), userToDelete.getUsername());
+        return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
 }

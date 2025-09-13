@@ -41,7 +41,7 @@ public class AdminTimeTrackingController {
         if (!isSuperAdmin && adminCompanyId == null) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin ist keiner Firma zugeordnet.");
         }
-        List<User> usersToList = isSuperAdmin ? userRepository.findAll() : userRepository.findByCompany_Id(adminCompanyId);
+        List<User> usersToList = isSuperAdmin ? userRepository.findByDeletedFalse() : userRepository.findByCompany_IdAndDeletedFalse(adminCompanyId);
         List<DailyTimeSummaryDTO> result = usersToList.stream()
                 .flatMap(u -> timeTrackingService.getUserHistory(u.getUsername()).stream())
                 .sorted(Comparator.comparing(DailyTimeSummaryDTO::getUsername).thenComparing(DailyTimeSummaryDTO::getDate).reversed())
@@ -113,8 +113,8 @@ public class AdminTimeTrackingController {
         LocalDate mondayDate = LocalDate.parse(monday);
         User adminUser = userRepository.findByUsername(principal.getName()).orElseThrow();
         List<User> usersToList = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ?
-                                 userRepository.findAll() : 
-                                 (adminUser.getCompany() != null ? userRepository.findByCompany_Id(adminUser.getCompany().getId()) : Collections.emptyList());
+                                 userRepository.findByDeletedFalse() :
+                                 (adminUser.getCompany() != null ? userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId()) : Collections.emptyList());
         if (usersToList.isEmpty() && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
              return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin ist keiner Firma zugeordnet oder Firma hat keine User.");
         }
@@ -132,9 +132,9 @@ public class AdminTimeTrackingController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> getAllCurrentTrackingBalances(Principal principal) {
         User adminUser = userRepository.findByUsername(principal.getName()).orElseThrow();
-         List<User> usersToList = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ?
-                                 userRepository.findAll() : 
-                                 (adminUser.getCompany() != null ? userRepository.findByCompany_Id(adminUser.getCompany().getId()) : Collections.emptyList());
+        List<User> usersToList = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ?
+                                 userRepository.findByDeletedFalse() :
+                                 (adminUser.getCompany() != null ? userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId()) : Collections.emptyList());
         if (usersToList.isEmpty() && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
              return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin ist keiner Firma zugeordnet oder Firma hat keine User.");
         }

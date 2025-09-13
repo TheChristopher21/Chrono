@@ -11,7 +11,7 @@ import { useTranslation } from '../../context/LanguageContext';
 function DeleteConfirmModal({
                                 visible,
                                 title = "Benutzer löschen",
-                                message = "Möchtest du diesen Benutzer wirklich löschen?",
+                                message = "Dieser Benutzer wird deaktiviert. Seine Daten bleiben bis zu einem Jahr gespeichert und werden danach endgültig gelöscht. Fortfahren?",
                                 userName = "",
                                 onConfirm,
                                 onCancel
