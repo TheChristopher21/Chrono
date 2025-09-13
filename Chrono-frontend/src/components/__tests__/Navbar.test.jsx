@@ -58,7 +58,9 @@ describe('Navbar', () => {
             { authToken: 'token', currentUser: { username: 'Admin', roles: ['ROLE_ADMIN'] }, logout: vi.fn() },
             '/dashboard'
         );
-        expect(screen.getByText(/Mein Dashboard/i)).toBeInTheDocument();
+        const dashboardLink = screen.getByRole('link', { name: /Mein Dashboard/i });
+        expect(dashboardLink).toBeInTheDocument();
+        expect(dashboardLink).toHaveAttribute('href', '/admin/dashboard');
         expect(screen.queryByText(/Admin-Start/i)).toBeNull();
     });
 
