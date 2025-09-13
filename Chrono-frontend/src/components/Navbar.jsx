@@ -228,7 +228,6 @@ const Navbar = () => {
                                                     {t('navbar.myDashboard','Mein Dashboard')}
                                                 </Link>
                                             </li>
-                                            <li><Link to="/payslips">{t('navbar.payslips','Abrechnungen')}</Link></li>
                                         </>
                                     )}
                                 </>
