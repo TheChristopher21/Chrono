@@ -1,19 +1,14 @@
 package com.chrono.chrono.controller;
 
-import com.chrono.chrono.dto.ProjectHierarchyNodeDTO;
 import com.chrono.chrono.dto.ProjectReportDTO;
-import com.chrono.chrono.entities.User;
 import com.chrono.chrono.services.ReportService;
-import com.chrono.chrono.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
-import java.security.Principal;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/report")
@@ -21,32 +16,6 @@ public class ReportController {
 
     @Autowired
     private ReportService reportService;
-
-    @Autowired
-    private UserService userService;
-
-    private boolean featureEnabled(User user) {
-        return user != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled());
-    }
-
-    @GetMapping("/analytics/projects")
-    public ResponseEntity<List<ProjectHierarchyNodeDTO>> projectAnalytics(
-            @RequestParam(required = false) String startDate,
-            @RequestParam(required = false) String endDate,
-            Principal principal
-    ) {
-        if (principal == null) {
-            return ResponseEntity.status(401).build();
-        }
-        User user = userService.getUserByUsername(principal.getName());
-        if (!featureEnabled(user)) {
-            return ResponseEntity.status(403).build();
-        }
-        LocalDate start = startDate != null && !startDate.isBlank() ? LocalDate.parse(startDate) : null;
-        LocalDate end = endDate != null && !endDate.isBlank() ? LocalDate.parse(endDate) : null;
-        List<ProjectHierarchyNodeDTO> analytics = reportService.getProjectAnalytics(user.getCompany().getId(), start, end);
-        return ResponseEntity.ok(analytics);
-    }
 
     @GetMapping("/project/{projectId}")
     public ResponseEntity<ProjectReportDTO> projectReport(
