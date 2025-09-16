@@ -49,6 +49,7 @@ const PercentageWeekOverview = ({
                                 }) => {
     const { currentUser } = useAuth();
     const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
+    const isCustomerTrackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(monday, i));
 
     function handleWeekJump(e) {
@@ -68,7 +69,7 @@ const PercentageWeekOverview = ({
 
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
-                {(userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled) && (
+                {isCustomerTrackingEnabled && (
                     <div className="customer-project-selectors">
                         <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                             <option value="">{t('noCustomer')}</option>
@@ -142,11 +143,37 @@ const PercentageWeekOverview = ({
                     if (holidayName) dayClass += ' holiday-day';
 
                     const dailyWorkedMins = summary?.workedMinutes || 0;
+                    const projectNames = Array.from(
+                        new Set(
+                            (summary?.entries || [])
+                                .map(entry => entry.projectName || (projects || []).find(p => String(p.id) === String(entry.projectId))?.name || '')
+                                .filter(Boolean)
+                        )
+                    );
+                    const hasProjects = projectNames.length > 0;
+                    const showProjectBadge = isCustomerTrackingEnabled && hasProjects;
+                    const projectBadgeBaseLabel = t('assignCustomer.projectTag', 'Projektzeit');
+                    const projectBadgeLabel = projectNames.length === 1
+                        ? projectNames[0]
+                        : `${projectBadgeBaseLabel}${projectNames.length > 1 ? ` (${projectNames.length})` : ''}`;
+                    const projectBadgeTitle = projectNames.join(', ');
 
                     return (
                         <div key={isoDate} className={dayClass}>
                             <div className="day-card-header">
-                                <h3>{dayName}, {formatDate(dayObj)}</h3>
+                                <div className="day-card-header-main">
+                                    <h3>{dayName}, {formatDate(dayObj)}</h3>
+                                    {showProjectBadge && (
+                                        <div className="day-card-badges">
+                                            <span
+                                                className="day-card-badge project-badge"
+                                                title={projectBadgeTitle || undefined}
+                                            >
+                                                {projectBadgeLabel}
+                                            </span>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                             <div className="day-card-body">
                                 {holidayName ? (

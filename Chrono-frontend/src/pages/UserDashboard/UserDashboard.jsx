@@ -528,6 +528,21 @@ function UserDashboard() {
                             const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
                             const holidayName = holidaysForUserCanton.data?.[isoDate];
 
+                            const projectNames = Array.from(
+                                new Set(
+                                    (summary?.entries || [])
+                                        .map(entry => entry.projectName || (projects || []).find(p => String(p.id) === String(entry.projectId))?.name || '')
+                                        .filter(Boolean)
+                                )
+                            );
+                            const hasProjects = projectNames.length > 0;
+                            const showProjectBadge = isCustomerTrackingEnabled && hasProjects;
+                            const projectBadgeBaseLabel = t('assignCustomer.projectTag', 'Projektzeit');
+                            const projectBadgeLabel = projectNames.length === 1
+                                ? projectNames[0]
+                                : `${projectBadgeBaseLabel}${projectNames.length > 1 ? ` (${projectNames.length})` : ''}`;
+                            const projectBadgeTitle = projectNames.join(', ');
+
                             let dayClass = 'week-day-card';
                             if (vacationToday) dayClass += ' vacation-day';
                             if (sickToday) dayClass += ' sick-day';
@@ -549,10 +564,24 @@ function UserDashboard() {
                             return (
                                 <div key={isoDate} className={dayClass}>
                                     <div className="week-day-header day-card-header">
-                                        <h4>{dayName}, {formattedDisplayDate}</h4>
-                                        {holidayName && <div className="day-card-badge holiday-badge">{holidayName}</div>}
-                                        {vacationToday && <div className="day-card-badge vacation-badge">{t('onVacation', 'Im Urlaub')}</div>}
-                                        {sickToday && <div className="day-card-badge sick-badge">{t('sickLeave.sick', 'Krank')}</div>}
+                                        <div className="day-card-header-main">
+                                            <h4>{dayName}, {formattedDisplayDate}</h4>
+                                            {(holidayName || vacationToday || sickToday || showProjectBadge) && (
+                                                <div className="day-card-badges">
+                                                    {holidayName && <span className="day-card-badge holiday-badge">{holidayName}</span>}
+                                                    {vacationToday && <span className="day-card-badge vacation-badge">{t('onVacation', 'Im Urlaub')}</span>}
+                                                    {sickToday && <span className="day-card-badge sick-badge">{t('sickLeave.sick', 'Krank')}</span>}
+                                                    {showProjectBadge && (
+                                                        <span
+                                                            className="day-card-badge project-badge"
+                                                            title={projectBadgeTitle || undefined}
+                                                        >
+                                                            {projectBadgeLabel}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
                                         {isCustomerTrackingEnabled && summary && summary.entries?.length > 0 && (
                                             <div className="day-card-actions">
                                                 <button

@@ -538,6 +538,7 @@ const translations = {
         noTask: "Keine Aufgabe",
         assignCustomer: {
             editButton: "Kunden & Zeiten bearbeiten",
+            projectTag: "Projektzeit",
         },
         correction: {
             desiredChange: "Gewünschte Änderung",
@@ -1505,6 +1506,7 @@ const translations = {
         noTask: "No task",
         assignCustomer: {
             editButton: "Edit customers & times",
+            projectTag: "Project time",
         },
         correction: {
             desiredChange: "Desired Change",

@@ -260,9 +260,20 @@
 .percentage-dashboard.scoped-dashboard .week-day-card:hover { border-color: color-mix(in srgb, var(--ud-c-primary) 50%, var(--ud-c-border)); transform: translateY(-4px); box-shadow: var(--ud-shadow-hover); }
 
 .percentage-dashboard.scoped-dashboard .day-card-header,
-.percentage-dashboard.scoped-dashboard .week-day-header { margin-bottom:.6rem; display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
+.percentage-dashboard.scoped-dashboard .week-day-header {
+    margin-bottom:.6rem;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:.75rem;
+}
 .percentage-dashboard.scoped-dashboard .day-card-header h3,
 .percentage-dashboard.scoped-dashboard .week-day-header h4 { margin:0; font-size: var(--ud-fz-lg); font-weight: 720; }
+.percentage-dashboard.scoped-dashboard .day-card-header-main { display:flex; flex-direction:column; gap:.35rem; flex:1 1 60%; min-width:0; }
+.percentage-dashboard.scoped-dashboard .day-card-badges { display:flex; flex-wrap:wrap; gap:.4rem; }
+.percentage-dashboard.scoped-dashboard .day-card-actions { display:flex; flex:0 0 auto; }
+.percentage-dashboard.scoped-dashboard .day-card-actions .button-primary-outline { white-space:nowrap; }
 
 /* Entry list */
 .percentage-dashboard.scoped-dashboard .time-entry-list { list-style:none; margin:.55rem 0 0 0; padding:0; font-size: var(--ud-fz-sm); }
@@ -289,10 +300,27 @@
 .percentage-dashboard.scoped-dashboard .note-buttons { display:flex; gap:.5rem; }
 
 /* Day badges */
-.day-card-badge { position:absolute; top:10px; right:10px; font-size:.75rem; padding:.28rem .55rem; border-radius:999px; border:1px solid currentColor; opacity:.96; backdrop-filter: blur(4px); }
+.day-card-badge {
+    position:relative;
+    top:auto;
+    right:auto;
+    font-size:.75rem;
+    padding:.28rem .55rem;
+    border-radius:999px;
+    border:1px solid currentColor;
+    opacity:.96;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    white-space:nowrap;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
 .holiday-indicator { background: color-mix(in srgb, var(--ud-c-warn) 12%, transparent); color: var(--ud-c-warn); }
 .vacation-indicator { background: color-mix(in srgb, var(--ud-c-primary) 12%, transparent); color: var(--ud-c-primary); }
 .sick-leave-indicator { background: color-mix(in srgb, var(--ud-c-error) 12%, transparent); color: var(--ud-c-error); }
+.project-badge { background: color-mix(in srgb, var(--ud-c-success) 16%, transparent); color: var(--ud-c-success); }
+[data-theme="dark"] .project-badge { background: color-mix(in srgb, var(--ud-c-success) 34%, transparent); }
 
 /* Correction actions row */
 .percentage-dashboard.scoped-dashboard .correction-button-row { margin-top:auto; padding-top:.7rem; border-top:1px solid var(--ud-c-line); display:grid; gap:.5rem; }
