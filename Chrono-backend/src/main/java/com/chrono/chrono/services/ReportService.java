@@ -1,9 +1,10 @@
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
-import com.chrono.chrono.dto.TimeTrackingEntryDTO;
+import com.chrono.chrono.dto.ProjectHierarchyNodeDTO;
 import com.chrono.chrono.dto.ProjectReportDTO;
 import com.chrono.chrono.dto.TaskReportDTO;
+import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.Task;
@@ -28,10 +29,12 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.*;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 @Service
@@ -51,6 +54,88 @@ public class ReportService {
 
     private static final DateTimeFormatter DATE_FORMATTER_REPORT = DateTimeFormatter.ofPattern("EEEE, dd.MM.yyyy", Locale.GERMAN);
     private static final DateTimeFormatter TIME_FORMATTER_REPORT = DateTimeFormatter.ofPattern("HH:mm");
+
+    public List<ProjectHierarchyNodeDTO> getProjectAnalytics(Long companyId, LocalDate start, LocalDate end) {
+        if (companyId == null) {
+            return java.util.Collections.emptyList();
+        }
+        LocalDate startDate = start != null ? start : LocalDate.now().minusMonths(1);
+        LocalDate endDate = end != null ? end : LocalDate.now();
+        LocalDateTime startDt = startDate.atStartOfDay();
+        LocalDateTime endDt = endDate.plusDays(1).atStartOfDay();
+
+        List<Project> projects = projectRepository.findByCustomerCompanyIdOrderByNameAsc(companyId);
+        Map<Long, ProjectHierarchyNodeDTO> nodeMap = new java.util.LinkedHashMap<>();
+        List<ProjectHierarchyNodeDTO> roots = new java.util.ArrayList<>();
+
+        for (Project project : projects) {
+            String customerName = project.getCustomer() != null ? project.getCustomer().getName() : null;
+            Long parentId = project.getParent() != null ? project.getParent().getId() : null;
+            ProjectHierarchyNodeDTO node = new ProjectHierarchyNodeDTO(
+                    project.getId(),
+                    project.getName(),
+                    customerName,
+                    parentId,
+                    project.getBudgetMinutes(),
+                    project.getHourlyRate()
+            );
+            nodeMap.put(project.getId(), node);
+        }
+
+        for (Project project : projects) {
+            ProjectHierarchyNodeDTO node = nodeMap.get(project.getId());
+            Project parent = project.getParent();
+            if (parent != null && nodeMap.containsKey(parent.getId())) {
+                nodeMap.get(parent.getId()).addChild(node);
+            } else {
+                roots.add(node);
+            }
+        }
+
+        Map<Long, Long> totalDurations = timeTrackingEntryRepository.sumDurationByProject(companyId, startDt, endDt)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> row[1] == null ? 0L : ((Number) row[1]).longValue()
+                ));
+
+        Map<Long, Long> billableDurations = timeTrackingEntryRepository.sumBillableDurationByProject(companyId, startDt, endDt)
+                .stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> row[1] == null ? 0L : ((Number) row[1]).longValue()
+                ));
+
+        for (ProjectHierarchyNodeDTO root : roots) {
+            aggregateDurations(root, totalDurations, billableDurations);
+        }
+
+        return roots;
+    }
+
+    private long aggregateDurations(ProjectHierarchyNodeDTO node, Map<Long, Long> totalDurations,
+                                    Map<Long, Long> billableDurations) {
+        if (node == null) {
+            return 0L;
+        }
+        long selfTotal = totalDurations.getOrDefault(node.getId(), 0L);
+        long selfBillable = billableDurations.getOrDefault(node.getId(), 0L);
+        long aggregatedTotal = selfTotal;
+        long aggregatedBillable = selfBillable;
+
+        if (node.getChildren() != null) {
+            for (ProjectHierarchyNodeDTO child : node.getChildren()) {
+                long childTotal = aggregateDurations(child, totalDurations, billableDurations);
+                aggregatedTotal += childTotal;
+                aggregatedBillable += child.getBillableMinutes() != null ? child.getBillableMinutes() : 0L;
+            }
+        }
+
+        node.setTotalMinutes(aggregatedTotal);
+        node.setBillableMinutes(aggregatedBillable);
+        node.updateUtilization();
+        return aggregatedTotal;
+    }
 
     public ProjectReportDTO generateProjectReport(Long projectId, LocalDate start, LocalDate end) {
         Project project = projectRepository.findById(projectId)
