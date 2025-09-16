@@ -82,6 +82,7 @@ function UserDashboard() {
     const [editingNote, setEditingNote] = useState(null);
     const [noteContent, setNoteContent] = useState('');
     const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
+    const isCustomerTrackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
 
 
     const defaultExpectedHours = userProfile?.dailyWorkHours ?? 8.5;
@@ -135,8 +136,7 @@ function UserDashboard() {
     }, [loadProfileAndInitialData]);
 
     useEffect(() => {
-        const trackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
-        if (trackingEnabled) {
+        if (isCustomerTrackingEnabled) {
             fetchCustomers();
             api.get('/api/customers/recent')
                 .then(res => setRecentCustomers(Array.isArray(res.data) ? res.data : []))
@@ -148,7 +148,7 @@ function UserDashboard() {
             setRecentCustomers([]);
             setProjects([]);
         }
-    }, [userProfile, currentUser, fetchCustomers]);
+    }, [userProfile, currentUser, fetchCustomers, isCustomerTrackingEnabled]);
 
     useEffect(() => {
         if (selectedProjectId) {
@@ -452,7 +452,7 @@ function UserDashboard() {
 
                     <div className="punch-section">
                         <h4>{t("manualPunchTitle")}</h4>
-                        {(userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled) && (
+                        {isCustomerTrackingEnabled && (
                             <>
                                 <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                                     <option value="">{t('noCustomer')}</option>
@@ -553,6 +553,16 @@ function UserDashboard() {
                                         {holidayName && <div className="day-card-badge holiday-badge">{holidayName}</div>}
                                         {vacationToday && <div className="day-card-badge vacation-badge">{t('onVacation', 'Im Urlaub')}</div>}
                                         {sickToday && <div className="day-card-badge sick-badge">{t('sickLeave.sick', 'Krank')}</div>}
+                                        {isCustomerTrackingEnabled && summary && summary.entries?.length > 0 && (
+                                            <div className="day-card-actions">
+                                                <button
+                                                    onClick={() => setModalInfo({ isVisible: true, day: dayObj, summary })}
+                                                    className="button-primary-outline"
+                                                >
+                                                    {t('assignCustomer.editButton', 'Kunden & Zeiten bearbeiten')}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="week-day-content day-card-content">
