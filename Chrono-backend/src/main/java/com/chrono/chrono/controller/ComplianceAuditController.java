@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.dto.ComplianceAuditLogDTO;
 import com.chrono.chrono.entities.ComplianceAuditLog;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.services.ComplianceAuditService;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/api/audit")
@@ -25,8 +28,9 @@ public class ComplianceAuditController {
     private UserService userService;
 
     @GetMapping
-    public ResponseEntity<List<ComplianceAuditLog>> getRecent(@RequestParam(name = "limit", defaultValue = "25") int limit,
-                                                              Principal principal) {
+    public ResponseEntity<List<ComplianceAuditLogDTO>> getRecent(@RequestParam(name = "limit", defaultValue = "25") int limit,
+                                                                 Principal principal) {
+
         if (principal == null) {
             return ResponseEntity.status(401).build();
         }
@@ -40,6 +44,10 @@ public class ComplianceAuditController {
             return ResponseEntity.status(403).build();
         }
         List<ComplianceAuditLog> logs = complianceAuditService.getRecentLogs(user.getCompany().getId(), limit);
-        return ResponseEntity.ok(logs);
+        List<ComplianceAuditLogDTO> payload = logs.stream()
+                .map(ComplianceAuditLogDTO::fromEntity)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(payload);
+
     }
 }
