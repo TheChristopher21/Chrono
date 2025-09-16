@@ -51,6 +51,8 @@ const HourlyWeekOverview = ({
     const [noteContent, setNoteContent] = useState('');   // Speichert den Inhalt der Notiz während der Bearbeitung
     const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
 
+    const isCustomerTrackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
+
 
     // Initialize customer selections and ranges from existing entries
 
@@ -119,7 +121,7 @@ const HourlyWeekOverview = ({
             {punchMessage && <div className="punch-message">{punchMessage}</div>}
             <div className="punch-section">
                 <h4>{t("manualPunchTitle", "Manuelles Stempeln")}</h4>
-                {(userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled) && (
+                {isCustomerTrackingEnabled && (
                     <>
                         <select value={selectedCustomerId} onChange={e => setSelectedCustomerId(e.target.value)}>
                             <option value="">{t('noCustomer')}</option>
@@ -188,15 +190,44 @@ const HourlyWeekOverview = ({
                     const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
                     const formattedDisplayDate = formatDate(dayObj);
 
+                    const projectNames = Array.from(
+                        new Set(
+                            (summary?.entries || [])
+                                .map(entry => entry.projectName || (projects || []).find(p => String(p.id) === String(entry.projectId))?.name || '')
+                                .filter(Boolean)
+                        )
+                    );
+                    const hasProjects = projectNames.length > 0;
+                    const showProjectBadge = isCustomerTrackingEnabled && hasProjects;
+                    const projectBadgeBaseLabel = t('assignCustomer.projectTag', 'Projektzeit');
+                    const projectBadgeLabel = projectNames.length === 1
+                        ? projectNames[0]
+                        : `${projectBadgeBaseLabel}${projectNames.length > 1 ? ` (${projectNames.length})` : ''}`;
+                    const projectBadgeTitle = projectNames.join(', ');
+
                     const dayClasses = `week-day-card day-card ${summary?.needsCorrection ? 'needs-correction-highlight' : ''} ${vacationToday ? 'vacation-day' : ''}`;
 
                     return (
                         <div key={isoDate} className={dayClasses}>
                         <div className="week-day-header day-card-header">
-                                <h4>{dayName}, {formattedDisplayDate}</h4>
-                                {vacationToday && <div className="day-card-badge vacation-badge">{t('onVacation', 'Im Urlaub')}</div>}
+                                <div className="day-card-header-main">
+                                    <h4>{dayName}, {formattedDisplayDate}</h4>
+                                    {(vacationToday || showProjectBadge) && (
+                                        <div className="day-card-badges">
+                                            {vacationToday && <span className="day-card-badge vacation-badge">{t('onVacation', 'Im Urlaub')}</span>}
+                                            {showProjectBadge && (
+                                                <span
+                                                    className="day-card-badge project-badge"
+                                                    title={projectBadgeTitle || undefined}
+                                                >
+                                                    {projectBadgeLabel}
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
 
-                                {summary && summary.entries.length > 0 && (
+                                {isCustomerTrackingEnabled && summary?.entries?.length > 0 && (
                                     <div className="day-card-actions">
                                         <button onClick={() => setModalInfo({ isVisible: true, day: dayObj, summary })} className="button-primary-outline">
                                             {t('assignCustomer.editButton', 'Kunden & Zeiten bearbeiten')}

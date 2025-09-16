@@ -280,13 +280,42 @@
 .hourly-dashboard.scoped-dashboard .week-day-card:hover { border-color: color-mix(in srgb, var(--ud-c-primary) 50%, var(--ud-c-border)); transform: translateY(-4px); box-shadow: var(--ud-shadow-hover); }
 
 .hourly-dashboard.scoped-dashboard .day-card-header,
-.hourly-dashboard.scoped-dashboard .week-day-header { margin-bottom:.6rem; display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
+.hourly-dashboard.scoped-dashboard .week-day-header {
+    margin-bottom:.6rem;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:.75rem;
+}
 .hourly-dashboard.scoped-dashboard .day-card-header h3,
 .hourly-dashboard.scoped-dashboard .week-day-header h4 { margin:0; font-size: var(--ud-fz-lg); font-weight: 720; }
 
+.hourly-dashboard.scoped-dashboard .day-card-header-main { display:flex; flex-direction:column; gap:.35rem; flex:1 1 60%; min-width:0; }
+.hourly-dashboard.scoped-dashboard .day-card-badges { display:flex; flex-wrap:wrap; gap:.4rem; }
+.hourly-dashboard.scoped-dashboard .day-card-actions { display:flex; flex:0 0 auto; }
+.hourly-dashboard.scoped-dashboard .day-card-actions .button-primary-outline { white-space:nowrap; }
+
 /* Badges / Indicators */
-.hourly-dashboard.scoped-dashboard .day-card-badge { position:absolute; top:10px; right:10px; font-size:.75rem; padding:.28rem .55rem; border-radius:999px; border:1px solid currentColor; opacity:.96; backdrop-filter: blur(4px); }
+.hourly-dashboard.scoped-dashboard .day-card-badge {
+    position:relative;
+    top:auto;
+    right:auto;
+    font-size:.75rem;
+    padding:.28rem .55rem;
+    border-radius:999px;
+    border:1px solid currentColor;
+    opacity:.96;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    white-space:nowrap;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
 .hourly-dashboard.scoped-dashboard .vacation-badge { background: color-mix(in srgb, var(--ud-c-primary) 12%, transparent); color: var(--ud-c-primary); }
+.hourly-dashboard.scoped-dashboard .project-badge { background: color-mix(in srgb, var(--ud-c-success) 16%, transparent); color: var(--ud-c-success); }
+[data-theme="dark"] .hourly-dashboard.scoped-dashboard .project-badge { background: color-mix(in srgb, var(--ud-c-success) 34%, transparent); }
 .hourly-dashboard.scoped-dashboard .vacation-indicator { background: color-mix(in srgb, var(--ud-c-primary) 8%, transparent); color: var(--ud-c-primary); padding:.2rem .5rem; border-radius: 999px; display:inline-block; }
 
 /* Entry list */

@@ -272,14 +272,43 @@
 .user-dashboard.scoped-dashboard .week-day-card::before { content:""; position:absolute; inset:0; background: radial-gradient(400px 160px at 10% 0%, rgba(var(--ud-c-primary-rgb),.05), transparent 60%); pointer-events:none; }
 .user-dashboard.scoped-dashboard .week-day-card:hover { border-color: color-mix(in srgb, var(--ud-c-primary) 50%, var(--ud-c-border)); transform: translateY(-4px); box-shadow: var(--ud-shadow-hover); }
 
-.user-dashboard.scoped-dashboard .week-day-header { margin-bottom:.6rem; display:flex; align-items:center; justify-content:space-between; gap:.6rem; }
+.user-dashboard.scoped-dashboard .week-day-header {
+    margin-bottom:.6rem;
+    display:flex;
+    flex-wrap:wrap;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:.75rem;
+}
 .user-dashboard.scoped-dashboard .week-day-header h4 { margin:0; font-size: var(--ud-fz-lg); font-weight: 720; }
 
+.user-dashboard.scoped-dashboard .day-card-header-main { display:flex; flex-direction:column; gap:.35rem; flex:1 1 60%; min-width:0; }
+.user-dashboard.scoped-dashboard .day-card-badges { display:flex; flex-wrap:wrap; gap:.4rem; }
+.user-dashboard.scoped-dashboard .day-card-actions { display:flex; flex:0 0 auto; }
+.user-dashboard.scoped-dashboard .day-card-actions .button-primary-outline { white-space:nowrap; }
+
 /* Status badges */
-.user-dashboard.scoped-dashboard .day-card-badge { position:absolute; top:10px; right:10px; font-size:.75rem; padding:.28rem .55rem; border-radius:999px; border:1px solid currentColor; opacity:.96; backdrop-filter: blur(4px); }
+.user-dashboard.scoped-dashboard .day-card-badge {
+    position:relative;
+    top:auto;
+    right:auto;
+    font-size:.75rem;
+    padding:.28rem .55rem;
+    border-radius:999px;
+    border:1px solid currentColor;
+    opacity:.96;
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    white-space:nowrap;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+}
 .user-dashboard.scoped-dashboard .holiday-badge { background: color-mix(in srgb, var(--ud-c-warn) 12%, transparent); color: var(--ud-c-warn); }
 .user-dashboard.scoped-dashboard .vacation-badge { background: color-mix(in srgb, var(--ud-c-primary) 12%, transparent); color: var(--ud-c-primary); }
 .user-dashboard.scoped-dashboard .sick-badge { background: color-mix(in srgb, var(--ud-c-error) 12%, transparent); color: var(--ud-c-error); }
+.user-dashboard.scoped-dashboard .project-badge { background: color-mix(in srgb, var(--ud-c-success) 16%, transparent); color: var(--ud-c-success); }
+[data-theme="dark"] .user-dashboard.scoped-dashboard .project-badge { background: color-mix(in srgb, var(--ud-c-success) 34%, transparent); }
 
 /* Day highlighting */
 .user-dashboard.scoped-dashboard .holiday-day { background: color-mix(in srgb, var(--ud-c-warn) 6%, var(--ud-c-card)); }
