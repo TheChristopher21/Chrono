@@ -1,7 +1,12 @@
 package com.chrono.chrono.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "projects")
@@ -21,6 +26,18 @@ public class Project {
     @Column(name = "budget_minutes")
     private Integer budgetMinutes;
 
+    @Column(name = "hourly_rate", precision = 10, scale = 2)
+    private BigDecimal hourlyRate;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    @JsonIgnoreProperties({"customer", "parent", "children", "hibernateLazyInitializer", "handler"})
+    private Project parent;
+
+    @OneToMany(mappedBy = "parent", fetch = FetchType.LAZY)
+    @JsonIgnore
+    private List<Project> children = new ArrayList<>();
+
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 
@@ -32,4 +49,13 @@ public class Project {
 
     public Integer getBudgetMinutes() { return budgetMinutes; }
     public void setBudgetMinutes(Integer budgetMinutes) { this.budgetMinutes = budgetMinutes; }
+
+    public BigDecimal getHourlyRate() { return hourlyRate; }
+    public void setHourlyRate(BigDecimal hourlyRate) { this.hourlyRate = hourlyRate; }
+
+    public Project getParent() { return parent; }
+    public void setParent(Project parent) { this.parent = parent; }
+
+    public List<Project> getChildren() { return children; }
+    public void setChildren(List<Project> children) { this.children = children; }
 }
