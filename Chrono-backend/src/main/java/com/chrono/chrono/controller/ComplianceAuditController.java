@@ -16,6 +16,7 @@ import java.security.Principal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+
 @RestController
 @RequestMapping("/api/audit")
 public class ComplianceAuditController {
@@ -29,6 +30,7 @@ public class ComplianceAuditController {
     @GetMapping
     public ResponseEntity<List<ComplianceAuditLogDTO>> getRecent(@RequestParam(name = "limit", defaultValue = "25") int limit,
                                                                  Principal principal) {
+
         if (principal == null) {
             return ResponseEntity.status(401).build();
         }
@@ -46,5 +48,6 @@ public class ComplianceAuditController {
                 .map(ComplianceAuditLogDTO::fromEntity)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(payload);
+
     }
 }
