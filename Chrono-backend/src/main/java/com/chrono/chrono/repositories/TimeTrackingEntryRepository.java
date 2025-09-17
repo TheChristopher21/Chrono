@@ -51,22 +51,14 @@ public interface TimeTrackingEntryRepository extends JpaRepository<TimeTrackingE
             LocalDateTime endDateTime
     );
 
-    @Query("SELECT t.project.id, SUM(COALESCE(t.durationMinutes, 0)) FROM TimeTrackingEntry t " +
-            "WHERE t.project IS NOT NULL AND t.project.customer.company.id = :companyId " +
-            "AND t.durationMinutes IS NOT NULL AND t.entryTimestamp >= :start AND t.entryTimestamp < :end " +
-            "GROUP BY t.project.id")
-    List<Object[]> sumDurationByProject(@Param("companyId") Long companyId,
-                                         @Param("start") LocalDateTime start,
-                                         @Param("end") LocalDateTime end);
-
-    @Query("SELECT t.project.id, SUM(COALESCE(t.durationMinutes, 0)) FROM TimeTrackingEntry t " +
-            "WHERE t.project IS NOT NULL AND t.task IS NOT NULL AND t.task.billable = TRUE " +
-            "AND t.project.customer.company.id = :companyId " +
-            "AND t.durationMinutes IS NOT NULL AND t.entryTimestamp >= :start AND t.entryTimestamp < :end " +
-            "GROUP BY t.project.id")
-    List<Object[]> sumBillableDurationByProject(@Param("companyId") Long companyId,
-                                                @Param("start") LocalDateTime start,
-                                                @Param("end") LocalDateTime end);
+    @Query("SELECT t FROM TimeTrackingEntry t " +
+            "WHERE t.user.company.id = :companyId " +
+            "AND t.entryTimestamp >= :start AND t.entryTimestamp < :end " +
+            "ORDER BY t.user.id, t.entryTimestamp ASC")
+    List<TimeTrackingEntry> findByCompanyIdAndEntryTimestampBetween(
+            @Param("companyId") Long companyId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end);
 
     List<TimeTrackingEntry> findByProjectIdInAndEntryTimestampBetween(List<Long> projectIds,
                                                                      LocalDateTime startDateTime,
