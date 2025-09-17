@@ -92,25 +92,79 @@ public class ReportService {
             }
         }
 
-        Map<Long, Long> totalDurations = timeTrackingEntryRepository.sumDurationByProject(companyId, startDt, endDt)
-                .stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> row[1] == null ? 0L : ((Number) row[1]).longValue()
-                ));
+        List<TimeTrackingEntry> relevantEntries = timeTrackingEntryRepository
+                .findByCompanyIdAndEntryTimestampBetween(companyId, startDt, endDt);
 
-        Map<Long, Long> billableDurations = timeTrackingEntryRepository.sumBillableDurationByProject(companyId, startDt, endDt)
-                .stream()
-                .collect(Collectors.toMap(
-                        row -> (Long) row[0],
-                        row -> row[1] == null ? 0L : ((Number) row[1]).longValue()
-                ));
+        Map<Long, Long> totalDurations = new java.util.HashMap<>();
+        Map<Long, Long> billableDurations = new java.util.HashMap<>();
+        Map<Long, TimeTrackingEntry> openStartByUser = new java.util.HashMap<>();
+
+        for (TimeTrackingEntry entry : relevantEntries) {
+            if (entry == null || entry.getUser() == null || entry.getUser().getId() == null) {
+                continue;
+            }
+            Long userId = entry.getUser().getId();
+
+            if (entry.getPunchType() == TimeTrackingEntry.PunchType.START) {
+                openStartByUser.put(userId, entry);
+                continue;
+            }
+
+            if (entry.getPunchType() != TimeTrackingEntry.PunchType.ENDE) {
+                continue;
+            }
+
+            TimeTrackingEntry startEntry = openStartByUser.remove(userId);
+
+            Project project = resolveProject(entry, startEntry);
+            if (project == null || project.getId() == null) {
+                continue;
+            }
+
+            Integer durationMinutes = entry.getDurationMinutes();
+            if (durationMinutes == null && startEntry != null && startEntry.getEntryTimestamp() != null
+                    && entry.getEntryTimestamp() != null) {
+                durationMinutes = (int) java.time.Duration.between(
+                        startEntry.getEntryTimestamp(),
+                        entry.getEntryTimestamp()
+                ).toMinutes();
+            }
+            if (durationMinutes == null || durationMinutes <= 0) {
+                continue;
+            }
+
+            totalDurations.merge(project.getId(), durationMinutes.longValue(), Long::sum);
+
+            com.chrono.chrono.entities.Task relevantTask = entry.getTask() != null
+                    ? entry.getTask()
+                    : (startEntry != null ? startEntry.getTask() : null);
+            if (relevantTask != null && Boolean.TRUE.equals(relevantTask.getBillable())) {
+                billableDurations.merge(project.getId(), durationMinutes.longValue(), Long::sum);
+            }
+        }
 
         for (ProjectHierarchyNodeDTO root : roots) {
             aggregateDurations(root, totalDurations, billableDurations);
         }
 
         return roots;
+    }
+
+    private Project resolveProject(TimeTrackingEntry endEntry, TimeTrackingEntry startEntry) {
+        Project project = null;
+        if (endEntry != null) {
+            project = endEntry.getProject();
+            if (project == null && endEntry.getTask() != null) {
+                project = endEntry.getTask().getProject();
+            }
+        }
+        if (project == null && startEntry != null) {
+            project = startEntry.getProject();
+            if (project == null && startEntry.getTask() != null) {
+                project = startEntry.getTask().getProject();
+            }
+        }
+        return project;
     }
 
     private long aggregateDurations(ProjectHierarchyNodeDTO node, Map<Long, Long> totalDurations,

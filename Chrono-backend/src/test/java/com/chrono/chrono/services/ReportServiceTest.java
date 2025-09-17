@@ -4,6 +4,9 @@ import com.chrono.chrono.dto.ProjectHierarchyNodeDTO;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.Project;
+import com.chrono.chrono.entities.Task;
+import com.chrono.chrono.entities.TimeTrackingEntry;
+import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.ProjectRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
@@ -14,7 +17,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -66,11 +71,59 @@ class ReportServiceTest {
         when(projectRepository.findByCustomerCompanyIdOrderByNameAsc(companyId))
                 .thenReturn(List.of(root, child));
 
-        when(timeTrackingEntryRepository.sumDurationByProject(eq(companyId), any(), any()))
-                .thenReturn(List.of(new Object[]{1L, 300L}, new Object[]{2L, 90L}));
+        User user = new User();
+        user.setId(42L);
 
-        when(timeTrackingEntryRepository.sumBillableDurationByProject(eq(companyId), any(), any()))
-                .thenReturn(List.of(new Object[]{1L, 200L}, new Object[]{2L, 60L}));
+        Task billableTask = new Task();
+        billableTask.setBillable(true);
+        Task nonBillableTask = new Task();
+        nonBillableTask.setBillable(false);
+
+        LocalDateTime base = LocalDateTime.of(2024, 1, 5, 8, 0);
+
+        TimeTrackingEntry rootStartBillable = new TimeTrackingEntry(user, customer, root, base,
+                TimeTrackingEntry.PunchType.START, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        rootStartBillable.setTask(billableTask);
+        TimeTrackingEntry rootEndBillable = new TimeTrackingEntry(user, customer, root, base.plusMinutes(200),
+                TimeTrackingEntry.PunchType.ENDE, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        rootEndBillable.setDurationMinutes(200);
+        rootEndBillable.setTask(billableTask);
+
+        TimeTrackingEntry rootStartNonBillable = new TimeTrackingEntry(user, customer, root, base.plusMinutes(200),
+                TimeTrackingEntry.PunchType.START, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        rootStartNonBillable.setTask(nonBillableTask);
+        TimeTrackingEntry rootEndNonBillable = new TimeTrackingEntry(user, customer, root, base.plusMinutes(300),
+                TimeTrackingEntry.PunchType.ENDE, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        rootEndNonBillable.setDurationMinutes(100);
+        rootEndNonBillable.setTask(nonBillableTask);
+
+        TimeTrackingEntry childStartBillable = new TimeTrackingEntry(user, customer, child, base.plusHours(6),
+                TimeTrackingEntry.PunchType.START, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        childStartBillable.setTask(billableTask);
+        TimeTrackingEntry childEndBillable = new TimeTrackingEntry(user, customer, child, base.plusHours(7),
+                TimeTrackingEntry.PunchType.ENDE, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        childEndBillable.setDurationMinutes(60);
+        childEndBillable.setTask(billableTask);
+
+        TimeTrackingEntry childStartNonBillable = new TimeTrackingEntry(user, customer, child, base.plusHours(7),
+                TimeTrackingEntry.PunchType.START, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        childStartNonBillable.setTask(nonBillableTask);
+        TimeTrackingEntry childEndNonBillable = new TimeTrackingEntry(user, customer, child, base.plusHours(7).plusMinutes(30),
+                TimeTrackingEntry.PunchType.ENDE, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        childEndNonBillable.setDurationMinutes(30);
+        childEndNonBillable.setTask(nonBillableTask);
+
+        when(timeTrackingEntryRepository.findByCompanyIdAndEntryTimestampBetween(eq(companyId), any(), any()))
+                .thenReturn(Stream.of(
+                        rootStartBillable,
+                        rootEndBillable,
+                        rootStartNonBillable,
+                        rootEndNonBillable,
+                        childStartBillable,
+                        childEndBillable,
+                        childStartNonBillable,
+                        childEndNonBillable
+                ).toList());
 
         List<ProjectHierarchyNodeDTO> analytics = reportService.getProjectAnalytics(
                 companyId,
