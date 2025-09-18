@@ -1,4 +1,4 @@
-import  { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
@@ -15,6 +15,7 @@ import AdminCorrectionsList from './AdminCorrectionsList';
 import EditTimeModal from './EditTimeModal';
 import PrintUserTimesModal from './PrintUserTimesModal';
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
+import AdminDashboardKpis from './AdminDashboardKpis';
 
 import {
     getMondayOfWeek,
@@ -456,12 +457,23 @@ const AdminDashboard = () => {
                 {currentUser && ( <p>{t('adminDashboard.loggedInAs')} {currentUser.username}</p> )}
             </header>
 
+            <AdminDashboardKpis
+                t={t}
+                allVacations={allVacations}
+                allCorrections={allCorrections}
+                weeklyBalances={weeklyBalances}
+                users={users}
+            />
+
             <div className="admin-action-buttons-container">
                 <Link to="/admin/import-times" className="admin-action-button button-primary">
                     {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
                 </Link>
                 <Link to="/admin/payslips" className="admin-action-button button-primary">
                     {t('navbar.payslips', 'Abrechnungen')}
+                </Link>
+                <Link to="/admin/analytics" className="admin-action-button button-secondary admin-analytics-button">
+                    {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
                 </Link>
                 <button onClick={handleDataReloadNeeded} className="admin-action-button button-secondary">
                     {t('adminDashboard.reloadDataButton', 'Daten neu laden')}
