@@ -176,7 +176,6 @@ const AdminProjectsPage = () => {
     // Edit form state
     const [editingId, setEditingId] = useState(null);
     const [editingName, setEditingName] = useState('');
-    const [editingCustomerId, setEditingCustomerId] = useState('');
     const [editingBudget, setEditingBudget] = useState('');
     const [editingParentId, setEditingParentId] = useState('');
     const [editingHourlyRate, setEditingHourlyRate] = useState('');
