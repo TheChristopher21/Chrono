@@ -421,6 +421,7 @@ const AdminAnalyticsPage = () => {
                     t('adminAnalytics.vacationPie.regular', 'Genehmigt'),
                     t('adminAnalytics.vacationPie.overtime', 'Überstunden genutzt'),
                     t('adminAnalytics.vacationPie.pending', 'Ausstehend (wartet auf Entscheidung)'),
+
                     t('adminAnalytics.vacationPie.denied', 'Abgelehnt'),
                 ],
                 datasets: [
@@ -501,6 +502,7 @@ const AdminAnalyticsPage = () => {
         scales: {
             y: {
                 title: { display: true, text: t('adminAnalytics.overtimeAxis', 'Überstunden (Stunden)') },
+
                 grid: { color: 'rgba(148, 163, 184, 0.25)' },
             },
             x: {
@@ -555,6 +557,7 @@ const AdminAnalyticsPage = () => {
             <header className="analytics-header">
                 <h1>{t('adminAnalytics.title', 'Analyse & Trends')}</h1>
                 <p>{t('adminAnalytics.subtitle', 'Schneller Überblick über Auslastung (wie viel gearbeitet wird), Abwesenheiten (Urlaub oder krank) und Entwicklungen im Team.')}</p>
+
             </header>
 
             {loading ? (
@@ -568,6 +571,7 @@ const AdminAnalyticsPage = () => {
                     <section className="analytics-section">
                         <div className="section-header">
                             <h2>{t('adminAnalytics.overtimeTrend.title', 'Überstundentrend (Top 5 Personen)')}</h2>
+
                             {overtimeSnapshot && (
                                 <div className="section-meta">
                                     <span>{t('adminAnalytics.overtimeTrend.average', 'Ø Saldo')}: {minutesToHHMM(overtimeSnapshot.average)}</span>
@@ -609,6 +613,7 @@ const AdminAnalyticsPage = () => {
                             <div className="section-meta">
                                 <span>{t('adminAnalytics.absence.vacationTotal', 'Urlaub gesamt')}: {absenceBreakdown.totals.vacation.toFixed(1)} {t('adminAnalytics.daysLabel', 'Tage')}</span>
                                 <span>{t('adminAnalytics.absence.sickTotal', 'Krankheit gesamt')}: {absenceBreakdown.totals.sick.toFixed(1)} {t('adminAnalytics.daysLabel', 'Tage')}</span>
+
                             </div>
                         </div>
                         <div className="chart-wrapper chart-bar">
