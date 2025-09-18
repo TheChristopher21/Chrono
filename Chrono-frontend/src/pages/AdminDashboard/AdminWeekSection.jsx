@@ -81,6 +81,7 @@ const AdminWeekSection = ({
 
     // State for holiday options for the currently detailed percentage user
     const [currentUserHolidayOptions, setCurrentUserHolidayOptions] = useState([]);
+    const [holidayOptionsByUser, setHolidayOptionsByUser] = useState({});
 
     // Fetch holiday options when a percentage user's details are expanded for the current week
     const fetchHolidayOptionsForUser = useCallback(async (username, mondayDate) => {
@@ -90,7 +91,40 @@ const AdminWeekSection = ({
                 const response = await api.get('/api/admin/user-holiday-options/week', {
                     params: { username: username, mondayInWeek: formatLocalDateYMD(mondayDate) }
                 });
-                setCurrentUserHolidayOptions(Array.isArray(response.data) ? response.data : []);
+                const optionsList = Array.isArray(response.data) ? response.data : [];
+
+                const normalizedOptions = optionsList.map(opt => {
+                    if (!opt) return opt;
+                    const normalizedDate = typeof opt.holidayDate === 'string'
+                        ? opt.holidayDate
+                        : formatLocalDateYMD(new Date(opt.holidayDate));
+                    return { ...opt, holidayDate: normalizedDate };
+                }).filter(Boolean);
+
+                const weekDatesToReset = [];
+                const mondayClone = new Date(mondayDate.getTime());
+                mondayClone.setHours(0, 0, 0, 0);
+                for (let i = 0; i < 7; i += 1) {
+                    const day = new Date(mondayClone.getTime());
+                    day.setDate(mondayClone.getDate() + i);
+                    weekDatesToReset.push(formatLocalDateYMD(day));
+                }
+
+                setHolidayOptionsByUser(prev => {
+                    const prevForUser = prev[username] ? { ...prev[username] } : {};
+                    weekDatesToReset.forEach(dateKey => {
+                        if (prevForUser[dateKey]) delete prevForUser[dateKey];
+                    });
+                    normalizedOptions.forEach(option => {
+                        if (option?.holidayDate) {
+                            prevForUser[option.holidayDate] = option;
+                        }
+                    });
+                    return { ...prev, [username]: prevForUser };
+                });
+
+                const sortedCurrentOptions = [...normalizedOptions].sort((a, b) => a.holidayDate.localeCompare(b.holidayDate));
+                setCurrentUserHolidayOptions(sortedCurrentOptions);
             } catch (error) {
                 console.error("Error fetching holiday options for user's week:", error);
                 setCurrentUserHolidayOptions([]); // Reset on error
@@ -114,6 +148,8 @@ const AdminWeekSection = ({
     }, [hiddenUsers]);
 
     const userAnalytics = useMemo(() => {
+        const currentWeekIsoDates = weekDates.map(date => formatLocalDateYMD(date));
+        const currentWeekIsoSet = new Set(currentWeekIsoDates);
         // dailySummariesForWeekSection is now a list of DailyTimeSummaryDTO
         return users
             .map((user) => {
@@ -140,9 +176,11 @@ const AdminWeekSection = ({
 
                 const weeklyActualMinutes = calculateWeeklyActualMinutes(Object.values(userDayMapCurrentWeek));
 
-                // Pass holiday options specific to this user for this week if available
-                // This assumes currentUserHolidayOptions is correctly populated for the detailedUser
-                const holidayOptionsForThisUserInThisWeek = user.username === detailedUser ? currentUserHolidayOptions : (userConfig.isPercentage ? [] : null);
+                const storedHolidayOptions = holidayOptionsByUser[user.username] || {};
+                const allHolidayOptionsForUser = Object.values(storedHolidayOptions);
+                const holidayOptionsForThisUserInThisWeek = allHolidayOptionsForUser
+                    .filter(opt => opt?.holidayDate && currentWeekIsoSet.has(opt.holidayDate))
+                    .sort((a, b) => a.holidayDate.localeCompare(b.holidayDate));
 
 
                 const weeklyExpectedMinutes = calculateWeeklyExpectedMinutes(
@@ -162,7 +200,7 @@ const AdminWeekSection = ({
                     allUserSummariesList, // Pass all summaries for this user
                     userApprovedVacations, userConfig, defaultExpectedHours,
                     userCurrentSickLeaves, holidaysForThisUserYear,
-                    user.username === detailedUser ? currentUserHolidayOptions : (userConfig.isPercentage ? [] : null) // Pass relevant holiday options
+                    allHolidayOptionsForUser // Pass relevant holiday options collected so far
                 );
 
                 return {
@@ -177,9 +215,10 @@ const AdminWeekSection = ({
                     userDayMap: userDayMapCurrentWeek, // Summaries for the currently displayed week
                     userApprovedVacations,
                     userCurrentSickLeaves, // Pass sick leaves for display
+                    holidayOptions: allHolidayOptionsForUser,
                 };
             });
-    }, [users, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, detailedUser, currentUserHolidayOptions]);
+    }, [users, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser]);
 
     const issueSummary = useMemo(() => {
         const summary = {
@@ -466,10 +505,46 @@ const AdminWeekSection = ({
 
     const handleHolidayOptionChange = async (username, dateIso, newOptionValue) => {
         try {
-            await api.post('/api/admin/user-holiday-options', null, {
+            const response = await api.post('/api/admin/user-holiday-options', null, {
                 params: { username, date: dateIso, option: newOptionValue }
             });
             notify(t('adminDashboard.holidayOptionUpdateSuccess', 'Feiertagsoption erfolgreich aktualisiert.'), 'success');
+            const normalizedDateIso = typeof dateIso === 'string' ? dateIso : formatLocalDateYMD(new Date(dateIso));
+
+            setHolidayOptionsByUser(prev => {
+                const previousForUser = prev[username] ? { ...prev[username] } : {};
+                const updatedOptionData = response?.data && typeof response.data === 'object'
+                    ? {
+                        ...response.data,
+                        holidayDate: typeof response.data.holidayDate === 'string'
+                            ? response.data.holidayDate
+                            : normalizedDateIso,
+                        holidayHandlingOption: newOptionValue,
+                    }
+                    : {
+                        ...(previousForUser[normalizedDateIso] || {}),
+                        holidayDate: normalizedDateIso,
+                        holidayHandlingOption: newOptionValue,
+                        username,
+                    };
+                previousForUser[normalizedDateIso] = updatedOptionData;
+                return { ...prev, [username]: previousForUser };
+            });
+            if (detailedUser === username) {
+                setCurrentUserHolidayOptions(prev => {
+                    const updated = prev.some(opt => opt.holidayDate === normalizedDateIso)
+                        ? prev.map(opt => opt.holidayDate === normalizedDateIso
+                            ? { ...opt, holidayHandlingOption: newOptionValue }
+                            : opt)
+                        : [...prev, {
+                            holidayDate: normalizedDateIso,
+                            holidayHandlingOption: newOptionValue,
+                            username,
+                            ...(response?.data && typeof response.data === 'object' ? response.data : {}),
+                        }];
+                    return updated.sort((a, b) => a.holidayDate.localeCompare(b.holidayDate));
+                });
+            }
             // Re-fetch options for the current detailed user if it matches
             if (detailedUser === username) {
                 fetchHolidayOptionsForUser(username, selectedMonday);
