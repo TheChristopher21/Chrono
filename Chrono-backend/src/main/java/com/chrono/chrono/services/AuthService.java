@@ -2,6 +2,7 @@ package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.AuthRequest;
 import com.chrono.chrono.dto.AuthResponse;
+import com.chrono.chrono.exceptions.InvalidCredentialsException;
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.RoleRepository;
@@ -37,12 +38,14 @@ public class AuthService {
     @Autowired
     private DemoDataService demoDataService;
 
+    private static final String INVALID_CREDENTIALS_MESSAGE = "Benutzername oder Passwort ist falsch.";
+
     public AuthResponse login(AuthRequest request) {
         User user = userRepository.findByUsername(request.getUsername())
-                .orElseThrow(() -> new RuntimeException("User not found!"));
+                .orElseThrow(() -> new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE);
         }
 
         // Token (mit user-Daten gehasht) generieren

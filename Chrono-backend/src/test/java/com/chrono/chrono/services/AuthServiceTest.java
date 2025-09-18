@@ -4,6 +4,7 @@ import com.chrono.chrono.dto.AuthRequest;
 import com.chrono.chrono.dto.AuthResponse;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.Role;
+import com.chrono.chrono.exceptions.InvalidCredentialsException;
 import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.utils.JwtUtil;
@@ -68,7 +69,8 @@ class AuthServiceTest {
         when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("wrong", "encoded")).thenReturn(false);
 
-        assertThrows(RuntimeException.class, () -> authService.login(request));
+        InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class, () -> authService.login(request));
+        assertEquals("Benutzername oder Passwort ist falsch.", ex.getMessage());
         verify(passwordEncoder).matches("wrong", "encoded");
     }
 
@@ -77,7 +79,8 @@ class AuthServiceTest {
         AuthRequest request = new AuthRequest("unknown", "pass");
         when(userRepository.findByUsername("unknown")).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> authService.login(request));
+        InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class, () -> authService.login(request));
+        assertEquals("Benutzername oder Passwort ist falsch.", ex.getMessage());
         verify(userRepository).findByUsername("unknown");
     }
 
