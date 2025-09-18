@@ -61,16 +61,18 @@ const AdminDashboardKpis = ({ t, allVacations, allCorrections, weeklyBalances, u
     const cards = useMemo(() => {
         const openItems = stats.pendingVacations + stats.pendingCorrections;
         const avgLabel = stats.balanceSamplesCount > 0
-            ? `${t('adminDashboard.kpis.sampleSizePrefix', 'Basis: ')}${stats.balanceSamplesCount}`
+            ? `${t('adminDashboard.kpis.sampleSizePrefix', 'Grundlage: ')}${stats.balanceSamplesCount}`
+
             : t('adminDashboard.kpis.noBalances', 'Keine Salden vorhanden');
 
         const highlightPositive = stats.topPositive && stats.topPositive.minutes > 0
             ? `${stats.topPositive.username || t('adminDashboard.kpis.unknownUser', 'Unbekannt')}: ${minutesToHHMM(stats.topPositive.minutes)}`
-            : t('adminDashboard.kpis.noPositive', 'Keine positiven Überstände');
+            : t('adminDashboard.kpis.noPositive', 'Keine positiven Überstände (Mehrarbeit)');
 
         const highlightNegative = stats.topNegative && stats.topNegative.minutes < 0
             ? `${stats.topNegative.username || t('adminDashboard.kpis.unknownUser', 'Unbekannt')}: ${minutesToHHMM(stats.topNegative.minutes)}`
-            : t('adminDashboard.kpis.noNegative', 'Keine negativen Salden');
+            : t('adminDashboard.kpis.noNegative', 'Keine negativen Salden (Fehlzeit)');
+
 
         return [
             {
@@ -83,21 +85,24 @@ const AdminDashboardKpis = ({ t, allVacations, allCorrections, weeklyBalances, u
             {
                 id: 'averageOvertime',
                 tone: stats.averageOvertimeMinutes >= 0 ? 'positive' : 'critical',
-                title: t('adminDashboard.kpis.averageOvertime', 'Ø Überstundensaldo'),
+                title: t('adminDashboard.kpis.averageOvertime', 'Ø Überstundensaldo (Durchschnitt)'),
+
                 value: minutesToHHMM(stats.averageOvertimeMinutes),
                 meta: avgLabel,
             },
             {
                 id: 'negativeBalances',
                 tone: stats.negativeBalances > 0 ? 'critical' : 'positive',
-                title: t('adminDashboard.kpis.negativeBalances', 'Negative Salden'),
+                title: t('adminDashboard.kpis.negativeBalances', 'Negative Salden (Fehlzeit)'),
+
                 value: stats.negativeBalances,
                 meta: highlightNegative,
             },
             {
                 id: 'topOvertime',
                 tone: 'info',
-                title: t('adminDashboard.kpis.topOvertime', 'Höchster Saldo'),
+                title: t('adminDashboard.kpis.topOvertime', 'Höchster Saldo (meiste Überstunden)'),
+
                 value: stats.topPositive && stats.topPositive.minutes
                     ? minutesToHHMM(stats.topPositive.minutes)
                     : minutesToHHMM(0),
@@ -109,7 +114,8 @@ const AdminDashboardKpis = ({ t, allVacations, allCorrections, weeklyBalances, u
     return (
         <section
             className="dashboard-kpi-grid"
-            aria-label={t('adminDashboard.kpis.sectionLabel', 'Aktuelle Kennzahlen')}
+            aria-label={t('adminDashboard.kpis.sectionLabel', 'Aktuelle Kennzahlen (kurzer Überblick)')}
+
         >
             {cards.map(card => (
                 <article

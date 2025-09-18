@@ -182,6 +182,7 @@ const AdminWeekSection = ({
         return parseHolidayOptionsFromStorage(window.localStorage.getItem(HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY));
     });
 
+
     // Fetch holiday options when a percentage user's details are expanded for the current week
     const fetchHolidayOptionsForUser = useCallback(async (username, mondayDate) => {
         const userConf = users.find(u => u.username === username);
@@ -224,6 +225,7 @@ const AdminWeekSection = ({
                     }
                     return next;
                 });
+
             } catch (error) {
                 console.error("Error fetching holiday options for user's week:", error);
                 setCurrentUserHolidayOptions([]); // Reset on error
@@ -350,6 +352,7 @@ const AdminWeekSection = ({
     const userAnalytics = useMemo(() => {
         const currentWeekIsoDates = weekDates.map(date => formatLocalDateYMD(date));
         const currentWeekIsoSet = new Set(currentWeekIsoDates);
+
         // dailySummariesForWeekSection is now a list of DailyTimeSummaryDTO
         return users
             .map((user) => {
@@ -420,6 +423,7 @@ const AdminWeekSection = ({
             });
     }, [users, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser]);
 
+
     const issueSummary = useMemo(() => {
         const summary = {
             missing: 0,
@@ -478,6 +482,7 @@ const AdminWeekSection = ({
             if (!hasAnyIssue) {
                 return false;
             }
+
 
             if (activeFilters.length === 0) {
                 return true;
@@ -544,25 +549,29 @@ const AdminWeekSection = ({
     const issueFilterButtons = useMemo(() => ([
         {
             key: 'missing',
-            label: t('adminDashboard.issueFilters.missing', 'Fehlende Stempel'),
+            label: t('adminDashboard.issueFilters.missing', 'Fehlende Stempel (keine Zeiten)'),
+
             count: issueSummary.missing,
             icon: '❗',
         },
         {
             key: 'incomplete',
-            label: t('adminDashboard.issueFilters.incomplete', 'Unvollständige Tage'),
+            label: t('adminDashboard.issueFilters.incomplete', 'Unvollständige Tage (z.B. Ende fehlt)'),
+
             count: issueSummary.incomplete,
             icon: '⚠️',
         },
         {
             key: 'autoCompleted',
-            label: t('adminDashboard.issueFilters.autoCompleted', 'Auto-abschlüsse offen'),
+            label: t('adminDashboard.issueFilters.autoCompleted', 'Automatisch beendet (noch prüfen)'),
+
             count: issueSummary.autoCompleted,
             icon: '🤖',
         },
         {
             key: 'holidayPending',
-            label: t('adminDashboard.issueFilters.holidayPending', 'Feiertagsentscheidung offen'),
+            label: t('adminDashboard.issueFilters.holidayPending', 'Feiertag offen (Entscheid fehlt)'),
+
             count: issueSummary.holidayPending,
             icon: '🎉',
         },
@@ -792,9 +801,13 @@ const AdminWeekSection = ({
                                 type="button"
                                 onClick={() => setShowHiddenUsersManager(!showHiddenUsersManager)}
                                 className="manage-hidden-users-button text-sm"
-                                title={t('manageHiddenUsersTooltip', 'Ausgeblendete Benutzer verwalten')}
+                                title={t('adminDashboard.manageHiddenUsersTooltip', 'Ausgeblendete Benutzer verwalten')}
                             >
-                                {showHiddenUsersManager ? t('hideHiddenUsersList', 'Liste verbergen') : t('showHiddenUsersList', 'Ausgeblendete zeigen')} ({hiddenUsers.size})
+                                {showHiddenUsersManager
+                                    ? t('adminDashboard.hideHiddenUsersList', 'Liste verbergen')
+                                    : t('adminDashboard.showHiddenUsersList', 'Ausgeblendete zeigen')}
+                                ({hiddenUsers.size})
+
                             </button>
                         )}
                         <button
@@ -842,9 +855,9 @@ const AdminWeekSection = ({
 
                 {showHiddenUsersManager && (
                     <div className="hidden-users-manager card-style p-3 my-2 bg-gray-50 rounded shadow">
-                        <h4 className="text-sm font-semibold mb-1">{t('hiddenUsersTitle', 'Ausgeblendete Benutzer')}</h4>
+                        <h4 className="text-sm font-semibold mb-1">{t('adminDashboard.hiddenUsersTitle', 'Ausgeblendete Benutzer')}</h4>
                         {hiddenUsers.size === 0 ? (
-                            <p className="text-xs italic">{t('noHiddenUsers', 'Aktuell sind keine Benutzer ausgeblendet.')}</p>
+                            <p className="text-xs italic">{t('adminDashboard.noHiddenUsers', 'Aktuell sind keine Benutzer ausgeblendet.')}</p>
                         ) : (
                             <>
                                 <ul className="hidden-users-list list-disc list-inside ml-1 text-xs">
@@ -852,13 +865,13 @@ const AdminWeekSection = ({
                                         <li key={username} className="flex justify-between items-center py-0.5">
                                             <span>{username}</span>
                                             <button onClick={() => handleUnhideUser(username)} className="action-button unhide-button text-xs p-0.5 bg-blue-100 hover:bg-blue-200 rounded">
-                                                {t('unhideUser', 'Einblenden')}
+                                                {t('adminDashboard.unhideUser', 'Einblenden')}
                                             </button>
                                         </li>
                                     ))}
                                 </ul>
                                 <button onClick={handleUnhideAllUsers} className="action-button unhide-all-button mt-2 text-xs p-1 bg-gray-200 hover:bg-gray-300 rounded">
-                                    {t('unhideAllUsers', 'Alle einblenden')}
+                                    {t('adminDashboard.unhideAllUsers', 'Alle einblenden')}
                                 </button>
                             </>
                         )}
@@ -913,19 +926,57 @@ const AdminWeekSection = ({
                                             {(userData.problemIndicators.missingEntriesCount > 0 || userData.problemIndicators.incompleteDaysCount > 0 || userData.problemIndicators.autoCompletedUncorrectedCount > 0 || userData.problemIndicators.holidayPendingCount > 0) ? (
                                                 <div className="flex gap-1 items-center justify-center">
                                                     {userData.problemIndicators.missingEntriesCount > 0 && (
-                                                        <span title={`${userData.problemIndicators.missingEntriesCount} ${t('problemTooltips.missingEntries', 'Tag(e) ohne Eintrag')}`} onClick={() => handleProblemIndicatorClick(userData.username, "missing")} className="problem-icon cursor-pointer" role="button" tabIndex={0} onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "missing")}>❗</span>
+                                                        <span
+                                                            title={`${userData.problemIndicators.missingEntriesCount} ${t('adminDashboard.problemTooltips.missingEntries', 'Tag(e) ohne Eintrag')}`}
+                                                            onClick={() => handleProblemIndicatorClick(userData.username, "missing")}
+                                                            className="problem-icon cursor-pointer"
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "missing")}
+                                                        >
+                                                            ❗
+                                                        </span>
                                                     )}
                                                     {userData.problemIndicators.incompleteDaysCount > 0 && (
-                                                        <span title={`${userData.problemIndicators.incompleteDaysCount} ${t('problemTooltips.incompleteDays', 'Tag(e) unvollständig (z.B. fehlendes Ende)')}`} onClick={() => handleProblemIndicatorClick(userData.username, "any_incomplete")} className="problem-icon cursor-pointer" role="button" tabIndex={0} onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "any_incomplete")}>⚠️</span>
+                                                        <span
+                                                            title={`${userData.problemIndicators.incompleteDaysCount} ${t('adminDashboard.problemTooltips.incompleteDays', 'Tag(e) unvollständig (z.B. fehlendes Ende)')}`}
+                                                            onClick={() => handleProblemIndicatorClick(userData.username, "any_incomplete")}
+                                                            className="problem-icon cursor-pointer"
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "any_incomplete")}
+                                                        >
+                                                            ⚠️
+                                                        </span>
                                                     )}
                                                     {userData.problemIndicators.autoCompletedUncorrectedCount > 0 && (
-                                                        <span title={`${userData.problemIndicators.autoCompletedUncorrectedCount} ${t('problemTooltips.autoCompletedDaysUncorrected', 'Tag(e) automatisch beendet & unkorrigiert')}`} onClick={() => handleProblemIndicatorClick(userData.username, "auto_completed")} className="problem-icon auto-completed-icon cursor-pointer" role="button" tabIndex={0} onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "auto_completed")}>🤖</span>
+                                                        <span
+                                                            title={`${userData.problemIndicators.autoCompletedUncorrectedCount} ${t('adminDashboard.problemTooltips.autoCompletedDaysUncorrected', 'Tag(e) automatisch beendet & unkorrigiert')}`}
+                                                            onClick={() => handleProblemIndicatorClick(userData.username, "auto_completed")}
+                                                            className="problem-icon auto-completed-icon cursor-pointer"
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "auto_completed")}
+                                                        >
+                                                            🤖
+                                                        </span>
                                                     )}
                                                     {userData.problemIndicators.holidayPendingCount > 0 && (
-                                                        <span title={`${userData.problemIndicators.holidayPendingCount} ${t('problemTooltips.holidayPending', 'Feiertagsoption(en) ausstehend')}`} onClick={() => handleProblemIndicatorClick(userData.username, "holiday_pending_decision")} className="problem-icon holiday-pending-icon cursor-pointer" role="button" tabIndex={0} onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "holiday_pending_decision")}>🎉❓</span>
+                                                        <span
+                                                            title={`${userData.problemIndicators.holidayPendingCount} ${t('adminDashboard.problemTooltips.holidayPending', 'Feiertagsoption(en) ausstehend')}`}
+                                                            onClick={() => handleProblemIndicatorClick(userData.username, "holiday_pending_decision")}
+                                                            className="problem-icon holiday-pending-icon cursor-pointer"
+                                                            role="button"
+                                                            tabIndex={0}
+                                                            onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "holiday_pending_decision")}
+                                                        >
+                                                            🎉❓
+                                                        </span>
                                                     )}
                                                 </div>
-                                            ) : (<span role="img" aria-label={t('noIssues', 'Keine Probleme')} className="text-green-500">✅</span>)}
+                                            ) : (
+                                                <span role="img" aria-label={t('adminDashboard.noIssues', 'Keine Probleme')} className="text-green-500">✅</span>
+                                            )}
                                         </td>
                                         <td data-label={t('actions', 'Aktionen')} className="actions-cell">
                                             <button onClick={() => toggleDetails(userData.username)} className="action-button details-toggle-button" title={detailedUser === userData.username ? t('hideDetails', 'Details Ausblenden') : t('showDetails', 'Details Anzeigen')} aria-expanded={detailedUser === userData.username}>
