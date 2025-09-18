@@ -58,9 +58,13 @@ const flattenHierarchy = (nodes, depth = 0, acc = []) => {
     return acc;
 };
 
-const ProjectTree = ({ nodes, analyticsMap }) => {
+const ProjectTree = ({ nodes, analyticsMap, t }) => {
     if (!nodes || nodes.length === 0) {
-        return <p className="tree-empty">Keine Hierarchie vorhanden.</p>;
+        return (
+            <p className="tree-empty">
+                {t('project.hierarchy.empty', 'Keine Hierarchie vorhanden.')}
+            </p>
+        );
     }
 
     const renderNodes = (items) => (
@@ -88,17 +92,26 @@ const ProjectTree = ({ nodes, analyticsMap }) => {
                             </div>
                             <div className="tree-metrics">
                                 {budgetHours && (
-                                    <span className="metric-chip" title="Budget Stunden">
-                                        Budget: {budgetHours}
+                                    <span
+                                        className="metric-chip"
+                                        title={t('project.hierarchy.metrics.budgetTitle', 'Budget Stunden')}
+                                    >
+                                        {t('project.hierarchy.metrics.budgetLabel', 'Budget')}: {budgetHours}
                                     </span>
                                 )}
                                 {totalHours && (
-                                    <span className="metric-chip" title="Gebuchte Stunden">
-                                        Ist: {totalHours}
+                                    <span
+                                        className="metric-chip"
+                                        title={t('project.hierarchy.metrics.actualTitle', 'Gebuchte Stunden')}
+                                    >
+                                        {t('project.hierarchy.metrics.actualLabel', 'Ist')}: {totalHours}
                                     </span>
                                 )}
                                 {utilizationPct != null && (
-                                    <div className="metric-progress" title="Auslastung">
+                                    <div
+                                        className="metric-progress"
+                                        title={t('project.hierarchy.metrics.utilizationTitle', 'Auslastung')}
+                                    >
                                         <div className="metric-progress-bar" style={{ width: `${utilizationPct}%` }} />
                                         <span>{utilizationPct}%</span>
                                     </div>
@@ -1008,7 +1021,7 @@ const AdminProjectsPage = () => {
                                     </button>
                                 </div>
                             </div>
-                            <ProjectTree nodes={projectHierarchy} analyticsMap={analyticsMap} />
+                            <ProjectTree nodes={projectHierarchy} analyticsMap={analyticsMap} t={t} />
                         </section>
 
                         <section className="content-section">
