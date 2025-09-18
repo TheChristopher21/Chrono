@@ -1178,40 +1178,99 @@ const translations = {
         privacyPage: {
             title: "Datenschutzerklärung für Chrono",
             content: `
-                <p><strong>Stand: 10. September 2025</strong></p>
-                <p>Wir freuen uns über Ihr Interesse an unserer Zeiterfassungsanwendung Chrono. Der Schutz Ihrer persönlichen Daten ist uns ein wichtiges Anliegen. Nachfolgend informieren wir Sie ausführlich über den Umgang mit Ihren Daten.</p>
-                <h2>1. Verantwortliche Stelle</h2>
-                <p>Verantwortlich für die Datenerhebung, -verarbeitung und -nutzung im Sinne der Datenschutz-Grundverordnung (DSGVO) ist:<br/>
+                <p><strong>Stand: 20. Februar 2025</strong></p>
+                <p>Wir freuen uns über Ihr Interesse an unserer Zeiterfassungsanwendung Chrono. Der Schutz Ihrer persönlichen Daten hat für uns höchste Priorität. Diese Datenschutzerklärung erläutert, welche personenbezogenen Daten wir verarbeiten, zu welchen Zwecken und welche Rechte Ihnen nach der Datenschutz-Grundverordnung (DSGVO) sowie dem revidierten Schweizer Datenschutzgesetz (revDSG) zustehen.</p>
+                <h2>1. Verantwortliche Stelle und Kontakt</h2>
+                <p>Verantwortlich für die Datenverarbeitung ist:<br/>
                 <strong>Chrono</strong><br/>
                 Lettenstrasse 20<br/>
                 9122 Mogelsberg<br/>
                 Schweiz</p>
-                <p><strong>E-Mail:</strong> siefertchristopher@chrono-logisch.ch<br/>
-                <strong>Telefon:</strong> +41 764699122</p>
-                <p>Weitere Informationen finden Sie in unserem <a href="/impressum">Impressum</a>.</p>
-                <h2>2. Art, Zweck und Umfang der Datenverarbeitung</h2>
-                <h3>a) Bei Besuch der Webseite</h3>
-                <p>Bei jedem Aufruf unserer Webseite erfasst unser System automatisiert Daten wie Browsertyp, Betriebssystem, Referrer URL, Hostname des zugreifenden Rechners, Uhrzeit der Serveranfrage und IP-Adresse. Diese Daten sind technisch erforderlich, um die Anwendung anzuzeigen und die Stabilität und Sicherheit zu gewährleisten.</p>
-                <h3>b) Bei Registrierung und Nutzung eines Benutzerkontos</h3>
-                <p>Zur Nutzung von Chrono müssen Sie sich registrieren. Dabei erheben wir Daten wie Benutzername, E-Mail-Adresse, verschlüsseltes Passwort sowie weitere optionale Profildaten. Diese Daten sind zur Verwaltung des Benutzerkontos und zur Vertragserfüllung erforderlich.</p>
-                <h3>c) Im Rahmen der Zeiterfassung und Arbeitsorganisation</h3>
-                <p>Chrono verarbeitet Arbeitszeiten, Projektzuordnungen, Korrekturanträge, NFC-Kartendaten sowie Krankmeldungen und Urlaubsanträge. Die Verarbeitung dient der Vertragserfüllung.</p>
-                <h3>d) Im Rahmen der Lohnabrechnung</h3>
-                <p>Sofern das Lohnmodul genutzt wird, verarbeiten wir Gehaltsdaten, Steuerinformationen und Bankverbindungen. Diese Daten werden vertraulich behandelt.</p>
-                <h3>e) Bei Nutzung des KI-Chatbots und der Wissensdatenbank</h3>
-                <p>Anfragen an den Chatbot werden verarbeitet, um passende Antworten zu liefern und den Dienst zu verbessern.</p>
-                <h3>f) Bei Kontaktaufnahme</h3>
-                <p>Übermittelte Daten (z.B. Name, E-Mail, Inhalt der Anfrage) werden zur Bearbeitung gespeichert.</p>
-                <h2>3. Cookies und Lokaler Speicher</h2>
-                <p>Wir verwenden lokalen Speicher, um Einstellungen wie Sprache oder Theme zu speichern. Diese Informationen werden nicht an unsere Server übertragen.</p>
-                <h2>4. Weitergabe von Daten an Dritte</h2>
-                <p>Eine Weitergabe erfolgt nur, wenn dies gesetzlich vorgeschrieben ist oder zur Vertragserfüllung notwendig wird, etwa an Zahlungsdienstleister oder nach Zustimmung an Google Calendar. Mit allen Dienstleistern bestehen Auftragsverarbeitungsverträge.</p>
-                <h2>5. Ihre Rechte als betroffene Person</h2>
-                <p>Sie haben das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung, Widerspruch, Datenübertragbarkeit sowie ein Beschwerderecht bei einer Aufsichtsbehörde.</p>
-                <h2>6. Datensicherheit</h2>
-                <p>Wir treffen technische und organisatorische Maßnahmen, um Ihre Daten vor Verlust oder unbefugtem Zugriff zu schützen und verbessern diese laufend.</p>
-                <h2>7. Änderung dieser Datenschutzerklärung</h2>
-                <p>Wir behalten uns vor, diese Erklärung anzupassen, damit sie den aktuellen rechtlichen Anforderungen entspricht oder Änderungen unserer Leistungen umzusetzen.</p>
+                <p><strong>E-Mail:</strong> <a href="mailto:siefertchristopher@chrono-logisch.ch">siefertchristopher@chrono-logisch.ch</a><br/>
+                <strong>Telefon:</strong> <a href="tel:+41764699122">+41 76 469 91 22</a></p>
+                <p>Weitere Informationen finden Sie im <a href="/impressum">Impressum</a>.</p>
+                <h2>2. Geltungsbereich und Rollenverteilung</h2>
+                <p>Diese Datenschutzerklärung gilt für die Nutzung unserer Websites, Web- und Desktop-Anwendungen sowie für sonstige Kontaktaufnahmen mit uns als Anbieter.</p>
+                <p>Nutzen Sie Chrono im Auftrag Ihres Arbeitgebers oder Auftraggebers, bleibt dieser in der Regel datenschutzrechtlich Verantwortlicher. Wir verarbeiten die dabei anfallenden Daten als Auftragsverarbeiter nach Art. 28 DSGVO bzw. Art. 9 revDSG auf Grundlage eines Vertrages zur Auftragsverarbeitung. In diesem Fall beachten Sie bitte zusätzlich die Datenschutzhinweise Ihres Arbeitgebers.</p>
+                <h2>3. Kategorien personenbezogener Daten, Zwecke und Rechtsgrundlagen</h2>
+                <ul>
+                    <li><strong>Besuch unserer Websites und Schnittstellen</strong><br/>
+                    Datenkategorien: IP-Adresse, Datum und Uhrzeit des Zugriffs, Browser- und Geräteinformationen, Referrer-URL, Fehler- und Sicherheitslogs.<br/>
+                    Zwecke: Bereitstellung der Website, Gewährleistung von Stabilität und Sicherheit, Missbrauchserkennung, Fehleranalyse.<br/>
+                    Rechtsgrundlagen: Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an einer sicheren Bereitstellung), Art. 31 Abs. 1 revDSG.</li>
+                    <li><strong>Registrierung und Vertragsdurchführung</strong><br/>
+                    Datenkategorien: Name, Firmenangaben, Benutzername, E-Mail-Adresse, Passwort (gehasht), Rollen- und Berechtigungsdaten, Einstellungen.<br/>
+                    Zwecke: Einrichtung und Verwaltung des Benutzerkontos, Vertragserfüllung, Kundenbetreuung.<br/>
+                    Rechtsgrundlagen: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung oder vorvertragliche Maßnahmen), Art. 6 Abs. 1 lit. c DSGVO (gesetzliche Pflichten, z.&nbsp;B. steuerliche Nachweispflichten), Art. 31 Abs. 1 revDSG.</li>
+                    <li><strong>Nutzung der Zeiterfassungs- und Organisationsfunktionen</strong><br/>
+                    Datenkategorien: Arbeitszeitbuchungen, Projekt- und Tätigkeitszuordnungen, Abwesenheiten, Urlaubs- und Korrekturanträge, ggf. Dienstpläne, NFC-Kartennummern, Kommentare, Informationen zu Krankmeldungen.<br/>
+                    Zwecke: Erfüllung des SaaS-Vertrages, Arbeitsorganisation, gesetzliche Nachweis- und Aufbewahrungspflichten nach Arbeits- und Sozialversicherungsrecht.<br/>
+                    Rechtsgrundlagen: Art. 6 Abs. 1 lit. b DSGVO, Art. 6 Abs. 1 lit. c DSGVO (rechtliche Verpflichtungen), Art. 31 Abs. 1 revDSG. Soweit besondere Kategorien personenbezogener Daten (z.&nbsp;B. Gesundheitsdaten bei Krankmeldungen) verarbeitet werden, erfolgt dies auf Grundlage von Art. 9 Abs. 2 lit. b DSGVO sowie Art. 31 Abs. 2 revDSG.</li>
+                    <li><strong>Lohn- und Abrechnungsmodul</strong><br/>
+                    Datenkategorien: Gehaltsbestandteile, Steuer- und Sozialversicherungsmerkmale, Bankverbindung, Auszahlungsinformationen.<br/>
+                    Zwecke: Erstellung von Lohnabrechnungen, Erfüllung arbeits-, steuer- und sozialversicherungsrechtlicher Pflichten, Nachweisführung.<br/>
+                    Rechtsgrundlagen: Art. 6 Abs. 1 lit. b und lit. c DSGVO, Art. 9 Abs. 2 lit. b DSGVO, Art. 31 Abs. 1 und 2 revDSG.</li>
+                    <li><strong>Zahlungsabwicklung</strong><br/>
+                    Datenkategorien: Vertrags- und Rechnungsdaten, Zahlungsstatus, verkürzte Zahlungsinformationen (z.&nbsp;B. Kartentyp, letzte vier Stellen).<br/>
+                    Zwecke: Abwicklung kostenpflichtiger Leistungen, Forderungsmanagement, Buchhaltung.<br/>
+                    Rechtsgrundlagen: Art. 6 Abs. 1 lit. b und lit. f DSGVO (berechtigtes Interesse an effizienter Zahlungsabwicklung), Art. 6 Abs. 1 lit. c DSGVO (gesetzliche Aufbewahrungspflichten), Art. 31 Abs. 1 revDSG.</li>
+                    <li><strong>Support- und Kommunikationsanfragen</strong><br/>
+                    Datenkategorien: Name, Kontaktdaten, Inhalt der Anfrage, Metadaten der Kommunikation.<br/>
+                    Zwecke: Bearbeitung und Dokumentation von Anfragen, Kundenservice, Verbesserung unserer Dienste.<br/>
+                    Rechtsgrundlagen: Art. 6 Abs. 1 lit. b DSGVO (sofern die Anfrage auf einen Vertrag zielt), Art. 6 Abs. 1 lit. f DSGVO (berechtigtes Interesse an Support und Dokumentation), Art. 31 Abs. 1 revDSG.</li>
+                    <li><strong>Monitoring, Sicherheit und Protokollierung</strong><br/>
+                    Datenkategorien: System- und Audit-Logs, Nutzer-IDs, Zeitstempel technischer Aktionen.<br/>
+                    Zwecke: Gewährleistung der Sicherheit unserer Systeme, Nachvollziehbarkeit administrativer Eingriffe, Erkennung und Abwehr von Cyberangriffen, Backup-Verwaltung.<br/>
+                    Rechtsgrundlagen: Art. 6 Abs. 1 lit. f DSGVO, Art. 32 DSGVO, Art. 31 Abs. 1 revDSG.</li>
+                    <li><strong>KI-Chatbot (lokale Instanz)</strong><br/>
+                    Datenkategorien: Inhalte Ihrer Eingaben und Antworten des Systems.<br/>
+                    Zwecke: Beantwortung Ihrer Fragen zur Anwendung, Verbesserung der Hilfefunktion.<br/>
+                    Rechtsgrundlagen: Art. 6 Abs. 1 lit. b DSGVO (Vertragserfüllung), Art. 6 Abs. 1 lit. f DSGVO (Optimierung unserer Dienste), Art. 31 Abs. 1 revDSG. Anfragen werden ausschließlich auf unserer Infrastruktur verarbeitet; es findet keine Übermittlung an externe KI-Anbieter statt.</li>
+                    <li><strong>Optionale Integrationen (z.&nbsp;B. Google Calendar)</strong><br/>
+                    Datenkategorien: Kalenderereignisse, Synchronisationsmetadaten.<br/>
+                    Zwecke: Synchronisation Ihrer Termine mit Chrono.<br/>
+                    Rechtsgrundlagen: Art. 6 Abs. 1 lit. a DSGVO (Einwilligung), Art. 49 Abs. 1 lit. a DSGVO, Art. 31 Abs. 1 revDSG. Die Nutzung erfolgt ausschließlich nach separater Aktivierung durch Sie.</li>
+                </ul>
+                <h2>4. Empfänger und Auftragsverarbeiter</h2>
+                <p>Wir übermitteln personenbezogene Daten nur, wenn eine Rechtsgrundlage dies erlaubt oder eine Einwilligung vorliegt. Zu den Kategorien von Empfängern gehören:</p>
+                <ul>
+                    <li><strong>Hosting- und Infrastrukturpartner:</strong> Rechenzentren in der Schweiz bzw. im Europäischen Wirtschaftsraum, die unsere Anwendung technisch betreiben. Der jeweils eingesetzte Anbieter ist in unserem Verzeichnis der Verarbeitungstätigkeiten dokumentiert und stellt angemessene technische und organisatorische Maßnahmen sicher.</li>
+                    <li><strong>Zahlungsdienstleister:</strong> Stripe Payments Europe Ltd., 1 Grand Canal Street Lower, Dublin 2, Irland (Stripe). Stripe kann Daten an verbundene Unternehmen in den USA übermitteln. Wir haben mit Stripe die EU-Standardvertragsklauseln abgeschlossen.</li>
+                    <li><strong>E-Mail- und Kommunikationsdienstleister:</strong> SMTP- und Support-Dienstleister, über die wir Support- und Systembenachrichtigungen versenden.</li>
+                    <li><strong>IT-Dienstleister:</strong> Wartungs-, Hosting-, Backup- und Supportpartner, die uns bei der Bereitstellung der Anwendung unterstützen und vertraglich zur Vertraulichkeit verpflichtet sind.</li>
+                    <li><strong>Behörden, Gerichte oder externe Berater:</strong> sofern dies zur Erfüllung gesetzlicher Pflichten oder zur Geltendmachung, Ausübung oder Verteidigung von Rechtsansprüchen erforderlich ist.</li>
+                </ul>
+                <h2>5. Übermittlungen in Drittländer</h2>
+                <p>Eine Übermittlung in Staaten außerhalb der Schweiz bzw. des EWR findet grundsätzlich nur statt, wenn dort ein angemessenes Datenschutzniveau besteht oder geeignete Garantien vorliegen. Für Stripe greifen die EU-Standardvertragsklauseln sowie zusätzliche Schutzmaßnahmen. Optionale Integrationen wie Google Calendar (USA) setzen Ihre ausdrückliche Einwilligung voraus; dabei informieren wir Sie gesondert über mögliche Risiken.</p>
+                <h2>6. Speicherdauer</h2>
+                <ul>
+                    <li>Kontodaten speichern wir für die Dauer der Vertragsbeziehung. Nach Vertragsende werden die Daten gemäß vertraglichen Vereinbarungen und gesetzlichen Aufbewahrungsfristen gelöscht oder anonymisiert.</li>
+                    <li>Zeiterfassungs-, Projekt- und Abrechnungsdaten bewahren wir entsprechend arbeits-, steuer- und handelsrechtlicher Pflichten bis zu zehn Jahre auf.</li>
+                    <li>Technische Logdaten und Sicherheitsprotokolle werden in der Regel spätestens nach 30 Tagen gelöscht, sofern keine Sicherheitsvorfälle eine längere Aufbewahrung erfordern.</li>
+                    <li>Support- und Kommunikationsdaten löschen wir spätestens 24 Monate nach Abschluss des Vorgangs, sofern keine gesetzlichen Aufbewahrungspflichten entgegenstehen.</li>
+                </ul>
+                <p>Sobald der Zweck der Verarbeitung entfällt, prüfen wir im Rahmen unseres Löschkonzepts mindestens jährlich, ob eine Löschung oder Anonymisierung möglich ist.</p>
+                <h2>7. Datensicherheit</h2>
+                <p>Wir treffen angemessene technische und organisatorische Maßnahmen gemäß Art. 32 DSGVO und Art. 8 revDSG, um Ihre Daten vor Verlust, Missbrauch und unbefugtem Zugriff zu schützen. Dazu zählen u. a. verschlüsselte Datenübertragung (TLS), rollenbasierte Zugriffskonzepte, Protokollierung administrativer Zugriffe, regelmäßige Backups und Sicherheitsupdates.</p>
+                <h2>8. Rechte der betroffenen Personen</h2>
+                <p>Ihnen stehen die folgenden Rechte zu:</p>
+                <ul>
+                    <li>Auskunft über die bei uns gespeicherten personenbezogenen Daten (Art. 15 DSGVO, Art. 25 revDSG)</li>
+                    <li>Berichtigung unrichtiger Daten (Art. 16 DSGVO, Art. 32 revDSG)</li>
+                    <li>Löschung bzw. Einschränkung der Verarbeitung (Art. 17 und 18 DSGVO, Art. 32 revDSG)</li>
+                    <li>Widerspruch gegen Verarbeitungen, die auf berechtigtem Interesse beruhen (Art. 21 DSGVO)</li>
+                    <li>Datenübertragbarkeit (Art. 20 DSGVO, Art. 28 revDSG)</li>
+                    <li>Widerruf erteilter Einwilligungen mit Wirkung für die Zukunft (Art. 7 Abs. 3 DSGVO, Art. 6 Abs. 6 revDSG)</li>
+                </ul>
+                <p>Zur Wahrnehmung Ihrer Rechte können Sie uns jederzeit unter <a href="mailto:siefertchristopher@chrono-logisch.ch">siefertchristopher@chrono-logisch.ch</a> kontaktieren. Wir beantworten Anfragen grundsätzlich innerhalb eines Monats.</p>
+                <h2>9. Beschwerderecht</h2>
+                <p>Sie haben das Recht, sich bei einer Datenschutzaufsichtsbehörde zu beschweren. Zuständig für die Schweiz ist der Eidgenössische Datenschutz- und Öffentlichkeitsbeauftragte (Feldeggweg 1, CH-3003 Bern, <a href="https://www.edoeb.admin.ch">www.edoeb.admin.ch</a>). Für EU-/EWR-Personen steht die Aufsichtsbehörde Ihres üblichen Aufenthaltsortes, Ihres Arbeitsplatzes oder des mutmaßlichen Verstoßes zur Verfügung.</p>
+                <h2>10. Pflicht zur Bereitstellung von Daten</h2>
+                <p>Bestimmte Daten sind für die Nutzung von Chrono erforderlich (z.&nbsp;B. Registrierungs- und Vertragsdaten). Ohne diese Angaben können wir die vertraglichen Leistungen nicht bereitstellen. Freiwillige Angaben kennzeichnen wir als solche.</p>
+                <h2>11. Automatisierte Entscheidungsfindung</h2>
+                <p>Es findet keine automatisierte Entscheidungsfindung oder Profiling im Sinne von Art. 22 DSGVO statt.</p>
+                <h2>12. Änderungen dieser Datenschutzerklärung</h2>
+                <p>Wir überarbeiten diese Datenschutzerklärung, wenn neue Funktionen eingeführt werden oder rechtliche Vorgaben sich ändern. Die jeweils aktuelle Version ist jederzeit unter <a href="/datenschutz">www.chrono-logisch.ch/datenschutz</a> abrufbar.</p>
             `,
         },
         agbPage: {
@@ -2427,40 +2486,99 @@ const translations = {
         privacyPage: {
             title: "Privacy Policy for Chrono",
             content: `
-                <p><strong>Updated: 10 September 2025</strong></p>
-                <p>We appreciate your interest in our time tracking application Chrono. Protecting your personal data is important to us. The following provides detailed information on how we handle your data.</p>
-                <h2>1. Controller</h2>
-                <p>The controller for data collection, processing and use under the GDPR is:<br/>
+                <p><strong>Updated: 20 February 2025</strong></p>
+                <p>We appreciate your interest in Chrono, our time tracking application. Protecting your personal data is a top priority. This privacy notice explains what personal data we process, for which purposes and the rights you have under the EU General Data Protection Regulation (GDPR) and the revised Swiss Federal Act on Data Protection (revFADP).</p>
+                <h2>1. Controller and contact</h2>
+                <p>The controller is:<br/>
                 <strong>Chrono</strong><br/>
                 Lettenstrasse 20<br/>
                 9122 Mogelsberg<br/>
                 Switzerland</p>
-                <p><strong>Email:</strong> siefertchristopher@chrono-logisch.ch<br/>
-                <strong>Phone:</strong> +41 764699122</p>
-                <p>Further details are available in our <a href="/impressum">imprint</a>.</p>
-                <h2>2. Type, Purpose and Scope of Data Processing</h2>
-                <h3>a) Visiting the website</h3>
-                <p>When visiting our website we automatically collect data such as browser type, operating system, referrer URL, hostname of the accessing computer, time of the server request and IP address. These are technically necessary to display the site and ensure stability and security.</p>
-                <h3>b) Registration and use of an account</h3>
-                <p>To use Chrono you must register. We collect username, email address, encrypted password and optional profile data. These data are required to manage the account and fulfil the contract.</p>
-                <h3>c) Time tracking and work organisation</h3>
-                <p>Chrono processes working times, project assignments, correction requests, NFC card data as well as sick notes and vacation requests. Processing is necessary for contract fulfilment.</p>
-                <h3>d) Payroll module</h3>
-                <p>If the payroll module is used we process salary data, tax information and bank details. These data are treated confidentially.</p>
-                <h3>e) AI chatbot and knowledge base</h3>
-                <p>Requests to the chatbot are processed to deliver suitable answers and to improve the service.</p>
-                <h3>f) Contacting us</h3>
-                <p>Data transmitted via contact form or email (e.g. name, email, message content) are stored to process your enquiry.</p>
-                <h2>3. Cookies and Local Storage</h2>
-                <p>We use local storage to save preferences such as language or theme. This information is not transmitted to our servers.</p>
-                <h2>4. Disclosure of Data to Third Parties</h2>
-                <p>Data are only disclosed if required by law or necessary for contract fulfilment, e.g. to payment providers or after consent to Google Calendar. Data processing agreements exist with all service providers.</p>
-                <h2>5. Your Rights</h2>
-                <p>You have the right to access, rectify, delete or restrict processing of your data, the right to object, data portability and the right to lodge a complaint with a supervisory authority.</p>
-                <h2>6. Data Security</h2>
-                <p>We take technical and organisational measures to protect your data against loss or unauthorised access and continually improve these measures.</p>
-                <h2>7. Changes to this Privacy Policy</h2>
-                <p>We reserve the right to adjust this policy so that it always meets current legal requirements or to reflect changes to our services.</p>
+                <p><strong>Email:</strong> <a href="mailto:siefertchristopher@chrono-logisch.ch">siefertchristopher@chrono-logisch.ch</a><br/>
+                <strong>Phone:</strong> <a href="tel:+41764699122">+41 76 469 91 22</a></p>
+                <p>Further company details are available in our <a href="/impressum">imprint</a>.</p>
+                <h2>2. Scope and roles</h2>
+                <p>This privacy policy applies to the use of our websites, web and desktop applications and to any communication with us as the provider.</p>
+                <p>If you use Chrono on behalf of your employer or principal, that organisation usually remains the data controller. We process the related data as a processor in accordance with Art. 28 GDPR and Art. 9 revFADP based on a data processing agreement. In these cases, please also refer to your employer’s privacy notice.</p>
+                <h2>3. Categories of personal data, purposes and legal bases</h2>
+                <ul>
+                    <li><strong>Visits to our websites and technical interfaces</strong><br/>
+                    Categories: IP address, date and time of access, browser and device information, referrer URL, error and security logs.<br/>
+                    Purposes: providing the website, ensuring stability and security, detecting misuse, troubleshooting.<br/>
+                    Legal bases: Art. 6(1)(f) GDPR (legitimate interest in a secure service), Art. 31(1) revFADP.</li>
+                    <li><strong>Registration and contract fulfilment</strong><br/>
+                    Categories: name, company details, username, email address, password (hashed), role and permission data, settings.<br/>
+                    Purposes: creating and administering user accounts, providing the service, customer care.<br/>
+                    Legal bases: Art. 6(1)(b) GDPR (performance of a contract or steps prior to entering into a contract), Art. 6(1)(c) GDPR (legal obligations, e.g. tax record keeping), Art. 31(1) revFADP.</li>
+                    <li><strong>Use of time tracking and organisation features</strong><br/>
+                    Categories: time entries, project and task assignments, absences, vacation and correction requests, duty rosters, NFC card numbers, comments, information on sick notes.<br/>
+                    Purposes: delivering the SaaS service, workforce management, statutory record-keeping obligations under labour and social security law.<br/>
+                    Legal bases: Art. 6(1)(b) GDPR, Art. 6(1)(c) GDPR, Art. 31(1) revFADP. Where special categories of personal data (e.g. health data relating to sick notes) are processed we rely on Art. 9(2)(b) GDPR and Art. 31(2) revFADP.</li>
+                    <li><strong>Payroll module</strong><br/>
+                    Categories: salary components, tax and social security details, bank account information, payout data.<br/>
+                    Purposes: creating payroll statements, fulfilling employment, tax and social security obligations, documentation.<br/>
+                    Legal bases: Art. 6(1)(b) and (c) GDPR, Art. 9(2)(b) GDPR, Art. 31(1) and (2) revFADP.</li>
+                    <li><strong>Payment processing</strong><br/>
+                    Categories: contract and invoice data, payment status, truncated payment details (e.g. card type, last four digits).<br/>
+                    Purposes: processing paid plans, receivables management, bookkeeping.<br/>
+                    Legal bases: Art. 6(1)(b) and (f) GDPR (legitimate interest in efficient payment processes), Art. 6(1)(c) GDPR (statutory retention duties), Art. 31(1) revFADP.</li>
+                    <li><strong>Support and communication</strong><br/>
+                    Categories: name, contact details, content of your enquiry, communication metadata.<br/>
+                    Purposes: handling and documenting requests, customer support, service improvement.<br/>
+                    Legal bases: Art. 6(1)(b) GDPR (where the enquiry relates to a contract), Art. 6(1)(f) GDPR (legitimate interest in support and documentation), Art. 31(1) revFADP.</li>
+                    <li><strong>Monitoring, security and logging</strong><br/>
+                    Categories: system and audit logs, user IDs, timestamps of administrative actions.<br/>
+                    Purposes: safeguarding our systems, traceability of administrative access, detecting and defending against cyber attacks, managing backups.<br/>
+                    Legal bases: Art. 6(1)(f) GDPR, Art. 32 GDPR, Art. 31(1) revFADP.</li>
+                    <li><strong>AI assistant (local instance)</strong><br/>
+                    Categories: the content of your prompts and the responses returned by the system.<br/>
+                    Purposes: answering your questions about the application, improving our help features.<br/>
+                    Legal bases: Art. 6(1)(b) GDPR (contract performance), Art. 6(1)(f) GDPR (optimising our services), Art. 31(1) revFADP. Requests are processed solely on our infrastructure; no data are transmitted to external AI providers.</li>
+                    <li><strong>Optional integrations (e.g. Google Calendar)</strong><br/>
+                    Categories: calendar events and synchronisation metadata.<br/>
+                    Purposes: synchronising appointments between Chrono and external services.<br/>
+                    Legal bases: Art. 6(1)(a) GDPR (consent), Art. 49(1)(a) GDPR, Art. 31(1) revFADP. We only activate such integrations after you have given explicit consent.</li>
+                </ul>
+                <h2>4. Recipients and processors</h2>
+                <p>We disclose personal data only if permitted by law or if you have given consent. Recipients and categories of processors include:</p>
+                <ul>
+                    <li><strong>Hosting and infrastructure partners:</strong> data centres located in Switzerland or the European Economic Area that operate our application. The providers we work with are documented in our record of processing activities and implement appropriate technical and organisational measures.</li>
+                    <li><strong>Payment service provider:</strong> Stripe Payments Europe Ltd., 1 Grand Canal Street Lower, Dublin 2, Ireland (Stripe). Stripe may transfer data to affiliated companies in the United States. We have concluded the EU Standard Contractual Clauses with Stripe.</li>
+                    <li><strong>Email and communication providers:</strong> SMTP and support services that deliver support tickets and system notifications on our behalf.</li>
+                    <li><strong>IT service providers:</strong> maintenance, hosting, backup and support partners who assist us in running the application and who are contractually bound to confidentiality.</li>
+                    <li><strong>Authorities, courts or external advisors:</strong> where necessary to comply with legal obligations or to establish, exercise or defend legal claims.</li>
+                </ul>
+                <h2>5. International data transfers</h2>
+                <p>We only transfer personal data outside Switzerland or the EEA if an adequate level of protection is ensured or appropriate safeguards are in place. For Stripe we rely on the EU Standard Contractual Clauses and supplementary safeguards. Optional integrations such as Google Calendar (USA) require your explicit consent and we will inform you separately about potential risks.</p>
+                <h2>6. Storage periods</h2>
+                <ul>
+                    <li>Account data are stored for the duration of the contractual relationship. After termination we delete or anonymise the data in line with contractual arrangements and statutory retention periods.</li>
+                    <li>Time tracking, project and payroll data are retained for up to ten years to comply with labour, tax and commercial law obligations.</li>
+                    <li>Technical log files and security logs are usually deleted after 30 days unless a security incident requires longer retention.</li>
+                    <li>Support and communication records are deleted 24 months after the ticket has been closed unless statutory retention requirements apply.</li>
+                </ul>
+                <p>Once the processing purpose ceases to apply we review, at least annually, whether deletion or anonymisation is possible in line with our deletion concept.</p>
+                <h2>7. Data security</h2>
+                <p>We implement appropriate technical and organisational measures pursuant to Art. 32 GDPR and Art. 8 revFADP to protect your data against loss, misuse and unauthorised access. Measures include encrypted data transmission (TLS), role-based access control, logging of administrative access, regular backups and security updates.</p>
+                <h2>8. Your rights</h2>
+                <p>You have the following rights:</p>
+                <ul>
+                    <li>Access to the personal data we store about you (Art. 15 GDPR, Art. 25 revFADP)</li>
+                    <li>Rectification of inaccurate data (Art. 16 GDPR, Art. 32 revFADP)</li>
+                    <li>Erasure or restriction of processing (Art. 17 and 18 GDPR, Art. 32 revFADP)</li>
+                    <li>Objection to processing based on legitimate interests (Art. 21 GDPR)</li>
+                    <li>Data portability (Art. 20 GDPR, Art. 28 revFADP)</li>
+                    <li>Withdrawal of consent with effect for the future (Art. 7(3) GDPR, Art. 6(6) revFADP)</li>
+                </ul>
+                <p>You can exercise your rights at any time by contacting <a href="mailto:siefertchristopher@chrono-logisch.ch">siefertchristopher@chrono-logisch.ch</a>. We usually respond within one month.</p>
+                <h2>9. Right to lodge a complaint</h2>
+                <p>You may lodge a complaint with a supervisory authority. In Switzerland the competent authority is the Federal Data Protection and Information Commissioner (Feldeggweg 1, CH-3003 Bern, <a href="https://www.edoeb.admin.ch">www.edoeb.admin.ch</a>). Individuals in the EU/EEA may also contact the supervisory authority at their habitual residence, place of work or the place of the alleged infringement.</p>
+                <h2>10. Obligation to provide data</h2>
+                <p>Certain information is required in order to use Chrono (e.g. registration and contract details). Without this data we are unable to provide the contractual services. Optional fields are marked accordingly.</p>
+                <h2>11. Automated decision-making</h2>
+                <p>We do not use automated decision-making or profiling within the meaning of Art. 22 GDPR.</p>
+                <h2>12. Changes to this privacy policy</h2>
+                <p>We update this privacy policy whenever new features are introduced or legal requirements change. The current version is always available at <a href="/datenschutz">www.chrono-logisch.ch/datenschutz</a>.</p>
             `,
         },
         agbPage: {
