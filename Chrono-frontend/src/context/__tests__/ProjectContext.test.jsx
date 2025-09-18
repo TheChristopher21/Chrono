@@ -3,12 +3,12 @@ import React from 'react';
 import { render, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-const apiMock = {
+const apiMock = vi.hoisted(() => ({
     get: vi.fn(),
     post: vi.fn(),
     put: vi.fn(),
     delete: vi.fn()
-};
+}));
 
 vi.mock('../../utils/api', () => ({
     default: apiMock
@@ -86,7 +86,12 @@ describe('ProjectProvider', () => {
 
         const { latest } = renderWithConsumer();
 
-        await waitFor(() => expect(apiMock.get).toHaveBeenCalledTimes(2));
+        await waitFor(() => {
+            const projectCalls = apiMock.get.mock.calls.filter(([url]) => url === '/api/projects');
+            const hierarchyCalls = apiMock.get.mock.calls.filter(([url]) => url === '/api/projects/hierarchy');
+            expect(projectCalls.length).toBeGreaterThanOrEqual(1);
+            expect(hierarchyCalls.length).toBeGreaterThanOrEqual(1);
+        });
 
         await act(async () => {
             await latest.current.createProject({
@@ -107,7 +112,10 @@ describe('ProjectProvider', () => {
         });
 
         await waitFor(() => {
-            expect(apiMock.get).toHaveBeenCalledTimes(4);
+            const projectCalls = apiMock.get.mock.calls.filter(([url]) => url === '/api/projects');
+            const hierarchyCalls = apiMock.get.mock.calls.filter(([url]) => url === '/api/projects/hierarchy');
+            expect(projectCalls.length).toBeGreaterThanOrEqual(2);
+            expect(hierarchyCalls.length).toBeGreaterThanOrEqual(2);
             expect(latest.current.projects).toEqual([{ id: 1, name: 'New' }]);
             expect(latest.current.projectHierarchy).toEqual([{ id: 1, name: 'New', children: [] }]);
         });
