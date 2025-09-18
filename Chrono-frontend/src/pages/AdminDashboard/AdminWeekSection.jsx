@@ -24,6 +24,21 @@ import {parseISO} from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
 
 
+const ISSUE_FILTER_KEYS = {
+    missing: 'missingEntriesCount',
+    incomplete: 'incompleteDaysCount',
+    autoCompleted: 'autoCompletedUncorrectedCount',
+    holidayPending: 'holidayPendingCount',
+};
+
+const DEFAULT_ISSUE_FILTER_STATE = {
+    missing: true,
+    incomplete: true,
+    autoCompleted: true,
+    holidayPending: true,
+};
+
+
 const AdminWeekSection = ({
                               t,
                               weekDates,
@@ -52,6 +67,8 @@ const AdminWeekSection = ({
     const [detailedUser, setDetailedUser] = useState(null); // Username of the user whose details are expanded
     const [sortConfig, setSortConfig] = useState({ key: 'username', direction: 'ascending' });
     const [focusedProblem, setFocusedProblem] = useState({ username: null, dateIso: null, type: null });
+    const [showOnlyIssues, setShowOnlyIssues] = useState(false);
+    const [issueTypeFilters, setIssueTypeFilters] = useState(() => ({ ...DEFAULT_ISSUE_FILTER_STATE }));
 
     const HIDDEN_USERS_LOCAL_STORAGE_KEY = 'adminDashboard_hiddenUsers_v2';
     const [hiddenUsers, setHiddenUsers] = useState(() => {
@@ -96,7 +113,7 @@ const AdminWeekSection = ({
         localStorage.setItem(HIDDEN_USERS_LOCAL_STORAGE_KEY, JSON.stringify(Array.from(hiddenUsers)));
     }, [hiddenUsers]);
 
-    const processedUserData = useMemo(() => {
+    const userAnalytics = useMemo(() => {
         // dailySummariesForWeekSection is now a list of DailyTimeSummaryDTO
         return users
             .map((user) => {
@@ -161,13 +178,78 @@ const AdminWeekSection = ({
                     userApprovedVacations,
                     userCurrentSickLeaves, // Pass sick leaves for display
                 };
-            })
-            .filter(ud => // Filter by search term and hidden status
-                ud.username.toLowerCase().includes(searchTerm.toLowerCase()) &&
-                !hiddenUsers.has(ud.username)
-            );
-    }, [users, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, searchTerm, hiddenUsers, rawUserTrackingBalances, detailedUser, currentUserHolidayOptions]);
+            });
+    }, [users, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, detailedUser, currentUserHolidayOptions]);
 
+    const issueSummary = useMemo(() => {
+        const summary = {
+            missing: 0,
+            incomplete: 0,
+            autoCompleted: 0,
+            holidayPending: 0,
+            totalWithIssue: 0,
+        };
+
+        userAnalytics.forEach(userData => {
+            const indicators = userData.problemIndicators || {};
+            let hasAny = false;
+            if ((indicators.missingEntriesCount || 0) > 0) {
+                summary.missing += 1;
+                hasAny = true;
+            }
+            if ((indicators.incompleteDaysCount || 0) > 0) {
+                summary.incomplete += 1;
+                hasAny = true;
+            }
+            if ((indicators.autoCompletedUncorrectedCount || 0) > 0) {
+                summary.autoCompleted += 1;
+                hasAny = true;
+            }
+            if ((indicators.holidayPendingCount || 0) > 0) {
+                summary.holidayPending += 1;
+                hasAny = true;
+            }
+            if (hasAny) {
+                summary.totalWithIssue += 1;
+            }
+        });
+
+        return summary;
+    }, [userAnalytics]);
+
+    const processedUserData = useMemo(() => {
+        const normalizedSearch = searchTerm.trim().toLowerCase();
+        const activeFilters = Object.entries(issueTypeFilters)
+            .filter(([, enabled]) => enabled)
+            .map(([key]) => key);
+
+        return userAnalytics.filter(userData => {
+            if (normalizedSearch && !userData.username.toLowerCase().includes(normalizedSearch)) {
+                return false;
+            }
+            if (hiddenUsers.has(userData.username)) {
+                return false;
+            }
+            if (!showOnlyIssues) {
+                return true;
+            }
+
+            const indicators = userData.problemIndicators || {};
+            const hasAnyIssue = Object.values(ISSUE_FILTER_KEYS).some(key => (indicators[key] || 0) > 0);
+            if (!hasAnyIssue) {
+                return false;
+            }
+
+            if (activeFilters.length === 0) {
+                return true;
+            }
+
+            return activeFilters.some(filterKey => {
+                const indicatorKey = ISSUE_FILTER_KEYS[filterKey];
+                return indicatorKey ? (indicators[indicatorKey] || 0) > 0 : false;
+            });
+        });
+    }, [userAnalytics, searchTerm, hiddenUsers, showOnlyIssues, issueTypeFilters]);
 
     const sortedUserData = useMemo(() => {
         // Sorting logic (remains largely the same, adjust keys if needed)
@@ -208,6 +290,46 @@ const AdminWeekSection = ({
         }
         return '';
     };
+
+    const toggleIssueTypeFilter = (filterKey) => {
+        setIssueTypeFilters(prev => ({
+            ...prev,
+            [filterKey]: !prev[filterKey],
+        }));
+    };
+
+    const resetIssueTypeFilters = () => {
+        setIssueTypeFilters({ ...DEFAULT_ISSUE_FILTER_STATE });
+    };
+
+    const issueFilterButtons = useMemo(() => ([
+        {
+            key: 'missing',
+            label: t('adminDashboard.issueFilters.missing', 'Fehlende Stempel'),
+            count: issueSummary.missing,
+            icon: '❗',
+        },
+        {
+            key: 'incomplete',
+            label: t('adminDashboard.issueFilters.incomplete', 'Unvollständige Tage'),
+            count: issueSummary.incomplete,
+            icon: '⚠️',
+        },
+        {
+            key: 'autoCompleted',
+            label: t('adminDashboard.issueFilters.autoCompleted', 'Auto-abschlüsse offen'),
+            count: issueSummary.autoCompleted,
+            icon: '🤖',
+        },
+        {
+            key: 'holidayPending',
+            label: t('adminDashboard.issueFilters.holidayPending', 'Feiertagsentscheidung offen'),
+            count: issueSummary.holidayPending,
+            icon: '🎉',
+        },
+    ]), [issueSummary, t]);
+
+    const activeIssueFilterCount = Object.values(issueTypeFilters).filter(Boolean).length;
 
     const toggleDetails = (username) => {
         const newDetailedUser = detailedUser === username ? null : username;
@@ -382,21 +504,64 @@ const AdminWeekSection = ({
                 </div>
 
                 <div className="user-search-controls">
-                    <input
-                        type="text"
-                        placeholder={t("adminDashboard.searchUser", "Benutzer suchen...")}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="user-search-input"
-                    />
-                    {users.length > 0 && ( // Only show if there are users to manage
+                    <div className="user-search-row">
+                        <input
+                            type="text"
+                            placeholder={t("adminDashboard.searchUser", "Benutzer suchen...")}
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="user-search-input"
+                        />
+                        {users.length > 0 && ( // Only show if there are users to manage
+                            <button
+                                type="button"
+                                onClick={() => setShowHiddenUsersManager(!showHiddenUsersManager)}
+                                className="manage-hidden-users-button text-sm"
+                                title={t('manageHiddenUsersTooltip', 'Ausgeblendete Benutzer verwalten')}
+                            >
+                                {showHiddenUsersManager ? t('hideHiddenUsersList', 'Liste verbergen') : t('showHiddenUsersList', 'Ausgeblendete zeigen')} ({hiddenUsers.size})
+                            </button>
+                        )}
                         <button
-                            onClick={() => setShowHiddenUsersManager(!showHiddenUsersManager)}
-                            className="manage-hidden-users-button text-sm"
-                            title={t('manageHiddenUsersTooltip', 'Ausgeblendete Benutzer verwalten')}
+                            type="button"
+                            className={`issue-filter-toggle ${showOnlyIssues ? 'active' : ''}`}
+                            onClick={() => setShowOnlyIssues(prev => !prev)}
+                            aria-pressed={showOnlyIssues}
                         >
-                            {showHiddenUsersManager ? t('hideHiddenUsersList', 'Liste verbergen') : t('showHiddenUsersList', 'Ausgeblendete zeigen')} ({hiddenUsers.size})
+                            {showOnlyIssues
+                                ? t('adminDashboard.issueFilters.showAll', 'Alle anzeigen')
+                                : t('adminDashboard.issueFilters.onlyIssues', 'Nur Problemfälle')}
+                            {issueSummary.totalWithIssue > 0 && ` (${issueSummary.totalWithIssue})`}
                         </button>
+                    </div>
+                    {showOnlyIssues && (
+                        <div
+                            className="issue-type-filter-group"
+                            role="group"
+                            aria-label={t('adminDashboard.issueFilters.groupLabel', 'Problemtypen filtern')}
+                        >
+                            {issueFilterButtons.map(filter => (
+                                <button
+                                    type="button"
+                                    key={filter.key}
+                                    className={`issue-type-pill ${issueTypeFilters[filter.key] ? 'active' : ''}`}
+                                    onClick={() => toggleIssueTypeFilter(filter.key)}
+                                    aria-pressed={issueTypeFilters[filter.key]}
+                                >
+                                    <span className="pill-icon" aria-hidden="true">{filter.icon}</span>
+                                    <span className="pill-label">{filter.label}</span>
+                                    <span className="pill-count">{filter.count}</span>
+                                </button>
+                            ))}
+                            <button
+                                type="button"
+                                className="issue-type-pill reset-pill"
+                                onClick={resetIssueTypeFilters}
+                                disabled={activeIssueFilterCount === Object.keys(DEFAULT_ISSUE_FILTER_STATE).length}
+                            >
+                                {t('adminDashboard.issueFilters.reset', 'Alle Typen')}
+                            </button>
+                        </div>
                     )}
                 </div>
 

@@ -129,6 +129,84 @@
   font-size: 0.9rem;
 }
 
+/* KPI Overview */
+.admin-dashboard.scoped-dashboard .dashboard-kpi-grid {
+  display: grid;
+  gap: var(--u-gap-sm);
+  margin-bottom: var(--u-gap);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+.admin-dashboard.scoped-dashboard .kpi-card {
+  background: var(--c-card);
+  border-radius: var(--u-radius-md);
+  border: 1px solid var(--c-border);
+  box-shadow: var(--u-shadow-sm);
+  padding: clamp(1rem, 2.2vw, 1.4rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  transition: transform var(--u-dur) var(--u-ease), box-shadow var(--u-dur) var(--u-ease);
+}
+.admin-dashboard.scoped-dashboard .kpi-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--u-shadow-md);
+}
+.admin-dashboard.scoped-dashboard .kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.admin-dashboard.scoped-dashboard .kpi-value {
+  font-size: clamp(1.5rem, 3.6vw, 2.1rem);
+  font-weight: 700;
+  color: var(--c-text);
+}
+.admin-dashboard.scoped-dashboard .kpi-meta {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--c-muted);
+}
+.admin-dashboard.scoped-dashboard .kpi-card.kpi-warning {
+  border-color: rgba(255, 199, 65, 0.4);
+  background: linear-gradient(135deg, rgba(255, 199, 65, 0.12), var(--c-card));
+}
+.admin-dashboard.scoped-dashboard .kpi-card.kpi-positive {
+  border-color: rgba(46, 204, 113, 0.35);
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.12), var(--c-card));
+}
+.admin-dashboard.scoped-dashboard .kpi-card.kpi-critical {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), var(--c-card));
+}
+.admin-dashboard.scoped-dashboard .kpi-card.kpi-info {
+  border-color: rgba(71, 91, 255, 0.35);
+  background: linear-gradient(135deg, rgba(71, 91, 255, 0.12), var(--c-card));
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .kpi-card {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .kpi-card.kpi-warning {
+  border-color: rgba(245, 158, 11, 0.5);
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.18), var(--c-surface));
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .kpi-card.kpi-positive {
+  border-color: rgba(74, 222, 128, 0.45);
+  background: linear-gradient(135deg, rgba(74, 222, 128, 0.2), var(--c-surface));
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .kpi-card.kpi-critical {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: linear-gradient(135deg, rgba(248, 113, 113, 0.2), var(--c-surface));
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .kpi-card.kpi-info {
+  border-color: rgba(96, 165, 250, 0.45);
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), var(--c-surface));
+}
+
 /* Styles for top-level action buttons (Import/Reload) */
 .admin-dashboard.scoped-dashboard .admin-action-buttons-container {
   margin-bottom: var(--u-gap);
@@ -155,6 +233,24 @@
 }
 .admin-dashboard.scoped-dashboard .admin-action-button:hover {
   transform: translateY(-1px);
+}
+
+.admin-dashboard.scoped-dashboard .admin-action-button.admin-analytics-button {
+  border-color: rgba(71, 91, 255, 0.3);
+  background: rgba(71, 91, 255, 0.08);
+  color: var(--c-text);
+}
+.admin-dashboard.scoped-dashboard .admin-action-button.admin-analytics-button:hover {
+  background: rgba(71, 91, 255, 0.16);
+  border-color: rgba(71, 91, 255, 0.55);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-action-button.admin-analytics-button {
+  background: rgba(71, 91, 255, 0.18);
+  border-color: rgba(71, 91, 255, 0.45);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-action-button.admin-analytics-button:hover {
+  background: rgba(71, 91, 255, 0.28);
+  border-color: rgba(71, 91, 255, 0.65);
 }
 
 /* Generic Button Styles */
@@ -367,10 +463,15 @@
 /* User Search Controls & Hidden Users Manager */
 .admin-dashboard.scoped-dashboard .user-search-controls {
   display: flex;
+  flex-direction: column;
   gap: var(--u-gap-sm);
   margin-bottom: var(--u-gap-md);
-  align-items: center;
+}
+.admin-dashboard.scoped-dashboard .user-search-row {
+  display: flex;
+  gap: var(--u-gap-sm);
   flex-wrap: wrap;
+  align-items: center;
 }
 .admin-dashboard.scoped-dashboard .user-search-controls .user-search-input {
   padding: 0.6rem 0.9rem;
@@ -410,6 +511,94 @@
 }
 .admin-dashboard.scoped-dashboard .manage-hidden-users-button:hover {
   opacity: 0.85;
+}
+
+.admin-dashboard.scoped-dashboard .issue-filter-toggle {
+  padding: 0.55rem 0.9rem;
+  font-size: 0.82rem;
+  border-radius: var(--u-radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  cursor: pointer;
+  transition:
+    background-color var(--u-dur) var(--u-ease),
+    border-color var(--u-dur) var(--u-ease),
+    color var(--u-dur) var(--u-ease);
+}
+.admin-dashboard.scoped-dashboard .issue-filter-toggle:hover {
+  background: var(--c-line);
+}
+.admin-dashboard.scoped-dashboard .issue-filter-toggle.active {
+  background: rgba(255, 199, 65, 0.18);
+  border-color: rgba(255, 199, 65, 0.65);
+  color: var(--c-text);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .issue-filter-toggle {
+  background: var(--c-line);
+  border-color: var(--c-border);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .issue-filter-toggle.active {
+  background: rgba(245, 158, 11, 0.32);
+  border-color: rgba(245, 158, 11, 0.55);
+}
+
+.admin-dashboard.scoped-dashboard .issue-type-filter-group {
+  display: flex;
+  gap: var(--u-gap-xs);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.admin-dashboard.scoped-dashboard .issue-type-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.78rem;
+  border-radius: var(--u-radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  color: var(--c-text);
+  cursor: pointer;
+  transition:
+    transform var(--u-dur) var(--u-ease),
+    background-color var(--u-dur) var(--u-ease),
+    border-color var(--u-dur) var(--u-ease);
+}
+.admin-dashboard.scoped-dashboard .issue-type-pill:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--c-surface);
+}
+.admin-dashboard.scoped-dashboard .issue-type-pill.active {
+  border-color: rgba(71, 91, 255, 0.55);
+  background: rgba(71, 91, 255, 0.12);
+}
+.admin-dashboard.scoped-dashboard .issue-type-pill .pill-icon {
+  font-size: 0.85rem;
+}
+.admin-dashboard.scoped-dashboard .issue-type-pill .pill-count {
+  font-weight: 600;
+  font-size: 0.75rem;
+  padding: 0 0.2rem;
+  min-width: 1.4rem;
+  text-align: center;
+}
+.admin-dashboard.scoped-dashboard .issue-type-pill.reset-pill {
+  background: transparent;
+  border-style: dashed;
+}
+.admin-dashboard.scoped-dashboard .issue-type-pill.reset-pill:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .issue-type-pill {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .issue-type-pill.active {
+  background: rgba(96, 165, 250, 0.24);
+  border-color: rgba(96, 165, 250, 0.55);
 }
 
 .admin-dashboard.scoped-dashboard .hidden-users-manager {
