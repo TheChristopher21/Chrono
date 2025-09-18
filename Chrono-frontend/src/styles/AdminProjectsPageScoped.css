@@ -84,6 +84,64 @@
     color: var(--pg-text);
 }
 
+.admin-projects-page .tab-bar {
+    display: inline-flex;
+    flex-wrap: wrap;
+    gap: var(--pg-gap-sm);
+    padding: 0.4rem;
+    background: var(--pg-card);
+    border: 1px solid var(--pg-border);
+    border-radius: var(--pg-radius-xl);
+    box-shadow: var(--pg-shadow-card);
+    margin-bottom: var(--pg-gap-lg);
+}
+
+.admin-projects-page .tab-button {
+    border: 1px solid transparent;
+    background: transparent;
+    color: var(--pg-text-muted);
+    font-weight: 600;
+    padding: 0.55rem 1.2rem;
+    border-radius: var(--pg-radius-md);
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.admin-projects-page .tab-button:hover,
+.admin-projects-page .tab-button:focus {
+    color: var(--pg-text);
+    background: var(--pg-surface);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.14);
+    transform: translateY(-1px);
+}
+
+.admin-projects-page .tab-button.is-active {
+    background: var(--pg-primary);
+    color: #fff;
+    box-shadow: 0 10px 22px rgba(37, 99, 235, 0.28);
+    transform: translateY(-1px);
+}
+
+.admin-projects-page .tab-panel-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pg-gap-lg);
+}
+
+.admin-projects-page .tab-panel {
+    display: none;
+}
+
+.admin-projects-page .tab-panel.is-active {
+    display: flex;
+    flex-direction: column;
+    gap: var(--pg-gap-lg);
+}
+
+.admin-projects-page .tab-panel.is-active > .content-section {
+    margin: 0;
+}
+
 .admin-projects-page .content-section {
     background: var(--pg-card);
     border: 1px solid var(--pg-border);
@@ -129,6 +187,10 @@
     padding: 0 0.95rem;
     outline: none;
     transition: border-color 0.15s ease, box-shadow 0.2s ease, background 0.2s ease, transform 0.05s ease;
+}
+
+.admin-projects-page .project-selector {
+    max-width: 320px;
 }
 
 .admin-projects-page input:hover,
@@ -445,6 +507,19 @@
     gap: 0.5rem;
     font-size: 0.9rem;
     color: var(--pg-text);
+}
+
+.admin-projects-page .checkbox-field {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--pg-text);
+}
+
+.admin-projects-page .checkbox-field input[type="checkbox"] {
+    width: auto;
+    height: auto;
 }
 
 .integration-cards {

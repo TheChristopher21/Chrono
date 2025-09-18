@@ -196,14 +196,8 @@ const Navbar = () => {
                                                 </Link>
                                                 {currentUser.customerTrackingEnabled && (
                                                     <>
-                                                        <Link to="/admin/customers" onClick={() => setOpenAdmin(false)}>
-                                                            {t('navbar.customerManagement','Kunden')}
-                                                        </Link>
                                                         <Link to="/admin/projects" onClick={() => setOpenAdmin(false)}>
-                                                            {t('navbar.projectManagement','Projekte')}
-                                                        </Link>
-                                                        <Link to="/admin/tasks" onClick={() => setOpenAdmin(false)}>
-                                                            {t('navbar.taskManagement','Aufgaben')}
+                                                            {t('navbar.workManagement','Kunden · Projekte · Aufgaben')}
                                                         </Link>
                                                     </>
                                                 )}
