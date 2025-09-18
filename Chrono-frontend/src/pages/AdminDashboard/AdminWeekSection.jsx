@@ -23,6 +23,96 @@ import {
 import {parseISO} from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
 
+const HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY = 'adminDashboard_holidayOptions_v1';
+const HIDDEN_USERS_LOCAL_STORAGE_PREFIX = 'adminDashboard_hiddenUsers_v3';
+
+const isBrowserEnvironment = () => typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
+
+const areSetsEqual = (setA, setB) => {
+    if (setA === setB) return true;
+    if (!setA || !setB || setA.size !== setB.size) return false;
+    for (const value of setA) {
+        if (!setB.has(value)) return false;
+    }
+    return true;
+};
+
+const parseHiddenUsersFromStorage = (rawValue) => {
+    if (!rawValue) return new Set();
+    try {
+        const parsed = JSON.parse(rawValue);
+        if (Array.isArray(parsed)) return new Set(parsed);
+        return new Set();
+    } catch (error) {
+        console.error('Error parsing hidden users from localStorage:', error);
+        return new Set();
+    }
+};
+
+const normalizeHolidayOptionsList = (optionsList) => {
+    if (!Array.isArray(optionsList)) return [];
+    return optionsList
+        .map(option => {
+            if (!option) return null;
+            try {
+                const normalizedDate = typeof option.holidayDate === 'string'
+                    ? option.holidayDate
+                    : formatLocalDateYMD(new Date(option.holidayDate));
+                if (!normalizedDate) return null;
+                return { ...option, holidayDate: normalizedDate };
+            } catch (error) {
+                console.error('Error normalizing holiday option entry:', error, option);
+                return null;
+            }
+        })
+        .filter(Boolean);
+};
+
+const getIsoDatesForWeek = (mondayDate) => {
+    if (!(mondayDate instanceof Date) || Number.isNaN(mondayDate.getTime())) return [];
+    const mondayClone = new Date(mondayDate.getTime());
+    mondayClone.setHours(0, 0, 0, 0);
+    const isoDates = [];
+    for (let i = 0; i < 7; i += 1) {
+        const day = new Date(mondayClone.getTime());
+        day.setDate(mondayClone.getDate() + i);
+        isoDates.push(formatLocalDateYMD(day));
+    }
+    return isoDates;
+};
+
+const areHolidayOptionRecordsEqual = (optionA, optionB) => {
+    if (optionA === optionB) return true;
+    if (!optionA || !optionB) return false;
+    const keys = new Set([...Object.keys(optionA), ...Object.keys(optionB)]);
+    for (const key of keys) {
+        if (optionA[key] !== optionB[key]) return false;
+    }
+    return true;
+};
+
+const parseHolidayOptionsFromStorage = (rawValue) => {
+    if (!rawValue) return {};
+    try {
+        const parsed = JSON.parse(rawValue);
+        if (!parsed || typeof parsed !== 'object') return {};
+        return Object.entries(parsed).reduce((acc, [username, dateMap]) => {
+            if (dateMap && typeof dateMap === 'object') {
+                acc[username] = Object.entries(dateMap).reduce((userAcc, [dateKey, option]) => {
+                    if (option && typeof option === 'object' && typeof option.holidayDate === 'string') {
+                        userAcc[dateKey] = option;
+                    }
+                    return userAcc;
+                }, {});
+            }
+            return acc;
+        }, {});
+    } catch (error) {
+        console.error('Error parsing stored holiday options from localStorage:', error);
+        return {};
+    }
+};
+
 
 const ISSUE_FILTER_KEYS = {
     missing: 'missingEntriesCount',
@@ -63,6 +153,12 @@ const AdminWeekSection = ({
     const { notify } = useNotification();
     const { currentUser } = useAuth();
 
+    const browserHasStorage = isBrowserEnvironment();
+    const hiddenUsersStorageKey = useMemo(
+        () => `${HIDDEN_USERS_LOCAL_STORAGE_PREFIX}_${currentUser?.username || 'anonymous'}`,
+        [currentUser?.username]
+    );
+
     const [searchTerm, setSearchTerm] = useState("");
     const [detailedUser, setDetailedUser] = useState(null); // Username of the user whose details are expanded
     const [sortConfig, setSortConfig] = useState({ key: 'username', direction: 'ascending' });
@@ -70,18 +166,22 @@ const AdminWeekSection = ({
     const [showOnlyIssues, setShowOnlyIssues] = useState(false);
     const [issueTypeFilters, setIssueTypeFilters] = useState(() => ({ ...DEFAULT_ISSUE_FILTER_STATE }));
 
-    const HIDDEN_USERS_LOCAL_STORAGE_KEY = 'adminDashboard_hiddenUsers_v2';
-    const [hiddenUsers, setHiddenUsers] = useState(() => {
-        const saved = localStorage.getItem(HIDDEN_USERS_LOCAL_STORAGE_KEY);
-        try { return saved ? new Set(JSON.parse(saved)) : new Set(); }
-        catch (e) { console.error("Error parsing hidden users from localStorage:", e); return new Set(); }
-    });
+    const readHiddenUsersFromStorage = useCallback(() => {
+        if (!browserHasStorage) return new Set();
+        return parseHiddenUsersFromStorage(window.localStorage.getItem(hiddenUsersStorageKey));
+    }, [browserHasStorage, hiddenUsersStorageKey]);
+
+    const [hiddenUsers, setHiddenUsers] = useState(() => readHiddenUsersFromStorage());
     const [showHiddenUsersManager, setShowHiddenUsersManager] = useState(false);
     const detailSectionRef = useRef(null); // For scrolling to problem
 
     // State for holiday options for the currently detailed percentage user
     const [currentUserHolidayOptions, setCurrentUserHolidayOptions] = useState([]);
-    const [holidayOptionsByUser, setHolidayOptionsByUser] = useState({});
+    const [holidayOptionsByUser, setHolidayOptionsByUser] = useState(() => {
+        if (!browserHasStorage) return {};
+        return parseHolidayOptionsFromStorage(window.localStorage.getItem(HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY));
+    });
+
 
     // Fetch holiday options when a percentage user's details are expanded for the current week
     const fetchHolidayOptionsForUser = useCallback(async (username, mondayDate) => {
@@ -91,40 +191,41 @@ const AdminWeekSection = ({
                 const response = await api.get('/api/admin/user-holiday-options/week', {
                     params: { username: username, mondayInWeek: formatLocalDateYMD(mondayDate) }
                 });
-                const optionsList = Array.isArray(response.data) ? response.data : [];
-
-                const normalizedOptions = optionsList.map(opt => {
-                    if (!opt) return opt;
-                    const normalizedDate = typeof opt.holidayDate === 'string'
-                        ? opt.holidayDate
-                        : formatLocalDateYMD(new Date(opt.holidayDate));
-                    return { ...opt, holidayDate: normalizedDate };
-                }).filter(Boolean);
-
-                const weekDatesToReset = [];
-                const mondayClone = new Date(mondayDate.getTime());
-                mondayClone.setHours(0, 0, 0, 0);
-                for (let i = 0; i < 7; i += 1) {
-                    const day = new Date(mondayClone.getTime());
-                    day.setDate(mondayClone.getDate() + i);
-                    weekDatesToReset.push(formatLocalDateYMD(day));
-                }
+                const normalizedOptions = normalizeHolidayOptionsList(response.data);
+                const weekDatesToReset = getIsoDatesForWeek(mondayDate);
 
                 setHolidayOptionsByUser(prev => {
                     const prevForUser = prev[username] ? { ...prev[username] } : {};
+                    const updatedForUser = { ...prevForUser };
+                    let userChanged = false;
+                    const optionDateSet = new Set(normalizedOptions.map(opt => opt.holidayDate).filter(Boolean));
+
                     weekDatesToReset.forEach(dateKey => {
-                        if (prevForUser[dateKey]) delete prevForUser[dateKey];
-                    });
-                    normalizedOptions.forEach(option => {
-                        if (option?.holidayDate) {
-                            prevForUser[option.holidayDate] = option;
+                        if (!optionDateSet.has(dateKey) && updatedForUser[dateKey]) {
+                            delete updatedForUser[dateKey];
+                            userChanged = true;
                         }
                     });
-                    return { ...prev, [username]: prevForUser };
+
+                    normalizedOptions.forEach(option => {
+                        if (!option?.holidayDate) return;
+                        if (!areHolidayOptionRecordsEqual(updatedForUser[option.holidayDate], option)) {
+                            updatedForUser[option.holidayDate] = option;
+                            userChanged = true;
+                        }
+                    });
+
+                    if (!userChanged) return prev;
+
+                    const next = { ...prev };
+                    if (Object.keys(updatedForUser).length > 0) {
+                        next[username] = updatedForUser;
+                    } else {
+                        delete next[username];
+                    }
+                    return next;
                 });
 
-                const sortedCurrentOptions = [...normalizedOptions].sort((a, b) => a.holidayDate.localeCompare(b.holidayDate));
-                setCurrentUserHolidayOptions(sortedCurrentOptions);
             } catch (error) {
                 console.error("Error fetching holiday options for user's week:", error);
                 setCurrentUserHolidayOptions([]); // Reset on error
@@ -132,7 +233,7 @@ const AdminWeekSection = ({
         } else {
             setCurrentUserHolidayOptions([]); // Not a percentage user or no user
         }
-    }, [users, formatLocalDateYMD]); // formatLocalDateYMD is stable
+    }, [users]);
 
     useEffect(() => {
         if (detailedUser) {
@@ -142,12 +243,115 @@ const AdminWeekSection = ({
         }
     }, [detailedUser, selectedMonday, fetchHolidayOptionsForUser]);
 
+    useEffect(() => {
+        if (!detailedUser) return;
+        const storedOptionsForUser = holidayOptionsByUser[detailedUser];
+        const sortedOptions = storedOptionsForUser
+            ? Object.values(storedOptionsForUser).sort((a, b) => a.holidayDate.localeCompare(b.holidayDate))
+            : [];
+        setCurrentUserHolidayOptions(sortedOptions);
+    }, [detailedUser, holidayOptionsByUser]);
 
     useEffect(() => {
-        localStorage.setItem(HIDDEN_USERS_LOCAL_STORAGE_KEY, JSON.stringify(Array.from(hiddenUsers)));
-    }, [hiddenUsers]);
+        if (!browserHasStorage) return;
+        const storedHiddenUsers = readHiddenUsersFromStorage();
+        setHiddenUsers(prev => (areSetsEqual(prev, storedHiddenUsers) ? prev : storedHiddenUsers));
+    }, [browserHasStorage, readHiddenUsersFromStorage]);
+
+    useEffect(() => {
+        if (!browserHasStorage) return;
+        try {
+            window.localStorage.setItem(hiddenUsersStorageKey, JSON.stringify(Array.from(hiddenUsers)));
+        } catch (error) {
+            console.error('Error persisting hidden users to localStorage:', error);
+        }
+    }, [browserHasStorage, hiddenUsersStorageKey, hiddenUsers]);
+
+    useEffect(() => {
+        if (!browserHasStorage) return;
+        try {
+            window.localStorage.setItem(HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY, JSON.stringify(holidayOptionsByUser));
+        } catch (error) {
+            console.error('Error persisting holiday options to localStorage:', error);
+        }
+    }, [browserHasStorage, holidayOptionsByUser]);
+
+    useEffect(() => {
+        if (!selectedMonday || !Array.isArray(users) || users.length === 0) return;
+        const percentageUsers = users.filter(user => user?.isPercentage);
+        if (percentageUsers.length === 0) return;
+
+        const isoDatesForWeek = getIsoDatesForWeek(selectedMonday);
+        if (isoDatesForWeek.length === 0) return;
+
+        let cancelled = false;
+
+        const preloadHolidayOptions = async () => {
+            const requests = percentageUsers.map(user =>
+                api.get('/api/admin/user-holiday-options/week', {
+                    params: { username: user.username, mondayInWeek: formatLocalDateYMD(selectedMonday) }
+                })
+                    .then(response => ({ username: user.username, options: normalizeHolidayOptionsList(response.data) }))
+                    .catch(error => {
+                        console.error(`Error preloading holiday options for ${user.username}:`, error);
+                        return { username: user.username, options: null };
+                    })
+            );
+
+            const results = await Promise.all(requests);
+            if (cancelled) return;
+
+            setHolidayOptionsByUser(prev => {
+                let hasChanges = false;
+                const next = { ...prev };
+
+                results.forEach(({ username, options }) => {
+                    if (!username || options === null) return;
+
+                    const prevForUser = prev[username] ? { ...prev[username] } : {};
+                    const updatedForUser = { ...prevForUser };
+                    let userChanged = false;
+                    const optionDateSet = new Set(options.map(opt => opt.holidayDate).filter(Boolean));
+
+                    isoDatesForWeek.forEach(dateKey => {
+                        if (!optionDateSet.has(dateKey) && updatedForUser[dateKey]) {
+                            delete updatedForUser[dateKey];
+                            userChanged = true;
+                        }
+                    });
+
+                    options.forEach(option => {
+                        if (!option?.holidayDate) return;
+                        if (!areHolidayOptionRecordsEqual(updatedForUser[option.holidayDate], option)) {
+                            updatedForUser[option.holidayDate] = option;
+                            userChanged = true;
+                        }
+                    });
+
+                    if (userChanged) {
+                        if (Object.keys(updatedForUser).length > 0) {
+                            next[username] = updatedForUser;
+                        } else {
+                            delete next[username];
+                        }
+                        hasChanges = true;
+                    }
+                });
+
+                return hasChanges ? next : prev;
+            });
+        };
+
+        preloadHolidayOptions();
+
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedMonday, users]);
 
     const userAnalytics = useMemo(() => {
+        const currentWeekIsoDates = weekDates.map(date => formatLocalDateYMD(date));
+        const currentWeekIsoSet = new Set(currentWeekIsoDates);
 
         // dailySummariesForWeekSection is now a list of DailyTimeSummaryDTO
         return users
@@ -217,7 +421,7 @@ const AdminWeekSection = ({
                     holidayOptions: allHolidayOptionsForUser,
                 };
             });
-    }, [users, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, detailedUser, currentUserHolidayOptions]);
+    }, [users, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser]);
 
 
     const issueSummary = useMemo(() => {
