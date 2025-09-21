@@ -3,7 +3,7 @@ import Navbar from '../components/Navbar';
 import api from '../utils/api';
 import ReactMarkdown from 'react-markdown';
 import { useTranslation } from '../context/LanguageContext';
-import '../styles/WhatsNewPageScoped.css'; // Gekapselte CSS-Datei
+import '../styles/WhatsNewPageScoped.css';
 
 const WhatsNewPage = () => {
     const { t } = useTranslation();

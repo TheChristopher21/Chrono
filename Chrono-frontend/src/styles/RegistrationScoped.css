@@ -716,6 +716,12 @@
   font-size: 1.1em;
   margin-left: 0.1em;
 }
+.central-employee-input .employee-note {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: var(--c-text-soft);
+    line-height: 1.4;
+}
 
 
 @media (max-width: 768px) {

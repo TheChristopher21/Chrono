@@ -227,7 +227,13 @@ const Registration = () => {
                                 onChange={handleEmployeeCountChange}
                                 disabled={isSubmitting}
                             />
+                            <p className="employee-note">
+                                Für sehr große Unternehmen mit mehr als 200 Mitarbeitenden erstellen wir
+                                gerne ein individuelles Angebot. Bitte stellen Sie eine direkte Anfrage
+                                über unser Kontaktformular.
+                            </p>
                         </div>
+
 
                         <div className="billing-toggle">
                             <label>

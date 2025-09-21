@@ -1320,7 +1320,7 @@ const AdminWeekSection = forwardRef(({
             )}
         </>
     );
-};
+});
 
 AdminWeekSection.propTypes = {
     t: PropTypes.func.isRequired,

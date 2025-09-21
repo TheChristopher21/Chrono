@@ -102,11 +102,12 @@ class ReportServiceIntegrationTest {
                 LocalDate.of(2024, 1, 10)
         );
 
+        Project finalProject = project;
         assertThat(analytics)
                 .hasSize(1)
                 .first()
                 .satisfies(node -> {
-                    assertThat(node.getId()).isEqualTo(project.getId());
+                    assertThat(node.getId()).isEqualTo(finalProject.getId());
                     assertThat(node.getTotalMinutes()).isEqualTo(480L);
                     assertThat(node.getUtilization()).isNotNull();
                 });
@@ -164,11 +165,12 @@ class ReportServiceIntegrationTest {
                 LocalDate.of(2024, 2, 5)
         );
 
+        Project finalProject = project;
         assertThat(analytics)
                 .hasSize(1)
                 .first()
                 .satisfies(node -> {
-                    assertThat(node.getId()).isEqualTo(project.getId());
+                    assertThat(node.getId()).isEqualTo(finalProject.getId());
                     assertThat(node.getTotalMinutes()).isEqualTo(90L);
                     assertThat(node.getBillableMinutes()).isEqualTo(90L);
                 });
