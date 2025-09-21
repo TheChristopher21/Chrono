@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 
@@ -121,14 +121,6 @@ const AdminDashboard = () => {
             weekSectionRef.current?.focusUser?.(username);
         }
     }, []);
-
-    const handleOpenImportTimes = useCallback(() => {
-        navigate('/admin/import-times');
-    }, [navigate]);
-
-    const handleOpenPayslips = useCallback(() => {
-        navigate('/admin/payslips');
-    }, [navigate]);
 
     const handleOpenAnalytics = useCallback(() => {
         navigate('/admin/analytics');
@@ -593,27 +585,34 @@ const AdminDashboard = () => {
 
 
             <div className="admin-action-buttons-container">
-                <button
-                    type="button"
-                    onClick={handleOpenImportTimes}
+                <Link
+                    to="/admin/import-times"
                     className="admin-action-button button-primary"
+                    role="button"
                 >
                     {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
-                </button>
-                <button
-                    type="button"
-                    onClick={handleOpenPayslips}
+                </Link>
+                <Link
+                    to="/admin/payslips"
                     className="admin-action-button button-primary"
+                    role="button"
                 >
                     {t('navbar.payslips', 'Abrechnungen')}
-                </button>
-                <button
-                    type="button"
-                    onClick={handleOpenAnalytics}
+                </Link>
+                <Link
+                    to="/admin/schedule"
+                    className="admin-action-button button-primary"
+                    role="button"
+                >
+                    {t('navbar.schedulePlanner', 'Dienstplan')}
+                </Link>
+                <Link
+                    to="/admin/analytics"
                     className="admin-action-button button-secondary admin-analytics-button"
+                    role="button"
                 >
                     {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
-                </button>
+                </Link>
                 <button
                     type="button"
                     onClick={handleDataReloadNeeded}
