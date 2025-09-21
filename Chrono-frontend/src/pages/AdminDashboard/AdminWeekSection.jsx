@@ -1,5 +1,13 @@
 // src/pages/AdminDashboard/AdminWeekSection.jsx
-import React, { useState, useMemo, useEffect, useRef, useCallback } from "react";
+import React, {
+    useState,
+    useMemo,
+    useEffect,
+    useRef,
+    useCallback,
+    forwardRef,
+    useImperativeHandle,
+} from "react";
 import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from "prop-types";
 import "../../styles/AdminDashboardScoped.css";
@@ -129,27 +137,28 @@ const DEFAULT_ISSUE_FILTER_STATE = {
 };
 
 
-const AdminWeekSection = ({
-                              t,
-                              weekDates,
-                              selectedMonday,
-                              handlePrevWeek,
-                              handleNextWeek,
-                              handleWeekJump,
-                              handleCurrentWeek,
-                              onFocusProblemWeek,
-                              dailySummariesForWeekSection, // This will be DailyTimeSummaryDTO[]
-                              allVacations,
-                              allSickLeaves,
-                              allHolidays, // This is now holidaysByCanton
-                              users,
-                              defaultExpectedHours,
-                              openEditModal, // This will pass the list of entries now
-                              openPrintUserModal,
-                              rawUserTrackingBalances, // Consider renaming if structure changed
-                              openNewEntryModal, // For creating entries for a day from scratch
-                              onDataReloadNeeded,
-                          }) => {
+const AdminWeekSection = forwardRef(({
+                                         t,
+                                         weekDates,
+                                         selectedMonday,
+                                         handlePrevWeek,
+                                         handleNextWeek,
+                                         handleWeekJump,
+                                         handleCurrentWeek,
+                                         onFocusProblemWeek,
+                                         dailySummariesForWeekSection, // This will be DailyTimeSummaryDTO[]
+                                         allVacations,
+                                         allSickLeaves,
+                                         allHolidays, // This is now holidaysByCanton
+                                         users,
+                                         defaultExpectedHours,
+                                         openEditModal, // This will pass the list of entries now
+                                         openPrintUserModal,
+                                         rawUserTrackingBalances, // Consider renaming if structure changed
+                                         openNewEntryModal, // For creating entries for a day from scratch
+                                         onDataReloadNeeded,
+                                         onIssueSummaryChange,
+                                     }, ref) => {
     const { notify } = useNotification();
     const { currentUser } = useAuth();
 
@@ -174,6 +183,7 @@ const AdminWeekSection = ({
     const [hiddenUsers, setHiddenUsers] = useState(() => readHiddenUsersFromStorage());
     const [showHiddenUsersManager, setShowHiddenUsersManager] = useState(false);
     const detailSectionRef = useRef(null); // For scrolling to problem
+    const sectionRef = useRef(null);
 
     // State for holiday options for the currently detailed percentage user
     const [currentUserHolidayOptions, setCurrentUserHolidayOptions] = useState([]);
@@ -460,6 +470,12 @@ const AdminWeekSection = ({
         return summary;
     }, [userAnalytics]);
 
+    useEffect(() => {
+        if (typeof onIssueSummaryChange === 'function') {
+            onIssueSummaryChange(issueSummary);
+        }
+    }, [issueSummary, onIssueSummaryChange]);
+
     const processedUserData = useMemo(() => {
         const normalizedSearch = searchTerm.trim().toLowerCase();
         const activeFilters = Object.entries(issueTypeFilters)
@@ -578,6 +594,27 @@ const AdminWeekSection = ({
     ]), [issueSummary, t]);
 
     const activeIssueFilterCount = Object.values(issueTypeFilters).filter(Boolean).length;
+
+    const scrollSectionIntoView = useCallback(() => {
+        if (sectionRef.current) {
+            sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, []);
+
+    const setFiltersExclusive = useCallback((filterKey) => {
+        if (!filterKey || filterKey === 'all') {
+            setIssueTypeFilters({ ...DEFAULT_ISSUE_FILTER_STATE });
+            return;
+        }
+
+        if (Object.prototype.hasOwnProperty.call(DEFAULT_ISSUE_FILTER_STATE, filterKey)) {
+            const nextState = { ...DEFAULT_ISSUE_FILTER_STATE };
+            Object.keys(nextState).forEach(key => {
+                nextState[key] = key === filterKey;
+            });
+            setIssueTypeFilters(nextState);
+        }
+    }, []);
 
     const toggleDetails = (username) => {
         const newDetailedUser = detailedUser === username ? null : username;
@@ -768,10 +805,66 @@ const AdminWeekSection = ({
         }
     };
 
+    useImperativeHandle(ref, () => ({
+        focusIssueType(filterKey) {
+            setSearchTerm('');
+            setDetailedUser(null);
+            setFocusedProblem({ username: null, dateIso: null, type: null });
+            setShowOnlyIssues(true);
+            setFiltersExclusive(filterKey);
+            scrollSectionIntoView();
+        },
+        showOnlyIssuesView() {
+            setSearchTerm('');
+            setDetailedUser(null);
+            setFocusedProblem({ username: null, dateIso: null, type: null });
+            setShowOnlyIssues(true);
+            scrollSectionIntoView();
+        },
+        resetIssueFilters() {
+            setSearchTerm('');
+            setDetailedUser(null);
+            setFocusedProblem({ username: null, dateIso: null, type: null });
+            setShowOnlyIssues(false);
+            setIssueTypeFilters({ ...DEFAULT_ISSUE_FILTER_STATE });
+            scrollSectionIntoView();
+        },
+        focusUser(username) {
+            if (!username) return;
+            setHiddenUsers(prev => {
+                if (!prev.has(username)) return prev;
+                const next = new Set(prev);
+                next.delete(username);
+                return next;
+            });
+            setShowOnlyIssues(false);
+            setSearchTerm(username);
+            setDetailedUser(username);
+            setFocusedProblem({ username, dateIso: null, type: 'direct_focus' });
+            scrollSectionIntoView();
+        },
+        focusNegativeBalances() {
+            setSearchTerm('');
+            setDetailedUser(null);
+            setFocusedProblem({ username: null, dateIso: null, type: null });
+            setShowOnlyIssues(false);
+            setSortConfig({ key: 'cumulativeBalanceMinutes', direction: 'ascending' });
+            scrollSectionIntoView();
+        },
+        focusPositiveBalances() {
+            setSearchTerm('');
+            setDetailedUser(null);
+            setFocusedProblem({ username: null, dateIso: null, type: null });
+            setShowOnlyIssues(false);
+            setSortConfig({ key: 'cumulativeBalanceMinutes', direction: 'descending' });
+            scrollSectionIntoView();
+        },
+    }), [scrollSectionIntoView, setFiltersExclusive]);
+
 
     return (
         <> {/* Added scoped-dashboard here */}
-            <section className="week-section content-section">
+            <section ref={sectionRef} className="week-section content-section">
                 <div className="section-header-controls"> {/* Wrapper for H3 and Navigation */}
                     <h3>{t("adminDashboard.timeTrackingCurrentWeek", "Zeiterfassung Aktuelle Woche")}</h3>
                     <div className="week-navigation">
@@ -1313,6 +1406,9 @@ AdminWeekSection.propTypes = {
     })),
     openNewEntryModal: PropTypes.func.isRequired,
     onDataReloadNeeded: PropTypes.func.isRequired,
+    onIssueSummaryChange: PropTypes.func,
 };
+
+AdminWeekSection.displayName = 'AdminWeekSection';
 
 export default AdminWeekSection;
