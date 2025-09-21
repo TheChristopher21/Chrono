@@ -460,6 +460,17 @@
   gap: var(--u-gap);
 }
 
+@media (max-width: 640px) {
+  .admin-dashboard.scoped-dashboard .admin-action-buttons-container {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-dashboard.scoped-dashboard .admin-action-button {
+    width: 100%;
+  }
+}
+
 .admin-dashboard.scoped-dashboard .dashboard-secondary-grid {
   display: grid;
   gap: var(--u-gap);
@@ -674,6 +685,38 @@
 .admin-dashboard.scoped-dashboard .stream-more {
   font-size: 0.78rem;
   color: var(--c-muted);
+}
+
+@media (max-width: 768px) {
+  .admin-dashboard.scoped-dashboard .stream-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-dashboard.scoped-dashboard .stream-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .admin-dashboard.scoped-dashboard .stream-item-meta {
+    flex-wrap: wrap;
+  }
+
+  .admin-dashboard.scoped-dashboard .stream-btn {
+    flex: 1 1 auto;
+  }
+}
+
+@media (max-width: 640px) {
+  .admin-dashboard.scoped-dashboard .ribbon-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .admin-dashboard.scoped-dashboard .issue-chip {
+    flex: 1 1 140px;
+  }
 }
 
 /* Week Navigation (im WeekSection Header) */
