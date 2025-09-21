@@ -533,6 +533,41 @@ const translations = {
                 groupLabel: "Problemtypen filtern",
                 reset: "Alle Typen",
             },
+            smartOverview: {
+                title: "Wochenüberblick",
+                subtitle: "Direkter Blick auf wichtige Kennzahlen und offene Themen.",
+                showIssuesButton: "Problemfälle anzeigen",
+                cards: {
+                    active: {
+                        title: "Aktive Personen",
+                        subtitle: "mit Sollzeit in dieser Woche",
+                    },
+                    issues: {
+                        title: "Problemfälle",
+                        subtitle: "Benutzer mit Handlungsbedarf",
+                    },
+                    corrections: {
+                        title: "Offene Korrekturen",
+                        subtitle: "Tage prüfen (fehlend/unklar)",
+                    },
+                    negative: {
+                        title: "Negative Salden",
+                        subtitle: "Personen unter Soll",
+                    },
+                },
+                quickFix: {
+                    title: "Schnellkorrekturen",
+                    subtitle: "Spring direkt zu den wichtigsten Problemen.",
+                    empty: "Aktuell keine offenen Problemfälle – alles im grünen Bereich!",
+                    action: "Öffnen",
+                    labels: {
+                        missing: "Fehlende Stempel",
+                        incomplete: "Unvollständige Tage",
+                        autoCompleted: "Automatisch beendet",
+                        holidayPending: "Feiertag offen",
+                    },
+                },
+            },
             manageHiddenUsersTooltip: "Ausgeblendete Benutzer verwalten",
             hideHiddenUsersList: "Liste verbergen",
             showHiddenUsersList: "Ausgeblendete zeigen",
@@ -1851,6 +1886,41 @@ const translations = {
                 onlyIssues: "Only show issues",
                 groupLabel: "Filter issue types",
                 reset: "All types",
+            },
+            smartOverview: {
+                title: "Weekly overview",
+                subtitle: "See key metrics and open issues at a glance.",
+                showIssuesButton: "Show issue list",
+                cards: {
+                    active: {
+                        title: "Active people",
+                        subtitle: "with target time this week",
+                    },
+                    issues: {
+                        title: "People with issues",
+                        subtitle: "Need attention",
+                    },
+                    corrections: {
+                        title: "Open corrections",
+                        subtitle: "Days to review (missing/unclear)",
+                    },
+                    negative: {
+                        title: "Negative balances",
+                        subtitle: "Below expected hours",
+                    },
+                },
+                quickFix: {
+                    title: "Quick fixes",
+                    subtitle: "Jump straight to the most relevant issues.",
+                    empty: "No open issues right now – great job!",
+                    action: "Open",
+                    labels: {
+                        missing: "Missing punches",
+                        incomplete: "Incomplete days",
+                        autoCompleted: "Auto-completed",
+                        holidayPending: "Holiday decision open",
+                    },
+                },
             },
             manageHiddenUsersTooltip: "Manage hidden people",
             hideHiddenUsersList: "Hide list",
