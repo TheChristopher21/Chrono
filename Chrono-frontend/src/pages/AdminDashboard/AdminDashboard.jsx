@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 
@@ -121,6 +121,14 @@ const AdminDashboard = () => {
             weekSectionRef.current?.focusUser?.(username);
         }
     }, []);
+
+    const handleOpenImportTimes = useCallback(() => {
+        navigate('/admin/import-times');
+    }, [navigate]);
+
+    const handleOpenPayslips = useCallback(() => {
+        navigate('/admin/payslips');
+    }, [navigate]);
 
     const handleOpenAnalytics = useCallback(() => {
         navigate('/admin/analytics');
@@ -585,16 +593,32 @@ const AdminDashboard = () => {
 
 
             <div className="admin-action-buttons-container">
-                <Link to="/admin/import-times" className="admin-action-button button-primary">
+                <button
+                    type="button"
+                    onClick={handleOpenImportTimes}
+                    className="admin-action-button button-primary"
+                >
                     {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
-                </Link>
-                <Link to="/admin/payslips" className="admin-action-button button-primary">
+                </button>
+                <button
+                    type="button"
+                    onClick={handleOpenPayslips}
+                    className="admin-action-button button-primary"
+                >
                     {t('navbar.payslips', 'Abrechnungen')}
-                </Link>
-                <Link to="/admin/analytics" className="admin-action-button button-secondary admin-analytics-button">
+                </button>
+                <button
+                    type="button"
+                    onClick={handleOpenAnalytics}
+                    className="admin-action-button button-secondary admin-analytics-button"
+                >
                     {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
-                </Link>
-                <button onClick={handleDataReloadNeeded} className="admin-action-button button-secondary">
+                </button>
+                <button
+                    type="button"
+                    onClick={handleDataReloadNeeded}
+                    className="admin-action-button button-secondary"
+                >
                     {t('adminDashboard.reloadDataButton', 'Daten neu laden')}
                 </button>
             </div>
