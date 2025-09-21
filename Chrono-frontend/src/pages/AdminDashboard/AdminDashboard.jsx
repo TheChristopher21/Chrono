@@ -582,56 +582,7 @@ const AdminDashboard = () => {
                 onOpenAnalytics={handleOpenAnalytics}
             />
 
-            <div
-                className={`issue-focus-ribbon${hasIssues ? '' : ' issue-focus-ribbon-clear'}`}
-                role="region"
-                aria-live="polite"
-            >
-                <div className="ribbon-header">
-                    <div className="ribbon-title-group">
-                        <span className="ribbon-title">{t('adminDashboard.focusRibbon.title', 'Problemfokus')}</span>
-                        <p className="ribbon-subtitle">
-                            {hasIssues
-                                ? t('adminDashboard.focusRibbon.subtitleWithCount', '{count} Mitarbeitende benötigen Review.', {
-                                    count: issueSummary.totalWithIssue,
-                                })
-                                : t('adminDashboard.focusRibbon.subtitleClear', 'Alle Nutzer ohne Warnungen in dieser Woche.')}
-                        </p>
-                    </div>
-                    <div className="ribbon-actions">
-                        <button
-                            type="button"
-                            className="ribbon-btn"
-                            onClick={() => handleFocusIssues('all')}
-                            disabled={!hasIssues}
-                        >
-                            {t('adminDashboard.focusRibbon.showAll', 'Alle Problemfälle anzeigen')}
-                        </button>
-                        <button
-                            type="button"
-                            className="ribbon-btn ghost"
-                            onClick={handleResetIssueFilters}
-                        >
-                            {t('adminDashboard.focusRibbon.reset', 'Filter zurücksetzen')}
-                        </button>
-                    </div>
-                </div>
-                <div className="ribbon-chip-row">
-                    {issueChipConfig.map(chip => (
-                        <button
-                            key={chip.key}
-                            type="button"
-                            className={`issue-chip${activeIssuePill === chip.key ? ' active' : ''}`}
-                            onClick={() => handleFocusIssues(chip.key)}
-                            disabled={chip.count === 0}
-                        >
-                            <span className="chip-icon" aria-hidden="true">{chip.icon}</span>
-                            <span className="chip-label">{chip.label}</span>
-                            <span className="chip-count">{chip.count}</span>
-                        </button>
-                    ))}
-                </div>
-            </div>
+
 
             <div className="admin-action-buttons-container">
                 <Link to="/admin/import-times" className="admin-action-button button-primary">
