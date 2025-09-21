@@ -453,31 +453,31 @@
   background-color: color-mix(in srgb, var(--c-error) 20%, transparent);
 }
 
-/* Haupt-Layout: Spalten-Grid */
+/* Haupt-Layout: Wochenansicht über die volle Breite */
 .admin-dashboard.scoped-dashboard .dashboard-content {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--u-gap);
-} /* Standardmäßig 1 Spalte */
-
-@media (min-width: 1024px) {
-  /* Desktop */
-  .admin-dashboard.scoped-dashboard .dashboard-content {
-    grid-template-columns: 2fr 1fr;
-  } /* 2/3 und 1/3 Aufteilung */
-  .admin-dashboard.scoped-dashboard .left-column {
-    /* Nimmt 2 Teile des Grids ein */
-  }
-  .admin-dashboard.scoped-dashboard .right-column {
-    /* Nimmt 1 Teil des Grids ein */
-  }
-}
-
-.admin-dashboard.scoped-dashboard .left-column,
-.admin-dashboard.scoped-dashboard .right-column {
   display: flex;
   flex-direction: column;
   gap: var(--u-gap);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-secondary-grid {
+  display: grid;
+  gap: var(--u-gap);
+  grid-template-columns: 1fr;
+}
+
+.admin-dashboard.scoped-dashboard .secondary-section {
+  display: flex;
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .admin-dashboard.scoped-dashboard .dashboard-secondary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  }
+  .admin-dashboard.scoped-dashboard .dashboard-secondary-grid > :first-child {
+    grid-column: 1 / -1;
+  }
 }
 
 /* Standard-Section-Styling */
@@ -1770,12 +1770,8 @@
 
 /* Generelle Layout-Anpassungen für kleinere Bildschirme */
 @media (max-width: 1024px) {
-  .admin-dashboard.scoped-dashboard .dashboard-content {
+  .admin-dashboard.scoped-dashboard .dashboard-secondary-grid {
     grid-template-columns: 1fr;
-  }
-  .admin-dashboard.scoped-dashboard .left-column,
-  .admin-dashboard.scoped-dashboard .right-column {
-    grid-column: span 1 / span 1;
   }
 }
 @media (max-width: 768px) {

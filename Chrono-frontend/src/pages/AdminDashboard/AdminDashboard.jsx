@@ -649,62 +649,62 @@ const AdminDashboard = () => {
             </div>
 
             <div className="dashboard-content">
-                <div className="left-column">
-                    <AdminWeekSection
-                        ref={weekSectionRef}
-                        t={t}
-                        weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
-                        selectedMonday={selectedMonday}
-                        handlePrevWeek={handlePrevWeek}
-                        handleNextWeek={handleNextWeek}
-                        handleWeekJump={handleWeekJump}
-                        handleCurrentWeek={handleCurrentWeek}
-                        onFocusProblemWeek={focusWeekForProblem}
-                        dailySummariesForWeekSection={dailySummaries}
-                        allVacations={allVacations}
-                        allSickLeaves={allSickLeaves}
-                        allHolidays={holidaysByCanton}
-                        users={users}
-                        defaultExpectedHours={defaultExpectedHours}
-                        openEditModal={openEditModal}
-                        openPrintUserModal={openPrintUserModal}
-                        rawUserTrackingBalances={weeklyBalances}
-                        openNewEntryModal={openNewEntryModal}
-                        onDataReloadNeeded={handleDataReloadNeeded}
-                        onIssueSummaryChange={handleIssueSummaryUpdate}
-                    />
-                </div>
-                <div className="right-column">
-                    <AdminActionStream
-                        t={t}
-                        allVacations={allVacations}
-                        allCorrections={allCorrections}
-                        onApproveVacation={handleApproveVacation}
-                        onDenyVacation={handleDenyVacation}
-                        onApproveCorrection={handleApproveCorrection}
-                        onDenyCorrection={handleDenyCorrection}
-                        onOpenVacationCenter={handleNavigateToVacations}
-                        onOpenCorrectionCenter={handleNavigateToCorrections}
-                        onFocusUser={handleFocusUserFromTask}
-                    />
-                    <div ref={vacationsSectionRef}>
-                        <AdminVacationRequests
-                        t={t}
-                        allVacations={allVacations}
-                        handleApproveVacation={handleApproveVacation}
-                        handleDenyVacation={handleDenyVacation}
-                        onReloadVacations={handleDataReloadNeeded}
-                        openSignal={vacationOpenSignal}
-                    />
+                <AdminWeekSection
+                    ref={weekSectionRef}
+                    t={t}
+                    weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
+                    selectedMonday={selectedMonday}
+                    handlePrevWeek={handlePrevWeek}
+                    handleNextWeek={handleNextWeek}
+                    handleWeekJump={handleWeekJump}
+                    handleCurrentWeek={handleCurrentWeek}
+                    onFocusProblemWeek={focusWeekForProblem}
+                    dailySummariesForWeekSection={dailySummaries}
+                    allVacations={allVacations}
+                    allSickLeaves={allSickLeaves}
+                    allHolidays={holidaysByCanton}
+                    users={users}
+                    defaultExpectedHours={defaultExpectedHours}
+                    openEditModal={openEditModal}
+                    openPrintUserModal={openPrintUserModal}
+                    rawUserTrackingBalances={weeklyBalances}
+                    openNewEntryModal={openNewEntryModal}
+                    onDataReloadNeeded={handleDataReloadNeeded}
+                    onIssueSummaryChange={handleIssueSummaryUpdate}
+                />
+                <div className="dashboard-secondary-grid">
+                    <div className="secondary-section action-stream-wrapper">
+                        <AdminActionStream
+                            t={t}
+                            allVacations={allVacations}
+                            allCorrections={allCorrections}
+                            onApproveVacation={handleApproveVacation}
+                            onDenyVacation={handleDenyVacation}
+                            onApproveCorrection={handleApproveCorrection}
+                            onDenyCorrection={handleDenyCorrection}
+                            onOpenVacationCenter={handleNavigateToVacations}
+                            onOpenCorrectionCenter={handleNavigateToCorrections}
+                            onFocusUser={handleFocusUserFromTask}
+                        />
                     </div>
-                    <div ref={correctionsSectionRef}>
+                    <div ref={vacationsSectionRef} className="secondary-section">
+                        <AdminVacationRequests
+                            t={t}
+                            allVacations={allVacations}
+                            handleApproveVacation={handleApproveVacation}
+                            handleDenyVacation={handleDenyVacation}
+                            onReloadVacations={handleDataReloadNeeded}
+                            openSignal={vacationOpenSignal}
+                        />
+                    </div>
+                    <div ref={correctionsSectionRef} className="secondary-section">
                         <AdminCorrectionsList
-                        t={t}
-                        allCorrections={allCorrections}
-                        onApprove={handleApproveCorrection}
-                        onDeny={handleDenyCorrection}
-                        openSignal={correctionOpenSignal}
-                    />
+                            t={t}
+                            allCorrections={allCorrections}
+                            onApprove={handleApproveCorrection}
+                            onDeny={handleDenyCorrection}
+                            openSignal={correctionOpenSignal}
+                        />
                     </div>
                 </div>
             </div>
