@@ -13,4 +13,12 @@
     flex-direction: row;
     align-items: center;
     gap: 12px; /* Abstand zwischen den Buttons */
+
+    /* Verhindert, dass der Container selbst Klicks blockiert */
+    pointer-events: none;
+}
+
+/* Der eigentliche Inhalt darf weiterhin auf Eingaben reagieren */
+.scoped-floating-buttons .chat-widget {
+    pointer-events: auto;
 }
