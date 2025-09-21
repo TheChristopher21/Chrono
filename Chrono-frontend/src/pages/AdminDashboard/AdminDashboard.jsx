@@ -7,7 +7,6 @@ import api from '../../utils/api';
 import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
-import autoTable from "jspdf-autotable";
 
 import AdminWeekSection from './AdminWeekSection';
 import AdminVacationRequests from './AdminVacationRequests';
@@ -23,7 +22,8 @@ import {
     formatLocalDateYMD,
     addDays,
     minutesToHHMM,
-    formatDate, processEntriesForReport,
+    formatDate,
+    processEntriesForReport,
 } from './adminDashboardUtils';
 
 const AdminDashboard = () => {
