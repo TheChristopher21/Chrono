@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Navbar from '../../components/Navbar';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -16,6 +16,7 @@ import EditTimeModal from './EditTimeModal';
 import PrintUserTimesModal from './PrintUserTimesModal';
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 import AdminDashboardKpis from './AdminDashboardKpis';
+import AdminActionStream from './AdminActionStream';
 
 import {
     getMondayOfWeek,
@@ -29,6 +30,7 @@ const AdminDashboard = () => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
     const { t } = useTranslation();
+    const navigate = useNavigate();
 
     const [dailySummaries, setDailySummaries] = useState([]);
     const [allVacations, setAllVacations] = useState([]);
@@ -49,6 +51,115 @@ const AdminDashboard = () => {
     const [printUserEndDate, setPrintUserEndDate] = useState(formatLocalDateYMD(new Date()));
     const [weeklyBalances, setWeeklyBalances] = useState([]);
     const defaultExpectedHours = 8.5;
+
+    const [issueSummary, setIssueSummary] = useState({
+        missing: 0,
+        incomplete: 0,
+        autoCompleted: 0,
+        holidayPending: 0,
+        totalWithIssue: 0,
+    });
+    const [activeIssuePill, setActiveIssuePill] = useState(null);
+    const [vacationOpenSignal, setVacationOpenSignal] = useState(0);
+    const [correctionOpenSignal, setCorrectionOpenSignal] = useState(0);
+
+    const weekSectionRef = useRef(null);
+    const vacationsSectionRef = useRef(null);
+    const correctionsSectionRef = useRef(null);
+
+    const handleIssueSummaryUpdate = useCallback((summary) => {
+        if (summary) {
+            setIssueSummary(summary);
+        }
+    }, []);
+
+    const scrollToRef = useCallback((targetRef) => {
+        if (targetRef?.current) {
+            targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, []);
+
+    const handleFocusIssues = useCallback((filterKey) => {
+        setActiveIssuePill(filterKey);
+        if (weekSectionRef.current?.focusIssueType) {
+            weekSectionRef.current.focusIssueType(filterKey);
+        }
+    }, []);
+
+    const handleResetIssueFilters = useCallback(() => {
+        setActiveIssuePill(null);
+        weekSectionRef.current?.resetIssueFilters?.();
+    }, []);
+
+    const handleShowIssueOverview = useCallback(() => {
+        handleFocusIssues('all');
+    }, [handleFocusIssues]);
+
+    const handleFocusNegativeBalances = useCallback(() => {
+        setActiveIssuePill(null);
+        weekSectionRef.current?.focusNegativeBalances?.();
+    }, []);
+
+    const handleFocusPositiveBalances = useCallback(() => {
+        setActiveIssuePill(null);
+        weekSectionRef.current?.focusPositiveBalances?.();
+    }, []);
+
+    const handleNavigateToVacations = useCallback(() => {
+        setVacationOpenSignal(prev => prev + 1);
+        scrollToRef(vacationsSectionRef);
+    }, [scrollToRef]);
+
+    const handleNavigateToCorrections = useCallback(() => {
+        setCorrectionOpenSignal(prev => prev + 1);
+        scrollToRef(correctionsSectionRef);
+    }, [scrollToRef]);
+
+    const handleFocusUserFromTask = useCallback((username) => {
+        if (username) {
+            setActiveIssuePill(null);
+            weekSectionRef.current?.focusUser?.(username);
+        }
+    }, []);
+
+    const handleOpenAnalytics = useCallback(() => {
+        navigate('/admin/analytics');
+    }, [navigate]);
+
+    const issueChipConfig = useMemo(() => ([
+        {
+            key: 'missing',
+            icon: '❗',
+            label: t('adminDashboard.issueRibbon.missing', 'Fehlende Zeiten'),
+            count: issueSummary.missing,
+        },
+        {
+            key: 'incomplete',
+            icon: '⚠️',
+            label: t('adminDashboard.issueRibbon.incomplete', 'Unvollständig'),
+            count: issueSummary.incomplete,
+        },
+        {
+            key: 'autoCompleted',
+            icon: '🤖',
+            label: t('adminDashboard.issueRibbon.autoCompleted', 'Auto beendet'),
+            count: issueSummary.autoCompleted,
+        },
+        {
+            key: 'holidayPending',
+            icon: '🎉',
+            label: t('adminDashboard.issueRibbon.holidayPending', 'Feiertag offen'),
+            count: issueSummary.holidayPending,
+        },
+    ]), [issueSummary, t]);
+
+    const hasIssues = issueSummary.totalWithIssue > 0;
+
+    useEffect(() => {
+        if (!hasIssues && activeIssuePill !== null) {
+            setActiveIssuePill(null);
+        }
+    }, [hasIssues, activeIssuePill]);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -463,7 +574,64 @@ const AdminDashboard = () => {
                 allCorrections={allCorrections}
                 weeklyBalances={weeklyBalances}
                 users={users}
+                onNavigateToVacations={handleNavigateToVacations}
+                onNavigateToCorrections={handleNavigateToCorrections}
+                onShowIssueOverview={handleShowIssueOverview}
+                onFocusNegativeBalances={handleFocusNegativeBalances}
+                onFocusOvertimeLeaders={handleFocusPositiveBalances}
+                onOpenAnalytics={handleOpenAnalytics}
             />
+
+            <div
+                className={`issue-focus-ribbon${hasIssues ? '' : ' issue-focus-ribbon-clear'}`}
+                role="region"
+                aria-live="polite"
+            >
+                <div className="ribbon-header">
+                    <div className="ribbon-title-group">
+                        <span className="ribbon-title">{t('adminDashboard.focusRibbon.title', 'Problemfokus')}</span>
+                        <p className="ribbon-subtitle">
+                            {hasIssues
+                                ? t('adminDashboard.focusRibbon.subtitleWithCount', '{count} Mitarbeitende benötigen Review.', {
+                                    count: issueSummary.totalWithIssue,
+                                })
+                                : t('adminDashboard.focusRibbon.subtitleClear', 'Alle Nutzer ohne Warnungen in dieser Woche.')}
+                        </p>
+                    </div>
+                    <div className="ribbon-actions">
+                        <button
+                            type="button"
+                            className="ribbon-btn"
+                            onClick={() => handleFocusIssues('all')}
+                            disabled={!hasIssues}
+                        >
+                            {t('adminDashboard.focusRibbon.showAll', 'Alle Problemfälle anzeigen')}
+                        </button>
+                        <button
+                            type="button"
+                            className="ribbon-btn ghost"
+                            onClick={handleResetIssueFilters}
+                        >
+                            {t('adminDashboard.focusRibbon.reset', 'Filter zurücksetzen')}
+                        </button>
+                    </div>
+                </div>
+                <div className="ribbon-chip-row">
+                    {issueChipConfig.map(chip => (
+                        <button
+                            key={chip.key}
+                            type="button"
+                            className={`issue-chip${activeIssuePill === chip.key ? ' active' : ''}`}
+                            onClick={() => handleFocusIssues(chip.key)}
+                            disabled={chip.count === 0}
+                        >
+                            <span className="chip-icon" aria-hidden="true">{chip.icon}</span>
+                            <span className="chip-label">{chip.label}</span>
+                            <span className="chip-count">{chip.count}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
 
             <div className="admin-action-buttons-container">
                 <Link to="/admin/import-times" className="admin-action-button button-primary">
@@ -480,9 +648,10 @@ const AdminDashboard = () => {
                 </button>
             </div>
 
-            <div className="dashboard-layout">
-                <div className="main-content">
+            <div className="dashboard-content">
+                <div className="left-column">
                     <AdminWeekSection
+                        ref={weekSectionRef}
                         t={t}
                         weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
                         selectedMonday={selectedMonday}
@@ -502,22 +671,41 @@ const AdminDashboard = () => {
                         rawUserTrackingBalances={weeklyBalances}
                         openNewEntryModal={openNewEntryModal}
                         onDataReloadNeeded={handleDataReloadNeeded}
+                        onIssueSummaryChange={handleIssueSummaryUpdate}
                     />
                 </div>
                 <div className="right-column">
-                    <AdminVacationRequests
+                    <AdminActionStream
+                        t={t}
+                        allVacations={allVacations}
+                        allCorrections={allCorrections}
+                        onApproveVacation={handleApproveVacation}
+                        onDenyVacation={handleDenyVacation}
+                        onApproveCorrection={handleApproveCorrection}
+                        onDenyCorrection={handleDenyCorrection}
+                        onOpenVacationCenter={handleNavigateToVacations}
+                        onOpenCorrectionCenter={handleNavigateToCorrections}
+                        onFocusUser={handleFocusUserFromTask}
+                    />
+                    <div ref={vacationsSectionRef}>
+                        <AdminVacationRequests
                         t={t}
                         allVacations={allVacations}
                         handleApproveVacation={handleApproveVacation}
                         handleDenyVacation={handleDenyVacation}
                         onReloadVacations={handleDataReloadNeeded}
+                        openSignal={vacationOpenSignal}
                     />
-                    <AdminCorrectionsList
+                    </div>
+                    <div ref={correctionsSectionRef}>
+                        <AdminCorrectionsList
                         t={t}
                         allCorrections={allCorrections}
                         onApprove={handleApproveCorrection}
                         onDeny={handleDenyCorrection}
+                        openSignal={correctionOpenSignal}
                     />
+                    </div>
                 </div>
             </div>
 

@@ -14,7 +14,8 @@ const AdminVacationRequests = ({
                                    allVacations,
                                    handleApproveVacation,
                                    handleDenyVacation,
-                                   onReloadVacations // Callback zum Neuladen der Urlaubsdaten
+                                   onReloadVacations, // Callback zum Neuladen der Urlaubsdaten
+                                   openSignal,
                                }) => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -29,6 +30,12 @@ const AdminVacationRequests = ({
     function toggleExpansion() {
         setIsExpanded(!isExpanded);
     }
+
+    useEffect(() => {
+        if (typeof openSignal === 'number' && openSignal > 0) {
+            setIsExpanded(true);
+        }
+    }, [openSignal]);
 
     function handleSearch(e) {
         setSearchTerm(e.target.value);
@@ -224,7 +231,12 @@ AdminVacationRequests.propTypes = {
     ).isRequired,
     handleApproveVacation: PropTypes.func.isRequired,
     handleDenyVacation: PropTypes.func.isRequired,
-    onReloadVacations: PropTypes.func.isRequired // Wichtig für die Aktualisierung der Liste
+    onReloadVacations: PropTypes.func.isRequired, // Wichtig für die Aktualisierung der Liste
+    openSignal: PropTypes.number,
+};
+
+AdminVacationRequests.defaultProps = {
+    openSignal: 0,
 };
 
 export default AdminVacationRequests;

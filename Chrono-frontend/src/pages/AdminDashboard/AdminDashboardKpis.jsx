@@ -2,7 +2,19 @@ import PropTypes from 'prop-types';
 import { useMemo } from 'react';
 import { minutesToHHMM } from './adminDashboardUtils';
 
-const AdminDashboardKpis = ({ t, allVacations, allCorrections, weeklyBalances, users }) => {
+const AdminDashboardKpis = ({
+    t,
+    allVacations,
+    allCorrections,
+    weeklyBalances,
+    users,
+    onNavigateToVacations,
+    onNavigateToCorrections,
+    onShowIssueOverview,
+    onFocusNegativeBalances,
+    onFocusOvertimeLeaders,
+    onOpenAnalytics,
+}) => {
     const stats = useMemo(() => {
         const pendingVacations = Array.isArray(allVacations)
             ? allVacations.filter(vac => !vac.approved && !vac.denied).length
@@ -74,6 +86,62 @@ const AdminDashboardKpis = ({ t, allVacations, allCorrections, weeklyBalances, u
             : t('adminDashboard.kpis.noNegative', 'Keine negativen Salden (Fehlzeit)');
 
 
+        const pendingActions = [];
+        if (onNavigateToVacations) {
+            pendingActions.push({
+                key: 'vacations',
+                label: t('adminDashboard.kpis.actions.openVacations', 'Zu Urlaubsanträgen'),
+                onClick: onNavigateToVacations,
+                disabled: stats.pendingVacations === 0,
+            });
+        }
+        if (onNavigateToCorrections) {
+            pendingActions.push({
+                key: 'corrections',
+                label: t('adminDashboard.kpis.actions.openCorrections', 'Zu Korrekturen'),
+                onClick: onNavigateToCorrections,
+                disabled: stats.pendingCorrections === 0,
+            });
+        }
+        if (onShowIssueOverview) {
+            pendingActions.push({
+                key: 'issues',
+                label: t('adminDashboard.kpis.actions.focusIssues', 'Problemfälle filtern'),
+                onClick: onShowIssueOverview,
+                disabled: openItems === 0,
+            });
+        }
+
+        const overtimeActions = [];
+        if (onOpenAnalytics) {
+            overtimeActions.push({
+                key: 'analytics',
+                label: t('adminDashboard.kpis.actions.openAnalytics', 'Analytics öffnen'),
+                onClick: onOpenAnalytics,
+                variant: 'ghost',
+            });
+        }
+
+        const negativeActions = [];
+        if (onFocusNegativeBalances) {
+            negativeActions.push({
+                key: 'focusNegative',
+                label: t('adminDashboard.kpis.actions.focusNegative', 'Negativsalden hervorheben'),
+                onClick: onFocusNegativeBalances,
+                disabled: stats.negativeBalances === 0,
+            });
+        }
+
+        const positiveActions = [];
+        if (onFocusOvertimeLeaders) {
+            positiveActions.push({
+                key: 'focusPositive',
+                label: t('adminDashboard.kpis.actions.focusPositive', 'Überstunden-Topliste anzeigen'),
+                onClick: onFocusOvertimeLeaders,
+                disabled: !stats.topPositive || !stats.topPositive.minutes,
+            });
+        }
+
         return [
             {
                 id: 'pendingRequests',
@@ -81,6 +149,7 @@ const AdminDashboardKpis = ({ t, allVacations, allCorrections, weeklyBalances, u
                 title: t('adminDashboard.kpis.pendingRequests', 'Offene Anträge'),
                 value: openItems,
                 meta: `${t('adminDashboard.kpis.vacationsShort', 'Urlaub')}: ${stats.pendingVacations} · ${t('adminDashboard.kpis.correctionsShort', 'Korrekturen')}: ${stats.pendingCorrections}`,
+                actions: pendingActions,
             },
             {
                 id: 'averageOvertime',
@@ -89,6 +158,7 @@ const AdminDashboardKpis = ({ t, allVacations, allCorrections, weeklyBalances, u
 
                 value: minutesToHHMM(stats.averageOvertimeMinutes),
                 meta: avgLabel,
+                actions: overtimeActions,
             },
             {
                 id: 'negativeBalances',
@@ -97,6 +167,7 @@ const AdminDashboardKpis = ({ t, allVacations, allCorrections, weeklyBalances, u
 
                 value: stats.negativeBalances,
                 meta: highlightNegative,
+                actions: negativeActions,
             },
             {
                 id: 'topOvertime',
@@ -107,9 +178,10 @@ const AdminDashboardKpis = ({ t, allVacations, allCorrections, weeklyBalances, u
                     ? minutesToHHMM(stats.topPositive.minutes)
                     : minutesToHHMM(0),
                 meta: highlightPositive,
+                actions: positiveActions,
             },
         ];
-    }, [stats, t]);
+    }, [stats, t, onNavigateToVacations, onNavigateToCorrections, onShowIssueOverview, onOpenAnalytics, onFocusNegativeBalances, onFocusOvertimeLeaders]);
 
     return (
         <section
@@ -128,6 +200,21 @@ const AdminDashboardKpis = ({ t, allVacations, allCorrections, weeklyBalances, u
                     </header>
                     <div className="kpi-value" aria-live="polite">{card.value}</div>
                     <p className="kpi-meta">{card.meta}</p>
+                    {card.actions && card.actions.length > 0 && (
+                        <div className="kpi-actions">
+                            {card.actions.map(action => (
+                                <button
+                                    key={action.key}
+                                    type="button"
+                                    className={`kpi-action-btn${action.variant ? ` ${action.variant}` : ''}`}
+                                    onClick={action.onClick}
+                                    disabled={action.disabled}
+                                >
+                                    {action.label}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </article>
             ))}
         </section>
@@ -152,6 +239,12 @@ AdminDashboardKpis.propTypes = {
         username: PropTypes.string,
         trackingBalanceInMinutes: PropTypes.number,
     })),
+    onNavigateToVacations: PropTypes.func,
+    onNavigateToCorrections: PropTypes.func,
+    onShowIssueOverview: PropTypes.func,
+    onFocusNegativeBalances: PropTypes.func,
+    onFocusOvertimeLeaders: PropTypes.func,
+    onOpenAnalytics: PropTypes.func,
 };
 
 AdminDashboardKpis.defaultProps = {
@@ -159,6 +252,12 @@ AdminDashboardKpis.defaultProps = {
     allCorrections: [],
     weeklyBalances: [],
     users: [],
+    onNavigateToVacations: undefined,
+    onNavigateToCorrections: undefined,
+    onShowIssueOverview: undefined,
+    onFocusNegativeBalances: undefined,
+    onFocusOvertimeLeaders: undefined,
+    onOpenAnalytics: undefined,
 };
 
 export default AdminDashboardKpis;

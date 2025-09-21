@@ -13,7 +13,7 @@
 //  • No external deps: pure React + existing CSS variables.
 // -----------------------------------------------------------------------------
 
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import { formatDate, formatTime } from "./adminDashboardUtils";
 import CorrectionDecisionModal from "./CorrectionDecisionModal";
@@ -34,7 +34,7 @@ const sortEntriesChronologically = (a, b) => {
 };
 
 /* ⇢ Main component --------------------------------------------------------- */
-function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny }) {
+function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal }) {
     /* ──────────────────────────────────── state */
     const [isExpanded, setIsExpanded] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -44,6 +44,12 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny }) {
     const [modalMode, setModalMode] = useState("approve");
     const [targetIds, setTargetIds] = useState([]);
     const [adminComment, setAdminComment] = useState("");
+
+    useEffect(() => {
+        if (typeof openSignal === 'number' && openSignal > 0) {
+            setIsExpanded(true);
+        }
+    }, [openSignal]);
 
     /* ──────────────────────────────────── data helpers */
     const requestSort = (key) => {
@@ -297,6 +303,11 @@ AdminCorrectionsList.propTypes = {
     allCorrections: PropTypes.arrayOf(PropTypes.object).isRequired,
     onApprove: PropTypes.func.isRequired,
     onDeny: PropTypes.func.isRequired,
+    openSignal: PropTypes.number,
+};
+
+AdminCorrectionsList.defaultProps = {
+    openSignal: 0,
 };
 
 export default AdminCorrectionsList;

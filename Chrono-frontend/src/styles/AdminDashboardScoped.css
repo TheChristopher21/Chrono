@@ -170,6 +170,35 @@
   font-size: 0.85rem;
   color: var(--c-muted);
 }
+.admin-dashboard.scoped-dashboard .kpi-actions {
+  margin-top: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+.admin-dashboard.scoped-dashboard .kpi-action-btn {
+  padding: 0.45rem 0.8rem;
+  font-size: 0.75rem;
+  border-radius: var(--u-radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  cursor: pointer;
+  transition: transform var(--u-dur) var(--u-ease), background-color var(--u-dur) var(--u-ease);
+}
+.admin-dashboard.scoped-dashboard .kpi-action-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--c-line);
+}
+.admin-dashboard.scoped-dashboard .kpi-action-btn.ghost {
+  background: transparent;
+  border-style: dashed;
+}
+.admin-dashboard.scoped-dashboard .kpi-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
 .admin-dashboard.scoped-dashboard .kpi-card.kpi-warning {
   border-color: rgba(255, 199, 65, 0.4);
   background: linear-gradient(135deg, rgba(255, 199, 65, 0.12), var(--c-card));
@@ -215,6 +244,113 @@
   gap: var(--u-gap-sm);
   justify-content: center;
   flex-wrap: wrap;
+}
+
+.admin-dashboard.scoped-dashboard .issue-focus-ribbon {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-md);
+  padding: var(--u-gap-sm) var(--u-gap-md);
+  box-shadow: var(--u-shadow-sm);
+  margin-bottom: var(--u-gap);
+  display: flex;
+  flex-direction: column;
+  gap: var(--u-gap-sm);
+}
+.admin-dashboard.scoped-dashboard .issue-focus-ribbon-clear {
+  border-style: dashed;
+  opacity: 0.9;
+}
+.admin-dashboard.scoped-dashboard .ribbon-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: var(--u-gap-sm);
+}
+.admin-dashboard.scoped-dashboard .ribbon-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.admin-dashboard.scoped-dashboard .ribbon-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+.admin-dashboard.scoped-dashboard .ribbon-subtitle {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--c-muted);
+}
+.admin-dashboard.scoped-dashboard .ribbon-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.admin-dashboard.scoped-dashboard .ribbon-btn {
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--u-radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  cursor: pointer;
+  font-size: 0.78rem;
+  transition: transform var(--u-dur), background-color var(--u-dur);
+}
+.admin-dashboard.scoped-dashboard .ribbon-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  background: var(--c-line);
+}
+.admin-dashboard.scoped-dashboard .ribbon-btn.ghost {
+  border-style: dashed;
+  background: transparent;
+}
+.admin-dashboard.scoped-dashboard .ribbon-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+  transform: none;
+}
+.admin-dashboard.scoped-dashboard .ribbon-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--u-gap-xs);
+}
+.admin-dashboard.scoped-dashboard .issue-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: var(--u-radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: transform var(--u-dur), background-color var(--u-dur);
+}
+.admin-dashboard.scoped-dashboard .issue-chip .chip-count {
+  font-weight: 600;
+  font-size: 0.75rem;
+}
+.admin-dashboard.scoped-dashboard .issue-chip.active {
+  border-color: rgba(255, 199, 65, 0.6);
+  background: rgba(255, 199, 65, 0.15);
+}
+.admin-dashboard.scoped-dashboard .issue-chip:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+.admin-dashboard.scoped-dashboard .issue-chip:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.admin-dashboard.scoped-dashboard .chip-icon {
+  font-size: 0.9rem;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .issue-focus-ribbon {
+  background: var(--c-surface);
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .issue-chip.active {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: rgba(245, 158, 11, 0.55);
 }
 .admin-dashboard.scoped-dashboard .admin-action-button {
   padding: 0.65rem 1.3rem;
@@ -401,6 +537,143 @@
 }
 .admin-dashboard.scoped-dashboard section.content-section .section-content {
   /* Kein zusätzliches Padding hier, damit Kindelemente die volle Breite nutzen können */
+}
+
+.admin-dashboard.scoped-dashboard .action-stream.content-section {
+  cursor: default;
+}
+.admin-dashboard.scoped-dashboard .action-stream .stream-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--u-gap-sm);
+}
+.admin-dashboard.scoped-dashboard .action-stream .stream-counter {
+  font-size: 0.85rem;
+  color: var(--c-muted);
+}
+.admin-dashboard.scoped-dashboard .action-stream-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--u-gap-xs);
+}
+.admin-dashboard.scoped-dashboard .stream-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch;
+  gap: var(--u-gap-sm);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-sm);
+  padding: var(--u-gap-xs) var(--u-gap-sm);
+  background: var(--c-surface);
+}
+.admin-dashboard.scoped-dashboard .stream-item-main {
+  display: flex;
+  gap: var(--u-gap-xs);
+  align-items: center;
+}
+.admin-dashboard.scoped-dashboard .stream-item-icon {
+  font-size: 1.5rem;
+}
+.admin-dashboard.scoped-dashboard .stream-item-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+.admin-dashboard.scoped-dashboard .stream-item-meta {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--c-muted);
+}
+.admin-dashboard.scoped-dashboard .stream-item-detail {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  font-size: 0.78rem;
+}
+.admin-dashboard.scoped-dashboard .stream-badge {
+  background: rgba(71, 91, 255, 0.12);
+  color: var(--c-text);
+  border-radius: var(--u-radius-xs);
+  padding: 0.1rem 0.4rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.admin-dashboard.scoped-dashboard .stream-badge.correction {
+  background: rgba(239, 68, 68, 0.12);
+}
+.admin-dashboard.scoped-dashboard .stream-flag {
+  background: var(--c-card);
+  border-radius: var(--u-radius-xs);
+  padding: 0.1rem 0.35rem;
+  border: 1px solid var(--c-border);
+}
+.admin-dashboard.scoped-dashboard .stream-flag.overtime {
+  border-color: rgba(71, 91, 255, 0.5);
+}
+.admin-dashboard.scoped-dashboard .stream-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.admin-dashboard.scoped-dashboard .stream-btn {
+  padding: 0.4rem 0.75rem;
+  border-radius: var(--u-radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: transform var(--u-dur), background-color var(--u-dur);
+}
+.admin-dashboard.scoped-dashboard .stream-btn.approve {
+  border-color: rgba(46, 204, 113, 0.5);
+  background: rgba(46, 204, 113, 0.12);
+}
+.admin-dashboard.scoped-dashboard .stream-btn.deny {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(239, 68, 68, 0.12);
+}
+.admin-dashboard.scoped-dashboard .stream-btn.ghost {
+  border-style: dashed;
+  background: transparent;
+}
+.admin-dashboard.scoped-dashboard .stream-btn:hover {
+  transform: translateY(-1px);
+}
+.admin-dashboard.scoped-dashboard .stream-footer {
+  margin-top: var(--u-gap-sm);
+  display: flex;
+  gap: var(--u-gap-xs);
+  flex-wrap: wrap;
+  align-items: center;
+}
+.admin-dashboard.scoped-dashboard .stream-link {
+  background: none;
+  border: none;
+  color: var(--c-pri);
+  cursor: pointer;
+  font-size: 0.82rem;
+  text-decoration: underline;
+  padding: 0;
+}
+.admin-dashboard.scoped-dashboard .stream-link:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  text-decoration: none;
+}
+.admin-dashboard.scoped-dashboard .stream-empty {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--c-muted);
+}
+.admin-dashboard.scoped-dashboard .stream-more {
+  font-size: 0.78rem;
+  color: var(--c-muted);
 }
 
 /* Week Navigation (im WeekSection Header) */
