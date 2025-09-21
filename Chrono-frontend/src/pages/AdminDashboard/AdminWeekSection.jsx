@@ -27,12 +27,21 @@ import {
     // isLateTime, // isLateTime might be used internally by formatTimeEntryForDisplay or similar
     getDetailedGlobalProblemIndicators,
     getMondayOfWeek,
+    addDays,
 } from "./adminDashboardUtils"; // Ensure this path is correct
 import {parseISO} from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
 
 const HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY = 'adminDashboard_holidayOptions_v1';
 const HIDDEN_USERS_LOCAL_STORAGE_PREFIX = 'adminDashboard_hiddenUsers_v3';
+const MONTH_RANGE_SETTINGS_LOCAL_STORAGE_PREFIX = 'adminDashboard_monthRangeSettings_v1';
+
+const DEFAULT_MONTH_RANGE_SETTINGS = {
+    mode: 'calendar',
+    customStartDay: 1,
+    manualStart: '',
+    manualEnd: '',
+};
 
 const isBrowserEnvironment = () => typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 
@@ -122,6 +131,168 @@ const parseHolidayOptionsFromStorage = (rawValue) => {
 };
 
 
+const clampMonthStartDay = (value) => {
+    if (value === null || value === undefined) return 1;
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 1;
+    const wholeNumber = Math.trunc(numeric);
+    if (Number.isNaN(wholeNumber) || wholeNumber < 1) return 1;
+    if (wholeNumber > 31) return 31;
+    return wholeNumber;
+};
+
+const getDaysInMonth = (year, monthIndex) => {
+    return new Date(year, monthIndex + 1, 0).getDate();
+};
+
+const parseMonthRangeSettingsFromStorage = (rawValue) => {
+    const defaults = { ...DEFAULT_MONTH_RANGE_SETTINGS };
+    if (!rawValue) return defaults;
+    try {
+        const parsed = JSON.parse(rawValue);
+        const mode = ['calendar', 'customCycle', 'manual'].includes(parsed?.mode)
+            ? parsed.mode
+            : defaults.mode;
+        const customStartDay = clampMonthStartDay(parsed?.customStartDay);
+        const manualStart = typeof parsed?.manualStart === 'string' ? parsed.manualStart : defaults.manualStart;
+        const manualEnd = typeof parsed?.manualEnd === 'string' ? parsed.manualEnd : defaults.manualEnd;
+        return {
+            mode,
+            customStartDay,
+            manualStart,
+            manualEnd,
+        };
+    } catch (error) {
+        console.error('Error parsing month range settings from localStorage:', error);
+        return defaults;
+    }
+};
+
+const getCustomCycleStartDate = (referenceDate, startDay) => {
+    if (!(referenceDate instanceof Date) || Number.isNaN(referenceDate.getTime())) {
+        return null;
+    }
+    const normalizedDay = clampMonthStartDay(startDay);
+    let year = referenceDate.getFullYear();
+    let monthIndex = referenceDate.getMonth();
+    const dayOfMonth = referenceDate.getDate();
+
+    if (dayOfMonth < normalizedDay) {
+        monthIndex -= 1;
+        if (monthIndex < 0) {
+            monthIndex = 11;
+            year -= 1;
+        }
+    }
+
+    const daysInMonth = getDaysInMonth(year, monthIndex);
+    const clampedDay = Math.min(normalizedDay, daysInMonth);
+    const startDate = new Date(year, monthIndex, clampedDay);
+    startDate.setHours(0, 0, 0, 0);
+    return startDate;
+};
+
+const getCustomCycleRangeForDate = (referenceDate, startDay) => {
+    const startDate = getCustomCycleStartDate(referenceDate, startDay);
+    if (!startDate) {
+        return { startIso: '', endIso: '' };
+    }
+    const nextCycleBase = addDays(startDate, 40);
+    const nextCycleStart = getCustomCycleStartDate(nextCycleBase, startDay);
+    if (!nextCycleStart) {
+        return { startIso: '', endIso: '' };
+    }
+    const endDate = addDays(nextCycleStart, -1);
+    endDate.setHours(0, 0, 0, 0);
+    return {
+        startIso: formatLocalDateYMD(startDate),
+        endIso: formatLocalDateYMD(endDate),
+    };
+};
+
+const computeMonthRangeBoundaries = (referenceDate, mode, customStartDay, manualStart, manualEnd) => {
+    if (mode === 'manual') {
+        return {
+            startIso: manualStart || '',
+            endIso: manualEnd || '',
+        };
+    }
+
+    if (mode === 'customCycle') {
+        return getCustomCycleRangeForDate(referenceDate, customStartDay);
+    }
+
+    return {
+        startIso: getMonthRangeStartIso(referenceDate),
+        endIso: getMonthRangeEndIso(referenceDate),
+    };
+};
+
+const getMonthRangeStartIso = (referenceDate) => {
+    if (!(referenceDate instanceof Date) || Number.isNaN(referenceDate.getTime())) {
+        return '';
+    }
+    const start = new Date(referenceDate.getTime());
+    start.setDate(1);
+    start.setHours(0, 0, 0, 0);
+    return formatLocalDateYMD(start);
+};
+
+const getMonthRangeEndIso = (referenceDate) => {
+    if (!(referenceDate instanceof Date) || Number.isNaN(referenceDate.getTime())) {
+        return '';
+    }
+    const end = new Date(referenceDate.getTime());
+    end.setMonth(end.getMonth() + 1);
+    end.setDate(0);
+    end.setHours(0, 0, 0, 0);
+    return formatLocalDateYMD(end);
+};
+
+const EMPTY_PROBLEM_INDICATORS = {
+    missingEntriesCount: 0,
+    incompleteDaysCount: 0,
+    autoCompletedUncorrectedCount: 0,
+    holidayPendingCount: 0,
+    problematicDays: [],
+};
+
+const sortUserCollection = (collection, sortConfig) => {
+    const items = Array.isArray(collection) ? [...collection] : [];
+    if (!sortConfig?.key) {
+        return items;
+    }
+
+    items.sort((a, b) => {
+        if (!a || !b) return 0;
+        let valA = a[sortConfig.key];
+        let valB = b[sortConfig.key];
+
+        if (sortConfig.key === 'problemIndicators') {
+            const totalA = (a.problemIndicators?.missingEntriesCount || 0)
+                + (a.problemIndicators?.incompleteDaysCount || 0)
+                + (a.problemIndicators?.autoCompletedUncorrectedCount || 0)
+                + (a.problemIndicators?.holidayPendingCount || 0);
+            const totalB = (b.problemIndicators?.missingEntriesCount || 0)
+                + (b.problemIndicators?.incompleteDaysCount || 0)
+                + (b.problemIndicators?.autoCompletedUncorrectedCount || 0)
+                + (b.problemIndicators?.holidayPendingCount || 0);
+            valA = totalA;
+            valB = totalB;
+        } else if (typeof valA === 'string' && typeof valB === 'string') {
+            valA = valA.toLowerCase();
+            valB = valB.toLowerCase();
+        }
+
+        if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
+        return 0;
+    });
+
+    return items;
+};
+
+
 const ISSUE_FILTER_KEYS = {
     missing: 'missingEntriesCount',
     incomplete: 'incompleteDaysCount',
@@ -191,6 +362,45 @@ const AdminWeekSection = forwardRef(({
         if (!browserHasStorage) return {};
         return parseHolidayOptionsFromStorage(window.localStorage.getItem(HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY));
     });
+
+    const monthRangeSettingsStorageKey = `${MONTH_RANGE_SETTINGS_LOCAL_STORAGE_PREFIX}_${currentUser?.username || 'anonymous'}`;
+
+    const [activeTab, setActiveTab] = useState('week');
+    const [monthRangeMode, setMonthRangeMode] = useState(DEFAULT_MONTH_RANGE_SETTINGS.mode);
+    const [customMonthStartDay, setCustomMonthStartDay] = useState(DEFAULT_MONTH_RANGE_SETTINGS.customStartDay);
+    const [manualMonthRangeStart, setManualMonthRangeStart] = useState(DEFAULT_MONTH_RANGE_SETTINGS.manualStart);
+    const [manualMonthRangeEnd, setManualMonthRangeEnd] = useState(DEFAULT_MONTH_RANGE_SETTINGS.manualEnd);
+    const [monthSortConfig, setMonthSortConfig] = useState({ key: 'username', direction: 'ascending' });
+
+    useEffect(() => {
+        if (!browserHasStorage) return;
+        try {
+            const stored = window.localStorage.getItem(monthRangeSettingsStorageKey);
+            if (!stored) return;
+            const parsed = parseMonthRangeSettingsFromStorage(stored);
+            setMonthRangeMode(parsed.mode);
+            setCustomMonthStartDay(parsed.customStartDay);
+            setManualMonthRangeStart(parsed.manualStart);
+            setManualMonthRangeEnd(parsed.manualEnd);
+        } catch (error) {
+            console.error('Error restoring month range settings:', error);
+        }
+    }, [browserHasStorage, monthRangeSettingsStorageKey]);
+
+    useEffect(() => {
+        if (!browserHasStorage) return;
+        try {
+            const payload = JSON.stringify({
+                mode: monthRangeMode,
+                customStartDay: customMonthStartDay,
+                manualStart: manualMonthRangeStart,
+                manualEnd: manualMonthRangeEnd,
+            });
+            window.localStorage.setItem(monthRangeSettingsStorageKey, payload);
+        } catch (error) {
+            console.error('Error saving month range settings to localStorage:', error);
+        }
+    }, [browserHasStorage, monthRangeSettingsStorageKey, monthRangeMode, customMonthStartDay, manualMonthRangeStart, manualMonthRangeEnd]);
 
 
     // Fetch holiday options when a percentage user's details are expanded for the current week
@@ -359,6 +569,55 @@ const AdminWeekSection = forwardRef(({
         };
     }, [selectedMonday, users]);
 
+    const resolvedMonthRange = useMemo(
+        () => computeMonthRangeBoundaries(
+            selectedMonday,
+            monthRangeMode,
+            customMonthStartDay,
+            manualMonthRangeStart,
+            manualMonthRangeEnd,
+        ),
+        [selectedMonday, monthRangeMode, customMonthStartDay, manualMonthRangeStart, manualMonthRangeEnd]
+    );
+
+    const monthRangeStart = resolvedMonthRange.startIso;
+    const monthRangeEnd = resolvedMonthRange.endIso;
+    const monthRangeIsManual = monthRangeMode === 'manual';
+    const monthRangeIsCustomCycle = monthRangeMode === 'customCycle';
+    const hasCustomMonthSettings = monthRangeMode !== DEFAULT_MONTH_RANGE_SETTINGS.mode
+        || customMonthStartDay !== DEFAULT_MONTH_RANGE_SETTINGS.customStartDay
+        || manualMonthRangeStart !== DEFAULT_MONTH_RANGE_SETTINGS.manualStart
+        || manualMonthRangeEnd !== DEFAULT_MONTH_RANGE_SETTINGS.manualEnd;
+
+    const monthRangeDates = useMemo(() => {
+        if (!monthRangeStart || !monthRangeEnd) return [];
+        if (monthRangeStart > monthRangeEnd) return [];
+        try {
+            const startDate = parseISO(monthRangeStart);
+            const endDate = parseISO(monthRangeEnd);
+            if (!startDate || !endDate || Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+                return [];
+            }
+            startDate.setHours(0, 0, 0, 0);
+            endDate.setHours(0, 0, 0, 0);
+            if (startDate.getTime() > endDate.getTime()) return [];
+            const dates = [];
+            for (let cursor = new Date(startDate.getTime()); cursor.getTime() <= endDate.getTime(); cursor.setDate(cursor.getDate() + 1)) {
+                dates.push(new Date(cursor.getTime()));
+            }
+            return dates;
+        } catch (error) {
+            console.error('Error constructing month range dates:', error);
+            return [];
+        }
+    }, [monthRangeStart, monthRangeEnd]);
+
+    const monthRangeIsValid = monthRangeDates.length > 0;
+    const monthRangeLabel = useMemo(() => {
+        if (!monthRangeStart || !monthRangeEnd) return '';
+        return `${formatDate(monthRangeStart)} – ${formatDate(monthRangeEnd)}`;
+    }, [monthRangeStart, monthRangeEnd]);
+
     const userAnalytics = useMemo(() => {
         const currentWeekIsoDates = weekDates.map(date => formatLocalDateYMD(date));
         const currentWeekIsoSet = new Set(currentWeekIsoDates);
@@ -433,6 +692,74 @@ const AdminWeekSection = forwardRef(({
             });
     }, [users, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser]);
 
+    const userAnalyticsMap = useMemo(() => {
+        const map = new Map();
+        userAnalytics.forEach(entry => {
+            if (entry?.username) {
+                map.set(entry.username, entry);
+            }
+        });
+        return map;
+    }, [userAnalytics]);
+
+    const monthlyUserAnalytics = useMemo(() => {
+        if (!Array.isArray(users) || users.length === 0) return [];
+        if (!monthRangeIsValid) return [];
+
+        return users.map(user => {
+            const baseData = userAnalyticsMap.get(user.username) || null;
+            const userConfig = baseData?.userConfig || user;
+            const allUserSummariesList = dailySummariesForWeekSection.filter(summary => summary.username === user.username);
+            const monthSummaries = allUserSummariesList.filter(summary => summary.date >= monthRangeStart && summary.date <= monthRangeEnd);
+            const monthlyActualMinutes = monthSummaries.reduce((acc, summary) => acc + (summary?.workedMinutes || 0), 0);
+
+            const userApprovedVacations = allVacations.filter(vac => vac.username === user.username && vac.approved);
+            const userCurrentSickLeaves = allSickLeaves.filter(sl => sl.username === user.username);
+            const userCantonKey = userConfig?.companyCantonAbbreviation || 'GENERAL';
+            const holidaysForThisUserYear = allHolidays[userCantonKey]?.data || allHolidays['GENERAL']?.data || {};
+            const storedHolidayOptions = holidayOptionsByUser[user.username] || {};
+            const allHolidayOptionsForUser = Object.values(storedHolidayOptions);
+
+            const monthlyExpectedMinutes = monthRangeDates.reduce((acc, dateObj) => {
+                const isoDate = formatLocalDateYMD(dateObj);
+                const holidayOptionForDay = allHolidayOptionsForUser.find(opt => opt?.holidayDate === isoDate);
+                const expectedHours = getExpectedHoursForDay(
+                    dateObj,
+                    userConfig,
+                    defaultExpectedHours,
+                    holidaysForThisUserYear,
+                    userApprovedVacations,
+                    userCurrentSickLeaves,
+                    holidayOptionForDay
+                );
+                return acc + Math.round((expectedHours || 0) * 60);
+            }, 0);
+
+            const cumulativeBalanceMinutes = baseData?.cumulativeBalanceMinutes ?? (user.trackingBalanceInMinutes ?? 0);
+            const problemIndicators = baseData?.problemIndicators || EMPTY_PROBLEM_INDICATORS;
+            const userColor = baseData?.userColor || (/^#[0-9A-F]{6}$/i.test(user.color || "") ? user.color : "#007BFF");
+
+            return {
+                ...(baseData || {
+                    username: user.username,
+                    userConfig,
+                    weeklyActualMinutes: 0,
+                    weeklyExpectedMinutes: 0,
+                    currentWeekOvertimeMinutes: 0,
+                }),
+                username: user.username,
+                userColor,
+                userApprovedVacations,
+                userCurrentSickLeaves,
+                cumulativeBalanceMinutes,
+                problemIndicators,
+                monthlyActualMinutes,
+                monthlyExpectedMinutes,
+                monthlyOvertimeMinutes: monthlyActualMinutes - monthlyExpectedMinutes,
+            };
+        });
+    }, [users, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, monthRangeStart, monthRangeEnd, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, monthRangeDates, defaultExpectedHours]);
+
 
     const issueSummary = useMemo(() => {
         const summary = {
@@ -476,13 +803,15 @@ const AdminWeekSection = forwardRef(({
         }
     }, [issueSummary, onIssueSummaryChange]);
 
-    const processedUserData = useMemo(() => {
+    const filterUserCollection = useCallback((collection) => {
+        if (!Array.isArray(collection)) return [];
         const normalizedSearch = searchTerm.trim().toLowerCase();
         const activeFilters = Object.entries(issueTypeFilters)
             .filter(([, enabled]) => enabled)
             .map(([key]) => key);
 
-        return userAnalytics.filter(userData => {
+        return collection.filter(userData => {
+            if (!userData?.username) return false;
             if (normalizedSearch && !userData.username.toLowerCase().includes(normalizedSearch)) {
                 return false;
             }
@@ -499,7 +828,6 @@ const AdminWeekSection = forwardRef(({
                 return false;
             }
 
-
             if (activeFilters.length === 0) {
                 return true;
             }
@@ -509,32 +837,27 @@ const AdminWeekSection = forwardRef(({
                 return indicatorKey ? (indicators[indicatorKey] || 0) > 0 : false;
             });
         });
-    }, [userAnalytics, searchTerm, hiddenUsers, showOnlyIssues, issueTypeFilters]);
+    }, [searchTerm, hiddenUsers, showOnlyIssues, issueTypeFilters]);
 
-    const sortedUserData = useMemo(() => {
-        // Sorting logic (remains largely the same, adjust keys if needed)
-        let sortableItems = [...processedUserData];
-        if (sortConfig.key) {
-            sortableItems.sort((a, b) => {
-                let valA = a[sortConfig.key];
-                let valB = b[sortConfig.key];
+    const processedUserData = useMemo(
+        () => filterUserCollection(userAnalytics),
+        [userAnalytics, filterUserCollection]
+    );
 
-                // Special handling for problemIndicators sorting (sum of problems)
-                if (sortConfig.key === 'problemIndicators') {
-                    valA = (a.problemIndicators.missingEntriesCount + a.problemIndicators.incompleteDaysCount + a.problemIndicators.autoCompletedUncorrectedCount + a.problemIndicators.holidayPendingCount);
-                    valB = (b.problemIndicators.missingEntriesCount + b.problemIndicators.incompleteDaysCount + b.problemIndicators.autoCompletedUncorrectedCount + b.problemIndicators.holidayPendingCount);
-                } else if (typeof valA === 'string' && typeof valB === 'string') {
-                    valA = valA.toLowerCase();
-                    valB = valB.toLowerCase();
-                }
+    const processedMonthlyUserData = useMemo(
+        () => filterUserCollection(monthlyUserAnalytics),
+        [monthlyUserAnalytics, filterUserCollection]
+    );
 
-                if (valA < valB) return sortConfig.direction === 'ascending' ? -1 : 1;
-                if (valA > valB) return sortConfig.direction === 'ascending' ? 1 : -1;
-                return 0;
-            });
-        }
-        return sortableItems;
-    }, [processedUserData, sortConfig]);
+    const sortedUserData = useMemo(
+        () => sortUserCollection(processedUserData, sortConfig),
+        [processedUserData, sortConfig]
+    );
+
+    const sortedMonthlyUserData = useMemo(
+        () => sortUserCollection(processedMonthlyUserData, monthSortConfig),
+        [processedMonthlyUserData, monthSortConfig]
+    );
 
     const requestSort = (key) => {
         let direction = 'ascending';
@@ -550,6 +873,119 @@ const AdminWeekSection = forwardRef(({
         }
         return '';
     };
+
+    const requestMonthSort = (key) => {
+        let direction = 'ascending';
+        if (monthSortConfig.key === key && monthSortConfig.direction === 'ascending') {
+            direction = 'descending';
+        }
+        setMonthSortConfig({ key, direction });
+    };
+
+    const getMonthSortIndicator = (key) => {
+        if (monthSortConfig.key === key) {
+            return monthSortConfig.direction === 'ascending' ? ' ▲' : ' ▼';
+        }
+        return '';
+    };
+
+    const handleMonthRangeModeSelect = useCallback((value) => {
+        const nextMode = ['calendar', 'customCycle', 'manual'].includes(value) ? value : 'calendar';
+        if (nextMode === 'manual') {
+            setManualMonthRangeStart((prev) => prev || monthRangeStart || getMonthRangeStartIso(selectedMonday));
+            setManualMonthRangeEnd((prev) => prev || monthRangeEnd || getMonthRangeEndIso(selectedMonday));
+        }
+        setMonthRangeMode(nextMode);
+    }, [monthRangeEnd, monthRangeStart, selectedMonday]);
+
+    const handleMonthRangeStartChange = (value) => {
+        setMonthRangeMode('manual');
+        setManualMonthRangeStart(value);
+    };
+
+    const handleMonthRangeEndChange = (value) => {
+        setMonthRangeMode('manual');
+        setManualMonthRangeEnd(value);
+    };
+
+    const handleCustomMonthStartDayChange = (value) => {
+        const sanitized = clampMonthStartDay(value);
+        setCustomMonthStartDay(sanitized);
+    };
+
+    const resetMonthRangeToDefault = useCallback(() => {
+        setMonthRangeMode(DEFAULT_MONTH_RANGE_SETTINGS.mode);
+        setCustomMonthStartDay(DEFAULT_MONTH_RANGE_SETTINGS.customStartDay);
+        setManualMonthRangeStart(DEFAULT_MONTH_RANGE_SETTINGS.manualStart);
+        setManualMonthRangeEnd(DEFAULT_MONTH_RANGE_SETTINGS.manualEnd);
+    }, []);
+
+    const renderProblemIndicatorsCell = (userData) => {
+        const indicators = userData?.problemIndicators || EMPTY_PROBLEM_INDICATORS;
+        const hasProblems = (indicators.missingEntriesCount || 0) > 0
+            || (indicators.incompleteDaysCount || 0) > 0
+            || (indicators.autoCompletedUncorrectedCount || 0) > 0
+            || (indicators.holidayPendingCount || 0) > 0;
+
+        if (!hasProblems) {
+            return <span role="img" aria-label={t('adminDashboard.noIssues', 'Keine Probleme')} className="text-green-500">✅</span>;
+        }
+
+        return (
+            <div className="flex gap-1 items-center justify-center">
+                {indicators.missingEntriesCount > 0 && (
+                    <span
+                        title={`${indicators.missingEntriesCount} ${t('adminDashboard.problemTooltips.missingEntries', 'Tag(e) ohne Eintrag')}`}
+                        onClick={() => handleProblemIndicatorClick(userData.username, "missing")}
+                        className="problem-icon cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "missing")}
+                    >
+                        ❗
+                    </span>
+                )}
+                {indicators.incompleteDaysCount > 0 && (
+                    <span
+                        title={`${indicators.incompleteDaysCount} ${t('adminDashboard.problemTooltips.incompleteDays', 'Tag(e) unvollständig (z.B. fehlendes Ende)')}`}
+                        onClick={() => handleProblemIndicatorClick(userData.username, "any_incomplete")}
+                        className="problem-icon cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "any_incomplete")}
+                    >
+                        ⚠️
+                    </span>
+                )}
+                {indicators.autoCompletedUncorrectedCount > 0 && (
+                    <span
+                        title={`${indicators.autoCompletedUncorrectedCount}${t('adminDashboard.problemTooltips.autoCompletedDaysUncorrected', ' Tag(e) automatisch beendet & unkorrigiert')}`}
+                        onClick={() => handleProblemIndicatorClick(userData.username, "auto_completed")}
+                        className="problem-icon auto-completed-icon cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "auto_completed")}
+                    >
+                        🤖
+                    </span>
+                )}
+                {indicators.holidayPendingCount > 0 && (
+                    <span
+                        title={`${indicators.holidayPendingCount} ${t('adminDashboard.problemTooltips.holidayPending', 'Feiertagsoption(en) ausstehend')}`}
+                        onClick={() => handleProblemIndicatorClick(userData.username, "holiday_pending_decision")}
+                        className="problem-icon holiday-pending-icon cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "holiday_pending_decision")}
+                    >
+                        🎉❓
+                    </span>
+                )}
+            </div>
+        );
+    };
+
+    const activeSortedData = activeTab === 'week' ? sortedUserData : sortedMonthlyUserData;
 
     const toggleIssueTypeFilter = (filterKey) => {
         setIssueTypeFilters(prev => ({
@@ -991,21 +1427,103 @@ const AdminWeekSection = forwardRef(({
     return (
         <> {/* Added scoped-dashboard here */}
             <section ref={sectionRef} className="week-section content-section">
-                <div className="section-header-controls"> {/* Wrapper for H3 and Navigation */}
-                    <h3>{t("adminDashboard.timeTrackingCurrentWeek", "Zeiterfassung Aktuelle Woche")}</h3>
-                    <div className="week-navigation">
-                        <button onClick={handlePrevWeek} aria-label={t('adminDashboard.prevWeek', 'Vorige Woche')}>←</button>
-                        <input
-                            type="date"
-                            value={formatLocalDateYMD(selectedMonday)}
-                            onChange={handleWeekJump}
-                            aria-label={t('adminDashboard.jumpToDate', 'Datum auswählen')}
-                        />
-                        <button onClick={handleNextWeek} aria-label={t('adminDashboard.nextWeek', 'Nächste Woche')}>→</button>
-                        <button onClick={handleCurrentWeek} aria-label={t('adminDashboard.currentWeek', 'Aktuelle Woche')}>{t('currentWeek', 'Aktuelle Woche')}</button>
-                    </div>
+                <div className="section-header-controls">
+                    <h3>
+                        {activeTab === 'week'
+                            ? t("adminDashboard.timeTrackingCurrentWeek", "Zeiterfassung Aktuelle Woche")
+                            : t("adminDashboard.timeTrackingRangeTitle", "Zeiterfassung Zeitraum")}
+                    </h3>
+                    {activeTab === 'week' ? (
+                        <div className="week-navigation">
+                            <button onClick={handlePrevWeek} aria-label={t('adminDashboard.prevWeek', 'Vorige Woche')}>←</button>
+                            <input
+                                type="date"
+                                value={formatLocalDateYMD(selectedMonday)}
+                                onChange={handleWeekJump}
+                                aria-label={t('adminDashboard.jumpToDate', 'Datum auswählen')}
+                            />
+                            <button onClick={handleNextWeek} aria-label={t('adminDashboard.nextWeek', 'Nächste Woche')}>→</button>
+                            <button onClick={handleCurrentWeek} aria-label={t('adminDashboard.currentWeek', 'Aktuelle Woche')}>
+                                {t('currentWeek', 'Aktuelle Woche')}
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="month-range-controls">
+                            <label className="month-range-field month-range-mode">
+                                <span>{t('adminDashboard.monthView.modeLabel', 'Zeitraum-Modus')}</span>
+                                <select
+                                    value={monthRangeMode}
+                                    onChange={(e) => handleMonthRangeModeSelect(e.target.value)}
+                                    aria-label={t('adminDashboard.monthView.modeLabel', 'Zeitraum-Modus')}
+                                >
+                                    <option value="calendar">{t('adminDashboard.monthView.modeCalendar', 'Kalendermonat')}</option>
+                                    <option value="customCycle">{t('adminDashboard.monthView.modeCustomCycle', 'Benutzerdefinierte Monatsgrenzen')}</option>
+                                    <option value="manual">{t('adminDashboard.monthView.modeManual', 'Manuell wählen')}</option>
+                                </select>
+                            </label>
+                            {monthRangeIsCustomCycle && (
+                                <label className="month-range-field month-range-custom-day">
+                                    <span>{t('adminDashboard.monthView.customStartLabel', 'Starttag im Monat')}</span>
+                                    <input
+                                        type="number"
+                                        min="1"
+                                        max="31"
+                                        value={customMonthStartDay}
+                                        onChange={(e) => handleCustomMonthStartDayChange(e.target.value)}
+                                        aria-label={t('adminDashboard.monthView.customStartLabel', 'Starttag im Monat')}
+                                    />
+                                </label>
+                            )}
+                            <label className="month-range-field">
+                                <span>{t('adminDashboard.monthView.startLabel', 'Startdatum')}</span>
+                                <input
+                                    type="date"
+                                    value={monthRangeStart}
+                                    onChange={(e) => handleMonthRangeStartChange(e.target.value)}
+                                    aria-label={t('adminDashboard.monthView.startLabel', 'Startdatum')}
+                                    disabled={!monthRangeIsManual}
+                                />
+                            </label>
+                            <label className="month-range-field">
+                                <span>{t('adminDashboard.monthView.endLabel', 'Enddatum')}</span>
+                                <input
+                                    type="date"
+                                    value={monthRangeEnd}
+                                    onChange={(e) => handleMonthRangeEndChange(e.target.value)}
+                                    aria-label={t('adminDashboard.monthView.endLabel', 'Enddatum')}
+                                    disabled={!monthRangeIsManual}
+                                />
+                            </label>
+                            <button
+                                type="button"
+                                className="month-range-reset"
+                                onClick={resetMonthRangeToDefault}
+                                disabled={!hasCustomMonthSettings}
+                            >
+                                {t('adminDashboard.monthView.resetRange', 'Monatsgrenzen zurücksetzen')}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
+                <div className="timeframe-tab-bar">
+                    <button
+                        type="button"
+                        className={`timeframe-tab ${activeTab === 'week' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('week')}
+                    >
+                        {t('adminDashboard.weekTabLabel', 'Wochenansicht')}
+                    </button>
+                    <button
+                        type="button"
+                        className={`timeframe-tab ${activeTab === 'month' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('month')}
+                    >
+                        {t('adminDashboard.monthTabLabel', 'Monatsansicht')}
+                    </button>
+                </div>
+
+                {activeTab === 'week' && (
                 <div className="smart-week-overview" role="region" aria-label={t('adminDashboard.smartOverview.title', 'Wochenüberblick')}>
                     <div className="smart-overview-header">
                         <div>
@@ -1075,6 +1593,35 @@ const AdminWeekSection = forwardRef(({
                         </div>
                     </div>
                 </div>
+                )}
+
+                {activeTab === 'month' && (
+                    <div className="month-range-summary">
+                        <p>
+                            <strong>{t('adminDashboard.monthView.currentRangeTitle', 'Aktueller Zeitraum')}:</strong>{' '}
+                            {monthRangeIsValid
+                                ? monthRangeLabel
+                                : t('adminDashboard.monthView.noRangeSelected', 'Bitte gültigen Zeitraum auswählen.')}
+                        </p>
+                        <p className="month-range-hint">
+                            {monthRangeIsCustomCycle
+                                ? t(
+                                    'adminDashboard.monthView.customCycleHint',
+                                    'Automatischer Zeitraum: ab dem {day}. eines Monats bis zum Vortag des Folgemonats.',
+                                    { day: customMonthStartDay }
+                                )
+                                : monthRangeIsManual
+                                    ? t(
+                                        'adminDashboard.monthView.manualHint',
+                                        'Manueller Zeitraum – Start und Ende bleiben unverändert, bis erneut angepasst.'
+                                    )
+                                    : t(
+                                        'adminDashboard.monthView.adjustHint',
+                                        'Standard: 1. bis letzter Tag des Monats. Wähle „Benutzerdefinierte Monatsgrenzen“ oder „Manuell“, um z. B. vom 26. bis 26. auszuwerten.'
+                                    )}
+                        </p>
+                    </div>
+                )}
 
                 <div className="user-search-controls">
                     <div className="user-search-row">
@@ -1168,178 +1715,210 @@ const AdminWeekSection = forwardRef(({
                 )}
 
 
-                {sortedUserData.length === 0 && !showHiddenUsersManager ? (
+                {activeTab === 'month' && !monthRangeIsValid ? (
                     <p className="no-data-message italic text-gray-600 p-4 text-center">
-                        {hiddenUsers.size > 0 && searchTerm.trim() === ""
-                            ? t("adminDashboard.allVisibleUsersHiddenOrNoData", "Alle sichtbaren Benutzer sind ausgeblendet oder es sind keine Daten für die aktuelle Woche vorhanden.")
-                            : (searchTerm.trim() === "" ? t("adminDashboard.noUserDataForWeek", "Keine Benutzerdaten für diese Woche.") : t("adminDashboard.noMatch", "Keine Benutzer entsprechen der Suche."))
-                        }
+                        {t('adminDashboard.monthView.invalidRange', 'Bitte wählen Sie einen gültigen Zeitraum.')}
+                    </p>
+                ) : (activeSortedData.length === 0 && !showHiddenUsersManager ? (
+                    <p className="no-data-message italic text-gray-600 p-4 text-center">
+                        {activeTab === 'week'
+                            ? (hiddenUsers.size > 0 && searchTerm.trim() === ""
+                                ? t("adminDashboard.allVisibleUsersHiddenOrNoData", "Alle sichtbaren Benutzer sind ausgeblendet oder es sind keine Daten für die aktuelle Woche vorhanden.")
+                                : (searchTerm.trim() === "" ? t("adminDashboard.noUserDataForWeek", "Keine Benutzerdaten für diese Woche.") : t("adminDashboard.noMatch", "Keine Benutzer entsprechen der Suche.")))
+                            : (searchTerm.trim() === "" ? t('adminDashboard.monthView.noUserData', 'Keine Benutzerdaten für diesen Zeitraum.') : t('adminDashboard.noMatch', 'Keine Benutzer entsprechen der Suche.'))}
                     </p>
                 ) : (
-                    <div className="table-responsive-wrapper">
-                        <table className="admin-week-table">
-                            <thead>
-                            <tr>
-                                <th onClick={() => requestSort('username')} className="sortable-header th-user">
-                                    {t('user', 'Benutzer')} {getSortIndicator('username')}
-                                </th>
-                                <th onClick={() => requestSort('weeklyActualMinutes')} className="sortable-header th-numeric">
-                                    {t('actualHours', 'Ist (Wo)')} {getSortIndicator('weeklyActualMinutes')}
-                                </th>
-                                <th onClick={() => requestSort('weeklyExpectedMinutes')} className="sortable-header th-numeric">
-                                    {t('expectedHours', 'Soll (Wo)')} {getSortIndicator('weeklyExpectedMinutes')}
-                                </th>
-                                <th onClick={() => requestSort('currentWeekOvertimeMinutes')} className="sortable-header th-numeric">
-                                    {t('balanceWeek', 'Saldo (Wo)')} {getSortIndicator('currentWeekOvertimeMinutes')}
-                                </th>
-                                <th onClick={() => requestSort('cumulativeBalanceMinutes')} className="sortable-header th-numeric">
-                                    {t('balanceTotal', 'Gesamtsaldo')} {getSortIndicator('cumulativeBalanceMinutes')}
-                                </th>
-                                <th onClick={() => requestSort('problemIndicators')} className="sortable-header th-center">
-                                    {t('issues', 'Probleme')} {getSortIndicator('problemIndicators')}
-                                </th>
-                                <th className="th-actions">{t('actions', 'Aktionen')}</th>
-                            </tr>
-                            </thead>
-                            <tbody>
-                            {sortedUserData.map((userData) => (
-                                <React.Fragment key={userData.username}>
-                                    <tr className={`user-row ${detailedUser === userData.username ? "user-row-detailed" : ""} ${hiddenUsers.has(userData.username) ? "user-row-hidden" : ""}`}>
-                                        <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.username}</td>
-                                        <td data-label={t('actualHours', 'Ist (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyActualMinutes)}</td>
-                                        <td data-label={t('expectedHours', 'Soll (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyExpectedMinutes)}</td>
-                                        <td data-label={t('balanceWeek', 'Saldo (Wo)')} className={`td-numeric ${userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.currentWeekOvertimeMinutes)}</td>
-                                        <td data-label={t('balanceTotal', 'Gesamtsaldo')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
-                                        <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell td-center">
-                                            {/* Problem Indicators Logic */}
-                                            {(userData.problemIndicators.missingEntriesCount > 0 || userData.problemIndicators.incompleteDaysCount > 0 || userData.problemIndicators.autoCompletedUncorrectedCount > 0 || userData.problemIndicators.holidayPendingCount > 0) ? (
-                                                <div className="flex gap-1 items-center justify-center">
-                                                    {userData.problemIndicators.missingEntriesCount > 0 && (
-                                                        <span
-                                                            title={`${userData.problemIndicators.missingEntriesCount} ${t('adminDashboard.problemTooltips.missingEntries', 'Tag(e) ohne Eintrag')}`}
-                                                            onClick={() => handleProblemIndicatorClick(userData.username, "missing")}
-                                                            className="problem-icon cursor-pointer"
-                                                            role="button"
-                                                            tabIndex={0}
-                                                            onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "missing")}
-                                                        >
-                                                            ❗
-                                                        </span>
-                                                    )}
-                                                    {userData.problemIndicators.incompleteDaysCount > 0 && (
-                                                        <span
-                                                            title={`${userData.problemIndicators.incompleteDaysCount} ${t('adminDashboard.problemTooltips.incompleteDays', 'Tag(e) unvollständig (z.B. fehlendes Ende)')}`}
-                                                            onClick={() => handleProblemIndicatorClick(userData.username, "any_incomplete")}
-                                                            className="problem-icon cursor-pointer"
-                                                            role="button"
-                                                            tabIndex={0}
-                                                            onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "any_incomplete")}
-                                                        >
-                                                            ⚠️
-                                                        </span>
-                                                    )}
-                                                    {userData.problemIndicators.autoCompletedUncorrectedCount > 0 && (
-                                                        <span
-                                                            title={`${userData.problemIndicators.autoCompletedUncorrectedCount} ${t('adminDashboard.problemTooltips.autoCompletedDaysUncorrected', 'Tag(e) automatisch beendet & unkorrigiert')}`}
-                                                            onClick={() => handleProblemIndicatorClick(userData.username, "auto_completed")}
-                                                            className="problem-icon auto-completed-icon cursor-pointer"
-                                                            role="button"
-                                                            tabIndex={0}
-                                                            onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "auto_completed")}
-                                                        >
-                                                            🤖
-                                                        </span>
-                                                    )}
-                                                    {userData.problemIndicators.holidayPendingCount > 0 && (
-                                                        <span
-                                                            title={`${userData.problemIndicators.holidayPendingCount} ${t('adminDashboard.problemTooltips.holidayPending', 'Feiertagsoption(en) ausstehend')}`}
-                                                            onClick={() => handleProblemIndicatorClick(userData.username, "holiday_pending_decision")}
-                                                            className="problem-icon holiday-pending-icon cursor-pointer"
-                                                            role="button"
-                                                            tabIndex={0}
-                                                            onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, "holiday_pending_decision")}
-                                                        >
-                                                            🎉❓
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            ) : (
-                                                <span role="img" aria-label={t('adminDashboard.noIssues', 'Keine Probleme')} className="text-green-500">✅</span>
-                                            )}
-                                        </td>
-                                        <td data-label={t('actions', 'Aktionen')} className="actions-cell">
-                                            <button onClick={() => toggleDetails(userData.username)} className="action-button details-toggle-button" title={detailedUser === userData.username ? t('hideDetails', 'Details Ausblenden') : t('showDetails', 'Details Anzeigen')} aria-expanded={detailedUser === userData.username}>
-                                                {detailedUser === userData.username ? '📂' : '📄'}
-                                            </button>
-                                            <button onClick={() => openPrintUserModal(userData.username)} className="action-button print-user-button" title={t('printButtonUser', 'Zeiten dieses Benutzers drucken')}>
-                                                🖨️
-                                            </button>
-                                            <button onClick={() => handleHideUser(userData.username)} className="action-button hide-user-row-button" title={t('hideUserInTable', 'Diesen Benutzer in der Tabelle ausblenden')}>
-                                                🙈
-                                            </button>
-                                        </td>
-                                    </tr>
-                                    {detailedUser === userData.username && (
-                                        <tr className="user-detail-row">
-                                            <td colSpan="7" ref={detailSectionRef}>
-                                                <div className="admin-week-display-detail p-2 bg-slate-50 rounded-b-md shadow-inner">
-                                                    <div className="user-weekly-balance-detail text-xs mb-2 font-medium">
-                                                        <span>{t('balanceTotal', 'Gesamtsaldo')}: {minutesToHHMM(userData.cumulativeBalanceMinutes)}</span>
-                                                        <span className="mx-2">|</span>
-                                                        <span>{t('balanceWeek', 'Saldo (akt. Woche)')}: {minutesToHHMM(userData.currentWeekOvertimeMinutes)}</span>
-                                                    </div>
-                                                    <div className="admin-days-grid">
-                                                        {weekDates.map((d) => {
-                                                            const isoDate = formatLocalDateYMD(d);
-                                                            const dailySummary = userData.userDayMap[isoDate]; // This is DailyTimeSummaryDTO
-                                                            const userCantonKeyForDay = userData.userConfig.companyCantonAbbreviation || 'GENERAL';
-                                                            const holidaysDataForDay = allHolidays[userCantonKeyForDay]?.data || allHolidays['GENERAL']?.data || {};
-                                                            const holidayNameOnThisDay = holidaysDataForDay[isoDate];
-                                                            const holidayOptionForThisDay = currentUserHolidayOptions.find(opt => opt.holidayDate === isoDate);
+                    activeTab === 'week' ? (
+                        <div className="table-responsive-wrapper">
+                            <table className="admin-week-table">
+                                <thead>
+                                <tr>
+                                    <th onClick={() => requestSort('username')} className="sortable-header th-user">
+                                        {t('user', 'Benutzer')} {getSortIndicator('username')}
+                                    </th>
+                                    <th onClick={() => requestSort('weeklyActualMinutes')} className="sortable-header th-numeric">
+                                        {t('actualHours', 'Ist (Wo)')} {getSortIndicator('weeklyActualMinutes')}
+                                    </th>
+                                    <th onClick={() => requestSort('weeklyExpectedMinutes')} className="sortable-header th-numeric">
+                                        {t('expectedHours', 'Soll (Wo)')} {getSortIndicator('weeklyExpectedMinutes')}
+                                    </th>
+                                    <th onClick={() => requestSort('currentWeekOvertimeMinutes')} className="sortable-header th-numeric">
+                                        {t('balanceWeek', 'Saldo (Wo)')} {getSortIndicator('currentWeekOvertimeMinutes')}
+                                    </th>
+                                    <th onClick={() => requestSort('cumulativeBalanceMinutes')} className="sortable-header th-numeric">
+                                        {t('balanceTotal', 'Gesamtsaldo')} {getSortIndicator('cumulativeBalanceMinutes')}
+                                    </th>
+                                    <th onClick={() => requestSort('problemIndicators')} className="sortable-header th-center">
+                                        {t('issues', 'Probleme')} {getSortIndicator('problemIndicators')}
+                                    </th>
+                                    <th className="th-actions">{t('actions', 'Aktionen')}</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {sortedUserData.map((userData) => (
+                                    <React.Fragment key={userData.username}>
+                                        <tr className={`user-row ${detailedUser === userData.username ? "user-row-detailed" : ""} ${hiddenUsers.has(userData.username) ? "user-row-hidden" : ""}`}>
+                                            <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.username}</td>
+                                            <td data-label={t('actualHours', 'Ist (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyActualMinutes)}</td>
+                                            <td data-label={t('expectedHours', 'Soll (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyExpectedMinutes)}</td>
+                                            <td data-label={t('balanceWeek', 'Saldo (Wo)')} className={`td-numeric ${userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.currentWeekOvertimeMinutes)}</td>
+                                            <td data-label={t('balanceTotal', 'Gesamtsaldo')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
+                                            <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell td-center">
+                                                {renderProblemIndicatorsCell(userData)}
+                                            </td>
+                                            <td data-label={t('actions', 'Aktionen')} className="actions-cell">
+                                                <button onClick={() => toggleDetails(userData.username)} className="action-button details-toggle-button" title={detailedUser === userData.username ? t('hideDetails', 'Details Ausblenden') : t('showDetails', 'Details Anzeigen')} aria-expanded={detailedUser === userData.username}>
+                                                    {detailedUser === userData.username ? '📂' : '📄'}
+                                                </button>
+                                                <button onClick={() => openPrintUserModal(userData.username)} className="action-button print-user-button" title={t('printButtonUser', 'Zeiten dieses Benutzers drucken')}>
+                                                    🖨️
+                                                </button>
+                                                <button onClick={() => handleHideUser(userData.username)} className="action-button hide-user-row-button" title={t('hideUserInTable', 'Diesen Benutzer in der Tabelle ausblenden')}>
+                                                    🙈
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        {detailedUser === userData.username && (
+                                            <tr className="user-detail-row">
+                                                <td colSpan="7" ref={detailSectionRef}>
+                                                    <div className="admin-week-display-detail p-2 bg-slate-50 rounded-b-md shadow-inner">
+                                                        <div className="user-weekly-balance-detail text-xs mb-2 font-medium">
+                                                            <span>{t('balanceTotal', 'Gesamtsaldo')}: {minutesToHHMM(userData.cumulativeBalanceMinutes)}</span>
+                                                            <span className="mx-2">|</span>
+                                                            <span>{t('balanceWeek', 'Saldo (akt. Woche)')}: {minutesToHHMM(userData.currentWeekOvertimeMinutes)}</span>
+                                                        </div>
+                                                        <div className="admin-days-grid">
+                                                            {weekDates.map((d) => {
+                                                                const isoDate = formatLocalDateYMD(d);
+                                                                const dailySummary = userData.userDayMap[isoDate];
+                                                                const userCantonKeyForDay = userData.userConfig.companyCantonAbbreviation || 'GENERAL';
+                                                                const holidaysDataForDay = allHolidays[userCantonKeyForDay]?.data || allHolidays['GENERAL']?.data || {};
+                                                                const holidayNameOnThisDay = holidaysDataForDay[isoDate];
+                                                                const holidayOptionForThisDay = currentUserHolidayOptions.find(opt => opt.holidayDate === isoDate);
 
+                                                                const expectedMinsToday = Math.round(getExpectedHoursForDay(d, userData.userConfig, defaultExpectedHours, holidaysDataForDay, userData.userApprovedVacations, userData.userCurrentSickLeaves, holidayOptionForThisDay) * 60);
+                                                                const actualMinsToday = dailySummary?.workedMinutes || 0;
+                                                                const diffMinsToday = actualMinsToday - expectedMinsToday;
 
-                                                            const expectedMinsToday = Math.round(getExpectedHoursForDay(d, userData.userConfig, defaultExpectedHours, holidaysDataForDay, userData.userApprovedVacations, userData.userCurrentSickLeaves, holidayOptionForThisDay) * 60);
-                                                            const actualMinsToday = dailySummary?.workedMinutes || 0;
-                                                            const diffMinsToday = actualMinsToday - expectedMinsToday;
+                                                                const isFocused = focusedProblem.username === userData.username && focusedProblem.dateIso === isoDate;
+                                                                let cardClass = `admin-day-card ${isFocused ? (focusedProblem.type.includes('auto_completed') ? 'highlight-autocompleted' : (focusedProblem.type === 'holiday_pending_decision' ? 'highlight-holiday-pending' : 'focused-problem')) : ''}`;
+                                                                if (dailySummary?.needsCorrection && !isFocused) cardClass += ' auto-completed-day-card';
 
-                                                            const isFocused = focusedProblem.username === userData.username && focusedProblem.dateIso === isoDate;
-                                                            let cardClass = `admin-day-card ${isFocused ? (focusedProblem.type.includes('auto_completed') ? 'highlight-autocompleted' : (focusedProblem.type === 'holiday_pending_decision' ? 'highlight-holiday-pending' : 'focused-problem')) : ''}`;
-                                                            if (dailySummary?.needsCorrection && !isFocused) cardClass += ' auto-completed-day-card';
+                                                                const vacationOnThisDay = userData.userApprovedVacations.find(vac => isoDate >= vac.startDate && isoDate <= vac.endDate);
+                                                                const sickOnThisDay = userData.userCurrentSickLeaves.find(sick => isoDate >= sick.startDate && isoDate <= sick.endDate);
 
-
-                                                            const vacationOnThisDay = userData.userApprovedVacations.find(vac => isoDate >= vac.startDate && isoDate <= vac.endDate);
-                                                            const sickOnThisDay = userData.userCurrentSickLeaves.find(sick => isoDate >= sick.startDate && isoDate <= sick.endDate);
-
-                                                            let dayCardContent;
-                                                            if (holidayNameOnThisDay) {
-                                                                cardClass += ' admin-day-card-holiday';
-                                                                const currentHolidayHandling = holidayOptionForThisDay?.holidayHandlingOption || 'PENDING_DECISION';
-                                                                dayCardContent = (
-                                                                    <>
-                                                                        <p className="holiday-indicator text-xs">🎉 {t('holiday', 'Feiertag')}: {holidayNameOnThisDay}</p>
-                                                                        {userData.userConfig.isPercentage && (
-                                                                            <div className="holiday-handling-select mt-1">
-                                                                                <label htmlFor={`holiday-opt-${isoDate}-${userData.username}`} className="text-xs block mb-0.5">{t('adminDashboard.holidayOptionLabel', 'Option:')}</label>
-                                                                                <select
-                                                                                    id={`holiday-opt-${isoDate}-${userData.username}`}
-                                                                                    value={currentHolidayHandling}
-                                                                                    onChange={(e) => handleHolidayOptionChange(userData.username, isoDate, e.target.value)}
-                                                                                    className={`text-xs p-1 border rounded ${isFocused && focusedProblem.type === 'holiday_pending_decision' ? 'highlight-select' : ''}`}
-                                                                                >
-                                                                                    <option value="PENDING_DECISION">{t('adminDashboard.holidayOption.pending', 'Ausstehend')}</option>
-                                                                                    <option value="DEDUCT_FROM_WEEKLY_TARGET">{t('adminDashboard.holidayOption.deduct', 'Soll reduzieren')}</option>
-                                                                                    <option value="DO_NOT_DEDUCT_FROM_WEEKLY_TARGET">{t('adminDashboard.holidayOption.doNotDeduct', 'Soll nicht reduzieren')}</option>
-                                                                                </select>
-                                                                            </div>
-                                                                        )}
-                                                                    </>
-                                                                );
-                                                            } else if (vacationOnThisDay) {
-                                                                cardClass += ' admin-day-card-vacation';
-                                                                if (vacationOnThisDay.companyVacation && dailySummary && dailySummary.entries && dailySummary.entries.length > 0) {
+                                                                let dayCardContent;
+                                                                if (holidayNameOnThisDay) {
+                                                                    cardClass += ' admin-day-card-holiday';
+                                                                    const currentHolidayHandling = holidayOptionForThisDay?.holidayHandlingOption || 'PENDING_DECISION';
                                                                     dayCardContent = (
                                                                         <>
-                                                                            <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>
+                                                                            <p className="holiday-indicator text-xs">🎉 {t('holiday', 'Feiertag')}: {holidayNameOnThisDay}</p>
+                                                                            {userData.userConfig.isPercentage && (
+                                                                                <div className="holiday-handling-select mt-1">
+                                                                                    <label htmlFor={`holiday-opt-${isoDate}-${userData.username}`} className="text-xs block mb-0.5">{t('adminDashboard.holidayOptionLabel', 'Option:')}</label>
+                                                                                    <select
+                                                                                        id={`holiday-opt-${isoDate}-${userData.username}`}
+                                                                                        value={currentHolidayHandling}
+                                                                                        onChange={(e) => handleHolidayOptionChange(userData.username, isoDate, e.target.value)}
+                                                                                        className={`text-xs p-1 border rounded ${isFocused && focusedProblem.type === 'holiday_pending_decision' ? 'highlight-select' : ''}`}
+                                                                                    >
+                                                                                        <option value="PENDING_DECISION">{t('adminDashboard.holidayOption.pending', 'Ausstehend')}</option>
+                                                                                        <option value="DEDUCT_FROM_WEEKLY_TARGET">{t('adminDashboard.holidayOption.deduct', 'Soll reduzieren')}</option>
+                                                                                        <option value="DO_NOT_DEDUCT_FROM_WEEKLY_TARGET">{t('adminDashboard.holidayOption.doNotDeduct', 'Soll nicht reduzieren')}</option>
+                                                                                    </select>
+                                                                                </div>
+                                                                            )}
+                                                                        </>
+                                                                    );
+                                                                } else if (vacationOnThisDay) {
+                                                                    cardClass += ' admin-day-card-vacation';
+                                                                    if (vacationOnThisDay.companyVacation && dailySummary && dailySummary.entries && dailySummary.entries.length > 0) {
+                                                                        dayCardContent = (
+                                                                            <>
+                                                                                <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>
+                                                                                <div className="admin-day-card-header justify-between items-start mb-1">
+                                                                                    <div className="text-xs">
+                                                                                        {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {minutesToHHMM(expectedMinsToday)})</span>}
+                                                                                        {!userData.userConfig.isHourly && <span className={`daily-diff ml-1 ${diffMinsToday < 0 ? 'text-red-600' : 'text-green-600'}`}>({t('diffTimeShort', 'Diff')}: {minutesToHHMM(diffMinsToday)})</span>}
+                                                                                        {dailySummary.needsCorrection && <span className="auto-completed-tag ml-1 text-red-600 font-bold" title={t('adminDashboard.needsCorrectionTooltip', 'Automatisch beendet und unkorrigiert')}>KORR?</span>}
+                                                                                    </div>
+                                                                                    <button className="edit-day-button text-xs py-0.5 px-1 bg-gray-200 hover:bg-gray-300 rounded" onClick={() => openEditModal(userData.username, d, dailySummary)}>
+                                                                                        {t("adminDashboard.editButton", "Bearb.")}
+                                                                                    </button>
+                                                                                </div>
+                                                                                <ul className="time-entry-list-condensed text-xs">
+                                                                                    {sortEntries(dailySummary.entries).map(entry => {
+                                                                                        let typeLabel = entry.punchType;
+                                                                                        try {
+                                                                                            typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
+                                                                                        } catch (e) { /* Fallback */ }
+
+                                                                                        let sourceIndicator = '';
+                                                                                        if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
+                                                                                            sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
+                                                                                        } else if (entry.source === 'ADMIN_CORRECTION') {
+                                                                                            sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
+                                                                                        } else if (entry.source === 'USER_CORRECTION') {
+                                                                                            sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
+                                                                                        } else if (entry.source === 'MANUAL_IMPORT') {
+                                                                                            sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
+                                                                                        }
+
+                                                                                        return (
+                                                                                            <li key={entry.id || entry.key} className="py-0.5">
+                                                                                                {`${typeLabel}: ${formatTime(entry.entryTimestamp)}${sourceIndicator}`}
+                                                                                            </li>
+                                                                                        );
+                                                                                    })}
+                                                                                </ul>
+                                                                                <p className="text-xs mt-1">
+                                                                                    <strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(actualMinsToday)} | <strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(dailySummary.breakMinutes)}
+                                                                                </p>
+                                                                                {dailySummary.dailyNote && <p className="text-xs mt-1 italic">📝 {dailySummary.dailyNote}</p>}
+                                                                            </>
+                                                                        );
+                                                                    } else {
+                                                                        dayCardContent = (
+                                                                            <>
+                                                                                <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>
+                                                                                {vacationOnThisDay.halfDay && !userData.userConfig.isHourly && (
+                                                                                    <p className="text-xs">{t('adminDashboard.halfDayNote', 'Halbtägiger Urlaub – Restzeiten prüfen.')}</p>
+                                                                                )}
+                                                                            </>
+                                                                        );
+                                                                    }
+                                                                } else if (sickOnThisDay) {
+                                                                    cardClass += ' admin-day-card-sick';
+                                                                    dayCardContent = (
+                                                                        <>
+                                                                            <p className="sick-indicator text-xs">🤒 {t('adminDashboard.onSickLeave', 'Krank gemeldet')}{sickOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}</p>
+                                                                            {dailySummary && dailySummary.entries && dailySummary.entries.length > 0 && (
+                                                                                <p className="text-xs">{t('adminDashboard.sickWithEntries', 'Zeiten vorhanden – bitte prüfen.')}</p>
+                                                                            )}
+                                                                        </>
+                                                                    );
+                                                                } else if (!dailySummary || !dailySummary.entries || dailySummary.entries.length === 0) {
+                                                                    let showNewEntryButton = expectedMinsToday > 0
+                                                                        || (userData.userConfig.isPercentage && (d.getDay() >= 1 && d.getDay() <= (userData.userConfig.expectedWorkDays || 5)))
+                                                                        || (userData.userConfig.isHourly && (d.getDay() >= 1 && d.getDay() <= 5));
+                                                                    const effectiveDate = userData.userConfig.scheduleEffectiveDate ? parseISO(userData.userConfig.scheduleEffectiveDate) : null;
+                                                                    if (effectiveDate && d < effectiveDate) {
+                                                                        showNewEntryButton = false;
+                                                                    }
+                                                                    dayCardContent = (
+                                                                        <>
+                                                                            <p className="no-entries text-xs italic">{t('adminDashboard.noEntries')}</p>
+                                                                            {showNewEntryButton && (
+                                                                                <button className="edit-day-button new-entry text-xs py-0.5 px-1 mt-1 bg-blue-500 hover:bg-blue-600 text-white rounded" onClick={() => openNewEntryModal(userData.username, d)}>
+                                                                                    {t('adminDashboard.newEntryButton', 'Neuer Eintrag')}
+                                                                                </button>
+                                                                            )}
+                                                                        </>
+                                                                    );
+                                                                } else {
+                                                                    dayCardContent = (
+                                                                        <>
                                                                             <div className="admin-day-card-header justify-between items-start mb-1">
                                                                                 <div className="text-xs">
                                                                                     {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {minutesToHHMM(expectedMinsToday)})</span>}
@@ -1381,115 +1960,85 @@ const AdminWeekSection = forwardRef(({
                                                                             {dailySummary.dailyNote && <p className="text-xs mt-1 italic">📝 {dailySummary.dailyNote}</p>}
                                                                         </>
                                                                     );
-                                                                } else {
-                                                                    dayCardContent = <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>;
                                                                 }
-                                                            } else if (sickOnThisDay) {
-                                                                cardClass += ' admin-day-card-sick';
-                                                                dayCardContent = (
-                                                                    <div className="sick-leave-details-admin text-xs">
-                                                                        <p className="sick-indicator">
-                                                                            ⚕️ {t('sickLeave.sick', 'Krank')}
-                                                                            {sickOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}
-                                                                            {sickOnThisDay.comment && <span className="sick-comment-badge" title={sickOnThisDay.comment}>📝</span>}
-                                                                        </p>
-                                                                        <button onClick={() => openDeleteSickLeaveConfirmationModal(sickOnThisDay)} className="delete-sick-leave-button-inline text-xs p-0.5" title={t('adminDashboard.deleteSickLeaveTitle', 'Krankmeldung löschen')}>
-                                                                            🗑️
-                                                                        </button>
-                                                                    </div>
-                                                                );
-                                                            } else if (!dailySummary || !dailySummary.entries || dailySummary.entries.length === 0) {
-                                                                let showNewEntryButton = expectedMinsToday > 0
-                                                                    || (userData.userConfig.isPercentage && (d.getDay() >= 1 && d.getDay() <= (userData.userConfig.expectedWorkDays || 5)))
-                                                                    || (userData.userConfig.isHourly && (d.getDay() >= 1 && d.getDay() <= 5)); // Zeige Button, wenn Soll oder potenzieller Arbeitstag für % oder Stundenlohn
-                                                                // Check against scheduleEffectiveDate
-                                                                const effectiveDate = userData.userConfig.scheduleEffectiveDate ? parseISO(userData.userConfig.scheduleEffectiveDate) : null;
-                                                                if (effectiveDate && d < effectiveDate) {
-                                                                    showNewEntryButton = false;
-                                                                }
-                                                                dayCardContent = (
-                                                                    <>
-                                                                        <p className="no-entries text-xs italic">{t('adminDashboard.noEntries')}</p>
-                                                                        {showNewEntryButton && (
-                                                                            <button className="edit-day-button new-entry text-xs py-0.5 px-1 mt-1 bg-blue-500 hover:bg-blue-600 text-white rounded" onClick={() => openNewEntryModal(userData.username, d)}>
-                                                                                {t('adminDashboard.newEntryButton', 'Neuer Eintrag')}
-                                                                            </button>
-                                                                        )}
-                                                                    </>
-                                                                );
-                                                            } else { // Day with punches
-                                                                dayCardContent = (
-                                                                    <>
-                                                                        <div className="admin-day-card-header justify-between items-start mb-1">
-                                                                            <div className="text-xs">
-                                                                                {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {minutesToHHMM(expectedMinsToday)})</span>}
-                                                                                {!userData.userConfig.isHourly && <span className={`daily-diff ml-1 ${diffMinsToday < 0 ? 'text-red-600' : 'text-green-600'}`}>({t('diffTimeShort', 'Diff')}: {minutesToHHMM(diffMinsToday)})</span>}
-                                                                                {dailySummary.needsCorrection && <span className="auto-completed-tag ml-1 text-red-600 font-bold" title={t('adminDashboard.needsCorrectionTooltip', 'Automatisch beendet und unkorrigiert')}>KORR?</span>}
-                                                                            </div>
-                                                                            <button className="edit-day-button text-xs py-0.5 px-1 bg-gray-200 hover:bg-gray-300 rounded" onClick={() => openEditModal(userData.username, d, dailySummary)}>
-                                                                                {t("adminDashboard.editButton", "Bearb.")}
-                                                                            </button>
+
+                                                                return (
+                                                                    <div id={`day-card-${userData.username}-${isoDate}`} key={isoDate} className={`${cardClass} p-2 border rounded shadow-sm bg-white`}>
+                                                                        <div className="admin-day-card-header-date font-semibold text-sm mb-1 text-gray-700">
+                                                                            {d.toLocaleDateString("de-DE", { weekday: "short" }).toUpperCase()}, {formatDate(d)}
+                                                                            {userData.userConfig.isPercentage && holidayNameOnThisDay && holidayOptionForThisDay?.holidayHandlingOption === 'PENDING_DECISION' && (
+                                                                                <span className="holiday-pending-icon-small ml-1 text-orange-500 animate-pulse" title={t('adminDashboard.holidayOptionPendingTooltip', 'Feiertagsoption ausstehend')}>❓</span>
+                                                                            )}
                                                                         </div>
-                                                                        <ul className="time-entry-list-condensed text-xs">
-                                                                            {sortEntries(dailySummary.entries).map(entry => {
-                                                                                let typeLabel = entry.punchType;
-                                                                                try {
-                                                                                    typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
-                                                                                } catch (e) { /* Fallback */ }
-
-                                                                                let sourceIndicator = '';
-                                                                                if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
-                                                                                    sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
-                                                                                } else if (entry.source === 'ADMIN_CORRECTION') {
-                                                                                    sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
-                                                                                } else if (entry.source === 'USER_CORRECTION') {
-                                                                                    sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
-                                                                                } else if (entry.source === 'MANUAL_IMPORT') {
-                                                                                    sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
-                                                                                }
-
-                                                                                return (
-                                                                                    <li key={entry.id || entry.key} className="py-0.5">
-                                                                                        {/* Hier wird die korrekte formatTime-Funktion aufgerufen */}
-                                                                                        {`${typeLabel}: ${formatTime(entry.entryTimestamp)}${sourceIndicator}`}
-                                                                                    </li>
-                                                                                );
-                                                                            })}
-                                                                        </ul>
-                                                                        <p className="text-xs mt-1">
-                                                                            <strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(actualMinsToday)} | <strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(dailySummary.breakMinutes)}
-                                                                        </p>
-                                                                        {dailySummary.dailyNote && <p className="text-xs mt-1 italic">📝 {dailySummary.dailyNote}</p>}
-                                                                    </>
+                                                                        <div className="admin-day-content">
+                                                                            {dayCardContent}
+                                                                        </div>
+                                                                    </div>
                                                                 );
-                                                            }
-
-                                                            return (
-                                                                <div id={`day-card-${userData.username}-${isoDate}`} key={isoDate} className={`${cardClass} p-2 border rounded shadow-sm bg-white`}>
-                                                                    <div className="admin-day-card-header-date font-semibold text-sm mb-1 text-gray-700">
-                                                                        {d.toLocaleDateString("de-DE", { weekday: "short" }).toUpperCase()}, {formatDate(d)}
-                                                                        {/* Indikator für ausstehende Feiertagsoption für Prozent-Nutzer */}
-                                                                        {userData.userConfig.isPercentage && holidayNameOnThisDay && holidayOptionForThisDay?.holidayHandlingOption === 'PENDING_DECISION' && (
-                                                                            <span className="holiday-pending-icon-small ml-1 text-orange-500 animate-pulse" title={t('adminDashboard.holidayOptionPendingTooltip', 'Feiertagsoption ausstehend')}>❓</span>
-                                                                        )}
-                                                                    </div>
-                                                                    <div className="admin-day-content">
-                                                                        {dayCardContent}
-                                                                    </div>
-                                                                </div>
-                                                            );
-                                                        })}
+                                                            })}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    )}
-                                </React.Fragment>
-                            ))}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </React.Fragment>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    ) : (
+                        <div className="table-responsive-wrapper">
+                            <table className="admin-week-table">
+                                <thead>
+                                <tr>
+                                    <th onClick={() => requestMonthSort('username')} className="sortable-header th-user">
+                                        {t('user', 'Benutzer')} {getMonthSortIndicator('username')}
+                                    </th>
+                                    <th onClick={() => requestMonthSort('monthlyActualMinutes')} className="sortable-header th-numeric">
+                                        {t('adminDashboard.monthView.actualHours', 'Ist (Zeitraum)')} {getMonthSortIndicator('monthlyActualMinutes')}
+                                    </th>
+                                    <th onClick={() => requestMonthSort('monthlyExpectedMinutes')} className="sortable-header th-numeric">
+                                        {t('adminDashboard.monthView.expectedHours', 'Soll (Zeitraum)')} {getMonthSortIndicator('monthlyExpectedMinutes')}
+                                    </th>
+                                    <th onClick={() => requestMonthSort('monthlyOvertimeMinutes')} className="sortable-header th-numeric">
+                                        {t('adminDashboard.monthView.balanceRange', 'Saldo (Zeitraum)')} {getMonthSortIndicator('monthlyOvertimeMinutes')}
+                                    </th>
+                                    <th onClick={() => requestMonthSort('cumulativeBalanceMinutes')} className="sortable-header th-numeric">
+                                        {t('balanceTotal', 'Gesamtsaldo')} {getMonthSortIndicator('cumulativeBalanceMinutes')}
+                                    </th>
+                                    <th onClick={() => requestMonthSort('problemIndicators')} className="sortable-header th-center">
+                                        {t('issues', 'Probleme')} {getMonthSortIndicator('problemIndicators')}
+                                    </th>
+                                    <th className="th-actions">{t('actions', 'Aktionen')}</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {sortedMonthlyUserData.map((userData) => (
+                                    <tr key={userData.username} className={`user-row ${hiddenUsers.has(userData.username) ? "user-row-hidden" : ""}`}>
+                                        <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.username}</td>
+                                        <td data-label={t('adminDashboard.monthView.actualHours', 'Ist (Zeitraum)')} className="td-numeric">{minutesToHHMM(userData.monthlyActualMinutes)}</td>
+                                        <td data-label={t('adminDashboard.monthView.expectedHours', 'Soll (Zeitraum)')} className="td-numeric">{minutesToHHMM(userData.monthlyExpectedMinutes)}</td>
+                                        <td data-label={t('adminDashboard.monthView.balanceRange', 'Saldo (Zeitraum)')} className={`td-numeric ${userData.monthlyOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.monthlyOvertimeMinutes)}</td>
+                                        <td data-label={t('balanceTotal', 'Gesamtsaldo')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
+                                        <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell td-center">
+                                            {renderProblemIndicatorsCell(userData)}
+                                        </td>
+                                        <td data-label={t('actions', 'Aktionen')} className="actions-cell">
+                                            <button onClick={() => openPrintUserModal(userData.username)} className="action-button print-user-button" title={t('printButtonUser', 'Zeiten dieses Benutzers drucken')}>
+                                                🖨️
+                                            </button>
+                                            <button onClick={() => handleHideUser(userData.username)} className="action-button hide-user-row-button" title={t('hideUserInTable', 'Diesen Benutzer in der Tabelle ausblenden')}>
+                                                🙈
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    )
+                ))}
+
             </section>
             {/* Modal for deleting sick leave */}
             {showDeleteSickLeaveModal && sickLeaveToDelete && (

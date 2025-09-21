@@ -776,6 +776,144 @@
   border-color: var(--c-border);
 }
 
+.admin-dashboard.scoped-dashboard .timeframe-tab-bar {
+  display: flex;
+  gap: var(--u-gap-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--u-gap-sm);
+}
+
+.admin-dashboard.scoped-dashboard .timeframe-tab {
+  padding: 0.45rem 1rem;
+  border-radius: var(--u-radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  color: var(--c-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background var(--u-dur) var(--u-ease),
+    border-color var(--u-dur) var(--u-ease),
+    color var(--u-dur) var(--u-ease);
+}
+
+.admin-dashboard.scoped-dashboard .timeframe-tab:hover {
+  background: var(--c-surface);
+}
+
+.admin-dashboard.scoped-dashboard .timeframe-tab.active {
+  background: var(--c-pri);
+  color: #fff;
+  border-color: var(--c-pri);
+}
+
+.admin-dashboard.scoped-dashboard .month-range-controls {
+  display: flex;
+  gap: var(--u-gap-sm);
+  align-items: flex-end;
+  flex-wrap: wrap;
+  background: var(--c-surface);
+  padding: var(--u-gap-sm);
+  border-radius: var(--u-radius-sm);
+}
+
+.admin-dashboard.scoped-dashboard .month-range-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.85rem;
+}
+
+.admin-dashboard.scoped-dashboard .month-range-field span {
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .month-range-controls input[type="date"],
+.admin-dashboard.scoped-dashboard .month-range-controls select,
+.admin-dashboard.scoped-dashboard .month-range-controls input[type="number"] {
+  padding: 0.45rem 0.7rem;
+  font-size: 0.85rem;
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-sm);
+  background: var(--c-card);
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .month-range-controls select {
+  min-width: 12rem;
+}
+
+.admin-dashboard.scoped-dashboard .month-range-controls input[type="number"] {
+  width: 5.5rem;
+}
+
+.admin-dashboard.scoped-dashboard .month-range-controls input[disabled] {
+  background: var(--c-line);
+  cursor: not-allowed;
+  opacity: 0.8;
+}
+
+.admin-dashboard.scoped-dashboard .month-range-reset {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-sm);
+  padding: 0.45rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--c-pri);
+  cursor: pointer;
+  transition:
+    background var(--u-dur) var(--u-ease),
+    border-color var(--u-dur) var(--u-ease),
+    color var(--u-dur) var(--u-ease);
+}
+
+.admin-dashboard.scoped-dashboard .month-range-reset:hover {
+  background: var(--c-card);
+  color: var(--c-pri);
+}
+
+.admin-dashboard.scoped-dashboard .month-range-reset:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.admin-dashboard.scoped-dashboard .month-range-summary {
+  background: var(--c-surface);
+  border-radius: var(--u-radius-sm);
+  padding: var(--u-gap-sm);
+  margin-bottom: var(--u-gap-sm);
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .month-range-summary p {
+  margin: 0.2rem 0;
+  font-size: 0.9rem;
+}
+
+.admin-dashboard.scoped-dashboard .month-range-summary .month-range-hint {
+  font-size: 0.78rem;
+  color: var(--c-muted);
+}
+
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .month-range-controls {
+  background: var(--c-card);
+}
+
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .month-range-controls input[type="date"],
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .month-range-controls select,
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .month-range-controls input[type="number"] {
+  background: var(--c-surface);
+  color: var(--c-text);
+  border-color: var(--c-border);
+}
+
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .month-range-reset {
+  background: var(--c-card);
+  color: var(--c-pri);
+}
+
 /* Smart Week Overview */
 .admin-dashboard.scoped-dashboard .smart-week-overview {
   margin-bottom: var(--u-gap-md);

@@ -895,7 +895,6 @@ const translations = {
         dailyNoteTitle: "Notiz",
         noNotePlaceholder: "Keine Notiz.",
         editNote: "Notiz bearbeiten",
-        save: "Speichern",
         noTask: "Keine Aufgabe",
         assignCustomer: {
             editButton: "Kunden & Zeiten bearbeiten",
@@ -2283,7 +2282,6 @@ const translations = {
         dailyNoteTitle: "Note",
         noNotePlaceholder: "No note.",
         editNote: "Edit note",
-        save: "Save",
         noTask: "No task",
         assignCustomer: {
             editButton: "Edit customers & times",
