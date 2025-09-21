@@ -733,6 +733,259 @@
   border-color: var(--c-border);
 }
 
+/* Smart Week Overview */
+.admin-dashboard.scoped-dashboard .smart-week-overview {
+  margin-bottom: var(--u-gap-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--u-gap-sm);
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--u-gap-sm);
+  flex-wrap: wrap;
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-header h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-header p {
+  margin: 0.1rem 0 0;
+  font-size: 0.82rem;
+  color: var(--c-muted);
+  max-width: 28rem;
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-issues-toggle {
+  padding: 0.45rem 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border-radius: var(--u-radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-pri);
+  cursor: pointer;
+  transition:
+    background-color var(--u-dur) var(--u-ease),
+    border-color var(--u-dur) var(--u-ease),
+    color var(--u-dur) var(--u-ease),
+    transform var(--u-dur) var(--u-ease);
+  white-space: nowrap;
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-issues-toggle:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-pri) 12%, transparent);
+  border-color: var(--c-pri);
+  transform: translateY(-1px);
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-issues-toggle:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .smart-overview-issues-toggle:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-pri) 18%, transparent);
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-layout {
+  display: grid;
+  gap: var(--u-gap-sm);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: stretch;
+}
+
+@media (max-width: 1100px) {
+  .admin-dashboard.scoped-dashboard .smart-overview-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-dashboard.scoped-dashboard .smart-cards-grid {
+  display: grid;
+  gap: var(--u-gap-sm);
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-card {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-left: 4px solid var(--c-border);
+  border-radius: var(--u-radius-md);
+  padding: var(--u-gap-sm);
+  box-shadow: var(--u-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-height: 140px;
+  transition:
+    transform var(--u-dur) var(--u-ease),
+    box-shadow var(--u-dur) var(--u-ease);
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--u-shadow-md);
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-card .card-title {
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+  font-weight: 600;
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-card .card-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--c-text);
+  line-height: 1.1;
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-card .card-description {
+  font-size: 0.82rem;
+  color: var(--c-muted);
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-card.accent-primary {
+  border-left-color: var(--c-pri);
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-card.accent-warning {
+  border-left-color: var(--c-warn);
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-card.accent-info {
+  border-left-color: var(--c-info);
+}
+
+.admin-dashboard.scoped-dashboard .smart-overview-card.accent-danger {
+  border-left-color: var(--c-error);
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-panel {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius-md);
+  padding: var(--u-gap-sm);
+  box-shadow: var(--u-shadow-sm);
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--u-gap-sm);
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-header h5 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-header p {
+  margin: 0.2rem 0 0;
+  font-size: 0.78rem;
+  color: var(--c-muted);
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-list-item {
+  margin: 0;
+  padding: 0;
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-item {
+  width: 100%;
+  background: var(--c-surface);
+  border: 1px solid transparent;
+  border-radius: var(--u-radius-sm);
+  padding: 0.65rem 0.85rem;
+  display: flex;
+  gap: 0.65rem;
+  align-items: center;
+  cursor: pointer;
+  transition:
+    background-color var(--u-dur) var(--u-ease),
+    border-color var(--u-dur) var(--u-ease),
+    transform var(--u-dur) var(--u-ease);
+  color: inherit;
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-item:hover,
+.admin-dashboard.scoped-dashboard .smart-quick-fix-item:focus-visible {
+  background: var(--c-line);
+  border-color: var(--c-border);
+  transform: translateY(-1px);
+  outline: none;
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-item:focus-visible {
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-pri) 50%, transparent);
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-icon {
+  font-size: 1.2rem;
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-label strong {
+  font-size: 0.9rem;
+  color: var(--c-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-label span {
+  font-size: 0.78rem;
+  color: var(--c-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-cta {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--c-pri);
+  white-space: nowrap;
+}
+
+.admin-dashboard.scoped-dashboard .smart-quick-fix-empty {
+  margin: 0;
+  background: var(--c-surface);
+  border: 1px dashed var(--c-border);
+  border-radius: var(--u-radius-sm);
+  padding: 0.85rem;
+  text-align: center;
+  color: var(--c-muted);
+  font-size: 0.82rem;
+}
+
 /* User Search Controls & Hidden Users Manager */
 .admin-dashboard.scoped-dashboard .user-search-controls {
   display: flex;

@@ -595,6 +595,132 @@ const AdminWeekSection = forwardRef(({
 
     const activeIssueFilterCount = Object.values(issueTypeFilters).filter(Boolean).length;
 
+    const quickFixMeta = useMemo(() => ({
+        missing: {
+            label: t('adminDashboard.smartOverview.quickFix.labels.missing', 'Fehlende Stempel'),
+            icon: '❗',
+            filterKey: 'missing',
+            problemType: 'missing',
+            priority: 1,
+        },
+        incomplete: {
+            label: t('adminDashboard.smartOverview.quickFix.labels.incomplete', 'Unvollständige Tage'),
+            icon: '⚠️',
+            filterKey: 'incomplete',
+            problemType: 'any_incomplete',
+            priority: 2,
+        },
+        autoCompleted: {
+            label: t('adminDashboard.smartOverview.quickFix.labels.autoCompleted', 'Automatisch beendet'),
+            icon: '🤖',
+            filterKey: 'autoCompleted',
+            problemType: 'auto_completed',
+            priority: 3,
+        },
+        holidayPending: {
+            label: t('adminDashboard.smartOverview.quickFix.labels.holidayPending', 'Feiertag offen'),
+            icon: '🎉❓',
+            filterKey: 'holidayPending',
+            problemType: 'holiday_pending_decision',
+            priority: 4,
+        },
+    }), [t]);
+
+    const smartOverviewCards = useMemo(() => {
+        const totalUsersCount = Array.isArray(users) ? users.length : 0;
+        const stats = {
+            activeUsers: 0,
+            negativeBalanceUsers: 0,
+            missingDays: 0,
+            incompleteDays: 0,
+            autoCompletedDays: 0,
+        };
+
+        userAnalytics.forEach(userData => {
+            if (!userData) return;
+            const expectedMinutes = userData.weeklyExpectedMinutes || 0;
+            const actualMinutes = userData.weeklyActualMinutes || 0;
+            if (expectedMinutes > 0 || actualMinutes > 0) {
+                stats.activeUsers += 1;
+            }
+            if ((userData.cumulativeBalanceMinutes || 0) < 0) {
+                stats.negativeBalanceUsers += 1;
+            }
+            const indicators = userData.problemIndicators || {};
+            stats.missingDays += indicators.missingEntriesCount || 0;
+            stats.incompleteDays += indicators.incompleteDaysCount || 0;
+            stats.autoCompletedDays += indicators.autoCompletedUncorrectedCount || 0;
+        });
+
+        const totalCorrections = stats.missingDays + stats.incompleteDays + stats.autoCompletedDays;
+        const activeRatio = totalUsersCount > 0
+            ? `${stats.activeUsers}/${totalUsersCount}`
+            : `${stats.activeUsers}`;
+
+        return [
+            {
+                key: 'active',
+                accent: 'accent-primary',
+                title: t('adminDashboard.smartOverview.cards.active.title', 'Aktive Personen'),
+                value: stats.activeUsers,
+                description: `${activeRatio} ${t('adminDashboard.smartOverview.cards.active.subtitle', 'mit Sollzeit in dieser Woche')}`,
+            },
+            {
+                key: 'issues',
+                accent: 'accent-warning',
+                title: t('adminDashboard.smartOverview.cards.issues.title', 'Problemfälle'),
+                value: issueSummary.totalWithIssue,
+                description: t('adminDashboard.smartOverview.cards.issues.subtitle', 'Benutzer mit Handlungsbedarf'),
+            },
+            {
+                key: 'corrections',
+                accent: 'accent-info',
+                title: t('adminDashboard.smartOverview.cards.corrections.title', 'Offene Korrekturen'),
+                value: totalCorrections,
+                description: t('adminDashboard.smartOverview.cards.corrections.subtitle', 'Tage prüfen (fehlend/unklar)'),
+            },
+            {
+                key: 'negative',
+                accent: 'accent-danger',
+                title: t('adminDashboard.smartOverview.cards.negative.title', 'Negative Salden'),
+                value: stats.negativeBalanceUsers,
+                description: t('adminDashboard.smartOverview.cards.negative.subtitle', 'Personen unter Soll'),
+            },
+        ];
+    }, [users, userAnalytics, issueSummary, t]);
+
+    const quickIssueQueue = useMemo(() => {
+        const queue = [];
+
+        userAnalytics.forEach(userData => {
+            if (!userData?.problemIndicators) return;
+            const indicators = userData.problemIndicators;
+            const priorityOrder = [
+                { count: indicators.missingEntriesCount || 0, meta: quickFixMeta.missing },
+                { count: indicators.incompleteDaysCount || 0, meta: quickFixMeta.incomplete },
+                { count: indicators.autoCompletedUncorrectedCount || 0, meta: quickFixMeta.autoCompleted },
+                { count: indicators.holidayPendingCount || 0, meta: quickFixMeta.holidayPending },
+            ];
+
+            const firstWithIssue = priorityOrder.find(item => item.count > 0 && item.meta);
+            if (firstWithIssue) {
+                queue.push({
+                    username: userData.username,
+                    count: firstWithIssue.count,
+                    ...firstWithIssue.meta,
+                });
+            }
+        });
+
+        queue.sort((a, b) => {
+            if (a.priority !== b.priority) return a.priority - b.priority;
+            if (b.count !== a.count) return b.count - a.count;
+            return a.username.localeCompare(b.username);
+        });
+
+        return queue.slice(0, 6);
+    }, [userAnalytics, quickFixMeta]);
+
     const scrollSectionIntoView = useCallback(() => {
         if (sectionRef.current) {
             sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -877,6 +1003,76 @@ const AdminWeekSection = forwardRef(({
                         />
                         <button onClick={handleNextWeek} aria-label={t('adminDashboard.nextWeek', 'Nächste Woche')}>→</button>
                         <button onClick={handleCurrentWeek} aria-label={t('adminDashboard.currentWeek', 'Aktuelle Woche')}>{t('currentWeek', 'Aktuelle Woche')}</button>
+                    </div>
+                </div>
+
+                <div className="smart-week-overview" role="region" aria-label={t('adminDashboard.smartOverview.title', 'Wochenüberblick')}>
+                    <div className="smart-overview-header">
+                        <div>
+                            <h4>{t('adminDashboard.smartOverview.title', 'Wochenüberblick')}</h4>
+                            <p>{t('adminDashboard.smartOverview.subtitle', 'Direkter Blick auf wichtige Kennzahlen und offene Themen.')}</p>
+                        </div>
+                        <button
+                            type="button"
+                            className="smart-overview-issues-toggle"
+                            onClick={() => {
+                                scrollSectionIntoView();
+                                setShowOnlyIssues(true);
+                                setFiltersExclusive('all');
+                            }}
+                            disabled={issueSummary.totalWithIssue === 0}
+                        >
+                            {t('adminDashboard.smartOverview.showIssuesButton', 'Problemfälle anzeigen')}
+                            {issueSummary.totalWithIssue > 0 && ` (${issueSummary.totalWithIssue})`}
+                        </button>
+                    </div>
+                    <div className="smart-overview-layout">
+                        <div className="smart-cards-grid">
+                            {smartOverviewCards.map(card => (
+                                <div key={card.key} className={`smart-overview-card ${card.accent}`}>
+                                    <span className="card-title">{card.title}</span>
+                                    <span className="card-value">{card.value}</span>
+                                    <span className="card-description">{card.description}</span>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="smart-quick-fix-panel">
+                            <div className="smart-quick-fix-header">
+                                <h5>{t('adminDashboard.smartOverview.quickFix.title', 'Schnellkorrekturen')}</h5>
+                                <p>{t('adminDashboard.smartOverview.quickFix.subtitle', 'Spring direkt zu den wichtigsten Problemen.')}</p>
+                            </div>
+                            {quickIssueQueue.length === 0 ? (
+                                <p className="smart-quick-fix-empty">{t('adminDashboard.smartOverview.quickFix.empty', 'Aktuell keine offenen Problemfälle – alles im grünen Bereich!')}</p>
+                            ) : (
+                                <ul className="smart-quick-fix-list">
+                                    {quickIssueQueue.map(item => (
+                                        <li key={`${item.username}-${item.filterKey}`} className="smart-quick-fix-list-item">
+                                            <button
+                                                type="button"
+                                                className="smart-quick-fix-item"
+                                                onClick={() => {
+                                                    scrollSectionIntoView();
+                                                    if (hiddenUsers.has(item.username)) {
+                                                        handleUnhideUser(item.username);
+                                                    }
+                                                    setShowHiddenUsersManager(false);
+                                                    setShowOnlyIssues(true);
+                                                    setFiltersExclusive(item.filterKey);
+                                                    handleProblemIndicatorClick(item.username, item.problemType);
+                                                }}
+                                            >
+                                                <span className="smart-quick-fix-icon" aria-hidden="true">{item.icon}</span>
+                                                <span className="smart-quick-fix-label">
+                                                    <strong>{item.username}</strong>
+                                                    <span>{`${item.count}× ${item.label}`}</span>
+                                                </span>
+                                                <span className="smart-quick-fix-cta">{t('adminDashboard.smartOverview.quickFix.action', 'Öffnen')}</span>
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
+                            )}
+                        </div>
                     </div>
                 </div>
 
