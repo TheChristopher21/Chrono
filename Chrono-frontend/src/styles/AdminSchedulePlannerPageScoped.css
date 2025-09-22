@@ -132,12 +132,55 @@
     transition: all .2s ease;
     box-shadow: var(--ud-shadow-sm);
 }
+.schedule-planner-page.scoped-dashboard .user-list-item.disabled {
+    opacity: .55;
+    cursor: not-allowed;
+    filter: grayscale(.3);
+}
 .schedule-planner-page.scoped-dashboard .user-list-item:hover {
     border-color: var(--ud-c-primary);
     transform: translateY(-2px);
     box-shadow: var(--ud-shadow-interactive);
 }
+.schedule-planner-page.scoped-dashboard .user-list-item.disabled:hover {
+    border-color: var(--ud-c-border);
+    transform: none;
+    box-shadow: var(--ud-shadow-sm);
+}
 .schedule-planner-page.scoped-dashboard .user-list-item.dragging { opacity: .6; transform: scale(1.04); }
+.schedule-planner-page.scoped-dashboard .user-list-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    flex: 1;
+}
+.schedule-planner-page.scoped-dashboard .user-status-tag {
+    font-size: .7rem;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--ud-c-text-muted);
+}
+.schedule-planner-page.scoped-dashboard .user-disable-toggle {
+    margin-left: auto;
+    padding: .25rem .6rem;
+    border-radius: var(--ud-radius-sm);
+    border: 1px solid var(--ud-c-border);
+    background: var(--ud-c-card);
+    font-size: .75rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background .2s ease, color .2s ease, border-color .2s ease;
+}
+.schedule-planner-page.scoped-dashboard .user-disable-toggle:hover {
+    background: var(--ud-c-primary-light-bg);
+    border-color: var(--ud-c-primary);
+    color: var(--ud-c-primary);
+}
+.schedule-planner-page.scoped-dashboard .user-list-item.disabled .user-disable-toggle {
+    background: transparent;
+    color: var(--ud-c-text-muted);
+    border-style: dashed;
+}
 
 /* ----- Main + Header ----- */
 .schedule-planner-page.scoped-dashboard .planner-main { flex: 1; display: flex; flex-direction: column; gap: var(--ud-gap-lg); }
@@ -318,6 +361,10 @@
 @keyframes plannerPopIn { from { transform: scale(.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 .schedule-planner-page.scoped-dashboard .assigned-user:active { cursor: grabbing; }
 .schedule-planner-page.scoped-dashboard .assigned-user.dragging { opacity: .65; filter: saturate(.9); }
+.schedule-planner-page.scoped-dashboard .assigned-user.disabled-user {
+    filter: grayscale(.4) brightness(.95);
+    opacity: .8;
+}
 
 .schedule-planner-page.scoped-dashboard .clear-cell-btn {
     position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
