@@ -61,6 +61,23 @@ const AdminAnalyticsPage = () => {
         [users]
     );
 
+    const trackableUsernames = useMemo(() => {
+        if (!trackableUsers.length) {
+            return new Set();
+        }
+        return new Set(trackableUsers.map(user => user.username).filter(Boolean));
+    }, [trackableUsers]);
+
+    const relevantWeeklyBalances = useMemo(() => {
+        if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
+            return [];
+        }
+        if (trackableUsernames.size === 0) {
+            return weeklyBalances.filter(entry => entry?.username);
+        }
+        return weeklyBalances.filter(entry => entry?.username && trackableUsernames.has(entry.username));
+    }, [weeklyBalances, trackableUsernames]);
+
     useEffect(() => {
         let isMounted = true;
         const fetchData = async () => {
@@ -565,8 +582,8 @@ const AdminAnalyticsPage = () => {
     }, [allVacations, t]);
 
     const overtimeSnapshot = useMemo(() => {
-        const samples = (Array.isArray(weeklyBalances) && weeklyBalances.length > 0
-            ? weeklyBalances.map(entry => entry?.trackingBalance)
+        const samples = (Array.isArray(relevantWeeklyBalances) && relevantWeeklyBalances.length > 0
+            ? relevantWeeklyBalances.map(entry => entry?.trackingBalance)
             : trackableUsers.map(user => user?.trackingBalanceInMinutes))
             .filter(value => typeof value === 'number' && !Number.isNaN(value));
 
@@ -577,7 +594,7 @@ const AdminAnalyticsPage = () => {
         const sum = samples.reduce((acc, minutes) => acc + minutes, 0);
         const average = Math.round(sum / samples.length);
 
-        const source = weeklyBalances.length > 0 ? weeklyBalances : trackableUsers;
+        const source = relevantWeeklyBalances.length > 0 ? relevantWeeklyBalances : trackableUsers;
         const positive = source.reduce((best, entry) => {
             const minutes = Number.isFinite(entry?.trackingBalance) ? entry.trackingBalance : entry?.trackingBalanceInMinutes;
             if (!Number.isFinite(minutes)) {
@@ -600,7 +617,7 @@ const AdminAnalyticsPage = () => {
         }, null);
 
         return { average, positive, negative };
-    }, [weeklyBalances, trackableUsers]);
+    }, [relevantWeeklyBalances, trackableUsers]);
 
     const lineOptions = useMemo(() => ({
         responsive: true,

@@ -15,6 +15,28 @@ const AdminDashboardKpis = ({
     onFocusOvertimeLeaders,
     onOpenAnalytics,
 }) => {
+    const trackableUsers = useMemo(
+        () => (Array.isArray(users) ? users.filter(user => user?.includeInTimeTracking !== false) : []),
+        [users]
+    );
+
+    const trackableUsernames = useMemo(() => {
+        if (!trackableUsers.length) {
+            return new Set();
+        }
+        return new Set(trackableUsers.map(user => user.username).filter(Boolean));
+    }, [trackableUsers]);
+
+    const relevantWeeklyBalances = useMemo(() => {
+        if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
+            return [];
+        }
+        if (trackableUsernames.size === 0) {
+            return weeklyBalances.filter(entry => entry?.username);
+        }
+        return weeklyBalances.filter(entry => entry?.username && trackableUsernames.has(entry.username));
+    }, [weeklyBalances, trackableUsernames]);
+
     const stats = useMemo(() => {
         const pendingVacations = Array.isArray(allVacations)
             ? allVacations.filter(vac => !vac.approved && !vac.denied).length
@@ -24,10 +46,9 @@ const AdminDashboardKpis = ({
             ? allCorrections.filter(corr => !corr.approved && !corr.denied).length
             : 0;
 
-        const balanceSamples = (Array.isArray(weeklyBalances) && weeklyBalances.length > 0
-            ? weeklyBalances.map(b => Number.isFinite(b?.trackingBalance) ? b.trackingBalance : 0)
-            : Array.isArray(users)
-                ? users.map(user => Number.isFinite(user?.trackingBalanceInMinutes) ? user.trackingBalanceInMinutes : 0)
+        const balanceSamples = (Array.isArray(relevantWeeklyBalances) && relevantWeeklyBalances.length > 0
+            ? relevantWeeklyBalances.map(b => Number.isFinite(b?.trackingBalance) ? b.trackingBalance : 0)
+            : trackableUsers.map(user => Number.isFinite(user?.trackingBalanceInMinutes) ? user.trackingBalanceInMinutes : 0)
                 : [])
             .filter(val => typeof val === 'number' && !Number.isNaN(val));
 
@@ -37,8 +58,8 @@ const AdminDashboardKpis = ({
 
         const negativeBalances = balanceSamples.filter(minutes => minutes < 0).length;
 
-        const topPositive = Array.isArray(weeklyBalances)
-            ? weeklyBalances.reduce((best, item) => {
+        const topPositive = Array.isArray(relevantWeeklyBalances)
+            ? relevantWeeklyBalances.reduce((best, item) => {
                 const minutes = Number.isFinite(item?.trackingBalance) ? item.trackingBalance : null;
                 if (minutes === null) return best;
                 if (!best || minutes > best.minutes) {
@@ -48,8 +69,8 @@ const AdminDashboardKpis = ({
             }, null)
             : null;
 
-        const topNegative = Array.isArray(weeklyBalances)
-            ? weeklyBalances.reduce((worst, item) => {
+        const topNegative = Array.isArray(relevantWeeklyBalances)
+            ? relevantWeeklyBalances.reduce((worst, item) => {
                 const minutes = Number.isFinite(item?.trackingBalance) ? item.trackingBalance : null;
                 if (minutes === null) return worst;
                 if (!worst || minutes < worst.minutes) {
@@ -68,7 +89,7 @@ const AdminDashboardKpis = ({
             topPositive,
             topNegative,
         };
-    }, [allVacations, allCorrections, weeklyBalances, users]);
+    }, [allVacations, allCorrections, relevantWeeklyBalances, trackableUsers]);
 
     const cards = useMemo(() => {
         const openItems = stats.pendingVacations + stats.pendingCorrections;
