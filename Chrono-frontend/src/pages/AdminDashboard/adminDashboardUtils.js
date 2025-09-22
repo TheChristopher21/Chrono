@@ -55,6 +55,7 @@ export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}
 
     const explicitOptOutNonAdmins = collectUsernames(
         users.filter(user => user?.includeInTimeTracking === false && !isAdminAccount(user))
+
     );
 
     const filtered = users.filter(user => user?.includeInTimeTracking !== false);
@@ -116,6 +117,7 @@ export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}
             fallbackReason: null,
             allUsersOptedOut: false,
         };
+
     }
 
     const fallbackUsers = users.filter(user => user && user.username);
@@ -139,6 +141,7 @@ export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}
         fallbackReason: null,
         allUsersOptedOut: false,
     };
+
 };
 export const processEntriesForReport = (entries) => {
     const blocks = { work: [], break: [] };

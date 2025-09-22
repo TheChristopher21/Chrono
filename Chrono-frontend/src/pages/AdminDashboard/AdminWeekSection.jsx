@@ -378,6 +378,7 @@ const AdminWeekSection = forwardRef(({
         reactivatedOptOutUsernames,
         allUsersOptedOut,
     } = useMemo(
+
         () => selectTrackableUsers(users),
         [users]
     );
