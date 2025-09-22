@@ -1049,6 +1049,58 @@ td
   }
 }
 
+.admin-user-management-page.scoped-dashboard .time-tracking-toggle-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.admin-user-management-page.scoped-dashboard .time-tracking-toggle-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.55rem 1.1rem;
+  border-radius: var(--u-radius-sm);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--u-dur) var(--u-ease),
+              color var(--u-dur) var(--u-ease),
+              border-color var(--u-dur) var(--u-ease),
+              transform var(--u-dur) var(--u-ease);
+}
+
+.admin-user-management-page.scoped-dashboard .time-tracking-toggle-button:hover {
+  transform: translateY(-1px);
+  border-color: var(--c-pri);
+}
+
+.admin-user-management-page.scoped-dashboard .time-tracking-toggle-button:focus-visible {
+  outline: 2px solid var(--c-info);
+  outline-offset: 2px;
+}
+
+.admin-user-management-page.scoped-dashboard .time-tracking-toggle-button.active {
+  background: var(--c-pri);
+  border-color: var(--c-pri);
+  color: #ffffff;
+  box-shadow: var(--u-shadow-sm);
+}
+
+[data-theme="dark"] .admin-user-management-page.scoped-dashboard .time-tracking-toggle-button {
+  background: var(--c-surface);
+  color: var(--c-text);
+  border-color: var(--c-border);
+}
+
+[data-theme="dark"] .admin-user-management-page.scoped-dashboard .time-tracking-toggle-button.active {
+  background: var(--c-pri);
+  border-color: var(--c-pri);
+  color: #ffffff;
+}
+
 /* Reduzierte Bewegung für Barrierefreiheit */
 @media (prefers-reduced-motion: reduce) {
   .admin-user-management-page.scoped-dashboard *,

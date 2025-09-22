@@ -150,6 +150,7 @@ public class UserController {
         dto.setSocialSecurityNumber(user.getSocialSecurityNumber());
         dto.setTrackingBalanceInMinutes(user.getTrackingBalanceInMinutes());
         dto.setEmailNotifications(user.isEmailNotifications());
+        dto.setIncludeInTimeTracking(user.isIncludeInTimeTracking());
         if (user.getLastCustomer() != null) {
             dto.setLastCustomerId(user.getLastCustomer().getId());
             dto.setLastCustomerName(user.getLastCustomer().getName());

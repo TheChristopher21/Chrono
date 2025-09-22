@@ -26,6 +26,9 @@ const AdminUserForm = ({
         handleChange("roles", [e.target.value]);
     };
 
+    const isAdminRole = Array.isArray(userData.roles)
+        && (userData.roles.includes('ROLE_ADMIN') || userData.roles.includes('ROLE_SUPERADMIN'));
+
     const requiredLabelText = t("userManagement.requiredField", "Pflichtfeld");
     const optionalLabelText = t("userManagement.optionalField", "optional");
 
@@ -92,8 +95,30 @@ const AdminUserForm = ({
                     >
                         <option value="ROLE_USER">User</option>
                         <option value="ROLE_ADMIN">Admin</option>
+                        <option value="ROLE_SUPERADMIN">Superadmin</option>
                     </select>
                 </div>
+
+                {isAdminRole && (
+                    <div className="form-group time-tracking-toggle-group">
+                        <span className="form-label-text">
+                            {t('userManagement.includeInTimeTrackingLabel', 'In Zeiterfassung & Übersichten anzeigen')}
+                        </span>
+                        <button
+                            type="button"
+                            className={`time-tracking-toggle-button ${userData.includeInTimeTracking !== false ? 'active' : ''}`}
+                            onClick={() => handleChange('includeInTimeTracking', !(userData.includeInTimeTracking !== false))}
+                            aria-pressed={userData.includeInTimeTracking !== false}
+                        >
+                            {userData.includeInTimeTracking !== false
+                                ? t('userManagement.includeInTimeTrackingEnabled', 'Eingeschlossen in Zeitübersichten')
+                                : t('userManagement.includeInTimeTrackingDisabled', 'Von Zeitübersichten ausgeschlossen')}
+                        </button>
+                        <p className="form-group-description">
+                            {t('userManagement.includeInTimeTrackingHint', 'Admins ohne Arbeitszeiterfassung werden in Wochenansichten und Salden nicht angezeigt.')}
+                        </p>
+                    </div>
+                )}
 
                 <div className="form-group full-width">
                     <span className="form-label-text">

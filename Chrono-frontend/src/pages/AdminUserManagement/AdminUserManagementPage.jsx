@@ -71,6 +71,7 @@ const AdminUserManagementPage = () => {
         isPercentage: false,
         workPercentage: 100, // Default, falls isPercentage true wird
         trackingBalanceInMinutes: 0,
+        includeInTimeTracking: true,
         companyId: null // Wird später serverseitig gesetzt oder für Superadmin-Erstellung
     };
 
@@ -82,6 +83,7 @@ const AdminUserManagementPage = () => {
             const userList = Array.isArray(res.data) ? res.data : [];
             setUsers(userList.map(user => ({
                 ...user,
+                includeInTimeTracking: user.includeInTimeTracking !== false,
                 scheduleEffectiveDate: user.scheduleEffectiveDate ? user.scheduleEffectiveDate.toString() : getTodayISOString(),
                 weeklySchedule: user.weeklySchedule && user.weeklySchedule.length > 0 ? user.weeklySchedule : [{ ...defaultWeeklySchedule }],
                 scheduleCycle: user.scheduleCycle || 1,
@@ -324,6 +326,7 @@ const AdminUserManagementPage = () => {
             ...initialNewUserState, // Start mit Defaults
             ...userToEdit,          // Überschreibe mit User-Daten
             password: '',           // Passwort nicht vorausfüllen für Bearbeitung
+            includeInTimeTracking: userToEdit.includeInTimeTracking !== false,
             roles: userToEdit.roles && userToEdit.roles.length > 0 ? userToEdit.roles : ['ROLE_USER'],
             scheduleEffectiveDate: userToEdit.scheduleEffectiveDate ? userToEdit.scheduleEffectiveDate.toString() : getTodayISOString(),
             weeklySchedule: userToEdit.weeklySchedule && userToEdit.weeklySchedule.length > 0

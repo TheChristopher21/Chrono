@@ -210,6 +210,7 @@ public class AdminUserController {
         newUser.setBreakDuration(userDTO.getBreakDuration() != null ? userDTO.getBreakDuration() : 30);
         newUser.setHourlyRate(userDTO.getHourlyRate());
         newUser.setMonthlySalary(userDTO.getMonthlySalary());
+        newUser.setIncludeInTimeTracking(userDTO.getIncludeInTimeTracking() != null ? userDTO.getIncludeInTimeTracking() : true);
 
         boolean isHourly = userDTO.getIsHourly() != null ? userDTO.getIsHourly() : false;
         boolean isPercentage = userDTO.getIsPercentage() != null ? userDTO.getIsPercentage() : false;
@@ -365,6 +366,9 @@ public class AdminUserController {
         }
         if (userDTO.getMonthlySalary() != null) {
             existingUser.setMonthlySalary(userDTO.getMonthlySalary());
+        }
+        if (userDTO.getIncludeInTimeTracking() != null) {
+            existingUser.setIncludeInTimeTracking(userDTO.getIncludeInTimeTracking());
         }
         existingUser.setTrackingBalanceInMinutes(userDTO.getTrackingBalanceInMinutes() != null ? userDTO.getTrackingBalanceInMinutes() : existingUser.getTrackingBalanceInMinutes());
 
