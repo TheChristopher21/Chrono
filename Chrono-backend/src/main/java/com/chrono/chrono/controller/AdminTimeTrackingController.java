@@ -39,7 +39,7 @@ public class AdminTimeTrackingController {
         boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
 
         if (!isSuperAdmin && adminCompanyId == null) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin ist keiner Firma zugeordnet.");
+            return ResponseEntity.ok(Collections.emptyList());
         }
         List<User> usersToList = isSuperAdmin ? userRepository.findByDeletedFalse() : userRepository.findByCompany_IdAndDeletedFalse(adminCompanyId);
         usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
@@ -113,12 +113,13 @@ public class AdminTimeTrackingController {
     public ResponseEntity<?> getAdminWeeklyBalances(@RequestParam String monday, Principal principal) {
         LocalDate mondayDate = LocalDate.parse(monday);
         User adminUser = userRepository.findByUsername(principal.getName()).orElseThrow();
-        List<User> usersToList = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ?
+        boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        List<User> usersToList = isSuperAdmin ?
                                  userRepository.findByDeletedFalse() :
                                  (adminUser.getCompany() != null ? userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId()) : Collections.emptyList());
         usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
-        if (usersToList.isEmpty() && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
-             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin ist keiner Firma zugeordnet oder Firma hat keine User.");
+        if (usersToList.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
         }
         List<Map<String, Object>> result = usersToList.stream().map(u -> {
             Map<String, Object> entry = new HashMap<>();
@@ -134,12 +135,13 @@ public class AdminTimeTrackingController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> getAllCurrentTrackingBalances(Principal principal) {
         User adminUser = userRepository.findByUsername(principal.getName()).orElseThrow();
-        List<User> usersToList = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ?
+        boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        List<User> usersToList = isSuperAdmin ?
                                  userRepository.findByDeletedFalse() :
                                  (adminUser.getCompany() != null ? userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId()) : Collections.emptyList());
         usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
-        if (usersToList.isEmpty() && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
-             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin ist keiner Firma zugeordnet oder Firma hat keine User.");
+        if (usersToList.isEmpty()) {
+            return ResponseEntity.ok(Collections.emptyList());
         }
         List<Map<String, Object>> result = usersToList.stream().map(u -> {
             Map<String, Object> entry = new HashMap<>();
