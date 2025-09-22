@@ -142,6 +142,126 @@
   border-color: rgba(71, 91, 255, 0.25);
 }
 
+.admin-analytics.scoped-analytics .analytics-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--analytics-gap-sm);
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
+  padding: clamp(0.75rem, 2vw, 1.25rem);
+  border-radius: var(--analytics-radius-sm);
+  background: linear-gradient(135deg, rgba(71, 91, 255, 0.06), rgba(71, 91, 255, 0.01));
+  border: 1px solid rgba(71, 91, 255, 0.12);
+}
+
+[data-theme="dark"] .admin-analytics.scoped-analytics .analytics-filters {
+  background: linear-gradient(135deg, rgba(71, 91, 255, 0.12), rgba(71, 91, 255, 0.04));
+  border-color: rgba(71, 91, 255, 0.25);
+}
+
+.admin-analytics.scoped-analytics .filter-group {
+  flex: 1 1 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-analytics.scoped-analytics .filter-group label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--analytics-text);
+}
+
+.admin-analytics.scoped-analytics .filter-select {
+  width: 100%;
+  border-radius: var(--analytics-radius-sm);
+  border: 1px solid var(--analytics-border);
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--analytics-text);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.95rem;
+  transition: border-color var(--analytics-transition), box-shadow var(--analytics-transition);
+}
+
+[data-theme="dark"] .admin-analytics.scoped-analytics .filter-select {
+  background: rgba(15, 23, 42, 0.35);
+  border-color: var(--analytics-border);
+}
+
+.admin-analytics.scoped-analytics .filter-select:focus {
+  outline: none;
+  border-color: var(--analytics-accent);
+  box-shadow: 0 0 0 3px rgba(71, 91, 255, 0.2);
+}
+
+.admin-analytics.scoped-analytics .filter-multi {
+  min-height: 150px;
+  padding: 0.5rem;
+}
+
+.admin-analytics.scoped-analytics .filter-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--analytics-muted);
+}
+
+.admin-analytics.scoped-analytics .filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-analytics.scoped-analytics .filter-actions button {
+  border: none;
+  border-radius: var(--analytics-radius-sm);
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: transform var(--analytics-transition), box-shadow var(--analytics-transition), opacity var(--analytics-transition);
+  background: var(--analytics-accent);
+  color: #ffffff;
+}
+
+.admin-analytics.scoped-analytics .filter-actions button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 16px rgba(71, 91, 255, 0.18);
+}
+
+.admin-analytics.scoped-analytics .filter-actions button.secondary {
+  background: transparent;
+  color: var(--analytics-muted);
+  border: 1px solid var(--analytics-border);
+  box-shadow: none;
+}
+
+[data-theme="dark"] .admin-analytics.scoped-analytics .filter-actions button.secondary {
+  color: var(--analytics-text);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+.admin-analytics.scoped-analytics .filter-actions button.secondary:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: none;
+  background: rgba(71, 91, 255, 0.08);
+}
+
+.admin-analytics.scoped-analytics .filter-actions button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  box-shadow: none;
+}
+
+.admin-analytics.scoped-analytics .filter-summary {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--analytics-muted);
+}
+
+.admin-analytics.scoped-analytics .filter-summary.muted {
+  opacity: 0.8;
+}
+
 .admin-analytics.scoped-analytics .chart-wrapper {
   position: relative;
   width: 100%;
@@ -225,6 +345,10 @@
 
   .admin-analytics.scoped-analytics .analytics-section {
     padding: clamp(1.25rem, 5vw, 1.75rem);
+  }
+
+  .admin-analytics.scoped-analytics .analytics-filters {
+    flex-direction: column;
   }
 
   .admin-analytics.scoped-analytics .series-legend {
