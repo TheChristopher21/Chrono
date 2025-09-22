@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useMemo } from 'react';
-import { minutesToHHMM } from './adminDashboardUtils';
+import { minutesToHHMM, selectTrackableUsers } from './adminDashboardUtils';
 
 const AdminDashboardKpis = ({
     t,
@@ -15,8 +15,12 @@ const AdminDashboardKpis = ({
     onFocusOvertimeLeaders,
     onOpenAnalytics,
 }) => {
-    const trackableUsers = useMemo(
-        () => (Array.isArray(users) ? users.filter(user => user?.includeInTimeTracking !== false) : []),
+    const {
+        trackableUsers,
+        fallbackApplied: didFallbackTrackableUsers,
+        excludedUsernames,
+    } = useMemo(
+        () => selectTrackableUsers(users),
         [users]
     );
 
@@ -31,11 +35,19 @@ const AdminDashboardKpis = ({
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
             return [];
         }
+
         if (trackableUsernames.size === 0) {
-            return weeklyBalances.filter(entry => entry?.username);
+            if (didFallbackTrackableUsers || excludedUsernames.size === 0) {
+                return weeklyBalances.filter(entry => entry?.username);
+            }
+
+            return weeklyBalances.filter(
+                entry => entry?.username && !excludedUsernames.has(entry.username)
+            );
         }
+
         return weeklyBalances.filter(entry => entry?.username && trackableUsernames.has(entry.username));
-    }, [weeklyBalances, trackableUsernames]);
+    }, [weeklyBalances, trackableUsernames, didFallbackTrackableUsers, excludedUsernames]);
 
     const stats = useMemo(() => {
         const pendingVacations = Array.isArray(allVacations)

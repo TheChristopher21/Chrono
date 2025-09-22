@@ -11,6 +11,36 @@ export function getMondayOfWeek(date) {
     copy.setHours(0, 0, 0, 0);
     return copy;
 }
+
+export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}) => {
+    if (!Array.isArray(users)) {
+        return { trackableUsers: [], fallbackApplied: false, excludedUsernames: new Set() };
+    }
+
+    const excludedUsernames = new Set(
+        users
+            .filter(user => user?.includeInTimeTracking === false && user?.username)
+            .map(user => user.username)
+    );
+
+    const filtered = users.filter(user => user?.includeInTimeTracking !== false);
+
+    if (filtered.length > 0 || !fallbackToKnownUsers) {
+        return { trackableUsers: filtered, fallbackApplied: false, excludedUsernames };
+    }
+
+    if (excludedUsernames.size > 0) {
+        return { trackableUsers: filtered, fallbackApplied: false, excludedUsernames };
+    }
+
+    const fallbackUsers = users.filter(user => user && user.username);
+
+    return {
+        trackableUsers: fallbackUsers,
+        fallbackApplied: fallbackUsers.length > 0,
+        excludedUsernames,
+    };
+};
 export const processEntriesForReport = (entries) => {
     const blocks = { work: [], break: [] };
     if (!entries || entries.length === 0) return blocks;
