@@ -26,6 +26,17 @@ const AdminUserForm = ({
         handleChange("roles", [e.target.value]);
     };
 
+    const requiredLabelText = t("userManagement.requiredField", "Pflichtfeld");
+    const optionalLabelText = t("userManagement.optionalField", "optional");
+
+    const renderLabel = (id, translationKey, defaultText, { required = false, hint } = {}) => (
+        <label htmlFor={id}>
+            {t(translationKey, defaultText)}
+            {hint ? <span className="label-hint"> ({hint})</span> : null}
+            {required ? <span className="required-indicator"> ({requiredLabelText})</span> : null}
+        </label>
+    );
+
     return (
         <section className="user-form">
             <h3>
@@ -36,8 +47,15 @@ const AdminUserForm = ({
                 {/* Sektion: Basisinformationen */}
                 <h4 className="form-section-title full-width">{t('userManagement.section.basicInfo', 'Basisinformationen')}</h4>
 
+                <div className="form-group full-width form-group-heading">
+                    <h5>{t('userManagement.section.access', 'Zugang & Rollen')}</h5>
+                    <p className="form-group-description">
+                        {t('userManagement.section.accessHint', 'Steuert Login-Daten und Berechtigungen.')}
+                    </p>
+                </div>
+
                 <div className="form-group">
-                    <label htmlFor="username">{t("userManagement.username", "Benutzername")}:</label>
+                    {renderLabel("username", "userManagement.username", "Benutzername", { required: true })}
                     <input
                         id="username"
                         type="text"
@@ -50,7 +68,10 @@ const AdminUserForm = ({
 
                 {!isEditing && (
                     <div className="form-group">
-                        <label htmlFor="password">{t("userManagement.password", "Passwort")}:</label>
+                        {renderLabel("password", "userManagement.password", "Passwort", {
+                            required: true,
+                            hint: t("userManagement.passwordHint", "nur für neue Benutzer:innen"),
+                        })}
                         <input
                             id="password"
                             type="password"
@@ -60,8 +81,53 @@ const AdminUserForm = ({
                         />
                     </div>
                 )}
+
                 <div className="form-group">
-                    <label htmlFor="firstName">{t("userManagement.firstName", "Vorname")}:</label>
+                    {renderLabel("roles", "userManagement.role", "Rolle", { required: true })}
+                    <select
+                        id="roles"
+                        value={userData.roles?.[0] || "ROLE_USER"}
+                        onChange={handleRoleChange}
+                        required
+                    >
+                        <option value="ROLE_USER">User</option>
+                        <option value="ROLE_ADMIN">Admin</option>
+                    </select>
+                </div>
+
+                <div className="form-group full-width">
+                    <span className="form-label-text">
+                        {t("userManagement.color", "Farbe")}
+                        <span className="label-hint">
+                            {" "}
+                            ({t("userManagement.colorHint", "für Kalender & Auswertungen (optional)")})
+                        </span>
+                    </span>
+                    <div className="color-picker">
+                        {STANDARD_COLORS.map((c, idx) => (
+                            <div
+                                key={idx}
+                                className={`color-swatch ${userData.color === c ? "selected" : ""}`}
+                                style={{ backgroundColor: c }}
+                                onClick={() => handleChange("color", c)}
+                                role="button"
+                                tabIndex={0}
+                                onKeyPress={(e) => e.key === "Enter" && handleChange("color", c)}
+                                aria-label={`Farbe ${c} auswählen`}
+                            />
+                        ))}
+                    </div>
+                </div>
+
+                <div className="form-group full-width form-group-heading">
+                    <h5>{t("userManagement.section.personalData", "Persönliche Angaben")}</h5>
+                    <p className="form-group-description">
+                        {t("userManagement.section.personalDataHint", "Grunddaten für Stammdaten und Dokumente.")}
+                    </p>
+                </div>
+
+                <div className="form-group">
+                    {renderLabel("firstName", "userManagement.firstName", "Vorname", { required: true })}
                     <input
                         id="firstName"
                         type="text"
@@ -71,7 +137,7 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="lastName">{t("userManagement.lastName", "Nachname")}:</label>
+                    {renderLabel("lastName", "userManagement.lastName", "Nachname", { required: true })}
                     <input
                         id="lastName"
                         type="text"
@@ -81,7 +147,44 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="email">{t("userManagement.email", "E-Mail")}:</label>
+                    {renderLabel("birthDate", "userManagement.birthDate", "Geburtsdatum")}
+                    <input
+                        id="birthDate"
+                        type="date"
+                        pattern="\d{4}-\d{2}-\d{2}"
+                        value={userData.birthDate || ""}
+                        onChange={(e) => handleChange("birthDate", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    {renderLabel("civilStatus", "userManagement.civilStatus", "Zivilstand", { hint: optionalLabelText })}
+                    <input
+                        id="civilStatus"
+                        type="text"
+                        value={userData.civilStatus || ""}
+                        onChange={(e) => handleChange("civilStatus", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    {renderLabel("children", "userManagement.children", "Kinder", { hint: optionalLabelText })}
+                    <input
+                        id="children"
+                        type="number"
+                        min="0"
+                        value={userData.children ?? 0}
+                        onChange={(e) => handleChange("children", parseInt(e.target.value, 10))}
+                    />
+                </div>
+
+                <div className="form-group full-width form-group-heading">
+                    <h5>{t("userManagement.section.contact", "Kontakt & Adresse")}</h5>
+                    <p className="form-group-description">
+                        {t("userManagement.section.contactHint", "Wird für Benachrichtigungen und Unterlagen verwendet.")}
+                    </p>
+                </div>
+
+                <div className="form-group">
+                    {renderLabel("email", "userManagement.email", "E-Mail", { required: true })}
                     <input
                         id="email"
                         type="email"
@@ -91,7 +194,7 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="mobilePhone">{t("userManagement.mobilePhone", "Handynummer")}</label>
+                    {renderLabel("mobilePhone", "userManagement.mobilePhone", "Handynummer", { required: true })}
                     <input
                         id="mobilePhone"
                         type="tel"
@@ -101,7 +204,7 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="landlinePhone">{t("userManagement.landlinePhone", "Festnetz (optional)")}</label>
+                    {renderLabel("landlinePhone", "userManagement.landlinePhone", "Festnetz", { hint: optionalLabelText })}
                     <input
                         id="landlinePhone"
                         type="tel"
@@ -109,8 +212,8 @@ const AdminUserForm = ({
                         onChange={(e) => handleChange("landlinePhone", e.target.value)}
                     />
                 </div>
-                <div className="form-group">
-                    <label htmlFor="address">{t("userManagement.address", "Adresse")}</label>
+                <div className="form-group full-width">
+                    {renderLabel("address", "userManagement.address", "Adresse", { hint: optionalLabelText })}
                     <input
                         id="address"
                         type="text"
@@ -118,37 +221,25 @@ const AdminUserForm = ({
                         onChange={(e) => handleChange("address", e.target.value)}
                     />
                 </div>
-                <div className="form-group">
-                    <label htmlFor="department">{t("userManagement.department", "Abteilung")}</label>
-                    <input
-                        id="department"
-                        type="text"
-                        value={userData.department || ""}
-                        onChange={(e) => handleChange("department", e.target.value)}
-                    />
+
+                <div className="form-group full-width form-group-heading">
+                    <h5>{t("userManagement.section.employment", "Beschäftigung & Payroll")}</h5>
+                    <p className="form-group-description">
+                        {t(
+                            "userManagement.section.employmentHint",
+                            "Organisatorische Daten und landesspezifische Angaben für die Lohnabrechnung."
+                        )}
+                    </p>
                 </div>
+
                 <div className="form-group">
-                    <label htmlFor="birthDate">{t("userManagement.birthDate", "Geburtsdatum")}</label>
-                    <input
-                        id="birthDate"
-                        type="date"
-                        pattern="\\d{4}-\\d{2}-\\d{2}"
-                        value={userData.birthDate || ""}
-                        onChange={(e) => handleChange("birthDate", e.target.value)}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="entryDate">{t("userManagement.entryDate", "Eintrittsdatum")}</label>
-                    <input
-                        id="entryDate"
-                        type="date"
-                        pattern="\\d{4}-\\d{2}-\\d{2}"
-                        value={userData.entryDate || ""}
-                        onChange={(e) => handleChange("entryDate", e.target.value)}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="personnelNumber">{t("userManagement.personnelNumber", "Personalnummer")}</label>
+                    {renderLabel("personnelNumber", "userManagement.personnelNumber", "Personalnummer", {
+                        required: true,
+                        hint: t(
+                            "userManagement.personnelNumberHint",
+                            "laut Lohnsystem, nur Ziffern (max. 10, z. B. 4711)"
+                        ),
+                    })}
                     <input
                         id="personnelNumber"
                         type="text"
@@ -159,22 +250,84 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="country">{t("userManagement.country", "Land")}</label>
+                    {renderLabel("entryDate", "userManagement.entryDate", "Eintrittsdatum", {
+                        hint: t(
+                            "userManagement.entryDateHint",
+                            "Startdatum im Format JJJJ-MM-TT (optional, z. B. 2024-01-01)"
+                        ),
+                    })}
+                    <input
+                        id="entryDate"
+                        type="date"
+                        pattern="\d{4}-\d{2}-\d{2}"
+                        value={userData.entryDate || ""}
+                        onChange={(e) => handleChange("entryDate", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    {renderLabel("department", "userManagement.department", "Abteilung", { hint: optionalLabelText })}
+                    <input
+                        id="department"
+                        type="text"
+                        value={userData.department || ""}
+                        onChange={(e) => handleChange("department", e.target.value)}
+                    />
+                </div>
+                <div className="form-group">
+                    {renderLabel("country", "userManagement.country", "Land", {
+                        required: true,
+                        hint: t("userManagement.countryHint", "steuert länderspezifische Felder"),
+                    })}
                     <select
                         id="country"
                         value={userData.country || "DE"}
                         onChange={(e) => handleChange("country", e.target.value)}
+                        required
                     >
                         <option value="DE">DE</option>
                         <option value="CH">CH</option>
                     </select>
                 </div>
+                <div className="form-group full-width">
+                    {renderLabel("bankAccount", "userManagement.bankAccount", "Bankverbindung", {
+                        hint: t(
+                            "userManagement.bankAccountHint",
+                            "IBAN für die Lohnzahlung (z. B. DE89 3704 0044 0532 0130 00)"
+                        ),
+                    })}
+                    <input
+                        id="bankAccount"
+                        type="text"
+                        value={userData.bankAccount || ""}
+                        onChange={(e) => handleChange("bankAccount", e.target.value)}
+                    />
+                </div>
+                <div className="form-group full-width">
+                    {renderLabel("healthInsurance", "userManagement.healthInsurance", "Krankenkasse", {
+                        hint: t(
+                            "userManagement.healthInsuranceHint",
+                            "Name der Krankenkasse für die Abrechnung (optional, z. B. TK)"
+                        ),
+                    })}
+                    <input
+                        id="healthInsurance"
+                        type="text"
+                        value={userData.healthInsurance || ""}
+                        onChange={(e) => handleChange("healthInsurance", e.target.value)}
+                    />
+                </div>
 
                 {/* Conditional Fields based on Country */}
                 {userData.country === 'DE' && (
                     <>
+                        <div className="form-group full-width form-group-subheading">
+                            <h6>{t("userManagement.section.germany", "Zusatzangaben für Deutschland")}</h6>
+                        </div>
                         <div className="form-group">
-                            <label htmlFor="taxClass">{t("userManagement.taxClass", "Steuerklasse")}</label>
+                            {renderLabel("taxClass", "userManagement.taxClass", "Steuerklasse", {
+                                required: true,
+                                hint: t("userManagement.taxClassHint", "laut ELStAM, z. B. I oder III"),
+                            })}
                             <input
                                 id="taxClass"
                                 type="text"
@@ -185,7 +338,17 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="socialSecurityNumber">{t("userManagement.socialSecurityNumber.de", "Sozialversicherungsnummer")}</label>
+                            {renderLabel(
+                                "socialSecurityNumber",
+                                "userManagement.socialSecurityNumber.de",
+                                "Sozialversicherungsnummer",
+                                {
+                                    hint: t(
+                                        "userManagement.socialSecurityNumberDeHint",
+                                        "11 Stellen ohne Leerzeichen (optional, z. B. 12345678901)"
+                                    ),
+                                }
+                            )}
                             <input
                                 id="socialSecurityNumber"
                                 type="text"
@@ -194,7 +357,12 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="religion">{t("userManagement.religion.de", "Religion (für Kirchensteuer)")}</label>
+                            {renderLabel("religion", "userManagement.religion.de", "Religion (für Kirchensteuer)", {
+                                hint: t(
+                                    "userManagement.religionDeHint",
+                                    "laut Meldedaten (optional, z. B. römisch-katholisch)"
+                                ),
+                            })}
                             <input
                                 id="religion"
                                 type="text"
@@ -203,13 +371,15 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="federalState">Bundesland</label>
+                            {renderLabel("federalState", "userManagement.federalState", "Bundesland", {
+                                hint: optionalLabelText,
+                            })}
                             <select
                                 id="federalState"
                                 value={userData.federalState || ""}
                                 onChange={(e) => handleChange("federalState", e.target.value)}
                             >
-                                <option value="">– bitte wählen –</option>
+                                <option value="">{t("userManagement.selectOption", "– bitte wählen –")}</option>
                                 <option value="BW">Baden-Württemberg</option>
                                 <option value="BY">Bayern</option>
                                 <option value="BE">Berlin</option>
@@ -228,7 +398,6 @@ const AdminUserForm = ({
                                 <option value="TH">Thüringen</option>
                             </select>
                         </div>
-
                         <div className="form-group form-group-checkbox">
                             <input
                                 type="checkbox"
@@ -236,11 +405,20 @@ const AdminUserForm = ({
                                 checked={!!userData.churchTax}
                                 onChange={(e) => handleCheckboxChange("churchTax", e.target.checked)}
                             />
-                            <label htmlFor="churchTax">Kirchensteuerpflichtig</label>
+                            <label htmlFor="churchTax">{t("userManagement.churchTax", "Kirchensteuerpflichtig")}</label>
                         </div>
-
                         <div className="form-group">
-                            <label htmlFor="gkvAdditionalRate">GKV-Zusatzbeitrag (AN-Hälfte)</label>
+                            {renderLabel(
+                                "gkvAdditionalRate",
+                                "userManagement.gkvAdditionalRate",
+                                "GKV-Zusatzbeitrag (AN-Hälfte)",
+                                {
+                                    hint: t(
+                                        "userManagement.gkvAdditionalRateHint",
+                                        "Dezimalwert laut Krankenkasse (optional, z. B. 0.0125)"
+                                    ),
+                                }
+                            )}
                             <input
                                 id="gkvAdditionalRate"
                                 type="number"
@@ -248,7 +426,9 @@ const AdminUserForm = ({
                                 min="0"
                                 max="0.03"
                                 value={userData.gkvAdditionalRate ?? ""}
-                                onChange={(e) => handleChange("gkvAdditionalRate", e.target.value ? parseFloat(e.target.value) : null)}
+                                onChange={(e) =>
+                                    handleChange("gkvAdditionalRate", e.target.value ? parseFloat(e.target.value) : null)
+                                }
                                 placeholder="z. B. 0.0125"
                             />
                         </div>
@@ -257,8 +437,16 @@ const AdminUserForm = ({
 
                 {userData.country === 'CH' && (
                     <>
+                        <div className="form-group full-width form-group-subheading">
+                            <h6>{t("userManagement.section.switzerland", "Zusatzangaben für die Schweiz")}</h6>
+                        </div>
                         <div className="form-group">
-                            <label htmlFor="tarifCode">{t("userManagement.tarifCode", "Tarifcode")}</label>
+                            {renderLabel("tarifCode", "userManagement.tarifCode", "Tarifcode", {
+                                hint: t(
+                                    "userManagement.tarifCodeHint",
+                                    "Quellensteuer-Code vom Lohnausweis, z. B. A0"
+                                ),
+                            })}
                             <input
                                 id="tarifCode"
                                 type="text"
@@ -267,7 +455,7 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="canton">{t("userManagement.canton", "Kanton")}</label>
+                            {renderLabel("canton", "userManagement.canton", "Kanton", { hint: optionalLabelText })}
                             <input
                                 id="canton"
                                 type="text"
@@ -276,7 +464,17 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="socialSecurityNumber">{t("userManagement.socialSecurityNumber.ch", "AHV-Nr.")}</label>
+                            {renderLabel(
+                                "socialSecurityNumber",
+                                "userManagement.socialSecurityNumber.ch",
+                                "AHV-Nr.",
+                                {
+                                    hint: t(
+                                        "userManagement.socialSecurityNumberChHint",
+                                        "Sozialversicherungsnummer (optional, 13-stellig, z. B. 756.1234.5678.97)"
+                                    ),
+                                }
+                            )}
                             <input
                                 id="socialSecurityNumber"
                                 type="text"
@@ -285,7 +483,12 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="religion">{t("userManagement.religion.ch", "Religion")}</label>
+                            {renderLabel("religion", "userManagement.religion.ch", "Religion", {
+                                hint: t(
+                                    "userManagement.religionChHint",
+                                    "für Quellensteuer (optional, z. B. römisch-katholisch)"
+                                ),
+                            })}
                             <input
                                 id="religion"
                                 type="text"
@@ -295,74 +498,6 @@ const AdminUserForm = ({
                         </div>
                     </>
                 )}
-
-                <div className="form-group">
-                    <label htmlFor="civilStatus">{t("userManagement.civilStatus", "Zivilstand")}</label>
-                    <input
-                        id="civilStatus"
-                        type="text"
-                        value={userData.civilStatus || ""}
-                        onChange={(e) => handleChange("civilStatus", e.target.value)}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="children">{t("userManagement.children", "Kinder")}</label>
-                    <input
-                        id="children"
-                        type="number"
-                        min="0"
-                        value={userData.children ?? 0}
-                        onChange={(e) => handleChange("children", parseInt(e.target.value, 10))}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="bankAccount">{t("userManagement.bankAccount", "Bankverbindung")}</label>
-                    <input
-                        id="bankAccount"
-                        type="text"
-                        value={userData.bankAccount || ""}
-                        onChange={(e) => handleChange("bankAccount", e.target.value)}
-                    />
-                </div>
-                <div className="form-group">
-                    <label htmlFor="healthInsurance">{t("userManagement.healthInsurance", "Krankenkasse")}</label>
-                    <input
-                        id="healthInsurance"
-                        type="text"
-                        value={userData.healthInsurance || ""}
-                        onChange={(e) => handleChange("healthInsurance", e.target.value)}
-                    />
-                </div>
-
-                <div className="form-group">
-                    <label htmlFor="roles">{t("userManagement.role", "Rolle")}:</label>
-                    <select
-                        id="roles"
-                        value={userData.roles?.[0] || "ROLE_USER"}
-                        onChange={handleRoleChange}
-                    >
-                        <option value="ROLE_USER">User</option>
-                        <option value="ROLE_ADMIN">Admin</option>
-                    </select>
-                </div>
-
-                <div className="form-group full-width">
-                    <label>{t("userManagement.color", "Farbe")}:</label>
-                    <div className="color-picker">
-                        {STANDARD_COLORS.map((c, idx) => (
-                            <div
-                                key={idx}
-                                className={`color-swatch ${userData.color === c ? "selected" : ""}`}
-                                style={{ backgroundColor: c }}
-                                onClick={() => handleChange("color", c)}
-                                role="button"
-                                tabIndex={0}
-                                onKeyPress={(e) => e.key === 'Enter' && handleChange("color", c)}
-                                aria-label={`Farbe ${c} auswählen`}
-                            />
-                        ))}
-                    </div>
-                </div>
 
                 {/* Sektion: Arbeitsmodell */}
                 <h4 className="form-section-title full-width">{t('userManagement.section.workModel', 'Arbeitsmodell')}</h4>
@@ -390,7 +525,13 @@ const AdminUserForm = ({
 
                 {userData.isHourly && (
                     <div className="form-group">
-                        <label htmlFor="hourlyWage">{t("userManagement.hourlyWage", "Stundenlohn (Brutto)")}</label>
+                        {renderLabel("hourlyWage", "userManagement.hourlyWage", "Stundenlohn (Brutto)", {
+                            required: true,
+                            hint: t(
+                                "userManagement.hourlyWageHint",
+                                "Bruttobetrag in Landeswährung, z. B. 25.00"
+                            ),
+                        })}
                         <input
                             id="hourlyWage"
                             type="number"
@@ -406,7 +547,13 @@ const AdminUserForm = ({
 
                 {!userData.isHourly && (
                     <div className="form-group">
-                        <label htmlFor="monthlySalary">{t("userManagement.monthlySalary", "Monatslohn (Brutto)")}</label>
+                        {renderLabel("monthlySalary", "userManagement.monthlySalary", "Monatslohn (Brutto)", {
+                            required: true,
+                            hint: t(
+                                "userManagement.monthlySalaryHint",
+                                "Bruttogehalt pro Monat in Landeswährung, z. B. 4500.00"
+                            ),
+                        })}
                         <input
                             id="monthlySalary"
                             type="number"
@@ -422,7 +569,12 @@ const AdminUserForm = ({
 
                 {userData.isPercentage && !userData.isHourly && (
                     <div className="form-group">
-                        <label htmlFor="workPercentage">{t("userManagement.workPercentage", "Arbeitspensum (%)")}:</label>
+                        {renderLabel("workPercentage", "userManagement.workPercentage", "Arbeitspensum (%)", {
+                            hint: t(
+                                "userManagement.workPercentageHint",
+                                "Beschäftigungsgrad für die Lohnberechnung, z. B. 60"
+                            ),
+                        })}
                         <input
                             id="workPercentage"
                             type="number"
@@ -439,7 +591,12 @@ const AdminUserForm = ({
                 <h4 className="form-section-title full-width">{t('userManagement.section.generalSettings', 'Allgemeine Einstellungen')}</h4>
 
                 <div className="form-group">
-                    <label htmlFor="annualVacationDays">{t("userManagement.annualVacationDays", "Urlaubstage/Jahr")}:</label>
+                    {renderLabel("annualVacationDays", "userManagement.annualVacationDays", "Urlaubstage/Jahr", {
+                        hint: t(
+                            "userManagement.annualVacationDaysHint",
+                            "für die Urlaubsberechnung, ganze oder halbe Tage"
+                        ),
+                    })}
                     <input
                         id="annualVacationDays"
                         type="number" step="0.5" min="0"
@@ -449,7 +606,12 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="breakDuration">{t("userManagement.breakDuration", "Standard Pausendauer (Min)")}:</label>
+                    {renderLabel("breakDuration", "userManagement.breakDuration", "Standard Pausendauer (Min)", {
+                        hint: t(
+                            "userManagement.breakDurationHint",
+                            "für automatische Pausenabzüge, Minuten pro Tag"
+                        ),
+                    })}
                     <input
                         id="breakDuration"
                         type="number" min="0"
@@ -461,7 +623,17 @@ const AdminUserForm = ({
 
                 {!userData.isHourly && (
                     <div className="form-group">
-                        <label htmlFor="expectedWorkDays">{t("userManagement.expectedWorkDays", "Erw. Arbeitstage/Woche")}:</label>
+                        {renderLabel(
+                            "expectedWorkDays",
+                            "userManagement.expectedWorkDays",
+                            "Erw. Arbeitstage/Woche",
+                            {
+                                hint: t(
+                                    "userManagement.expectedWorkDaysHint",
+                                    "typische Arbeitstage zur Sollstundenberechnung"
+                                ),
+                            }
+                        )}
                         <input
                             id="expectedWorkDays"
                             type="number" step="0.5" min="0" max="7"
@@ -478,7 +650,12 @@ const AdminUserForm = ({
                     <h4 className="form-section-title">{t("userManagement.scheduleConfig", "Wochenplan & Sollzeiten")}</h4>
                     <div className="admin-user-form-grid"> {/* Nested grid for this section's own layout */}
                         <div className="form-group">
-                            <label htmlFor="dailyWorkHours">{t("userManagement.dailyWorkHours", "Standard Tagessoll (Std)")}:</label>
+                            {renderLabel("dailyWorkHours", "userManagement.dailyWorkHours", "Standard Tagessoll (Std)", {
+                                hint: t(
+                                    "userManagement.dailyWorkHoursHint",
+                                    "Sollstunden pro Arbeitstag für Zeitkonten"
+                                ),
+                            })}
                             <input
                                 id="dailyWorkHours"
                                 type="number" step="0.01" min="0"
@@ -488,7 +665,12 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="scheduleEffectiveDate">{t("userManagement.scheduleEffectiveDate", "Plan gültig ab")}:</label>
+                            {renderLabel("scheduleEffectiveDate", "userManagement.scheduleEffectiveDate", "Plan gültig ab", {
+                                hint: t(
+                                    "userManagement.scheduleEffectiveDateHint",
+                                    "Datum, ab dem der Wochenplan angewendet wird (z. B. 2024-01-01)"
+                                ),
+                            })}
                             <input
                                 type="date"
                                 id="scheduleEffectiveDate"
@@ -497,7 +679,12 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="scheduleCycle">{t("userManagement.cycleLength", "Zykluslänge (Wochen)")}:</label>
+                            {renderLabel("scheduleCycle", "userManagement.cycleLength", "Zykluslänge (Wochen)", {
+                                hint: t(
+                                    "userManagement.cycleLengthHint",
+                                    "Anzahl Wochen, bevor der Plan von vorn beginnt (z. B. 4)"
+                                ),
+                            })}
                             <input
                                 type="number"
                                 id="scheduleCycle"
