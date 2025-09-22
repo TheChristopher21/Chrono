@@ -215,6 +215,50 @@
   margin-bottom: 0.1rem;
   display: block;
 }
+.admin-user-management-page.scoped-dashboard .user-form .form-label-text {
+  font-weight: 500;
+  font-size: 0.85rem;
+  color: var(--c-muted);
+  display: block;
+}
+.admin-user-management-page.scoped-dashboard .user-form .label-hint {
+  color: var(--c-muted);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+.admin-user-management-page.scoped-dashboard .user-form .required-indicator {
+  color: var(--c-danger);
+  font-weight: 600;
+  font-size: 0.75rem;
+  margin-left: 0.25rem;
+}
+.admin-user-management-page.scoped-dashboard .user-form .form-group-heading {
+  padding-top: var(--u-gap-md);
+  gap: var(--u-gap-xs);
+}
+.admin-user-management-page.scoped-dashboard .user-form .form-group-heading:first-of-type {
+  padding-top: 0;
+}
+.admin-user-management-page.scoped-dashboard .user-form .form-group-heading h5 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
+.admin-user-management-page.scoped-dashboard .user-form .form-group-description {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--c-muted);
+}
+.admin-user-management-page.scoped-dashboard .user-form .form-group-subheading {
+  padding-top: var(--u-gap-sm);
+}
+.admin-user-management-page.scoped-dashboard .user-form .form-group-subheading h6 {
+  margin: 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--c-text);
+}
 .admin-user-management-page.scoped-dashboard
 .user-form
 .form-group-checkbox
