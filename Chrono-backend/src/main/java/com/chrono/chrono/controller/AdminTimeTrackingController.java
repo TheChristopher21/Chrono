@@ -42,6 +42,7 @@ public class AdminTimeTrackingController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin ist keiner Firma zugeordnet.");
         }
         List<User> usersToList = isSuperAdmin ? userRepository.findByDeletedFalse() : userRepository.findByCompany_IdAndDeletedFalse(adminCompanyId);
+        usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
         List<DailyTimeSummaryDTO> result = usersToList.stream()
                 .flatMap(u -> timeTrackingService.getUserHistory(u.getUsername()).stream())
                 .sorted(Comparator.comparing(DailyTimeSummaryDTO::getUsername).thenComparing(DailyTimeSummaryDTO::getDate).reversed())
@@ -115,6 +116,7 @@ public class AdminTimeTrackingController {
         List<User> usersToList = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ?
                                  userRepository.findByDeletedFalse() :
                                  (adminUser.getCompany() != null ? userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId()) : Collections.emptyList());
+        usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
         if (usersToList.isEmpty() && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
              return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin ist keiner Firma zugeordnet oder Firma hat keine User.");
         }
@@ -135,6 +137,7 @@ public class AdminTimeTrackingController {
         List<User> usersToList = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ?
                                  userRepository.findByDeletedFalse() :
                                  (adminUser.getCompany() != null ? userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId()) : Collections.emptyList());
+        usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
         if (usersToList.isEmpty() && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
              return ResponseEntity.status(HttpStatus.FORBIDDEN).body("Admin ist keiner Firma zugeordnet oder Firma hat keine User.");
         }

@@ -54,6 +54,7 @@ public class UserDTO {
     private String socialSecurityNumber;
     private Boolean deleted;
     private Boolean optOut;
+    private Boolean includeInTimeTracking;
     private Long companyId;
     private String companyCantonAbbreviation;
     private Boolean customerTrackingEnabled; // Kept
@@ -112,6 +113,7 @@ public class UserDTO {
         this.socialSecurityNumber = user.getSocialSecurityNumber();
         this.deleted = user.isDeleted();
         this.optOut = user.isOptOut();
+        this.includeInTimeTracking = user.isIncludeInTimeTracking();
         this.companyId = (user.getCompany() != null) ? user.getCompany().getId() : null;
         this.companyCantonAbbreviation = (user.getCompany() != null) ? user.getCompany().getCantonAbbreviation() : null;
         this.lastCustomerId = user.getLastCustomer() != null ? user.getLastCustomer().getId() : null;
@@ -133,7 +135,7 @@ public class UserDTO {
                    Boolean isPercentage, Integer workPercentage, Double hourlyRate, Double monthlySalary, String bankAccount,
                    String socialSecurityNumber, Long companyId,
                    Long lastCustomerId, String lastCustomerName, Boolean customerTrackingEnabled,
-                   Boolean deleted, Boolean optOut) { // Kept
+                   Boolean deleted, Boolean optOut, Boolean includeInTimeTracking) { // Kept
         this.id = id;
         this.username = username;
         this.password = password;
@@ -182,6 +184,7 @@ public class UserDTO {
         this.customerTrackingEnabled = customerTrackingEnabled; // Kept
         this.deleted = deleted;
         this.optOut = optOut;
+        this.includeInTimeTracking = includeInTimeTracking != null ? includeInTimeTracking : true;
     }
 
     // ----- Getters -----
@@ -229,6 +232,7 @@ public class UserDTO {
     public String getSocialSecurityNumber() { return socialSecurityNumber; }
     public Boolean getDeleted() { return deleted; }
     public Boolean getOptOut() { return optOut; }
+    public Boolean getIncludeInTimeTracking() { return includeInTimeTracking; }
     public Long getCompanyId() { return companyId; }
     public String getCompanyCantonAbbreviation() { return companyCantonAbbreviation; }
     public Long getLastCustomerId() { return lastCustomerId; }
@@ -280,6 +284,7 @@ public class UserDTO {
     public void setSocialSecurityNumber(String socialSecurityNumber) { this.socialSecurityNumber = socialSecurityNumber; }
     public void setDeleted(Boolean deleted) { this.deleted = deleted; }
     public void setOptOut(Boolean optOut) { this.optOut = optOut; }
+    public void setIncludeInTimeTracking(Boolean includeInTimeTracking) { this.includeInTimeTracking = includeInTimeTracking; }
     public void setCompanyId(Long companyId) { this.companyId = companyId; }
     public void setCompanyCantonAbbreviation(String companyCantonAbbreviation) { this.companyCantonAbbreviation = companyCantonAbbreviation; }
     public void setLastCustomerId(Long lastCustomerId) { this.lastCustomerId = lastCustomerId; }

@@ -372,6 +372,11 @@ const AdminWeekSection = forwardRef(({
     const [manualMonthRangeEnd, setManualMonthRangeEnd] = useState(DEFAULT_MONTH_RANGE_SETTINGS.manualEnd);
     const [monthSortConfig, setMonthSortConfig] = useState({ key: 'username', direction: 'ascending' });
 
+    const trackableUsers = useMemo(
+        () => (Array.isArray(users) ? users.filter(user => user?.includeInTimeTracking !== false) : []),
+        [users]
+    );
+
     useEffect(() => {
         if (!browserHasStorage) return;
         try {
@@ -405,7 +410,7 @@ const AdminWeekSection = forwardRef(({
 
     // Fetch holiday options when a percentage user's details are expanded for the current week
     const fetchHolidayOptionsForUser = useCallback(async (username, mondayDate) => {
-        const userConf = users.find(u => u.username === username);
+        const userConf = trackableUsers.find(u => u.username === username);
         if (userConf && userConf.isPercentage) {
             try {
                 const response = await api.get('/api/admin/user-holiday-options/week', {
@@ -453,7 +458,7 @@ const AdminWeekSection = forwardRef(({
         } else {
             setCurrentUserHolidayOptions([]); // Not a percentage user or no user
         }
-    }, [users]);
+    }, [trackableUsers]);
 
     useEffect(() => {
         if (detailedUser) {
@@ -497,8 +502,8 @@ const AdminWeekSection = forwardRef(({
     }, [browserHasStorage, holidayOptionsByUser]);
 
     useEffect(() => {
-        if (!selectedMonday || !Array.isArray(users) || users.length === 0) return;
-        const percentageUsers = users.filter(user => user?.isPercentage);
+        if (!selectedMonday || trackableUsers.length === 0) return;
+        const percentageUsers = trackableUsers.filter(user => user?.isPercentage);
         if (percentageUsers.length === 0) return;
 
         const isoDatesForWeek = getIsoDatesForWeek(selectedMonday);
@@ -567,7 +572,7 @@ const AdminWeekSection = forwardRef(({
         return () => {
             cancelled = true;
         };
-    }, [selectedMonday, users]);
+    }, [selectedMonday, trackableUsers]);
 
     const resolvedMonthRange = useMemo(
         () => computeMonthRangeBoundaries(
@@ -623,7 +628,7 @@ const AdminWeekSection = forwardRef(({
         const currentWeekIsoSet = new Set(currentWeekIsoDates);
 
         // dailySummariesForWeekSection is now a list of DailyTimeSummaryDTO
-        return users
+        return trackableUsers
             .map((user) => {
                 const userConfig = user; // UserDTO from backend
                 // Get all DailyTimeSummaryDTOs for this user (can be for multiple days/weeks if AdminDashboard fetches more)
@@ -690,7 +695,7 @@ const AdminWeekSection = forwardRef(({
                     holidayOptions: allHolidayOptionsForUser,
                 };
             });
-    }, [users, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser]);
+    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser]);
 
     const userAnalyticsMap = useMemo(() => {
         const map = new Map();
@@ -703,10 +708,10 @@ const AdminWeekSection = forwardRef(({
     }, [userAnalytics]);
 
     const monthlyUserAnalytics = useMemo(() => {
-        if (!Array.isArray(users) || users.length === 0) return [];
+        if (!Array.isArray(trackableUsers) || trackableUsers.length === 0) return [];
         if (!monthRangeIsValid) return [];
 
-        return users.map(user => {
+        return trackableUsers.map(user => {
             const baseData = userAnalyticsMap.get(user.username) || null;
             const userConfig = baseData?.userConfig || user;
             const allUserSummariesList = dailySummariesForWeekSection.filter(summary => summary.username === user.username);
@@ -758,7 +763,7 @@ const AdminWeekSection = forwardRef(({
                 monthlyOvertimeMinutes: monthlyActualMinutes - monthlyExpectedMinutes,
             };
         });
-    }, [users, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, monthRangeStart, monthRangeEnd, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, monthRangeDates, defaultExpectedHours]);
+    }, [trackableUsers, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, monthRangeStart, monthRangeEnd, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, monthRangeDates, defaultExpectedHours]);
 
 
     const issueSummary = useMemo(() => {
@@ -1063,7 +1068,7 @@ const AdminWeekSection = forwardRef(({
     }), [t]);
 
     const smartOverviewCards = useMemo(() => {
-        const totalUsersCount = Array.isArray(users) ? users.length : 0;
+        const totalUsersCount = Array.isArray(trackableUsers) ? trackableUsers.length : 0;
         const stats = {
             activeUsers: 0,
             negativeBalanceUsers: 0,
@@ -1123,7 +1128,7 @@ const AdminWeekSection = forwardRef(({
                 description: t('adminDashboard.smartOverview.cards.negative.subtitle', 'Personen unter Soll'),
             },
         ];
-    }, [users, userAnalytics, issueSummary, t]);
+    }, [trackableUsers, userAnalytics, issueSummary, t]);
 
     const quickIssueQueue = useMemo(() => {
         const queue = [];
@@ -1632,7 +1637,7 @@ const AdminWeekSection = forwardRef(({
                             onChange={(e) => setSearchTerm(e.target.value)}
                             className="user-search-input"
                         />
-                        {users.length > 0 && ( // Only show if there are users to manage
+                        {trackableUsers.length > 0 && ( // Only show if there are users to manage
                             <button
                                 type="button"
                                 onClick={() => setShowHiddenUsersManager(!showHiddenUsersManager)}

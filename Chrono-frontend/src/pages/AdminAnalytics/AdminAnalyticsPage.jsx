@@ -54,6 +54,11 @@ const AdminAnalyticsPage = () => {
     const [weeklyBalances, setWeeklyBalances] = useState([]);
     const [holidaysCache, setHolidaysCache] = useState({});
 
+    const trackableUsers = useMemo(
+        () => (Array.isArray(users) ? users.filter(user => user?.includeInTimeTracking !== false) : []),
+        [users]
+    );
+
     useEffect(() => {
         let isMounted = true;
         const fetchData = async () => {
@@ -115,7 +120,7 @@ const AdminAnalyticsPage = () => {
         if (currentUser?.companyCantonAbbreviation) {
             cantons.add(currentUser.companyCantonAbbreviation);
         }
-        users.forEach(user => {
+        trackableUsers.forEach(user => {
             if (user.companyCantonAbbreviation) {
                 cantons.add(user.companyCantonAbbreviation);
             }
@@ -191,7 +196,7 @@ const AdminAnalyticsPage = () => {
         return () => {
             isMounted = false;
         };
-    }, [analysisWeeks, users, currentUser, holidaysCache]);
+    }, [analysisWeeks, trackableUsers, currentUser, holidaysCache]);
 
     const userSummaryDateMap = useMemo(() => {
         const map = new Map();
@@ -252,14 +257,14 @@ const AdminAnalyticsPage = () => {
     }, [holidaysCache, currentUser]);
 
     const weeklyOvertimeTrend = useMemo(() => {
-        if (!analysisWeeks.length || !users.length) {
+        if (!analysisWeeks.length || !trackableUsers.length) {
             return { chart: { labels: [], datasets: [] }, series: [] };
         }
         const weekLabels = analysisWeeks.map(week => week.label);
         const palette = ['#475bff', '#2ecc71', '#ff7f50', '#8e44ad', '#00bcd4', '#f97316'];
 
         const seriesData = [];
-        users.filter(user => !user.isHourly).forEach((user, index) => {
+        trackableUsers.filter(user => !user.isHourly).forEach((user, index) => {
             const summaryMap = userSummaryDateMap.get(user.username) || new Map();
             const approvedVacations = (vacationsByUser.get(user.username) || []).filter(vac => vac.approved);
             const sickLeaves = sickLeavesByUser.get(user.username) || [];
@@ -303,7 +308,7 @@ const AdminAnalyticsPage = () => {
         }));
 
         return { chart: { labels: weekLabels, datasets }, series: seriesData.slice(0, 5) };
-    }, [analysisWeeks, users, userSummaryDateMap, vacationsByUser, sickLeavesByUser, holidayLookupForUser]);
+    }, [analysisWeeks, trackableUsers, userSummaryDateMap, vacationsByUser, sickLeavesByUser, holidayLookupForUser]);
 
     const absenceBreakdown = useMemo(() => {
         const monthFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' });
@@ -450,7 +455,7 @@ const AdminAnalyticsPage = () => {
     const overtimeSnapshot = useMemo(() => {
         const samples = (Array.isArray(weeklyBalances) && weeklyBalances.length > 0
             ? weeklyBalances.map(entry => entry?.trackingBalance)
-            : users.map(user => user?.trackingBalanceInMinutes))
+            : trackableUsers.map(user => user?.trackingBalanceInMinutes))
             .filter(value => typeof value === 'number' && !Number.isNaN(value));
 
         if (!samples.length) {
@@ -460,7 +465,7 @@ const AdminAnalyticsPage = () => {
         const sum = samples.reduce((acc, minutes) => acc + minutes, 0);
         const average = Math.round(sum / samples.length);
 
-        const source = weeklyBalances.length > 0 ? weeklyBalances : users;
+        const source = weeklyBalances.length > 0 ? weeklyBalances : trackableUsers;
         const positive = source.reduce((best, entry) => {
             const minutes = Number.isFinite(entry?.trackingBalance) ? entry.trackingBalance : entry?.trackingBalanceInMinutes;
             if (!Number.isFinite(minutes)) {
@@ -483,7 +488,7 @@ const AdminAnalyticsPage = () => {
         }, null);
 
         return { average, positive, negative };
-    }, [weeklyBalances, users]);
+    }, [weeklyBalances, trackableUsers]);
 
     const lineOptions = useMemo(() => ({
         responsive: true,

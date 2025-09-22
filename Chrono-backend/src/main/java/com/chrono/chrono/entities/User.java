@@ -80,6 +80,9 @@ public class User {
     @Column(name = "opt_out", nullable = false)
     private boolean optOut = false;
 
+    @Column(name = "include_in_time_tracking", nullable = false)
+    private boolean includeInTimeTracking = true;
+
     @Column(name = "demo", nullable = false)
     private boolean demo = false;
 
@@ -264,6 +267,9 @@ public class User {
 
     public boolean isOptOut() { return optOut; }
     public void setOptOut(boolean optOut) { this.optOut = optOut; }
+
+    public boolean isIncludeInTimeTracking() { return includeInTimeTracking; }
+    public void setIncludeInTimeTracking(boolean includeInTimeTracking) { this.includeInTimeTracking = includeInTimeTracking; }
 
     public boolean isDemo() { return demo; }
     public void setDemo(boolean demo) { this.demo = demo; }

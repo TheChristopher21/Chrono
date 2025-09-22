@@ -724,6 +724,10 @@ const translations = {
             breakDuration: "Pausendauer (Min)",
             workPercentage: "Work Percentage",
             annualVacationDays: "Urlaubstage",
+            includeInTimeTrackingLabel: "In Zeiterfassung & Übersichten anzeigen",
+            includeInTimeTrackingEnabled: "Eingeschlossen in Zeitübersichten",
+            includeInTimeTrackingDisabled: "Von Zeitübersichten ausgeschlossen",
+            includeInTimeTrackingHint: "Admins ohne Arbeitszeiterfassung werden in Wochenansichten und Salden nicht angezeigt.",
             button: {
                 save: "Speichern",
                 cancel: "Abbrechen",
@@ -2111,6 +2115,10 @@ const translations = {
             breakDuration: "Break Duration (min)",
             workPercentage: "Work Percentage",
             annualVacationDays: "Vacation Days",
+            includeInTimeTrackingLabel: "Show in time tracking & summaries",
+            includeInTimeTrackingEnabled: "Included in time overviews",
+            includeInTimeTrackingDisabled: "Excluded from time overviews",
+            includeInTimeTrackingHint: "Admins who opt out won't appear in weekly views or balance tables.",
             button: {
                 save: "Save",
                 cancel: "Cancel",
