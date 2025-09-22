@@ -28,6 +28,7 @@ import {
     getDetailedGlobalProblemIndicators,
     getMondayOfWeek,
     addDays,
+    selectTrackableUsers,
 } from "./adminDashboardUtils"; // Ensure this path is correct
 import {parseISO} from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
@@ -372,8 +373,12 @@ const AdminWeekSection = forwardRef(({
     const [manualMonthRangeEnd, setManualMonthRangeEnd] = useState(DEFAULT_MONTH_RANGE_SETTINGS.manualEnd);
     const [monthSortConfig, setMonthSortConfig] = useState({ key: 'username', direction: 'ascending' });
 
-    const trackableUsers = useMemo(
-        () => (Array.isArray(users) ? users.filter(user => user?.includeInTimeTracking !== false) : []),
+    const {
+        trackableUsers,
+        reactivatedOptOutUsernames,
+        allUsersOptedOut,
+    } = useMemo(
+        () => selectTrackableUsers(users),
         [users]
     );
 
@@ -1510,6 +1515,25 @@ const AdminWeekSection = forwardRef(({
                         </div>
                     )}
                 </div>
+
+                {reactivatedOptOutUsernames.size > 0 && (
+                    <div className="mt-3 rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+                        {t(
+                            'adminDashboard.weekView.optOutFallbackNotice',
+                            'Hinweis: {count} Nutzer werden trotz Opt-out angezeigt, damit die Übersicht nicht leer ist. Bitte prüfe die Einstellung „In Zeiterfassung anzeigen“ in der Benutzerverwaltung.',
+                            { count: reactivatedOptOutUsernames.size }
+                        )}
+                    </div>
+                )}
+
+                {trackableUsers.length === 0 && allUsersOptedOut && (
+                    <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                        {t(
+                            'adminDashboard.weekView.allOptedOutWarning',
+                            'Alle bekannten Benutzer sind derzeit von den Zeitübersichten ausgeschlossen. Passe die Einstellung „In Zeiterfassung anzeigen“ in der Benutzerverwaltung an, um diese Ansicht wieder zu füllen.'
+                        )}
+                    </div>
+                )}
 
                 <div className="timeframe-tab-bar">
                     <button
