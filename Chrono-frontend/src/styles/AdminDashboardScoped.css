@@ -39,6 +39,10 @@
   --u-dur: 0.26s;
   --u-ease: cubic-bezier(0.4, 0.2, 0.2, 1);
 
+  --ad-scroll-visible-items: 10;
+  --ad-scroll-row-height: 4.75rem;
+  --ad-scroll-area-height: calc(var(--ad-scroll-visible-items) * var(--ad-scroll-row-height));
+
   background: var(--c-bg);
   color: var(--c-text);
   font-family: "Poppins", system-ui, sans-serif;
@@ -484,7 +488,7 @@
 
 @media (min-width: 1024px) {
   .admin-dashboard.scoped-dashboard .dashboard-secondary-grid {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
   }
   .admin-dashboard.scoped-dashboard .dashboard-secondary-grid > :first-child {
     grid-column: 1 / -1;
@@ -2700,21 +2704,29 @@
 
 /* Tabellen-Container (für Scrolling) */
 .corrections-list-container {
-  overflow-y: auto;
-  max-height: 70vh; /* Scrollbar erscheint bei mehr als ca. 10-12 Einträgen */
   border: 1px solid var(--ad-c-border);
   border-radius: var(--ad-radius-lg);
   box-shadow: var(--ad-shadow-sm);
   background-color: var(--ad-c-bg-card);
 }
 
-.vacation-requests-container {
+.corrections-list-container.scroll-limited {
   overflow-y: auto;
-  max-height: 70vh;
+  max-height: min(70vh, var(--ad-scroll-area-height));
+  scrollbar-gutter: stable;
+}
+
+.vacation-requests-container {
   border: 1px solid var(--ad-c-border);
   border-radius: var(--ad-radius-lg);
   box-shadow: var(--ad-shadow-sm);
   background-color: var(--ad-c-bg-card);
+}
+
+.vacation-requests-container.scroll-limited {
+  overflow-y: auto;
+  max-height: min(70vh, var(--ad-scroll-area-height));
+  scrollbar-gutter: stable;
 }
 .vacation-request-list .vacation-item {
   display: flex;
@@ -2872,10 +2884,14 @@
 
 /* ---------- 1) Container ------------------------------------------------- */
 .admin-dashboard.scoped-dashboard .correction-section .table-wrapper {
-    max-height: 70vh;
-    overflow-y: auto;
     border: 1px solid var(--c-border);
     border-radius: var(--u-radius-sm);
+}
+
+.admin-dashboard.scoped-dashboard .correction-section .table-wrapper.scroll-limited {
+    max-height: min(70vh, var(--ad-scroll-area-height));
+    overflow-y: auto;
+    scrollbar-gutter: stable;
 }
 
 /* ---------- 2) Tabelle --------------------------------------------------- */
