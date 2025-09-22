@@ -62,6 +62,7 @@ const usePlannerStore = create((set) => ({
 
     showWeekends: true,
     highlightConflicts: true,
+    disabledUserIds: new Set(),
 
     setWeekStart: (date) => set({ weekStart: startOfWeek(date, { weekStartsOn: 1 }) }),
     changeWeek: (offset) => set((state) => ({ weekStart: addDays(state.weekStart, offset * 7) })),
@@ -71,6 +72,12 @@ const usePlannerStore = create((set) => ({
 
     setShowWeekends: (v) => set({ showWeekends: v }),
     setHighlightConflicts: (v) => set({ highlightConflicts: v }),
+    toggleUserDisabled: (userId) => set((state) => {
+        const next = new Set(state.disabledUserIds);
+        if (next.has(userId)) next.delete(userId);
+        else next.add(userId);
+        return { disabledUserIds: next };
+    }),
 }));
 
 /* ===========================
@@ -174,28 +181,51 @@ const UserList = () => {
     const dragUser = usePlannerStore(state => state.dragUser);
     const setDragUser = usePlannerStore(state => state.setDragUser);
     const clearDrag = usePlannerStore(state => state.clearDrag);
+    const disabledUserIds = usePlannerStore(state => state.disabledUserIds);
+    const toggleUserDisabled = usePlannerStore(state => state.toggleUserDisabled);
 
     return (
         <div className="planner-sidebar">
             <h3>{t('schedulePlanner.availableUsers', 'Mitarbeiter')}</h3>
             <div className="user-list">
-                {isLoadingUsers ? <p>Lade...</p> : users.map(u => (
-                    <div
-                        key={u.id}
-                        className={`user-list-item ${dragUser?.id === u.id ? 'dragging' : ''}`}
-                        draggable
-                        onDragStart={(e) => {
-                            try {
-                                e.dataTransfer.effectAllowed = 'copyMove';
-                                e.dataTransfer.setData('text/plain', String(u.id ?? 'user'));
-                            } catch {}
-                            setDragUser(u);
-                        }}
-                        onDragEnd={() => clearDrag()}
-                    >
-                        {u.firstName} {u.lastName}
-                    </div>
-                ))}
+                {isLoadingUsers ? <p>Lade...</p> : users.map(u => {
+                    const isDisabled = disabledUserIds.has(u.id);
+                    return (
+                        <div
+                            key={u.id}
+                            className={`user-list-item ${dragUser?.id === u.id ? 'dragging' : ''} ${isDisabled ? 'disabled' : ''}`}
+                            draggable={!isDisabled}
+                            onDragStart={(e) => {
+                                if (isDisabled) {
+                                    e.preventDefault();
+                                    return;
+                                }
+                                try {
+                                    e.dataTransfer.effectAllowed = 'copyMove';
+                                    e.dataTransfer.setData('text/plain', String(u.id ?? 'user'));
+                                } catch {}
+                                setDragUser(u);
+                            }}
+                            onDragEnd={() => clearDrag()}
+                        >
+                            <div className="user-list-item-info">
+                                <span>{u.firstName} {u.lastName}</span>
+                                {isDisabled && <span className="user-status-tag">{t('schedulePlanner.userDisabled', 'Deaktiviert')}</span>}
+                            </div>
+                            <button
+                                type="button"
+                                className="user-disable-toggle"
+                                onClick={(event) => {
+                                    event.stopPropagation();
+                                    toggleUserDisabled(u.id);
+                                }}
+                                onMouseDown={(event) => event.stopPropagation()}
+                            >
+                                {isDisabled ? t('schedulePlanner.enableUser', 'Aktivieren') : t('schedulePlanner.disableUser', 'Deaktivieren')}
+                            </button>
+                        </div>
+                    );
+                })}
             </div>
         </div>
     );
@@ -211,6 +241,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
     const weekStart = usePlannerStore(state => state.weekStart);
     const showWeekends = usePlannerStore(state => state.showWeekends);
     const highlightConflicts = usePlannerStore(state => state.highlightConflicts);
+    const disabledUserIds = usePlannerStore(state => state.disabledUserIds);
 
     const setDragUser = usePlannerStore(state => state.setDragUser);
     const dragUser = usePlannerStore(state => state.dragUser);
@@ -244,6 +275,11 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
         e.stopPropagation();
         setHoveredCell(null);
         if (!dragUser) return;
+        if (disabledUserIds.has(dragUser.id)) {
+            notify(t('schedulePlanner.userDisabledDrop', 'Der Nutzer ist deaktiviert und kann nicht zugewiesen werden.'));
+            clearDrag();
+            return;
+        }
 
         // Urlaub blockiert Drop
         const vacForUser = vacationMap?.[dragUser.username]?.[dateKey];
@@ -350,13 +386,15 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
                                                             const expected = getExpectedHoursForDate(user, dateKey);
                                                             const isDayOff = expected <= 0;
                                                             const isVacation = user.username && vacationMap?.[user.username]?.[dateKey];
+                                                            const isDisabled = disabledUserIds.has(user.id);
 
                                                             const cls = [
                                                                 'assigned-user',
                                                                 dragEntry?.id === entry.id ? 'dragging' : '',
                                                                 highlightConflicts && isDoubleBooked ? 'conflict-double' : '',
                                                                 highlightConflicts && isDayOff ? 'conflict-dayoff' : '',
-                                                                highlightConflicts && isVacation ? 'conflict-vac' : ''
+                                                                highlightConflicts && isVacation ? 'conflict-vac' : '',
+                                                                isDisabled ? 'disabled-user' : ''
                                                             ].filter(Boolean).join(' ');
 
                                                             return (
@@ -420,6 +458,11 @@ const AdminSchedulePlannerPage = () => {
 
     const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
     const { data: shifts = [] } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
+    const disabledUserIds = usePlannerStore(state => state.disabledUserIds);
+    const availableUsers = React.useMemo(
+        () => users.filter(u => !disabledUserIds.has(u.id)),
+        [users, disabledUserIds]
+    );
 
     const { data: holidays = {} } = useQuery({
         queryKey: ['holidays', weekStart.getFullYear(), currentUser?.company?.cantonAbbreviation],
@@ -503,6 +546,10 @@ const AdminSchedulePlannerPage = () => {
     });
 
     const handleAutoFill = () => {
+        if (availableUsers.length === 0) {
+            alert(t('schedulePlanner.noActiveUsers', 'Keine aktiven Mitarbeiter für das automatische Auffüllen verfügbar.'));
+            return;
+        }
         const newEntries = [];
         const dateKeys = Array.from({ length: 7 }, (_, i) => formatISO(addDays(weekStart, i), { representation: 'date' }));
         let userIndex = 0;
@@ -515,11 +562,11 @@ const AdminSchedulePlannerPage = () => {
 
             active.forEach(shift => {
                 const alreadyAssignedToShift = (schedule[dateKey] || []).some(e => e.shift === shift.shiftKey);
-                if (!alreadyAssignedToShift && users.length > 0) {
+                if (!alreadyAssignedToShift && availableUsers.length > 0) {
                     let assigned = false;
                     let attempts = 0;
-                    while (!assigned && attempts < users.length) {
-                        const userToAssign = users[userIndex % users.length];
+                    while (!assigned && attempts < availableUsers.length) {
+                        const userToAssign = availableUsers[userIndex % availableUsers.length];
                         const username = userToAssign.username;
                         const onVacation = username && vacationMap[username] && vacationMap[username][dateKey];
                         if (

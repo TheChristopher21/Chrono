@@ -53,6 +53,8 @@ const AdminAnalyticsPage = () => {
     const [allSickLeaves, setAllSickLeaves] = useState([]);
     const [weeklyBalances, setWeeklyBalances] = useState([]);
     const [holidaysCache, setHolidaysCache] = useState({});
+    const [selectedWeeks, setSelectedWeeks] = useState(12);
+    const [selectedUsernames, setSelectedUsernames] = useState([]);
 
     const trackableUsers = useMemo(
         () => (Array.isArray(users) ? users.filter(user => user?.includeInTimeTracking !== false) : []),
@@ -100,17 +102,99 @@ const AdminAnalyticsPage = () => {
         };
     }, [notify, t]);
 
+    const selectableUsers = useMemo(
+        () =>
+            users
+                .filter(user => !user.isHourly && user?.username)
+                .slice()
+                .sort((a, b) => (a.username || '').localeCompare(b.username || '', undefined, { sensitivity: 'base' })),
+        [users],
+    );
+
+    const selectableUsernames = useMemo(() => selectableUsers.map(user => user.username), [selectableUsers]);
+
+    useEffect(() => {
+        setSelectedUsernames(prev => {
+            if (!prev.length) {
+                return prev;
+            }
+            const allowed = new Set(selectableUsernames);
+            const filtered = prev.filter(username => allowed.has(username));
+            return filtered.length === prev.length ? prev : filtered;
+        });
+    }, [selectableUsernames]);
+
+    const userSelectSize = useMemo(
+        () => Math.min(8, Math.max(3, selectableUsers.length || 0)),
+        [selectableUsers.length],
+    );
+
     const analysisWeeks = useMemo(() => {
         const formatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: '2-digit' });
         const currentMonday = getMondayOfWeek(new Date());
-        return Array.from({ length: 12 }, (_, idx) => {
-            const monday = addDays(currentMonday, -7 * (11 - idx));
+        const totalWeeks = Number.isFinite(selectedWeeks) && selectedWeeks > 0 ? selectedWeeks : 12;
+        return Array.from({ length: totalWeeks }, (_, idx) => {
+            const offset = totalWeeks - 1 - idx;
+            const monday = addDays(currentMonday, -7 * offset);
             const dates = Array.from({ length: 7 }, (_, dayIndex) => addDays(new Date(monday), dayIndex));
             const end = dates[dates.length - 1];
             const label = `${formatter.format(monday)} – ${formatter.format(end)}`;
             return { monday, dates, label };
         });
+    }, [selectedWeeks]);
+
+    const weekRangeOptions = useMemo(
+        () => [
+            { value: 4, label: t('adminAnalytics.filters.rangeOption.fourWeeks', 'Letzte 4 Wochen') },
+            { value: 8, label: t('adminAnalytics.filters.rangeOption.eightWeeks', 'Letzte 8 Wochen') },
+            { value: 12, label: t('adminAnalytics.filters.rangeOption.twelveWeeks', 'Letzte 12 Wochen') },
+            { value: 24, label: t('adminAnalytics.filters.rangeOption.twentyFourWeeks', 'Letzte 24 Wochen') },
+        ],
+        [t],
+    );
+
+    const currentRangeLabel = useMemo(() => {
+        const option = weekRangeOptions.find(opt => opt.value === selectedWeeks);
+        return option ? option.label : '';
+    }, [weekRangeOptions, selectedWeeks]);
+
+    const handleRangeChange = useCallback(event => {
+        const value = Number(event.target.value);
+        setSelectedWeeks(Number.isFinite(value) && value > 0 ? value : 12);
     }, []);
+
+    const handleUserSelectionChange = useCallback(event => {
+        const selected = Array.from(event.target.selectedOptions, option => option.value);
+        setSelectedUsernames(selected);
+    }, []);
+
+    const handleSelectAllUsers = useCallback(() => {
+        setSelectedUsernames([...selectableUsernames]);
+    }, [selectableUsernames]);
+
+    const handleResetUsers = useCallback(() => {
+        setSelectedUsernames([]);
+    }, []);
+
+    const selectionSummary = useMemo(() => {
+        if (!selectableUsers.length) {
+            return null;
+        }
+        if (!selectedUsernames.length) {
+            return t('adminAnalytics.filters.autoSelectionLabel', 'Top 5 (automatisch)');
+        }
+        if (selectedUsernames.length === selectableUsers.length) {
+            return t('adminAnalytics.filters.allSelectedLabel', 'Alle');
+        }
+        return `${selectedUsernames.length}/${selectableUsers.length}`;
+    }, [selectableUsers.length, selectedUsernames, t]);
+
+    const displayRangeLabel = useMemo(() => {
+        if (currentRangeLabel) {
+            return currentRangeLabel;
+        }
+        return `${selectedWeeks} ${t('adminAnalytics.filters.weeksSuffix', 'Wochen')}`;
+    }, [currentRangeLabel, selectedWeeks, t]);
 
     useEffect(() => {
         if (!analysisWeeks.length) {
@@ -265,6 +349,7 @@ const AdminAnalyticsPage = () => {
 
         const seriesData = [];
         trackableUsers.filter(user => !user.isHourly).forEach((user, index) => {
+
             const summaryMap = userSummaryDateMap.get(user.username) || new Map();
             const approvedVacations = (vacationsByUser.get(user.username) || []).filter(vac => vac.approved);
             const sickLeaves = sickLeavesByUser.get(user.username) || [];
@@ -290,14 +375,27 @@ const AdminAnalyticsPage = () => {
             });
 
             const magnitude = weekValues.reduce((acc, value) => acc + Math.abs(value), 0);
-            if (magnitude === 0) {
-                return;
-            }
-            seriesData.push({ username: user.username, data: weekValues, magnitude, color: palette[index % palette.length] });
+            return {
+                username: user.username,
+                data: weekValues,
+                magnitude,
+                color: palette[index % palette.length],
+            };
         });
 
-        seriesData.sort((a, b) => b.magnitude - a.magnitude);
-        const datasets = seriesData.slice(0, 5).map(series => ({
+        const sortedSeries = [...seriesData].sort((a, b) => b.magnitude - a.magnitude);
+
+        let activeSeries = [];
+        if (selectedUsernames.length) {
+            const selectedSet = new Set(selectedUsernames);
+            activeSeries = sortedSeries.filter(series => selectedSet.has(series.username));
+        } else {
+            const nonZero = sortedSeries.filter(series => series.magnitude > 0);
+            const base = nonZero.length ? nonZero : sortedSeries;
+            activeSeries = base.slice(0, Math.min(5, base.length));
+        }
+
+        const datasets = activeSeries.map(series => ({
             label: series.username,
             data: series.data,
             borderColor: series.color,
@@ -309,6 +407,7 @@ const AdminAnalyticsPage = () => {
 
         return { chart: { labels: weekLabels, datasets }, series: seriesData.slice(0, 5) };
     }, [analysisWeeks, trackableUsers, userSummaryDateMap, vacationsByUser, sickLeavesByUser, holidayLookupForUser]);
+
 
     const absenceBreakdown = useMemo(() => {
         const monthFormatter = new Intl.DateTimeFormat(undefined, { month: 'short', year: 'numeric' });
@@ -552,7 +651,11 @@ const AdminAnalyticsPage = () => {
         },
     }), []);
 
-    const hasOvertimeData = weeklyOvertimeTrend.chart.datasets.length > 0;
+    const hasUserSelection = selectedUsernames.length > 0;
+    const hasOvertimeData = weeklyOvertimeTrend.series.length > 0;
+    const userFilterHintId = 'analytics-user-filter-hint';
+    const isSelectAllDisabled = selectableUsers.length === 0 || selectedUsernames.length === selectableUsers.length;
+    const isResetDisabled = selectedUsernames.length === 0;
     const hasAbsenceData = absenceBreakdown.chart.datasets.some(dataset => dataset.data.some(value => value > 0));
     const hasVacationData = vacationPie.chart.datasets[0]?.data?.some(value => value > 0);
 
@@ -575,7 +678,7 @@ const AdminAnalyticsPage = () => {
                 <div className="analytics-content">
                     <section className="analytics-section">
                         <div className="section-header">
-                            <h2>{t('adminAnalytics.overtimeTrend.title', 'Überstundentrend (Top 5 Personen)')}</h2>
+                            <h2>{t('adminAnalytics.overtimeTrend.title', 'Überstundentrend')}</h2>
 
                             {overtimeSnapshot && (
                                 <div className="section-meta">
@@ -593,9 +696,85 @@ const AdminAnalyticsPage = () => {
                                 </div>
                             )}
                         </div>
+                        <div
+                            className="analytics-filters"
+                            role="group"
+                            aria-label={t('adminAnalytics.filters.title', 'Filter')}
+                        >
+                            <div className="filter-group">
+                                <label htmlFor="analytics-range">{t('adminAnalytics.filters.rangeLabel', 'Zeitraum')}</label>
+                                <select
+                                    id="analytics-range"
+                                    className="filter-select"
+                                    value={selectedWeeks}
+                                    onChange={handleRangeChange}
+                                >
+                                    {weekRangeOptions.map(option => (
+                                        <option key={option.value} value={option.value}>
+                                            {option.label}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="filter-summary">
+                                    {t('adminAnalytics.filters.currentRange', 'Aktueller Zeitraum')}: {displayRangeLabel}
+                                </p>
+                            </div>
+                            <div className="filter-group filter-group-users">
+                                <label htmlFor="analytics-users">{t('adminAnalytics.filters.userLabel', 'Mitarbeitende')}</label>
+                                <select
+                                    id="analytics-users"
+                                    multiple
+                                    className="filter-select filter-multi"
+                                    size={userSelectSize}
+                                    value={selectedUsernames}
+                                    onChange={handleUserSelectionChange}
+                                    aria-describedby={userFilterHintId}
+                                    disabled={!selectableUsers.length}
+                                >
+                                    {selectableUsers.map(user => (
+                                        <option key={user.username} value={user.username}>
+                                            {user.username}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p id={userFilterHintId} className="filter-hint">
+                                    {t('adminAnalytics.filters.hint', 'Keine Auswahl zeigt automatisch die Top 5 mit der größten Veränderung an.')}
+                                </p>
+                                <div className="filter-actions">
+                                    <button
+                                        type="button"
+                                        onClick={handleSelectAllUsers}
+                                        disabled={isSelectAllDisabled}
+                                    >
+                                        {t('adminAnalytics.filters.selectAll', 'Alle anzeigen')}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        className="secondary"
+                                        onClick={handleResetUsers}
+                                        disabled={isResetDisabled}
+                                    >
+                                        {t('adminAnalytics.filters.reset', 'Auswahl zurücksetzen')}
+                                    </button>
+                                </div>
+                                {selectionSummary ? (
+                                    <p className="filter-summary">
+                                        {t('adminAnalytics.filters.currentSelection', 'Aktuell angezeigt')}: {selectionSummary}
+                                    </p>
+                                ) : (
+                                    <p className="filter-summary muted">
+                                        {t('adminAnalytics.filters.noSelectableUsers', 'Keine Mitarbeitenden verfügbar.')}
+                                    </p>
+                                )}
+                            </div>
+                        </div>
                         <div className="chart-wrapper chart-line">
                             {hasOvertimeData ? (
                                 <Line data={weeklyOvertimeTrend.chart} options={lineOptions} />
+                            ) : hasUserSelection ? (
+                                <p className="chart-placeholder">
+                                    {t('adminAnalytics.filters.selectionEmpty', 'Für die gewählten Personen liegen im Zeitraum keine Daten vor.')}
+                                </p>
                             ) : (
                                 <p className="chart-placeholder">{t('adminAnalytics.overtimeTrend.empty', 'Es liegen aktuell keine auswertbaren Überstundendaten vor.')}</p>
                             )}
