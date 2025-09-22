@@ -233,7 +233,13 @@ const AdminUserForm = ({
                 </div>
 
                 <div className="form-group">
-                    {renderLabel("personnelNumber", "userManagement.personnelNumber", "Personalnummer", { required: true })}
+                    {renderLabel("personnelNumber", "userManagement.personnelNumber", "Personalnummer", {
+                        required: true,
+                        hint: t(
+                            "userManagement.personnelNumberHint",
+                            "laut Lohnsystem, nur Ziffern (max. 10, z. B. 4711)"
+                        ),
+                    })}
                     <input
                         id="personnelNumber"
                         type="text"
@@ -244,7 +250,12 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
-                    {renderLabel("entryDate", "userManagement.entryDate", "Eintrittsdatum", { hint: optionalLabelText })}
+                    {renderLabel("entryDate", "userManagement.entryDate", "Eintrittsdatum", {
+                        hint: t(
+                            "userManagement.entryDateHint",
+                            "Startdatum im Format JJJJ-MM-TT (optional, z. B. 2024-01-01)"
+                        ),
+                    })}
                     <input
                         id="entryDate"
                         type="date"
@@ -279,7 +290,10 @@ const AdminUserForm = ({
                 </div>
                 <div className="form-group full-width">
                     {renderLabel("bankAccount", "userManagement.bankAccount", "Bankverbindung", {
-                        hint: t("userManagement.bankAccountHint", "für Lohnzahlungen"),
+                        hint: t(
+                            "userManagement.bankAccountHint",
+                            "IBAN für die Lohnzahlung (z. B. DE89 3704 0044 0532 0130 00)"
+                        ),
                     })}
                     <input
                         id="bankAccount"
@@ -290,7 +304,10 @@ const AdminUserForm = ({
                 </div>
                 <div className="form-group full-width">
                     {renderLabel("healthInsurance", "userManagement.healthInsurance", "Krankenkasse", {
-                        hint: optionalLabelText,
+                        hint: t(
+                            "userManagement.healthInsuranceHint",
+                            "Name der Krankenkasse für die Abrechnung (optional, z. B. TK)"
+                        ),
                     })}
                     <input
                         id="healthInsurance"
@@ -307,7 +324,10 @@ const AdminUserForm = ({
                             <h6>{t("userManagement.section.germany", "Zusatzangaben für Deutschland")}</h6>
                         </div>
                         <div className="form-group">
-                            {renderLabel("taxClass", "userManagement.taxClass", "Steuerklasse", { required: true })}
+                            {renderLabel("taxClass", "userManagement.taxClass", "Steuerklasse", {
+                                required: true,
+                                hint: t("userManagement.taxClassHint", "laut ELStAM, z. B. I oder III"),
+                            })}
                             <input
                                 id="taxClass"
                                 type="text"
@@ -322,7 +342,12 @@ const AdminUserForm = ({
                                 "socialSecurityNumber",
                                 "userManagement.socialSecurityNumber.de",
                                 "Sozialversicherungsnummer",
-                                { hint: optionalLabelText }
+                                {
+                                    hint: t(
+                                        "userManagement.socialSecurityNumberDeHint",
+                                        "11 Stellen ohne Leerzeichen (optional, z. B. 12345678901)"
+                                    ),
+                                }
                             )}
                             <input
                                 id="socialSecurityNumber"
@@ -333,7 +358,10 @@ const AdminUserForm = ({
                         </div>
                         <div className="form-group">
                             {renderLabel("religion", "userManagement.religion.de", "Religion (für Kirchensteuer)", {
-                                hint: optionalLabelText,
+                                hint: t(
+                                    "userManagement.religionDeHint",
+                                    "laut Meldedaten (optional, z. B. römisch-katholisch)"
+                                ),
                             })}
                             <input
                                 id="religion"
@@ -384,7 +412,12 @@ const AdminUserForm = ({
                                 "gkvAdditionalRate",
                                 "userManagement.gkvAdditionalRate",
                                 "GKV-Zusatzbeitrag (AN-Hälfte)",
-                                { hint: optionalLabelText }
+                                {
+                                    hint: t(
+                                        "userManagement.gkvAdditionalRateHint",
+                                        "Dezimalwert laut Krankenkasse (optional, z. B. 0.0125)"
+                                    ),
+                                }
                             )}
                             <input
                                 id="gkvAdditionalRate"
@@ -411,7 +444,7 @@ const AdminUserForm = ({
                             {renderLabel("tarifCode", "userManagement.tarifCode", "Tarifcode", {
                                 hint: t(
                                     "userManagement.tarifCodeHint",
-                                    "Quellensteuer-Code vom Lohnausweis"
+                                    "Quellensteuer-Code vom Lohnausweis, z. B. A0"
                                 ),
                             })}
                             <input
@@ -435,7 +468,12 @@ const AdminUserForm = ({
                                 "socialSecurityNumber",
                                 "userManagement.socialSecurityNumber.ch",
                                 "AHV-Nr.",
-                                { hint: optionalLabelText }
+                                {
+                                    hint: t(
+                                        "userManagement.socialSecurityNumberChHint",
+                                        "Sozialversicherungsnummer (optional, 13-stellig, z. B. 756.1234.5678.97)"
+                                    ),
+                                }
                             )}
                             <input
                                 id="socialSecurityNumber"
@@ -445,7 +483,12 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            {renderLabel("religion", "userManagement.religion.ch", "Religion", { hint: optionalLabelText })}
+                            {renderLabel("religion", "userManagement.religion.ch", "Religion", {
+                                hint: t(
+                                    "userManagement.religionChHint",
+                                    "für Quellensteuer (optional, z. B. römisch-katholisch)"
+                                ),
+                            })}
                             <input
                                 id="religion"
                                 type="text"
@@ -482,7 +525,13 @@ const AdminUserForm = ({
 
                 {userData.isHourly && (
                     <div className="form-group">
-                        {renderLabel("hourlyWage", "userManagement.hourlyWage", "Stundenlohn (Brutto)", { required: true })}
+                        {renderLabel("hourlyWage", "userManagement.hourlyWage", "Stundenlohn (Brutto)", {
+                            required: true,
+                            hint: t(
+                                "userManagement.hourlyWageHint",
+                                "Bruttobetrag in Landeswährung, z. B. 25.00"
+                            ),
+                        })}
                         <input
                             id="hourlyWage"
                             type="number"
@@ -498,7 +547,13 @@ const AdminUserForm = ({
 
                 {!userData.isHourly && (
                     <div className="form-group">
-                        {renderLabel("monthlySalary", "userManagement.monthlySalary", "Monatslohn (Brutto)", { required: true })}
+                        {renderLabel("monthlySalary", "userManagement.monthlySalary", "Monatslohn (Brutto)", {
+                            required: true,
+                            hint: t(
+                                "userManagement.monthlySalaryHint",
+                                "Bruttogehalt pro Monat in Landeswährung, z. B. 4500.00"
+                            ),
+                        })}
                         <input
                             id="monthlySalary"
                             type="number"
@@ -514,7 +569,12 @@ const AdminUserForm = ({
 
                 {userData.isPercentage && !userData.isHourly && (
                     <div className="form-group">
-                        <label htmlFor="workPercentage">{t("userManagement.workPercentage", "Arbeitspensum (%)")}:</label>
+                        {renderLabel("workPercentage", "userManagement.workPercentage", "Arbeitspensum (%)", {
+                            hint: t(
+                                "userManagement.workPercentageHint",
+                                "Beschäftigungsgrad für die Lohnberechnung, z. B. 60"
+                            ),
+                        })}
                         <input
                             id="workPercentage"
                             type="number"
@@ -531,7 +591,12 @@ const AdminUserForm = ({
                 <h4 className="form-section-title full-width">{t('userManagement.section.generalSettings', 'Allgemeine Einstellungen')}</h4>
 
                 <div className="form-group">
-                    <label htmlFor="annualVacationDays">{t("userManagement.annualVacationDays", "Urlaubstage/Jahr")}:</label>
+                    {renderLabel("annualVacationDays", "userManagement.annualVacationDays", "Urlaubstage/Jahr", {
+                        hint: t(
+                            "userManagement.annualVacationDaysHint",
+                            "für die Urlaubsberechnung, ganze oder halbe Tage"
+                        ),
+                    })}
                     <input
                         id="annualVacationDays"
                         type="number" step="0.5" min="0"
@@ -541,7 +606,12 @@ const AdminUserForm = ({
                     />
                 </div>
                 <div className="form-group">
-                    <label htmlFor="breakDuration">{t("userManagement.breakDuration", "Standard Pausendauer (Min)")}:</label>
+                    {renderLabel("breakDuration", "userManagement.breakDuration", "Standard Pausendauer (Min)", {
+                        hint: t(
+                            "userManagement.breakDurationHint",
+                            "für automatische Pausenabzüge, Minuten pro Tag"
+                        ),
+                    })}
                     <input
                         id="breakDuration"
                         type="number" min="0"
@@ -553,7 +623,17 @@ const AdminUserForm = ({
 
                 {!userData.isHourly && (
                     <div className="form-group">
-                        <label htmlFor="expectedWorkDays">{t("userManagement.expectedWorkDays", "Erw. Arbeitstage/Woche")}:</label>
+                        {renderLabel(
+                            "expectedWorkDays",
+                            "userManagement.expectedWorkDays",
+                            "Erw. Arbeitstage/Woche",
+                            {
+                                hint: t(
+                                    "userManagement.expectedWorkDaysHint",
+                                    "typische Arbeitstage zur Sollstundenberechnung"
+                                ),
+                            }
+                        )}
                         <input
                             id="expectedWorkDays"
                             type="number" step="0.5" min="0" max="7"
@@ -570,7 +650,12 @@ const AdminUserForm = ({
                     <h4 className="form-section-title">{t("userManagement.scheduleConfig", "Wochenplan & Sollzeiten")}</h4>
                     <div className="admin-user-form-grid"> {/* Nested grid for this section's own layout */}
                         <div className="form-group">
-                            <label htmlFor="dailyWorkHours">{t("userManagement.dailyWorkHours", "Standard Tagessoll (Std)")}:</label>
+                            {renderLabel("dailyWorkHours", "userManagement.dailyWorkHours", "Standard Tagessoll (Std)", {
+                                hint: t(
+                                    "userManagement.dailyWorkHoursHint",
+                                    "Sollstunden pro Arbeitstag für Zeitkonten"
+                                ),
+                            })}
                             <input
                                 id="dailyWorkHours"
                                 type="number" step="0.01" min="0"
@@ -580,7 +665,12 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="scheduleEffectiveDate">{t("userManagement.scheduleEffectiveDate", "Plan gültig ab")}:</label>
+                            {renderLabel("scheduleEffectiveDate", "userManagement.scheduleEffectiveDate", "Plan gültig ab", {
+                                hint: t(
+                                    "userManagement.scheduleEffectiveDateHint",
+                                    "Datum, ab dem der Wochenplan angewendet wird (z. B. 2024-01-01)"
+                                ),
+                            })}
                             <input
                                 type="date"
                                 id="scheduleEffectiveDate"
@@ -589,7 +679,12 @@ const AdminUserForm = ({
                             />
                         </div>
                         <div className="form-group">
-                            <label htmlFor="scheduleCycle">{t("userManagement.cycleLength", "Zykluslänge (Wochen)")}:</label>
+                            {renderLabel("scheduleCycle", "userManagement.cycleLength", "Zykluslänge (Wochen)", {
+                                hint: t(
+                                    "userManagement.cycleLengthHint",
+                                    "Anzahl Wochen, bevor der Plan von vorn beginnt (z. B. 4)"
+                                ),
+                            })}
                             <input
                                 type="number"
                                 id="scheduleCycle"
