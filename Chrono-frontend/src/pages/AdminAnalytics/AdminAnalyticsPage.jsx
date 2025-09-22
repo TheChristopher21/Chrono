@@ -104,11 +104,11 @@ const AdminAnalyticsPage = () => {
 
     const selectableUsers = useMemo(
         () =>
-            users
+            trackableUsers
                 .filter(user => !user.isHourly && user?.username)
                 .slice()
                 .sort((a, b) => (a.username || '').localeCompare(b.username || '', undefined, { sensitivity: 'base' })),
-        [users],
+        [trackableUsers],
     );
 
     const selectableUsernames = useMemo(() => selectableUsers.map(user => user.username), [selectableUsers]);
