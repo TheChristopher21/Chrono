@@ -12,33 +12,134 @@ export function getMondayOfWeek(date) {
     return copy;
 }
 
+const normalizeRoles = (roles) => {
+    if (!Array.isArray(roles)) {
+        return [];
+    }
+    return roles
+        .map(role => (typeof role === 'string' ? role : String(role || '')))
+        .filter(Boolean);
+};
+
+const isAdminAccount = (user) => {
+    const normalizedRoles = normalizeRoles(user?.roles);
+    if (normalizedRoles.length === 0) {
+        return false;
+    }
+    return normalizedRoles.every(role => role.toUpperCase().includes('ADMIN'));
+};
+
+const collectUsernames = (collection) => new Set(
+    collection
+        .map(user => user?.username)
+        .filter(Boolean)
+);
+
 export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}) => {
     if (!Array.isArray(users)) {
-        return { trackableUsers: [], fallbackApplied: false, excludedUsernames: new Set() };
+        return {
+            trackableUsers: [],
+            fallbackApplied: false,
+            excludedUsernames: new Set(),
+            reactivatedOptOutUsernames: new Set(),
+            fallbackReason: null,
+            allUsersOptedOut: false,
+        };
     }
 
-    const excludedUsernames = new Set(
-        users
-            .filter(user => user?.includeInTimeTracking === false && user?.username)
-            .map(user => user.username)
+    const totalKnownUsers = users.filter(user => user?.username).length;
+
+    const explicitOptOutAdmins = collectUsernames(
+        users.filter(user => user?.includeInTimeTracking === false && isAdminAccount(user))
+    );
+
+    const explicitOptOutNonAdmins = collectUsernames(
+        users.filter(user => user?.includeInTimeTracking === false && !isAdminAccount(user))
+
     );
 
     const filtered = users.filter(user => user?.includeInTimeTracking !== false);
 
     if (filtered.length > 0 || !fallbackToKnownUsers) {
-        return { trackableUsers: filtered, fallbackApplied: false, excludedUsernames };
+        return {
+            trackableUsers: filtered,
+            fallbackApplied: false,
+            excludedUsernames: new Set([
+                ...explicitOptOutAdmins,
+                ...explicitOptOutNonAdmins,
+            ]),
+            reactivatedOptOutUsernames: new Set(),
+            fallbackReason: null,
+            allUsersOptedOut: false,
+        };
     }
 
-    if (excludedUsernames.size > 0) {
-        return { trackableUsers: filtered, fallbackApplied: false, excludedUsernames };
+    const nonAdminFallbackCandidates = users.filter(user => user?.username && !isAdminAccount(user));
+
+    if (nonAdminFallbackCandidates.length > 0) {
+        const reactivatedSet = collectUsernames(
+            nonAdminFallbackCandidates.filter(user => explicitOptOutNonAdmins.has(user.username))
+        );
+
+        const explicitOptOutCount = explicitOptOutAdmins.size + explicitOptOutNonAdmins.size;
+
+        return {
+            trackableUsers: nonAdminFallbackCandidates,
+            fallbackApplied: true,
+            excludedUsernames: explicitOptOutAdmins,
+            reactivatedOptOutUsernames: reactivatedSet,
+            fallbackReason: 'nonAdminOptOuts',
+            allUsersOptedOut: totalKnownUsers > 0 && explicitOptOutCount >= totalKnownUsers,
+        };
+    }
+
+    const explicitOptOutCount = explicitOptOutAdmins.size + explicitOptOutNonAdmins.size;
+    if (explicitOptOutCount > 0) {
+        return {
+            trackableUsers: [],
+            fallbackApplied: false,
+            excludedUsernames: new Set([
+                ...explicitOptOutAdmins,
+                ...explicitOptOutNonAdmins,
+            ]),
+            reactivatedOptOutUsernames: new Set(),
+            fallbackReason: 'allUsersOptedOut',
+            allUsersOptedOut: true,
+        };
+    }
+
+    if (!fallbackToKnownUsers) {
+        return {
+            trackableUsers: [],
+            fallbackApplied: false,
+            excludedUsernames: new Set(),
+            reactivatedOptOutUsernames: new Set(),
+            fallbackReason: null,
+            allUsersOptedOut: false,
+        };
+
     }
 
     const fallbackUsers = users.filter(user => user && user.username);
 
+    if (fallbackUsers.length > 0) {
+        return {
+            trackableUsers: fallbackUsers,
+            fallbackApplied: true,
+            excludedUsernames: new Set(),
+            reactivatedOptOutUsernames: new Set(),
+            fallbackReason: 'noConfiguredUsers',
+            allUsersOptedOut: false,
+        };
+    }
+
     return {
-        trackableUsers: fallbackUsers,
-        fallbackApplied: fallbackUsers.length > 0,
-        excludedUsernames,
+        trackableUsers: [],
+        fallbackApplied: false,
+        excludedUsernames: new Set(),
+        reactivatedOptOutUsernames: new Set(),
+        fallbackReason: null,
+        allUsersOptedOut: false,
     };
 
 };

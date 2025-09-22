@@ -375,6 +375,8 @@ const AdminWeekSection = forwardRef(({
 
     const {
         trackableUsers,
+        reactivatedOptOutUsernames,
+        allUsersOptedOut,
     } = useMemo(
 
         () => selectTrackableUsers(users),
@@ -1514,6 +1516,25 @@ const AdminWeekSection = forwardRef(({
                         </div>
                     )}
                 </div>
+
+                {reactivatedOptOutUsernames.size > 0 && (
+                    <div className="mt-3 rounded-md border border-yellow-300 bg-yellow-50 p-3 text-sm text-yellow-800">
+                        {t(
+                            'adminDashboard.weekView.optOutFallbackNotice',
+                            'Hinweis: {count} Nutzer werden trotz Opt-out angezeigt, damit die Übersicht nicht leer ist. Bitte prüfe die Einstellung „In Zeiterfassung anzeigen“ in der Benutzerverwaltung.',
+                            { count: reactivatedOptOutUsernames.size }
+                        )}
+                    </div>
+                )}
+
+                {trackableUsers.length === 0 && allUsersOptedOut && (
+                    <div className="mt-3 rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-700">
+                        {t(
+                            'adminDashboard.weekView.allOptedOutWarning',
+                            'Alle bekannten Benutzer sind derzeit von den Zeitübersichten ausgeschlossen. Passe die Einstellung „In Zeiterfassung anzeigen“ in der Benutzerverwaltung an, um diese Ansicht wieder zu füllen.'
+                        )}
+                    </div>
+                )}
 
                 <div className="timeframe-tab-bar">
                     <button
