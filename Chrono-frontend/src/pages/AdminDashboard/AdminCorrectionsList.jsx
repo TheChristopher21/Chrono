@@ -137,7 +137,7 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
     }, [groupedRows, sortConfig]);
 
     /* ──────────────────────────────────── render */
-    const scrollable = sortedRows.length > 25;
+    const requiresScroll = sortedRows.length >= 10;
     const hasPending = allCorrections.some(c => !c.approved && !c.denied);
 
     return (
@@ -188,10 +188,7 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
                     {sortedRows.length === 0 ? (
                         <p>{t("adminCorrections.noRequestsFound", "Keine Anträge gefunden.")}</p>
                     ) : (
-                        <div
-                            className="table-wrapper"
-                            style={{ maxHeight: scrollable ? "70vh" : "none", overflowY: scrollable ? "auto" : "visible" }}
-                        >
+                        <div className={`table-wrapper${requiresScroll ? ' scroll-limited' : ''}`}>
                             <table className="corrections-table">
                                 <thead>
                                 <tr>

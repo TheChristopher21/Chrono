@@ -84,6 +84,7 @@ const AdminVacationRequests = ({
     const sortedVacations = [...filteredVacations].sort((a, b) => b.id - a.id);
 
     const hasPending = allVacations.some(v => !v.approved && !v.denied);
+    const isScrollable = sortedVacations.length >= 10;
 
     return (
         <> {/* Stellt sicher, dass CSS-Variablen verfügbar sind */}
@@ -115,7 +116,7 @@ const AdminVacationRequests = ({
                         {sortedVacations.length === 0 ? (
                             <p>{t('adminDashboard.noVacationRequests', 'Keine Urlaubsanträge gefunden.')}</p>
                         ) : (
-                            <div className="vacation-requests-container" style={{ maxHeight: sortedVacations.length > 20 ? '70vh' : 'none' }}>
+                            <div className={`vacation-requests-container${isScrollable ? ' scroll-limited' : ''}`}>
                             <ul className="item-list vacation-request-list">
                                 {sortedVacations.map((v) => {
                                     const status = v.approved
