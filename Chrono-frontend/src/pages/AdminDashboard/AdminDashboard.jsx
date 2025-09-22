@@ -52,6 +52,27 @@ const AdminDashboard = () => {
     const [weeklyBalances, setWeeklyBalances] = useState([]);
     const defaultExpectedHours = 8.5;
 
+    const trackableUsernames = useMemo(() => {
+        if (!Array.isArray(users) || users.length === 0) {
+            return new Set();
+        }
+        return new Set(
+            users
+                .filter(user => user?.includeInTimeTracking !== false && user?.username)
+                .map(user => user.username)
+        );
+    }, [users]);
+
+    const filteredWeeklyBalances = useMemo(() => {
+        if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
+            return [];
+        }
+        if (trackableUsernames.size === 0) {
+            return weeklyBalances.filter(entry => entry?.username);
+        }
+        return weeklyBalances.filter(entry => entry?.username && trackableUsernames.has(entry.username));
+    }, [weeklyBalances, trackableUsernames]);
+
     const [issueSummary, setIssueSummary] = useState({
         missing: 0,
         incomplete: 0,
@@ -448,7 +469,7 @@ const AdminDashboard = () => {
 
         const userDetails = users.find(u => u.username === printUser);
         const userNameDisplay = userDetails ? `${userDetails.firstName} ${userDetails.lastName} (${printUser})` : printUser;
-        const balanceRecord = weeklyBalances.find(b => b.username === printUser);
+        const balanceRecord = filteredWeeklyBalances.find(b => b.username === printUser);
         const overtimeStr = minutesToHHMM(balanceRecord?.trackingBalance || 0);
 
         const doc = new jsPDF("p", "mm", "a4");
@@ -583,7 +604,7 @@ const AdminDashboard = () => {
                 t={t}
                 allVacations={allVacations}
                 allCorrections={allCorrections}
-                weeklyBalances={weeklyBalances}
+                weeklyBalances={filteredWeeklyBalances}
                 users={users}
                 onNavigateToVacations={handleNavigateToVacations}
                 onNavigateToCorrections={handleNavigateToCorrections}
@@ -652,7 +673,7 @@ const AdminDashboard = () => {
                     defaultExpectedHours={defaultExpectedHours}
                     openEditModal={openEditModal}
                     openPrintUserModal={openPrintUserModal}
-                    rawUserTrackingBalances={weeklyBalances}
+                    rawUserTrackingBalances={filteredWeeklyBalances}
                     openNewEntryModal={openNewEntryModal}
                     onDataReloadNeeded={handleDataReloadNeeded}
                     onIssueSummaryChange={handleIssueSummaryUpdate}

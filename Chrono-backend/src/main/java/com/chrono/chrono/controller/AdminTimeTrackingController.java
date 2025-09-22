@@ -47,7 +47,6 @@ public class AdminTimeTrackingController {
             logger.warn("Admin {} has no company assigned. Falling back to all active users for time summaries.", principal.getName());
             usersToList = userRepository.findByDeletedFalse();
         }
-        usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
         List<DailyTimeSummaryDTO> result = usersToList.stream()
                 .flatMap(u -> timeTrackingService.getUserHistory(u.getUsername()).stream())
                 .sorted(Comparator.comparing(DailyTimeSummaryDTO::getUsername).thenComparing(DailyTimeSummaryDTO::getDate).reversed())
@@ -128,7 +127,6 @@ public class AdminTimeTrackingController {
             logger.warn("Admin {} has no company assigned. Falling back to all active users for weekly balances.", principal.getName());
             usersToList = userRepository.findByDeletedFalse();
         }
-        usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
         if (usersToList.isEmpty()) {
             return ResponseEntity.ok(Collections.emptyList());
         }
@@ -156,7 +154,6 @@ public class AdminTimeTrackingController {
             logger.warn("Admin {} has no company assigned. Falling back to all active users for tracking balances.", principal.getName());
             usersToList = userRepository.findByDeletedFalse();
         }
-        usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
         if (usersToList.isEmpty()) {
             return ResponseEntity.ok(Collections.emptyList());
         }
