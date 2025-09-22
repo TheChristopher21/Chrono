@@ -24,6 +24,7 @@ import {
     minutesToHHMM,
     formatDate,
     processEntriesForReport,
+    selectTrackableUsers,
 } from './adminDashboardUtils';
 
 const AdminDashboard = () => {
@@ -52,16 +53,21 @@ const AdminDashboard = () => {
     const [weeklyBalances, setWeeklyBalances] = useState([]);
     const defaultExpectedHours = 8.5;
 
+    const trackableUsers = useMemo(
+        () => selectTrackableUsers(users),
+        [users]
+    );
+
     const trackableUsernames = useMemo(() => {
-        if (!Array.isArray(users) || users.length === 0) {
+        if (!Array.isArray(trackableUsers) || trackableUsers.length === 0) {
             return new Set();
         }
         return new Set(
-            users
-                .filter(user => user?.includeInTimeTracking !== false && user?.username)
-                .map(user => user.username)
+            trackableUsers
+                .map(user => user?.username)
+                .filter(Boolean)
         );
-    }, [users]);
+    }, [trackableUsers]);
 
     const filteredWeeklyBalances = useMemo(() => {
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {

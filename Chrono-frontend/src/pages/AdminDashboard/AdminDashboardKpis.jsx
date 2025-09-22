@@ -1,6 +1,6 @@
 import PropTypes from 'prop-types';
 import { useMemo } from 'react';
-import { minutesToHHMM } from './adminDashboardUtils';
+import { minutesToHHMM, selectTrackableUsers } from './adminDashboardUtils';
 
 const AdminDashboardKpis = ({
     t,
@@ -16,7 +16,7 @@ const AdminDashboardKpis = ({
     onOpenAnalytics,
 }) => {
     const trackableUsers = useMemo(
-        () => (Array.isArray(users) ? users.filter(user => user?.includeInTimeTracking !== false) : []),
+        () => selectTrackableUsers(users),
         [users]
     );
 

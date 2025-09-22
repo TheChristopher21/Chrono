@@ -11,6 +11,20 @@ export function getMondayOfWeek(date) {
     copy.setHours(0, 0, 0, 0);
     return copy;
 }
+
+export const selectTrackableUsers = (users) => {
+    if (!Array.isArray(users)) {
+        return [];
+    }
+
+    const filtered = users.filter(user => user?.includeInTimeTracking !== false);
+
+    if (filtered.length > 0) {
+        return filtered;
+    }
+
+    return users.filter(user => user && user.username);
+};
 export const processEntriesForReport = (entries) => {
     const blocks = { work: [], break: [] };
     if (!entries || entries.length === 0) return blocks;

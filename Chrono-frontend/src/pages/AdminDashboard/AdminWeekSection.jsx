@@ -28,6 +28,7 @@ import {
     getDetailedGlobalProblemIndicators,
     getMondayOfWeek,
     addDays,
+    selectTrackableUsers,
 } from "./adminDashboardUtils"; // Ensure this path is correct
 import {parseISO} from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
@@ -373,7 +374,7 @@ const AdminWeekSection = forwardRef(({
     const [monthSortConfig, setMonthSortConfig] = useState({ key: 'username', direction: 'ascending' });
 
     const trackableUsers = useMemo(
-        () => (Array.isArray(users) ? users.filter(user => user?.includeInTimeTracking !== false) : []),
+        () => selectTrackableUsers(users),
         [users]
     );
 

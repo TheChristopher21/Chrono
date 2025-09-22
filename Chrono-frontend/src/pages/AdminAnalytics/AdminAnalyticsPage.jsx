@@ -10,6 +10,7 @@ import {
     formatLocalDateYMD,
     calculateWeeklyExpectedMinutes,
     minutesToHHMM,
+    selectTrackableUsers,
 } from '../AdminDashboard/adminDashboardUtils';
 import { Line, Bar, Doughnut } from 'react-chartjs-2';
 import {
@@ -57,7 +58,7 @@ const AdminAnalyticsPage = () => {
     const [selectedUsernames, setSelectedUsernames] = useState([]);
 
     const trackableUsers = useMemo(
-        () => (Array.isArray(users) ? users.filter(user => user?.includeInTimeTracking !== false) : []),
+        () => selectTrackableUsers(users),
         [users]
     );
 
