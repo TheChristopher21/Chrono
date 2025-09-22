@@ -40,6 +40,7 @@ export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}
         fallbackApplied: fallbackUsers.length > 0,
         excludedUsernames,
     };
+
 };
 export const processEntriesForReport = (entries) => {
     const blocks = { work: [], break: [] };

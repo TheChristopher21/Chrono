@@ -376,6 +376,7 @@ const AdminWeekSection = forwardRef(({
     const {
         trackableUsers,
     } = useMemo(
+
         () => selectTrackableUsers(users),
         [users]
     );

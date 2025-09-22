@@ -20,6 +20,7 @@ const AdminDashboardKpis = ({
         fallbackApplied: didFallbackTrackableUsers,
         excludedUsernames,
     } = useMemo(
+
         () => selectTrackableUsers(users),
         [users]
     );
