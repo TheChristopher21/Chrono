@@ -199,6 +199,105 @@
   padding: 0.5rem;
 }
 
+.admin-analytics.scoped-analytics .filter-group-users fieldset.user-selection {
+  margin: 0;
+  border-radius: var(--analytics-radius-sm);
+  border: 1px solid var(--analytics-border);
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-inline-size: 0;
+}
+
+[data-theme="dark"] .admin-analytics.scoped-analytics .filter-group-users fieldset.user-selection {
+  background: rgba(15, 23, 42, 0.35);
+  border-color: var(--analytics-border);
+}
+
+.admin-analytics.scoped-analytics .filter-group-users fieldset.user-selection legend {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--analytics-text);
+  padding: 0 0.25rem;
+}
+
+.admin-analytics.scoped-analytics .filter-group-users fieldset.user-selection:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.admin-analytics.scoped-analytics .filter-group-users fieldset.user-selection:disabled .user-option {
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.admin-analytics.scoped-analytics .filter-user-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.admin-analytics.scoped-analytics .filter-user-list::-webkit-scrollbar {
+  width: 0.45rem;
+}
+
+.admin-analytics.scoped-analytics .filter-user-list::-webkit-scrollbar-thumb {
+  background: rgba(71, 91, 255, 0.35);
+  border-radius: 999px;
+}
+
+[data-theme="dark"] .admin-analytics.scoped-analytics .filter-user-list::-webkit-scrollbar-thumb {
+  background: rgba(71, 91, 255, 0.5);
+}
+
+.admin-analytics.scoped-analytics .user-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.55rem;
+  border-radius: var(--analytics-radius-sm);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: border-color var(--analytics-transition), background-color var(--analytics-transition),
+    box-shadow var(--analytics-transition);
+  font-size: 0.92rem;
+  color: var(--analytics-text);
+  background: rgba(255, 255, 255, 0.55);
+}
+
+[data-theme="dark"] .admin-analytics.scoped-analytics .user-option {
+  background: rgba(15, 23, 42, 0.45);
+}
+
+.admin-analytics.scoped-analytics .user-option:hover {
+  border-color: rgba(71, 91, 255, 0.35);
+  box-shadow: 0 0 0 1px rgba(71, 91, 255, 0.2);
+}
+
+.admin-analytics.scoped-analytics .user-option.is-selected {
+  background: rgba(71, 91, 255, 0.12);
+  border-color: rgba(71, 91, 255, 0.45);
+  box-shadow: 0 0 0 2px rgba(71, 91, 255, 0.18);
+}
+
+[data-theme="dark"] .admin-analytics.scoped-analytics .user-option.is-selected {
+  background: rgba(71, 91, 255, 0.24);
+  border-color: rgba(71, 91, 255, 0.55);
+}
+
+.admin-analytics.scoped-analytics .user-option input[type="checkbox"] {
+  accent-color: var(--analytics-accent);
+}
+
+.admin-analytics.scoped-analytics .user-option span {
+  flex: 1;
+  line-height: 1.35;
+}
+
 .admin-analytics.scoped-analytics .filter-hint {
   margin: 0;
   font-size: 0.85rem;

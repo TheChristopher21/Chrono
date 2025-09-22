@@ -124,10 +124,10 @@ const AdminAnalyticsPage = () => {
         });
     }, [selectableUsernames]);
 
-    const userSelectSize = useMemo(
-        () => Math.min(8, Math.max(3, selectableUsers.length || 0)),
-        [selectableUsers.length],
-    );
+    const userListMaxHeight = useMemo(() => {
+        const visibleItems = Math.min(8, Math.max(3, selectableUsers.length || 0));
+        return `${visibleItems * 2.6}rem`;
+    }, [selectableUsers.length]);
 
     const analysisWeeks = useMemo(() => {
         const formatter = new Intl.DateTimeFormat(undefined, { month: 'short', day: '2-digit' });
@@ -163,9 +163,13 @@ const AdminAnalyticsPage = () => {
         setSelectedWeeks(Number.isFinite(value) && value > 0 ? value : 12);
     }, []);
 
-    const handleUserSelectionChange = useCallback(event => {
-        const selected = Array.from(event.target.selectedOptions, option => option.value);
-        setSelectedUsernames(selected);
+    const handleToggleUserSelection = useCallback(username => {
+        setSelectedUsernames(prev => {
+            if (prev.includes(username)) {
+                return prev.filter(entry => entry !== username);
+            }
+            return [...prev, username];
+        });
     }, []);
 
     const handleSelectAllUsers = useCallback(() => {
@@ -348,40 +352,41 @@ const AdminAnalyticsPage = () => {
         const palette = ['#475bff', '#2ecc71', '#ff7f50', '#8e44ad', '#00bcd4', '#f97316'];
 
         const seriesData = [];
-        trackableUsers.filter(user => !user.isHourly).forEach((user, index) => {
+        trackableUsers
+            .filter(user => !user.isHourly)
+            .forEach((user, index) => {
+                const summaryMap = userSummaryDateMap.get(user.username) || new Map();
+                const approvedVacations = (vacationsByUser.get(user.username) || []).filter(vac => vac.approved);
+                const sickLeaves = sickLeavesByUser.get(user.username) || [];
 
-            const summaryMap = userSummaryDateMap.get(user.username) || new Map();
-            const approvedVacations = (vacationsByUser.get(user.username) || []).filter(vac => vac.approved);
-            const sickLeaves = sickLeavesByUser.get(user.username) || [];
+                const weekValues = analysisWeeks.map(({ dates }) => {
+                    const actualMinutes = dates.reduce((acc, date) => {
+                        const iso = formatLocalDateYMD(date);
+                        const summary = summaryMap.get(iso);
+                        return acc + (summary?.workedMinutes || 0);
+                    }, 0);
+                    const holidayMap = holidayLookupForUser(user, dates);
+                    const expectedMinutes = calculateWeeklyExpectedMinutes(
+                        user,
+                        dates,
+                        DEFAULT_EXPECTED_HOURS,
+                        approvedVacations,
+                        sickLeaves,
+                        holidayMap,
+                        null,
+                    );
+                    const overtimeMinutes = actualMinutes - expectedMinutes;
+                    return Number((overtimeMinutes / 60).toFixed(2));
+                });
 
-            const weekValues = analysisWeeks.map(({ dates }) => {
-                const actualMinutes = dates.reduce((acc, date) => {
-                    const iso = formatLocalDateYMD(date);
-                    const summary = summaryMap.get(iso);
-                    return acc + (summary?.workedMinutes || 0);
-                }, 0);
-                const holidayMap = holidayLookupForUser(user, dates);
-                const expectedMinutes = calculateWeeklyExpectedMinutes(
-                    user,
-                    dates,
-                    DEFAULT_EXPECTED_HOURS,
-                    approvedVacations,
-                    sickLeaves,
-                    holidayMap,
-                    null,
-                );
-                const overtimeMinutes = actualMinutes - expectedMinutes;
-                return Number((overtimeMinutes / 60).toFixed(2));
+                const magnitude = weekValues.reduce((acc, value) => acc + Math.abs(value), 0);
+                seriesData.push({
+                    username: user.username,
+                    data: weekValues,
+                    magnitude,
+                    color: palette[index % palette.length],
+                });
             });
-
-            const magnitude = weekValues.reduce((acc, value) => acc + Math.abs(value), 0);
-            return {
-                username: user.username,
-                data: weekValues,
-                magnitude,
-                color: palette[index % palette.length],
-            };
-        });
 
         const sortedSeries = [...seriesData].sort((a, b) => b.magnitude - a.magnitude);
 
@@ -405,8 +410,16 @@ const AdminAnalyticsPage = () => {
             pointRadius: 3,
         }));
 
-        return { chart: { labels: weekLabels, datasets }, series: seriesData.slice(0, 5) };
-    }, [analysisWeeks, trackableUsers, userSummaryDateMap, vacationsByUser, sickLeavesByUser, holidayLookupForUser]);
+        return { chart: { labels: weekLabels, datasets }, series: activeSeries };
+    }, [
+        analysisWeeks,
+        trackableUsers,
+        userSummaryDateMap,
+        vacationsByUser,
+        sickLeavesByUser,
+        holidayLookupForUser,
+        selectedUsernames,
+    ]);
 
 
     const absenceBreakdown = useMemo(() => {
@@ -720,25 +733,40 @@ const AdminAnalyticsPage = () => {
                                 </p>
                             </div>
                             <div className="filter-group filter-group-users">
-                                <label htmlFor="analytics-users">{t('adminAnalytics.filters.userLabel', 'Mitarbeitende')}</label>
-                                <select
-                                    id="analytics-users"
-                                    multiple
-                                    className="filter-select filter-multi"
-                                    size={userSelectSize}
-                                    value={selectedUsernames}
-                                    onChange={handleUserSelectionChange}
+                                <fieldset
+                                    className="user-selection"
                                     aria-describedby={userFilterHintId}
                                     disabled={!selectableUsers.length}
                                 >
-                                    {selectableUsers.map(user => (
-                                        <option key={user.username} value={user.username}>
-                                            {user.username}
-                                        </option>
-                                    ))}
-                                </select>
+                                    <legend>{t('adminAnalytics.filters.userLabel', 'Mitarbeitende')}</legend>
+                                    <div className="filter-user-list" style={{ maxHeight: userListMaxHeight }}>
+                                        {selectableUsers.map((user, index) => {
+                                            const checkboxId = `analytics-user-${index}`;
+                                            const checked = selectedUsernames.includes(user.username);
+                                            return (
+                                                <label
+                                                    key={user.username}
+                                                    htmlFor={checkboxId}
+                                                    className={`user-option${checked ? ' is-selected' : ''}`}
+                                                >
+                                                    <input
+                                                        id={checkboxId}
+                                                        type="checkbox"
+                                                        value={user.username}
+                                                        checked={checked}
+                                                        onChange={() => handleToggleUserSelection(user.username)}
+                                                    />
+                                                    <span>{user.username}</span>
+                                                </label>
+                                            );
+                                        })}
+                                    </div>
+                                </fieldset>
                                 <p id={userFilterHintId} className="filter-hint">
-                                    {t('adminAnalytics.filters.hint', 'Keine Auswahl zeigt automatisch die Top 5 mit der größten Veränderung an.')}
+                                    {t(
+                                        'adminAnalytics.filters.hint',
+                                        'Keine Auswahl zeigt automatisch die Top 5 mit der größten Veränderung an. Klicke auf die Namen, um mehrere Personen auszuwählen.',
+                                    )}
                                 </p>
                                 <div className="filter-actions">
                                     <button
