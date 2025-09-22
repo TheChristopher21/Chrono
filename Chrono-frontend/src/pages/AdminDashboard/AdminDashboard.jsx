@@ -68,9 +68,20 @@ const AdminDashboard = () => {
     const correctionsSectionRef = useRef(null);
 
     const handleIssueSummaryUpdate = useCallback((summary) => {
-        if (summary) {
-            setIssueSummary(summary);
+        if (!summary) {
+            return;
         }
+
+        setIssueSummary(prevSummary => {
+            if (!prevSummary) {
+                return summary;
+            }
+
+            const keysToCompare = ['missing', 'incomplete', 'autoCompleted', 'holidayPending', 'totalWithIssue'];
+            const hasChanges = keysToCompare.some(key => (prevSummary[key] || 0) !== (summary[key] || 0));
+
+            return hasChanges ? summary : prevSummary;
+        });
     }, []);
 
     const scrollToRef = useCallback((targetRef) => {
