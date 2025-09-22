@@ -38,10 +38,15 @@ public class AdminTimeTrackingController {
         Long adminCompanyId = (adminUser.getCompany() != null) ? adminUser.getCompany().getId() : null;
         boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
 
-        if (!isSuperAdmin && adminCompanyId == null) {
-            return ResponseEntity.ok(Collections.emptyList());
+        List<User> usersToList;
+        if (isSuperAdmin) {
+            usersToList = userRepository.findByDeletedFalse();
+        } else if (adminCompanyId != null) {
+            usersToList = userRepository.findByCompany_IdAndDeletedFalse(adminCompanyId);
+        } else {
+            logger.warn("Admin {} has no company assigned. Falling back to all active users for time summaries.", principal.getName());
+            usersToList = userRepository.findByDeletedFalse();
         }
-        List<User> usersToList = isSuperAdmin ? userRepository.findByDeletedFalse() : userRepository.findByCompany_IdAndDeletedFalse(adminCompanyId);
         usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
         List<DailyTimeSummaryDTO> result = usersToList.stream()
                 .flatMap(u -> timeTrackingService.getUserHistory(u.getUsername()).stream())
@@ -114,9 +119,15 @@ public class AdminTimeTrackingController {
         LocalDate mondayDate = LocalDate.parse(monday);
         User adminUser = userRepository.findByUsername(principal.getName()).orElseThrow();
         boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
-        List<User> usersToList = isSuperAdmin ?
-                                 userRepository.findByDeletedFalse() :
-                                 (adminUser.getCompany() != null ? userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId()) : Collections.emptyList());
+        List<User> usersToList;
+        if (isSuperAdmin) {
+            usersToList = userRepository.findByDeletedFalse();
+        } else if (adminUser.getCompany() != null) {
+            usersToList = userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId());
+        } else {
+            logger.warn("Admin {} has no company assigned. Falling back to all active users for weekly balances.", principal.getName());
+            usersToList = userRepository.findByDeletedFalse();
+        }
         usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
         if (usersToList.isEmpty()) {
             return ResponseEntity.ok(Collections.emptyList());
@@ -136,9 +147,15 @@ public class AdminTimeTrackingController {
     public ResponseEntity<?> getAllCurrentTrackingBalances(Principal principal) {
         User adminUser = userRepository.findByUsername(principal.getName()).orElseThrow();
         boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
-        List<User> usersToList = isSuperAdmin ?
-                                 userRepository.findByDeletedFalse() :
-                                 (adminUser.getCompany() != null ? userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId()) : Collections.emptyList());
+        List<User> usersToList;
+        if (isSuperAdmin) {
+            usersToList = userRepository.findByDeletedFalse();
+        } else if (adminUser.getCompany() != null) {
+            usersToList = userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId());
+        } else {
+            logger.warn("Admin {} has no company assigned. Falling back to all active users for tracking balances.", principal.getName());
+            usersToList = userRepository.findByDeletedFalse();
+        }
         usersToList = usersToList.stream().filter(User::isIncludeInTimeTracking).collect(Collectors.toList());
         if (usersToList.isEmpty()) {
             return ResponseEntity.ok(Collections.emptyList());

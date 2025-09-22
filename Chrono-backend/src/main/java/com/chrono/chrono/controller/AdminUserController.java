@@ -60,30 +60,20 @@ public class AdminUserController {
     public ResponseEntity<List<UserDTO>> getAllUsers(Principal principal) {
         User admin = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("Logged in admin not found: " + principal.getName()));
-        if (admin.getCompany() == null && !admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) { // SUPERADMIN darf auch ohne Firma alles sehen
-            logger.warn("Admin {} has no company assigned and is not SUPERADMIN. Cannot list users.", principal.getName());
-            // Für SUPERADMIN ohne Firma alle User zurückgeben, ansonsten leere Liste für regulären Admin ohne Firma
-            if (admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
-                List<User> allUsersSystem = userRepository.findAll();
-                List<UserDTO> dtosSystem = allUsersSystem.stream().map(UserDTO::new).collect(Collectors.toList());
-                return ResponseEntity.ok(dtosSystem);
-            }
-            return ResponseEntity.ok(List.of());
-        }
+
+        boolean isSuperAdmin = admin.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
 
         List<User> users;
-        if (admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) && admin.getCompany() == null) {
-            users = userRepository.findByDeletedFalse(); // SUPERADMIN ohne Firma sieht alle nicht gelöschten User
-        } else if (admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) && admin.getCompany() != null) {
-            // SUPERADMIN with a company might see all users or just their company's users based on policy.
-            // Assuming SUPERADMIN always sees all users regardless of their own company assignment for this example.
+        if (isSuperAdmin) {
+            users = userRepository.findByDeletedFalse();
+        } else if (admin.getCompany() != null) {
+            Long companyId = admin.getCompany().getId();
+            users = userRepository.findByCompany_IdAndDeletedFalse(companyId);
+        } else {
+            logger.warn("Admin {} has no company assigned. Falling back to all active users.", principal.getName());
             users = userRepository.findByDeletedFalse();
         }
-        else { // Regular Admin
-            Long companyId = admin.getCompany().getId();
-            users = userRepository.findByCompany_IdAndDeletedFalse(companyId); // Regulärer Admin sieht User seiner Firma
-        }
-
 
         List<UserDTO> dtos = users.stream()
                 .map(UserDTO::new)
