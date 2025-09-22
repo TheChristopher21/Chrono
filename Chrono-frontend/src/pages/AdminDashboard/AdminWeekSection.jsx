@@ -373,7 +373,10 @@ const AdminWeekSection = forwardRef(({
     const [manualMonthRangeEnd, setManualMonthRangeEnd] = useState(DEFAULT_MONTH_RANGE_SETTINGS.manualEnd);
     const [monthSortConfig, setMonthSortConfig] = useState({ key: 'username', direction: 'ascending' });
 
-    const trackableUsers = useMemo(
+    const {
+        trackableUsers,
+    } = useMemo(
+
         () => selectTrackableUsers(users),
         [users]
     );

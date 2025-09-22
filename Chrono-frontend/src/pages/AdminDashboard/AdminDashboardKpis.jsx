@@ -15,7 +15,12 @@ const AdminDashboardKpis = ({
     onFocusOvertimeLeaders,
     onOpenAnalytics,
 }) => {
-    const trackableUsers = useMemo(
+    const {
+        trackableUsers,
+        fallbackApplied: didFallbackTrackableUsers,
+        excludedUsernames,
+    } = useMemo(
+
         () => selectTrackableUsers(users),
         [users]
     );
@@ -31,11 +36,19 @@ const AdminDashboardKpis = ({
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
             return [];
         }
+
         if (trackableUsernames.size === 0) {
-            return weeklyBalances.filter(entry => entry?.username);
+            if (didFallbackTrackableUsers || excludedUsernames.size === 0) {
+                return weeklyBalances.filter(entry => entry?.username);
+            }
+
+            return weeklyBalances.filter(
+                entry => entry?.username && !excludedUsernames.has(entry.username)
+            );
         }
+
         return weeklyBalances.filter(entry => entry?.username && trackableUsernames.has(entry.username));
-    }, [weeklyBalances, trackableUsernames]);
+    }, [weeklyBalances, trackableUsernames, didFallbackTrackableUsers, excludedUsernames]);
 
     const stats = useMemo(() => {
         const pendingVacations = Array.isArray(allVacations)

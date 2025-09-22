@@ -12,18 +12,35 @@ export function getMondayOfWeek(date) {
     return copy;
 }
 
-export const selectTrackableUsers = (users) => {
+export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}) => {
     if (!Array.isArray(users)) {
-        return [];
+        return { trackableUsers: [], fallbackApplied: false, excludedUsernames: new Set() };
     }
+
+    const excludedUsernames = new Set(
+        users
+            .filter(user => user?.includeInTimeTracking === false && user?.username)
+            .map(user => user.username)
+    );
 
     const filtered = users.filter(user => user?.includeInTimeTracking !== false);
 
-    if (filtered.length > 0) {
-        return filtered;
+    if (filtered.length > 0 || !fallbackToKnownUsers) {
+        return { trackableUsers: filtered, fallbackApplied: false, excludedUsernames };
     }
 
-    return users.filter(user => user && user.username);
+    if (excludedUsernames.size > 0) {
+        return { trackableUsers: filtered, fallbackApplied: false, excludedUsernames };
+    }
+
+    const fallbackUsers = users.filter(user => user && user.username);
+
+    return {
+        trackableUsers: fallbackUsers,
+        fallbackApplied: fallbackUsers.length > 0,
+        excludedUsernames,
+    };
+
 };
 export const processEntriesForReport = (entries) => {
     const blocks = { work: [], break: [] };

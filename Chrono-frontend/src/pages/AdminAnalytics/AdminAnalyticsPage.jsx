@@ -57,7 +57,12 @@ const AdminAnalyticsPage = () => {
     const [selectedWeeks, setSelectedWeeks] = useState(12);
     const [selectedUsernames, setSelectedUsernames] = useState([]);
 
-    const trackableUsers = useMemo(
+    const {
+        trackableUsers,
+        fallbackApplied: didFallbackTrackableUsers,
+        excludedUsernames,
+    } = useMemo(
+
         () => selectTrackableUsers(users),
         [users]
     );
@@ -73,11 +78,19 @@ const AdminAnalyticsPage = () => {
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
             return [];
         }
+
         if (trackableUsernames.size === 0) {
-            return weeklyBalances.filter(entry => entry?.username);
+            if (didFallbackTrackableUsers || excludedUsernames.size === 0) {
+                return weeklyBalances.filter(entry => entry?.username);
+            }
+
+            return weeklyBalances.filter(
+                entry => entry?.username && !excludedUsernames.has(entry.username)
+            );
         }
+
         return weeklyBalances.filter(entry => entry?.username && trackableUsernames.has(entry.username));
-    }, [weeklyBalances, trackableUsernames]);
+    }, [weeklyBalances, trackableUsernames, didFallbackTrackableUsers, excludedUsernames]);
 
     useEffect(() => {
         let isMounted = true;
