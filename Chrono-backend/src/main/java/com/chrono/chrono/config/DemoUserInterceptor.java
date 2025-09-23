@@ -20,6 +20,12 @@ public class DemoUserInterceptor implements HandlerInterceptor {
     private UserRepository userRepository;
 
     private static final Set<String> BLOCKED_METHODS = Set.of("POST", "PUT", "DELETE", "PATCH");
+    private static final Set<String> ALLOWED_WRITE_ENDPOINTS = Set.of(
+            "/api/vacation/create",
+            "/api/correction/create",
+            "/api/sick-leave/report",
+            "/api/chat"
+    );
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
@@ -28,6 +34,10 @@ public class DemoUserInterceptor implements HandlerInterceptor {
             if (auth != null && auth.isAuthenticated()) {
                 User user = userRepository.findByUsername(auth.getName()).orElse(null);
                 if (user != null && user.isDemo()) {
+                    String path = request.getRequestURI();
+                    if (ALLOWED_WRITE_ENDPOINTS.contains(path)) {
+                        return true;
+                    }
                     response.setStatus(HttpStatus.FORBIDDEN.value());
                     return false;
                 }
