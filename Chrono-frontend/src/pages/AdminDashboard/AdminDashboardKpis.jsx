@@ -59,11 +59,13 @@ const AdminDashboardKpis = ({
             ? allCorrections.filter(corr => !corr.approved && !corr.denied).length
             : 0;
 
-        const balanceSamples = (Array.isArray(relevantWeeklyBalances) && relevantWeeklyBalances.length > 0
-            ? relevantWeeklyBalances.map(b => Number.isFinite(b?.trackingBalance) ? b.trackingBalance : 0)
-            : trackableUsers.map(user => Number.isFinite(user?.trackingBalanceInMinutes) ? user.trackingBalanceInMinutes : 0)
-                : [])
-            .filter(val => typeof val === 'number' && !Number.isNaN(val));
+        const balanceSamples = (
+            Array.isArray(relevantWeeklyBalances) && relevantWeeklyBalances.length > 0
+                ? relevantWeeklyBalances.map(b => Number.isFinite(b?.trackingBalance) ? b.trackingBalance : 0)
+                : (Array.isArray(trackableUsers) && trackableUsers.length > 0
+                    ? trackableUsers.map(user => Number.isFinite(user?.trackingBalanceInMinutes) ? user.trackingBalanceInMinutes : 0)
+                    : [])
+        ).filter(val => typeof val === 'number' && !Number.isNaN(val));
 
         const averageOvertimeMinutes = balanceSamples.length > 0
             ? Math.round(balanceSamples.reduce((acc, minutes) => acc + minutes, 0) / balanceSamples.length)
