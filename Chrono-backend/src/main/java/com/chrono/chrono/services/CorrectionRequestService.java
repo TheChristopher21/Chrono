@@ -1,5 +1,6 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.dto.AdminCorrectionRequestDTO;
 import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
@@ -22,6 +23,7 @@ import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CorrectionRequestService {
@@ -182,14 +184,20 @@ public class CorrectionRequestService {
         return initialRequest;
     }
 
-    public List<CorrectionRequest> getAllRequests() {
-        // Lädt alle Anfragen, inklusive Originalzeiten und Benutzer, ideal für Super-Admins.
-        return correctionRepo.findAllWithDetails();
+    @Transactional(readOnly = true)
+    public List<AdminCorrectionRequestDTO> getAllRequestsForAdminDashboard() {
+        return correctionRepo.findAllWithDetails()
+                .stream()
+                .map(this::toAdminDto)
+                .collect(Collectors.toList());
     }
 
-    public List<CorrectionRequest> getRequestsByCompany(Long companyId) {
-        // Lädt alle Anfragen für eine spezifische Company-ID inklusive Originalzeiten.
-        return correctionRepo.findAllByCompanyId(companyId);
+    @Transactional(readOnly = true)
+    public List<AdminCorrectionRequestDTO> getRequestsByCompanyForAdminDashboard(Long companyId) {
+        return correctionRepo.findAllByCompanyId(companyId)
+                .stream()
+                .map(this::toAdminDto)
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -206,4 +214,31 @@ public class CorrectionRequestService {
     }
 
     public UserRepository getUserRepo() { return userRepo; }
+
+    private AdminCorrectionRequestDTO toAdminDto(CorrectionRequest request) {
+        var targetEntry = request.getTargetEntry();
+        LocalDateTime originalTimestamp = null;
+        TimeTrackingEntry.PunchType originalPunchType = null;
+        Long targetEntryId = null;
+        if (targetEntry != null) {
+            originalTimestamp = targetEntry.getEntryTimestamp();
+            originalPunchType = targetEntry.getPunchType();
+            targetEntryId = targetEntry.getId();
+        }
+
+        return new AdminCorrectionRequestDTO(
+                request.getId(),
+                request.getUsername(),
+                request.getRequestDate(),
+                request.getDesiredTimestamp(),
+                request.getDesiredPunchType(),
+                request.getReason(),
+                request.isApproved(),
+                request.isDenied(),
+                request.getAdminComment(),
+                originalTimestamp,
+                originalPunchType,
+                targetEntryId
+        );
+    }
 }
