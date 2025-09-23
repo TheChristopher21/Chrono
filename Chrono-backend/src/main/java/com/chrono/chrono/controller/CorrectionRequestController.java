@@ -1,5 +1,6 @@
 package com.chrono.chrono.controller;
 
+import com.chrono.chrono.dto.AdminCorrectionRequestDTO;
 import com.chrono.chrono.dto.CorrectionRequest;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.RoleRepository;
@@ -11,6 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -91,30 +94,46 @@ public class CorrectionRequestController {
 
     @GetMapping("/all")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<List<CorrectionRequest>> getAllPendingRequests(Principal principal) {
+    public ResponseEntity<List<AdminCorrectionRequestDTO>> getAllPendingRequests(Principal principal) {
+        String principalName = principal != null ? principal.getName() : null;
+        if (principalName == null) {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            if (authentication != null && authentication.isAuthenticated()) {
+                principalName = authentication.getName();
+            }
+        }
+
+        if (principalName == null || principalName.isBlank()) {
+            logger.warn("Korrekturanträge konnten nicht geladen werden: kein authentifizierter Benutzer im SecurityContext.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Collections.emptyList());
+        }
+
         try {
-            User currentUser = userRepo.findByUsername(principal.getName())
+            User currentUser = userRepo.findByUsername(principalName)
                     .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
 
-            List<CorrectionRequest> requests;
+            List<AdminCorrectionRequestDTO> requests;
 
             // KORREKTUR: Verwendet jetzt die korrekte Methode .getRoles()
             boolean isSuperAdmin = currentUser.getRoles().stream()
                     .anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
 
             if (isSuperAdmin) {
-                requests = correctionRequestService.getAllRequests();
+                requests = correctionRequestService.getAllRequestsForAdminDashboard();
             } else {
                 if (currentUser.getCompany() == null) {
                     return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Collections.emptyList());
                 }
-                requests = correctionRequestService.getRequestsByCompany(currentUser.getCompany().getId());
+                requests = correctionRequestService.getRequestsByCompanyForAdminDashboard(currentUser.getCompany().getId());
             }
 
             return ResponseEntity.ok(requests);
 
+        } catch (SecurityException ex) {
+            logger.warn("Sicherheitsverletzung beim Abrufen aller Korrekturanträge durch {}: {}", principalName, ex.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Collections.emptyList());
         } catch (Exception e) {
-            logger.error("Fehler beim Abrufen aller Korrekturanträge durch {}: {}", principal.getName(), e.getMessage(), e);
+            logger.error("Fehler beim Abrufen aller Korrekturanträge durch {}: {}", principalName, e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Collections.emptyList());
         }
     }
