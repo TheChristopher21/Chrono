@@ -5,6 +5,7 @@ import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
 import "../../styles/SupplyChainDashboardScoped.css";
 
+
 const SupplyChainDashboard = () => {
     const { notify } = useNotification();
     const { t } = useTranslation();
@@ -45,6 +46,7 @@ const SupplyChainDashboard = () => {
 
     return (
         <div className="admin-page supply-chain-page">
+
             <Navbar />
             <main className="admin-content">
                 <header className="admin-header">

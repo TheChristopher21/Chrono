@@ -5,6 +5,7 @@ import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
 import "../../styles/CrmDashboardScoped.css";
 
+
 const CrmDashboard = () => {
     const { notify } = useNotification();
     const { t } = useTranslation();
@@ -33,6 +34,7 @@ const CrmDashboard = () => {
 
     return (
         <div className="admin-page crm-page">
+
             <Navbar />
             <main className="admin-content">
                 <header className="admin-header">

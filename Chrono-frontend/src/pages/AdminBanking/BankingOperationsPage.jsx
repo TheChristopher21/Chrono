@@ -5,6 +5,7 @@ import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
 import "../../styles/BankingOperationsPageScoped.css";
 
+
 const initialAccount = {
     name: "",
     iban: "",
@@ -18,6 +19,7 @@ const BankingOperationsPage = () => {
     const [accounts, setAccounts] = useState([]);
     const [batches, setBatches] = useState([]);
     const [batchMeta, setBatchMeta] = useState({ total: 0 });
+
     const [accountForm, setAccountForm] = useState(initialAccount);
 
     const load = useCallback(async () => {
@@ -48,6 +50,7 @@ const BankingOperationsPage = () => {
             setBatchMeta({
                 total: totalBatches,
             });
+
         } catch (error) {
             console.error("Failed to load banking data", error);
             notify(t("banking.loadError", "Bankdaten konnten nicht geladen werden."), "error");
@@ -73,6 +76,7 @@ const BankingOperationsPage = () => {
 
     return (
         <div className="admin-page banking-page">
+
             <Navbar />
             <main className="admin-content">
                 <header className="admin-header">
@@ -143,6 +147,7 @@ const BankingOperationsPage = () => {
                         </div>
                         <span className="badge">{batchMeta.total}</span>
                     </div>
+
                     <div className="table-wrapper">
                         <table>
                             <thead>
