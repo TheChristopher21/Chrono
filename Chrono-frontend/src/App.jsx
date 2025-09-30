@@ -43,6 +43,10 @@ import Datenschutz from "./pages/Datenschutz.jsx";
 import CompanySettingsPage from "./pages/CompanySettingsPage.jsx";
 import PayslipsPage from "./pages/PayslipsPage.jsx";
 import DemoTour from "./pages/DemoTour.jsx";
+import AdminAccountingPage from "./pages/AdminAccounting/AdminAccountingPage.jsx";
+import SupplyChainDashboard from "./pages/SupplyChain/SupplyChainDashboard.jsx";
+import CrmDashboard from "./pages/CRM/CrmDashboard.jsx";
+import BankingOperationsPage from "./pages/AdminBanking/BankingOperationsPage.jsx";
 
 // Hilfs-Komponenten
 import PrivateRoute from "./components/PrivateRoute.jsx";
@@ -82,6 +86,10 @@ function App() {
                         <Route path="/admin/projects" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminProjectsPage /></PrivateRoute>} />
                         <Route path="/admin/tasks" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminTasksPage /></PrivateRoute>} />
                         <Route path="/admin/analytics" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminAnalyticsPage /></PrivateRoute>} />
+                        <Route path="/admin/accounting" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminAccountingPage /></PrivateRoute>} />
+                        <Route path="/admin/supply-chain" element={<PrivateRoute requiredRole="ROLE_ADMIN"><SupplyChainDashboard /></PrivateRoute>} />
+                        <Route path="/admin/crm" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CrmDashboard /></PrivateRoute>} />
+                        <Route path="/admin/banking" element={<PrivateRoute requiredRole="ROLE_ADMIN"><BankingOperationsPage /></PrivateRoute>} />
                         <Route path="/admin/project-report" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminProjectReportPage /></PrivateRoute>} />
                         <Route path="/admin/company" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CompanyManagementPage /></PrivateRoute>} />
                         <Route path="/admin/payslips" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_PAYROLL_ADMIN"]}><AdminPayslipsPage /></PrivateRoute>} />

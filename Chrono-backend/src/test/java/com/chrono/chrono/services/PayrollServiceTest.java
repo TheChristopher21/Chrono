@@ -9,6 +9,7 @@ import com.chrono.chrono.repositories.PayslipRepository;
 import com.chrono.chrono.repositories.PayslipScheduleRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.services.accounting.AccountingService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -45,6 +46,9 @@ class PayrollServiceTest {
     private PayslipScheduleRepository payslipScheduleRepository;
     @Mock
     private TaxCalculationService taxCalculationService;
+
+    @Mock
+    private AccountingService accountingService;
 
     @InjectMocks
     private PayrollService payrollService;
@@ -139,6 +143,7 @@ class PayrollServiceTest {
         when(payslipRepository.findById(2L)).thenReturn(Optional.of(ps));
         when(pdfService.generatePayslipPdf(ps)).thenReturn("file.pdf");
         when(payslipRepository.save(ps)).thenReturn(ps);
+        when(accountingService.recordPayrollPosting(any(Payslip.class))).thenReturn(null);
 
         payrollService.approvePayslip(2L, "ok");
 

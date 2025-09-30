@@ -201,6 +201,18 @@ const Navbar = () => {
                                                         </Link>
                                                     </>
                                                 )}
+                                                <Link to="/admin/accounting" onClick={() => setOpenAdmin(false)}>
+                                                    {t('navbar.accounting','Finanzbuchhaltung')}
+                                                </Link>
+                                                <Link to="/admin/supply-chain" onClick={() => setOpenAdmin(false)}>
+                                                    {t('navbar.supplyChain','Supply Chain')}
+                                                </Link>
+                                                <Link to="/admin/crm" onClick={() => setOpenAdmin(false)}>
+                                                    {t('navbar.crm','CRM & Marketing')}
+                                                </Link>
+                                                <Link to="/admin/banking" onClick={() => setOpenAdmin(false)}>
+                                                    {t('navbar.banking','Zahlungsverkehr')}
+                                                </Link>
                                                 <Link to="/admin/payslips" onClick={() => setOpenAdmin(false)}>
                                                     {t('navbar.payslips','Abrechnungen')}
                                                 </Link>

@@ -15,6 +15,7 @@ import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.EmailService;
 import com.chrono.chrono.services.PdfService;
 import com.chrono.chrono.services.TaxCalculationService;
+import com.chrono.chrono.services.accounting.AccountingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,9 @@ public class PayrollService {
     private PayslipScheduleRepository payslipScheduleRepository;
     @Autowired
     private TaxCalculationService taxCalculationService;
+
+    @Autowired
+    private AccountingService accountingService;
 
     private static final double OVERTIME_BONUS = 0.25;
 
@@ -182,6 +186,7 @@ public class PayrollService {
         String pdf = pdfService.generatePayslipPdf(ps);
         ps.setPdfPath(pdf);
         payslipRepository.save(ps);
+        accountingService.recordPayrollPosting(ps);
         audit(ps, "APPROVED", "ADMIN", comment);
         emailService.sendPayslipApprovedMail(ps.getUser(), ps);
     }
@@ -195,6 +200,7 @@ public class PayrollService {
             ps.setLocked(true);
             String pdf = pdfService.generatePayslipPdf(ps);
             ps.setPdfPath(pdf);
+            accountingService.recordPayrollPosting(ps);
             audit(ps, "APPROVED", "ADMIN", comment);
             emailService.sendPayslipApprovedMail(ps.getUser(), ps);
         }
