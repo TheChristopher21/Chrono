@@ -11,6 +11,7 @@ const BASE_FEATURE = {
     key: "base",
     name: "Zeiterfassung (Basis)",
     price: 5,
+    priceType: "perEmployee",
     required: true,
     description: "Digitale Zeiterfassung für alle Mitarbeiter (Pflichtmodul).",
 };
@@ -19,6 +20,7 @@ const FEATURES = [
         key: "vacation",
         name: "Urlaubs- & Abwesenheitsmodul",
         price: 1,
+        priceType: "perEmployee",
         required: false,
         description: "Digitale Urlaubsanträge, Abwesenheitsübersicht, Freigabe-Workflow.",
     },
@@ -26,6 +28,7 @@ const FEATURES = [
         key: "payroll",
         name: "Lohnabrechnung",
         price: 4,
+        priceType: "perEmployee",
         required: false,
         description: "Lohnabrechnung (DE & CH), Gehaltsabrechnungen als PDF, Abrechnungsexport.",
     },
@@ -33,13 +36,63 @@ const FEATURES = [
         key: "projects",
         name: "Projektzeiten & Kundenverwaltung",
         price: 1,
+        priceType: "perEmployee",
         required: false,
         description: "Erfassen von Projektzeiten und Kunden, Berichte & Auswertungen.",
+    },
+    {
+        key: "accounting",
+        name: "Finanzbuchhaltung & Anlagen",
+        price: 2.5,
+        priceType: "perEmployee",
+        required: false,
+        description: "Hauptbuch, Debitoren/Kreditoren, Anlagenverwaltung inkl. automatischer Übergabe aus Payroll & Billing.",
+    },
+    {
+        key: "crm",
+        name: "CRM & Opportunity-Management",
+        price: 1.2,
+        priceType: "perEmployee",
+        required: false,
+        description: "Leads, Aktivitäten, Kampagnen und Pipeline-Visualisierung mit Team-Zugriff.",
+    },
+    {
+        key: "supplyChain",
+        name: "Supply Chain & Lager",
+        price: 3.5,
+        priceType: "perEmployee",
+        required: false,
+        description: "Artikel-, Lager- und Auftragsverwaltung, Wareneingang/-ausgang, Produktion & Servicefälle.",
+    },
+    {
+        key: "banking",
+        name: "Banking & Zahlungsverkehr",
+        price: 89,
+        priceType: "flat",
+        required: false,
+        description: "ISO-20022 pain.001 Export, Zahlungsfreigaben, sichere Nachrichten & Idempotency-Workflows.",
+    },
+    {
+        key: "analytics",
+        name: "Reporting & BI-Dashboards",
+        price: 0.8,
+        priceType: "perEmployee",
+        required: false,
+        description: "Drill-down-Kennzahlen, Forecasts und Export in Echtzeit über alle Module.",
+    },
+    {
+        key: "signature",
+        name: "Digitale Signaturen & sichere Zustellung",
+        price: 0.6,
+        priceType: "perEmployee",
+        required: false,
+        description: "Elektronische Signatur von Lohnabrechnungen, Verträgen & Rechnungen mit verschlüsselter Zustellung.",
     },
     {
         key: "nfc",
         name: "NFC-Stempeluhr",
         price: 0.5,
+        priceType: "perEmployee",
         required: false,
         description: "Stempeln per NFC-Karte oder Chip am Terminal oder Smartphone.",
     },
@@ -47,23 +100,26 @@ const FEATURES = [
         key: "chatbot",
         name: "Integrierter Support-Chatbot",
         price: 0.5,
+        priceType: "perEmployee",
         required: false,
         description: "KI-basierte Hilfe & Erklärungen direkt in der App.",
     },
     {
         key: "premiumSupport",
-        name: "Premium-Support",
-        price: 1,
+        name: "Premium-Support (SLA 2h)",
+        price: 129,
+        priceType: "flat",
         required: false,
-        description: "Telefonischer Support & priorisierte Bearbeitung.",
+        description: "Telefonischer Premium-Support, dedizierte Success-Manager & priorisierte Umsetzung.",
     },
     {
         key: "roster",
         name: "Dienstplan & Schichtplanung",
-        price: 1.20,
+        price: 1.2,
+        priceType: "perEmployee",
         required: false,
-        description: "Intelligente Schichtplanung mit Drag & Drop, Konflikterkennung, Mitarbeiterwünschen, Urlaubsabgleich und Export als PDF/Excel."
-    }
+        description: "Intelligente Schichtplanung mit Drag & Drop, Konflikterkennung, Mitarbeiterwünschen, Urlaubsabgleich und Export als PDF/Excel.",
+    },
 ];
 
 const INSTALL_FEE = 250;
@@ -97,18 +153,41 @@ const Registration = () => {
 
     // Preisberechnung
     useEffect(() => {
-        // Alle gewählten Features: Pflicht + Zusatz
-        let allFeatures = [BASE_FEATURE, ...FEATURES.filter(f => selectedFeatures.includes(f.key))];
-        let sumFeaturesPerEmployee = allFeatures.reduce((acc, f) => acc + f.price, 0);
-        let totalPerPeriod = sumFeaturesPerEmployee * employeeCount;
+        const selectedFeatureObjects = FEATURES.filter((f) => selectedFeatures.includes(f.key));
+        const perEmployeeAddOnRate = selectedFeatureObjects
+            .filter((f) => f.priceType === "perEmployee")
+            .reduce((acc, f) => acc + f.price, 0);
+        const flatAddOnMonthly = selectedFeatureObjects
+            .filter((f) => f.priceType === "flat")
+            .reduce((acc, f) => acc + f.price, 0);
 
-        let periodText = "/ Monat";
-        let periodFactor = 1;
-        let displayTotalPeriod = totalPerPeriod;
+        const basePerEmployeeMonthly = BASE_FEATURE.price * employeeCount;
+        const addOnPerEmployeeMonthly = perEmployeeAddOnRate * employeeCount;
+        const addOnFlatMonthly = flatAddOnMonthly;
+        const addOnCount = selectedFeatureObjects.length;
+
+        let discountRate = 0;
+        if (addOnCount >= 5) {
+            discountRate = 0.15;
+        } else if (addOnCount >= 3) {
+            discountRate = 0.1;
+        }
+
+        const addOnTotalBeforeDiscount = addOnPerEmployeeMonthly + addOnFlatMonthly;
+        const addOnDiscountValue = addOnTotalBeforeDiscount * discountRate;
+        const discountPerEmployeeShare =
+            addOnPerEmployeeMonthly > 0 && addOnTotalBeforeDiscount > 0
+                ? (addOnDiscountValue * (addOnPerEmployeeMonthly / addOnTotalBeforeDiscount)) /
+                  Math.max(employeeCount, 1)
+                : 0;
+        const effectivePerEmployeeRate = BASE_FEATURE.price + perEmployeeAddOnRate - discountPerEmployeeShare;
+        const monthlyTotalBeforeFactor = basePerEmployeeMonthly + addOnTotalBeforeDiscount - addOnDiscountValue;
+
+        let periodLabel = "pro Monat";
+        let displayTotalPeriod = monthlyTotalBeforeFactor;
         if (billingPeriod === "yearly") {
-            displayTotalPeriod = totalPerPeriod * YEARLY_DISCOUNT_FACTOR;
-            periodText = "/ Jahr (entspricht 10 Monatsraten)";
-            periodFactor = YEARLY_DISCOUNT_FACTOR;
+            displayTotalPeriod = monthlyTotalBeforeFactor * YEARLY_DISCOUNT_FACTOR;
+            periodLabel = "pro Jahr (12 Monate, 2 gratis)";
         }
 
         const installationFee = INSTALL_FEE;
@@ -117,13 +196,19 @@ const Registration = () => {
 
         setCalculatedPrice(totalFirstPayment);
         setPriceBreakdown({
-            sumFeaturesPerEmployee,
+            perEmployeeRate: effectivePerEmployeeRate,
+            basePerEmployeeMonthly,
+            addOnPerEmployeeMonthly,
+            addOnFlatMonthly,
+            addOnDiscountRate: discountRate,
+            addOnDiscountValue,
             totalPerPeriod: displayTotalPeriod,
             installationFee,
             optionalTraining,
-            periodText,
+            periodLabel,
             isYearly: billingPeriod === "yearly",
-            perPeriodSingle: totalPerPeriod,
+            perPeriodSingle: monthlyTotalBeforeFactor,
+            addOnCount,
         });
     }, [selectedFeatures, employeeCount, billingPeriod, includeOptionalTraining]);
 
@@ -181,11 +266,19 @@ const Registration = () => {
     };
 
     function formatCHF(value) {
-        if (typeof value !== 'number' || isNaN(value)) {
+        if (typeof value !== "number" || isNaN(value)) {
             return "0,00 CHF";
         }
         return value.toFixed(2).replace(".", ",") + " CHF";
     }
+
+    const getFeaturePriceLabel = (feature) => {
+        const formatted = formatCHF(feature.price);
+        if (feature.priceType === "flat") {
+            return `+${formatted} / Monat gesamt`;
+        }
+        return `+${formatted} / Monat je MA`;
+    };
 
     // --------- HERO/INTRO UND UI ------------------------------------
     return (
@@ -288,9 +381,7 @@ const Registration = () => {
                                     </div>
                                     <h3>{feature.name}</h3>
                                     <p className="price-line base-fee">
-                                        <strong>
-                                            +{formatCHF(feature.price)} / Monat je MA
-                                        </strong>
+                                        <strong>{getFeaturePriceLabel(feature)}</strong>
                                     </p>
                                     <ul className="features-list">
                                         <li>{feature.description}</li>
@@ -314,6 +405,7 @@ const Registration = () => {
                         </div>
                         <p className="pricing-footnote">
                             * Alle Preise zzgl. MwSt. | Jährliche Zahlung = 2 Monate geschenkt.<br />
+                            Bundle-Rabatt: ab 3 Add-ons 10 % auf Zusatzmodule, ab 5 Add-ons 15 %.<br />
                             Einmalige Installationspauschale: {formatCHF(INSTALL_FEE)} (inkl. System-Setup und Ersteinrichtung)
                         </p>
                     </section>
@@ -341,10 +433,24 @@ const Registration = () => {
                   </span>
                                 </p>
                                 <p className="price-item">
-                                    <span className="label">Gesamtkosten {billingPeriod === "monthly" ? "pro Monat" : "pro Jahr"}:</span>
-                                    <span className="value">
-                    {formatCHF(priceBreakdown.totalPerPeriod)} {priceBreakdown.periodText.replace(" (entspricht 10 Monatsraten)", "")}
-                  </span>
+                                    <span className="label">Preis je Mitarbeiter:</span>
+                                    <span className="value">{formatCHF(priceBreakdown.perEmployeeRate)} / Monat</span>
+                                </p>
+                                {priceBreakdown.addOnFlatMonthly > 0 && (
+                                    <p className="price-item">
+                                        <span className="label">Fixpreis-Module gesamt:</span>
+                                        <span className="value">{formatCHF(priceBreakdown.addOnFlatMonthly)}</span>
+                                    </p>
+                                )}
+                                {priceBreakdown.addOnDiscountValue > 0 && (
+                                    <p className="price-item sub-hint">
+                                        <span className="label">Bundle-Rabatt ({Math.round(priceBreakdown.addOnDiscountRate * 100)} %):</span>
+                                        <span className="value">{formatCHF(-priceBreakdown.addOnDiscountValue)}</span>
+                                    </p>
+                                )}
+                                <p className="price-item">
+                                    <span className="label">Gesamtkosten {priceBreakdown.periodLabel}:</span>
+                                    <span className="value">{formatCHF(priceBreakdown.totalPerPeriod)}</span>
                                 </p>
                                 {priceBreakdown.isYearly && (
                                     <p className="price-item sub-hint">
@@ -377,7 +483,7 @@ const Registration = () => {
                                 <p className="price-item sub-hint">
                                     <span className="label">Folgezahlungen:</span>
                                     <span className="value">
-                    {formatCHF(priceBreakdown.totalPerPeriod)} {billingPeriod === "monthly" ? "monatlich" : "jährlich"}
+                    {formatCHF(priceBreakdown.perPeriodSingle)} {billingPeriod === "monthly" ? "monatlich" : "pro Monat (bei Jahreszahlung)"}
                   </span>
                                 </p>
                             </div>

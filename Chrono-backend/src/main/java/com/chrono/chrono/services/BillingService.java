@@ -20,6 +20,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.chrono.chrono.services.accounting.AccountsReceivableService;
+
 @Service
 public class BillingService {
 
@@ -31,6 +33,9 @@ public class BillingService {
 
     @Autowired
     private ComplianceAuditService complianceAuditService;
+
+    @Autowired
+    private AccountsReceivableService accountsReceivableService;
 
     public InvoiceSummaryDTO generateInvoice(User actor, Project project, LocalDate start, LocalDate end,
                                              boolean includeChildren, BigDecimal overrideRate, String currency) {
@@ -110,6 +115,7 @@ public class BillingService {
         complianceAuditService.recordAction(actor, "GENERATE", "BILLING", project.getId(),
                 String.format("Automatisierte Abrechnung für %s (%s - %s)",
                         project.getName(), start, end));
+        accountsReceivableService.recordProjectInvoice(project, summary);
         return summary;
     }
 }
