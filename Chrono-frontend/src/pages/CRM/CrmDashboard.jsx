@@ -3,6 +3,8 @@ import Navbar from "../../components/Navbar.jsx";
 import api from "../../utils/api.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
+import "../../styles/CrmDashboardScoped.css";
+
 
 const CrmDashboard = () => {
     const { notify } = useNotification();
@@ -31,7 +33,8 @@ const CrmDashboard = () => {
     }, [notify, t]);
 
     return (
-        <div className="admin-page">
+        <div className="admin-page crm-page">
+
             <Navbar />
             <main className="admin-content">
                 <header className="admin-header">

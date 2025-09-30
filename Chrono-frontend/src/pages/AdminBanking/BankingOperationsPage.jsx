@@ -3,6 +3,8 @@ import Navbar from "../../components/Navbar.jsx";
 import api from "../../utils/api.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
+import "../../styles/BankingOperationsPageScoped.css";
+
 
 const initialAccount = {
     name: "",
@@ -16,6 +18,8 @@ const BankingOperationsPage = () => {
     const { t } = useTranslation();
     const [accounts, setAccounts] = useState([]);
     const [batches, setBatches] = useState([]);
+    const [batchMeta, setBatchMeta] = useState({ total: 0 });
+
     const [accountForm, setAccountForm] = useState(initialAccount);
 
     const load = useCallback(async () => {
@@ -24,8 +28,29 @@ const BankingOperationsPage = () => {
                 api.get("/api/banking/accounts"),
                 api.get("/api/banking/batches/open")
             ]);
-            setAccounts(accountRes.data ?? []);
-            setBatches(batchRes.data ?? []);
+            const normalize = (payload) => {
+                if (!payload) {
+                    return [];
+                }
+                if (Array.isArray(payload)) {
+                    return payload;
+                }
+                if (Array.isArray(payload.content)) {
+                    return payload.content;
+                }
+                return [];
+            };
+            const normalizedAccounts = normalize(accountRes.data);
+            const normalizedBatches = normalize(batchRes.data);
+            setAccounts(normalizedAccounts);
+            setBatches(normalizedBatches);
+            const totalBatches = typeof batchRes.data?.totalElements === "number"
+                ? batchRes.data.totalElements
+                : normalizedBatches.length;
+            setBatchMeta({
+                total: totalBatches,
+            });
+
         } catch (error) {
             console.error("Failed to load banking data", error);
             notify(t("banking.loadError", "Bankdaten konnten nicht geladen werden."), "error");
@@ -50,7 +75,8 @@ const BankingOperationsPage = () => {
     };
 
     return (
-        <div className="admin-page">
+        <div className="admin-page banking-page">
+
             <Navbar />
             <main className="admin-content">
                 <header className="admin-header">
@@ -114,7 +140,14 @@ const BankingOperationsPage = () => {
                 </section>
 
                 <section className="card">
-                    <h2>{t("banking.pendingBatches", "Offene Zahlungsaufträge")}</h2>
+                    <div className="section-header">
+                        <div>
+                            <h2>{t("banking.pendingBatches", "Offene Zahlungsaufträge")}</h2>
+                            <p className="muted">{t("banking.pendingBatchesHint", "Noch nicht übermittelte Zahlungen aus den Freigaben")}</p>
+                        </div>
+                        <span className="badge">{batchMeta.total}</span>
+                    </div>
+
                     <div className="table-wrapper">
                         <table>
                             <thead>

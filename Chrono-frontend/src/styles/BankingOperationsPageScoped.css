@@ -1,0 +1,172 @@
+.admin-page.banking-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #f0fdf4 0%, #dcfce7 100%);
+    color: #134e4a;
+}
+
+[data-theme="dark"] .admin-page.banking-page {
+    background: linear-gradient(180deg, #052e16 0%, #064e3b 100%);
+    color: #ccfbf1;
+}
+
+.admin-page.banking-page .admin-content {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.admin-page.banking-page .admin-header h1 {
+    margin: 0;
+    font-size: clamp(1.8rem, 2.8vw, 2.4rem);
+    font-weight: 600;
+}
+
+.admin-page.banking-page .admin-header .muted,
+.admin-page.banking-page .muted {
+    margin-top: 0.35rem;
+    color: #0f766e;
+}
+
+[data-theme="dark"] .admin-page.banking-page .admin-header .muted,
+[data-theme="dark"] .admin-page.banking-page .muted {
+    color: #5eead4;
+}
+
+.admin-page.banking-page .card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 18px;
+    border: 1px solid rgba(20, 83, 45, 0.25);
+    padding: 1.5rem;
+    box-shadow: 0 18px 40px rgba(22, 101, 52, 0.14);
+    backdrop-filter: blur(6px);
+}
+
+[data-theme="dark"] .admin-page.banking-page .card {
+    background: rgba(6, 78, 59, 0.7);
+    border-color: rgba(16, 185, 129, 0.45);
+    box-shadow: 0 18px 45px rgba(2, 44, 34, 0.7);
+}
+
+.admin-page.banking-page .form-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    align-items: end;
+}
+
+.admin-page.banking-page .form-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-weight: 500;
+}
+
+.admin-page.banking-page .form-grid input {
+    border-radius: 10px;
+    border: 1px solid rgba(15, 118, 110, 0.45);
+    padding: 0.6rem 0.85rem;
+    background: rgba(236, 253, 245, 0.8);
+    color: inherit;
+}
+
+[data-theme="dark"] .admin-page.banking-page .form-grid input {
+    background: rgba(15, 118, 110, 0.45);
+    border-color: rgba(110, 231, 183, 0.55);
+}
+
+.admin-page.banking-page .list-unstyled {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.admin-page.banking-page .list-unstyled li {
+    font-size: 0.95rem;
+}
+
+.admin-page.banking-page .table-wrapper {
+    overflow-x: auto;
+    border-radius: 14px;
+    border: 1px solid rgba(20, 83, 45, 0.2);
+}
+
+.admin-page.banking-page table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.admin-page.banking-page th,
+.admin-page.banking-page td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(20, 83, 45, 0.18);
+}
+
+.admin-page.banking-page th {
+    font-weight: 600;
+    color: #0f766e;
+}
+
+[data-theme="dark"] .admin-page.banking-page th {
+    color: #5eead4;
+}
+
+.admin-page.banking-page tbody tr:hover {
+    background: rgba(187, 247, 208, 0.6);
+}
+
+[data-theme="dark"] .admin-page.banking-page tbody tr:hover {
+    background: rgba(16, 185, 129, 0.25);
+}
+
+.admin-page.banking-page .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+}
+
+.admin-page.banking-page .section-header h2 {
+    margin: 0;
+}
+
+.admin-page.banking-page .badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2.5rem;
+    padding: 0.3rem 0.75rem;
+    border-radius: 999px;
+    background: linear-gradient(135deg, #0f766e, #14b8a6);
+    color: #ecfdf5;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .admin-page.banking-page .badge {
+    background: linear-gradient(135deg, #14b8a6, #5eead4);
+    color: #042f2e;
+}
+
+@media (max-width: 768px) {
+    .admin-page.banking-page .admin-content {
+        padding: 1.75rem 1rem 2.5rem;
+    }
+
+    .admin-page.banking-page .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-page.banking-page .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}

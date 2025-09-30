@@ -3,6 +3,8 @@ import Navbar from "../../components/Navbar.jsx";
 import api from "../../utils/api.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
+import "../../styles/AdminAccountingPageScoped.css";
+
 
 const initialAccount = {
     code: "",
@@ -73,7 +75,8 @@ const AdminAccountingPage = () => {
     };
 
     return (
-        <div className="admin-page">
+        <div className="admin-page accounting-page">
+
             <Navbar />
             <main className="admin-content">
                 <header className="admin-header">

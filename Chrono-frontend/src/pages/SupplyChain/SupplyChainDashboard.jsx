@@ -3,6 +3,8 @@ import Navbar from "../../components/Navbar.jsx";
 import api from "../../utils/api.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
+import "../../styles/SupplyChainDashboardScoped.css";
+
 
 const SupplyChainDashboard = () => {
     const { notify } = useNotification();
@@ -43,7 +45,8 @@ const SupplyChainDashboard = () => {
     }, [stock, products]);
 
     return (
-        <div className="admin-page">
+        <div className="admin-page supply-chain-page">
+
             <Navbar />
             <main className="admin-content">
                 <header className="admin-header">
