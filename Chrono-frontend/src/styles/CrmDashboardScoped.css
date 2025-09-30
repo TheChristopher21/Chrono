@@ -1,0 +1,101 @@
+.admin-page.crm-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #f8fafc 0%, #ede9fe 100%);
+    color: #312e81;
+}
+
+[data-theme="dark"] .admin-page.crm-page {
+    background: linear-gradient(180deg, #111827 0%, #1e1b4b 100%);
+    color: #e0e7ff;
+}
+
+.admin-page.crm-page .admin-content {
+    width: min(1100px, 100%);
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.admin-page.crm-page .admin-header h1 {
+    margin: 0;
+    font-size: clamp(1.8rem, 2.8vw, 2.4rem);
+    font-weight: 600;
+}
+
+.admin-page.crm-page .admin-header .muted,
+.admin-page.crm-page .muted {
+    margin-top: 0.3rem;
+    color: #5b21b6;
+}
+
+[data-theme="dark"] .admin-page.crm-page .admin-header .muted,
+[data-theme="dark"] .admin-page.crm-page .muted {
+    color: #c4b5fd;
+}
+
+.admin-page.crm-page .card,
+.admin-page.crm-page .card-grid > .card,
+.admin-page.crm-page .card-grid > article.card {
+    background: rgba(255, 255, 255, 0.92);
+    border-radius: 18px;
+    border: 1px solid rgba(91, 33, 182, 0.2);
+    padding: 1.6rem;
+    box-shadow: 0 18px 38px rgba(88, 28, 135, 0.12);
+    backdrop-filter: blur(6px);
+}
+
+[data-theme="dark"] .admin-page.crm-page .card,
+[data-theme="dark"] .admin-page.crm-page .card-grid > .card,
+[data-theme="dark"] .admin-page.crm-page .card-grid > article.card {
+    background: rgba(49, 46, 129, 0.78);
+    border-color: rgba(165, 180, 252, 0.4);
+    box-shadow: 0 18px 42px rgba(30, 27, 75, 0.7);
+}
+
+.admin-page.crm-page .card-grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.admin-page.crm-page .metric {
+    font-size: clamp(1.6rem, 3vw, 2.2rem);
+    font-weight: 600;
+    color: #7c3aed;
+    margin: 0.35rem 0 0;
+}
+
+[data-theme="dark"] .admin-page.crm-page .metric {
+    color: #a855f7;
+}
+
+.admin-page.crm-page .list-unstyled {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.admin-page.crm-page .list-unstyled li {
+    font-size: 0.96rem;
+}
+
+.admin-page.crm-page strong {
+    color: #3730a3;
+}
+
+[data-theme="dark"] .admin-page.crm-page strong {
+    color: #c7d2fe;
+}
+
+@media (max-width: 768px) {
+    .admin-page.crm-page .admin-content {
+        padding: 1.75rem 1rem 2.5rem;
+    }
+}

@@ -17,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
@@ -26,8 +27,16 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
-        "spring.datasource.url=jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;MODE=MYSQL",
+        "SPRING_DATASOURCE_URL=jdbc:h2:mem:chrono_report_test;DB_CLOSE_DELAY=-1;MODE=MYSQL",
+        "SPRING_DATASOURCE_USERNAME=sa",
+        "SPRING_DATASOURCE_PASSWORD=",
+        "SPRING_MAIL_HOST=localhost",
+        "SPRING_MAIL_PORT=2525",
+        "SPRING_MAIL_USERNAME=test",
+        "SPRING_MAIL_PASSWORD=test",
+        "spring.datasource.url=jdbc:h2:mem:chrono_report_test;DB_CLOSE_DELAY=-1;MODE=MYSQL",
         "spring.datasource.driverClassName=org.h2.Driver",
         "spring.datasource.username=sa",
         "spring.datasource.password=",

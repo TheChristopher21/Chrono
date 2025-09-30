@@ -9,6 +9,7 @@ import com.chrono.chrono.entities.Task;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
+import com.chrono.chrono.services.accounting.AccountsReceivableService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -41,6 +42,9 @@ class BillingServiceTest {
 
     @Mock
     private ComplianceAuditService complianceAuditService;
+
+    @Mock
+    private AccountsReceivableService accountsReceivableService;
 
     @InjectMocks
     private BillingService billingService;
@@ -97,6 +101,8 @@ class BillingServiceTest {
         when(projectService.collectProjectAndDescendantIds(project)).thenReturn(Set.of(10L, 11L));
         when(timeTrackingEntryRepository.findByProjectIdInAndEntryTimestampBetween(anyList(), any(), any()))
                 .thenReturn(List.of(billableEntry, childEntry, nonBillableEntry));
+        when(accountsReceivableService.recordProjectInvoice(any(Project.class), any(InvoiceSummaryDTO.class)))
+                .thenReturn(null);
 
         User actor = new User();
         actor.setUsername("auditor");
@@ -143,5 +149,6 @@ class BillingServiceTest {
         verify(timeTrackingEntryRepository).findByProjectIdInAndEntryTimestampBetween(anyList(), any(), any());
         verify(complianceAuditService).recordAction(eq(actor), eq("GENERATE"), eq("BILLING"), eq(project.getId()),
                 contains("Root Project"));
+        verify(accountsReceivableService).recordProjectInvoice(eq(project), any(InvoiceSummaryDTO.class));
     }
 }

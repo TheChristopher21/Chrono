@@ -1,0 +1,116 @@
+.admin-page.supply-chain-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, #eff6ff 0%, #dbeafe 100%);
+    color: #0f172a;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page {
+    background: linear-gradient(180deg, #0b1120 0%, #1e293b 100%);
+    color: #e2e8f0;
+}
+
+.admin-page.supply-chain-page .admin-content {
+    width: min(1200px, 100%);
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 3rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+}
+
+.admin-page.supply-chain-page .admin-header h1 {
+    margin: 0;
+    font-size: clamp(1.8rem, 2.8vw, 2.4rem);
+    font-weight: 600;
+}
+
+.admin-page.supply-chain-page .admin-header .muted,
+.admin-page.supply-chain-page .muted {
+    margin-top: 0.35rem;
+    color: #1e3a8a;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .admin-header .muted,
+[data-theme="dark"] .admin-page.supply-chain-page .muted {
+    color: #93c5fd;
+}
+
+.admin-page.supply-chain-page .card,
+.admin-page.supply-chain-page .card-grid > .card,
+.admin-page.supply-chain-page .card-grid > article.card {
+    background: rgba(255, 255, 255, 0.9);
+    border-radius: 18px;
+    border: 1px solid rgba(30, 64, 175, 0.2);
+    padding: 1.5rem;
+    box-shadow: 0 18px 40px rgba(30, 64, 175, 0.12);
+    backdrop-filter: blur(6px);
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .card,
+[data-theme="dark"] .admin-page.supply-chain-page .card-grid > .card,
+[data-theme="dark"] .admin-page.supply-chain-page .card-grid > article.card {
+    background: rgba(15, 23, 42, 0.78);
+    border-color: rgba(96, 165, 250, 0.45);
+    box-shadow: 0 18px 42px rgba(8, 47, 73, 0.65);
+}
+
+.admin-page.supply-chain-page .card-grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.admin-page.supply-chain-page .metric {
+    font-size: clamp(1.6rem, 3vw, 2.3rem);
+    font-weight: 600;
+    color: #2563eb;
+    margin: 0.35rem 0 0;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .metric {
+    color: #60a5fa;
+}
+
+.admin-page.supply-chain-page .table-wrapper {
+    overflow-x: auto;
+    border-radius: 14px;
+    border: 1px solid rgba(30, 64, 175, 0.2);
+}
+
+.admin-page.supply-chain-page table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.admin-page.supply-chain-page th,
+.admin-page.supply-chain-page td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid rgba(30, 64, 175, 0.18);
+}
+
+.admin-page.supply-chain-page th {
+    font-weight: 600;
+    color: #1e40af;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page th {
+    color: #bfdbfe;
+}
+
+.admin-page.supply-chain-page tbody tr:hover {
+    background: rgba(191, 219, 254, 0.6);
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page tbody tr:hover {
+    background: rgba(59, 130, 246, 0.2);
+}
+
+@media (max-width: 768px) {
+    .admin-page.supply-chain-page .admin-content {
+        padding: 1.75rem 1rem 2.5rem;
+    }
+}
