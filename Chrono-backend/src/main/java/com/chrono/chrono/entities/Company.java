@@ -3,6 +3,7 @@ package com.chrono.chrono.entities;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
 
 /**
@@ -44,6 +45,11 @@ public class Company {
 
     @Column(name = "customer_tracking_enabled")
     private Boolean customerTrackingEnabled;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "company_enabled_features", joinColumns = @JoinColumn(name = "company_id"))
+    @Column(name = "feature_key")
+    private Set<String> enabledFeatures = new LinkedHashSet<>();
 
     // NEU: Kantonskürzel für Feiertagsberechnung (z.B. "SG", "ZH")
     @Column(name = "canton_abbreviation", length = 2)
@@ -120,6 +126,19 @@ public class Company {
 
     public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; }
     public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; }
+
+    public Set<String> getEnabledFeatures() {
+        if (enabledFeatures == null) {
+            enabledFeatures = new LinkedHashSet<>();
+        }
+        return enabledFeatures;
+    }
+
+    public void setEnabledFeatures(Set<String> enabledFeatures) {
+        this.enabledFeatures = (enabledFeatures != null)
+                ? new LinkedHashSet<>(enabledFeatures)
+                : new LinkedHashSet<>();
+    }
 
     public String getLogoPath() { return logoPath; }
     public void setLogoPath(String logoPath) { this.logoPath = logoPath; }

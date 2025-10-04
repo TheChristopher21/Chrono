@@ -4,6 +4,18 @@ import { useTranslation } from '../context/LanguageContext';
 import Navbar from '../components/Navbar';
 import '../styles/CompanyManagementScoped.css'; // Scoped CSS für Light/Dark etc.
 import { useAuth } from '../context/AuthContext'; // Importieren, falls noch nicht geschehen
+import { FEATURE_CATALOG } from '../constants/registrationFeatures';
+
+const OPTIONAL_FEATURES = FEATURE_CATALOG.filter((feature) => !feature.alwaysAvailable);
+const ALWAYS_AVAILABLE_LABELS = FEATURE_CATALOG.filter((feature) => feature.alwaysAvailable).map(
+    (feature) => feature.name
+);
+const FEATURE_LABEL_MAP = FEATURE_CATALOG.reduce((acc, feature) => {
+    acc[feature.key] = feature.name;
+    return acc;
+}, {});
+const normalizeFeatureSelection = (keys = []) =>
+    OPTIONAL_FEATURES.filter((feature) => keys.includes(feature.key)).map((feature) => feature.key);
 
 const CompanyManagementPage = () => {
     const { t } = useTranslation();
@@ -25,6 +37,7 @@ const CompanyManagementPage = () => {
     const [newNotifyVacation, setNewNotifyVacation] = useState(false);
     const [newNotifyOvertime, setNewNotifyOvertime] = useState(false);
     const [newCustomerTrackingEnabled, setNewCustomerTrackingEnabled] = useState(false);
+    const [newEnabledFeatures, setNewEnabledFeatures] = useState([]);
 
     // Alternativ: "Firma + Admin" anlegen
     const [createWithAdmin, setCreateWithAdmin] = useState({
@@ -44,7 +57,8 @@ const CompanyManagementPage = () => {
         teamsWebhookUrl: '',
         notifyVacation: false,
         notifyOvertime: false,
-        customerTrackingEnabled: false
+        customerTrackingEnabled: false,
+        enabledFeatures: []
     });
 
     // Edit-Mode
@@ -67,7 +81,13 @@ const CompanyManagementPage = () => {
         setError('');
         try {
             const res = await api.get('/api/superadmin/companies');
-            setCompanies(Array.isArray(res.data) ? res.data : []);
+            const payload = Array.isArray(res.data)
+                ? res.data.map((company) => ({
+                      ...company,
+                      enabledFeatures: normalizeFeatureSelection(company.enabledFeatures || []),
+                  }))
+                : [];
+            setCompanies(payload);
         } catch (err) {
             console.error('Error fetching companies:', err);
             setError('Fehler beim Laden der Firmenliste');
@@ -75,6 +95,36 @@ const CompanyManagementPage = () => {
             setLoading(false);
         }
     }
+
+    const toggleNewCompanyFeature = (featureKey) => {
+        setNewEnabledFeatures((prev) => {
+            const next = prev.includes(featureKey)
+                ? prev.filter((key) => key !== featureKey)
+                : [...prev, featureKey];
+            return normalizeFeatureSelection(next);
+        });
+    };
+
+    const toggleCreateWithAdminFeature = (featureKey) => {
+        setCreateWithAdmin((prev) => {
+            const current = prev.enabledFeatures || [];
+            const next = current.includes(featureKey)
+                ? current.filter((key) => key !== featureKey)
+                : [...current, featureKey];
+            return { ...prev, enabledFeatures: normalizeFeatureSelection(next) };
+        });
+    };
+
+    const toggleEditingCompanyFeature = (featureKey) => {
+        setEditingCompany((prev) => {
+            if (!prev) return prev;
+            const current = prev.enabledFeatures || [];
+            const next = current.includes(featureKey)
+                ? current.filter((key) => key !== featureKey)
+                : [...current, featureKey];
+            return { ...prev, enabledFeatures: normalizeFeatureSelection(next) };
+        });
+    };
 
     async function handleCreateCompany(e) {
         e.preventDefault();
@@ -93,7 +143,8 @@ const CompanyManagementPage = () => {
                 teamsWebhookUrl: newTeamsWebhook || null,
                 notifyVacation: newNotifyVacation,
                 notifyOvertime: newNotifyOvertime,
-                customerTrackingEnabled: newCustomerTrackingEnabled
+                customerTrackingEnabled: newCustomerTrackingEnabled,
+                enabledFeatures: newEnabledFeatures
             };
             await api.post('/api/superadmin/companies', payload);
             setNewCompanyName('');
@@ -107,6 +158,7 @@ const CompanyManagementPage = () => {
             setNewNotifyVacation(false);
             setNewNotifyOvertime(false);
             setNewCustomerTrackingEnabled(false);
+            setNewEnabledFeatures([]);
             fetchCompanies();
         } catch (err) {
             console.error('Error creating company:', err);
@@ -144,7 +196,8 @@ const CompanyManagementPage = () => {
                 teamsWebhookUrl: createWithAdmin.teamsWebhookUrl || null,
                 notifyVacation: createWithAdmin.notifyVacation,
                 notifyOvertime: createWithAdmin.notifyOvertime,
-                customerTrackingEnabled: createWithAdmin.customerTrackingEnabled
+                customerTrackingEnabled: createWithAdmin.customerTrackingEnabled,
+                enabledFeatures: createWithAdmin.enabledFeatures
             };
 
             const res = await api.post('/api/superadmin/companies/create-with-admin', payload);
@@ -166,7 +219,8 @@ const CompanyManagementPage = () => {
                 teamsWebhookUrl: '',
                 notifyVacation: false,
                 notifyOvertime: false,
-                customerTrackingEnabled: false
+                customerTrackingEnabled: false,
+                enabledFeatures: []
             });
 
             fetchCompanies();
@@ -230,7 +284,8 @@ const CompanyManagementPage = () => {
             teamsWebhookUrl: company.teamsWebhookUrl || '',
             notifyVacation: company.notifyVacation || false,
             notifyOvertime: company.notifyOvertime || false,
-            customerTrackingEnabled: company.customerTrackingEnabled || false
+            customerTrackingEnabled: company.customerTrackingEnabled || false,
+            enabledFeatures: normalizeFeatureSelection(company.enabledFeatures || [])
         });
     }
 
@@ -252,7 +307,8 @@ const CompanyManagementPage = () => {
                 teamsWebhookUrl: editingCompany.teamsWebhookUrl,
                 notifyVacation: editingCompany.notifyVacation,
                 notifyOvertime: editingCompany.notifyOvertime,
-                customerTrackingEnabled: editingCompany.customerTrackingEnabled
+                customerTrackingEnabled: editingCompany.customerTrackingEnabled,
+                enabledFeatures: editingCompany.enabledFeatures || []
             };
             await api.put(`/api/superadmin/companies/${editingCompany.id}`, payload);
             setEditingCompany(null);
@@ -396,6 +452,26 @@ const CompanyManagementPage = () => {
                                 />
                                 Kunden-Zeiterfassung aktivieren
                             </label>
+                            <div className="cmp-feature-box">
+                                <div className="cmp-feature-box__header">
+                                    <strong>Zusatzmodule freischalten</strong>
+                                    <span className="cmp-feature-box__hint">
+                                        Immer verfügbar: {ALWAYS_AVAILABLE_LABELS.join(', ')}
+                                    </span>
+                                </div>
+                                <div className="cmp-feature-grid">
+                                    {OPTIONAL_FEATURES.map((feature) => (
+                                        <label key={feature.key} className="cmp-feature-toggle">
+                                            <input
+                                                type="checkbox"
+                                                checked={newEnabledFeatures.includes(feature.key)}
+                                                onChange={() => toggleNewCompanyFeature(feature.key)}
+                                            />
+                                            <span>{feature.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
                             <button type="submit">Erstellen</button>
                         </form>
                     </section>
@@ -484,6 +560,26 @@ const CompanyManagementPage = () => {
                                 />
                                 Kunden-Zeiterfassung aktivieren
                             </label>
+                            <div className="cmp-feature-box">
+                                <div className="cmp-feature-box__header">
+                                    <strong>Zusatzmodule freischalten</strong>
+                                    <span className="cmp-feature-box__hint">
+                                        Immer verfügbar: {ALWAYS_AVAILABLE_LABELS.join(', ')}
+                                    </span>
+                                </div>
+                                <div className="cmp-feature-grid">
+                                    {OPTIONAL_FEATURES.map((feature) => (
+                                        <label key={feature.key} className="cmp-feature-toggle">
+                                            <input
+                                                type="checkbox"
+                                                checked={createWithAdmin.enabledFeatures.includes(feature.key)}
+                                                onChange={() => toggleCreateWithAdminFeature(feature.key)}
+                                            />
+                                            <span>{feature.name}</span>
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
                             <input
                                 type="text"
                                 placeholder="Admin-Username (*)"
@@ -618,6 +714,26 @@ const CompanyManagementPage = () => {
                                             />
                                             Kunden-Zeiterfassung aktivieren
                                         </label>
+                                        <div className="cmp-feature-box">
+                                            <div className="cmp-feature-box__header">
+                                                <strong>Zusatzmodule freischalten</strong>
+                                                <span className="cmp-feature-box__hint">
+                                                    Immer verfügbar: {ALWAYS_AVAILABLE_LABELS.join(', ')}
+                                                </span>
+                                            </div>
+                                            <div className="cmp-feature-grid">
+                                                {OPTIONAL_FEATURES.map((feature) => (
+                                                    <label key={feature.key} className="cmp-feature-toggle">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={editingCompany.enabledFeatures?.includes(feature.key) || false}
+                                                            onChange={() => toggleEditingCompanyFeature(feature.key)}
+                                                        />
+                                                        <span>{feature.name}</span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
                                         <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                                                 <input
                                                     type="checkbox"
@@ -648,6 +764,25 @@ const CompanyManagementPage = () => {
                                                         {co.paymentMethod ? ` - ${co.paymentMethod}` : ''}
                                                         {co.canceled ? ' (gekündigt)' : ''}
                     </span>
+                                                    <div className="cmp-modules">
+                                                        <span className="cmp-modules__label">Zusatzmodule:</span>
+                                                        {co.enabledFeatures && co.enabledFeatures.length ? (
+                                                            <div className="cmp-feature-chip-row">
+                                                                {co.enabledFeatures.map((key) => (
+                                                                    <span key={key} className="cmp-feature-chip">
+                                                                        {FEATURE_LABEL_MAP[key] || key}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        ) : (
+                                                            <span className="cmp-feature-chip cmp-feature-chip--empty">
+                                                                Keine zusätzlichen Module
+                                                            </span>
+                                                        )}
+                                                        <span className="cmp-modules__hint">
+                                                            Immer verfügbar: {ALWAYS_AVAILABLE_LABELS.join(', ')}
+                                                        </span>
+                                                    </div>
                                                 </div>
                                                 <div className="cmp-btns">
                                                     <button onClick={() => startEdit(co)}>Bearbeiten</button>

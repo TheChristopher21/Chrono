@@ -123,6 +123,96 @@
   background: var(--c-primary-dim);
 }
 
+.company-management-page.scoped-company .cmp-feature-box {
+  border: 1px dashed var(--c-border);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  background: var(--c-input-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.company-management-page.scoped-company .cmp-feature-box__header {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.company-management-page.scoped-company .cmp-feature-box__hint {
+  font-size: 0.85rem;
+  color: var(--c-muted);
+}
+
+.company-management-page.scoped-company .cmp-feature-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.company-management-page.scoped-company .cmp-feature-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.company-management-page.scoped-company .cmp-feature-toggle:hover {
+  border-color: var(--c-primary);
+  background: rgba(71, 91, 255, 0.08);
+}
+
+.company-management-page.scoped-company .cmp-feature-toggle input {
+  accent-color: var(--c-primary);
+}
+
+.company-management-page.scoped-company .cmp-modules {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.5rem;
+}
+
+.company-management-page.scoped-company .cmp-modules__label {
+  font-size: 0.85rem;
+  color: var(--c-muted);
+}
+
+.company-management-page.scoped-company .cmp-modules__hint {
+  font-size: 0.75rem;
+  color: var(--c-muted);
+}
+
+.company-management-page.scoped-company .cmp-feature-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.company-management-page.scoped-company .cmp-feature-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: rgba(71, 91, 255, 0.15);
+  color: var(--c-primary);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.company-management-page.scoped-company .cmp-feature-chip--empty {
+  background: none;
+  border: 1px dashed var(--c-border);
+  color: var(--c-muted);
+  font-weight: 500;
+}
+
 /* Speziell für das Changelog-Formular, falls nötig */
 .company-management-page.scoped-company .changelog-form-section .form-group {
   display: flex;

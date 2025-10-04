@@ -1,126 +1,10 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import "../styles/RegistrationScoped.css";
-import { Link } from "react-router-dom";
 import api from "../utils/api";
 import { useNotification } from "../context/NotificationContext";
-
-// Baukasten-Features (anpassbar)
-const BASE_FEATURE = {
-    key: "base",
-    name: "Zeiterfassung (Basis)",
-    price: 5,
-    priceType: "perEmployee",
-    required: true,
-    description: "Digitale Zeiterfassung für alle Mitarbeiter (Pflichtmodul).",
-};
-const FEATURES = [
-    {
-        key: "vacation",
-        name: "Urlaubs- & Abwesenheitsmodul",
-        price: 1,
-        priceType: "perEmployee",
-        required: false,
-        description: "Digitale Urlaubsanträge, Abwesenheitsübersicht, Freigabe-Workflow.",
-    },
-    {
-        key: "payroll",
-        name: "Lohnabrechnung",
-        price: 4,
-        priceType: "perEmployee",
-        required: false,
-        description: "Lohnabrechnung (DE & CH), Gehaltsabrechnungen als PDF, Abrechnungsexport.",
-    },
-    {
-        key: "projects",
-        name: "Projektzeiten & Kundenverwaltung",
-        price: 1,
-        priceType: "perEmployee",
-        required: false,
-        description: "Erfassen von Projektzeiten und Kunden, Berichte & Auswertungen.",
-    },
-    {
-        key: "accounting",
-        name: "Finanzbuchhaltung & Anlagen",
-        price: 2.5,
-        priceType: "perEmployee",
-        required: false,
-        description: "Hauptbuch, Debitoren/Kreditoren, Anlagenverwaltung inkl. automatischer Übergabe aus Payroll & Billing.",
-    },
-    {
-        key: "crm",
-        name: "CRM & Opportunity-Management",
-        price: 1.2,
-        priceType: "perEmployee",
-        required: false,
-        description: "Leads, Aktivitäten, Kampagnen und Pipeline-Visualisierung mit Team-Zugriff.",
-    },
-    {
-        key: "supplyChain",
-        name: "Supply Chain & Lager",
-        price: 3.5,
-        priceType: "perEmployee",
-        required: false,
-        description: "Artikel-, Lager- und Auftragsverwaltung, Wareneingang/-ausgang, Produktion & Servicefälle.",
-    },
-    {
-        key: "banking",
-        name: "Banking & Zahlungsverkehr",
-        price: 89,
-        priceType: "flat",
-        required: false,
-        description: "ISO-20022 pain.001 Export, Zahlungsfreigaben, sichere Nachrichten & Idempotency-Workflows.",
-    },
-    {
-        key: "analytics",
-        name: "Reporting & BI-Dashboards",
-        price: 0.8,
-        priceType: "perEmployee",
-        required: false,
-        description: "Drill-down-Kennzahlen, Forecasts und Export in Echtzeit über alle Module.",
-    },
-    {
-        key: "signature",
-        name: "Digitale Signaturen & sichere Zustellung",
-        price: 0.6,
-        priceType: "perEmployee",
-        required: false,
-        description: "Elektronische Signatur von Lohnabrechnungen, Verträgen & Rechnungen mit verschlüsselter Zustellung.",
-    },
-    {
-        key: "nfc",
-        name: "NFC-Stempeluhr",
-        price: 0.5,
-        priceType: "perEmployee",
-        required: false,
-        description: "Stempeln per NFC-Karte oder Chip am Terminal oder Smartphone.",
-    },
-    {
-        key: "chatbot",
-        name: "Integrierter Support-Chatbot",
-        price: 0.5,
-        priceType: "perEmployee",
-        required: false,
-        description: "KI-basierte Hilfe & Erklärungen direkt in der App.",
-    },
-    {
-        key: "premiumSupport",
-        name: "Premium-Support (SLA 2h)",
-        price: 129,
-        priceType: "flat",
-        required: false,
-        description: "Telefonischer Premium-Support, dedizierte Success-Manager & priorisierte Umsetzung.",
-    },
-    {
-        key: "roster",
-        name: "Dienstplan & Schichtplanung",
-        price: 1.2,
-        priceType: "perEmployee",
-        required: false,
-        description: "Intelligente Schichtplanung mit Drag & Drop, Konflikterkennung, Mitarbeiterwünschen, Urlaubsabgleich und Export als PDF/Excel.",
-    },
-];
+import { BASE_FEATURE, FEATURE_CATALOG, TOGGLABLE_FEATURE_KEYS } from "../constants/registrationFeatures";
 
 const INSTALL_FEE = 250;
 const OPTIONAL_TRAINING_COST = 120;
@@ -128,7 +12,16 @@ const YEARLY_DISCOUNT_FACTOR = 10; // 2 Monate geschenkt
 
 const Registration = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { notify } = useNotification();
+
+    const companyId = useMemo(() => {
+        const params = new URLSearchParams(location.search);
+        const value = params.get("companyId");
+        if (!value) return null;
+        const parsed = Number(value);
+        return Number.isFinite(parsed) ? parsed : null;
+    }, [location.search]);
 
     const [form, setForm] = useState({
         companyName: "",
@@ -140,7 +33,7 @@ const Registration = () => {
 
     const [employeeCount, setEmployeeCount] = useState(1);
     const [selectedFeatures, setSelectedFeatures] = useState(
-        FEATURES.filter((f) => f.required).map((f) => f.key)
+        FEATURE_CATALOG.filter((f) => f.required).map((f) => f.key)
     );
     const [billingPeriod, setBillingPeriod] = useState("monthly");
     const [includeOptionalTraining, setIncludeOptionalTraining] = useState(false);
@@ -150,10 +43,77 @@ const Registration = () => {
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [companyFeatureKeys, setCompanyFeatureKeys] = useState([]);
+    const [featureError, setFeatureError] = useState("");
+    const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
+
+    const visibleFeatures = useMemo(() => {
+        return FEATURE_CATALOG.filter(
+            (feature) => feature.alwaysAvailable || companyFeatureKeys.includes(feature.key)
+        );
+    }, [companyFeatureKeys]);
+
+    const visibleFeatureKeys = useMemo(() => new Set(visibleFeatures.map((feature) => feature.key)), [visibleFeatures]);
+
+    useEffect(() => {
+        let isMounted = true;
+        if (companyId == null) {
+            if (isMounted) {
+                setCompanyFeatureKeys([]);
+                setFeatureError("");
+                setIsLoadingFeatures(false);
+            }
+            return () => {
+                isMounted = false;
+            };
+        }
+
+        const loadFeatures = async () => {
+            setIsLoadingFeatures(true);
+            setFeatureError("");
+            try {
+                const response = await api.get("/api/public/registration-features", {
+                    params: { companyId },
+                });
+                const payload = response.data;
+                const rawKeys = Array.isArray(payload)
+                    ? payload
+                    : Array.isArray(payload?.enabledFeatures)
+                    ? payload.enabledFeatures
+                    : [];
+                const sanitized = rawKeys.filter((key) => TOGGLABLE_FEATURE_KEYS.includes(key));
+                if (isMounted) {
+                    setCompanyFeatureKeys(sanitized);
+                }
+            } catch (fetchError) {
+                console.error("Fehler beim Laden der Firmenmodule", fetchError);
+                if (isMounted) {
+                    setFeatureError(
+                        "Die freigeschalteten Module konnten nicht geladen werden. Es werden nur die Standardmodule angezeigt."
+                    );
+                    setCompanyFeatureKeys([]);
+                }
+            } finally {
+                if (isMounted) {
+                    setIsLoadingFeatures(false);
+                }
+            }
+        };
+
+        loadFeatures();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [companyId]);
+
+    useEffect(() => {
+        setSelectedFeatures((prev) => prev.filter((key) => visibleFeatureKeys.has(key)));
+    }, [visibleFeatureKeys]);
 
     // Preisberechnung
     useEffect(() => {
-        const selectedFeatureObjects = FEATURES.filter((f) => selectedFeatures.includes(f.key));
+        const selectedFeatureObjects = FEATURE_CATALOG.filter((f) => selectedFeatures.includes(f.key));
         const perEmployeeAddOnRate = selectedFeatureObjects
             .filter((f) => f.priceType === "perEmployee")
             .reduce((acc, f) => acc + f.price, 0);
@@ -216,7 +176,10 @@ const Registration = () => {
         setForm({ ...form, [e.target.name]: e.target.value });
 
     const handleFeatureChange = (featureKey) => {
-        const featureObj = FEATURES.find((f) => f.key === featureKey);
+        if (!visibleFeatureKeys.has(featureKey)) {
+            return;
+        }
+        const featureObj = FEATURE_CATALOG.find((f) => f.key === featureKey);
         if (featureObj.required) return; // Pflichtmodul, nicht abwählbar
         setSelectedFeatures((prev) =>
             prev.includes(featureKey)
@@ -245,14 +208,18 @@ const Registration = () => {
         setIsSubmitting(true);
         setError("");
         try {
+            const selectedFeatureObjects = FEATURE_CATALOG.filter((f) => selectedFeatures.includes(f.key));
+            const selectedFeatureNames = selectedFeatureObjects.map((f) => f.name);
             const payload = {
                 ...form,
                 selectedFeatures,
+                selectedFeatureNames,
                 employeeCount,
                 billingPeriod,
                 includeOptionalTraining,
                 priceBreakdown,
                 calculatedPrice,
+                companyId: companyId ?? null,
             };
             await api.post("/api/apply", payload);
             setSuccess(true);
@@ -366,7 +333,7 @@ const Registration = () => {
                                 </ul>
                             </div>
                             {/* Zusatzmodule */}
-                            {FEATURES.map((feature) => (
+                            {visibleFeatures.map((feature) => (
                                 <div
                                     key={feature.key}
                                     className={`pricing-card${selectedFeatures.includes(feature.key) ? " selected" : ""}`}
@@ -388,6 +355,37 @@ const Registration = () => {
                                     </ul>
                                 </div>
                             ))}
+                        </div>
+
+                        <div className="feature-availability-note">
+                            {isLoadingFeatures ? (
+                                <span>Freigeschaltete Module werden geladen...</span>
+                            ) : featureError ? (
+                                <span className="feature-warning">{featureError}</span>
+                            ) : companyId != null ? (
+                                <>
+                                    <span>
+                                        Module, die für Ihre Firma freigegeben wurden, sind auswählbar. Basis, Urlaub und NFC sind
+                                        immer verfügbar.
+                                    </span>
+                                    {visibleFeatures.filter((feature) => !feature.alwaysAvailable).length === 0 && (
+                                        <span className="feature-muted">
+                                            Aktuell wurden keine zusätzlichen Module freigeschaltet. Bei Bedarf im SuperAdmin-Panel
+                                            aktivieren.
+                                        </span>
+                                    )}
+                                </>
+                            ) : (
+                                <>
+                                    <span>
+                                        Hinweis: Ohne Firmen-ID werden nur die Standardmodule angezeigt. Aktivierte Zusatzmodule sehen
+                                        Sie über einen personalisierten Link.
+                                    </span>
+                                    <span className="feature-muted">
+                                        Tipp: SuperAdmins können im Firmen-Panel entscheiden, welche Module angezeigt werden.
+                                    </span>
+                                </>
+                            )}
                         </div>
 
                         <div className="training-option-section">
