@@ -143,6 +143,29 @@
   font-weight: 600;
 }
 
+.feature-availability-note {
+  margin: 1.5rem auto 2rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--u-radius);
+  background: var(--c-card);
+  border: 1px dashed var(--c-border-light);
+  font-size: clamp(0.88rem, 1.4vw, 0.95rem);
+  color: var(--c-text-soft);
+  max-width: 840px;
+}
+
+.feature-availability-note .feature-warning {
+  color: #d35400;
+  font-weight: 600;
+}
+
+.feature-availability-note .feature-muted {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--c-muted);
+  font-size: 0.85rem;
+}
+
 /* Abrechnung (Monat/Jahr) Toggle */
 .billing-toggle {
   display: flex;

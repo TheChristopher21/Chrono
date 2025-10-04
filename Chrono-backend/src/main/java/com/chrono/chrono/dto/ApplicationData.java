@@ -26,4 +26,6 @@ public class ApplicationData {
     // Optionales Intensiv-Onboarding
     private Boolean includeOptionalTraining;
     private Double optionalTrainingCost;  // 120.00 CHF, wenn ausgewählt
+
+    private Long companyId; // Superadmin-gesteuerte Freischaltung
 }

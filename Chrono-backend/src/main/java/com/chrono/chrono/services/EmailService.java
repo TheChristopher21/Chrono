@@ -40,6 +40,9 @@ public class EmailService {
         } else if (data.getSelectedFeatures() != null) {
             mailText.append("Gewählte Module (Keys): ").append(String.join(", ", data.getSelectedFeatures())).append("\n");
         }
+        if (data.getCompanyId() != null) {
+            mailText.append("Freigeschaltet für Company-ID: ").append(data.getCompanyId()).append("\n");
+        }
 
         if (data.getEmployeeCount() != null) {
             mailText.append("Mitarbeiteranzahl: ").append(data.getEmployeeCount()).append("\n");

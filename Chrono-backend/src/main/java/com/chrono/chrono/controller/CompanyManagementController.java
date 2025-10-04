@@ -8,6 +8,7 @@ import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.StripeService;
 import com.stripe.model.PaymentIntent;
+import com.chrono.chrono.utils.RegistrationFeatures;
 // import com.chrono.chrono.utils.PasswordEncoderConfig; // Wird nicht direkt verwendet, PasswordEncoder reicht
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.*;
@@ -75,6 +76,7 @@ public class CompanyManagementController {
         company.setNotifyVacation(body.getNotifyVacation());
         company.setNotifyOvertime(body.getNotifyOvertime());
         company.setCustomerTrackingEnabled(body.getCustomerTrackingEnabled());
+        company.setEnabledFeatures(RegistrationFeatures.sanitizeOptionalFeatures(body.getEnabledFeatures()));
         // Weitere Standardwerte für neue Firmen
         company.setPaid(false);
         company.setCanceled(false);
@@ -130,6 +132,7 @@ public class CompanyManagementController {
         company.setNotifyVacation(companyDTO.getNotifyVacation());
         company.setNotifyOvertime(companyDTO.getNotifyOvertime());
         company.setCustomerTrackingEnabled(companyDTO.getCustomerTrackingEnabled());
+        company.setEnabledFeatures(RegistrationFeatures.sanitizeOptionalFeatures(companyDTO.getEnabledFeatures()));
 
         Company saved = companyRepository.save(company);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -168,6 +171,8 @@ public class CompanyManagementController {
                         existingCompany.setNotifyOvertime(companyDTO.getNotifyOvertime());
                     if (companyDTO.getCustomerTrackingEnabled() != null)
                         existingCompany.setCustomerTrackingEnabled(companyDTO.getCustomerTrackingEnabled());
+                    if (companyDTO.getEnabledFeatures() != null)
+                        existingCompany.setEnabledFeatures(RegistrationFeatures.sanitizeOptionalFeatures(companyDTO.getEnabledFeatures()));
                     // Zahlungsstatus sollte über /payment aktualisiert werden, um die Logik getrennt zu halten
                     // existingCompany.setPaid(companyDTO.isPaid());
                     // existingCompany.setPaymentMethod(companyDTO.getPaymentMethod());
@@ -241,6 +246,7 @@ public class CompanyManagementController {
         private Boolean notifyOvertime;
         private Boolean customerTrackingEnabled;
         private String logoPath;
+        private Set<String> enabledFeatures;
 
         public static CompanyDTO fromEntity(Company co) {
             CompanyDTO dto = new CompanyDTO();
@@ -262,6 +268,7 @@ public class CompanyManagementController {
             dto.notifyOvertime = co.getNotifyOvertime();
             dto.customerTrackingEnabled = co.getCustomerTrackingEnabled();
             dto.logoPath = co.getLogoPath();
+            dto.enabledFeatures = RegistrationFeatures.sanitizeOptionalFeatures(co.getEnabledFeatures());
             return dto;
         }
 
@@ -284,6 +291,7 @@ public class CompanyManagementController {
         public Boolean getNotifyOvertime() { return notifyOvertime; }
         public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; }
         public String getLogoPath() { return logoPath; }
+        public Set<String> getEnabledFeatures() { return enabledFeatures; }
 
         // Setter (wichtig für @RequestBody)
         public void setId(Long id) { this.id = id; }
@@ -304,6 +312,11 @@ public class CompanyManagementController {
         public void setNotifyOvertime(Boolean notifyOvertime) { this.notifyOvertime = notifyOvertime; }
         public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; }
         public void setLogoPath(String logoPath) { this.logoPath = logoPath; }
+        public void setEnabledFeatures(Set<String> enabledFeatures) {
+            this.enabledFeatures = (enabledFeatures != null)
+                    ? RegistrationFeatures.sanitizeOptionalFeatures(enabledFeatures)
+                    : null;
+        }
     }
 
     public static class CreateCompanyWithAdminDTO {
@@ -323,6 +336,7 @@ public class CompanyManagementController {
         private Boolean notifyVacation;
         private Boolean notifyOvertime;
         private Boolean customerTrackingEnabled;
+        private Set<String> enabledFeatures;
 
         // Getter/Setter
         public String getCompanyName() { return companyName; }
@@ -357,6 +371,12 @@ public class CompanyManagementController {
         public void setNotifyOvertime(Boolean notifyOvertime) { this.notifyOvertime = notifyOvertime; }
         public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; }
         public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; }
+        public Set<String> getEnabledFeatures() { return enabledFeatures; }
+        public void setEnabledFeatures(Set<String> enabledFeatures) {
+            this.enabledFeatures = (enabledFeatures != null)
+                    ? RegistrationFeatures.sanitizeOptionalFeatures(enabledFeatures)
+                    : null;
+        }
     }
 
     public static class PaymentUpdateDTO {

@@ -84,6 +84,7 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.POST, "/api/apply").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/contact").permitAll();
                     auth.requestMatchers("/api/chat").permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/public/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/report/timesheet/ics-feed/**").permitAll();
 
                     // Admin-Endpunkte
