@@ -91,7 +91,14 @@ function App() {
                         <Route path="/admin/crm" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CrmDashboard /></PrivateRoute>} />
                         <Route path="/admin/banking" element={<PrivateRoute requiredRole="ROLE_ADMIN"><BankingOperationsPage /></PrivateRoute>} />
                         <Route path="/admin/project-report" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminProjectReportPage /></PrivateRoute>} />
-                        <Route path="/admin/company" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CompanyManagementPage /></PrivateRoute>} />
+                        <Route
+                            path="/admin/company"
+                            element={
+                                <PrivateRoute requiredRole="ROLE_SUPERADMIN">
+                                    <CompanyManagementPage />
+                                </PrivateRoute>
+                            }
+                        />
                         <Route path="/admin/payslips" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_PAYROLL_ADMIN"]}><AdminPayslipsPage /></PrivateRoute>} />
                         <Route path="/admin/schedule" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminSchedulePlannerPage /></PrivateRoute>} />
                         <Route path="/admin/print-schedule" element={<PrivateRoute requiredRole="ROLE_ADMIN"><PrintSchedule /></PrivateRoute>} />
