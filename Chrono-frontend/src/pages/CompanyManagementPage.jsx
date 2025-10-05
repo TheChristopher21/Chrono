@@ -14,8 +14,51 @@ const FEATURE_LABEL_MAP = FEATURE_CATALOG.reduce((acc, feature) => {
     acc[feature.key] = feature.name;
     return acc;
 }, {});
-const normalizeFeatureSelection = (keys = []) =>
-    OPTIONAL_FEATURES.filter((feature) => keys.includes(feature.key)).map((feature) => feature.key);
+const toFeatureKeyArray = (rawKeys) => {
+    if (!rawKeys) {
+        return [];
+    }
+
+    if (Array.isArray(rawKeys)) {
+        return rawKeys;
+    }
+
+    if (typeof rawKeys === 'string') {
+        const trimmed = rawKeys.trim();
+        if (!trimmed) {
+            return [];
+        }
+
+        try {
+            const parsed = JSON.parse(trimmed);
+            if (Array.isArray(parsed)) {
+                return parsed;
+            }
+        } catch (error) {
+            // Ignored – fallback to comma-separated parsing below
+        }
+
+        return trimmed
+            .split(',')
+            .map((key) => key.replace(/[\[\]\"]+/g, '').trim())
+            .filter(Boolean);
+    }
+
+    if (typeof rawKeys?.[Symbol.iterator] === 'function') {
+        return Array.from(rawKeys);
+    }
+
+    if (typeof rawKeys === 'object') {
+        return Object.values(rawKeys).filter((value) => typeof value === 'string' && value.trim().length > 0);
+    }
+
+    return [];
+};
+
+const normalizeFeatureSelection = (keys = []) => {
+    const keyArray = toFeatureKeyArray(keys);
+    return OPTIONAL_FEATURES.filter((feature) => keyArray.includes(feature.key)).map((feature) => feature.key);
+};
 
 const CompanyManagementPage = () => {
     const { t } = useTranslation();
@@ -629,8 +672,10 @@ const CompanyManagementPage = () => {
                     <section className="cmp-section">
                         <h3>Bestehende Firmen</h3>
                         <ul className="cmp-list">
-                            {companies.map((co) => (
-                                <li key={co.id} className="cmp-item">
+                            {companies.map((co) => {
+                                const optionalFeatures = normalizeFeatureSelection(co.enabledFeatures);
+                                return (
+                                    <li key={co.id} className="cmp-item">
                                     {editingCompany && editingCompany.id === co.id ? (
                                         <form onSubmit={handleSaveEdit} className="cmp-inline-form">
                                             {/* ... Ihr Code für das Bearbeitungs-Formular ... */}
@@ -766,9 +811,9 @@ const CompanyManagementPage = () => {
                     </span>
                                                     <div className="cmp-modules">
                                                         <span className="cmp-modules__label">Zusatzmodule:</span>
-                                                        {co.enabledFeatures && co.enabledFeatures.length ? (
+                                                        {optionalFeatures.length ? (
                                                             <div className="cmp-feature-chip-row">
-                                                                {co.enabledFeatures.map((key) => (
+                                                                {optionalFeatures.map((key) => (
                                                                     <span key={key} className="cmp-feature-chip">
                                                                         {FEATURE_LABEL_MAP[key] || key}
                                                                     </span>
@@ -841,7 +886,8 @@ const CompanyManagementPage = () => {
                                         </>
                                     )}
                                 </li>
-                            ))}
+                                );
+                            })}
                         </ul>
                         {currentUser?.roles?.includes('ROLE_SUPERADMIN') && (
                             <section className="cmp-section">
