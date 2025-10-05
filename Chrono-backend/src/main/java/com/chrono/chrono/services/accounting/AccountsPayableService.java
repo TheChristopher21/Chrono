@@ -7,8 +7,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -69,6 +71,53 @@ public class AccountsPayableService {
 
     @Transactional(readOnly = true)
     public Page<VendorInvoice> findPendingInvoices(Pageable pageable) {
-        return vendorInvoiceRepository.findByStatus(InvoiceStatus.OPEN, pageable);
+        return vendorInvoiceRepository.findByStatusIn(
+                Set.of(InvoiceStatus.OPEN, InvoiceStatus.PARTIALLY_PAID),
+                pageable);
+    }
+
+    @Transactional
+    public VendorInvoice applyPayment(Long invoiceId, BigDecimal amount, LocalDate paymentDate, String memo) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Payment amount must be positive");
+        }
+        VendorInvoice invoice = vendorInvoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new IllegalArgumentException("Vendor invoice not found: " + invoiceId));
+
+        Account bank = accountingService.ensureAccount("1000", "Bank", AccountType.ASSET);
+        Account liability = accountingService.ensureAccount("2001", "Verbindlichkeiten Kreditoren", AccountType.LIABILITY);
+
+        JournalEntry entry = new JournalEntry();
+        LocalDate postingDate = paymentDate != null ? paymentDate : LocalDate.now();
+        entry.setEntryDate(postingDate);
+        entry.setDescription("Vendor payment " + invoice.getInvoiceNumber());
+        entry.setSource("AP");
+        entry.setDocumentReference(invoice.getInvoiceNumber());
+
+        JournalEntryLine debit = new JournalEntryLine();
+        debit.setAccount(liability);
+        debit.setDebit(amount);
+        debit.setCredit(BigDecimal.ZERO);
+        debit.setMemo(memo != null && !memo.isBlank() ? memo : "Vendor payment");
+
+        JournalEntryLine credit = new JournalEntryLine();
+        credit.setAccount(bank);
+        credit.setDebit(BigDecimal.ZERO);
+        credit.setCredit(amount);
+        credit.setMemo(memo != null && !memo.isBlank() ? memo : "Vendor payment");
+
+        entry.setLines(List.of(debit, credit));
+        accountingService.postEntry(entry);
+
+        BigDecimal newPaid = invoice.getAmountPaid().add(amount);
+        if (newPaid.compareTo(invoice.getAmount()) >= 0) {
+            invoice.setAmountPaid(invoice.getAmount());
+            invoice.setStatus(InvoiceStatus.PAID);
+        } else {
+            invoice.setAmountPaid(newPaid);
+            invoice.setStatus(InvoiceStatus.PARTIALLY_PAID);
+        }
+        invoice.setLastPaymentDate(postingDate);
+        return vendorInvoiceRepository.save(invoice);
     }
 }

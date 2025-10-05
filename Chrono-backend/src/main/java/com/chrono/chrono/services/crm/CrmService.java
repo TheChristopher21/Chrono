@@ -7,7 +7,9 @@ import com.chrono.chrono.repositories.crm.*;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class CrmService {
@@ -42,10 +44,55 @@ public class CrmService {
         return customerAddressRepository.save(address);
     }
 
+    @Transactional(readOnly = true)
+    public List<CustomerAddress> listAddresses(Customer customer) {
+        return customerAddressRepository.findByCustomer(customer);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<CustomerAddress> findAddress(Long id) {
+        return customerAddressRepository.findById(id);
+    }
+
+    @Transactional
+    public CustomerAddress updateAddress(CustomerAddress existing, CustomerAddress changes) {
+        existing.setStreet(changes.getStreet());
+        existing.setPostalCode(changes.getPostalCode());
+        existing.setCity(changes.getCity());
+        existing.setCountry(changes.getCountry());
+        existing.setType(changes.getType());
+        return customerAddressRepository.save(existing);
+    }
+
+    @Transactional
+    public void deleteAddress(CustomerAddress address) {
+        customerAddressRepository.delete(address);
+    }
+
     @Transactional
     public CustomerContact addContact(Customer customer, CustomerContact contact) {
         contact.setCustomer(customer);
         return customerContactRepository.save(contact);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<CustomerContact> findContact(Long id) {
+        return customerContactRepository.findById(id);
+    }
+
+    @Transactional
+    public CustomerContact updateContact(CustomerContact contact, CustomerContact changes) {
+        contact.setFirstName(changes.getFirstName());
+        contact.setLastName(changes.getLastName());
+        contact.setEmail(changes.getEmail());
+        contact.setPhone(changes.getPhone());
+        contact.setRoleTitle(changes.getRoleTitle());
+        return customerContactRepository.save(contact);
+    }
+
+    @Transactional
+    public void deleteContact(CustomerContact contact) {
+        customerContactRepository.delete(contact);
     }
 
     @Transactional
@@ -55,8 +102,40 @@ public class CrmService {
         return crmActivityRepository.save(activity);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<CrmActivity> findActivity(Long id) {
+        return crmActivityRepository.findById(id);
+    }
+
+    @Transactional
+    public CrmActivity updateActivity(CrmActivity activity, CrmActivity changes) {
+        activity.setType(changes.getType());
+        activity.setNotes(changes.getNotes());
+        if (changes.getTimestamp() != null) {
+            activity.setTimestamp(changes.getTimestamp());
+        }
+        activity.setContact(changes.getContact());
+        return crmActivityRepository.save(activity);
+    }
+
+    @Transactional
+    public void deleteActivity(CrmActivity activity) {
+        crmActivityRepository.delete(activity);
+    }
+
     @Transactional
     public CrmLead saveLead(CrmLead lead) {
+        return crmLeadRepository.save(lead);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<CrmLead> findLead(Long id) {
+        return crmLeadRepository.findById(id);
+    }
+
+    @Transactional
+    public CrmLead updateLeadStatus(CrmLead lead, LeadStatus status) {
+        lead.setStatus(status);
         return crmLeadRepository.save(lead);
     }
 
@@ -65,8 +144,57 @@ public class CrmService {
         return opportunityRepository.save(opportunity);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Opportunity> findOpportunity(Long id) {
+        return opportunityRepository.findById(id);
+    }
+
+    @Transactional
+    public Opportunity updateOpportunity(Opportunity opportunity, OpportunityStage stage, Double probability,
+                                         LocalDate expectedCloseDate) {
+        if (stage != null) {
+            opportunity.setStage(stage);
+        }
+        if (probability != null) {
+            opportunity.setProbability(probability);
+        }
+        if (expectedCloseDate != null) {
+            opportunity.setExpectedCloseDate(expectedCloseDate);
+        }
+        return opportunityRepository.save(opportunity);
+    }
+
     @Transactional
     public Campaign saveCampaign(Campaign campaign) {
+        return campaignRepository.save(campaign);
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<Campaign> findCampaign(Long id) {
+        return campaignRepository.findById(id);
+    }
+
+    @Transactional
+    public Campaign updateCampaign(Campaign campaign, CampaignStatus status, String name,
+                                   LocalDate startDate, LocalDate endDate, Integer budget, String channel) {
+        if (status != null) {
+            campaign.setStatus(status);
+        }
+        if (name != null) {
+            campaign.setName(name);
+        }
+        if (startDate != null) {
+            campaign.setStartDate(startDate);
+        }
+        if (endDate != null) {
+            campaign.setEndDate(endDate);
+        }
+        if (budget != null) {
+            campaign.setBudget(budget);
+        }
+        if (channel != null) {
+            campaign.setChannel(channel);
+        }
         return campaignRepository.save(campaign);
     }
 

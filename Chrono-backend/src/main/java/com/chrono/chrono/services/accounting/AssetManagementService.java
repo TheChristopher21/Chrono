@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.List;
 
 @Service
 public class AssetManagementService {
@@ -29,6 +30,11 @@ public class AssetManagementService {
         Asset saved = assetRepository.save(asset);
         postAcquisition(saved);
         return saved;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Asset> listAssets() {
+        return assetRepository.findAll();
     }
 
     private void postAcquisition(Asset asset) {

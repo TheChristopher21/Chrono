@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -80,6 +81,53 @@ public class AccountsReceivableService {
 
     @Transactional(readOnly = true)
     public Page<CustomerInvoice> findOpenInvoices(Pageable pageable) {
-        return customerInvoiceRepository.findByStatus(InvoiceStatus.OPEN, pageable);
+        return customerInvoiceRepository.findByStatusIn(
+                Set.of(InvoiceStatus.OPEN, InvoiceStatus.PARTIALLY_PAID),
+                pageable);
+    }
+
+    @Transactional
+    public CustomerInvoice applyPayment(Long invoiceId, BigDecimal amount, LocalDate paymentDate, String memo) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Payment amount must be positive");
+        }
+        CustomerInvoice invoice = customerInvoiceRepository.findById(invoiceId)
+                .orElseThrow(() -> new IllegalArgumentException("Invoice not found: " + invoiceId));
+
+        Account bank = accountingService.ensureAccount("1000", "Bank", AccountType.ASSET);
+        Account receivable = accountingService.ensureAccount("1100", "Forderungen aus Lieferungen", AccountType.ASSET);
+
+        JournalEntry entry = new JournalEntry();
+        LocalDate postingDate = paymentDate != null ? paymentDate : LocalDate.now();
+        entry.setEntryDate(postingDate);
+        entry.setDescription("Receipt " + invoice.getInvoiceNumber());
+        entry.setSource("AR");
+        entry.setDocumentReference(invoice.getInvoiceNumber());
+
+        JournalEntryLine debit = new JournalEntryLine();
+        debit.setAccount(bank);
+        debit.setDebit(amount);
+        debit.setCredit(BigDecimal.ZERO);
+        debit.setMemo(memo != null && !memo.isBlank() ? memo : "Customer payment");
+
+        JournalEntryLine credit = new JournalEntryLine();
+        credit.setAccount(receivable);
+        credit.setDebit(BigDecimal.ZERO);
+        credit.setCredit(amount);
+        credit.setMemo(memo != null && !memo.isBlank() ? memo : "Customer payment");
+
+        entry.setLines(List.of(debit, credit));
+        accountingService.postEntry(entry);
+
+        BigDecimal newPaid = invoice.getAmountPaid().add(amount);
+        if (newPaid.compareTo(invoice.getAmount()) >= 0) {
+            invoice.setAmountPaid(invoice.getAmount());
+            invoice.setStatus(InvoiceStatus.PAID);
+        } else {
+            invoice.setAmountPaid(newPaid);
+            invoice.setStatus(InvoiceStatus.PARTIALLY_PAID);
+        }
+        invoice.setLastPaymentDate(postingDate);
+        return customerInvoiceRepository.save(invoice);
     }
 }

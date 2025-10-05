@@ -8,18 +8,13 @@ import com.chrono.chrono.services.CustomerService;
 import com.chrono.chrono.services.UserService;
 import com.chrono.chrono.services.crm.CrmService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
 import java.security.Principal;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/crm")
@@ -46,6 +41,19 @@ public class CrmController {
                 && Objects.equals(user.getCompany().getId(), customer.getCompany().getId());
     }
 
+    @GetMapping("/customers/{id}/addresses")
+    public ResponseEntity<List<CustomerAddressDTO>> listAddresses(@PathVariable Long id, Principal principal) {
+        User user = getUser(principal);
+        Customer customer = customerService.findById(id).orElse(null);
+        if (customer == null || !allowed(user, customer)) {
+            return user == null ? ResponseEntity.status(401).build() : ResponseEntity.status(403).build();
+        }
+        List<CustomerAddressDTO> addresses = crmService.listAddresses(customer).stream()
+                .map(CustomerAddressDTO::from)
+                .collect(Collectors.toList());
+        return ResponseEntity.ok(addresses);
+    }
+
     @PostMapping("/customers/{id}/addresses")
     public ResponseEntity<CustomerAddressDTO> addAddress(@PathVariable Long id,
                                                          @RequestBody CreateCustomerAddressRequest request,
@@ -60,6 +68,42 @@ public class CrmController {
                 .body(CustomerAddressDTO.from(saved));
     }
 
+    @PutMapping("/customers/{id}/addresses/{addressId}")
+    public ResponseEntity<CustomerAddressDTO> updateAddress(@PathVariable Long id,
+                                                            @PathVariable Long addressId,
+                                                            @RequestBody CreateCustomerAddressRequest request,
+                                                            Principal principal) {
+        User user = getUser(principal);
+        Customer customer = customerService.findById(id).orElse(null);
+        if (customer == null || !allowed(user, customer)) {
+            return user == null ? ResponseEntity.status(401).build() : ResponseEntity.status(403).build();
+        }
+        return crmService.findAddress(addressId)
+                .filter(address -> Objects.equals(address.getCustomer().getId(), customer.getId()))
+                .map(address -> crmService.updateAddress(address, request.toEntity()))
+                .map(CustomerAddressDTO::from)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/customers/{id}/addresses/{addressId}")
+    public ResponseEntity<Void> deleteAddress(@PathVariable Long id,
+                                              @PathVariable Long addressId,
+                                              Principal principal) {
+        User user = getUser(principal);
+        Customer customer = customerService.findById(id).orElse(null);
+        if (customer == null || !allowed(user, customer)) {
+            return user == null ? ResponseEntity.status(401).build() : ResponseEntity.status(403).build();
+        }
+        return crmService.findAddress(addressId)
+                .filter(address -> Objects.equals(address.getCustomer().getId(), customer.getId()))
+                .map(address -> {
+                    crmService.deleteAddress(address);
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/customers/{id}/contacts")
     public ResponseEntity<CustomerContactDTO> addContact(@PathVariable Long id,
                                                          @RequestBody CreateCustomerContactRequest request,
@@ -72,6 +116,42 @@ public class CrmController {
         CustomerContact saved = crmService.addContact(customer, request.toEntity());
         return ResponseEntity.created(URI.create("/api/crm/customers/" + id + "/contacts/" + saved.getId()))
                 .body(CustomerContactDTO.from(saved));
+    }
+
+    @PutMapping("/customers/{id}/contacts/{contactId}")
+    public ResponseEntity<CustomerContactDTO> updateContact(@PathVariable Long id,
+                                                            @PathVariable Long contactId,
+                                                            @RequestBody CreateCustomerContactRequest request,
+                                                            Principal principal) {
+        User user = getUser(principal);
+        Customer customer = customerService.findById(id).orElse(null);
+        if (customer == null || !allowed(user, customer)) {
+            return user == null ? ResponseEntity.status(401).build() : ResponseEntity.status(403).build();
+        }
+        return crmService.findContact(contactId)
+                .filter(contact -> Objects.equals(contact.getCustomer().getId(), customer.getId()))
+                .map(contact -> crmService.updateContact(contact, request.toEntity()))
+                .map(CustomerContactDTO::from)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/customers/{id}/contacts/{contactId}")
+    public ResponseEntity<Void> deleteContact(@PathVariable Long id,
+                                              @PathVariable Long contactId,
+                                              Principal principal) {
+        User user = getUser(principal);
+        Customer customer = customerService.findById(id).orElse(null);
+        if (customer == null || !allowed(user, customer)) {
+            return user == null ? ResponseEntity.status(401).build() : ResponseEntity.status(403).build();
+        }
+        return crmService.findContact(contactId)
+                .filter(contact -> Objects.equals(contact.getCustomer().getId(), customer.getId()))
+                .map(contact -> {
+                    crmService.deleteContact(contact);
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @GetMapping("/customers/{id}/contacts")
@@ -122,6 +202,56 @@ public class CrmController {
                 .body(CrmActivityDTO.from(saved));
     }
 
+    @PutMapping("/customers/{id}/activities/{activityId}")
+    public ResponseEntity<CrmActivityDTO> updateActivity(@PathVariable Long id,
+                                                         @PathVariable Long activityId,
+                                                         @RequestBody CreateCrmActivityRequest request,
+                                                         Principal principal) {
+        User user = getUser(principal);
+        Customer customer = customerService.findById(id).orElse(null);
+        if (customer == null || !allowed(user, customer)) {
+            return user == null ? ResponseEntity.status(401).build() : ResponseEntity.status(403).build();
+        }
+        CustomerContact contact = null;
+        if (request.getContactId() != null) {
+            contact = crmService.findContact(request.getContactId())
+                    .filter(c -> Objects.equals(c.getCustomer().getId(), customer.getId()))
+                    .orElse(null);
+        }
+        CustomerContact finalContact = contact;
+        return crmService.findActivity(activityId)
+                .filter(activity -> Objects.equals(activity.getCustomer().getId(), customer.getId()))
+                .map(existing -> {
+                    CrmActivity changes = request.toEntity();
+                    changes.setCustomer(customer);
+                    changes.setContact(finalContact);
+                    if (finalContact != null) {
+                        changes.setContact(finalContact);
+                    }
+                    CrmActivity updated = crmService.updateActivity(existing, changes);
+                    return ResponseEntity.ok(CrmActivityDTO.from(updated));
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @DeleteMapping("/customers/{id}/activities/{activityId}")
+    public ResponseEntity<Void> deleteActivity(@PathVariable Long id,
+                                               @PathVariable Long activityId,
+                                               Principal principal) {
+        User user = getUser(principal);
+        Customer customer = customerService.findById(id).orElse(null);
+        if (customer == null || !allowed(user, customer)) {
+            return user == null ? ResponseEntity.status(401).build() : ResponseEntity.status(403).build();
+        }
+        return crmService.findActivity(activityId)
+                .filter(activity -> Objects.equals(activity.getCustomer().getId(), customer.getId()))
+                .map(activity -> {
+                    crmService.deleteActivity(activity);
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/leads")
     public ResponseEntity<CrmLeadDTO> createLead(@RequestBody CreateCrmLeadRequest request, Principal principal) {
         User user = getUser(principal);
@@ -145,6 +275,22 @@ public class CrmController {
                 .map(CrmLeadDTO::from)
                 .toList();
         return ResponseEntity.ok(leads);
+    }
+
+    @PatchMapping("/leads/{id}")
+    public ResponseEntity<CrmLeadDTO> updateLead(@PathVariable Long id,
+                                                 @RequestBody UpdateLeadStatusRequest request,
+                                                 Principal principal) {
+        User user = getUser(principal);
+        if (user == null || user.getCompany() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return crmService.findLead(id)
+                .filter(lead -> Objects.equals(lead.getCompany().getId(), user.getCompany().getId()))
+                .map(lead -> crmService.updateLeadStatus(lead, request.getStatus()))
+                .map(CrmLeadDTO::from)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/opportunities")
@@ -182,6 +328,23 @@ public class CrmController {
         return ResponseEntity.ok(opportunities);
     }
 
+    @PatchMapping("/opportunities/{id}")
+    public ResponseEntity<OpportunityDTO> updateOpportunity(@PathVariable Long id,
+                                                             @RequestBody UpdateOpportunityRequest request,
+                                                             Principal principal) {
+        User user = getUser(principal);
+        if (user == null || user.getCompany() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return crmService.findOpportunity(id)
+                .filter(opportunity -> Objects.equals(opportunity.getCompany().getId(), user.getCompany().getId()))
+                .map(opportunity -> crmService.updateOpportunity(opportunity, request.getStage(),
+                        request.getProbability(), request.getExpectedCloseDate()))
+                .map(OpportunityDTO::from)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/campaigns")
     public ResponseEntity<CampaignDTO> createCampaign(@RequestBody CreateCampaignRequest request, Principal principal) {
         User user = getUser(principal);
@@ -205,5 +368,22 @@ public class CrmController {
                 .map(CampaignDTO::from)
                 .toList();
         return ResponseEntity.ok(campaigns);
+    }
+
+    @PatchMapping("/campaigns/{id}")
+    public ResponseEntity<CampaignDTO> updateCampaign(@PathVariable Long id,
+                                                      @RequestBody UpdateCampaignRequest request,
+                                                      Principal principal) {
+        User user = getUser(principal);
+        if (user == null || user.getCompany() == null) {
+            return ResponseEntity.status(401).build();
+        }
+        return crmService.findCampaign(id)
+                .filter(campaign -> Objects.equals(campaign.getCompany().getId(), user.getCompany().getId()))
+                .map(campaign -> crmService.updateCampaign(campaign, request.getStatus(), request.getName(),
+                        request.getStartDate(), request.getEndDate(), request.getBudget(), request.getChannel()))
+                .map(CampaignDTO::from)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 }
