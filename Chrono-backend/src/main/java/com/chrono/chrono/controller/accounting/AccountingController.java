@@ -77,6 +77,14 @@ public class AccountingController {
         return ResponseEntity.ok(entries);
     }
 
+    @GetMapping("/assets")
+    public ResponseEntity<List<AssetDTO>> listAssets() {
+        List<AssetDTO> assets = assetManagementService.listAssets().stream()
+                .map(AssetDTO::from)
+                .toList();
+        return ResponseEntity.ok(assets);
+    }
+
     @PostMapping("/journal")
     public ResponseEntity<JournalEntryDTO> createJournalEntry(@RequestBody CreateJournalEntryRequest request) {
         JournalEntry entry = new JournalEntry();
@@ -132,5 +140,21 @@ public class AccountingController {
                 .map(AssetDTO::from)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/receivables/{id}/payments")
+    public ResponseEntity<CustomerInvoiceDTO> applyReceivablePayment(@PathVariable Long id,
+                                                                     @RequestBody RecordPaymentRequest request) {
+        var updated = accountsReceivableService.applyPayment(id, request.getAmount(),
+                request.getPaymentDate(), request.getMemo());
+        return ResponseEntity.ok(CustomerInvoiceDTO.from(updated));
+    }
+
+    @PostMapping("/payables/{id}/payments")
+    public ResponseEntity<VendorInvoiceDTO> applyPayablePayment(@PathVariable Long id,
+                                                                @RequestBody RecordPaymentRequest request) {
+        var updated = accountsPayableService.applyPayment(id, request.getAmount(),
+                request.getPaymentDate(), request.getMemo());
+        return ResponseEntity.ok(VendorInvoiceDTO.from(updated));
     }
 }

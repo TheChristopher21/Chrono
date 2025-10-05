@@ -11,21 +11,28 @@ public class VendorInvoiceDTO {
     private final String invoiceNumber;
     private final String vendorName;
     private final BigDecimal amount;
+    private final BigDecimal amountPaid;
+    private final BigDecimal openAmount;
     private final String currency;
     private final InvoiceStatus status;
     private final LocalDate invoiceDate;
     private final LocalDate dueDate;
+    private final LocalDate lastPaymentDate;
 
     public VendorInvoiceDTO(Long id, String invoiceNumber, String vendorName, BigDecimal amount,
-                            String currency, InvoiceStatus status, LocalDate invoiceDate, LocalDate dueDate) {
+                            BigDecimal amountPaid, BigDecimal openAmount, String currency, InvoiceStatus status,
+                            LocalDate invoiceDate, LocalDate dueDate, LocalDate lastPaymentDate) {
         this.id = id;
         this.invoiceNumber = invoiceNumber;
         this.vendorName = vendorName;
         this.amount = amount;
+        this.amountPaid = amountPaid;
+        this.openAmount = openAmount;
         this.currency = currency;
         this.status = status;
         this.invoiceDate = invoiceDate;
         this.dueDate = dueDate;
+        this.lastPaymentDate = lastPaymentDate;
     }
 
     public static VendorInvoiceDTO from(VendorInvoice invoice) {
@@ -34,10 +41,13 @@ public class VendorInvoiceDTO {
                 invoice.getInvoiceNumber(),
                 invoice.getVendorName(),
                 invoice.getAmount(),
+                invoice.getAmountPaid(),
+                invoice.getOpenAmount(),
                 invoice.getCurrency(),
                 invoice.getStatus(),
                 invoice.getInvoiceDate(),
-                invoice.getDueDate());
+                invoice.getDueDate(),
+                invoice.getLastPaymentDate());
     }
 
     public Long getId() {
@@ -56,6 +66,14 @@ public class VendorInvoiceDTO {
         return amount;
     }
 
+    public BigDecimal getAmountPaid() {
+        return amountPaid;
+    }
+
+    public BigDecimal getOpenAmount() {
+        return openAmount;
+    }
+
     public String getCurrency() {
         return currency;
     }
@@ -70,5 +88,9 @@ public class VendorInvoiceDTO {
 
     public LocalDate getDueDate() {
         return dueDate;
+    }
+
+    public LocalDate getLastPaymentDate() {
+        return lastPaymentDate;
     }
 }

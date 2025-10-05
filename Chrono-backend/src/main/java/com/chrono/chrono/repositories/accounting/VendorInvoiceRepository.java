@@ -6,6 +6,8 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
+
 public interface VendorInvoiceRepository extends JpaRepository<VendorInvoice, Long> {
-    Page<VendorInvoice> findByStatus(InvoiceStatus status, Pageable pageable);
+    Page<VendorInvoice> findByStatusIn(Collection<InvoiceStatus> statuses, Pageable pageable);
 }

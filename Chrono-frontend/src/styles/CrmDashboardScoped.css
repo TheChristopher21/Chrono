@@ -94,6 +94,108 @@
     color: #c7d2fe;
 }
 
+.admin-page.crm-page .link-button {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #5b21b6;
+    cursor: pointer;
+    font: inherit;
+    text-decoration: underline;
+}
+
+.admin-page.crm-page .link-button.danger {
+    color: #dc2626;
+}
+
+.admin-page.crm-page .link-button.active {
+    font-weight: 600;
+}
+
+.admin-page.crm-page .customer-detail header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.admin-page.crm-page .detail-grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+.admin-page.crm-page .form-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    align-items: end;
+    margin-top: 1rem;
+}
+
+.admin-page.crm-page .form-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    font-weight: 500;
+}
+
+.admin-page.crm-page .form-grid input,
+.admin-page.crm-page .form-grid select,
+.admin-page.crm-page .form-grid textarea {
+    border: 1px solid rgba(91, 33, 182, 0.35);
+    border-radius: 10px;
+    padding: 0.55rem 0.75rem;
+    font-size: 0.95rem;
+    background: rgba(250, 245, 255, 0.85);
+    color: inherit;
+}
+
+.admin-page.crm-page .form-grid textarea {
+    min-height: 120px;
+}
+
+[data-theme="dark"] .admin-page.crm-page .form-grid input,
+[data-theme="dark"] .admin-page.crm-page .form-grid select,
+[data-theme="dark"] .admin-page.crm-page .form-grid textarea {
+    background: rgba(49, 46, 129, 0.85);
+    border-color: rgba(165, 180, 252, 0.5);
+}
+
+.admin-page.crm-page .form-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.admin-page.crm-page .form-actions button {
+    min-width: 120px;
+}
+
+.admin-page.crm-page .action-row {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+    flex-wrap: wrap;
+}
+
+.admin-page.crm-page .two-column {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.25rem;
+}
+
+.admin-page.crm-page .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.admin-page.crm-page .full-width {
+    grid-column: 1 / -1;
+}
+
 @media (max-width: 768px) {
     .admin-page.crm-page .admin-content {
         padding: 1.75rem 1rem 2.5rem;

@@ -27,6 +27,11 @@ public class CustomerInvoice {
     @Column(precision = 19, scale = 4, nullable = false)
     private BigDecimal amount = BigDecimal.ZERO;
 
+    @Column(precision = 19, scale = 4, nullable = false)
+    private BigDecimal amountPaid = BigDecimal.ZERO;
+
+    private LocalDate lastPaymentDate;
+
     @Column(length = 3)
     private String currency = "CHF";
 
@@ -90,6 +95,30 @@ public class CustomerInvoice {
 
     public void setAmount(BigDecimal amount) {
         this.amount = amount;
+    }
+
+    public BigDecimal getAmountPaid() {
+        return amountPaid == null ? BigDecimal.ZERO : amountPaid;
+    }
+
+    public void setAmountPaid(BigDecimal amountPaid) {
+        this.amountPaid = amountPaid;
+    }
+
+    public LocalDate getLastPaymentDate() {
+        return lastPaymentDate;
+    }
+
+    public void setLastPaymentDate(LocalDate lastPaymentDate) {
+        this.lastPaymentDate = lastPaymentDate;
+    }
+
+    @Transient
+    public BigDecimal getOpenAmount() {
+        BigDecimal paid = getAmountPaid();
+        BigDecimal total = amount != null ? amount : BigDecimal.ZERO;
+        BigDecimal remaining = total.subtract(paid != null ? paid : BigDecimal.ZERO);
+        return remaining.compareTo(BigDecimal.ZERO) < 0 ? BigDecimal.ZERO : remaining;
     }
 
     public String getCurrency() {

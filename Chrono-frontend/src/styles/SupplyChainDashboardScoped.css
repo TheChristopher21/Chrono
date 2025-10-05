@@ -109,6 +109,50 @@
     background: rgba(59, 130, 246, 0.2);
 }
 
+.admin-page.supply-chain-page .form-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    align-items: end;
+}
+
+.admin-page.supply-chain-page .form-grid label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    font-weight: 500;
+}
+
+.admin-page.supply-chain-page .form-grid input,
+.admin-page.supply-chain-page .form-grid select {
+    border: 1px solid rgba(30, 64, 175, 0.45);
+    border-radius: 10px;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.95rem;
+    background: rgba(255, 255, 255, 0.92);
+    color: inherit;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .form-grid input,
+[data-theme="dark"] .admin-page.supply-chain-page .form-grid select {
+    background: rgba(15, 23, 42, 0.85);
+    border-color: rgba(96, 165, 250, 0.6);
+}
+
+.admin-page.supply-chain-page .po-lines {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.admin-page.supply-chain-page .po-line {
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    align-items: end;
+}
+
 @media (max-width: 768px) {
     .admin-page.supply-chain-page .admin-content {
         padding: 1.75rem 1rem 2.5rem;
