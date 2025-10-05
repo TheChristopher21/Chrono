@@ -23,9 +23,13 @@ const SupplyChainDashboard = () => {
                     api.get("/api/supply-chain/warehouses"),
                     api.get("/api/supply-chain/stock")
                 ]);
-                setProducts(productRes.data ?? []);
-                setWarehouses(warehouseRes.data ?? []);
-                setStock(stockRes.data ?? []);
+
+                const productData = productRes?.data;
+                const stockData = stockRes?.data;
+
+                setProducts(Array.isArray(productData) ? productData : productData?.content ?? []);
+                setWarehouses(warehouseRes?.data ?? []);
+                setStock(Array.isArray(stockData) ? stockData : stockData?.content ?? []);
             } catch (error) {
                 console.error("Failed to load supply chain data", error);
                 notify(t("supplyChain.loadError", "Supply-Chain-Daten konnten nicht geladen werden."), "error");
