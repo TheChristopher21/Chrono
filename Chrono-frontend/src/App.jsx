@@ -1,4 +1,4 @@
-import React from "react";
+import "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -94,7 +94,7 @@ function App() {
                         <Route
                             path="/admin/company"
                             element={
-                                <PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]}>
+                                <PrivateRoute requiredRole={["ROLE_SUPERADMIN"]}>
                                     <CompanyManagementPage />
                                 </PrivateRoute>
                             }
