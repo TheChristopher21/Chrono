@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
  * - Bei fehlender Auth → Redirect zu /login?next=<uri>
  * - Bei fehlender Berechtigung → Redirect zur Landing-Page
  */
-const PrivateRoute = ({ children, requiredRole }) => {
+const PrivateRoute = ({ children, requiredRole, requiredFeature, redirectTo = '/' }) => {
     const { authToken, currentUser } = useAuth();
     const location = useLocation();
 
@@ -31,6 +31,28 @@ const PrivateRoute = ({ children, requiredRole }) => {
 
         if (!allowed) {
             return <Navigate to="/" replace />;
+        }
+    }
+
+    if (requiredFeature) {
+        const isSuperAdmin = currentUser?.roles?.includes('ROLE_SUPERADMIN');
+        if (!isSuperAdmin) {
+            const featureKeysRaw = currentUser?.companyFeatureKeys;
+            const featureList = Array.isArray(featureKeysRaw)
+                ? featureKeysRaw
+                : featureKeysRaw
+                    ? Object.values(featureKeysRaw)
+                    : [];
+
+            const requiredFeatures = Array.isArray(requiredFeature)
+                ? requiredFeature
+                : [requiredFeature];
+
+            const hasFeature = requiredFeatures.some((featureKey) => featureList.includes(featureKey));
+
+            if (!hasFeature) {
+                return <Navigate to={redirectTo} replace />;
+            }
         }
     }
 

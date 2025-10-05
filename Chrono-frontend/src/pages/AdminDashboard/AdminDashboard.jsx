@@ -172,6 +172,21 @@ const AdminDashboard = () => {
         }
     }, []);
 
+    const isSuperAdmin = !!currentUser?.roles?.includes('ROLE_SUPERADMIN');
+
+    const companyFeatureSet = useMemo(() => {
+        const keys = currentUser?.companyFeatureKeys;
+        if (!keys) return new Set();
+        if (Array.isArray(keys)) return new Set(keys);
+        return new Set(Object.values(keys));
+    }, [currentUser?.companyFeatureKeys]);
+
+    const hasFeature = useCallback((featureKey) => {
+        if (!featureKey) return true;
+        if (isSuperAdmin) return true;
+        return companyFeatureSet.has(featureKey);
+    }, [companyFeatureSet, isSuperAdmin]);
+
     const handleOpenAnalytics = useCallback(() => {
         navigate('/admin/analytics');
     }, [navigate]);
@@ -629,7 +644,7 @@ const AdminDashboard = () => {
                 onShowIssueOverview={handleShowIssueOverview}
                 onFocusNegativeBalances={handleFocusNegativeBalances}
                 onFocusOvertimeLeaders={handleFocusPositiveBalances}
-                onOpenAnalytics={handleOpenAnalytics}
+                onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
             />
 
 
@@ -642,27 +657,33 @@ const AdminDashboard = () => {
                 >
                     {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
                 </Link>
-                <Link
-                    to="/admin/payslips"
-                    className="admin-action-button button-primary"
-                    role="button"
-                >
-                    {t('navbar.payslips', 'Abrechnungen')}
-                </Link>
-                <Link
-                    to="/admin/schedule"
-                    className="admin-action-button button-primary"
-                    role="button"
-                >
-                    {t('navbar.schedulePlanner', 'Dienstplan')}
-                </Link>
-                <Link
-                    to="/admin/analytics"
-                    className="admin-action-button button-secondary admin-analytics-button"
-                    role="button"
-                >
-                    {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
-                </Link>
+                {hasFeature('payroll') && (
+                    <Link
+                        to="/admin/payslips"
+                        className="admin-action-button button-primary"
+                        role="button"
+                    >
+                        {t('navbar.payslips', 'Abrechnungen')}
+                    </Link>
+                )}
+                {hasFeature('roster') && (
+                    <Link
+                        to="/admin/schedule"
+                        className="admin-action-button button-primary"
+                        role="button"
+                    >
+                        {t('navbar.schedulePlanner', 'Dienstplan')}
+                    </Link>
+                )}
+                {hasFeature('analytics') && (
+                    <Link
+                        to="/admin/analytics"
+                        className="admin-action-button button-secondary admin-analytics-button"
+                        role="button"
+                    >
+                        {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
+                    </Link>
+                )}
                 <button
                     type="button"
                     onClick={handleDataReloadNeeded}

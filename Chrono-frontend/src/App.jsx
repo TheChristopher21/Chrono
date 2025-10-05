@@ -82,15 +82,114 @@ function App() {
                         <Route path="/admin/dashboard" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminDashboard /></PrivateRoute>} />
                         <Route path="/admin/users" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminUserManagementPage /></PrivateRoute>} />
                         <Route path="/admin/change-password" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminChangePassword /></PrivateRoute>} />
-                        <Route path="/admin/customers" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminCustomersPage /></PrivateRoute>} />
-                        <Route path="/admin/projects" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminProjectsPage /></PrivateRoute>} />
-                        <Route path="/admin/tasks" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminTasksPage /></PrivateRoute>} />
-                        <Route path="/admin/analytics" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminAnalyticsPage /></PrivateRoute>} />
-                        <Route path="/admin/accounting" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminAccountingPage /></PrivateRoute>} />
-                        <Route path="/admin/supply-chain" element={<PrivateRoute requiredRole="ROLE_ADMIN"><SupplyChainDashboard /></PrivateRoute>} />
-                        <Route path="/admin/crm" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CrmDashboard /></PrivateRoute>} />
-                        <Route path="/admin/banking" element={<PrivateRoute requiredRole="ROLE_ADMIN"><BankingOperationsPage /></PrivateRoute>} />
-                        <Route path="/admin/project-report" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminProjectReportPage /></PrivateRoute>} />
+                        <Route
+                            path="/admin/customers"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="projects"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <AdminCustomersPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/projects"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="projects"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <AdminProjectsPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/tasks"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="projects"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <AdminTasksPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/analytics"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="analytics"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <AdminAnalyticsPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/accounting"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="accounting"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <AdminAccountingPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/supply-chain"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="supplyChain"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <SupplyChainDashboard />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/crm"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="crm"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <CrmDashboard />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/banking"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="banking"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <BankingOperationsPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/project-report"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="projects"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <AdminProjectReportPage />
+                                </PrivateRoute>
+                            }
+                        />
                         <Route
                             path="/admin/company"
                             element={
@@ -99,9 +198,42 @@ function App() {
                                 </PrivateRoute>
                             }
                         />
-                        <Route path="/admin/payslips" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_PAYROLL_ADMIN"]}><AdminPayslipsPage /></PrivateRoute>} />
-                        <Route path="/admin/schedule" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminSchedulePlannerPage /></PrivateRoute>} />
-                        <Route path="/admin/print-schedule" element={<PrivateRoute requiredRole="ROLE_ADMIN"><PrintSchedule /></PrivateRoute>} />
+                        <Route
+                            path="/admin/payslips"
+                            element={
+                                <PrivateRoute
+                                    requiredRole={["ROLE_ADMIN", "ROLE_PAYROLL_ADMIN"]}
+                                    requiredFeature="payroll"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <AdminPayslipsPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/schedule"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="roster"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <AdminSchedulePlannerPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/print-schedule"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="roster"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <PrintSchedule />
+                                </PrivateRoute>
+                            }
+                        />
 
                         <Route path="/admin/knowledge" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminKnowledgePage /></PrivateRoute>} />
                         <Route path="/admin/company-settings" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CompanySettingsPage /></PrivateRoute>} />

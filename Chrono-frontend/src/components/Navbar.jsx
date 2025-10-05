@@ -1,7 +1,7 @@
 /****************************************
  * Navbar.jsx · kompakt mit Dropdowns & Icons (Aug 2025)
  ****************************************/
-import React, { useState, useEffect, useContext, useRef } from 'react';
+import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LanguageContext, useTranslation } from '../context/LanguageContext';
@@ -121,6 +121,19 @@ const Navbar = () => {
     const userInitial = currentUser?.username?.[0]?.toUpperCase() || 'U';
     const onAdminRoute = location.pathname.startsWith('/admin');
 
+    const companyFeatureKeys = useMemo(() => {
+        const keys = currentUser?.companyFeatureKeys;
+        if (!keys) return new Set();
+        if (Array.isArray(keys)) return new Set(keys);
+        return new Set(Object.values(keys));
+    }, [currentUser?.companyFeatureKeys]);
+
+    const hasFeature = (featureKey) => {
+        if (!featureKey) return true;
+        if (isSuperAdmin) return true;
+        return companyFeatureKeys.has(featureKey);
+    };
+
     return (
         <div className={styles['scoped-navbar']}>
             <nav className={styles.navbar} aria-label="Hauptnavigation">
@@ -194,31 +207,43 @@ const Navbar = () => {
                                                 <Link to="/admin/users" onClick={() => setOpenAdmin(false)}>
                                                     {t('navbar.userManagement','Benutzerverwaltung')}
                                                 </Link>
-                                                {currentUser.customerTrackingEnabled && (
+                                                {currentUser.customerTrackingEnabled && hasFeature('projects') && (
                                                     <>
                                                         <Link to="/admin/projects" onClick={() => setOpenAdmin(false)}>
                                                             {t('navbar.workManagement','Kunden · Projekte · Aufgaben')}
                                                         </Link>
                                                     </>
                                                 )}
-                                                <Link to="/admin/accounting" onClick={() => setOpenAdmin(false)}>
-                                                    {t('navbar.accounting','Finanzbuchhaltung')}
-                                                </Link>
-                                                <Link to="/admin/supply-chain" onClick={() => setOpenAdmin(false)}>
-                                                    {t('navbar.supplyChain','Supply Chain')}
-                                                </Link>
-                                                <Link to="/admin/crm" onClick={() => setOpenAdmin(false)}>
-                                                    {t('navbar.crm','CRM & Marketing')}
-                                                </Link>
-                                                <Link to="/admin/banking" onClick={() => setOpenAdmin(false)}>
-                                                    {t('navbar.banking','Zahlungsverkehr')}
-                                                </Link>
-                                                <Link to="/admin/payslips" onClick={() => setOpenAdmin(false)}>
-                                                    {t('navbar.payslips','Abrechnungen')}
-                                                </Link>
-                                                <Link to="/admin/schedule" onClick={() => setOpenAdmin(false)}>
-                                                    {t('navbar.schedulePlanner','Dienstplan')}
-                                                </Link>
+                                                {hasFeature('accounting') && (
+                                                    <Link to="/admin/accounting" onClick={() => setOpenAdmin(false)}>
+                                                        {t('navbar.accounting','Finanzbuchhaltung')}
+                                                    </Link>
+                                                )}
+                                                {hasFeature('supplyChain') && (
+                                                    <Link to="/admin/supply-chain" onClick={() => setOpenAdmin(false)}>
+                                                        {t('navbar.supplyChain','Supply Chain')}
+                                                    </Link>
+                                                )}
+                                                {hasFeature('crm') && (
+                                                    <Link to="/admin/crm" onClick={() => setOpenAdmin(false)}>
+                                                        {t('navbar.crm','CRM & Marketing')}
+                                                    </Link>
+                                                )}
+                                                {hasFeature('banking') && (
+                                                    <Link to="/admin/banking" onClick={() => setOpenAdmin(false)}>
+                                                        {t('navbar.banking','Zahlungsverkehr')}
+                                                    </Link>
+                                                )}
+                                                {hasFeature('payroll') && (
+                                                    <Link to="/admin/payslips" onClick={() => setOpenAdmin(false)}>
+                                                        {t('navbar.payslips','Abrechnungen')}
+                                                    </Link>
+                                                )}
+                                                {hasFeature('roster') && (
+                                                    <Link to="/admin/schedule" onClick={() => setOpenAdmin(false)}>
+                                                        {t('navbar.schedulePlanner','Dienstplan')}
+                                                    </Link>
+                                                )}
                                                 <Link to="/admin/knowledge" onClick={() => setOpenAdmin(false)}>
                                                     {t('navbar.knowledge','Firmen KI Wissen')}
                                                 </Link>

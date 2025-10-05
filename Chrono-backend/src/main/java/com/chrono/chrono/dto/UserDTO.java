@@ -2,11 +2,15 @@ package com.chrono.chrono.dto;
 
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.utils.RegistrationFeatures;
+
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
 
 public class UserDTO {
     // ----- Fields -----
@@ -60,10 +64,12 @@ public class UserDTO {
     private Boolean customerTrackingEnabled; // Kept
     private Long lastCustomerId;
     private String lastCustomerName;
+    private Set<String> companyFeatureKeys;
 
     public UserDTO() {
         this.roles = new ArrayList<>();
         this.weeklySchedule = new ArrayList<>();
+        this.companyFeatureKeys = new LinkedHashSet<>(RegistrationFeatures.ALWAYS_AVAILABLE_FEATURES);
     }
 
     // Constructor from User entity
@@ -119,6 +125,10 @@ public class UserDTO {
         this.lastCustomerId = user.getLastCustomer() != null ? user.getLastCustomer().getId() : null;
         this.lastCustomerName = user.getLastCustomer() != null ? user.getLastCustomer().getName() : null;
         this.customerTrackingEnabled = (user.getCompany() != null) ? user.getCompany().getCustomerTrackingEnabled() : null; // Kept
+        this.companyFeatureKeys = new LinkedHashSet<>(RegistrationFeatures.ALWAYS_AVAILABLE_FEATURES);
+        if (user.getCompany() != null) {
+            this.companyFeatureKeys.addAll(RegistrationFeatures.sanitizeOptionalFeatures(user.getCompany().getEnabledFeatures()));
+        }
     }
 
     // All-Args-Constructor
@@ -182,6 +192,7 @@ public class UserDTO {
         this.lastCustomerId = lastCustomerId;
         this.lastCustomerName = lastCustomerName;
         this.customerTrackingEnabled = customerTrackingEnabled; // Kept
+        this.companyFeatureKeys = new LinkedHashSet<>(RegistrationFeatures.ALWAYS_AVAILABLE_FEATURES);
         this.deleted = deleted;
         this.optOut = optOut;
         this.includeInTimeTracking = includeInTimeTracking != null ? includeInTimeTracking : true;
@@ -238,6 +249,7 @@ public class UserDTO {
     public Long getLastCustomerId() { return lastCustomerId; }
     public String getLastCustomerName() { return lastCustomerName; }
     public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; } // Kept
+    public Set<String> getCompanyFeatureKeys() { return companyFeatureKeys; }
 
     // ----- Setters -----
     public void setId(Long id) { this.id = id; }
@@ -290,4 +302,9 @@ public class UserDTO {
     public void setLastCustomerId(Long lastCustomerId) { this.lastCustomerId = lastCustomerId; }
     public void setLastCustomerName(String lastCustomerName) { this.lastCustomerName = lastCustomerName; }
     public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; } // Kept
+    public void setCompanyFeatureKeys(Set<String> companyFeatureKeys) {
+        this.companyFeatureKeys = companyFeatureKeys != null
+                ? new LinkedHashSet<>(companyFeatureKeys)
+                : new LinkedHashSet<>(RegistrationFeatures.ALWAYS_AVAILABLE_FEATURES);
+    }
 }
