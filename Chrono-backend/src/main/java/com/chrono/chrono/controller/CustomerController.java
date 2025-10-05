@@ -43,7 +43,16 @@ public class CustomerController {
      * Akzeptiert jetzt ein User-Objekt direkt.
      */
     private boolean featureEnabled(User user) {
-        return user != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled());
+        if (user == null || user.getCompany() == null) {
+            return false;
+        }
+
+        if (Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+            return true;
+        }
+
+        return user.getCompany().getEnabledFeatures() != null
+                && user.getCompany().getEnabledFeatures().contains("crm");
     }
 
     /**
