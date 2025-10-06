@@ -39,6 +39,18 @@
   --c-error: #e53e3e;
   --c-error-bg: #fff5f5;
   --c-error-text: #c53030;
+  --billing-bg: var(--c-card-alt);
+  --billing-border: color-mix(in srgb, var(--c-border) 80%, transparent);
+  --billing-text: var(--c-text-soft);
+  --billing-hover-bg: color-mix(in srgb, var(--c-primary-light) 45%, #ffffff 55%);
+  --billing-hover-border: color-mix(in srgb, var(--c-primary) 35%, var(--c-border) 65%);
+  --billing-hover-text: var(--c-text-strong);
+  --billing-active-bg: linear-gradient(135deg, rgba(66, 153, 225, 0.18) 0%, rgba(72, 187, 255, 0.1) 100%);
+  --billing-active-border: #4299e1;
+  --billing-active-text: #1b365d;
+  --billing-active-shadow: 0 18px 28px -18px rgba(66, 153, 225, 0.55);
+  --billing-indicator-border: color-mix(in srgb, var(--c-border) 80%, transparent);
+  --billing-active-indicator-color: var(--billing-active-border);
   --u-radius-lg: 16px;
   --u-radius-md: 10px;
   --u-radius-sm: 6px;
@@ -98,6 +110,18 @@
   --c-error: #fc8181;
   --c-error-bg: rgba(252, 129, 129, 0.1);
   --c-error-text: #fed7d7;
+  --billing-bg: rgba(26, 32, 44, 0.85);
+  --billing-border: rgba(148, 163, 184, 0.32);
+  --billing-text: rgba(226, 232, 240, 0.88);
+  --billing-hover-bg: rgba(99, 179, 237, 0.18);
+  --billing-hover-border: rgba(144, 205, 244, 0.6);
+  --billing-hover-text: #f7fafc;
+  --billing-active-bg: linear-gradient(135deg, rgba(99, 179, 237, 0.38) 0%, rgba(99, 179, 237, 0.22) 100%);
+  --billing-active-border: rgba(144, 205, 244, 0.95);
+  --billing-active-text: #ebf8ff;
+  --billing-active-shadow: 0 20px 34px -18px rgba(66, 153, 225, 0.7);
+  --billing-indicator-border: rgba(144, 205, 244, 0.55);
+  --billing-active-indicator-color: #ebf8ff;
 }
 
 /* Innerer Wrapper */
@@ -174,31 +198,95 @@
   margin-bottom: 2.5rem;
   flex-wrap: wrap;
 }
-.billing-toggle label {
+.billing-toggle .billing-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
   font-size: clamp(0.9rem, 1.5vw, 0.95rem);
   cursor: pointer;
-  padding: 0.6rem 1.2rem;
-  border: 1px solid var(--c-border-light);
-  border-radius: var(--u-radius-sm);
+  padding: 0.75rem 1.4rem;
+  border: 1px solid var(--billing-border);
+  border-radius: var(--u-radius-md);
+  background: var(--billing-bg);
+  color: var(--billing-text);
   transition:
-          background-color 0.2s,
-          color 0.2s,
-          border-color 0.2s;
-  color: var(--c-text-soft);
+          background-color var(--u-dur) var(--u-ease),
+          color var(--u-dur) var(--u-ease),
+          border-color var(--u-dur) var(--u-ease),
+          box-shadow var(--u-dur) var(--u-ease),
+          transform var(--u-dur) var(--u-ease);
+  min-width: clamp(200px, 28vw, 260px);
+  box-shadow: var(--u-shadow-xs);
+  font-weight: 500;
 }
-.billing-toggle input[type="radio"] {
-  display: none;
+.billing-toggle .billing-option input[type="radio"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
 }
-.billing-toggle input[type="radio"]:checked + label {
-  background-color: var(--c-primary-light);
-  color: var(--c-primary);
-  border-color: var(--c-primary);
+.billing-toggle .billing-option__indicator {
+  width: 16px;
+  height: 16px;
+  border-radius: 999px;
+  border: 2px solid var(--billing-indicator-border);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition:
+          background-color var(--u-dur) var(--u-ease),
+          border-color var(--u-dur) var(--u-ease),
+          transform var(--u-dur) var(--u-ease);
+  flex-shrink: 0;
+  color: transparent;
+}
+.billing-toggle .billing-option__indicator::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background-color: currentColor;
+  transform: scale(0);
+  transition: transform var(--u-dur) var(--u-ease);
+}
+.billing-toggle .billing-option__label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 500;
+  color: inherit;
+}
+.billing-toggle .billing-option:hover,
+.billing-toggle .billing-option:focus-within {
+  border-color: var(--billing-hover-border);
+  color: var(--billing-hover-text);
+  background: var(--billing-hover-bg);
+  box-shadow: var(--u-shadow-sm);
+}
+.billing-toggle .billing-option.is-active {
+  background: var(--billing-active-bg);
+  color: var(--billing-active-text);
+  border-color: var(--billing-active-border);
+  box-shadow: var(--billing-active-shadow);
+  transform: translateY(-2px);
   font-weight: 600;
-  box-shadow: 0 0 10px -3px var(--c-primary-light);
 }
-.billing-toggle label:not(:has(input[type="radio"]:checked)):hover {
-  border-color: var(--c-text-soft);
-  color: var(--c-text);
+.billing-toggle .billing-option.is-active .billing-option__indicator::after {
+  transform: scale(1);
+}
+.billing-toggle .billing-option.is-active .billing-option__indicator {
+  border-color: var(--billing-active-border);
+  color: var(--billing-active-indicator-color);
+}
+.billing-toggle .billing-option.is-active .deal-badge {
+  background: var(--c-primary);
+  color: var(--c-primary-text);
+}
+.billing-toggle .billing-option input[type="radio"]:focus-visible + .billing-option__indicator {
+  outline: 3px solid color-mix(in srgb, var(--billing-active-border) 60%, transparent);
+  outline-offset: 4px;
 }
 
 /* Pakete (Cards) */

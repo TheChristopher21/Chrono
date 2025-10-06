@@ -143,6 +143,15 @@ const LandingPage = () => {
                 t("landing.features.items.7.bullets.2", "Praktisch für Steuer und Abrechnung"),
             ],
         },
+        {
+            icon: "🤝",
+            title: t("landing.features.items.8.title", "Persönlicher Support inklusive"),
+            bullets: [
+                t("landing.features.items.8.bullets.0", "Direkter Draht zum Chrono-Team"),
+                t("landing.features.items.8.bullets.1", "Antwort in der Regel am selben Werktag"),
+                t("landing.features.items.8.bullets.2", "Onboarding-Hilfe für dein gesamtes Team"),
+            ],
+        },
     ];
 
     const steps = [

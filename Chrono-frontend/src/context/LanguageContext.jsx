@@ -354,6 +354,14 @@ const translations = {
                             "Praktisch für Steuer und Abrechnung",
                         ],
                     },
+                    {
+                        title: "Persönlicher Support inklusive",
+                        bullets: [
+                            "Direkter Draht zum Chrono-Team",
+                            "Antwort in der Regel am selben Werktag",
+                            "Onboarding-Hilfe für dein gesamtes Team",
+                        ],
+                    },
                 ],
             },
             steps: {
