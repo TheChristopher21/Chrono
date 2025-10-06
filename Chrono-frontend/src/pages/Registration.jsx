@@ -59,7 +59,7 @@ const Registration = () => {
         let isMounted = true;
         if (companyId == null) {
             if (isMounted) {
-                setCompanyFeatureKeys([]);
+                setCompanyFeatureKeys(TOGGLABLE_FEATURE_KEYS);
                 setFeatureError("");
                 setIsLoadingFeatures(false);
             }
@@ -89,9 +89,9 @@ const Registration = () => {
                 console.error("Fehler beim Laden der Firmenmodule", fetchError);
                 if (isMounted) {
                     setFeatureError(
-                        "Die freigeschalteten Module konnten nicht geladen werden. Es werden nur die Standardmodule angezeigt."
+                        "Die freigeschalteten Module konnten nicht geladen werden. Es werden vorerst alle Zusatzmodule angezeigt."
                     );
-                    setCompanyFeatureKeys([]);
+                    setCompanyFeatureKeys(TOGGLABLE_FEATURE_KEYS);
                 }
             } finally {
                 if (isMounted) {
@@ -378,11 +378,12 @@ const Registration = () => {
                             ) : (
                                 <>
                                     <span>
-                                        Hinweis: Ohne Firmen-ID werden nur die Standardmodule angezeigt. Aktivierte Zusatzmodule sehen
-                                        Sie über einen personalisierten Link.
+                                        Hinweis: Ohne Firmen-ID zeigen wir alle verfügbaren Zusatzmodule an. Wenn Ihre Firma einen
+                                        individuellen Link bereitstellt, spiegeln wir die dort definierten Freigaben wider.
                                     </span>
                                     <span className="feature-muted">
-                                        Tipp: SuperAdmins können im Firmen-Panel entscheiden, welche Module angezeigt werden.
+                                        Tipp: SuperAdmins können im Firmen-Panel entscheiden, welche Module für Mitarbeiter:innen
+                                        freigeschaltet werden.
                                     </span>
                                 </>
                             )}
