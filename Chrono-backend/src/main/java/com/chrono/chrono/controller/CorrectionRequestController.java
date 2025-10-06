@@ -139,8 +139,36 @@ public class CorrectionRequestController {
     }
     @GetMapping("/my")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<List<CorrectionRequest>> getMyRequests(Principal principal) {
-        return ResponseEntity.ok(correctionRequestService.getRequestsForUser(principal.getName()));
+    public ResponseEntity<?> getMyRequests(
+            Principal principal,
+            @RequestParam(value = "username", required = false) String requestedUsername
+    ) {
+        String effectivePrincipal = principal != null ? principal.getName() : null;
+        String effectiveUsername = (requestedUsername != null && !requestedUsername.isBlank())
+                ? requestedUsername.trim()
+                : effectivePrincipal;
+
+        if (effectiveUsername == null) {
+            logger.warn("Korrekturanträge konnten nicht geladen werden: kein authentifizierter Benutzer oder Benutzername.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Kein authentifizierter Benutzer vorhanden."));
+        }
+
+        if (effectivePrincipal != null && !effectivePrincipal.equals(effectiveUsername)) {
+            logger.warn("Benutzer {} versuchte auf Korrekturanträge von {} zuzugreifen, Zugriff verweigert.",
+                    effectivePrincipal, effectiveUsername);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(Map.of("message", "Sie dürfen nur Ihre eigenen Korrekturanträge abrufen."));
+        }
+
+        try {
+            List<CorrectionRequest> requests = correctionRequestService.getRequestsForUser(effectiveUsername);
+            return ResponseEntity.ok(requests);
+        } catch (RuntimeException e) {
+            logger.error("Fehler beim Abrufen der Korrekturanträge für {}: {}", effectiveUsername, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "Benutzer oder Korrekturanträge nicht gefunden."));
+        }
     }
 
     // Add this new method inside the CorrectionRequestController class
