@@ -4,6 +4,7 @@ import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import java.time.LocalDate;
@@ -19,6 +20,7 @@ public class CorrectionRequest {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "target_entry_id", nullable = true)
+    @JsonIgnore
     private TimeTrackingEntry targetEntry;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
