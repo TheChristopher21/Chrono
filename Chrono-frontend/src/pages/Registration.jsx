@@ -425,10 +425,14 @@ const Registration = () => {
                                 <p className="price-item">
                                     <span className="label">Ausgewählte Features:</span>
                                     <span className="value">
-                    {[BASE_FEATURE, ...FEATURES.filter(f => selectedFeatures.includes(f.key))]
-                        .map(f => f.name)
-                        .join(", ")}
-                  </span>
+                                        {[BASE_FEATURE,
+                                            ...FEATURE_CATALOG.filter((feature) =>
+                                                selectedFeatures.includes(feature.key)
+                                            ),
+                                        ]
+                                            .map((feature) => feature.name)
+                                            .join(", ")}
+                                    </span>
                                 </p>
                                 <p className="price-item">
                                     <span className="label">Preis je Mitarbeiter:</span>
