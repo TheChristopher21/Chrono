@@ -2,6 +2,7 @@ package com.chrono.chrono.entities;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -45,6 +46,9 @@ public class Company {
 
     @Column(name = "customer_tracking_enabled")
     private Boolean customerTrackingEnabled;
+
+    @Column(name = "demo_data_last_reset")
+    private LocalDate demoDataLastReset;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "company_enabled_features", joinColumns = @JoinColumn(name = "company_id"))
@@ -160,4 +164,7 @@ public class Company {
 
     public Double getMidijobFactor() { return midijobFactor; }
     public void setMidijobFactor(Double midijobFactor) { this.midijobFactor = midijobFactor; }
+
+    public LocalDate getDemoDataLastReset() { return demoDataLastReset; }
+    public void setDemoDataLastReset(LocalDate demoDataLastReset) { this.demoDataLastReset = demoDataLastReset; }
 }
