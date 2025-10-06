@@ -2,6 +2,7 @@ package com.chrono.chrono.config;
 
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.services.DemoDataService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
@@ -19,6 +20,9 @@ public class DemoUserInterceptor implements HandlerInterceptor {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private DemoDataService demoDataService;
+
     private static final Set<String> BLOCKED_METHODS = Set.of("POST", "PUT", "DELETE", "PATCH");
     private static final Set<String> ALLOWED_WRITE_ENDPOINTS = Set.of(
             "/api/vacation/create",
@@ -29,11 +33,13 @@ public class DemoUserInterceptor implements HandlerInterceptor {
 
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
-        if (BLOCKED_METHODS.contains(request.getMethod())) {
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null && auth.isAuthenticated()) {
-                User user = userRepository.findByUsername(auth.getName()).orElse(null);
-                if (user != null && user.isDemo()) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated()) {
+            User user = userRepository.findByUsername(auth.getName()).orElse(null);
+            if (user != null && user.isDemo()) {
+                demoDataService.refreshDemoDataIfOutdated(user);
+
+                if (BLOCKED_METHODS.contains(request.getMethod())) {
                     String path = request.getRequestURI();
                     if (ALLOWED_WRITE_ENDPOINTS.contains(path)) {
                         return true;

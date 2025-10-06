@@ -47,6 +47,8 @@ public class DemoDataService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    private static final int DEMO_DATA_REFRESH_INTERVAL_DAYS = 7;
+
     @Transactional
     public void resetDemoData(User user) {
         Company company = ensureCompany(user);
@@ -278,7 +280,29 @@ public class DemoDataService {
 
         createVacation(david, today.plusDays(20), today.plusDays(24), false, false, null, false, false);
 
+        company.setDemoDataLastReset(today);
+        companyRepository.save(company);
         userRepository.saveAll(teamMembers);
+    }
+
+    @Transactional
+    public void refreshDemoDataIfOutdated(User user) {
+        if (user == null || user.getId() == null) {
+            return;
+        }
+
+        User managedUser = userRepository.findById(user.getId()).orElse(null);
+        if (managedUser == null || !managedUser.isDemo()) {
+            return;
+        }
+
+        Company company = managedUser.getCompany();
+        LocalDate today = LocalDate.now();
+        LocalDate lastReset = company != null ? company.getDemoDataLastReset() : null;
+
+        if (lastReset == null || lastReset.isBefore(today.minusDays(DEMO_DATA_REFRESH_INTERVAL_DAYS - 1))) {
+            resetDemoData(managedUser);
+        }
     }
 
     private Company ensureCompany(User demoUser) {
