@@ -57,6 +57,15 @@
   --stat-denied-text: #991b1b;
   --stat-pending-text: #92400e;
 
+  /* Status-Badges (Light) */
+  --stat-badge-default-text: #ffffff;
+  --stat-badge-approved-bg: #15803d;
+  --stat-badge-approved-text: #ecfdf5;
+  --stat-badge-denied-bg: #b91c1c;
+  --stat-badge-denied-text: #fef2f2;
+  --stat-badge-pending-bg: #b45309;
+  --stat-badge-pending-text: #fff7ed;
+
   --c-bg-vacation: #e0f2fe;
   --c-text-vacation: #0c4a6e;
   --c-bg-vacation-detail: #f0f8ff;
@@ -94,6 +103,15 @@
   --stat-approved-text: #bbf7d0;
   --stat-denied-text: #fecaca;
   --stat-pending-text: #fed7aa;
+
+  /* Status-Badges (Dark) */
+  --stat-badge-default-text: #0f172a;
+  --stat-badge-approved-bg: #22c55e;
+  --stat-badge-approved-text: #022c22;
+  --stat-badge-denied-bg: #f87171;
+  --stat-badge-denied-text: #450a0a;
+  --stat-badge-pending-bg: #fbbf24;
+  --stat-badge-pending-text: #422006;
 
   --c-bg-vacation: #1e3a8a;
   --c-text-vacation: #bfdbfe;
@@ -2822,19 +2840,23 @@
   font-size: 0.75rem;
   font-weight: 700;
   text-transform: uppercase;
-  color: #fff;
+  color: var(--stat-badge-default-text, #fff);
+  background-color: var(--stat-badge-default-bg, transparent);
   display: inline-block;
   text-align: center;
   min-width: 75px;
 }
-.status-badge.status-pending {
-  background-color: var(--ad-c-warn, #f59e0b);
-}
 .status-badge.status-approved {
-  background-color: var(--ad-c-success, #22c55e);
+  background-color: var(--stat-badge-approved-bg, #15803d);
+  color: var(--stat-badge-approved-text, #ecfdf5);
 }
 .status-badge.status-denied {
-  background-color: var(--ad-c-danger, #ef4444);
+  background-color: var(--stat-badge-denied-bg, #b91c1c);
+  color: var(--stat-badge-denied-text, #fef2f2);
+}
+.status-badge.status-pending {
+  background-color: var(--stat-badge-pending-bg, #b45309);
+  color: var(--stat-badge-pending-text, #fff7ed);
 }
 
 
@@ -2943,7 +2965,8 @@
     border-radius: 999px;
     font-size: 0.72rem;
     font-weight: 700;
-    color: #fff;
+    color: var(--stat-badge-default-text, #fff);
+    background-color: var(--stat-badge-default-bg, transparent);
     text-transform: uppercase;
     display: inline-block;
     min-width: 80px;
@@ -2954,9 +2977,18 @@
   Bietet im Dark‑Mode deutlich besseren Kontrast als der sehr helle
   Pastellton zuvor.
 */
-.status-badge.status-approved  { background-color: #22c55e; }
-.status-badge.status-denied    { background-color: var(--stat-denied-text); }
-.status-badge.status-pending   { background-color: var(--stat-pending-text); }
+.status-badge.status-approved  {
+    background-color: var(--stat-badge-approved-bg, #22c55e);
+    color: var(--stat-badge-approved-text, #022c22);
+}
+.status-badge.status-denied    {
+    background-color: var(--stat-badge-denied-bg, #f87171);
+    color: var(--stat-badge-denied-text, #450a0a);
+}
+.status-badge.status-pending   {
+    background-color: var(--stat-badge-pending-bg, #fbbf24);
+    color: var(--stat-badge-pending-text, #422006);
+}
 
 /* komplette Zeile leicht einfärben, aber nur, wenn nicht :hover */
 .corrections-table tr.status-approved:not(:hover) { background-color: var(--stat-approved-bg); }
