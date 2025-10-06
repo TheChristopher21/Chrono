@@ -295,8 +295,10 @@ const Registration = () => {
                         </div>
 
 
-                        <div className="billing-toggle">
-                            <label>
+                        <div className="billing-toggle" role="radiogroup" aria-label="Zahlungsintervall auswählen">
+                            <label
+                                className={`billing-option${billingPeriod === "monthly" ? " is-active" : ""}`}
+                            >
                                 <input
                                     type="radio"
                                     name="billingPeriod"
@@ -304,9 +306,12 @@ const Registration = () => {
                                     checked={billingPeriod === "monthly"}
                                     onChange={handleBillingPeriodChange}
                                 />
-                                Monatliche Zahlung
+                                <span className="billing-option__indicator" aria-hidden="true" />
+                                <span className="billing-option__label">Monatliche Zahlung</span>
                             </label>
-                            <label>
+                            <label
+                                className={`billing-option${billingPeriod === "yearly" ? " is-active" : ""}`}
+                            >
                                 <input
                                     type="radio"
                                     name="billingPeriod"
@@ -314,7 +319,10 @@ const Registration = () => {
                                     checked={billingPeriod === "yearly"}
                                     onChange={handleBillingPeriodChange}
                                 />
-                                Jährliche Zahlung <span className="deal-badge">2 Monate geschenkt!</span>
+                                <span className="billing-option__indicator" aria-hidden="true" />
+                                <span className="billing-option__label">
+                                    Jährliche Zahlung <span className="deal-badge">2 Monate geschenkt!</span>
+                                </span>
                             </label>
                         </div>
 
