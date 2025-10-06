@@ -114,18 +114,45 @@ function UserDashboard() {
     const fetchDataForUser = useCallback(async () => {
         if (!userProfile?.username) return;
         try {
-            const [resSummaries, resVacation, resCorr, resSick] = await Promise.all([
+            const results = await Promise.allSettled([
                 api.get(`/api/timetracking/history?username=${userProfile.username}`),
                 api.get('/api/vacation/my'),
                 api.get(`/api/correction/my?username=${userProfile.username}`),
                 api.get('/api/sick-leave/my')
             ]);
-            setDailySummaries(Array.isArray(resSummaries.data) ? resSummaries.data : []);
-            setVacationRequests(Array.isArray(resVacation.data) ? resVacation.data : []);
-            setCorrectionRequests(Array.isArray(resCorr.data) ? resCorr.data : []);
-            setSickLeaves(Array.isArray(resSick.data) ? resSick.data : []);
+
+            const [summariesRes, vacationRes, correctionsRes, sickRes] = results;
+
+            if (summariesRes.status === 'fulfilled') {
+                setDailySummaries(Array.isArray(summariesRes.value.data) ? summariesRes.value.data : []);
+            } else {
+                setDailySummaries([]);
+            }
+
+            if (vacationRes.status === 'fulfilled') {
+                setVacationRequests(Array.isArray(vacationRes.value.data) ? vacationRes.value.data : []);
+            } else {
+                setVacationRequests([]);
+            }
+
+            if (correctionsRes.status === 'fulfilled') {
+                setCorrectionRequests(Array.isArray(correctionsRes.value.data) ? correctionsRes.value.data : []);
+            } else {
+                setCorrectionRequests([]);
+            }
+
+            if (sickRes.status === 'fulfilled') {
+                setSickLeaves(Array.isArray(sickRes.value.data) ? sickRes.value.data : []);
+            } else {
+                setSickLeaves([]);
+            }
+
+            if (results.some(result => result.status === 'rejected')) {
+                console.error('Einige Benutzerdaten konnten nicht geladen werden (UserDashboard):', results);
+                notify(t('errors.fetchUserDataError', 'Fehler beim Laden der Benutzerdaten.'), 'error');
+            }
         } catch (err) {
-            console.error("Fehler beim Laden der Benutzerdaten (UserDashboard):", err);
+            console.error('Unerwarteter Fehler beim Laden der Benutzerdaten (UserDashboard):', err);
             notify(t('errors.fetchUserDataError', 'Fehler beim Laden der Benutzerdaten.'), 'error');
         }
     }, [userProfile, notify, t]);
