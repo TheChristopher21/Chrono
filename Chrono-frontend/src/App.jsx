@@ -45,6 +45,7 @@ import PayslipsPage from "./pages/PayslipsPage.jsx";
 import DemoTour from "./pages/DemoTour.jsx";
 import AdminAccountingPage from "./pages/AdminAccounting/AdminAccountingPage.jsx";
 import SupplyChainDashboard from "./pages/SupplyChain/SupplyChainDashboard.jsx";
+import ChronoTwoDashboard from "./pages/ChronoTwo/ChronoTwoDashboard.jsx";
 import CrmDashboard from "./pages/CRM/CrmDashboard.jsx";
 import BankingOperationsPage from "./pages/AdminBanking/BankingOperationsPage.jsx";
 
@@ -139,6 +140,18 @@ function App() {
                                     redirectTo="/admin/dashboard"
                                 >
                                     <AdminAccountingPage />
+                                </PrivateRoute>
+                            }
+                        />
+                        <Route
+                            path="/admin/chrono-two"
+                            element={
+                                <PrivateRoute
+                                    requiredRole="ROLE_ADMIN"
+                                    requiredFeature="chrono2"
+                                    redirectTo="/admin/dashboard"
+                                >
+                                    <ChronoTwoDashboard />
                                 </PrivateRoute>
                             }
                         />

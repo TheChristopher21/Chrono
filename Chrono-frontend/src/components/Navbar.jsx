@@ -224,6 +224,11 @@ const Navbar = () => {
                                                         {t('navbar.supplyChain','Supply Chain')}
                                                     </Link>
                                                 )}
+                                                {hasFeature('chrono2') && (
+                                                    <Link to="/admin/chrono-two" onClick={() => setOpenAdmin(false)}>
+                                                        Chrono 2.0
+                                                    </Link>
+                                                )}
                                                 {hasFeature('crm') && (
                                                     <Link to="/admin/crm" onClick={() => setOpenAdmin(false)}>
                                                         {t('navbar.crm','CRM & Marketing')}
