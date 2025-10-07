@@ -745,261 +745,263 @@ const AdminProjectsPage = () => {
                         className={`tab-panel${activeTab === 'projects' ? ' is-active' : ''}`}
                         hidden={activeTab !== 'projects'}
                     >
-                        <section className="content-section">
-                            <h3 className="section-title">{t('project.create.title', 'Neues Projekt anlegen')}</h3>
+                        <div className="content-grid content-grid--two">
+                            <section className="content-section">
+                                <h3 className="section-title">{t('project.create.title', 'Neues Projekt anlegen')}</h3>
 
-                            {!hasCustomers && (
-                                <div className="empty-state">
-                                    <h4>{t('project.create.noCustomersTitle', 'Noch keine Kunden angelegt')}</h4>
-                                    <p>
-                                        {t(
-                                            'project.create.noCustomersDesc',
-                                            'Lege zuerst einen Kunden an, um Projekte zuordnen zu können.'
-                                        )}
-                                    </p>
-                                </div>
-                            )}
+                                {!hasCustomers && (
+                                    <div className="empty-state">
+                                        <h4>{t('project.create.noCustomersTitle', 'Noch keine Kunden angelegt')}</h4>
+                                        <p>
+                                            {t(
+                                                'project.create.noCustomersDesc',
+                                                'Lege zuerst einen Kunden an, um Projekte zuordnen zu können.'
+                                            )}
+                                        </p>
+                                    </div>
+                                )}
 
-                            <form onSubmit={handleCreate} className="create-form" aria-label={t('project.create.form', 'Projekt anlegen')}>
-                                <label className="sr-only" htmlFor="newProjectName">
-                                    {t('project.create.nameLabel', 'Projektname')}
-                                </label>
-                                <input
-                                    id="newProjectName"
-                                    type="text"
-                                    placeholder={t('project.create.namePlaceholder', 'Name des neuen Projekts')}
-                                    value={newName}
-                                    onChange={(e) => setNewName(e.target.value)}
-                                    required
-                                    autoComplete="off"
-                                />
+                                <form onSubmit={handleCreate} className="create-form" aria-label={t('project.create.form', 'Projekt anlegen')}>
+                                    <label className="sr-only" htmlFor="newProjectName">
+                                        {t('project.create.nameLabel', 'Projektname')}
+                                    </label>
+                                    <input
+                                        id="newProjectName"
+                                        type="text"
+                                        placeholder={t('project.create.namePlaceholder', 'Name des neuen Projekts')}
+                                        value={newName}
+                                        onChange={(e) => setNewName(e.target.value)}
+                                        required
+                                        autoComplete="off"
+                                    />
 
-                                <label className="sr-only" htmlFor="newProjectCustomer">
-                                    {t('project.create.customerLabel', 'Kunde')}
-                                </label>
-                                <select
-                                    id="newProjectCustomer"
-                                    value={selectedCustomerId}
-                                    onChange={(e) => setSelectedCustomerId(e.target.value)}
-                                    required
-                                    disabled={!hasCustomers}
-                                >
-                                    <option value="" disabled>
-                                        {t('project.create.customerPlaceholder', 'Kunde auswählen...')}
-                                    </option>
-                                    {customerList.map((c) => (
-                                        <option key={c.id} value={c.id}>
-                                            {c.name}
+                                    <label className="sr-only" htmlFor="newProjectCustomer">
+                                        {t('project.create.customerLabel', 'Kunde')}
+                                    </label>
+                                    <select
+                                        id="newProjectCustomer"
+                                        value={selectedCustomerId}
+                                        onChange={(e) => setSelectedCustomerId(e.target.value)}
+                                        required
+                                        disabled={!hasCustomers}
+                                    >
+                                        <option value="" disabled>
+                                            {t('project.create.customerPlaceholder', 'Kunde auswählen...')}
                                         </option>
-                                    ))}
-                                </select>
+                                        {customerList.map((c) => (
+                                            <option key={c.id} value={c.id}>
+                                                {c.name}
+                                            </option>
+                                        ))}
+                                    </select>
 
-                                <label className="sr-only" htmlFor="newProjectParent">
-                                    {t('project.create.parentLabel', 'Übergeordnetes Projekt')}
-                                </label>
-                                <select
-                                    id="newProjectParent"
-                                    value={newParentId}
-                                    onChange={(e) => setNewParentId(e.target.value)}
-                                >
-                                    <option value="">
-                                        {t('project.create.noParent', 'Kein übergeordnetes Projekt')}
-                                    </option>
-                                    {parentOptions.map((option) => (
-                                        <option key={option.id} value={option.id}>
-                                            {option.name}
+                                    <label className="sr-only" htmlFor="newProjectParent">
+                                        {t('project.create.parentLabel', 'Übergeordnetes Projekt')}
+                                    </label>
+                                    <select
+                                        id="newProjectParent"
+                                        value={newParentId}
+                                        onChange={(e) => setNewParentId(e.target.value)}
+                                    >
+                                        <option value="">
+                                            {t('project.create.noParent', 'Kein übergeordnetes Projekt')}
                                         </option>
-                                    ))}
-                                </select>
+                                        {parentOptions.map((option) => (
+                                            <option key={option.id} value={option.id}>
+                                                {option.name}
+                                            </option>
+                                        ))}
+                                    </select>
 
-                                <label className="sr-only" htmlFor="newProjectBudget">
-                                    {t('project.create.budgetLabel', 'Budget (Minuten)')}
-                                </label>
-                                <input
-                                    id="newProjectBudget"
-                                    type="number"
-                                    min="0"
-                                    inputMode="numeric"
-                                    placeholder={t('project.create.budgetPlaceholder', 'Budget (Minuten)')}
-                                    value={newBudget}
-                                    onChange={(e) => setNewBudget(e.target.value)}
-                                />
+                                    <label className="sr-only" htmlFor="newProjectBudget">
+                                        {t('project.create.budgetLabel', 'Budget (Minuten)')}
+                                    </label>
+                                    <input
+                                        id="newProjectBudget"
+                                        type="number"
+                                        min="0"
+                                        inputMode="numeric"
+                                        placeholder={t('project.create.budgetPlaceholder', 'Budget (Minuten)')}
+                                        value={newBudget}
+                                        onChange={(e) => setNewBudget(e.target.value)}
+                                    />
 
-                                <label className="sr-only" htmlFor="newProjectRate">
-                                    {t('project.create.rateLabel', 'Stundensatz (CHF)')}
-                                </label>
-                                <input
-                                    id="newProjectRate"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    inputMode="decimal"
-                                    placeholder={t('project.create.ratePlaceholder', 'Stundensatz (optional)')}
-                                    value={newHourlyRate}
-                                    onChange={(e) => setNewHourlyRate(e.target.value)}
-                                />
+                                    <label className="sr-only" htmlFor="newProjectRate">
+                                        {t('project.create.rateLabel', 'Stundensatz (CHF)')}
+                                    </label>
+                                    <input
+                                        id="newProjectRate"
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        inputMode="decimal"
+                                        placeholder={t('project.create.ratePlaceholder', 'Stundensatz (optional)')}
+                                        value={newHourlyRate}
+                                        onChange={(e) => setNewHourlyRate(e.target.value)}
+                                    />
 
-                                <button type="submit" className="button-primary" disabled={!hasCustomers}>
-                                    {t('create', 'Anlegen')}
-                                </button>
-                            </form>
-                        </section>
+                                    <button type="submit" className="button-primary" disabled={!hasCustomers}>
+                                        {t('create', 'Anlegen')}
+                                    </button>
+                                </form>
+                            </section>
 
-                        <section className="content-section">
-                            <h3 className="section-title">{t('project.list.title', 'Bestehende Projekte')}</h3>
+                            <section className="content-section">
+                                <h3 className="section-title">{t('project.list.title', 'Bestehende Projekte')}</h3>
 
-                            {!hasProjects ? (
-                                <div className="empty-state">
-                                    <h4>{t('project.list.emptyTitle', 'Noch keine Projekte')}</h4>
-                                    <p>
-                                        {t(
-                                            'project.list.emptyDesc',
-                                            'Lege oben ein neues Projekt an. Projekte können optional ein Budget in Minuten haben.'
-                                        )}
-                                    </p>
-                                </div>
-                            ) : (
-                                <div className="item-list-container">
-                                    <ul className="item-list project-list">
-                                        {projectList.map((p) => (
-                                            <li key={p.id} className="list-item">
-                                                {editingId === p.id ? (
-                                                    <form
-                                                        onSubmit={handleUpdate}
-                                                        className="edit-form"
-                                                        aria-label={t('project.edit.form', 'Projekt bearbeiten')}
-                                                    >
-                                                        <label className="sr-only" htmlFor="editProjectName">
-                                                            {t('project.edit.nameLabel', 'Projektname')}
-                                                        </label>
-                                                        <input
-                                                            id="editProjectName"
-                                                            type="text"
-                                                            value={editingName}
-                                                            onChange={(e) => setEditingName(e.target.value)}
-                                                            required
-                                                            autoFocus
-                                                            autoComplete="off"
-                                                        />
-
-                                                        <label className="sr-only" htmlFor="editProjectCustomer">
-                                                            {t('project.edit.customerLabel', 'Kunde')}
-                                                        </label>
-                                                        <select
-                                                            id="editProjectCustomer"
-                                                            value={editingCustomerId}
-                                                            onChange={(e) => setEditingCustomerId(e.target.value)}
-                                                            required
+                                {!hasProjects ? (
+                                    <div className="empty-state">
+                                        <h4>{t('project.list.emptyTitle', 'Noch keine Projekte')}</h4>
+                                        <p>
+                                            {t(
+                                                'project.list.emptyDesc',
+                                                'Lege oben ein neues Projekt an. Projekte können optional ein Budget in Minuten haben.'
+                                            )}
+                                        </p>
+                                    </div>
+                                ) : (
+                                    <div className="item-list-container">
+                                        <ul className="item-list project-list">
+                                            {projectList.map((p) => (
+                                                <li key={p.id} className="list-item">
+                                                    {editingId === p.id ? (
+                                                        <form
+                                                            onSubmit={handleUpdate}
+                                                            className="edit-form"
+                                                            aria-label={t('project.edit.form', 'Projekt bearbeiten')}
                                                         >
-                                                            <option value="" disabled>
-                                                                {t('project.edit.customerPlaceholder', 'Kunde auswählen...')}
-                                                            </option>
-                                                            {customerList.map((c) => (
-                                                                <option key={c.id} value={c.id}>
-                                                                    {c.name}
+                                                            <label className="sr-only" htmlFor="editProjectName">
+                                                                {t('project.edit.nameLabel', 'Projektname')}
+                                                            </label>
+                                                            <input
+                                                                id="editProjectName"
+                                                                type="text"
+                                                                value={editingName}
+                                                                onChange={(e) => setEditingName(e.target.value)}
+                                                                required
+                                                                autoFocus
+                                                                autoComplete="off"
+                                                            />
+
+                                                            <label className="sr-only" htmlFor="editProjectCustomer">
+                                                                {t('project.edit.customerLabel', 'Kunde')}
+                                                            </label>
+                                                            <select
+                                                                id="editProjectCustomer"
+                                                                value={editingCustomerId}
+                                                                onChange={(e) => setEditingCustomerId(e.target.value)}
+                                                                required
+                                                            >
+                                                                <option value="" disabled>
+                                                                    {t('project.edit.customerPlaceholder', 'Kunde auswählen...')}
                                                                 </option>
-                                                            ))}
-                                                        </select>
-
-                                                        <label className="sr-only" htmlFor="editProjectParent">
-                                                            {t('project.edit.parentLabel', 'Übergeordnetes Projekt')}
-                                                        </label>
-                                                        <select
-                                                            id="editProjectParent"
-                                                            value={editingParentId}
-                                                            onChange={(e) => setEditingParentId(e.target.value)}
-                                                        >
-                                                            <option value="">
-                                                                {t('project.edit.noParent', 'Kein übergeordnetes Projekt')}
-                                                            </option>
-                                                            {parentOptions
-                                                                .filter((option) => !blockedParentIds.has(option.id))
-                                                                .map((option) => (
-                                                                    <option key={option.id} value={String(option.id)}>
-                                                                        {option.name}
+                                                                {customerList.map((c) => (
+                                                                    <option key={c.id} value={c.id}>
+                                                                        {c.name}
                                                                     </option>
                                                                 ))}
-                                                        </select>
+                                                            </select>
 
-                                                        <label className="sr-only" htmlFor="editProjectBudget">
-                                                            {t('project.edit.budgetLabel', 'Budget (Minuten)')}
-                                                        </label>
-                                                        <input
-                                                            id="editProjectBudget"
-                                                            type="number"
-                                                            min="0"
-                                                            inputMode="numeric"
-                                                            placeholder={t('project.edit.budgetPlaceholder', 'Budget (Minuten)')}
-                                                            value={editingBudget}
-                                                            onChange={(e) => setEditingBudget(e.target.value)}
-                                                        />
+                                                            <label className="sr-only" htmlFor="editProjectParent">
+                                                                {t('project.edit.parentLabel', 'Übergeordnetes Projekt')}
+                                                            </label>
+                                                            <select
+                                                                id="editProjectParent"
+                                                                value={editingParentId}
+                                                                onChange={(e) => setEditingParentId(e.target.value)}
+                                                            >
+                                                                <option value="">
+                                                                    {t('project.edit.noParent', 'Kein übergeordnetes Projekt')}
+                                                                </option>
+                                                                {parentOptions
+                                                                    .filter((option) => !blockedParentIds.has(option.id))
+                                                                    .map((option) => (
+                                                                        <option key={option.id} value={String(option.id)}>
+                                                                            {option.name}
+                                                                        </option>
+                                                                    ))}
+                                                            </select>
 
-                                                        <label className="sr-only" htmlFor="editProjectRate">
-                                                            {t('project.edit.rateLabel', 'Stundensatz (CHF)')}
-                                                        </label>
-                                                        <input
-                                                            id="editProjectRate"
-                                                            type="number"
-                                                            min="0"
-                                                            step="0.01"
-                                                            inputMode="decimal"
-                                                            placeholder={t('project.edit.ratePlaceholder', 'Stundensatz (optional)')}
-                                                            value={editingHourlyRate}
-                                                            onChange={(e) => setEditingHourlyRate(e.target.value)}
-                                                        />
+                                                            <label className="sr-only" htmlFor="editProjectBudget">
+                                                                {t('project.edit.budgetLabel', 'Budget (Minuten)')}
+                                                            </label>
+                                                            <input
+                                                                id="editProjectBudget"
+                                                                type="number"
+                                                                min="0"
+                                                                inputMode="numeric"
+                                                                placeholder={t('project.edit.budgetPlaceholder', 'Budget (Minuten)')}
+                                                                value={editingBudget}
+                                                                onChange={(e) => setEditingBudget(e.target.value)}
+                                                            />
 
-                                                        <div className="form-actions">
-                                                            <button type="submit" className="button-primary">
-                                                                {t('save', 'Speichern')}
-                                                            </button>
-                                                            <button type="button" onClick={cancelEdit} className="button-secondary">
-                                                                {t('cancel', 'Abbrechen')}
-                                                            </button>
-                                                        </div>
-                                                    </form>
-                                                ) : (
-                                                    <>
-                                                        <div className="item-details">
-                                                            <span className="item-name" title={p.name}>
-                                                                {p.name}
-                                                            </span>
-                                                            <div className="item-meta">
-                                                                <span className="item-chip">
-                                                                    {p.customer?.name || t('project.noCustomer', 'Kein Kunde zugewiesen')}
-                                                                </span>
-                                                                {p.parent && (
-                                                                    <span className="item-chip">
-                                                                        {t('project.parent', 'Parent')}: {p.parent.name}
-                                                                    </span>
-                                                                )}
-                                                                {p.budgetMinutes !== undefined && p.budgetMinutes !== null && (
-                                                                    <span className="item-chip">
-                                                                        {p.budgetMinutes} {t('project.budget.unit', 'Min')}
-                                                                    </span>
-                                                                )}
-                                                                {p.hourlyRate !== undefined && p.hourlyRate !== null && p.hourlyRate !== '' && (
-                                                                    <span className="item-chip">
-                                                                        {t('project.rate', 'Rate')}: {p.hourlyRate}
-                                                                    </span>
-                                                                )}
+                                                            <label className="sr-only" htmlFor="editProjectRate">
+                                                                {t('project.edit.rateLabel', 'Stundensatz (CHF)')}
+                                                            </label>
+                                                            <input
+                                                                id="editProjectRate"
+                                                                type="number"
+                                                                min="0"
+                                                                step="0.01"
+                                                                inputMode="decimal"
+                                                                placeholder={t('project.edit.ratePlaceholder', 'Stundensatz (optional)')}
+                                                                value={editingHourlyRate}
+                                                                onChange={(e) => setEditingHourlyRate(e.target.value)}
+                                                            />
+
+                                                            <div className="form-actions">
+                                                                <button type="submit" className="button-primary">
+                                                                    {t('save', 'Speichern')}
+                                                                </button>
+                                                                <button type="button" onClick={cancelEdit} className="button-secondary">
+                                                                    {t('cancel', 'Abbrechen')}
+                                                                </button>
                                                             </div>
-                                                        </div>
-                                                        <div className="item-actions">
-                                                            <button onClick={() => startEdit(p)} className="button-secondary">
-                                                                {t('edit', 'Bearbeiten')}
-                                                            </button>
-                                                            <button onClick={() => handleDelete(p.id)} className="button-danger">
-                                                                {t('delete', 'Löschen')}
-                                                            </button>
-                                                        </div>
-                                                    </>
-                                                )}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-                        </section>
+                                                        </form>
+                                                    ) : (
+                                                        <>
+                                                            <div className="item-details">
+                                                                <span className="item-name" title={p.name}>
+                                                                    {p.name}
+                                                                </span>
+                                                                <div className="item-meta">
+                                                                    <span className="item-chip">
+                                                                        {p.customer?.name || t('project.noCustomer', 'Kein Kunde zugewiesen')}
+                                                                    </span>
+                                                                    {p.parent && (
+                                                                        <span className="item-chip">
+                                                                            {t('project.parent', 'Parent')}: {p.parent.name}
+                                                                        </span>
+                                                                    )}
+                                                                    {p.budgetMinutes !== undefined && p.budgetMinutes !== null && (
+                                                                        <span className="item-chip">
+                                                                            {p.budgetMinutes} {t('project.budget.unit', 'Min')}
+                                                                        </span>
+                                                                    )}
+                                                                    {p.hourlyRate !== undefined && p.hourlyRate !== null && p.hourlyRate !== '' && (
+                                                                        <span className="item-chip">
+                                                                            {t('project.rate', 'Rate')}: {p.hourlyRate}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                            <div className="item-actions">
+                                                                <button onClick={() => startEdit(p)} className="button-secondary">
+                                                                    {t('edit', 'Bearbeiten')}
+                                                                </button>
+                                                                <button onClick={() => handleDelete(p.id)} className="button-danger">
+                                                                    {t('delete', 'Löschen')}
+                                                                </button>
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+                            </section>
+                        </div>
 
                         <section className="content-section">
                             <div className="section-header">
@@ -1250,58 +1252,58 @@ const AdminProjectsPage = () => {
                         className={`tab-panel${activeTab === 'customers' ? ' is-active' : ''}`}
                         hidden={activeTab !== 'customers'}
                     >
-                        <section className="content-section">
-                            <h3 className="section-title">{t('customer.create.title', 'Neuen Kunden anlegen')}</h3>
-                            <form onSubmit={handleCreateCustomer} className="create-form">
-                                <input
-                                    type="text"
-                                    placeholder={t('customer.create.placeholder', 'Name des neuen Kunden')}
-                                    value={newCustomerName}
-                                    onChange={(e) => setNewCustomerName(e.target.value)}
-                                    required
-                                />
-                                <div></div>
-                                <button type="submit" className="button-primary">{t('create', 'Anlegen')}</button>
-                            </form>
-                        </section>
+                        <div className="content-grid content-grid--two">
+                            <section className="content-section">
+                                <h3 className="section-title">{t('customer.create.title', 'Neuen Kunden anlegen')}</h3>
+                                <form onSubmit={handleCreateCustomer} className="create-form">
+                                    <input
+                                        type="text"
+                                        placeholder={t('customer.create.placeholder', 'Name des neuen Kunden')}
+                                        value={newCustomerName}
+                                        onChange={(e) => setNewCustomerName(e.target.value)}
+                                        required
+                                    />
+                                    <button type="submit" className="button-primary">{t('create', 'Anlegen')}</button>
+                                </form>
+                            </section>
 
-                        <section className="content-section">
-                            <h3 className="section-title">{t('customer.list.title', 'Bestehende Kunden')}</h3>
-                            <div className="item-list-container">
-                                <ul className="item-list customer-list">
-                                    {customerList.map((customer) => (
-                                        <li key={customer.id} className="list-item">
-                                            {editingCustomerId === customer.id ? (
-                                                <form onSubmit={handleUpdateCustomer} className="edit-form">
-                                                    <input
-                                                        type="text"
-                                                        value={editingCustomerName}
-                                                        onChange={(e) => setEditingCustomerName(e.target.value)}
-                                                        required
-                                                        autoFocus
-                                                    />
-                                                    <div></div>
-                                                    <div className="form-actions">
-                                                        <button type="submit" className="button-primary">{t('save', 'Speichern')}</button>
-                                                        <button type="button" onClick={cancelCustomerEdit} className="button-secondary">
-                                                            {t('cancel', 'Abbrechen')}
-                                                        </button>
-                                                    </div>
-                                                </form>
-                                            ) : (
-                                                <>
-                                                    <span className="item-name">{customer.name}</span>
-                                                    <div className="item-actions">
-                                                        <button onClick={() => startCustomerEdit(customer)} className="button-secondary">{t('edit', 'Bearbeiten')}</button>
-                                                        <button onClick={() => handleDeleteCustomer(customer.id)} className="button-danger">{t('delete', 'Löschen')}</button>
-                                                    </div>
-                                                </>
-                                            )}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </section>
+                            <section className="content-section">
+                                <h3 className="section-title">{t('customer.list.title', 'Bestehende Kunden')}</h3>
+                                <div className="item-list-container">
+                                    <ul className="item-list customer-list">
+                                        {customerList.map((customer) => (
+                                            <li key={customer.id} className="list-item">
+                                                {editingCustomerId === customer.id ? (
+                                                    <form onSubmit={handleUpdateCustomer} className="edit-form">
+                                                        <input
+                                                            type="text"
+                                                            value={editingCustomerName}
+                                                            onChange={(e) => setEditingCustomerName(e.target.value)}
+                                                            required
+                                                            autoFocus
+                                                        />
+                                                        <div className="form-actions">
+                                                            <button type="submit" className="button-primary">{t('save', 'Speichern')}</button>
+                                                            <button type="button" onClick={cancelCustomerEdit} className="button-secondary">
+                                                                {t('cancel', 'Abbrechen')}
+                                                            </button>
+                                                        </div>
+                                                    </form>
+                                                ) : (
+                                                    <>
+                                                        <span className="item-name">{customer.name}</span>
+                                                        <div className="item-actions">
+                                                            <button onClick={() => startCustomerEdit(customer)} className="button-secondary">{t('edit', 'Bearbeiten')}</button>
+                                                            <button onClick={() => handleDeleteCustomer(customer.id)} className="button-danger">{t('delete', 'Löschen')}</button>
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </section>
+                        </div>
                     </div>
 
                     <div
@@ -1334,103 +1336,103 @@ const AdminProjectsPage = () => {
                         </section>
 
                         {hasProjects && (
-                            <section className="content-section">
-                                <h3 className="section-title">{t('task.create.title', 'Neue Aufgabe anlegen')}</h3>
-                                <form onSubmit={handleCreateTask} className="create-form">
-                                    <input
-                                        type="text"
-                                        placeholder={t('task.create.namePlaceholder', 'Name der neuen Aufgabe')}
-                                        value={newTaskName}
-                                        onChange={(e) => setNewTaskName(e.target.value)}
-                                        required
-                                    />
-                                    <input
-                                        type="number"
-                                        placeholder={t('task.create.budgetPlaceholder', 'Budget (Minuten)')}
-                                        value={newTaskBudget}
-                                        onChange={(e) => setNewTaskBudget(e.target.value)}
-                                    />
-                                    <label className="checkbox-field">
+                            <div className="content-grid content-grid--two">
+                                <section className="content-section">
+                                    <h3 className="section-title">{t('task.create.title', 'Neue Aufgabe anlegen')}</h3>
+                                    <form onSubmit={handleCreateTask} className="create-form">
                                         <input
-                                            type="checkbox"
-                                            checked={newTaskBillable}
-                                            onChange={(e) => setNewTaskBillable(e.target.checked)}
+                                            type="text"
+                                            placeholder={t('task.create.namePlaceholder', 'Name der neuen Aufgabe')}
+                                            value={newTaskName}
+                                            onChange={(e) => setNewTaskName(e.target.value)}
+                                            required
                                         />
-                                        {t('task.create.billable', 'Abrechenbar')}
-                                    </label>
-                                    <button type="submit" className="button-primary">{t('create', 'Anlegen')}</button>
-                                </form>
-                            </section>
-                        )}
+                                        <input
+                                            type="number"
+                                            placeholder={t('task.create.budgetPlaceholder', 'Budget (Minuten)')}
+                                            value={newTaskBudget}
+                                            onChange={(e) => setNewTaskBudget(e.target.value)}
+                                        />
+                                        <label className="checkbox-field">
+                                            <input
+                                                type="checkbox"
+                                                checked={newTaskBillable}
+                                                onChange={(e) => setNewTaskBillable(e.target.checked)}
+                                            />
+                                            {t('task.create.billable', 'Abrechenbar')}
+                                        </label>
+                                        <button type="submit" className="button-primary">{t('create', 'Anlegen')}</button>
+                                    </form>
+                                </section>
 
-                        {hasProjects && (
-                            <section className="content-section">
-                                <h3 className="section-title">{t('task.list.title', 'Bestehende Aufgaben')}</h3>
-                                {taskList.length === 0 ? (
-                                    <div className="empty-state">
-                                        <h4>{t('task.list.empty', 'Noch keine Aufgaben für dieses Projekt')}</h4>
-                                        <p>{t('task.list.emptyHint', 'Lege oben eine neue Aufgabe an, um loszulegen.')}</p>
-                                    </div>
-                                ) : (
-                                    <div className="item-list-container">
-                                        <ul className="item-list project-list">
-                                            {taskList.map((task) => (
-                                                <li key={task.id} className="list-item">
-                                                    {editingTaskId === task.id ? (
-                                                        <form onSubmit={handleUpdateTask} className="edit-form">
-                                                            <input
-                                                                type="text"
-                                                                value={editingTaskName}
-                                                                onChange={(e) => setEditingTaskName(e.target.value)}
-                                                                required
-                                                                autoFocus
-                                                            />
-                                                            <input
-                                                                type="number"
-                                                                placeholder={t('task.edit.budgetPlaceholder', 'Budget (Minuten)')}
-                                                                value={editingTaskBudget}
-                                                                onChange={(e) => setEditingTaskBudget(e.target.value)}
-                                                            />
-                                                            <label className="checkbox-field">
+                                <section className="content-section">
+                                    <h3 className="section-title">{t('task.list.title', 'Bestehende Aufgaben')}</h3>
+                                    {taskList.length === 0 ? (
+                                        <div className="empty-state">
+                                            <h4>{t('task.list.empty', 'Noch keine Aufgaben für dieses Projekt')}</h4>
+                                            <p>{t('task.list.emptyHint', 'Lege oben eine neue Aufgabe an, um loszulegen.')}</p>
+                                        </div>
+                                    ) : (
+                                        <div className="item-list-container">
+                                            <ul className="item-list project-list">
+                                                {taskList.map((task) => (
+                                                    <li key={task.id} className="list-item">
+                                                        {editingTaskId === task.id ? (
+                                                            <form onSubmit={handleUpdateTask} className="edit-form">
                                                                 <input
-                                                                    type="checkbox"
-                                                                    checked={editingTaskBillable}
-                                                                    onChange={(e) => setEditingTaskBillable(e.target.checked)}
+                                                                    type="text"
+                                                                    value={editingTaskName}
+                                                                    onChange={(e) => setEditingTaskName(e.target.value)}
+                                                                    required
+                                                                    autoFocus
                                                                 />
-                                                                {t('task.edit.billable', 'Abrechenbar')}
-                                                            </label>
-                                                            <div className="form-actions">
-                                                                <button type="submit" className="button-primary">{t('save', 'Speichern')}</button>
-                                                                <button type="button" onClick={cancelTaskEdit} className="button-secondary">{t('cancel', 'Abbrechen')}</button>
-                                                            </div>
-                                                        </form>
-                                                    ) : (
-                                                        <>
-                                                            <div className="item-details">
-                                                                <span className="item-name">{task.name}</span>
-                                                                <div className="item-meta">
-                                                                    {task.budgetMinutes !== undefined && task.budgetMinutes !== null && (
-                                                                        <span className="item-chip">
-                                                                            {task.budgetMinutes} {t('task.budget.unit', 'Min')}
-                                                                        </span>
-                                                                    )}
-                                                                    {task.billable && (
-                                                                        <span className="item-chip">{t('task.billable', 'Abrechenbar')}</span>
-                                                                    )}
+                                                                <input
+                                                                    type="number"
+                                                                    placeholder={t('task.edit.budgetPlaceholder', 'Budget (Minuten)')}
+                                                                    value={editingTaskBudget}
+                                                                    onChange={(e) => setEditingTaskBudget(e.target.value)}
+                                                                />
+                                                                <label className="checkbox-field">
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={editingTaskBillable}
+                                                                        onChange={(e) => setEditingTaskBillable(e.target.checked)}
+                                                                    />
+                                                                    {t('task.edit.billable', 'Abrechenbar')}
+                                                                </label>
+                                                                <div className="form-actions">
+                                                                    <button type="submit" className="button-primary">{t('save', 'Speichern')}</button>
+                                                                    <button type="button" onClick={cancelTaskEdit} className="button-secondary">{t('cancel', 'Abbrechen')}</button>
                                                                 </div>
-                                                            </div>
-                                                            <div className="item-actions">
-                                                                <button onClick={() => startTaskEdit(task)} className="button-secondary">{t('edit', 'Bearbeiten')}</button>
-                                                                <button onClick={() => handleDeleteTask(task.id)} className="button-danger">{t('delete', 'Löschen')}</button>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
-                            </section>
+                                                            </form>
+                                                        ) : (
+                                                            <>
+                                                                <div className="item-details">
+                                                                    <span className="item-name">{task.name}</span>
+                                                                    <div className="item-meta">
+                                                                        {task.budgetMinutes !== undefined && task.budgetMinutes !== null && (
+                                                                            <span className="item-chip">
+                                                                                {task.budgetMinutes} {t('task.budget.unit', 'Min')}
+                                                                            </span>
+                                                                        )}
+                                                                        {task.billable && (
+                                                                            <span className="item-chip">{t('task.billable', 'Abrechenbar')}</span>
+                                                                        )}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="item-actions">
+                                                                    <button onClick={() => startTaskEdit(task)} className="button-secondary">{t('edit', 'Bearbeiten')}</button>
+                                                                    <button onClick={() => handleDeleteTask(task.id)} className="button-danger">{t('delete', 'Löschen')}</button>
+                                                                </div>
+                                                            </>
+                                                        )}
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                        </div>
+                                    )}
+                                </section>
+                            </div>
                         )}
                     </div>
                 </div>
