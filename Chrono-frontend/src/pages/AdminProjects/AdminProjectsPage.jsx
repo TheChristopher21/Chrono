@@ -112,7 +112,10 @@ const ProjectTree = ({ nodes, analyticsMap, t }) => {
                                         className="metric-progress"
                                         title={t('project.hierarchy.metrics.utilizationTitle', 'Auslastung')}
                                     >
-                                        <div className="metric-progress-bar" style={{ width: `${utilizationPct}%` }} />
+                                        <div
+                                            className="metric-progress-bar"
+                                            style={{ '--progress': (utilizationPct / 100).toString() }}
+                                        />
                                         <span>{utilizationPct}%</span>
                                     </div>
                                 )}
@@ -705,39 +708,129 @@ const AdminProjectsPage = () => {
         { id: 'tasks', label: t('task.management.title', 'Aufgaben') }
     ]), [t]);
 
+    const projectPulse = useMemo(() => {
+        const totalProjects = projectList.length;
+        const totalCustomers = customerList.length;
+        const projectsWithBudget = projectList.filter((project) => Number(project?.budgetMinutes ?? 0) > 0).length;
+        const totalBudgetMinutes = projectList.reduce(
+            (sum, project) => sum + Number(project?.budgetMinutes ?? 0),
+            0
+        );
+        const projectsWithRates = projectList.filter((project) => project?.hourlyRate !== null && project?.hourlyRate !== undefined);
+        const averageRate = projectsWithRates.length > 0
+            ? projectsWithRates.reduce((sum, project) => sum + Number(project?.hourlyRate ?? 0), 0) / projectsWithRates.length
+            : null;
+        const activeIntegrations = integrations.filter((integration) => integration?.active).length;
+
+        return {
+            totalProjects,
+            totalCustomers,
+            projectsWithBudget,
+            totalBudgetHours: totalBudgetMinutes / 60,
+            activeIntegrations,
+            averageRate
+        };
+    }, [projectList, customerList, integrations]);
+
+    const formattedBudgetHours = useMemo(() => {
+        if (!projectPulse.totalBudgetHours) return '—';
+        const value = projectPulse.totalBudgetHours;
+        return value >= 100 ? Math.round(value).toLocaleString() : value.toLocaleString(undefined, { maximumFractionDigits: 1 });
+    }, [projectPulse.totalBudgetHours]);
+
+    const formattedAverageRate = useMemo(() => {
+        if (projectPulse.averageRate === null || Number.isNaN(projectPulse.averageRate)) return '—';
+        return projectPulse.averageRate.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+    }, [projectPulse.averageRate]);
+
     return (
         <>
             <Navbar />
-            <div className="admin-projects-page scoped-dashboard">
-                <header className="dashboard-header">
-                    <h1>{t('project.management.hubTitle', 'Projekte, Kunden & Aufgaben')}</h1>
-                </header>
-
-                <div
-                    className="tab-bar"
-                    role="tablist"
-                    aria-label={t('project.management.tablist', 'Verwaltungsbereiche auswählen')}
-                >
-                    {tabItems.map((tab) => {
-                        const isActive = tab.id === activeTab;
-                        return (
+            <div className="admin-projects-page scoped-dashboard neo-dashboard">
+                <section className="page-hero">
+                    <div className="hero-heading">
+                        <span className="hero-kicker">{t('project.management.hero.kicker', 'Chronos Control Center')}</span>
+                        <h1>{t('project.management.hero.title', 'Projekte & Workflows orchestrieren')}</h1>
+                        <p>
+                            {t(
+                                'project.management.hero.subtitle',
+                                'Behalte Budgets, Kundenbeziehungen und Aufgaben in einem modernen Cockpit im Blick.'
+                            )}
+                        </p>
+                        <div className="hero-actions">
                             <button
-                                key={tab.id}
                                 type="button"
-                                id={`admin-tab-${tab.id}`}
-                                role="tab"
-                                aria-selected={isActive}
-                                aria-controls={`admin-panel-${tab.id}`}
-                                className={`tab-button${isActive ? ' is-active' : ''}`}
-                                onClick={() => handleTabChange(tab.id)}
+                                className="button-ghost hero-action"
+                                onClick={loadAnalytics}
+                                disabled={analyticsLoading}
                             >
-                                {tab.label}
+                                {analyticsLoading
+                                    ? t('loading', 'Lädt...')
+                                    : t('project.management.hero.refreshAnalytics', 'Analytics aktualisieren')}
                             </button>
-                        );
-                    })}
-                </div>
+                            <button
+                                type="button"
+                                className="button-primary hero-action"
+                                onClick={() => handleTabChange('projects')}
+                            >
+                                {t('project.management.hero.createProject', 'Neues Projekt starten')}
+                            </button>
+                        </div>
+                    </div>
+                    <div className="hero-stats" role="list">
+                        <div className="hero-stat-card" role="listitem">
+                            <span className="stat-label">{t('project.management.hero.totalProjects', 'Aktive Projekte')}</span>
+                            <span className="stat-value">{projectPulse.totalProjects}</span>
+                            <span className="stat-sublabel">
+                                {projectPulse.projectsWithBudget} {t('project.management.hero.projectsWithBudgetSuffix', 'mit Budget')}
+                            </span>
+                        </div>
+                        <div className="hero-stat-card" role="listitem">
+                            <span className="stat-label">{t('project.management.hero.totalCustomers', 'Verknüpfte Kunden')}</span>
+                            <span className="stat-value">{projectPulse.totalCustomers}</span>
+                            <span className="stat-sublabel">{t('project.management.hero.customersSubtitle', 'CRM synchronisiert')}</span>
+                        </div>
+                        <div className="hero-stat-card" role="listitem">
+                            <span className="stat-label">{t('project.management.hero.totalBudget', 'Gesamtbudget')}</span>
+                            <span className="stat-value">{formattedBudgetHours}</span>
+                            <span className="stat-sublabel">{t('project.management.hero.totalBudgetUnit', 'Stunden hinterlegt')}</span>
+                        </div>
+                        <div className="hero-stat-card" role="listitem">
+                            <span className="stat-label">{t('project.management.hero.integrations', 'Integrationen')}</span>
+                            <span className="stat-value">{projectPulse.activeIntegrations}</span>
+                            <span className="stat-sublabel">
+                                {t('project.management.hero.ratePrefix', 'Ø Satz')} {formattedAverageRate} {t('project.management.hero.rateCurrency', 'CHF')}
+                            </span>
+                        </div>
+                    </div>
+                </section>
 
-                <div className="tab-panel-wrapper">
+                <div className="tab-shell">
+                    <div
+                        className="tab-bar"
+                        role="tablist"
+                        aria-label={t('project.management.tablist', 'Verwaltungsbereiche auswählen')}
+                    >
+                        {tabItems.map((tab) => {
+                            const isActive = tab.id === activeTab;
+                            return (
+                                <button
+                                    key={tab.id}
+                                    type="button"
+                                    id={`admin-tab-${tab.id}`}
+                                    role="tab"
+                                    aria-selected={isActive}
+                                    aria-controls={`admin-panel-${tab.id}`}
+                                    className={`tab-button${isActive ? ' is-active' : ''}`}
+                                    onClick={() => handleTabChange(tab.id)}
+                                >
+                                    <span className="tab-label">{tab.label}</span>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    <div className="tab-panel-wrapper">
                     <div
                         id="admin-panel-projects"
                         role="tabpanel"
