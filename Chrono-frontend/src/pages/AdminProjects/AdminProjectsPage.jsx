@@ -1529,10 +1529,10 @@ const AdminProjectsPage = () => {
                         )}
                     </div>
                 </div>
+                </div>
             </div>
-        </>
+            </>
+            );
+            };
 
-    );
-};
-
-export default AdminProjectsPage;
+            export default AdminProjectsPage;
