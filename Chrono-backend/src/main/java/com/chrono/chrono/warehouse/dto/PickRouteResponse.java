@@ -11,14 +11,17 @@ public class PickRouteResponse {
         private double y;
         private double z;
         private double etaSeconds;
+        private int quantity;
 
-        public RouteWaypoint(String locationId, String productId, double x, double y, double z, double etaSeconds) {
+        public RouteWaypoint(String locationId, String productId, double x, double y, double z,
+                              double etaSeconds, int quantity) {
             this.locationId = locationId;
             this.productId = productId;
             this.x = x;
             this.y = y;
             this.z = z;
             this.etaSeconds = etaSeconds;
+            this.quantity = quantity;
         }
 
         public String getLocationId() {
@@ -43,6 +46,10 @@ public class PickRouteResponse {
 
         public double getEtaSeconds() {
             return etaSeconds;
+        }
+
+        public int getQuantity() {
+            return quantity;
         }
     }
 

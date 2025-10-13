@@ -2,10 +2,12 @@ package com.chrono.chrono.controller.inventory;
 
 import com.chrono.chrono.dto.inventory.*;
 import com.chrono.chrono.entities.inventory.Product;
+import com.chrono.chrono.entities.inventory.ProductionOrder;
 import com.chrono.chrono.entities.inventory.PurchaseOrder;
 import com.chrono.chrono.entities.inventory.PurchaseOrderLine;
 import com.chrono.chrono.entities.inventory.SalesOrder;
 import com.chrono.chrono.entities.inventory.SalesOrderLine;
+import com.chrono.chrono.entities.inventory.ServiceRequest;
 import com.chrono.chrono.entities.inventory.StockMovement;
 import com.chrono.chrono.entities.inventory.Warehouse;
 import com.chrono.chrono.repositories.inventory.ProductRepository;
@@ -86,7 +88,8 @@ public class SupplyChainController {
         Product product = productRepository.findById(request.getProductId()).orElseThrow();
         Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId()).orElseThrow();
         StockMovement movement = supplyChainService.adjustStock(product, warehouse,
-                request.getQuantityChange(), request.getType(), request.getReference());
+                request.getQuantityChange(), request.getType(), request.getReference(),
+                request.getLotNumber(), request.getSerialNumber(), request.getExpirationDate());
         return ResponseEntity.created(URI.create("/api/supply-chain/stock-movements/" + movement.getId()))
                 .body(StockMovementDTO.from(movement));
     }
@@ -114,6 +117,12 @@ public class SupplyChainController {
         return ResponseEntity.ok(PurchaseOrderDTO.from(supplyChainService.receivePurchaseOrder(id, warehouse)));
     }
 
+    @PostMapping("/procurement/auto-replenish")
+    public ResponseEntity<AutoReplenishResponse> autoReplenish(@RequestBody AutoReplenishRequest request) {
+        AutoReplenishResponse response = supplyChainService.autoReplenish(request);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/sales-orders")
     public ResponseEntity<SalesOrderDTO> createSalesOrder(@RequestBody CreateSalesOrderRequest request) {
         List<SalesOrderLine> lines = request.getLines() == null ? List.of() : request.getLines().stream()
@@ -135,5 +144,58 @@ public class SupplyChainController {
                                                            @RequestBody WarehouseReferenceRequest ref) {
         Warehouse warehouse = warehouseRepository.findById(ref.getWarehouseId()).orElseThrow();
         return ResponseEntity.ok(SalesOrderDTO.from(supplyChainService.fulfillSalesOrder(id, warehouse)));
+    }
+
+    @PostMapping("/sales-orders/pick-waves")
+    public ResponseEntity<WavePickResponse> planWavePicking(@RequestBody PlanWavePickRequest request) {
+        return ResponseEntity.ok(supplyChainService.planWavePicking(request));
+    }
+
+    @GetMapping("/production-orders")
+    public ResponseEntity<Page<ProductionOrderDTO>> listProductionOrders(@RequestParam(defaultValue = "0") int page,
+                                                                         @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Page<ProductionOrderDTO> orders = supplyChainService.listProductionOrders(pageable)
+                .map(ProductionOrderDTO::from);
+        return ResponseEntity.ok(orders);
+    }
+
+    @PostMapping("/production-orders")
+    public ResponseEntity<ProductionOrderDTO> createProductionOrder(@RequestBody CreateProductionOrderRequest request) {
+        Product product = productRepository.findById(request.getProductId()).orElseThrow();
+        ProductionOrder saved = supplyChainService.saveProductionOrder(request.toEntity(product));
+        return ResponseEntity.created(URI.create("/api/supply-chain/production-orders/" + saved.getId()))
+                .body(ProductionOrderDTO.from(saved));
+    }
+
+    @PostMapping("/production-orders/{id}/status")
+    public ResponseEntity<ProductionOrderDTO> updateProductionOrderStatus(@PathVariable Long id,
+                                                                          @RequestBody UpdateProductionOrderStatusRequest request) {
+        ProductionOrder updated = supplyChainService.updateProductionOrderStatus(id, request.getStatus(),
+                request.getStartDate(), request.getCompletionDate());
+        return ResponseEntity.ok(ProductionOrderDTO.from(updated));
+    }
+
+    @GetMapping("/service-requests")
+    public ResponseEntity<Page<ServiceRequestDTO>> listServiceRequests(@RequestParam(defaultValue = "0") int page,
+                                                                       @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Page<ServiceRequestDTO> requests = supplyChainService.listServiceRequests(pageable)
+                .map(ServiceRequestDTO::from);
+        return ResponseEntity.ok(requests);
+    }
+
+    @PostMapping("/service-requests")
+    public ResponseEntity<ServiceRequestDTO> createServiceRequest(@RequestBody CreateServiceRequestRequest request) {
+        ServiceRequest saved = supplyChainService.logServiceRequest(request.toEntity());
+        return ResponseEntity.created(URI.create("/api/supply-chain/service-requests/" + saved.getId()))
+                .body(ServiceRequestDTO.from(saved));
+    }
+
+    @PostMapping("/service-requests/{id}/status")
+    public ResponseEntity<ServiceRequestDTO> updateServiceRequestStatus(@PathVariable Long id,
+                                                                        @RequestBody UpdateServiceRequestStatusRequest request) {
+        ServiceRequest updated = supplyChainService.updateServiceRequestStatus(id, request.getStatus(), request.getClosedDate());
+        return ResponseEntity.ok(ServiceRequestDTO.from(updated));
     }
 }

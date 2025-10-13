@@ -4,6 +4,7 @@ import com.chrono.chrono.entities.inventory.StockMovement;
 import com.chrono.chrono.entities.inventory.StockMovementType;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public class StockMovementDTO {
@@ -14,9 +15,13 @@ public class StockMovementDTO {
     private final BigDecimal quantityChange;
     private final String reference;
     private final LocalDateTime movementDate;
+    private final String lotNumber;
+    private final String serialNumber;
+    private final LocalDate expirationDate;
 
     public StockMovementDTO(Long id, Long productId, Long warehouseId, StockMovementType type,
-                            BigDecimal quantityChange, String reference, LocalDateTime movementDate) {
+                            BigDecimal quantityChange, String reference, LocalDateTime movementDate,
+                            String lotNumber, String serialNumber, LocalDate expirationDate) {
         this.id = id;
         this.productId = productId;
         this.warehouseId = warehouseId;
@@ -24,6 +29,9 @@ public class StockMovementDTO {
         this.quantityChange = quantityChange;
         this.reference = reference;
         this.movementDate = movementDate;
+        this.lotNumber = lotNumber;
+        this.serialNumber = serialNumber;
+        this.expirationDate = expirationDate;
     }
 
     public static StockMovementDTO from(StockMovement movement) {
@@ -34,7 +42,10 @@ public class StockMovementDTO {
                 movement.getType(),
                 movement.getQuantityChange(),
                 movement.getReference(),
-                movement.getMovementDate());
+                movement.getMovementDate(),
+                movement.getLotNumber(),
+                movement.getSerialNumber(),
+                movement.getExpirationDate());
     }
 
     public Long getId() {
@@ -63,5 +74,17 @@ public class StockMovementDTO {
 
     public LocalDateTime getMovementDate() {
         return movementDate;
+    }
+
+    public String getLotNumber() {
+        return lotNumber;
+    }
+
+    public String getSerialNumber() {
+        return serialNumber;
+    }
+
+    public LocalDate getExpirationDate() {
+        return expirationDate;
     }
 }

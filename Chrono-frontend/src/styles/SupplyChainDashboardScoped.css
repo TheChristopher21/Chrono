@@ -153,6 +153,81 @@
     align-items: end;
 }
 
+.admin-page.supply-chain-page .small-print {
+    font-size: 0.8rem;
+    margin: -0.25rem 0 0;
+}
+
+.admin-page.supply-chain-page .workflow-designer {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.admin-page.supply-chain-page .workflow-designer textarea {
+    min-height: 320px;
+    border-radius: 14px;
+    border: 1px solid rgba(30, 64, 175, 0.4);
+    padding: 1rem;
+    font-family: "Fira Code", "SFMono-Regular", "Menlo", monospace;
+    font-size: 0.9rem;
+    resize: vertical;
+    background: rgba(255, 255, 255, 0.92);
+    color: inherit;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .workflow-designer textarea {
+    background: rgba(15, 23, 42, 0.85);
+    border-color: rgba(96, 165, 250, 0.6);
+}
+
+.admin-page.supply-chain-page .workflow-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.admin-page.supply-chain-page .workflow-preview-card {
+    border: 1px dashed rgba(30, 64, 175, 0.4);
+    border-radius: 12px;
+    padding: 0.75rem 1rem;
+    background: rgba(241, 245, 255, 0.6);
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .workflow-preview-card {
+    border-color: rgba(96, 165, 250, 0.5);
+    background: rgba(30, 64, 175, 0.2);
+}
+
+.admin-page.supply-chain-page .workflow-actions {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
+.admin-page.supply-chain-page .workflow-actions button {
+    flex: 1 1 150px;
+}
+
+.admin-page.supply-chain-page .workflow-actions button.secondary {
+    background: transparent;
+    border: 1px solid rgba(30, 64, 175, 0.5);
+    color: #1e3a8a;
+}
+
+.admin-page.supply-chain-page .workflow-actions button.secondary:hover {
+    background: rgba(191, 219, 254, 0.5);
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .workflow-actions button.secondary {
+    border-color: rgba(96, 165, 250, 0.6);
+    color: #bfdbfe;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .workflow-actions button.secondary:hover {
+    background: rgba(30, 64, 175, 0.4);
+}
+
 @media (max-width: 768px) {
     .admin-page.supply-chain-page .admin-content {
         padding: 1.75rem 1rem 2.5rem;

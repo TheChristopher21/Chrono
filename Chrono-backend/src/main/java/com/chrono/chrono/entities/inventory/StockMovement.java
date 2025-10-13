@@ -3,6 +3,7 @@ package com.chrono.chrono.entities.inventory;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Entity
@@ -36,6 +37,15 @@ public class StockMovement {
 
     @Column(length = 512)
     private String notes;
+
+    @Column(name = "lot_number", length = 64)
+    private String lotNumber;
+
+    @Column(name = "serial_number", length = 64)
+    private String serialNumber;
+
+    @Column(name = "expiration_date")
+    private LocalDate expirationDate;
 
     public Long getId() {
         return id;
@@ -99,5 +109,29 @@ public class StockMovement {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public String getLotNumber() {
+        return lotNumber;
+    }
+
+    public void setLotNumber(String lotNumber) {
+        this.lotNumber = lotNumber;
+    }
+
+    public String getSerialNumber() {
+        return serialNumber;
+    }
+
+    public void setSerialNumber(String serialNumber) {
+        this.serialNumber = serialNumber;
+    }
+
+    public LocalDate getExpirationDate() {
+        return expirationDate;
+    }
+
+    public void setExpirationDate(LocalDate expirationDate) {
+        this.expirationDate = expirationDate;
     }
 }
