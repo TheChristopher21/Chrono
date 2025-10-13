@@ -1,3 +1,237 @@
+@import "./tokens/design-tokens.css";
+
+:root {
+    color-scheme: light dark;
+    --app-max-width: 1280px;
+    --app-horizontal-padding: clamp(1.25rem, 4vw, 2.5rem);
+    --app-vertical-padding: clamp(1.5rem, 4vw, 2.75rem);
+    --app-radius-lg: clamp(18px, 3vw, 28px);
+    --app-radius-md: clamp(12px, 2.4vw, 20px);
+    --app-radius-sm: clamp(8px, 1.8vw, 14px);
+    --app-shadow-sm: 0 12px 30px rgba(15, 23, 42, 0.08);
+    --app-shadow-md: 0 18px 45px rgba(15, 23, 42, 0.12);
+    --app-shadow-lg: 0 30px 80px rgba(15, 23, 42, 0.18);
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: clamp(15px, 0.6vw + 14px, 16px);
+    -webkit-text-size-adjust: 100%;
+    font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-family-base, "Inter", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif);
+    background: var(--c-bg, #f8fafc);
+    color: var(--c-text, #0f172a);
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    overflow-x: hidden;
+    transition: background-color 160ms ease, color 160ms ease;
+}
+
+#root,
+.App {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-width: 0;
+}
+
+main,
+:where(.page-shell) {
+    width: min(100%, var(--app-max-width));
+    margin-inline: auto;
+    padding-inline: var(--app-horizontal-padding);
+    padding-block: var(--app-vertical-padding);
+}
+
+:where(section),
+:where(header),
+:where(footer) {
+    width: 100%;
+    min-width: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+    display: block;
+    max-width: 100%;
+    height: auto;
+}
+
+input,
+button,
+textarea,
+select {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+:focus-visible {
+    outline: 2px solid var(--c-primary, #2563eb);
+    outline-offset: 3px;
+}
+
+a {
+    color: var(--c-primary, #2563eb);
+    text-decoration: none;
+    transition: color 160ms ease;
+}
+
+a:hover {
+    color: var(--c-primary-hover, #1d4ed8);
+}
+
+a:focus-visible {
+    outline-offset: 4px;
+}
+
+p,
+ul,
+ol {
+    max-width: 72ch;
+    margin-block: 0;
+}
+
+p + p {
+    margin-top: 1em;
+}
+
+.table-responsive,
+:where(.table-wrapper),
+:where(.table-scroll) {
+    position: relative;
+    width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+}
+
+.table-responsive::-webkit-scrollbar,
+:where(.table-wrapper)::-webkit-scrollbar,
+:where(.table-scroll)::-webkit-scrollbar {
+    height: 8px;
+}
+
+:where(.table-wrapper)::-webkit-scrollbar-thumb,
+:where(.table-scroll)::-webkit-scrollbar-thumb,
+.table-responsive::-webkit-scrollbar-thumb {
+    background: rgba(148, 163, 184, 0.45);
+    border-radius: 999px;
+}
+
+:where(table) {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+:where(th),
+:where(td) {
+    text-align: left;
+    vertical-align: middle;
+}
+
+:where(.card) {
+    background: var(--c-card, rgba(255, 255, 255, 0.86));
+    border-radius: var(--app-radius-md);
+    box-shadow: var(--app-shadow-sm);
+    padding: clamp(1rem, 3vw, 1.75rem);
+}
+
+:where(.stack) {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.75rem, 2.6vw, 1.5rem);
+}
+
+:where(.grid-auto) {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+    gap: clamp(1rem, 3vw, 2rem);
+}
+
+@media (max-width: 1280px) {
+    :root {
+        --app-horizontal-padding: clamp(1rem, 4vw, 2rem);
+        --app-vertical-padding: clamp(1.25rem, 4vw, 2.25rem);
+    }
+}
+
+@media (max-width: 1024px) {
+    body {
+        line-height: 1.6;
+    }
+
+    :root {
+        --app-max-width: min(1100px, 96vw);
+    }
+}
+
+@media (max-width: 768px) {
+    html {
+        font-size: clamp(14px, 1.6vw + 12px, 15px);
+    }
+
+    body {
+        --app-horizontal-padding: clamp(0.9rem, 4.5vw, 1.25rem);
+        --app-vertical-padding: clamp(1.1rem, 5vw, 1.8rem);
+    }
+
+    main,
+    :where(.page-shell) {
+        padding-inline: var(--app-horizontal-padding);
+        padding-block: var(--app-vertical-padding);
+    }
+
+    :where(.grid-auto) {
+        grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    }
+
+    :where(.card) {
+        border-radius: clamp(12px, 4vw, 18px);
+        box-shadow: var(--app-shadow-md);
+    }
+}
+
+@media (max-width: 540px) {
+    :root {
+        --app-max-width: min(480px, 100vw);
+    }
+
+    body {
+        --app-horizontal-padding: clamp(0.75rem, 5vw, 1.1rem);
+        --app-vertical-padding: clamp(1rem, 6vw, 1.5rem);
+    }
+
+    :where(.grid-auto) {
+        grid-template-columns: 1fr;
+    }
+
+    :where(.card) {
+        padding: clamp(0.85rem, 5vw, 1.25rem);
+    }
+}
+
 /* ==== Modal Tokens (global, greifen auch bei Portals) ==== */
 :root {
     --modal-backdrop-color: rgba(17, 24, 39, .55); /* dim */
