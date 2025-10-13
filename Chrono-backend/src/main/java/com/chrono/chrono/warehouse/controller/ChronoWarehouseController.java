@@ -96,6 +96,11 @@ public class ChronoWarehouseController {
         return intelligenceService.planPickRoute(request);
     }
 
+    @PostMapping("/outbound/3d-box-recommendation")
+    public BoxRecommendationResponse recommendBox(@RequestBody BoxRecommendationRequest request) {
+        return intelligenceService.recommend3dBox(request);
+    }
+
     @GetMapping("/outbound/returns")
     public List<ReturnWorkflowResponse> listReturns() {
         return intelligenceService.listReturnCases();

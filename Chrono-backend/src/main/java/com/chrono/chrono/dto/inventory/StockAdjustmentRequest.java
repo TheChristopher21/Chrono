@@ -3,6 +3,7 @@ package com.chrono.chrono.dto.inventory;
 import com.chrono.chrono.entities.inventory.StockMovementType;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 public class StockAdjustmentRequest {
     private Long productId;
@@ -10,6 +11,9 @@ public class StockAdjustmentRequest {
     private BigDecimal quantityChange;
     private StockMovementType type;
     private String reference;
+    private String lotNumber;
+    private String serialNumber;
+    private LocalDate expirationDate;
 
     public Long getProductId() {
         return productId;
@@ -49,5 +53,29 @@ public class StockAdjustmentRequest {
 
     public void setReference(String reference) {
         this.reference = reference;
+    }
+
+    public String getLotNumber() {
+        return lotNumber;
+    }
+
+    public void setLotNumber(String lotNumber) {
+        this.lotNumber = lotNumber;
+    }
+
+    public String getSerialNumber() {
+        return serialNumber;
+    }
+
+    public void setSerialNumber(String serialNumber) {
+        this.serialNumber = serialNumber;
+    }
+
+    public LocalDate getExpirationDate() {
+        return expirationDate;
+    }
+
+    public void setExpirationDate(LocalDate expirationDate) {
+        this.expirationDate = expirationDate;
     }
 }

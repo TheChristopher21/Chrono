@@ -38,6 +38,11 @@ public class WarehouseIntelligenceService {
             "Packaging", List.of("label", "box", "pack", "carton"),
             "Consumables", List.of("battery", "pad", "clean"),
             "Software", List.of("license", "suite", "subscription"));
+    private static final List<BoxOption> BOX_CATALOG = List.of(
+            new BoxOption("BOX-S", "Parcel Small 30x20x15", 30, 20, 15, 5),
+            new BoxOption("BOX-M", "Parcel Medium 40x30x25", 40, 30, 25, 12),
+            new BoxOption("BOX-L", "Parcel Large 60x40x40", 60, 40, 40, 25),
+            new BoxOption("CRATE-XL", "Crate XL 80x60x60", 80, 60, 60, 50));
 
     private final Map<String, WarehouseProduct> products = new ConcurrentHashMap<>();
     private final Map<String, WarehouseLocation> locations = new ConcurrentHashMap<>();
@@ -564,11 +569,79 @@ public class WarehouseIntelligenceService {
             cumulativeSeconds += legDistance / WALKING_SPEED_MS;
             cumulativeSeconds += node.quantity() * 4.0;
             waypoints.add(new PickRouteResponse.RouteWaypoint(node.location().getId(), node.productId(),
-                    destination[0], destination[1], destination[2], Math.round(cumulativeSeconds * 10.0) / 10.0));
+                    destination[0], destination[1], destination[2], Math.round(cumulativeSeconds * 10.0) / 10.0,
+                    node.quantity()));
             current = destination;
         }
         return new PickRouteResponse(waypoints, Math.round(totalDistance * 10.0) / 10.0,
                 Math.round(cumulativeSeconds * 10.0) / 10.0);
+    }
+
+    public BoxRecommendationResponse recommend3dBox(BoxRecommendationRequest request) {
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("Es werden mindestens eine Position für die Kartonempfehlung benötigt");
+        }
+        double targetUtilisation = Optional.ofNullable(request.getTargetUtilisation()).orElse(0.82d);
+        targetUtilisation = Math.max(0.5d, Math.min(0.95d, targetUtilisation));
+
+        double totalVolume = 0;
+        double totalWeight = 0;
+        double longestEdge = 0;
+
+        for (BoxRecommendationRequest.Item item : request.getItems()) {
+            if (item.getQuantity() == null || item.getQuantity() <= 0) {
+                continue;
+            }
+            WarehouseProduct product = products.get(item.getProductId());
+            double unitVolume = resolveVolume(item, product);
+            double unitWeight = resolveWeight(item, product);
+            double itemLongestEdge = resolveLongestEdge(item, unitVolume);
+
+            totalVolume += unitVolume * item.getQuantity();
+            totalWeight += unitWeight * item.getQuantity();
+            longestEdge = Math.max(longestEdge, itemLongestEdge);
+        }
+
+        if (totalVolume <= 0) {
+            totalVolume = 0.01;
+        }
+
+        List<BoxRecommendationResponse.Alternative> alternatives = new ArrayList<>();
+        BoxOption bestOption = null;
+        int bestBoxes = 0;
+        double bestUtilisation = 0;
+        double bestScore = Double.MAX_VALUE;
+
+        for (BoxOption option : BOX_CATALOG) {
+            if (longestEdge > option.largestEdgeCm()) {
+                continue;
+            }
+            double boxVolume = option.volumeCubicM();
+            int boxesNeeded = Math.max(1, (int) Math.ceil(totalVolume / (boxVolume * targetUtilisation)));
+            while (boxesNeeded < 1000 && (totalWeight / boxesNeeded) > option.maxWeightKg()) {
+                boxesNeeded++;
+            }
+            double utilisation = totalVolume / (boxesNeeded * boxVolume);
+            alternatives.add(new BoxRecommendationResponse.Alternative(option.id(), option.name(), boxesNeeded,
+                    Math.min(utilisation, 1.0), boxVolume, option.maxWeightKg()));
+            double score = boxesNeeded * boxVolume;
+            if (score < bestScore) {
+                bestScore = score;
+                bestOption = option;
+                bestBoxes = boxesNeeded;
+                bestUtilisation = utilisation;
+            }
+        }
+
+        if (bestOption == null) {
+            throw new IllegalStateException("Kein Versandkarton aus dem Katalog erfüllt die Anforderungen");
+        }
+
+        alternatives.sort(Comparator.comparingInt(BoxRecommendationResponse.Alternative::getBoxesRequired)
+                .thenComparing(BoxRecommendationResponse.Alternative::getUtilisation).reversed());
+
+        return new BoxRecommendationResponse(bestOption.id(), bestOption.name(), bestBoxes,
+                Math.min(bestUtilisation, 1.0), totalVolume, totalWeight, alternatives);
     }
 
     public ReturnWorkflowResponse registerReturn(ReturnWorkflowRequest request) {
@@ -654,6 +727,37 @@ public class WarehouseIntelligenceService {
                 "Die Anfrage wurde KI-gestützt interpretiert und mit aggregierten Lagerdaten beantwortet.");
     }
 
+    private double resolveVolume(BoxRecommendationRequest.Item item, WarehouseProduct product) {
+        if (item.getVolumeCubicM() != null) {
+            return Math.max(0.0005, item.getVolumeCubicM());
+        }
+        if (item.getLengthCm() != null && item.getWidthCm() != null && item.getHeightCm() != null) {
+            return Math.max(0.0005,
+                    (item.getLengthCm() * item.getWidthCm() * item.getHeightCm()) / 1_000_000.0);
+        }
+        if (product != null && product.getVolumeCubicM() > 0) {
+            return product.getVolumeCubicM();
+        }
+        return 0.012;
+    }
+
+    private double resolveWeight(BoxRecommendationRequest.Item item, WarehouseProduct product) {
+        if (item.getWeightKg() != null) {
+            return Math.max(0.1, item.getWeightKg());
+        }
+        if (product != null && product.getWeightKg() > 0) {
+            return product.getWeightKg();
+        }
+        return 0.5;
+    }
+
+    private double resolveLongestEdge(BoxRecommendationRequest.Item item, double volumeCubicM) {
+        if (item.getLengthCm() != null && item.getWidthCm() != null && item.getHeightCm() != null) {
+            return Math.max(item.getLengthCm(), Math.max(item.getWidthCm(), item.getHeightCm()));
+        }
+        return Math.cbrt(Math.max(volumeCubicM, 0.0005)) * 100;
+    }
+
     public KpiDashboardResponse buildKpiDashboard() {
         Map<String, Double> kpis = Map.of(
                 "pick_rate", 318.0,
@@ -668,6 +772,20 @@ public class WarehouseIntelligenceService {
                 "scrap_rate", -0.2
         );
         return new KpiDashboardResponse(kpis, trends);
+    }
+
+    private record BoxOption(String id, String name, double lengthCm, double widthCm, double heightCm, double maxWeightKg) {
+        private double volumeCubicM() {
+            return (lengthCm * widthCm * heightCm) / 1_000_000.0;
+        }
+
+        private double smallestEdgeCm() {
+            return Math.min(lengthCm, Math.min(widthCm, heightCm));
+        }
+
+        private double largestEdgeCm() {
+            return Math.max(lengthCm, Math.max(widthCm, heightCm));
+        }
     }
 
     private boolean containsAny(String query, List<String> tokens) {

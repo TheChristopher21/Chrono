@@ -1,5 +1,7 @@
 package com.chrono.chrono.warehouse.service;
 
+import com.chrono.chrono.warehouse.dto.BoxRecommendationRequest;
+import com.chrono.chrono.warehouse.dto.BoxRecommendationResponse;
 import com.chrono.chrono.warehouse.dto.PickRouteRequest;
 import com.chrono.chrono.warehouse.dto.PickRouteResponse;
 import com.chrono.chrono.warehouse.dto.ProductRequest;
@@ -95,5 +97,22 @@ class WarehouseIntelligenceServiceTest {
         assertEquals("B-01-02", response.getWaypoints().get(1).getLocationId());
         assertTrue(response.getTotalDistance() > 0);
         assertTrue(response.getEstimatedDurationSeconds() > 0);
+    }
+
+    @Test
+    void recommend3dBoxFindsBestFitFromCatalog() {
+        WarehouseIntelligenceService service = new WarehouseIntelligenceService();
+        BoxRecommendationRequest request = new BoxRecommendationRequest();
+        BoxRecommendationRequest.Item item = new BoxRecommendationRequest.Item();
+        item.setProductId("SKU-AR-01");
+        item.setQuantity(3);
+        request.setItems(List.of(item));
+
+        BoxRecommendationResponse response = service.recommend3dBox(request);
+
+        assertNotNull(response.getRecommendedBoxId());
+        assertTrue(response.getBoxesRequired() >= 1);
+        assertFalse(response.getAlternatives().isEmpty());
+        assertTrue(response.getTotalVolumeCubicM() > 0);
     }
 }
