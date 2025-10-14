@@ -310,21 +310,90 @@
     }
 }
 
-@media (max-width: 480px) {
+@media (max-width: 680px) {
+    .scoped-login {
+        min-height: 100vh;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+
+    .scoped-login .login-bg-orbs {
+        display: none;
+    }
+
+    .scoped-login .login-page-2col {
+        min-height: calc(100vh - 64px);
+        gap: var(--space-3);
+    }
+
+    .scoped-login .login-right {
+        width: 100%;
+        border-radius: 0 0 28px 28px;
+        overflow: hidden;
+        background-position: center;
+        background-size: cover;
+        box-shadow: var(--shadow-lg);
+    }
+
     .scoped-login .login-left {
-        padding: var(--space-4) var(--space-2);
+        padding: calc(var(--space-4) + env(safe-area-inset-top, 0px)) var(--space-2) var(--space-4);
+        align-items: stretch;
     }
 
     .scoped-login .login-left-content {
         width: 100%;
         padding: var(--space-4);
+        background: var(--c-surface);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 28px;
+        box-shadow: var(--shadow-lg);
+    }
+
+    [data-theme="light"] .scoped-login .login-left-content {
+        border-color: rgba(15, 21, 39, 0.06);
+    }
+
+    .scoped-login .login-h1 {
+        font-size: clamp(1.7rem, 7vw, 2.1rem);
+    }
+
+    .scoped-login .login-lead {
+        font-size: 1rem;
+    }
+
+    .scoped-login .login-form {
+        gap: 1rem;
+    }
+
+    .scoped-login .login-form input {
+        border-radius: 14px;
+        padding: 0.95rem 1rem;
     }
 
     .scoped-login .login-btn {
-        padding: 0.9rem 1rem;
+        padding: 1rem 1.1rem;
+        border-radius: 20px;
+        font-size: 1rem;
+        box-shadow: 0 14px 34px rgba(80, 120, 255, 0.35);
+    }
+
+    .scoped-login .register-cta {
+        margin-top: 1.5rem;
+    }
+
+    .scoped-login .login-footer {
+        padding: var(--space-4) var(--space-2) calc(var(--space-5) + env(safe-area-inset-bottom, 0px));
     }
 
     .scoped-login .login-foot-inner {
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        gap: 0.75rem;
+        text-align: center;
+    }
+
+    .scoped-login .login-foot-links {
+        flex-wrap: wrap;
         justify-content: center;
     }
 }
