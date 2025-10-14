@@ -45,6 +45,10 @@ const Login = () => {
         try {
             const res = await fetch(`${import.meta.env.VITE_APIURL}/api/nfc/read/1`);
             if (!res.ok) return;
+
+            const contentType = res.headers.get('content-type') || '';
+            if (!contentType.toLowerCase().includes('application/json')) return;
+
             const json = await res.json();
             if (json.status !== 'success') return;
 
