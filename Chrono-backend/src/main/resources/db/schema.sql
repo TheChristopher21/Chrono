@@ -35,6 +35,16 @@ ALTER TABLE companies ADD COLUMN IF NOT EXISTS city VARCHAR(255);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS last_customer_id BIGINT;
 ALTER TABLE users ADD CONSTRAINT fk_last_customer FOREIGN KEY (last_customer_id) REFERENCES customers(id);
 ALTER TABLE users ADD COLUMN IF NOT EXISTS include_in_time_tracking BOOLEAN DEFAULT TRUE;
+-- Regular users should always remain visible in time tracking views. If an installation
+-- accidentally stored include_in_time_tracking = FALSE for non-admin users, correct it.
+UPDATE users SET include_in_time_tracking = TRUE
+WHERE include_in_time_tracking = FALSE
+  AND id NOT IN (
+    SELECT ur.user_id
+    FROM user_roles ur
+    INNER JOIN roles r ON r.id = ur.role_id
+    WHERE r.role_name IN ('ROLE_ADMIN', 'ROLE_SUPERADMIN')
+);
 ALTER TABLE time_tracking_entries ADD COLUMN IF NOT EXISTS project_id BIGINT;
 ALTER TABLE time_tracking_entries ADD CONSTRAINT fk_project FOREIGN KEY (project_id) REFERENCES projects(id);
 
