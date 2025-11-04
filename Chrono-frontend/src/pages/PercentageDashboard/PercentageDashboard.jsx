@@ -323,12 +323,16 @@ const PercentageDashboard = () => {
     const weekDatesForOverview = Array.from({ length: 5 }, (_, i) => addDays(selectedMonday, i));
     const weeklyWorked = computeTotalWorkedMinutesInRange(dailySummaries, selectedMonday, addDays(selectedMonday, 4));
 
-    const weeklyExpected = weekDatesForOverview.reduce((sum, dayObj) => {
+    const expectedWorkDaysPerWeek = (userProfile?.expectedWorkDays && userProfile.expectedWorkDays > 0)
+        ? userProfile.expectedWorkDays
+        : 5;
+
+    const weeklyExpected = weekDatesForOverview.reduce((sum, dayObj, index) => {
         const isoDate = formatLocalDate(dayObj);
         const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
         const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
         const isHoliday = holidaysForUserCanton?.data && holidaysForUserCanton.data[isoDate];
-        let daySoll = expectedDayMinutesForPercentageUser(userProfile);
+        let daySoll = index < expectedWorkDaysPerWeek ? expectedDayMinutesForPercentageUser(userProfile) : 0;
 
         if (isHoliday || (vacationToday && !vacationToday.halfDay) || (sickToday && !sickToday.halfDay)) {
             daySoll = 0;
