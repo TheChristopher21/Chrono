@@ -9,13 +9,12 @@ import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 
 import AdminWeekSection from './AdminWeekSection';
-import AdminVacationRequests from './AdminVacationRequests';
-import AdminCorrectionsList from './AdminCorrectionsList';
 import EditTimeModal from './EditTimeModal';
 import PrintUserTimesModal from './PrintUserTimesModal';
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 import AdminDashboardKpis from './AdminDashboardKpis';
 import AdminActionStream from './AdminActionStream';
+import CorrectionDecisionModal from './CorrectionDecisionModal';
 
 import {
     getMondayOfWeek,
@@ -23,9 +22,91 @@ import {
     addDays,
     minutesToHHMM,
     formatDate,
+    formatTime,
     processEntriesForReport,
     selectTrackableUsers,
 } from './adminDashboardUtils';
+
+const INBOX_FILTER_STORAGE_KEY = 'adminDashboard_inboxFilters_v1';
+const INBOX_VIEWS_STORAGE_KEY = 'adminDashboard_savedViews_v1';
+
+const DEFAULT_INBOX_FILTERS = {
+    status: 'pending',
+    types: ['vacation', 'correction'],
+    user: null,
+    department: null,
+    lowRiskOnly: false,
+    savedViewId: 'builtin:pending',
+};
+
+const isBrowserEnvironment = () => typeof window !== 'undefined' && !!window.localStorage;
+
+const loadStoredFilters = () => {
+    if (!isBrowserEnvironment()) return null;
+    try {
+        const raw = window.localStorage.getItem(INBOX_FILTER_STORAGE_KEY);
+        if (!raw) return null;
+        const parsed = JSON.parse(raw);
+        if (!parsed || typeof parsed !== 'object') return null;
+        const types = Array.isArray(parsed.types) && parsed.types.length > 0
+            ? parsed.types.filter((type) => ['vacation', 'correction'].includes(type))
+            : DEFAULT_INBOX_FILTERS.types;
+        return {
+            ...DEFAULT_INBOX_FILTERS,
+            ...parsed,
+            types,
+        };
+    } catch (error) {
+        console.error('Failed to parse stored inbox filters', error);
+        return null;
+    }
+};
+
+const loadStoredViews = () => {
+    if (!isBrowserEnvironment()) return [];
+    try {
+        const raw = window.localStorage.getItem(INBOX_VIEWS_STORAGE_KEY);
+        if (!raw) return [];
+        const parsed = JSON.parse(raw);
+        if (!Array.isArray(parsed)) return [];
+        return parsed.filter((view) => view && typeof view === 'object' && view.id && view.filters);
+    } catch (error) {
+        console.error('Failed to parse stored inbox views', error);
+        return [];
+    }
+};
+
+const persistFilters = (filters, searchValue) => {
+    if (!isBrowserEnvironment()) return;
+    try {
+        window.localStorage.setItem(INBOX_FILTER_STORAGE_KEY, JSON.stringify({ ...filters, query: searchValue }));
+    } catch (error) {
+        console.error('Failed to persist inbox filters', error);
+    }
+};
+
+const persistViews = (views) => {
+    if (!isBrowserEnvironment()) return;
+    try {
+        window.localStorage.setItem(INBOX_VIEWS_STORAGE_KEY, JSON.stringify(views));
+    } catch (error) {
+        console.error('Failed to persist inbox views', error);
+    }
+};
+
+const isLowRiskCorrection = (corr) => {
+    if (!corr) return false;
+    const entries = Array.isArray(corr.entries) && corr.entries.length > 0 ? corr.entries : [corr];
+    const firstEntry = entries[0] || {};
+    const desired = new Date(firstEntry.desiredTimestamp || corr.desiredTimestamp || 0);
+    const original = new Date(firstEntry.originalTimestamp || corr.originalTimestamp || 0);
+    if (Number.isNaN(desired.getTime()) || Number.isNaN(original.getTime())) return false;
+    const deltaMinutes = Math.abs(desired.getTime() - original.getTime()) / 60000;
+    const desiredHour = desired.getHours();
+    const withinWindow = desiredHour >= 6 && desiredHour <= 22;
+    const singlePair = (entries?.length ?? 1) <= 2;
+    return deltaMinutes <= 15 && withinWindow && singlePair && !corr.denied && !corr.approved;
+};
 
 const AdminDashboard = () => {
     const { currentUser } = useAuth();
@@ -91,6 +172,804 @@ const AdminDashboard = () => {
         return weeklyBalances.filter(entry => entry?.username && trackableUsernames.has(entry.username));
     }, [weeklyBalances, trackableUsernames, didFallbackTrackableUsers, excludedUsernames]);
 
+    const userMap = useMemo(() => {
+        const map = new Map();
+        users.forEach((user) => {
+            if (user?.username) {
+                map.set(user.username, user);
+            }
+        });
+        return map;
+    }, [users]);
+
+    const myDepartment = currentUser?.departmentName || null;
+
+    const inboxItems = useMemo(() => {
+        const vacationItems = (Array.isArray(allVacations) ? allVacations : []).map((vac) => {
+            const user = userMap.get(vac.username);
+            const priorityDate = vac.startDate || vac.createdAt || vac.requestedAt;
+            const parsedPriority = priorityDate ? new Date(priorityDate) : null;
+            const priority = parsedPriority && !Number.isNaN(parsedPriority.getTime())
+                ? parsedPriority.getTime()
+                : Number.MAX_SAFE_INTEGER;
+            return {
+                id: `vac-${vac.id}`,
+                entityId: vac.id,
+                type: 'vacation',
+                status: vac.approved ? 'approved' : vac.denied ? 'denied' : 'pending',
+                username: vac.username,
+                displayName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : vac.username,
+                department: user?.departmentName || null,
+                startDate: vac.startDate,
+                endDate: vac.endDate,
+                createdAt: vac.createdAt || vac.requestedAt,
+                requestedAt: vac.requestedAt,
+                priority,
+                flags: {
+                    halfDay: !!vac.halfDay,
+                    usesOvertime: !!vac.usesOvertime,
+                },
+                isLowRisk: false,
+                raw: vac,
+            };
+        });
+
+        const correctionItems = (Array.isArray(allCorrections) ? allCorrections : []).map((corr) => {
+            const user = userMap.get(corr.username);
+            const priorityDate = corr.requestDate || corr.desiredTimestamp || corr.originalTimestamp;
+            const parsedPriority = priorityDate ? new Date(priorityDate) : null;
+            const priority = parsedPriority && !Number.isNaN(parsedPriority.getTime())
+                ? parsedPriority.getTime()
+                : Number.MAX_SAFE_INTEGER;
+            const normalizedEntries = Array.isArray(corr.entries) ? corr.entries : [];
+            return {
+                id: `corr-${corr.id}`,
+                entityId: corr.id,
+                type: 'correction',
+                status: corr.approved ? 'approved' : corr.denied ? 'denied' : 'pending',
+                username: corr.username,
+                displayName: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : corr.username,
+                department: user?.departmentName || null,
+                createdAt: corr.requestDate,
+                reason: corr.reason,
+                priority,
+                flags: {
+                    entryCount: normalizedEntries.length,
+                },
+                entries: normalizedEntries,
+                isLowRisk: isLowRiskCorrection(corr),
+                raw: corr,
+            };
+        });
+
+        return [...vacationItems, ...correctionItems].sort((a, b) => a.priority - b.priority);
+    }, [allVacations, allCorrections, userMap]);
+
+    const filteredInboxItems = useMemo(() => {
+        let list = [...inboxItems];
+        const { status, types, user, department, lowRiskOnly } = inboxFilters;
+        if (status && status !== 'all') {
+            list = list.filter((item) => item.status === status);
+        }
+        if (Array.isArray(types) && types.length > 0) {
+            list = list.filter((item) => types.includes(item.type));
+        }
+        if (user) {
+            list = list.filter((item) => item.username === user);
+        }
+        if (department) {
+            list = list.filter((item) => (item.department || null) === department);
+        }
+        if (lowRiskOnly) {
+            list = list.filter((item) => item.isLowRisk);
+        }
+        if (inboxSearch) {
+            const query = inboxSearch.toLowerCase();
+            list = list.filter((item) => {
+                return [
+                    item.username,
+                    item.displayName,
+                    item.reason,
+                    item.type,
+                    item.raw?.startDate,
+                    item.raw?.endDate,
+                ].some((value) => (value || '').toString().toLowerCase().includes(query));
+            });
+        }
+        return list;
+    }, [inboxItems, inboxFilters, inboxSearch]);
+
+    const statusSummary = useMemo(() => {
+        const summary = { pending: 0, vacations: 0, corrections: 0 };
+        inboxItems.forEach((item) => {
+            if (item.status === 'pending') summary.pending += 1;
+            if (item.type === 'vacation' && item.status === 'pending') summary.vacations += 1;
+            if (item.type === 'correction' && item.status === 'pending') summary.corrections += 1;
+        });
+        return summary;
+    }, [inboxItems]);
+
+    const lowRiskPending = useMemo(() => inboxItems.filter((item) => item.type === 'correction' && item.isLowRisk && item.status === 'pending'), [inboxItems]);
+
+    useEffect(() => {
+        setSelectedInboxIds((prev) => prev.filter((id) => filteredInboxItems.some((item) => item.id === id)));
+        if (filteredInboxItems.length === 0) {
+            setFocusedInboxId(null);
+            setLastFocusedIndex(null);
+            return;
+        }
+        if (!focusedInboxId || !filteredInboxItems.some((item) => item.id === focusedInboxId)) {
+            setFocusedInboxId(filteredInboxItems[0].id);
+            setLastFocusedIndex(0);
+        } else {
+            const idx = filteredInboxItems.findIndex((item) => item.id === focusedInboxId);
+            setLastFocusedIndex(idx);
+        }
+    }, [filteredInboxItems, focusedInboxId]);
+
+    const focusedInboxItem = useMemo(() => {
+        if (!focusedInboxId) return null;
+        return filteredInboxItems.find((item) => item.id === focusedInboxId) || null;
+    }, [filteredInboxItems, focusedInboxId]);
+
+    const applyFilter = useCallback((modifier, savedViewId = null) => {
+        setInboxFilters((prev) => {
+            const draft = typeof modifier === 'function' ? modifier({ ...prev }) : { ...prev, ...modifier };
+            const next = { ...prev, ...draft };
+            if (!Array.isArray(next.types) || next.types.length === 0) {
+                next.types = [...DEFAULT_INBOX_FILTERS.types];
+            } else {
+                next.types = Array.from(new Set(next.types));
+            }
+            next.savedViewId = savedViewId;
+            return next;
+        });
+        setActiveQuickFilter(savedViewId || 'custom');
+    }, []);
+
+    const clearSelection = useCallback(() => {
+        setSelectedInboxIds([]);
+    }, []);
+
+    const clearSavedView = useCallback(() => {
+        setInboxFilters((prev) => {
+            if (!prev.savedViewId) return prev;
+            return { ...prev, savedViewId: null };
+        });
+        setActiveQuickFilter('custom');
+    }, []);
+
+    const applyQuickFilter = useCallback((filterId) => {
+        clearSelection();
+        setInboxSearch('');
+        switch (filterId) {
+            case 'builtin:pending':
+                applyFilter({
+                    status: 'pending',
+                    types: ['vacation', 'correction'],
+                    user: null,
+                    department: null,
+                    lowRiskOnly: false,
+                }, 'builtin:pending');
+                break;
+            case 'builtin:vacations':
+                applyFilter({
+                    status: 'pending',
+                    types: ['vacation'],
+                    user: null,
+                    department: null,
+                    lowRiskOnly: false,
+                }, 'builtin:vacations');
+                break;
+            case 'builtin:corrections':
+                applyFilter({
+                    status: 'pending',
+                    types: ['correction'],
+                    user: null,
+                    department: null,
+                    lowRiskOnly: false,
+                }, 'builtin:corrections');
+                break;
+            case 'builtin:lowRisk':
+                applyFilter({
+                    status: 'pending',
+                    types: ['correction'],
+                    lowRiskOnly: true,
+                    user: null,
+                    department: null,
+                }, 'builtin:lowRisk');
+                break;
+            case 'builtin:department':
+                if (myDepartment) {
+                    applyFilter({
+                        status: 'pending',
+                        department: myDepartment,
+                        user: null,
+                        lowRiskOnly: false,
+                    }, 'builtin:department');
+                }
+                break;
+            case 'builtin:approved':
+                applyFilter({
+                    status: 'approved',
+                    lowRiskOnly: false,
+                }, 'builtin:approved');
+                break;
+            case 'builtin:denied':
+                applyFilter({
+                    status: 'denied',
+                    lowRiskOnly: false,
+                }, 'builtin:denied');
+                break;
+            default:
+                applyFilter({}, filterId);
+        }
+    }, [applyFilter, clearSelection, myDepartment]);
+
+    const builtInViews = useMemo(() => {
+        const views = [
+            {
+                id: 'builtin:pending',
+                label: t('adminDashboard.inbox.views.pending', 'Alle offen'),
+                description: t('adminDashboard.inbox.views.pendingHint', 'Urlaub + Korrekturen · Status offen'),
+                action: () => applyQuickFilter('builtin:pending'),
+            },
+            {
+                id: 'builtin:vacations',
+                label: t('adminDashboard.inbox.views.vacations', 'Urlaubscenter'),
+                description: t('adminDashboard.inbox.views.vacationsHint', 'Nur Urlaubsanträge anzeigen'),
+                action: () => applyQuickFilter('builtin:vacations'),
+            },
+            {
+                id: 'builtin:corrections',
+                label: t('adminDashboard.inbox.views.corrections', 'Korrekturcenter'),
+                description: t('adminDashboard.inbox.views.correctionsHint', 'Nur Korrekturanträge anzeigen'),
+                action: () => applyQuickFilter('builtin:corrections'),
+            },
+            {
+                id: 'builtin:lowRisk',
+                label: t('adminDashboard.inbox.views.lowRisk', '≤15 Min Low-Risk'),
+                description: t('adminDashboard.inbox.views.lowRiskHint', 'Schnell genehmigbare Änderungen'),
+                action: () => applyQuickFilter('builtin:lowRisk'),
+            },
+        ];
+        if (myDepartment) {
+            views.push({
+                id: 'builtin:department',
+                label: t('adminDashboard.inbox.views.myDepartment', 'Meine Abteilung'),
+                description: t('adminDashboard.inbox.views.myDepartmentHint', 'Filter auf eigenes Team setzen'),
+                action: () => applyQuickFilter('builtin:department'),
+            });
+        }
+        views.push(
+            {
+                id: 'builtin:approved',
+                label: t('adminDashboard.inbox.views.approved', 'Genehmigt'),
+                description: t('adminDashboard.inbox.views.approvedHint', 'Historie genehmigter Anträge'),
+                action: () => applyQuickFilter('builtin:approved'),
+            },
+            {
+                id: 'builtin:denied',
+                label: t('adminDashboard.inbox.views.denied', 'Abgelehnt'),
+                description: t('adminDashboard.inbox.views.deniedHint', 'Abgelehnte Anträge im Blick behalten'),
+                action: () => applyQuickFilter('builtin:denied'),
+            },
+        );
+        return views;
+    }, [applyQuickFilter, myDepartment, t]);
+
+    const handleApplyCustomView = useCallback((view) => {
+        if (!view) return;
+        clearSelection();
+        setInboxSearch(view.query || '');
+        const filters = view.filters ? { ...view.filters } : {};
+        delete filters.savedViewId;
+        applyFilter(filters, view.id);
+    }, [applyFilter, clearSelection]);
+
+    const handleSaveCurrentView = useCallback(() => {
+        if (!isBrowserEnvironment()) return;
+        const name = window.prompt(t('adminDashboard.inbox.saveViewPrompt', 'Ansicht speichern als…'));
+        if (!name) return;
+        const filtersToStore = { ...inboxFilters };
+        delete filtersToStore.savedViewId;
+        const newView = {
+            id: `custom-${Date.now()}`,
+            label: name,
+            filters: filtersToStore,
+            query: inboxSearch,
+        };
+        setCustomViews((prev) => [...prev, newView]);
+        applyFilter(filtersToStore, newView.id);
+        setInboxSearch(inboxSearch);
+    }, [inboxFilters, inboxSearch, applyFilter, t]);
+
+    const handleDeleteView = useCallback((viewId) => {
+        setCustomViews((prev) => prev.filter((view) => view.id !== viewId));
+        if (inboxFilters.savedViewId === viewId) {
+            applyQuickFilter('builtin:pending');
+        }
+    }, [applyQuickFilter, inboxFilters.savedViewId]);
+
+    const handleRequestFocus = useCallback((item, index) => {
+        if (!item) return;
+        setFocusedInboxId(item.id);
+        setLastFocusedIndex(index);
+    }, []);
+
+    const handleToggleSelect = useCallback((item) => {
+        if (!item) return;
+        setSelectedInboxIds((prev) => {
+            if (prev.includes(item.id)) {
+                return prev.filter((id) => id !== item.id);
+            }
+            return [...prev, item.id];
+        });
+    }, []);
+
+    const handleToggleRange = useCallback((indexA, indexB) => {
+        if (typeof indexA !== 'number' || typeof indexB !== 'number') return;
+        const [start, end] = indexA < indexB ? [indexA, indexB] : [indexB, indexA];
+        const idsInRange = filteredInboxItems.slice(start, end + 1).map((item) => item.id);
+        setSelectedInboxIds((prev) => Array.from(new Set([...prev, ...idsInRange])));
+    }, [filteredInboxItems]);
+
+    const updateDecisionDraft = useCallback((itemId, value) => {
+        setDecisionDrafts((prev) => ({ ...prev, [itemId]: value }));
+    }, []);
+
+    const approveItem = useCallback(async (item, comment = '') => {
+        if (!item) return;
+        if (item.type === 'vacation') {
+            await handleApproveVacation(item.entityId);
+        } else {
+            await handleApproveCorrection(item.entityId, comment);
+        }
+        setDecisionDrafts((prev) => {
+            const next = { ...prev };
+            delete next[item.id];
+            return next;
+        });
+    }, [handleApproveVacation, handleApproveCorrection]);
+
+    const denyItem = useCallback(async (item, comment = '') => {
+        if (!item) return;
+        if (item.type === 'vacation') {
+            await handleDenyVacation(item.entityId);
+        } else {
+            await handleDenyCorrection(item.entityId, comment);
+        }
+        setDecisionDrafts((prev) => {
+            const next = { ...prev };
+            delete next[item.id];
+            return next;
+        });
+    }, [handleDenyVacation, handleDenyCorrection]);
+
+    const handleBulkApproveSelection = useCallback(async () => {
+        const candidates = filteredInboxItems.filter((item) => selectedInboxIds.includes(item.id) && item.status === 'pending');
+        if (candidates.length === 0) return;
+        await Promise.all(candidates.map((item) => approveItem(item, decisionDrafts[item.id] || '')));
+        clearSelection();
+    }, [approveItem, clearSelection, decisionDrafts, filteredInboxItems, selectedInboxIds]);
+
+    const handleBulkDenySelection = useCallback(async () => {
+        const candidates = filteredInboxItems.filter((item) => selectedInboxIds.includes(item.id) && item.status === 'pending');
+        if (candidates.length === 0) return;
+        await Promise.all(candidates.map((item) => denyItem(item, decisionDrafts[item.id] || '')));
+        clearSelection();
+    }, [clearSelection, decisionDrafts, denyItem, filteredInboxItems, selectedInboxIds]);
+
+    const handleAutoApproveLowRisk = useCallback(async () => {
+        if (lowRiskPending.length === 0) {
+            notify(t('adminDashboard.actionStream.noLowRisk', 'Keine Low-Risk-Korrekturen gefunden.'), 'info');
+            return;
+        }
+        await Promise.all(lowRiskPending.map((item) => approveItem(item, decisionDrafts[item.id] || '')));
+        clearSelection();
+    }, [approveItem, clearSelection, decisionDrafts, lowRiskPending, notify, t]);
+
+    const handleDecisionSubmit = useCallback((mode, comment) => {
+        if (!focusedInboxItem || focusedInboxItem.status !== 'pending') return;
+        if (mode === 'approve') {
+            approveItem(focusedInboxItem, comment || decisionDrafts[focusedInboxItem.id] || '');
+        } else {
+            denyItem(focusedInboxItem, comment || decisionDrafts[focusedInboxItem.id] || '');
+        }
+    }, [approveItem, decisionDrafts, denyItem, focusedInboxItem]);
+
+    const decisionComment = focusedInboxItem ? (decisionDrafts[focusedInboxItem.id] || '') : '';
+
+    const handleDetailCommentChange = useCallback((value) => {
+        if (!focusedInboxItem) return;
+        updateDecisionDraft(focusedInboxItem.id, value);
+    }, [focusedInboxItem, updateDecisionDraft]);
+
+    const renderDetailPanel = useCallback(() => {
+        if (!focusedInboxItem) {
+            return (
+                <div className="inbox-detail-card empty">
+                    {t('adminDashboard.inbox.noSelection', 'Wähle links ein Element, um Details anzuzeigen.')}
+                </div>
+            );
+        }
+
+        const statusKey = focusedInboxItem.status || 'pending';
+        const statusLabel = t(`status.${statusKey}`, statusKey);
+        const user = userMap.get(focusedInboxItem.username);
+        const typeLabel = focusedInboxItem.type === 'vacation'
+            ? t('adminDashboard.inbox.detail.typeVacation', 'Urlaubsantrag')
+            : t('adminDashboard.inbox.detail.typeCorrection', 'Korrekturantrag');
+
+        const metaRows = [
+            {
+                key: 'user',
+                label: t('adminDashboard.inbox.detail.user', 'Benutzer'),
+                value: focusedInboxItem.displayName || focusedInboxItem.username,
+            },
+            {
+                key: 'department',
+                label: t('adminDashboard.inbox.detail.department', 'Abteilung'),
+                value: focusedInboxItem.department || user?.departmentName || t('adminDashboard.inbox.detail.noDepartment', 'Keine Zuordnung'),
+            },
+            {
+                key: 'created',
+                label: t('adminDashboard.inbox.detail.created', 'Eingegangen'),
+                value: focusedInboxItem.createdAt ? formatDate(focusedInboxItem.createdAt) : '—',
+            },
+        ];
+
+        const renderVacationDetails = () => {
+            const vacation = focusedInboxItem.raw || {};
+            return (
+                <div className="detail-section">
+                    <h4>{t('adminDashboard.inbox.detail.period', 'Zeitraum')}</h4>
+                    <p className="meta-value">
+                        {vacation.startDate ? formatDate(vacation.startDate) : '—'}
+                        {' '}
+                        {vacation.endDate ? `– ${formatDate(vacation.endDate)}` : ''}
+                    </p>
+                    {vacation.comment && (
+                        <p className="detail-comment">{vacation.comment}</p>
+                    )}
+                    <div className="detail-flags">
+                        {vacation.halfDay && (
+                            <span className="flag">{t('adminDashboard.halfDayShort', '½ Tag')}</span>
+                        )}
+                        {vacation.usesOvertime && (
+                            <span className="flag overtime">{t('adminDashboard.overtimeVacationShort', 'ÜS')}</span>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const renderCorrectionDetails = () => {
+            const correction = focusedInboxItem.raw || {};
+            return (
+                <div className="detail-section">
+                    {correction.reason && (
+                        <>
+                            <h4>{t('adminDashboard.inbox.detail.reason', 'Grund')}</h4>
+                            <p className="detail-comment">{correction.reason}</p>
+                        </>
+                    )}
+                    {Array.isArray(focusedInboxItem.entries) && focusedInboxItem.entries.length > 0 && (
+                        <>
+                            <h4>{t('adminDashboard.inbox.detail.entries', 'Zeitänderungen')}</h4>
+                            <ul className="correction-entry-list">
+                                {focusedInboxItem.entries.map((entry, index) => {
+                                    const entryDateSource = entry.date || entry.desiredTimestamp || entry.originalTimestamp;
+                                    const formattedEntryDate = entryDateSource ? formatDate(entryDateSource) : '';
+                                    const originalTime = entry.originalTimestamp ? formatTime(entry.originalTimestamp) : null;
+                                    const desiredTime = entry.desiredTimestamp ? formatTime(entry.desiredTimestamp) : null;
+                                    return (
+                                        <li key={`${focusedInboxItem.id}-entry-${index}`}>
+                                            <span className="meta-label">{formattedEntryDate}</span>
+                                            <div>
+                                                {originalTime && (
+                                                    <span className="detail-diff-original">{originalTime}</span>
+                                                )}
+                                                {(originalTime || desiredTime) && ' → '}
+                                                {desiredTime && (
+                                                    <strong className="detail-diff-desired">{desiredTime}</strong>
+                                                )}
+                                            </div>
+                                            {entry.comment && (
+                                                <p className="detail-entry-comment">{entry.comment}</p>
+                                            )}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </>
+                    )}
+                    {focusedInboxItem.isLowRisk && (
+                        <p className="detail-hint success">
+                            {t('adminDashboard.inbox.detail.lowRiskHint', 'Als Low-Risk erkannt · für Bulk-Genehmigung geeignet')}
+                        </p>
+                    )}
+                </div>
+            );
+        };
+
+        const footerContent = focusedInboxItem.status === 'pending'
+            ? (
+                <CorrectionDecisionModal
+                    visible
+                    inline
+                    mode="approve"
+                    comment={decisionComment}
+                    setComment={handleDetailCommentChange}
+                    onSubmit={handleDecisionSubmit}
+                    title={t('adminDashboard.inbox.detail.decisionTitle', 'Kommentar & Entscheidung')}
+                    actions={[
+                        {
+                            mode: 'approve',
+                            label: t('adminDashboard.approveButton', 'Genehmigen'),
+                            primary: true,
+                        },
+                        {
+                            mode: 'deny',
+                            label: t('adminDashboard.rejectButton', 'Ablehnen'),
+                        },
+                    ]}
+                />
+            ) : (
+                <p className={`detail-hint status-${statusKey}`}>
+                    {t('adminDashboard.inbox.detail.processedInfo', 'Dieser Antrag wurde bereits bearbeitet.')}
+                </p>
+            );
+
+        return (
+            <div className="inbox-detail-card" key={focusedInboxItem.id}>
+                <div className="detail-header">
+                    <div>
+                        <h3>{typeLabel}</h3>
+                        <p className="detail-subtitle">{focusedInboxItem.displayName || focusedInboxItem.username}</p>
+                    </div>
+                    <span className={`detail-status status-${statusKey}`}>{statusLabel}</span>
+                </div>
+                <div className="detail-meta-grid">
+                    {metaRows.map((row) => (
+                        <div key={row.key}>
+                            <span className="meta-label">{row.label}</span>
+                            <span className="meta-value">{row.value || '—'}</span>
+                        </div>
+                    ))}
+                </div>
+                {focusedInboxItem.type === 'vacation' ? renderVacationDetails() : renderCorrectionDetails()}
+                <div className="detail-actions">
+                    <button
+                        type="button"
+                        className="button-secondary"
+                        onClick={() => handleFocusUserFromTask(focusedInboxItem.username)}
+                    >
+                        {t('adminDashboard.inbox.detail.focusUser', 'Im Kalender hervorheben')}
+                    </button>
+                </div>
+                {footerContent}
+            </div>
+        );
+    }, [
+        decisionComment,
+        focusedInboxItem,
+        handleDetailCommentChange,
+        handleDecisionSubmit,
+        handleFocusUserFromTask,
+        t,
+        userMap,
+    ]);
+
+    const commandList = useMemo(() => {
+        const base = [
+            {
+                id: 'cmd-vacations',
+                label: t('adminDashboard.commandPalette.openVacations', 'Urlaubscenter öffnen'),
+                action: () => applyQuickFilter('builtin:vacations'),
+            },
+            {
+                id: 'cmd-corrections',
+                label: t('adminDashboard.commandPalette.openCorrections', 'Korrekturcenter öffnen'),
+                action: () => applyQuickFilter('builtin:corrections'),
+            },
+            {
+                id: 'cmd-today-week',
+                label: t('adminDashboard.commandPalette.jumpToday', 'Zu aktueller Woche springen'),
+                action: () => handleCurrentWeek(),
+            },
+            {
+                id: 'cmd-low-risk',
+                label: t('adminDashboard.commandPalette.fixLowRisk', 'Offene ≤15 Min fixen'),
+                action: () => handleAutoApproveLowRisk(),
+            },
+        ];
+        const userCommands = users
+            .filter((user) => user?.username)
+            .slice(0, 25)
+            .map((user) => ({
+                id: `user-${user.username}`,
+                label: t('adminDashboard.commandPalette.focusUser', 'User {{name}} fokussieren', {
+                    name: `${user.firstName || ''} ${user.lastName || user.username}`.trim(),
+                }),
+                action: () => handleFocusUserFromTask(user.username),
+            }));
+        return [...base, ...userCommands];
+    }, [applyQuickFilter, handleAutoApproveLowRisk, handleFocusUserFromTask, handleCurrentWeek, t, users]);
+
+    const filteredCommands = useMemo(() => {
+        if (!paletteQuery) return commandList;
+        const query = paletteQuery.toLowerCase();
+        return commandList.filter((command) => command.label.toLowerCase().includes(query));
+    }, [commandList, paletteQuery]);
+
+    const handleExecuteCommand = useCallback((command) => {
+        if (!command) return;
+        setPaletteOpen(false);
+        command.action?.();
+    }, []);
+
+    useEffect(() => {
+        if (paletteOpen) {
+            setPaletteQuery('');
+            setPaletteActiveIndex(0);
+            requestAnimationFrame(() => {
+                paletteInputRef.current?.focus();
+            });
+        }
+    }, [paletteOpen]);
+
+    useEffect(() => {
+        if (paletteActiveIndex >= filteredCommands.length) {
+            setPaletteActiveIndex(Math.max(filteredCommands.length - 1, 0));
+        }
+    }, [filteredCommands, paletteActiveIndex]);
+
+    const handleSearchTermChange = useCallback((value) => {
+        setInboxSearch(value);
+        if (value && inboxFilters.savedViewId) {
+            clearSavedView();
+        }
+        if (value) {
+            setActiveQuickFilter('custom');
+        }
+    }, [clearSavedView, inboxFilters.savedViewId]);
+
+    useEffect(() => {
+        const handleKey = (event) => {
+            const target = event.target;
+            const isTypingTarget = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
+
+            if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+                event.preventDefault();
+                setPaletteOpen((prev) => !prev);
+                return;
+            }
+
+            if (event.key === '?' && !paletteOpen && !isTypingTarget) {
+                event.preventDefault();
+                notify(t('adminDashboard.shortcutCheatsheet', 'Shortcuts: J/K=Zeile · O=Öffnen · A=Approve · D=Deny · B=Bulk-Select · /=Suche · G G=Heute · H/L=Woche ±'), 'info');
+                return;
+            }
+
+            if (paletteOpen) {
+                if (event.key === 'Escape') {
+                    event.preventDefault();
+                    setPaletteOpen(false);
+                    return;
+                }
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    setPaletteActiveIndex((prev) => Math.min(prev + 1, Math.max(filteredCommands.length - 1, 0)));
+                    return;
+                }
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    setPaletteActiveIndex((prev) => Math.max(prev - 1, 0));
+                    return;
+                }
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    const command = filteredCommands[paletteActiveIndex];
+                    if (command) {
+                        handleExecuteCommand(command);
+                    }
+                    return;
+                }
+                return;
+            }
+
+            if (isTypingTarget) return;
+
+            const key = event.key.toLowerCase();
+
+            if (key === '/') {
+                event.preventDefault();
+                clearSavedView();
+                searchInputRef.current?.focus();
+                return;
+            }
+
+            if (key === 'h') {
+                event.preventDefault();
+                weekSectionRef.current?.handlePrevWeek?.();
+                return;
+            }
+
+            if (key === 'l') {
+                event.preventDefault();
+                weekSectionRef.current?.handleNextWeek?.();
+                return;
+            }
+
+            if (key === 'g') {
+                const now = Date.now();
+                if (now - gSequenceRef.current.last < 600) {
+                    gSequenceRef.current.count += 1;
+                } else {
+                    gSequenceRef.current.count = 1;
+                }
+                gSequenceRef.current.last = now;
+                if (gSequenceRef.current.count >= 2) {
+                    event.preventDefault();
+                    handleCurrentWeek();
+                    gSequenceRef.current.count = 0;
+                }
+                return;
+            }
+
+            if (key === 'j') {
+                event.preventDefault();
+                if (filteredInboxItems.length === 0) return;
+                const nextIndex = Math.min((lastFocusedIndex ?? 0) + 1, filteredInboxItems.length - 1);
+                handleRequestFocus(filteredInboxItems[nextIndex], nextIndex);
+                return;
+            }
+
+            if (key === 'k') {
+                event.preventDefault();
+                if (filteredInboxItems.length === 0) return;
+                const nextIndex = Math.max((lastFocusedIndex ?? 0) - 1, 0);
+                handleRequestFocus(filteredInboxItems[nextIndex], nextIndex);
+                return;
+            }
+
+            if (key === 'o' || key === 'enter') {
+                if (focusedInboxItem) {
+                    event.preventDefault();
+                    handleToggleSelect(focusedInboxItem);
+                }
+                return;
+            }
+
+            if (key === 'a') {
+                if (focusedInboxItem && focusedInboxItem.status === 'pending') {
+                    event.preventDefault();
+                    approveItem(focusedInboxItem, decisionDrafts[focusedInboxItem.id] || '');
+                }
+                return;
+            }
+
+            if (key === 'd') {
+                if (focusedInboxItem && focusedInboxItem.status === 'pending') {
+                    event.preventDefault();
+                    denyItem(focusedInboxItem, decisionDrafts[focusedInboxItem.id] || '');
+                }
+                return;
+            }
+
+            if (key === 'b') {
+                if (focusedInboxItem) {
+                    event.preventDefault();
+                    handleToggleSelect(focusedInboxItem);
+                }
+            }
+        };
+
+        window.addEventListener('keydown', handleKey);
+        return () => window.removeEventListener('keydown', handleKey);
+    }, [approveItem, clearSavedView, decisionDrafts, denyItem, filteredCommands, filteredInboxItems, focusedInboxItem, handleCurrentWeek, handleExecuteCommand, handleRequestFocus, handleToggleSelect, lastFocusedIndex, notify, paletteActiveIndex, paletteOpen, t]);
+
     const [issueSummary, setIssueSummary] = useState({
         missing: 0,
         incomplete: 0,
@@ -99,12 +978,24 @@ const AdminDashboard = () => {
         totalWithIssue: 0,
     });
     const [activeIssuePill, setActiveIssuePill] = useState(null);
-    const [vacationOpenSignal, setVacationOpenSignal] = useState(0);
-    const [correctionOpenSignal, setCorrectionOpenSignal] = useState(0);
+
+    const storedFilters = useMemo(() => loadStoredFilters(), []);
+    const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
+    const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
+    const [customViews, setCustomViews] = useState(() => loadStoredViews());
+    const [paletteOpen, setPaletteOpen] = useState(false);
+    const [paletteQuery, setPaletteQuery] = useState('');
+    const [paletteActiveIndex, setPaletteActiveIndex] = useState(0);
+    const paletteInputRef = useRef(null);
+    const searchInputRef = useRef(null);
+    const [selectedInboxIds, setSelectedInboxIds] = useState([]);
+    const [focusedInboxId, setFocusedInboxId] = useState(null);
+    const [lastFocusedIndex, setLastFocusedIndex] = useState(null);
+    const [activeQuickFilter, setActiveQuickFilter] = useState(inboxFilters.savedViewId || 'builtin:pending');
+    const [decisionDrafts, setDecisionDrafts] = useState({});
 
     const weekSectionRef = useRef(null);
-    const vacationsSectionRef = useRef(null);
-    const correctionsSectionRef = useRef(null);
+    const gSequenceRef = useRef({ last: 0, count: 0 });
 
     const handleIssueSummaryUpdate = useCallback((summary) => {
         if (!summary) {
@@ -121,12 +1012,6 @@ const AdminDashboard = () => {
 
             return hasChanges ? summary : prevSummary;
         });
-    }, []);
-
-    const scrollToRef = useCallback((targetRef) => {
-        if (targetRef?.current) {
-            targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
     }, []);
 
     const handleFocusIssues = useCallback((filterKey) => {
@@ -156,21 +1041,34 @@ const AdminDashboard = () => {
     }, []);
 
     const handleNavigateToVacations = useCallback(() => {
-        setVacationOpenSignal(prev => prev + 1);
-        scrollToRef(vacationsSectionRef);
-    }, [scrollToRef]);
+        applyQuickFilter('builtin:vacations');
+    }, [applyQuickFilter]);
 
     const handleNavigateToCorrections = useCallback(() => {
-        setCorrectionOpenSignal(prev => prev + 1);
-        scrollToRef(correctionsSectionRef);
-    }, [scrollToRef]);
+        applyQuickFilter('builtin:corrections');
+    }, [applyQuickFilter]);
 
     const handleFocusUserFromTask = useCallback((username) => {
-        if (username) {
-            setActiveIssuePill(null);
-            weekSectionRef.current?.focusUser?.(username);
-        }
-    }, []);
+        if (!username) return;
+        setActiveIssuePill(null);
+        applyFilter({
+            types: ['correction'],
+            user: username,
+            status: 'pending',
+            lowRiskOnly: false,
+        }, null);
+        setInboxSearch(username);
+        clearSelection();
+        weekSectionRef.current?.focusUser?.(username);
+    }, [applyFilter, clearSelection]);
+
+    useEffect(() => {
+        persistFilters(inboxFilters, inboxSearch);
+    }, [inboxFilters, inboxSearch]);
+
+    useEffect(() => {
+        persistViews(customViews);
+    }, [customViews]);
 
     const isSuperAdmin = !!currentUser?.roles?.includes('ROLE_SUPERADMIN');
 
@@ -694,6 +1592,99 @@ const AdminDashboard = () => {
             </div>
 
             <div className="dashboard-content">
+                <div className="unified-inbox-grid">
+                    <aside className="inbox-sidebar">
+                        <div className="sidebar-group">
+                            <h4>{t('adminDashboard.inbox.quickFilters', 'Quick Filter')}</h4>
+                            <div className="chip-list">
+                                {builtInViews.map((view) => (
+                                    <button
+                                        key={view.id}
+                                        type="button"
+                                        className={`chip-button${activeQuickFilter === view.id ? ' is-active' : ''}`}
+                                        onClick={view.action}
+                                    >
+                                        <span className="chip-label">{view.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                        <div className="sidebar-group">
+                            <h4>{t('adminDashboard.inbox.issues', 'Problemfilter')}</h4>
+                            <div className="chip-list">
+                                {issueChipConfig.map((chip) => (
+                                    <button
+                                        key={chip.key}
+                                        type="button"
+                                        className={`chip-button${activeIssuePill === chip.key ? ' is-active' : ''}${chip.count === 0 ? ' is-disabled' : ''}`}
+                                        onClick={() => handleFocusIssues(chip.key)}
+                                        disabled={chip.count === 0}
+                                    >
+                                        <span className="chip-icon" aria-hidden="true">{chip.icon}</span>
+                                        <span className="chip-label">{chip.label}</span>
+                                        <span className="chip-count">{chip.count}</span>
+                                    </button>
+                                ))}
+                                {hasIssues && (
+                                    <button
+                                        type="button"
+                                        className="chip-button ghost"
+                                        onClick={handleResetIssueFilters}
+                                    >
+                                        {t('adminDashboard.resetFilters', 'Filter zurücksetzen')}
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                        <div className="sidebar-group saved-views">
+                            <div className="saved-views-header">
+                                <h4>{t('adminDashboard.inbox.savedViews', 'Gespeicherte Ansichten')}</h4>
+                                <button type="button" className="button-ghost" onClick={handleSaveCurrentView}>
+                                    {t('adminDashboard.inbox.saveView', 'Speichern')}
+                                </button>
+                            </div>
+                            <ul className="saved-view-list">
+                                {customViews.length === 0 && (
+                                    <li className="saved-view-empty">{t('adminDashboard.inbox.noSavedViews', 'Noch keine Ansichten gespeichert.')}</li>
+                                )}
+                                {customViews.map((view) => (
+                                    <li key={view.id} className={inboxFilters.savedViewId === view.id ? 'is-active' : ''}>
+                                        <button type="button" onClick={() => handleApplyCustomView(view)}>
+                                            {view.label}
+                                        </button>
+                                        <button type="button" className="remove" onClick={() => handleDeleteView(view.id)} aria-label={t('delete', 'Löschen')}>
+                                            ×
+                                        </button>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </aside>
+                    <section className="inbox-center">
+                        <AdminActionStream
+                            t={t}
+                            items={filteredInboxItems}
+                            selectedIds={selectedInboxIds}
+                            focusedId={focusedInboxId}
+                            onRequestFocus={handleRequestFocus}
+                            onToggleSelect={handleToggleSelect}
+                            onToggleSelectRange={handleToggleRange}
+                            onApprove={(item) => approveItem(item, decisionDrafts[item.id] || '')}
+                            onDeny={(item) => denyItem(item, decisionDrafts[item.id] || '')}
+                            onBulkApprove={handleBulkApproveSelection}
+                            onBulkDeny={handleBulkDenySelection}
+                            onBulkAutoApprove={handleAutoApproveLowRisk}
+                            onFocusUser={handleFocusUserFromTask}
+                            searchTerm={inboxSearch}
+                            onSearchTermChange={handleSearchTermChange}
+                            statusSummary={statusSummary}
+                            searchInputRef={searchInputRef}
+                        />
+                    </section>
+                    <aside className="inbox-detail">
+                        {renderDetailPanel()}
+                    </aside>
+                </div>
                 <AdminWeekSection
                     ref={weekSectionRef}
                     t={t}
@@ -717,41 +1708,6 @@ const AdminDashboard = () => {
                     onDataReloadNeeded={handleDataReloadNeeded}
                     onIssueSummaryChange={handleIssueSummaryUpdate}
                 />
-                <div className="dashboard-secondary-grid">
-                    <div className="secondary-section action-stream-wrapper">
-                        <AdminActionStream
-                            t={t}
-                            allVacations={allVacations}
-                            allCorrections={allCorrections}
-                            onApproveVacation={handleApproveVacation}
-                            onDenyVacation={handleDenyVacation}
-                            onApproveCorrection={handleApproveCorrection}
-                            onDenyCorrection={handleDenyCorrection}
-                            onOpenVacationCenter={handleNavigateToVacations}
-                            onOpenCorrectionCenter={handleNavigateToCorrections}
-                            onFocusUser={handleFocusUserFromTask}
-                        />
-                    </div>
-                    <div ref={vacationsSectionRef} className="secondary-section">
-                        <AdminVacationRequests
-                            t={t}
-                            allVacations={allVacations}
-                            handleApproveVacation={handleApproveVacation}
-                            handleDenyVacation={handleDenyVacation}
-                            onReloadVacations={handleDataReloadNeeded}
-                            openSignal={vacationOpenSignal}
-                        />
-                    </div>
-                    <div ref={correctionsSectionRef} className="secondary-section">
-                        <AdminCorrectionsList
-                            t={t}
-                            allCorrections={allCorrections}
-                            onApprove={handleApproveCorrection}
-                            onDeny={handleDenyCorrection}
-                            openSignal={correctionOpenSignal}
-                        />
-                    </div>
-                </div>
             </div>
 
             <div className="mt-8">
@@ -762,6 +1718,39 @@ const AdminDashboard = () => {
                     users={users}
                 />
             </div>
+            {paletteOpen && (
+                <div className="command-palette-overlay" role="dialog" aria-modal="true">
+                    <div className="command-palette">
+                        <input
+                            type="search"
+                            ref={paletteInputRef}
+                            value={paletteQuery}
+                            onChange={(event) => {
+                                setPaletteQuery(event.target.value);
+                                setPaletteActiveIndex(0);
+                            }}
+                            placeholder={t('adminDashboard.commandPalette.placeholder', 'Befehl suchen …')}
+                            aria-label={t('adminDashboard.commandPalette.placeholder', 'Befehl suchen …')}
+                        />
+                        <ul>
+                            {filteredCommands.length === 0 && (
+                                <li className="empty">{t('adminDashboard.commandPalette.empty', 'Keine Treffer')}</li>
+                            )}
+                            {filteredCommands.map((command, index) => (
+                                <li key={command.id} className={index === paletteActiveIndex ? 'is-active' : ''}>
+                                    <button
+                                        type="button"
+                                        onMouseEnter={() => setPaletteActiveIndex(index)}
+                                        onClick={() => handleExecuteCommand(command)}
+                                    >
+                                        {command.label}
+                                    </button>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                </div>
+            )}
             <EditTimeModal
                 t={t}
                 isVisible={editModalVisible}
