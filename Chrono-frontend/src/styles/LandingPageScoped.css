@@ -77,16 +77,16 @@
 [data-theme="light"] .landing-page.scoped-landing .lp-secondary{color:#1e2438;}
 
 /* ===== Hero Layout ===== */
-.landing-page.scoped-landing .lp-hero{padding-top:calc(var(--space-7) + 1.2rem); position:relative; padding-inline:var(--section-pad-inline); text-align:left;}
+.landing-page.scoped-landing .lp-hero{padding-top:calc(var(--space-7) + 1.2rem); position:relative;}
 .landing-page.scoped-landing .lp-hero-grid{
-    width:100%; max-width:var(--layout-max); margin:0 auto; display:grid; align-items:center; gap:var(--space-5);
+    width:min(1180px,94vw); margin:0 auto; display:grid; align-items:center; gap:var(--space-5);
     grid-template-columns:minmax(0,1.2fr) minmax(0,1fr);
 }
 @media (max-width:980px){
     .landing-page.scoped-landing .lp-hero-grid{grid-template-columns:1fr;}
     .landing-page.scoped-landing .lp-hero{padding-top:var(--space-6);}
 }
-.landing-page.scoped-landing .lp-hero-copy{max-width:720px; margin:0;}
+.landing-page.scoped-landing .lp-hero-copy{text-align:left; max-width:720px; margin:0 auto;}
 .landing-page.scoped-landing .lp-hero-badge{
     display:inline-block; margin-bottom:.85rem; padding:.35rem .7rem; border-radius:999px;
     font-size:.78rem; color:#fff; background:linear-gradient(90deg,rgba(90,135,255,.6),rgba(90,135,255,.35));
@@ -101,7 +101,7 @@
 }
 .landing-page.scoped-landing .lp-hero-visual{
     position:relative; display:flex; align-items:center; justify-content:center;
-    min-height:480px; width:100%;
+    min-height:480px;
 }
 @media (max-width:980px){
     .landing-page.scoped-landing .lp-hero-visual{order:-1; min-height:380px;}
@@ -123,11 +123,10 @@
 .landing-page.scoped-landing .lp-progress-bar{position:relative; height:8px; border-radius:999px; background:rgba(255,255,255,.16); overflow:hidden;}
 .landing-page.scoped-landing .lp-progress-bar span{position:absolute; inset:0 auto 0 0; height:100%; border-radius:999px; background:var(--c-accent);}
 .landing-page.scoped-landing .lp-visual-stats{
-    position:absolute; display:grid; gap:var(--space-3); top:50%; right:calc(-1 * clamp(2rem, 6vw, 5rem));
-    transform:translateY(-50%);
+    position:absolute; display:grid; gap:var(--space-3); top:12%; right:-8%;
 }
 @media (max-width:1180px){
-    .landing-page.scoped-landing .lp-visual-stats{right:-2.5rem; top:12%; transform:none;}
+    .landing-page.scoped-landing .lp-visual-stats{right:-4%;}
 }
 @media (max-width:980px){
     .landing-page.scoped-landing .lp-visual-stats{position:static; margin-top:var(--space-3); grid-template-columns:repeat(auto-fit,minmax(160px,1fr)); gap:var(--space-2); width:100%; justify-items:stretch;}
@@ -212,7 +211,7 @@
     content:""; position:absolute; inset:0; background:linear-gradient(135deg, rgba(66,133,255,.14), transparent 60%);
     opacity:.9; pointer-events:none; z-index:0;
 }
-.landing-page.scoped-landing .lp-proof-inner{position:relative; width:100%; max-width:var(--layout-max); margin:0 auto; text-align:center; z-index:1;}
+.landing-page.scoped-landing .lp-proof-inner{position:relative; width:min(1050px,92vw); margin:0 auto; text-align:center; z-index:1;}
 .landing-page.scoped-landing .lp-proof-grid{
     margin-top:var(--space-4); display:grid; gap:var(--space-3); grid-template-columns:repeat(3,minmax(0,1fr));
 }
@@ -227,7 +226,7 @@
 .landing-page.scoped-landing .lp-proof-item span{color:var(--c-text-muted); font-size:.95rem;}
 
 /* Integrations */
-.landing-page.scoped-landing .lp-integrations-inner{width:100%; max-width:var(--layout-max); margin:0 auto; text-align:center;}
+.landing-page.scoped-landing .lp-integrations-inner{width:min(1050px,92vw); margin:0 auto; text-align:center;}
 .landing-page.scoped-landing .lp-integrations-grid{
     margin-top:var(--space-3); display:flex; flex-wrap:wrap; justify-content:center; gap:.75rem;
 }
@@ -238,9 +237,9 @@
 .landing-page.scoped-landing .lp-integrations-item:hover{transform:translateY(-2px); box-shadow:var(--shadow-sm);}
 
 /* CTA Banner */
-.landing-page.scoped-landing .lp-cta-banner{padding:var(--space-6) var(--section-pad-inline);}
+.landing-page.scoped-landing .lp-cta-banner{padding:var(--space-6) 0;}
 .landing-page.scoped-landing .lp-cta-inner{
-    width:100%; max-width:var(--layout-max); margin:0 auto; background:var(--c-surface-glass); border-radius:var(--radius-lg);
+    width:min(1080px,92vw); margin:0 auto; background:var(--c-surface-glass); border-radius:var(--radius-lg);
     border:1px solid rgba(90,135,255,.3); padding:var(--space-5); display:flex; gap:var(--space-4);
     align-items:center; justify-content:space-between; text-align:left; backdrop-filter:blur(10px);
 }
