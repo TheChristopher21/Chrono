@@ -1300,7 +1300,7 @@ const AdminDashboard = () => {
         }
     }
 
-    const handleApproveCorrection = async (id, comment) => {
+    async function handleApproveCorrection(id, comment) {
         try {
             await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionApprovedMsg')} #${id}`, "success");
@@ -1309,9 +1309,9 @@ const AdminDashboard = () => {
             console.error(`Fehler beim Genehmigen von Antrag #${id}:`, error);
             notify(`${t('adminDashboard.correctionErrorMsg')} #${id}`, "error");
         }
-    };
+    }
 
-    const handleDenyCorrection = async (id, comment) => {
+    async function handleDenyCorrection(id, comment) {
         try {
             await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionDeniedMsg')} #${id}`, "success");
@@ -1320,7 +1320,7 @@ const AdminDashboard = () => {
             console.error(`Fehler beim Ablehnen von Antrag #${id}:`, error);
             notify(`${t('adminDashboard.correctionErrorMsg')} #${id}`, "error");
         }
-    };
+    }
 
     function openEditModal(targetUsername, dateObj, dailySummaryForDay) {
         setEditTargetUsername(targetUsername);
