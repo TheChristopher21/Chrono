@@ -184,21 +184,6 @@ const AdminDashboard = () => {
 
     const myDepartment = currentUser?.departmentName || null;
 
-    const storedFilters = useMemo(() => loadStoredFilters(), []);
-    const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
-    const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
-    const [customViews, setCustomViews] = useState(() => loadStoredViews());
-    const [paletteOpen, setPaletteOpen] = useState(false);
-    const [paletteQuery, setPaletteQuery] = useState('');
-    const [paletteActiveIndex, setPaletteActiveIndex] = useState(0);
-    const paletteInputRef = useRef(null);
-    const searchInputRef = useRef(null);
-    const [selectedInboxIds, setSelectedInboxIds] = useState([]);
-    const [focusedInboxId, setFocusedInboxId] = useState(null);
-    const [lastFocusedIndex, setLastFocusedIndex] = useState(null);
-    const [activeQuickFilter, setActiveQuickFilter] = useState(inboxFilters.savedViewId || 'builtin:pending');
-    const [decisionDrafts, setDecisionDrafts] = useState({});
-
     const inboxItems = useMemo(() => {
         const vacationItems = (Array.isArray(allVacations) ? allVacations : []).map((vac) => {
             const user = userMap.get(vac.username);
@@ -818,6 +803,20 @@ const AdminDashboard = () => {
     });
     const [activeIssuePill, setActiveIssuePill] = useState(null);
 
+    const storedFilters = useMemo(() => loadStoredFilters(), []);
+    const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
+    const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
+    const [customViews, setCustomViews] = useState(() => loadStoredViews());
+    const [paletteOpen, setPaletteOpen] = useState(false);
+    const [paletteQuery, setPaletteQuery] = useState('');
+    const [paletteActiveIndex, setPaletteActiveIndex] = useState(0);
+    const paletteInputRef = useRef(null);
+    const searchInputRef = useRef(null);
+    const [selectedInboxIds, setSelectedInboxIds] = useState([]);
+    const [focusedInboxId, setFocusedInboxId] = useState(null);
+    const [lastFocusedIndex, setLastFocusedIndex] = useState(null);
+    const [activeQuickFilter, setActiveQuickFilter] = useState(inboxFilters.savedViewId || 'builtin:pending');
+    const [decisionDrafts, setDecisionDrafts] = useState({});
 
     const weekSectionRef = useRef(null);
     const gSequenceRef = useRef({ last: 0, count: 0 });
