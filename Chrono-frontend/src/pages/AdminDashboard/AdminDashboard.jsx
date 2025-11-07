@@ -600,182 +600,6 @@ const AdminDashboard = () => {
         updateDecisionDraft(focusedInboxItem.id, value);
     }, [focusedInboxItem, updateDecisionDraft]);
 
-    const renderDetailPanel = useCallback(() => {
-        if (!focusedInboxItem) {
-            return (
-                <div className="inbox-detail-card empty">
-                    {t('adminDashboard.inbox.noSelection', 'Wähle links ein Element, um Details anzuzeigen.')}
-                </div>
-            );
-        }
-
-        const statusKey = focusedInboxItem.status || 'pending';
-        const statusLabel = t(`status.${statusKey}`, statusKey);
-        const user = userMap.get(focusedInboxItem.username);
-        const typeLabel = focusedInboxItem.type === 'vacation'
-            ? t('adminDashboard.inbox.detail.typeVacation', 'Urlaubsantrag')
-            : t('adminDashboard.inbox.detail.typeCorrection', 'Korrekturantrag');
-
-        const metaRows = [
-            {
-                key: 'user',
-                label: t('adminDashboard.inbox.detail.user', 'Benutzer'),
-                value: focusedInboxItem.displayName || focusedInboxItem.username,
-            },
-            {
-                key: 'department',
-                label: t('adminDashboard.inbox.detail.department', 'Abteilung'),
-                value: focusedInboxItem.department || user?.departmentName || t('adminDashboard.inbox.detail.noDepartment', 'Keine Zuordnung'),
-            },
-            {
-                key: 'created',
-                label: t('adminDashboard.inbox.detail.created', 'Eingegangen'),
-                value: focusedInboxItem.createdAt ? formatDate(focusedInboxItem.createdAt) : '—',
-            },
-        ];
-
-        const renderVacationDetails = () => {
-            const vacation = focusedInboxItem.raw || {};
-            return (
-                <div className="detail-section">
-                    <h4>{t('adminDashboard.inbox.detail.period', 'Zeitraum')}</h4>
-                    <p className="meta-value">
-                        {vacation.startDate ? formatDate(vacation.startDate) : '—'}
-                        {' '}
-                        {vacation.endDate ? `– ${formatDate(vacation.endDate)}` : ''}
-                    </p>
-                    {vacation.comment && (
-                        <p className="detail-comment">{vacation.comment}</p>
-                    )}
-                    <div className="detail-flags">
-                        {vacation.halfDay && (
-                            <span className="flag">{t('adminDashboard.halfDayShort', '½ Tag')}</span>
-                        )}
-                        {vacation.usesOvertime && (
-                            <span className="flag overtime">{t('adminDashboard.overtimeVacationShort', 'ÜS')}</span>
-                        )}
-                    </div>
-                </div>
-            );
-        };
-
-        const renderCorrectionDetails = () => {
-            const correction = focusedInboxItem.raw || {};
-            return (
-                <div className="detail-section">
-                    {correction.reason && (
-                        <>
-                            <h4>{t('adminDashboard.inbox.detail.reason', 'Grund')}</h4>
-                            <p className="detail-comment">{correction.reason}</p>
-                        </>
-                    )}
-                    {Array.isArray(focusedInboxItem.entries) && focusedInboxItem.entries.length > 0 && (
-                        <>
-                            <h4>{t('adminDashboard.inbox.detail.entries', 'Zeitänderungen')}</h4>
-                            <ul className="correction-entry-list">
-                                {focusedInboxItem.entries.map((entry, index) => {
-                                    const entryDateSource = entry.date || entry.desiredTimestamp || entry.originalTimestamp;
-                                    const formattedEntryDate = entryDateSource ? formatDate(entryDateSource) : '';
-                                    const originalTime = entry.originalTimestamp ? formatTime(entry.originalTimestamp) : null;
-                                    const desiredTime = entry.desiredTimestamp ? formatTime(entry.desiredTimestamp) : null;
-                                    return (
-                                        <li key={`${focusedInboxItem.id}-entry-${index}`}>
-                                            <span className="meta-label">{formattedEntryDate}</span>
-                                            <div>
-                                                {originalTime && (
-                                                    <span className="detail-diff-original">{originalTime}</span>
-                                                )}
-                                                {(originalTime || desiredTime) && ' → '}
-                                                {desiredTime && (
-                                                    <strong className="detail-diff-desired">{desiredTime}</strong>
-                                                )}
-                                            </div>
-                                            {entry.comment && (
-                                                <p className="detail-entry-comment">{entry.comment}</p>
-                                            )}
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </>
-                    )}
-                    {focusedInboxItem.isLowRisk && (
-                        <p className="detail-hint success">
-                            {t('adminDashboard.inbox.detail.lowRiskHint', 'Als Low-Risk erkannt · für Bulk-Genehmigung geeignet')}
-                        </p>
-                    )}
-                </div>
-            );
-        };
-
-        const footerContent = focusedInboxItem.status === 'pending'
-            ? (
-                <CorrectionDecisionModal
-                    visible
-                    inline
-                    mode="approve"
-                    comment={decisionComment}
-                    setComment={handleDetailCommentChange}
-                    onSubmit={handleDecisionSubmit}
-                    title={t('adminDashboard.inbox.detail.decisionTitle', 'Kommentar & Entscheidung')}
-                    actions={[
-                        {
-                            mode: 'approve',
-                            label: t('adminDashboard.approveButton', 'Genehmigen'),
-                            primary: true,
-                        },
-                        {
-                            mode: 'deny',
-                            label: t('adminDashboard.rejectButton', 'Ablehnen'),
-                        },
-                    ]}
-                />
-            ) : (
-                <p className={`detail-hint status-${statusKey}`}>
-                    {t('adminDashboard.inbox.detail.processedInfo', 'Dieser Antrag wurde bereits bearbeitet.')}
-                </p>
-            );
-
-        return (
-            <div className="inbox-detail-card" key={focusedInboxItem.id}>
-                <div className="detail-header">
-                    <div>
-                        <h3>{typeLabel}</h3>
-                        <p className="detail-subtitle">{focusedInboxItem.displayName || focusedInboxItem.username}</p>
-                    </div>
-                    <span className={`detail-status status-${statusKey}`}>{statusLabel}</span>
-                </div>
-                <div className="detail-meta-grid">
-                    {metaRows.map((row) => (
-                        <div key={row.key}>
-                            <span className="meta-label">{row.label}</span>
-                            <span className="meta-value">{row.value || '—'}</span>
-                        </div>
-                    ))}
-                </div>
-                {focusedInboxItem.type === 'vacation' ? renderVacationDetails() : renderCorrectionDetails()}
-                <div className="detail-actions">
-                    <button
-                        type="button"
-                        className="button-secondary"
-                        onClick={() => handleFocusUserFromTask(focusedInboxItem.username)}
-                    >
-                        {t('adminDashboard.inbox.detail.focusUser', 'Im Kalender hervorheben')}
-                    </button>
-                </div>
-                {footerContent}
-            </div>
-        );
-    }, [
-        decisionComment,
-        focusedInboxItem,
-        handleDetailCommentChange,
-        handleDecisionSubmit,
-        handleFocusUserFromTask,
-        t,
-        userMap,
-    ]);
-
     const commandList = useMemo(() => {
         const base = [
             {
@@ -1062,6 +886,182 @@ const AdminDashboard = () => {
         clearSelection();
         weekSectionRef.current?.focusUser?.(username);
     }, [applyFilter, clearSelection]);
+
+    const renderDetailPanel = useCallback(() => {
+        if (!focusedInboxItem) {
+            return (
+                <div className="inbox-detail-card empty">
+                    {t('adminDashboard.inbox.noSelection', 'Wähle links ein Element, um Details anzuzeigen.')}
+                </div>
+            );
+        }
+
+        const statusKey = focusedInboxItem.status || 'pending';
+        const statusLabel = t(`status.${statusKey}`, statusKey);
+        const user = userMap.get(focusedInboxItem.username);
+        const typeLabel = focusedInboxItem.type === 'vacation'
+            ? t('adminDashboard.inbox.detail.typeVacation', 'Urlaubsantrag')
+            : t('adminDashboard.inbox.detail.typeCorrection', 'Korrekturantrag');
+
+        const metaRows = [
+            {
+                key: 'user',
+                label: t('adminDashboard.inbox.detail.user', 'Benutzer'),
+                value: focusedInboxItem.displayName || focusedInboxItem.username,
+            },
+            {
+                key: 'department',
+                label: t('adminDashboard.inbox.detail.department', 'Abteilung'),
+                value: focusedInboxItem.department || user?.departmentName || t('adminDashboard.inbox.detail.noDepartment', 'Keine Zuordnung'),
+            },
+            {
+                key: 'created',
+                label: t('adminDashboard.inbox.detail.created', 'Eingegangen'),
+                value: focusedInboxItem.createdAt ? formatDate(focusedInboxItem.createdAt) : '—',
+            },
+        ];
+
+        const renderVacationDetails = () => {
+            const vacation = focusedInboxItem.raw || {};
+            return (
+                <div className="detail-section">
+                    <h4>{t('adminDashboard.inbox.detail.period', 'Zeitraum')}</h4>
+                    <p className="meta-value">
+                        {vacation.startDate ? formatDate(vacation.startDate) : '—'}
+                        {' '}
+                        {vacation.endDate ? `– ${formatDate(vacation.endDate)}` : ''}
+                    </p>
+                    {vacation.comment && (
+                        <p className="detail-comment">{vacation.comment}</p>
+                    )}
+                    <div className="detail-flags">
+                        {vacation.halfDay && (
+                            <span className="flag">{t('adminDashboard.halfDayShort', '½ Tag')}</span>
+                        )}
+                        {vacation.usesOvertime && (
+                            <span className="flag overtime">{t('adminDashboard.overtimeVacationShort', 'ÜS')}</span>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        const renderCorrectionDetails = () => {
+            const correction = focusedInboxItem.raw || {};
+            return (
+                <div className="detail-section">
+                    {correction.reason && (
+                        <>
+                            <h4>{t('adminDashboard.inbox.detail.reason', 'Grund')}</h4>
+                            <p className="detail-comment">{correction.reason}</p>
+                        </>
+                    )}
+                    {Array.isArray(focusedInboxItem.entries) && focusedInboxItem.entries.length > 0 && (
+                        <>
+                            <h4>{t('adminDashboard.inbox.detail.entries', 'Zeitänderungen')}</h4>
+                            <ul className="correction-entry-list">
+                                {focusedInboxItem.entries.map((entry, index) => {
+                                    const entryDateSource = entry.date || entry.desiredTimestamp || entry.originalTimestamp;
+                                    const formattedEntryDate = entryDateSource ? formatDate(entryDateSource) : '';
+                                    const originalTime = entry.originalTimestamp ? formatTime(entry.originalTimestamp) : null;
+                                    const desiredTime = entry.desiredTimestamp ? formatTime(entry.desiredTimestamp) : null;
+                                    return (
+                                        <li key={`${focusedInboxItem.id}-entry-${index}`}>
+                                            <span className="meta-label">{formattedEntryDate}</span>
+                                            <div>
+                                                {originalTime && (
+                                                    <span className="detail-diff-original">{originalTime}</span>
+                                                )}
+                                                {(originalTime || desiredTime) && ' → '}
+                                                {desiredTime && (
+                                                    <strong className="detail-diff-desired">{desiredTime}</strong>
+                                                )}
+                                            </div>
+                                            {entry.comment && (
+                                                <p className="detail-entry-comment">{entry.comment}</p>
+                                            )}
+                                        </li>
+                                    );
+                                })}
+                            </ul>
+                        </>
+                    )}
+                    {focusedInboxItem.isLowRisk && (
+                        <p className="detail-hint success">
+                            {t('adminDashboard.inbox.detail.lowRiskHint', 'Als Low-Risk erkannt · für Bulk-Genehmigung geeignet')}
+                        </p>
+                    )}
+                </div>
+            );
+        };
+
+        const footerContent = focusedInboxItem.status === 'pending'
+            ? (
+                <CorrectionDecisionModal
+                    visible
+                    inline
+                    mode="approve"
+                    comment={decisionComment}
+                    setComment={handleDetailCommentChange}
+                    onSubmit={handleDecisionSubmit}
+                    title={t('adminDashboard.inbox.detail.decisionTitle', 'Kommentar & Entscheidung')}
+                    actions={[
+                        {
+                            mode: 'approve',
+                            label: t('adminDashboard.approveButton', 'Genehmigen'),
+                            primary: true,
+                        },
+                        {
+                            mode: 'deny',
+                            label: t('adminDashboard.rejectButton', 'Ablehnen'),
+                        },
+                    ]}
+                />
+            ) : (
+                <p className={`detail-hint status-${statusKey}`}>
+                    {t('adminDashboard.inbox.detail.processedInfo', 'Dieser Antrag wurde bereits bearbeitet.')}
+                </p>
+            );
+
+        return (
+            <div className="inbox-detail-card" key={focusedInboxItem.id}>
+                <div className="detail-header">
+                    <div>
+                        <h3>{typeLabel}</h3>
+                        <p className="detail-subtitle">{focusedInboxItem.displayName || focusedInboxItem.username}</p>
+                    </div>
+                    <span className={`detail-status status-${statusKey}`}>{statusLabel}</span>
+                </div>
+                <div className="detail-meta-grid">
+                    {metaRows.map((row) => (
+                        <div key={row.key}>
+                            <span className="meta-label">{row.label}</span>
+                            <span className="meta-value">{row.value || '—'}</span>
+                        </div>
+                    ))}
+                </div>
+                {focusedInboxItem.type === 'vacation' ? renderVacationDetails() : renderCorrectionDetails()}
+                <div className="detail-actions">
+                    <button
+                        type="button"
+                        className="button-secondary"
+                        onClick={() => handleFocusUserFromTask(focusedInboxItem.username)}
+                    >
+                        {t('adminDashboard.inbox.detail.focusUser', 'Im Kalender hervorheben')}
+                    </button>
+                </div>
+                {footerContent}
+            </div>
+        );
+    }, [
+        decisionComment,
+        focusedInboxItem,
+        handleDetailCommentChange,
+        handleDecisionSubmit,
+        handleFocusUserFromTask,
+        t,
+        userMap,
+    ]);
 
     useEffect(() => {
         persistFilters(inboxFilters, inboxSearch);
