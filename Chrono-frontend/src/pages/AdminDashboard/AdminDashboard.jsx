@@ -694,6 +694,20 @@ const AdminDashboard = () => {
             </div>
 
             <div className="dashboard-content">
+                <div className="dashboard-action-center">
+                    <AdminActionStream
+                        t={t}
+                        allVacations={allVacations}
+                        allCorrections={allCorrections}
+                        onApproveVacation={handleApproveVacation}
+                        onDenyVacation={handleDenyVacation}
+                        onApproveCorrection={handleApproveCorrection}
+                        onDenyCorrection={handleDenyCorrection}
+                        onOpenVacationCenter={handleNavigateToVacations}
+                        onOpenCorrectionCenter={handleNavigateToCorrections}
+                        onFocusUser={handleFocusUserFromTask}
+                    />
+                </div>
                 <AdminWeekSection
                     ref={weekSectionRef}
                     t={t}
@@ -718,20 +732,6 @@ const AdminDashboard = () => {
                     onIssueSummaryChange={handleIssueSummaryUpdate}
                 />
                 <div className="dashboard-secondary-grid">
-                    <div className="secondary-section action-stream-wrapper">
-                        <AdminActionStream
-                            t={t}
-                            allVacations={allVacations}
-                            allCorrections={allCorrections}
-                            onApproveVacation={handleApproveVacation}
-                            onDenyVacation={handleDenyVacation}
-                            onApproveCorrection={handleApproveCorrection}
-                            onDenyCorrection={handleDenyCorrection}
-                            onOpenVacationCenter={handleNavigateToVacations}
-                            onOpenCorrectionCenter={handleNavigateToCorrections}
-                            onFocusUser={handleFocusUserFromTask}
-                        />
-                    </div>
                     <div ref={vacationsSectionRef} className="secondary-section">
                         <AdminVacationRequests
                             t={t}
