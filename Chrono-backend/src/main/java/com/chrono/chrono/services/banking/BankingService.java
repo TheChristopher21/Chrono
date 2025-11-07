@@ -5,6 +5,7 @@ import com.chrono.chrono.entities.accounting.CustomerInvoice;
 import com.chrono.chrono.entities.accounting.InvoiceStatus;
 import com.chrono.chrono.entities.accounting.VendorInvoice;
 import com.chrono.chrono.entities.banking.*;
+import com.chrono.chrono.exceptions.BankingIntegrationException;
 import com.chrono.chrono.repositories.accounting.CustomerInvoiceRepository;
 import com.chrono.chrono.repositories.accounting.VendorInvoiceRepository;
 import com.chrono.chrono.repositories.banking.*;
@@ -33,6 +34,9 @@ public class BankingService {
     private final SecureMessageRepository secureMessageRepository;
     private final VendorInvoiceRepository vendorInvoiceRepository;
     private final CustomerInvoiceRepository customerInvoiceRepository;
+    private final PaymentGatewayClient paymentGatewayClient;
+    private final DigitalSignatureProviderClient digitalSignatureProviderClient;
+    private final SecureMessagingClient secureMessagingClient;
 
     public BankingService(BankAccountRepository bankAccountRepository,
                           PaymentBatchRepository paymentBatchRepository,
@@ -40,7 +44,10 @@ public class BankingService {
                           DigitalSignatureRequestRepository digitalSignatureRequestRepository,
                           SecureMessageRepository secureMessageRepository,
                           VendorInvoiceRepository vendorInvoiceRepository,
-                          CustomerInvoiceRepository customerInvoiceRepository) {
+                          CustomerInvoiceRepository customerInvoiceRepository,
+                          PaymentGatewayClient paymentGatewayClient,
+                          DigitalSignatureProviderClient digitalSignatureProviderClient,
+                          SecureMessagingClient secureMessagingClient) {
         this.bankAccountRepository = bankAccountRepository;
         this.paymentBatchRepository = paymentBatchRepository;
         this.paymentInstructionRepository = paymentInstructionRepository;
@@ -48,6 +55,9 @@ public class BankingService {
         this.secureMessageRepository = secureMessageRepository;
         this.vendorInvoiceRepository = vendorInvoiceRepository;
         this.customerInvoiceRepository = customerInvoiceRepository;
+        this.paymentGatewayClient = paymentGatewayClient;
+        this.digitalSignatureProviderClient = digitalSignatureProviderClient;
+        this.secureMessagingClient = secureMessagingClient;
     }
 
     @Transactional
@@ -123,9 +133,15 @@ public class BankingService {
         if (batch.getStatus() != PaymentStatus.APPROVED) {
             throw new IllegalStateException("Only approved batches can be transmitted");
         }
+        String pain001Xml = generatePain001Xml(batch);
+        PaymentGatewayClient.PaymentSubmissionResult submission =
+                paymentGatewayClient.transmit(batch, pain001Xml, transmissionReference);
+
         batch.setStatus(PaymentStatus.SENT);
         batch.setTransmittedAt(java.time.LocalDateTime.now());
-        batch.setTransmissionReference(transmissionReference);
+        batch.setTransmissionReference(submission.reference());
+        batch.setProviderStatus(submission.providerStatus());
+        batch.setProviderMessage(submission.providerMessage());
         batch.getInstructions().forEach(instruction -> {
             if (instruction.getVendorInvoice() != null) {
                 VendorInvoice invoice = instruction.getVendorInvoice();
@@ -160,24 +176,48 @@ public class BankingService {
 
     @Transactional
     public DigitalSignatureRequest requestSignature(String documentType, String path, String email) {
+        DigitalSignatureProviderClient.SignatureCreationResult result =
+                digitalSignatureProviderClient.createSignatureRequest(documentType, path, email);
         DigitalSignatureRequest request = new DigitalSignatureRequest();
         request.setDocumentType(documentType);
         request.setDocumentPath(path);
         request.setSignerEmail(email);
-        request.setStatus(SignatureStatus.IN_PROGRESS);
-        request.setProviderReference(UUID.randomUUID().toString());
+        request.setStatus(result.status());
+        request.setProviderReference(result.providerReference());
+        request.setSigningUrl(result.signingUrl());
+        request.setProviderStatusMessage(result.providerMessage());
+        request.setLastStatusCheck(java.time.LocalDateTime.now());
+        if (result.status() == SignatureStatus.COMPLETED) {
+            request.setCompletedAt(java.time.LocalDateTime.now());
+        }
         return digitalSignatureRequestRepository.save(request);
     }
 
     @Transactional
     public DigitalSignatureRequest markSignatureCompleted(Long id) {
         DigitalSignatureRequest request = digitalSignatureRequestRepository.findById(id).orElseThrow();
-        request.setStatus(SignatureStatus.COMPLETED);
-        request.setCompletedAt(java.time.LocalDateTime.now());
+        if (request.getProviderReference() == null) {
+            request.setStatus(SignatureStatus.COMPLETED);
+            request.setCompletedAt(java.time.LocalDateTime.now());
+            request.setProviderStatusMessage("Completed locally without provider reference");
+            request.setLastStatusCheck(java.time.LocalDateTime.now());
+            return digitalSignatureRequestRepository.save(request);
+        }
+        DigitalSignatureProviderClient.SignatureStatusUpdate statusUpdate =
+                digitalSignatureProviderClient.finalizeSignature(request.getProviderReference());
+        request.setStatus(statusUpdate.status());
+        request.setProviderStatusMessage(statusUpdate.providerMessage());
+        if (statusUpdate.signingUrl() != null) {
+            request.setSigningUrl(statusUpdate.signingUrl());
+        }
+        request.setLastStatusCheck(java.time.LocalDateTime.now());
+        if (statusUpdate.status() == SignatureStatus.COMPLETED || statusUpdate.status() == SignatureStatus.FAILED) {
+            request.setCompletedAt(java.time.LocalDateTime.now());
+        }
         return digitalSignatureRequestRepository.save(request);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = BankingIntegrationException.class)
     public SecureMessage logSecureMessage(Company company, String recipient, String subject, String body, String transport) {
         SecureMessage message = new SecureMessage();
         message.setCompany(company);
@@ -185,7 +225,12 @@ public class BankingService {
         message.setSubject(subject);
         message.setBody(body);
         message.setTransport(transport);
-        message.setDelivered(true);
+        SecureMessagingClient.SecureMessageResult result =
+                secureMessagingClient.sendSecureMessage(company, recipient, subject, body, transport);
+        message.setDelivered(result.delivered());
+        message.setProviderReference(result.providerReference());
+        message.setProviderStatus(result.providerStatus());
+        message.setProviderMessage(result.providerMessage());
         return secureMessageRepository.save(message);
     }
 

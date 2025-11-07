@@ -13,9 +13,13 @@ public class DigitalSignatureRequestDTO {
     private final SignatureStatus status;
     private final String providerReference;
     private final LocalDateTime completedAt;
+    private final String signingUrl;
+    private final String providerStatusMessage;
+    private final LocalDateTime lastStatusCheck;
 
     public DigitalSignatureRequestDTO(Long id, String documentType, String documentPath, String signerEmail,
-                                      SignatureStatus status, String providerReference, LocalDateTime completedAt) {
+                                      SignatureStatus status, String providerReference, LocalDateTime completedAt,
+                                      String signingUrl, String providerStatusMessage, LocalDateTime lastStatusCheck) {
         this.id = id;
         this.documentType = documentType;
         this.documentPath = documentPath;
@@ -23,6 +27,9 @@ public class DigitalSignatureRequestDTO {
         this.status = status;
         this.providerReference = providerReference;
         this.completedAt = completedAt;
+        this.signingUrl = signingUrl;
+        this.providerStatusMessage = providerStatusMessage;
+        this.lastStatusCheck = lastStatusCheck;
     }
 
     public static DigitalSignatureRequestDTO from(DigitalSignatureRequest request) {
@@ -33,7 +40,10 @@ public class DigitalSignatureRequestDTO {
                 request.getSignerEmail(),
                 request.getStatus(),
                 request.getProviderReference(),
-                request.getCompletedAt());
+                request.getCompletedAt(),
+                request.getSigningUrl(),
+                request.getProviderStatusMessage(),
+                request.getLastStatusCheck());
     }
 
     public Long getId() {
@@ -62,5 +72,17 @@ public class DigitalSignatureRequestDTO {
 
     public LocalDateTime getCompletedAt() {
         return completedAt;
+    }
+
+    public String getSigningUrl() {
+        return signingUrl;
+    }
+
+    public String getProviderStatusMessage() {
+        return providerStatusMessage;
+    }
+
+    public LocalDateTime getLastStatusCheck() {
+        return lastStatusCheck;
     }
 }

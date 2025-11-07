@@ -11,15 +11,22 @@ public class SecureMessageDTO {
     private final String transport;
     private final boolean delivered;
     private final LocalDateTime sentAt;
+    private final String providerReference;
+    private final String providerStatus;
+    private final String providerMessage;
 
     public SecureMessageDTO(Long id, String recipient, String subject, String transport,
-                            boolean delivered, LocalDateTime sentAt) {
+                            boolean delivered, LocalDateTime sentAt,
+                            String providerReference, String providerStatus, String providerMessage) {
         this.id = id;
         this.recipient = recipient;
         this.subject = subject;
         this.transport = transport;
         this.delivered = delivered;
         this.sentAt = sentAt;
+        this.providerReference = providerReference;
+        this.providerStatus = providerStatus;
+        this.providerMessage = providerMessage;
     }
 
     public static SecureMessageDTO from(SecureMessage message) {
@@ -29,7 +36,10 @@ public class SecureMessageDTO {
                 message.getSubject(),
                 message.getTransport(),
                 message.isDelivered(),
-                message.getSentAt());
+                message.getSentAt(),
+                message.getProviderReference(),
+                message.getProviderStatus(),
+                message.getProviderMessage());
     }
 
     public Long getId() {
@@ -54,5 +64,17 @@ public class SecureMessageDTO {
 
     public LocalDateTime getSentAt() {
         return sentAt;
+    }
+
+    public String getProviderReference() {
+        return providerReference;
+    }
+
+    public String getProviderStatus() {
+        return providerStatus;
+    }
+
+    public String getProviderMessage() {
+        return providerMessage;
     }
 }

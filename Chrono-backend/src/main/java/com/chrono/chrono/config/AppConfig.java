@@ -1,6 +1,7 @@
 package com.chrono.chrono.config;
 
 import org.springframework.boot.web.client.RestTemplateBuilder;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -9,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 import java.time.Duration;
 
 @Configuration
+@EnableConfigurationProperties(BankingIntegrationProperties.class)
 public class AppConfig {
 
     /**

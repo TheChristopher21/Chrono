@@ -45,6 +45,11 @@ public class PaymentBatch {
 
     private String transmissionReference;
 
+    private String providerStatus;
+
+    @Column(length = 1024)
+    private String providerMessage;
+
     public Long getId() {
         return id;
     }
@@ -123,5 +128,21 @@ public class PaymentBatch {
 
     public void setTransmissionReference(String transmissionReference) {
         this.transmissionReference = transmissionReference;
+    }
+
+    public String getProviderStatus() {
+        return providerStatus;
+    }
+
+    public void setProviderStatus(String providerStatus) {
+        this.providerStatus = providerStatus;
+    }
+
+    public String getProviderMessage() {
+        return providerMessage;
+    }
+
+    public void setProviderMessage(String providerMessage) {
+        this.providerMessage = providerMessage;
     }
 }
