@@ -5,7 +5,11 @@ import react from '@vitejs/plugin-react'
 // https://vitejs.dev/config/
 export default defineConfig({
     plugins: [react()],
-    base: './',
+    // Use an absolute base path so assets remain reachable when refreshing
+    // deep links in the SPA. Relative paths caused the browser to request
+    // route-prefixed asset URLs, which Nginx rewrote to index.html and broke
+    // module loading after a reload.
+    base: '/',
     build: {
         chunkSizeWarningLimit: 10000
     },
