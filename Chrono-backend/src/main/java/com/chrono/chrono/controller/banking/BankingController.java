@@ -8,11 +8,13 @@ import com.chrono.chrono.entities.accounting.VendorInvoice;
 import com.chrono.chrono.entities.banking.BankAccount;
 import com.chrono.chrono.entities.banking.PaymentBatch;
 import com.chrono.chrono.entities.banking.PaymentInstruction;
+import com.chrono.chrono.entities.banking.SecureMessage;
 import com.chrono.chrono.services.UserService;
 import com.chrono.chrono.services.banking.BankingService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -172,9 +174,13 @@ public class BankingController {
         if (company == null) {
             return ResponseEntity.status(401).build();
         }
-        var saved = bankingService.logSecureMessage(company, body.getRecipient(), body.getSubject(), body.getBody(), body.getTransport());
+        SecureMessage saved = bankingService.logSecureMessage(company, body.getRecipient(), body.getSubject(), body.getBody(), body.getTransport());
+        SecureMessageDTO dto = SecureMessageDTO.from(saved);
+        if (!saved.isDelivered()) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(dto);
+        }
         return ResponseEntity.created(URI.create("/api/banking/messages/" + saved.getId()))
-                .body(SecureMessageDTO.from(saved));
+                .body(dto);
     }
 
     @GetMapping("/pain001/{id}")

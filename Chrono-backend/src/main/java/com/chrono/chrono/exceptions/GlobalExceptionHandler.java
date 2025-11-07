@@ -36,6 +36,12 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(new ErrorResponse("Datei ist zu groß."), HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
+    @ExceptionHandler(BankingIntegrationException.class)
+    public ResponseEntity<ErrorResponse> handleBankingIntegration(BankingIntegrationException ex) {
+        logger.warn("Banking integration error: {}", ex.getMessage());
+        return new ResponseEntity<>(new ErrorResponse(ex.getMessage()), HttpStatus.BAD_GATEWAY);
+    }
+
     // Weitere spezifische Exception-Handler können hier hinzugefügt werden
 
     @ExceptionHandler(Exception.class)

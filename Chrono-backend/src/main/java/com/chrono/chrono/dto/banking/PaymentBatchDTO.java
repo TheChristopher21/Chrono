@@ -14,10 +14,13 @@ public class PaymentBatchDTO {
     private final String approvalBy;
     private final LocalDateTime transmittedAt;
     private final String transmissionReference;
+    private final String providerStatus;
+    private final String providerMessage;
     private final List<PaymentInstructionDTO> instructions;
 
     public PaymentBatchDTO(Long id, Long bankAccountId, PaymentStatus status, LocalDateTime approvedAt,
                            String approvalBy, LocalDateTime transmittedAt, String transmissionReference,
+                           String providerStatus, String providerMessage,
                            List<PaymentInstructionDTO> instructions) {
         this.id = id;
         this.bankAccountId = bankAccountId;
@@ -26,6 +29,8 @@ public class PaymentBatchDTO {
         this.approvalBy = approvalBy;
         this.transmittedAt = transmittedAt;
         this.transmissionReference = transmissionReference;
+        this.providerStatus = providerStatus;
+        this.providerMessage = providerMessage;
         this.instructions = instructions;
     }
 
@@ -38,6 +43,8 @@ public class PaymentBatchDTO {
                 batch.getApprovalBy(),
                 batch.getTransmittedAt(),
                 batch.getTransmissionReference(),
+                batch.getProviderStatus(),
+                batch.getProviderMessage(),
                 batch.getInstructions().stream().map(PaymentInstructionDTO::from).toList());
     }
 
@@ -67,6 +74,14 @@ public class PaymentBatchDTO {
 
     public String getTransmissionReference() {
         return transmissionReference;
+    }
+
+    public String getProviderStatus() {
+        return providerStatus;
+    }
+
+    public String getProviderMessage() {
+        return providerMessage;
     }
 
     public List<PaymentInstructionDTO> getInstructions() {

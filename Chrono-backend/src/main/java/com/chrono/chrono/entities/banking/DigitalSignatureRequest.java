@@ -28,6 +28,15 @@ public class DigitalSignatureRequest {
 
     private String providerReference;
 
+    @Column(name = "signing_url", length = 1024)
+    private String signingUrl;
+
+    @Column(name = "provider_status_message", length = 1024)
+    private String providerStatusMessage;
+
+    @Column(name = "last_status_check")
+    private LocalDateTime lastStatusCheck;
+
     public Long getId() {
         return id;
     }
@@ -90,5 +99,29 @@ public class DigitalSignatureRequest {
 
     public void setProviderReference(String providerReference) {
         this.providerReference = providerReference;
+    }
+
+    public String getSigningUrl() {
+        return signingUrl;
+    }
+
+    public void setSigningUrl(String signingUrl) {
+        this.signingUrl = signingUrl;
+    }
+
+    public String getProviderStatusMessage() {
+        return providerStatusMessage;
+    }
+
+    public void setProviderStatusMessage(String providerStatusMessage) {
+        this.providerStatusMessage = providerStatusMessage;
+    }
+
+    public LocalDateTime getLastStatusCheck() {
+        return lastStatusCheck;
+    }
+
+    public void setLastStatusCheck(LocalDateTime lastStatusCheck) {
+        this.lastStatusCheck = lastStatusCheck;
     }
 }

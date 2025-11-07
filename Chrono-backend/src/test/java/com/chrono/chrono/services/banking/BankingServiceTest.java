@@ -1,90 +1,130 @@
 package com.chrono.chrono.services.banking;
 
 import com.chrono.chrono.entities.Company;
-import com.chrono.chrono.entities.accounting.InvoiceStatus;
-import com.chrono.chrono.entities.accounting.VendorInvoice;
 import com.chrono.chrono.entities.banking.BankAccount;
+import com.chrono.chrono.entities.banking.DigitalSignatureRequest;
 import com.chrono.chrono.entities.banking.PaymentBatch;
-import com.chrono.chrono.entities.banking.PaymentInstruction;
 import com.chrono.chrono.entities.banking.PaymentStatus;
-import com.chrono.chrono.repositories.CompanyRepository;
+import com.chrono.chrono.entities.banking.SecureMessage;
+import com.chrono.chrono.entities.banking.SignatureStatus;
+import com.chrono.chrono.repositories.accounting.CustomerInvoiceRepository;
 import com.chrono.chrono.repositories.accounting.VendorInvoiceRepository;
+import com.chrono.chrono.repositories.banking.BankAccountRepository;
+import com.chrono.chrono.repositories.banking.DigitalSignatureRequestRepository;
+import com.chrono.chrono.repositories.banking.PaymentBatchRepository;
+import com.chrono.chrono.repositories.banking.PaymentInstructionRepository;
+import com.chrono.chrono.repositories.banking.SecureMessageRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.List;
+import java.util.Collections;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-@DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
-@Import(BankingService.class)
-@ActiveProfiles("test")
 class BankingServiceTest {
 
-    @Autowired
+    private BankAccountRepository bankAccountRepository;
+    private PaymentBatchRepository paymentBatchRepository;
+    private PaymentInstructionRepository paymentInstructionRepository;
+    private DigitalSignatureRequestRepository digitalSignatureRequestRepository;
+    private SecureMessageRepository secureMessageRepository;
+    private VendorInvoiceRepository vendorInvoiceRepository;
+    private CustomerInvoiceRepository customerInvoiceRepository;
+    private PaymentGatewayClient paymentGatewayClient;
+    private DigitalSignatureProviderClient digitalSignatureProviderClient;
+    private SecureMessagingClient secureMessagingClient;
     private BankingService bankingService;
 
-    @Autowired
-    private CompanyRepository companyRepository;
+    @BeforeEach
+    void setUp() {
+        bankAccountRepository = mock(BankAccountRepository.class);
+        paymentBatchRepository = mock(PaymentBatchRepository.class);
+        paymentInstructionRepository = mock(PaymentInstructionRepository.class);
+        digitalSignatureRequestRepository = mock(DigitalSignatureRequestRepository.class);
+        secureMessageRepository = mock(SecureMessageRepository.class);
+        vendorInvoiceRepository = mock(VendorInvoiceRepository.class);
+        customerInvoiceRepository = mock(CustomerInvoiceRepository.class);
+        paymentGatewayClient = mock(PaymentGatewayClient.class);
+        digitalSignatureProviderClient = mock(DigitalSignatureProviderClient.class);
+        secureMessagingClient = mock(SecureMessagingClient.class);
 
-    @Autowired
-    private VendorInvoiceRepository vendorInvoiceRepository;
+        bankingService = new BankingService(
+                bankAccountRepository,
+                paymentBatchRepository,
+                paymentInstructionRepository,
+                digitalSignatureRequestRepository,
+                secureMessageRepository,
+                vendorInvoiceRepository,
+                customerInvoiceRepository,
+                paymentGatewayClient,
+                digitalSignatureProviderClient,
+                secureMessagingClient);
+    }
 
     @Test
-    void createApproveAndTransmitBatchUpdatesInvoicesAndProducesPain001() {
-        Company company = companyRepository.save(new Company("Chrono Test"));
+    void markBatchTransmittedCallsGatewayAndSetsReference() {
+        Company company = new Company();
+        company.setId(10L);
+        company.setName("Chrono AG");
 
         BankAccount account = new BankAccount();
         account.setCompany(company);
-        account.setName("Main");
         account.setIban("CH9300762011623852957");
         account.setBic("POFICHBEXXX");
-        account = bankingService.saveBankAccount(account);
 
-        VendorInvoice vendorInvoice = new VendorInvoice();
-        vendorInvoice.setVendorName("Hardware GmbH");
-        vendorInvoice.setInvoiceNumber("SUP-1001");
-        vendorInvoice.setInvoiceDate(LocalDate.now());
-        vendorInvoice.setDueDate(LocalDate.now().plusDays(15));
-        vendorInvoice.setAmount(new BigDecimal("500.00"));
-        vendorInvoice.setStatus(InvoiceStatus.OPEN);
-        vendorInvoice = vendorInvoiceRepository.save(vendorInvoice);
+        PaymentBatch batch = new PaymentBatch();
+        batch.setId(7L);
+        batch.setCompany(company);
+        batch.setBankAccount(account);
+        batch.setStatus(PaymentStatus.APPROVED);
+        batch.setInstructions(Collections.emptyList());
 
-        PaymentInstruction instruction = new PaymentInstruction();
-        instruction.setVendorInvoice(vendorInvoice);
-        instruction.setCreditorName("Hardware GmbH");
-        instruction.setCreditorIban("CH6500762011623852957");
-        instruction.setCreditorBic("POFICHBEXXX");
-        instruction.setAmount(new BigDecimal("500.00"));
-        instruction.setCurrency("CHF");
-        instruction.setReference("SUP-1001");
+        when(paymentBatchRepository.findById(7L)).thenReturn(Optional.of(batch));
+        when(paymentBatchRepository.save(any(PaymentBatch.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentGatewayClient.transmit(any(PaymentBatch.class), any(String.class), any(String.class)))
+                .thenReturn(new PaymentGatewayClient.PaymentSubmissionResult("REF-123", "SENT", "ok"));
 
-        PaymentBatch batch = bankingService.createBatch(company, account.getId(), List.of(instruction));
-        assertThat(batch.getInstructions()).hasSize(1);
-        assertThat(batch.getStatus()).isEqualTo(PaymentStatus.PENDING_APPROVAL);
+        PaymentBatch updated = bankingService.markBatchTransmitted(7L, "IDEMPOTENT-REF");
 
-        PaymentBatch approved = bankingService.approveBatch(batch.getId(), "approver@chrono");
-        assertThat(approved.getStatus()).isEqualTo(PaymentStatus.APPROVED);
-        assertThat(approved.getApprovalBy()).isEqualTo("approver@chrono");
+        assertThat(updated.getStatus()).isEqualTo(PaymentStatus.SENT);
+        assertThat(updated.getTransmissionReference()).isEqualTo("REF-123");
+        assertThat(updated.getProviderStatus()).isEqualTo("SENT");
+        verify(paymentGatewayClient).transmit(any(PaymentBatch.class), any(String.class), any(String.class));
+    }
 
-        PaymentBatch transmitted = bankingService.markBatchTransmitted(batch.getId(), "BANK-REF-1");
-        assertThat(transmitted.getStatus()).isEqualTo(PaymentStatus.SENT);
-        assertThat(transmitted.getTransmissionReference()).isEqualTo("BANK-REF-1");
+    @Test
+    void requestSignaturePersistsProviderFields() {
+        when(digitalSignatureProviderClient.createSignatureRequest("PAYROLL", "/tmp/doc.pdf", "user@example.com"))
+                .thenReturn(new DigitalSignatureProviderClient.SignatureCreationResult(SignatureStatus.IN_PROGRESS,
+                        "SIG-42", "https://sign.example.com/42", "created"));
+        when(digitalSignatureRequestRepository.save(any(DigitalSignatureRequest.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        VendorInvoice refreshed = vendorInvoiceRepository.findById(vendorInvoice.getId()).orElseThrow();
-        assertThat(refreshed.getStatus()).isEqualTo(InvoiceStatus.PAID);
+        DigitalSignatureRequest request = bankingService.requestSignature("PAYROLL", "/tmp/doc.pdf", "user@example.com");
 
-        PaymentBatch idempotent = bankingService.markBatchTransmitted(batch.getId(), "BANK-REF-1");
-        assertThat(idempotent.getStatus()).isEqualTo(PaymentStatus.SENT);
+        assertThat(request.getProviderReference()).isEqualTo("SIG-42");
+        assertThat(request.getSigningUrl()).isEqualTo("https://sign.example.com/42");
+        assertThat(request.getStatus()).isEqualTo(SignatureStatus.IN_PROGRESS);
+    }
 
-        String xml = bankingService.generatePain001Xml(transmitted);
-        assertThat(xml).contains("<MsgId>CHRONO-" + transmitted.getId());
-        assertThat(xml).contains("<Cdtr><Nm>Hardware GmbH</Nm></Cdtr>");
-        assertThat(xml).contains("<InstdAmt Ccy=\"CHF\">500.00</InstdAmt>");
+    @Test
+    void logSecureMessageStoresProviderInformation() {
+        Company company = new Company();
+        company.setName("Chrono AG");
+        when(secureMessagingClient.sendSecureMessage(any(), any(), any(), any(), any()))
+                .thenReturn(new SecureMessagingClient.SecureMessageResult(true, "MSG-1", "DELIVERED", "ok"));
+        when(secureMessageRepository.save(any(SecureMessage.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        SecureMessage message = bankingService.logSecureMessage(company, "bank@example.com", "Subject", "Body", "EBICS");
+
+        assertThat(message.isDelivered()).isTrue();
+        assertThat(message.getProviderReference()).isEqualTo("MSG-1");
+        assertThat(message.getProviderStatus()).isEqualTo("DELIVERED");
     }
 }

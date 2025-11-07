@@ -33,6 +33,15 @@ public class SecureMessage {
 
     private String transport;
 
+    @Column(name = "provider_reference")
+    private String providerReference;
+
+    @Column(name = "provider_status")
+    private String providerStatus;
+
+    @Column(name = "provider_message", length = 1024)
+    private String providerMessage;
+
     public Long getId() {
         return id;
     }
@@ -95,5 +104,29 @@ public class SecureMessage {
 
     public void setTransport(String transport) {
         this.transport = transport;
+    }
+
+    public String getProviderReference() {
+        return providerReference;
+    }
+
+    public void setProviderReference(String providerReference) {
+        this.providerReference = providerReference;
+    }
+
+    public String getProviderStatus() {
+        return providerStatus;
+    }
+
+    public void setProviderStatus(String providerStatus) {
+        this.providerStatus = providerStatus;
+    }
+
+    public String getProviderMessage() {
+        return providerMessage;
+    }
+
+    public void setProviderMessage(String providerMessage) {
+        this.providerMessage = providerMessage;
     }
 }
