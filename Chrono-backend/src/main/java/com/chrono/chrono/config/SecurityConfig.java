@@ -26,13 +26,27 @@ import java.util.List;
 @EnableWebSecurity
 public class SecurityConfig {
 
-    // KORRIGIERT: 'www' Subdomain hinzugefügt
+// SecurityConfig.java
+
+    // PASST FÜR MOBILE ENTWICKLUNG AN
     public static final String[] ALLOWED_ORIGINS = {
+            // Produktive URLs
             "https://chrono-logisch.ch",
             "https://www.chrono-logisch.ch",
-            "http://localhost:5173"
-    };
 
+            // KORREKTUR: HINZUFÜGEN DES LOKALEN WEB-APP-PORTS
+            "http://localhost:5173",
+
+            // Lokale IPs und Ports
+            "http://10.0.2.2:5173",
+            "http://10.0.2.2:8080",
+            "http://localhost:8080",
+
+            // NEU: Die Ursprünge des Capacitor WebViews (siehe Log-Fehler!)
+            "capacitor://localhost",   // Standard Capacitor Origin
+            "https://localhost"        // Die Origin, die in Ihrem Logcat-Fehler aufgetreten ist
+    };
+    // ...
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
 
@@ -46,6 +60,7 @@ public class SecurityConfig {
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(List.of(ALLOWED_ORIGINS)); // Verwende List.of
+        configuration.setAllowedOrigins(List.of(ALLOWED_ORIGINS)); // Erlaubt nur die definierten Origins
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Origin"));
         configuration.setExposedHeaders(List.of("Authorization")); // Wichtig für das Lesen des Tokens im Frontend

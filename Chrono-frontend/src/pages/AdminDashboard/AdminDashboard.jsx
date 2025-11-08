@@ -873,7 +873,7 @@ const AdminDashboard = () => {
         applyQuickFilter('builtin:corrections');
     }, [applyQuickFilter]);
 
-    const handleFocusUserFromTask = useCallback((username) => {
+    function handleFocusUserFromTask(username) {
         if (!username) return;
         setActiveIssuePill(null);
         applyFilter({
@@ -885,7 +885,8 @@ const AdminDashboard = () => {
         setInboxSearch(username);
         clearSelection();
         weekSectionRef.current?.focusUser?.(username);
-    }, [applyFilter, clearSelection]);
+    }
+
 
     const renderDetailPanel = useCallback(() => {
         if (!focusedInboxItem) {

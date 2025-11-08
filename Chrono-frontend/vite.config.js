@@ -15,6 +15,8 @@ export default defineConfig({
     },
     // Ihr bestehender Proxy-Eintrag für die lokale Entwicklung bleibt erhalten
     server: {
+        // NEU HINZUFÜGEN: Erzwingt das Hören auf allen IP-Adressen (0.0.0.0)
+        host: true,
         proxy: {
             '/api': {
                 target: 'http://localhost:8080',
