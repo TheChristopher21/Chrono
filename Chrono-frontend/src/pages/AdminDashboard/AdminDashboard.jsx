@@ -154,6 +154,11 @@ const AdminDashboard = () => {
         );
     }, [trackableUsers]);
 
+    const storedFilters = useMemo(() => loadStoredFilters(), []);
+    const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
+    const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
+    const [customViews, setCustomViews] = useState(() => loadStoredViews());
+
     const filteredWeeklyBalances = useMemo(() => {
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
             return [];
@@ -803,10 +808,6 @@ const AdminDashboard = () => {
     });
     const [activeIssuePill, setActiveIssuePill] = useState(null);
 
-    const storedFilters = useMemo(() => loadStoredFilters(), []);
-    const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
-    const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
-    const [customViews, setCustomViews] = useState(() => loadStoredViews());
     const [paletteOpen, setPaletteOpen] = useState(false);
     const [paletteQuery, setPaletteQuery] = useState('');
     const [paletteActiveIndex, setPaletteActiveIndex] = useState(0);
