@@ -15,6 +15,7 @@ import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 import AdminDashboardKpis from './AdminDashboardKpis';
 import AdminActionStream from './AdminActionStream';
 import CorrectionDecisionModal from './CorrectionDecisionModal';
+import AdminQuickFixPanel from './AdminQuickFixPanel';
 
 import {
     getMondayOfWeek,
@@ -158,6 +159,8 @@ const AdminDashboard = () => {
     const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
     const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
     const [customViews, setCustomViews] = useState(() => loadStoredViews());
+    const [activeMainTab, setActiveMainTab] = useState('inbox');
+    const [quickFixQueue, setQuickFixQueue] = useState([]);
 
     const filteredWeeklyBalances = useMemo(() => {
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
@@ -822,6 +825,14 @@ const AdminDashboard = () => {
     const weekSectionRef = useRef(null);
     const gSequenceRef = useRef({ last: 0, count: 0 });
 
+    const scheduleNextFrame = useCallback((callback) => {
+        if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
+            window.requestAnimationFrame(callback);
+        } else {
+            setTimeout(callback, 0);
+        }
+    }, []);
+
     const handleIssueSummaryUpdate = useCallback((summary) => {
         if (!summary) {
             return;
@@ -840,11 +851,12 @@ const AdminDashboard = () => {
     }, []);
 
     const handleFocusIssues = useCallback((filterKey) => {
+        setActiveMainTab('team');
         setActiveIssuePill(filterKey);
         if (weekSectionRef.current?.focusIssueType) {
             weekSectionRef.current.focusIssueType(filterKey);
         }
-    }, []);
+    }, [setActiveMainTab]);
 
     const handleResetIssueFilters = useCallback(() => {
         setActiveIssuePill(null);
@@ -856,22 +868,26 @@ const AdminDashboard = () => {
     }, [handleFocusIssues]);
 
     const handleFocusNegativeBalances = useCallback(() => {
+        setActiveMainTab('team');
         setActiveIssuePill(null);
         weekSectionRef.current?.focusNegativeBalances?.();
-    }, []);
+    }, [setActiveMainTab]);
 
     const handleFocusPositiveBalances = useCallback(() => {
+        setActiveMainTab('team');
         setActiveIssuePill(null);
         weekSectionRef.current?.focusPositiveBalances?.();
-    }, []);
+    }, [setActiveMainTab]);
 
     const handleNavigateToVacations = useCallback(() => {
+        setActiveMainTab('inbox');
         applyQuickFilter('builtin:vacations');
-    }, [applyQuickFilter]);
+    }, [applyQuickFilter, setActiveMainTab]);
 
     const handleNavigateToCorrections = useCallback(() => {
+        setActiveMainTab('inbox');
         applyQuickFilter('builtin:corrections');
-    }, [applyQuickFilter]);
+    }, [applyQuickFilter, setActiveMainTab]);
 
     function handleFocusUserFromTask(username) {
         if (!username) return;
@@ -884,15 +900,43 @@ const AdminDashboard = () => {
         }, null);
         setInboxSearch(username);
         clearSelection();
-        weekSectionRef.current?.focusUser?.(username);
+        setActiveMainTab('team');
+        scheduleNextFrame(() => {
+            weekSectionRef.current?.focusUser?.(username);
+        });
     }
+
+    const handleQuickFixSelect = useCallback((item) => {
+        if (!item) return;
+        setActiveMainTab('team');
+        scheduleNextFrame(() => {
+            weekSectionRef.current?.focusQuickFixItem?.(item);
+        });
+    }, [scheduleNextFrame, setActiveMainTab]);
 
 
     const renderDetailPanel = useCallback(() => {
         if (!focusedInboxItem) {
             return (
-                <div className="inbox-detail-card empty">
-                    {t('adminDashboard.inbox.noSelection', 'Wähle links ein Element, um Details anzuzeigen.')}
+                <div className="inbox-detail-stack">
+                    <div className="inbox-detail-card empty">
+                        {t('adminDashboard.inbox.noSelection', 'Wähle links ein Element, um Details anzuzeigen.')}
+                    </div>
+                    <AdminQuickFixPanel
+                        t={t}
+                        items={quickFixQueue}
+                        onSelect={handleQuickFixSelect}
+                    />
+                    <div className="inbox-detail-card shortcut-hint-card" role="note">
+                        <h4>{t('adminDashboard.shortcuts.title', 'Zeitsparende Shortcuts')}</h4>
+                        <ul>
+                            <li><strong>J / K</strong> – {t('adminDashboard.shortcuts.navigate', 'Zeile wechseln')}</li>
+                            <li><strong>A</strong> / <strong>D</strong> – {t('adminDashboard.shortcuts.decide', 'Genehmigen bzw. ablehnen')}</li>
+                            <li><strong>O</strong> – {t('adminDashboard.shortcuts.open', 'Details öffnen')}</li>
+                            <li><strong>B</strong> – {t('adminDashboard.shortcuts.bulk', 'Mehrfachauswahl starten')}</li>
+                            <li><strong>Strg</strong>+<strong>K</strong> – {t('adminDashboard.shortcuts.palette', 'Befehlspalette öffnen')}</li>
+                        </ul>
+                    </div>
                 </div>
             );
         }
@@ -1059,7 +1103,9 @@ const AdminDashboard = () => {
         focusedInboxItem,
         handleDetailCommentChange,
         handleDecisionSubmit,
+        handleQuickFixSelect,
         handleFocusUserFromTask,
+        quickFixQueue,
         t,
         userMap,
     ]);
@@ -1525,81 +1571,130 @@ const AdminDashboard = () => {
         setPrintUserModalVisible(false);
     }
 
+    const adminActionButtons = (
+        <div className="admin-action-buttons-container">
+            <Link
+                to="/admin/import-times"
+                className="admin-action-button button-primary"
+                role="button"
+            >
+                {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
+            </Link>
+            {hasFeature('payroll') && (
+                <Link
+                    to="/admin/payslips"
+                    className="admin-action-button button-primary"
+                    role="button"
+                >
+                    {t('navbar.payslips', 'Abrechnungen')}
+                </Link>
+            )}
+            {hasFeature('roster') && (
+                <Link
+                    to="/admin/schedule"
+                    className="admin-action-button button-primary"
+                    role="button"
+                >
+                    {t('navbar.schedulePlanner', 'Dienstplan')}
+                </Link>
+            )}
+            {hasFeature('analytics') && (
+                <Link
+                    to="/admin/analytics"
+                    className="admin-action-button button-secondary admin-analytics-button"
+                    role="button"
+                >
+                    {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
+                </Link>
+            )}
+            <button
+                type="button"
+                onClick={handleDataReloadNeeded}
+                className="admin-action-button button-secondary"
+            >
+                {t('adminDashboard.reloadDataButton', 'Daten neu laden')}
+            </button>
+        </div>
+    );
+
     return (
         <div className="admin-dashboard scoped-dashboard">
             <Navbar />
             <header className="dashboard-header">
-                <h2>{t('adminDashboard.titleWeekly')}</h2>
-                {currentUser && ( <p>{t('adminDashboard.loggedInAs')} {currentUser.username}</p> )}
-            </header>
-
-            <AdminDashboardKpis
-                t={t}
-                allVacations={allVacations}
-                allCorrections={allCorrections}
-                weeklyBalances={filteredWeeklyBalances}
-                users={users}
-                onNavigateToVacations={handleNavigateToVacations}
-                onNavigateToCorrections={handleNavigateToCorrections}
-                onShowIssueOverview={handleShowIssueOverview}
-                onFocusNegativeBalances={handleFocusNegativeBalances}
-                onFocusOvertimeLeaders={handleFocusPositiveBalances}
-                onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
-            />
-
-
-
-            <div className="admin-action-buttons-container">
-                <Link
-                    to="/admin/import-times"
-                    className="admin-action-button button-primary"
-                    role="button"
-                >
-                    {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
-                </Link>
-                {hasFeature('payroll') && (
-                    <Link
-                        to="/admin/payslips"
-                        className="admin-action-button button-primary"
-                        role="button"
-                    >
-                        {t('navbar.payslips', 'Abrechnungen')}
-                    </Link>
-                )}
-                {hasFeature('roster') && (
-                    <Link
-                        to="/admin/schedule"
-                        className="admin-action-button button-primary"
-                        role="button"
-                    >
-                        {t('navbar.schedulePlanner', 'Dienstplan')}
-                    </Link>
-                )}
-                {hasFeature('analytics') && (
-                    <Link
-                        to="/admin/analytics"
-                        className="admin-action-button button-secondary admin-analytics-button"
-                        role="button"
-                    >
-                        {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
-                    </Link>
-                )}
+                <div className="header-info">
+                    <h2>{t('adminDashboard.titleWeekly')}</h2>
+                    {currentUser && (
+                        <p>{t('adminDashboard.loggedInAs')} {currentUser.username}</p>
+                    )}
+                </div>
                 <button
                     type="button"
-                    onClick={handleDataReloadNeeded}
-                    className="admin-action-button button-secondary"
+                    className="command-palette-trigger button-secondary"
+                    onClick={() => setPaletteOpen(true)}
                 >
-                    {t('adminDashboard.reloadDataButton', 'Daten neu laden')}
+                    {t('adminDashboard.commandPalette.buttonLabel', 'Befehle (Strg+K)')}
+                </button>
+            </header>
+
+            <div
+                className="dashboard-tab-navigation"
+                role="tablist"
+                aria-label={t('adminDashboard.tabNavigation', 'Arbeitsmodus auswählen')}
+            >
+                <button
+                    type="button"
+                    id="admin-dashboard-tab-inbox-button"
+                    role="tab"
+                    aria-controls="admin-dashboard-tab-inbox"
+                    aria-selected={activeMainTab === 'inbox'}
+                    className={`dashboard-tab-button${activeMainTab === 'inbox' ? ' is-active' : ''}`}
+                    onClick={() => setActiveMainTab('inbox')}
+                >
+                    {t('adminDashboard.tabInbox', 'Posteingang')}
+                </button>
+                <button
+                    type="button"
+                    id="admin-dashboard-tab-team-button"
+                    role="tab"
+                    aria-controls="admin-dashboard-tab-team"
+                    aria-selected={activeMainTab === 'team'}
+                    className={`dashboard-tab-button${activeMainTab === 'team' ? ' is-active' : ''}`}
+                    onClick={() => setActiveMainTab('team')}
+                >
+                    {t('adminDashboard.tabTeamOverview', 'Team-Übersicht')}
                 </button>
             </div>
 
-            <div className="dashboard-content">
-                <div className="unified-inbox-grid">
-                    <aside className="inbox-sidebar">
-                        <div className="sidebar-group">
-                            <h4>{t('adminDashboard.inbox.quickFilters', 'Quick Filter')}</h4>
-                            <div className="chip-list">
-                                {builtInViews.map((view) => (
+            <div
+                className={`dashboard-tab-panel${activeMainTab === 'inbox' ? ' is-active' : ''}`}
+                role="tabpanel"
+                id="admin-dashboard-tab-inbox"
+                aria-labelledby="admin-dashboard-tab-inbox-button"
+                aria-hidden={activeMainTab !== 'inbox'}
+            >
+                <AdminDashboardKpis
+                    t={t}
+                    allVacations={allVacations}
+                    allCorrections={allCorrections}
+                    weeklyBalances={filteredWeeklyBalances}
+                    users={users}
+                    onNavigateToVacations={handleNavigateToVacations}
+                    onNavigateToCorrections={handleNavigateToCorrections}
+                    onShowIssueOverview={handleShowIssueOverview}
+                    onFocusNegativeBalances={handleFocusNegativeBalances}
+                    onFocusOvertimeLeaders={handleFocusPositiveBalances}
+                    onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
+                />
+
+                {adminActionButtons}
+
+                <div className="dashboard-content">
+                    <div className="unified-inbox-grid">
+                        <aside className="inbox-sidebar">
+                            <div className="sidebar-group">
+                                <h4>{t('adminDashboard.inbox.quickFilters', 'Quick Filter')}</h4>
+                                <div className="chip-list">
+                                    {builtInViews.map((view) => (
                                     <button
                                         key={view.id}
                                         type="button"
@@ -1663,6 +1758,27 @@ const AdminDashboard = () => {
                         </div>
                     </aside>
                     <section className="inbox-center">
+                        {lowRiskPending.length > 0 && (
+                            <div className="low-risk-boost" role="region" aria-live="polite">
+                                <div className="boost-copy">
+                                    <span className="boost-eyebrow">⚡ {t('adminDashboard.lowRiskBoost.title', 'Zeitspar-Aktion')}</span>
+                                    <p>
+                                        {t(
+                                            'adminDashboard.lowRiskBoost.subtitle',
+                                            'Alle {count} Low-Risk-Anträge mit einem Klick genehmigen',
+                                            { count: lowRiskPending.length }
+                                        )}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    className="button-primary"
+                                    onClick={handleAutoApproveLowRisk}
+                                >
+                                    {t('adminDashboard.lowRiskBoost.cta', 'Jetzt erledigen')}
+                                </button>
+                            </div>
+                        )}
                         <AdminActionStream
                             t={t}
                             items={filteredInboxItems}
@@ -1687,38 +1803,68 @@ const AdminDashboard = () => {
                         {renderDetailPanel()}
                     </aside>
                 </div>
-                <AdminWeekSection
-                    ref={weekSectionRef}
-                    t={t}
-                    weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
-                    selectedMonday={selectedMonday}
-                    handlePrevWeek={handlePrevWeek}
-                    handleNextWeek={handleNextWeek}
-                    handleWeekJump={handleWeekJump}
-                    handleCurrentWeek={handleCurrentWeek}
-                    onFocusProblemWeek={focusWeekForProblem}
-                    dailySummariesForWeekSection={dailySummaries}
-                    allVacations={allVacations}
-                    allSickLeaves={allSickLeaves}
-                    allHolidays={holidaysByCanton}
-                    users={users}
-                    defaultExpectedHours={defaultExpectedHours}
-                    openEditModal={openEditModal}
-                    openPrintUserModal={openPrintUserModal}
-                    rawUserTrackingBalances={filteredWeeklyBalances}
-                    openNewEntryModal={openNewEntryModal}
-                    onDataReloadNeeded={handleDataReloadNeeded}
-                    onIssueSummaryChange={handleIssueSummaryUpdate}
-                />
+                </div>
             </div>
 
-            <div className="mt-8">
-                <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
-                <VacationCalendarAdmin
-                    vacationRequests={allVacations.filter(v => v.approved)}
-                    onReloadVacations={handleDataReloadNeeded}
+            <div
+                className={`dashboard-tab-panel${activeMainTab === 'team' ? ' is-active' : ''}`}
+                role="tabpanel"
+                id="admin-dashboard-tab-team"
+                aria-labelledby="admin-dashboard-tab-team-button"
+                aria-hidden={activeMainTab !== 'team'}
+            >
+                <AdminDashboardKpis
+                    t={t}
+                    allVacations={allVacations}
+                    allCorrections={allCorrections}
+                    weeklyBalances={filteredWeeklyBalances}
                     users={users}
+                    onNavigateToVacations={handleNavigateToVacations}
+                    onNavigateToCorrections={handleNavigateToCorrections}
+                    onShowIssueOverview={handleShowIssueOverview}
+                    onFocusNegativeBalances={handleFocusNegativeBalances}
+                    onFocusOvertimeLeaders={handleFocusPositiveBalances}
+                    onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
                 />
+
+                {adminActionButtons}
+
+                <div className="team-overview-content">
+                    <AdminWeekSection
+                        ref={weekSectionRef}
+                        t={t}
+                        weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
+                        selectedMonday={selectedMonday}
+                        handlePrevWeek={handlePrevWeek}
+                        handleNextWeek={handleNextWeek}
+                        handleWeekJump={handleWeekJump}
+                        handleCurrentWeek={handleCurrentWeek}
+                        onFocusProblemWeek={focusWeekForProblem}
+                        dailySummariesForWeekSection={dailySummaries}
+                        allVacations={allVacations}
+                        allSickLeaves={allSickLeaves}
+                        allHolidays={holidaysByCanton}
+                        users={users}
+                        defaultExpectedHours={defaultExpectedHours}
+                        openEditModal={openEditModal}
+                        openPrintUserModal={openPrintUserModal}
+                        rawUserTrackingBalances={filteredWeeklyBalances}
+                        openNewEntryModal={openNewEntryModal}
+                        onDataReloadNeeded={handleDataReloadNeeded}
+                        onIssueSummaryChange={handleIssueSummaryUpdate}
+                        showSmartOverview={false}
+                        onQuickFixQueueChange={setQuickFixQueue}
+                    />
+
+                    <div className="team-calendar-card">
+                        <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
+                        <VacationCalendarAdmin
+                            vacationRequests={allVacations.filter(v => v.approved)}
+                            onReloadVacations={handleDataReloadNeeded}
+                            users={users}
+                        />
+                    </div>
+                </div>
             </div>
             {paletteOpen && (
                 <div className="command-palette-overlay" role="dialog" aria-modal="true">

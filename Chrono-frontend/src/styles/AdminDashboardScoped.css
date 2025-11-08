@@ -138,17 +138,248 @@
   border: 1px solid var(--c-border);
   box-shadow: var(--u-shadow-md);
   margin-bottom: var(--u-gap);
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--u-gap-sm);
+}
+.admin-dashboard.scoped-dashboard .dashboard-header .header-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
 }
 .admin-dashboard.scoped-dashboard .dashboard-header h2 {
-  margin: 0 0 0.5rem 0;
+  margin: 0;
   font-size: clamp(1.8rem, 4vw, 2.2rem);
   font-weight: 700;
 }
 .admin-dashboard.scoped-dashboard .dashboard-header p {
-  margin-top: 0.25rem;
+  margin: 0;
   color: var(--c-muted);
   font-size: 0.9rem;
+}
+.admin-dashboard.scoped-dashboard .command-palette-trigger {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--u-radius-pill);
+  border: 1px solid var(--c-border-stronger);
+  background: var(--c-card);
+  color: var(--c-link);
+  font-weight: 600;
+  transition: background var(--u-dur) var(--u-ease), box-shadow var(--u-dur) var(--u-ease);
+}
+.admin-dashboard.scoped-dashboard .command-palette-trigger:hover,
+.admin-dashboard.scoped-dashboard .command-palette-trigger:focus-visible {
+  background: var(--c-surface);
+  box-shadow: var(--u-shadow-sm);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--u-gap-sm);
+  margin-bottom: var(--u-gap);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-button {
+  border: 1px solid var(--c-border);
+  background: var(--c-card);
+  color: var(--c-text-muted);
+  padding: 0.55rem 1.2rem;
+  border-radius: var(--u-radius-pill);
+  font-weight: 600;
+  transition: all var(--u-dur) var(--u-ease);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-button.is-active {
+  border-color: var(--c-primary);
+  background: color-mix(in srgb, var(--c-primary) 12%, var(--c-card));
+  color: var(--c-text);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--c-primary) 18%, transparent);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-button:hover,
+.admin-dashboard.scoped-dashboard .dashboard-tab-button:focus-visible {
+  border-color: var(--c-primary);
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-panel {
+  display: none;
+  flex-direction: column;
+  gap: var(--u-gap);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-tab-panel.is-active {
+  display: flex;
+}
+
+.admin-dashboard.scoped-dashboard .low-risk-boost {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--u-gap);
+  flex-wrap: wrap;
+  margin-bottom: var(--u-gap-sm);
+  padding: clamp(0.75rem, 2.2vw, 1.1rem);
+  border-radius: var(--u-radius-md);
+  border: 1px solid color-mix(in srgb, var(--c-success) 35%, transparent);
+  background: color-mix(in srgb, var(--c-success) 12%, var(--c-card));
+}
+
+.admin-dashboard.scoped-dashboard .low-risk-boost .boost-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.admin-dashboard.scoped-dashboard .low-risk-boost .boost-eyebrow {
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--c-success) 80%, black);
+}
+
+.admin-dashboard.scoped-dashboard .low-risk-boost p {
+  margin: 0;
+  font-weight: 600;
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .inbox-detail-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--u-gap-sm);
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-header h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-header p {
+  margin: 0;
+  color: var(--c-muted);
+  font-size: 0.85rem;
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-item {
+  width: 100%;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--u-gap-sm);
+  padding: 0.65rem 0.75rem;
+  border-radius: var(--u-radius-md);
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  transition: transform var(--u-dur) var(--u-ease), box-shadow var(--u-dur) var(--u-ease);
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-item:hover,
+.admin-dashboard.scoped-dashboard .quick-fix-item:focus-visible {
+  transform: translateY(-1px);
+  box-shadow: var(--u-shadow-sm);
+  border-color: var(--c-primary);
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-icon {
+  font-size: 1.3rem;
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-label {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  text-align: left;
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-label strong {
+  font-weight: 700;
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-label span {
+  color: var(--c-muted);
+  font-size: 0.85rem;
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-cta {
+  font-weight: 600;
+  color: var(--c-link);
+}
+
+.admin-dashboard.scoped-dashboard .quick-fix-empty {
+  margin: 0;
+  color: var(--c-muted);
+}
+
+.admin-dashboard.scoped-dashboard .shortcut-hint-card ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.admin-dashboard.scoped-dashboard .shortcut-hint-card li {
+  font-size: 0.9rem;
+  color: var(--c-text-muted);
+}
+
+.admin-dashboard.scoped-dashboard .shortcut-hint-card strong {
+  font-family: var(--font-mono, 'Roboto Mono', monospace);
+  font-size: 0.85rem;
+  color: var(--c-text);
+}
+
+.admin-dashboard.scoped-dashboard .team-overview-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--u-gap);
+}
+
+.admin-dashboard.scoped-dashboard .team-calendar-card {
+  background: var(--c-card);
+  border-radius: var(--u-radius-md);
+  border: 1px solid var(--c-border);
+  box-shadow: var(--u-shadow-sm);
+  padding: clamp(1rem, 2.4vw, 1.5rem);
+}
+
+.admin-dashboard.scoped-dashboard .team-calendar-card h4 {
+  margin-top: 0;
+  margin-bottom: 0.75rem;
+}
+
+@media (min-width: 1100px) {
+  .admin-dashboard.scoped-dashboard .team-overview-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
+    align-items: start;
+    gap: var(--u-gap);
+  }
 }
 
 /* KPI Overview */
@@ -997,6 +1228,18 @@
   border-radius: var(--u-radius-xs);
   padding: 0.1rem 0.35rem;
   border: 1px solid var(--c-border);
+}
+.admin-dashboard.scoped-dashboard .stream-flag.low-risk {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border-color: color-mix(in srgb, var(--c-success) 45%, transparent);
+  background: color-mix(in srgb, var(--c-success) 12%, var(--c-card));
+  color: color-mix(in srgb, var(--c-success) 80%, black);
+  font-weight: 600;
+}
+.admin-dashboard.scoped-dashboard .stream-flag.low-risk span[aria-hidden="true"] {
+  font-size: 0.85rem;
 }
 .admin-dashboard.scoped-dashboard .stream-flag.overtime {
   border-color: rgba(71, 91, 255, 0.5);

@@ -219,7 +219,10 @@ const AdminActionStream = ({
                             <span className="stream-flag overtime">{t('adminDashboard.overtimeVacationShort', 'ÜS')}</span>
                         )}
                         {item.type === 'correction' && item.isLowRisk && (
-                            <span className="stream-flag low-risk">{t('adminDashboard.actionStream.lowRisk', 'Low Risk')}</span>
+                            <span className="stream-flag low-risk">
+                                <span aria-hidden="true">✓</span>
+                                {t('adminDashboard.actionStream.lowRisk', 'Low Risk')}
+                            </span>
                         )}
                         {item.status !== 'pending' && (
                             <span className={`stream-flag status-${item.status}`}>{t(`status.${item.status}`, item.status)}</span>

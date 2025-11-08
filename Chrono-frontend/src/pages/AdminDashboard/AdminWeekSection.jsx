@@ -330,6 +330,8 @@ const AdminWeekSection = forwardRef(({
                                          openNewEntryModal, // For creating entries for a day from scratch
                                          onDataReloadNeeded,
                                          onIssueSummaryChange,
+                                         showSmartOverview = true,
+                                         onQuickFixQueueChange = () => {},
                                      }, ref) => {
     const { notify } = useNotification();
     const { currentUser } = useAuth();
@@ -1168,6 +1170,12 @@ const AdminWeekSection = forwardRef(({
         return queue.slice(0, 6);
     }, [userAnalytics, quickFixMeta]);
 
+    useEffect(() => {
+        if (typeof onQuickFixQueueChange === 'function') {
+            onQuickFixQueueChange(quickIssueQueue);
+        }
+    }, [onQuickFixQueueChange, quickIssueQueue]);
+
     const scrollSectionIntoView = useCallback(() => {
         if (sectionRef.current) {
             sectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1544,7 +1552,7 @@ const AdminWeekSection = forwardRef(({
                     </button>
                 </div>
 
-                {activeTab === 'week' && (
+                {activeTab === 'week' && showSmartOverview && (
                 <div className="smart-week-overview" role="region" aria-label={t('adminDashboard.smartOverview.title', 'Wochenüberblick')}>
                     <div className="smart-overview-header">
                         <div>
@@ -2173,6 +2181,8 @@ AdminWeekSection.propTypes = {
     openNewEntryModal: PropTypes.func.isRequired,
     onDataReloadNeeded: PropTypes.func.isRequired,
     onIssueSummaryChange: PropTypes.func,
+    showSmartOverview: PropTypes.bool,
+    onQuickFixQueueChange: PropTypes.func,
 };
 
 AdminWeekSection.displayName = 'AdminWeekSection';
