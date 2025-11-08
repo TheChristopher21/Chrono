@@ -294,6 +294,12 @@ const AdminDashboard = () => {
         return summary;
     }, [inboxItems]);
 
+    const [selectedInboxIds, setSelectedInboxIds] = useState([]);
+    const [focusedInboxId, setFocusedInboxId] = useState(null);
+    const [lastFocusedIndex, setLastFocusedIndex] = useState(null);
+    const [activeQuickFilter, setActiveQuickFilter] = useState(inboxFilters.savedViewId || 'builtin:pending');
+    const [decisionDrafts, setDecisionDrafts] = useState({});
+
     const lowRiskPending = useMemo(() => inboxItems.filter((item) => item.type === 'correction' && item.isLowRisk && item.status === 'pending'), [inboxItems]);
 
     useEffect(() => {
@@ -813,11 +819,6 @@ const AdminDashboard = () => {
     const [paletteActiveIndex, setPaletteActiveIndex] = useState(0);
     const paletteInputRef = useRef(null);
     const searchInputRef = useRef(null);
-    const [selectedInboxIds, setSelectedInboxIds] = useState([]);
-    const [focusedInboxId, setFocusedInboxId] = useState(null);
-    const [lastFocusedIndex, setLastFocusedIndex] = useState(null);
-    const [activeQuickFilter, setActiveQuickFilter] = useState(inboxFilters.savedViewId || 'builtin:pending');
-    const [decisionDrafts, setDecisionDrafts] = useState({});
 
     const weekSectionRef = useRef(null);
     const gSequenceRef = useRef({ last: 0, count: 0 });
