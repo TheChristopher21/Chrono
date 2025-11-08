@@ -293,6 +293,11 @@ const AdminDashboard = () => {
         });
         return summary;
     }, [inboxItems]);
+    const [paletteOpen, setPaletteOpen] = useState(false);
+    const [paletteQuery, setPaletteQuery] = useState('');
+    const [paletteActiveIndex, setPaletteActiveIndex] = useState(0);
+    const paletteInputRef = useRef(null);
+    const searchInputRef = useRef(null);
 
     const [selectedInboxIds, setSelectedInboxIds] = useState([]);
     const [focusedInboxId, setFocusedInboxId] = useState(null);
@@ -813,12 +818,6 @@ const AdminDashboard = () => {
         totalWithIssue: 0,
     });
     const [activeIssuePill, setActiveIssuePill] = useState(null);
-
-    const [paletteOpen, setPaletteOpen] = useState(false);
-    const [paletteQuery, setPaletteQuery] = useState('');
-    const [paletteActiveIndex, setPaletteActiveIndex] = useState(0);
-    const paletteInputRef = useRef(null);
-    const searchInputRef = useRef(null);
 
     const weekSectionRef = useRef(null);
     const gSequenceRef = useRef({ last: 0, count: 0 });
