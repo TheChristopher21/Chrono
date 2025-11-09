@@ -1694,6 +1694,31 @@ const AdminDashboard = () => {
                 </button>
             </header>
 
+            <section
+                className="dashboard-overview-grid dashboard-summary-section"
+                aria-label={t('adminDashboard.summary.ariaLabel', 'Aktueller Admin-Überblick')}
+            >
+                <div className="dashboard-overview-main">
+                    <AdminDashboardKpis
+                        t={t}
+                        allVacations={allVacations}
+                        allCorrections={allCorrections}
+                        weeklyBalances={filteredWeeklyBalances}
+                        users={users}
+                        onNavigateToVacations={handleNavigateToVacations}
+                        onNavigateToCorrections={handleNavigateToCorrections}
+                        onShowIssueOverview={handleShowIssueOverview}
+                        onFocusNegativeBalances={handleFocusNegativeBalances}
+                        onFocusOvertimeLeaders={handleFocusPositiveBalances}
+                        onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
+                    />
+                </div>
+                <aside className="dashboard-overview-side">
+                    {renderInboxSummary()}
+                    {adminActionPanel}
+                </aside>
+            </section>
+
             <div
                 className="dashboard-tab-navigation"
                 role="tablist"
@@ -1730,28 +1755,6 @@ const AdminDashboard = () => {
                 aria-labelledby="admin-dashboard-tab-inbox-button"
                 aria-hidden={activeMainTab !== 'inbox'}
             >
-                <div className="dashboard-overview-grid">
-                    <section className="dashboard-overview-main">
-                        <AdminDashboardKpis
-                            t={t}
-                            allVacations={allVacations}
-                            allCorrections={allCorrections}
-                            weeklyBalances={filteredWeeklyBalances}
-                            users={users}
-                            onNavigateToVacations={handleNavigateToVacations}
-                            onNavigateToCorrections={handleNavigateToCorrections}
-                            onShowIssueOverview={handleShowIssueOverview}
-                            onFocusNegativeBalances={handleFocusNegativeBalances}
-                            onFocusOvertimeLeaders={handleFocusPositiveBalances}
-                            onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
-                        />
-                    </section>
-                    <aside className="dashboard-overview-side">
-                        {renderInboxSummary()}
-                        {adminActionPanel}
-                    </aside>
-                </div>
-
                 <div className="dashboard-content">
                     <div className="unified-inbox-grid">
                         <aside className="inbox-sidebar">
@@ -1883,28 +1886,6 @@ const AdminDashboard = () => {
                 aria-labelledby="admin-dashboard-tab-team-button"
                 aria-hidden={activeMainTab !== 'team'}
             >
-                <div className="dashboard-overview-grid">
-                    <section className="dashboard-overview-main">
-                        <AdminDashboardKpis
-                            t={t}
-                            allVacations={allVacations}
-                            allCorrections={allCorrections}
-                            weeklyBalances={filteredWeeklyBalances}
-                            users={users}
-                            onNavigateToVacations={handleNavigateToVacations}
-                            onNavigateToCorrections={handleNavigateToCorrections}
-                            onShowIssueOverview={handleShowIssueOverview}
-                            onFocusNegativeBalances={handleFocusNegativeBalances}
-                            onFocusOvertimeLeaders={handleFocusPositiveBalances}
-                            onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
-                        />
-                    </section>
-                    <aside className="dashboard-overview-side">
-                        {renderInboxSummary()}
-                        {adminActionPanel}
-                    </aside>
-                </div>
-
                 <div className="team-overview-content">
                     <section className="team-overview-main">
                         <AdminWeekSection
