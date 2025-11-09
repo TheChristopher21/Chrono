@@ -296,6 +296,58 @@ const AdminDashboard = () => {
         });
         return summary;
     }, [inboxItems]);
+
+    const inboxSummaryItems = useMemo(() => ([
+        {
+            id: 'pending',
+            tone: 'warning',
+            label: t('adminDashboard.inboxSummary.pendingLabel', 'Offene Vorgänge'),
+            description: t('adminDashboard.inboxSummary.pendingDescription', 'Alles, was deine Entscheidung benötigt.'),
+            count: statusSummary?.pending ?? 0,
+        },
+        {
+            id: 'vacations',
+            tone: 'info',
+            label: t('adminDashboard.inboxSummary.vacationsLabel', 'Urlaubsanträge'),
+            description: t('adminDashboard.inboxSummary.vacationsDescription', 'Abwesenheiten im Blick behalten.'),
+            count: statusSummary?.vacations ?? 0,
+        },
+        {
+            id: 'corrections',
+            tone: 'accent',
+            label: t('adminDashboard.inboxSummary.correctionsLabel', 'Korrekturanträge'),
+            description: t('adminDashboard.inboxSummary.correctionsDescription', 'Zeitkorrekturen schnell abgleichen.'),
+            count: statusSummary?.corrections ?? 0,
+        },
+    ]), [statusSummary, t]);
+    const renderInboxSummary = () => (
+        <section
+            className="dashboard-summary-card"
+            aria-label={t('adminDashboard.inboxSummary.title', 'Statusübersicht Posteingang')}
+        >
+            <header className="summary-header">
+                <div className="summary-headline">
+                    <h3>{t('adminDashboard.inboxSummary.title', 'Statusübersicht')}</h3>
+                    <p>{t('adminDashboard.inboxSummary.subtitle', 'Was heute besondere Aufmerksamkeit benötigt.')}</p>
+                </div>
+                <span className="summary-total" aria-label={t('adminDashboard.inboxSummary.total', 'Offene Gesamtanzahl')}>
+                    {statusSummary?.pending ?? 0}
+                </span>
+            </header>
+            <ul className="summary-list">
+                {inboxSummaryItems.map((item) => (
+                    <li key={item.id} className={`summary-item summary-${item.tone}`}>
+                        <span className="summary-count">{item.count}</span>
+                        <div className="summary-content">
+                            <span className="summary-label">{item.label}</span>
+                            <span className="summary-description">{item.description}</span>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        </section>
+    );
+
     const [paletteOpen, setPaletteOpen] = useState(false);
     const [paletteQuery, setPaletteQuery] = useState('');
     const [paletteActiveIndex, setPaletteActiveIndex] = useState(0);
@@ -1571,50 +1623,56 @@ const AdminDashboard = () => {
         setPrintUserModalVisible(false);
     }
 
-    const adminActionButtons = (
-        <div className="admin-action-buttons-container">
-            <Link
-                to="/admin/import-times"
-                className="admin-action-button button-primary"
-                role="button"
-            >
-                {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
-            </Link>
-            {hasFeature('payroll') && (
+    const adminActionPanel = (
+        <section className="admin-action-panel" aria-label={t('adminDashboard.actions.title', 'Schnellzugriffe')}>
+            <header className="admin-action-header">
+                <h3>{t('adminDashboard.actions.title', 'Schnellzugriffe')}</h3>
+                <p>{t('adminDashboard.actions.subtitle', 'Wichtige Werkzeuge für deinen Administrationsalltag.')}</p>
+            </header>
+            <div className="admin-action-buttons-container">
                 <Link
-                    to="/admin/payslips"
+                    to="/admin/import-times"
                     className="admin-action-button button-primary"
                     role="button"
                 >
-                    {t('navbar.payslips', 'Abrechnungen')}
+                    {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
                 </Link>
-            )}
-            {hasFeature('roster') && (
-                <Link
-                    to="/admin/schedule"
-                    className="admin-action-button button-primary"
-                    role="button"
+                {hasFeature('payroll') && (
+                    <Link
+                        to="/admin/payslips"
+                        className="admin-action-button button-primary"
+                        role="button"
+                    >
+                        {t('navbar.payslips', 'Abrechnungen')}
+                    </Link>
+                )}
+                {hasFeature('roster') && (
+                    <Link
+                        to="/admin/schedule"
+                        className="admin-action-button button-primary"
+                        role="button"
+                    >
+                        {t('navbar.schedulePlanner', 'Dienstplan')}
+                    </Link>
+                )}
+                {hasFeature('analytics') && (
+                    <Link
+                        to="/admin/analytics"
+                        className="admin-action-button button-secondary admin-analytics-button"
+                        role="button"
+                    >
+                        {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
+                    </Link>
+                )}
+                <button
+                    type="button"
+                    onClick={handleDataReloadNeeded}
+                    className="admin-action-button button-secondary"
                 >
-                    {t('navbar.schedulePlanner', 'Dienstplan')}
-                </Link>
-            )}
-            {hasFeature('analytics') && (
-                <Link
-                    to="/admin/analytics"
-                    className="admin-action-button button-secondary admin-analytics-button"
-                    role="button"
-                >
-                    {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
-                </Link>
-            )}
-            <button
-                type="button"
-                onClick={handleDataReloadNeeded}
-                className="admin-action-button button-secondary"
-            >
-                {t('adminDashboard.reloadDataButton', 'Daten neu laden')}
-            </button>
-        </div>
+                    {t('adminDashboard.reloadDataButton', 'Daten neu laden')}
+                </button>
+            </div>
+        </section>
     );
 
     return (
@@ -1672,67 +1730,79 @@ const AdminDashboard = () => {
                 aria-labelledby="admin-dashboard-tab-inbox-button"
                 aria-hidden={activeMainTab !== 'inbox'}
             >
-                <AdminDashboardKpis
-                    t={t}
-                    allVacations={allVacations}
-                    allCorrections={allCorrections}
-                    weeklyBalances={filteredWeeklyBalances}
-                    users={users}
-                    onNavigateToVacations={handleNavigateToVacations}
-                    onNavigateToCorrections={handleNavigateToCorrections}
-                    onShowIssueOverview={handleShowIssueOverview}
-                    onFocusNegativeBalances={handleFocusNegativeBalances}
-                    onFocusOvertimeLeaders={handleFocusPositiveBalances}
-                    onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
-                />
-
-                {adminActionButtons}
+                <div className="dashboard-overview-grid">
+                    <section className="dashboard-overview-main">
+                        <AdminDashboardKpis
+                            t={t}
+                            allVacations={allVacations}
+                            allCorrections={allCorrections}
+                            weeklyBalances={filteredWeeklyBalances}
+                            users={users}
+                            onNavigateToVacations={handleNavigateToVacations}
+                            onNavigateToCorrections={handleNavigateToCorrections}
+                            onShowIssueOverview={handleShowIssueOverview}
+                            onFocusNegativeBalances={handleFocusNegativeBalances}
+                            onFocusOvertimeLeaders={handleFocusPositiveBalances}
+                            onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
+                        />
+                    </section>
+                    <aside className="dashboard-overview-side">
+                        {renderInboxSummary()}
+                        {adminActionPanel}
+                    </aside>
+                </div>
 
                 <div className="dashboard-content">
                     <div className="unified-inbox-grid">
                         <aside className="inbox-sidebar">
                             <div className="sidebar-group">
                                 <h4>{t('adminDashboard.inbox.quickFilters', 'Quick Filter')}</h4>
+                                <p className="sidebar-description">
+                                    {t('adminDashboard.inbox.quickFiltersHint', 'Ein Klick zeigt dir die relevantesten Aufgabenbereiche.')}
+                                </p>
                                 <div className="chip-list">
                                     {builtInViews.map((view) => (
-                                    <button
-                                        key={view.id}
-                                        type="button"
-                                        className={`chip-button${activeQuickFilter === view.id ? ' is-active' : ''}`}
-                                        onClick={view.action}
-                                    >
-                                        <span className="chip-label">{view.label}</span>
-                                    </button>
-                                ))}
+                                        <button
+                                            key={view.id}
+                                            type="button"
+                                            className={`chip-button${activeQuickFilter === view.id ? ' is-active' : ''}`}
+                                            onClick={view.action}
+                                        >
+                                            <span className="chip-label">{view.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
-                        </div>
-                        <div className="sidebar-group">
-                            <h4>{t('adminDashboard.inbox.issues', 'Problemfilter')}</h4>
-                            <div className="chip-list">
-                                {issueChipConfig.map((chip) => (
-                                    <button
-                                        key={chip.key}
-                                        type="button"
-                                        className={`chip-button${activeIssuePill === chip.key ? ' is-active' : ''}${chip.count === 0 ? ' is-disabled' : ''}`}
-                                        onClick={() => handleFocusIssues(chip.key)}
-                                        disabled={chip.count === 0}
-                                    >
-                                        <span className="chip-icon" aria-hidden="true">{chip.icon}</span>
-                                        <span className="chip-label">{chip.label}</span>
-                                        <span className="chip-count">{chip.count}</span>
-                                    </button>
-                                ))}
-                                {hasIssues && (
-                                    <button
-                                        type="button"
-                                        className="chip-button ghost"
-                                        onClick={handleResetIssueFilters}
-                                    >
-                                        {t('adminDashboard.resetFilters', 'Filter zurücksetzen')}
-                                    </button>
-                                )}
+                            <div className="sidebar-group">
+                                <h4>{t('adminDashboard.inbox.issues', 'Problemfilter')}</h4>
+                                <p className="sidebar-description">
+                                    {t('adminDashboard.inbox.issuesHint', 'Sortiere nach typischen Stolpersteinen und priorisiere deine Nacharbeit.')}
+                                </p>
+                                <div className="chip-list">
+                                    {issueChipConfig.map((chip) => (
+                                        <button
+                                            key={chip.key}
+                                            type="button"
+                                            className={`chip-button${activeIssuePill === chip.key ? ' is-active' : ''}${chip.count === 0 ? ' is-disabled' : ''}`}
+                                            onClick={() => handleFocusIssues(chip.key)}
+                                            disabled={chip.count === 0}
+                                        >
+                                            <span className="chip-icon" aria-hidden="true">{chip.icon}</span>
+                                            <span className="chip-label">{chip.label}</span>
+                                            <span className="chip-count">{chip.count}</span>
+                                        </button>
+                                    ))}
+                                    {hasIssues && (
+                                        <button
+                                            type="button"
+                                            className="chip-button ghost"
+                                            onClick={handleResetIssueFilters}
+                                        >
+                                            {t('adminDashboard.resetFilters', 'Filter zurücksetzen')}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
-                        </div>
                         <div className="sidebar-group saved-views">
                             <div className="saved-views-header">
                                 <h4>{t('adminDashboard.inbox.savedViews', 'Gespeicherte Ansichten')}</h4>
@@ -1813,21 +1883,27 @@ const AdminDashboard = () => {
                 aria-labelledby="admin-dashboard-tab-team-button"
                 aria-hidden={activeMainTab !== 'team'}
             >
-                <AdminDashboardKpis
-                    t={t}
-                    allVacations={allVacations}
-                    allCorrections={allCorrections}
-                    weeklyBalances={filteredWeeklyBalances}
-                    users={users}
-                    onNavigateToVacations={handleNavigateToVacations}
-                    onNavigateToCorrections={handleNavigateToCorrections}
-                    onShowIssueOverview={handleShowIssueOverview}
-                    onFocusNegativeBalances={handleFocusNegativeBalances}
-                    onFocusOvertimeLeaders={handleFocusPositiveBalances}
-                    onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
-                />
-
-                {adminActionButtons}
+                <div className="dashboard-overview-grid">
+                    <section className="dashboard-overview-main">
+                        <AdminDashboardKpis
+                            t={t}
+                            allVacations={allVacations}
+                            allCorrections={allCorrections}
+                            weeklyBalances={filteredWeeklyBalances}
+                            users={users}
+                            onNavigateToVacations={handleNavigateToVacations}
+                            onNavigateToCorrections={handleNavigateToCorrections}
+                            onShowIssueOverview={handleShowIssueOverview}
+                            onFocusNegativeBalances={handleFocusNegativeBalances}
+                            onFocusOvertimeLeaders={handleFocusPositiveBalances}
+                            onOpenAnalytics={hasFeature('analytics') ? handleOpenAnalytics : null}
+                        />
+                    </section>
+                    <aside className="dashboard-overview-side">
+                        {renderInboxSummary()}
+                        {adminActionPanel}
+                    </aside>
+                </div>
 
                 <div className="team-overview-content">
                     <AdminWeekSection
