@@ -162,6 +162,13 @@
     background: var(--nav-hover-strong);
     color: var(--nav-accent);
 }
+.scoped-navbar .navbar-links a.marketingLink {
+    font-weight: 700;
+}
+.scoped-navbar .navbar-links a.activeLink {
+    background: var(--nav-hover-strong);
+    color: var(--nav-accent);
+}
 
 /* --------------------------- Icon-Buttons --------------------------- */
 .scoped-navbar .icon-btn,

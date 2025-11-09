@@ -7,6 +7,7 @@ import { useTranslation } from "../context/LanguageContext";
 import { useNotification } from "../context/NotificationContext";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
+import logo from "../assets/logo.svg";
 
 // Feature block supports either a single text or a list of bullet points
 const FeatureCard = ({ icon, title, text, bullets }) => (
@@ -72,84 +73,93 @@ const LandingPage = () => {
     const features = [
         {
             icon: "🧾",
-            title: t("landing.features.items.0.title", "Arbeitszeit & Lohn in einem"),
+            title: t("landing.features.items.0.title", "Arbeitszeiterfassung & Payroll verbinden"),
             bullets: [
-                t("landing.features.items.0.bullets.0", "Arbeitsstunden festhalten"),
-                t("landing.features.items.0.bullets.1", "Urlaub und Extra-Zeit sehen"),
-                t("landing.features.items.0.bullets.2", "Alles an einem Ort"),
+                t("landing.features.items.0.bullets.0", "Arbeitszeiten gesetzeskonform dokumentieren"),
+                t("landing.features.items.0.bullets.1", "Lohnarten und Zuschläge automatisch berechnen"),
+                t("landing.features.items.0.bullets.2", "Transparente Stundennachweise für Mitarbeitende"),
             ],
         },
         {
             icon: "🇨🇭🇩🇪",
-            title: t("landing.features.items.1.title", "Lohnzettel für CH & DE"),
+            title: t("landing.features.items.1.title", "Payroll für Schweiz & Deutschland"),
             bullets: [
-                t("landing.features.items.1.bullets.0", "Als Datei speichern"),
-                t("landing.features.items.1.bullets.1", "Angaben leicht ändern"),
-                t("landing.features.items.1.bullets.2", "Schweiz und Deutschland abgedeckt"),
+                t("landing.features.items.1.bullets.0", "Kantonale und deutsche Vorgaben bereits hinterlegt"),
+                t("landing.features.items.1.bullets.1", "Lohnabrechnungen als PDF oder Excel exportieren"),
+                t("landing.features.items.1.bullets.2", "Brutto- und Nettolöhne mit wenigen Klicks anpassen"),
             ],
         },
         {
             icon: "👆",
-            title: t("landing.features.items.2.title", "Stempeln mit Karte oder Web"),
+            title: t("landing.features.items.2.title", "Stempeln via Terminal oder Web-App"),
             bullets: [
-                t("landing.features.items.2.bullets.0", "Mit Karte ein- und ausstempeln"),
-                t("landing.features.items.2.bullets.1", "Auch im Browser oder Handy"),
-                t("landing.features.items.2.bullets.2", "Geht sogar ohne Internet"),
+                t("landing.features.items.2.bullets.0", "Terminal, NFC-Karte oder Browser nutzen"),
+                t("landing.features.items.2.bullets.1", "Mobile Zeiterfassung für Teams im Außendienst"),
+                t("landing.features.items.2.bullets.2", "Offline-Puffer sorgt für verlässliche Buchungen"),
             ],
         },
         {
             icon: "📅",
-            title: t("landing.features.items.3.title", "Urlaub & Überstunden im Blick"),
+            title: t("landing.features.items.3.title", "Urlaub, Überstunden & Gleitzeit im Blick"),
             bullets: [
-                t("landing.features.items.3.bullets.0", "Urlaub online beantragen"),
-                t("landing.features.items.3.bullets.1", "Resttage sofort sehen"),
-                t("landing.features.items.3.bullets.2", "Überstunden automatisch verrechnet"),
+                t("landing.features.items.3.bullets.0", "Abwesenheiten digital beantragen und freigeben"),
+                t("landing.features.items.3.bullets.1", "Resturlaub und Salden in Echtzeit einsehen"),
+                t(
+                    "landing.features.items.3.bullets.2",
+                    "Überstunden automatisch in die Lohnabrechnung übernehmen"
+                ),
             ],
         },
         {
             icon: "🔔",
-            title: t("landing.features.items.4.title", "Hinweise & Erinnerungen"),
+            title: t("landing.features.items.4.title", "Automatische Hinweise & Erinnerungen"),
             bullets: [
-                t("landing.features.items.4.bullets.0", "Info bei neuem Lohnzettel"),
-                t("landing.features.items.4.bullets.1", "Hinweis bei Anträgen"),
+                t("landing.features.items.4.bullets.0", "Benachrichtigung bei neuen Lohnabrechnungen"),
+                t("landing.features.items.4.bullets.1", "Automatische Info zu Urlaubs- und Korrekturanträgen"),
                 t("landing.features.items.4.bullets.2", "Erinnerung, wenn du vergisst auszustempeln"),
             ],
         },
         {
             icon: "🛡️",
-            title: t("landing.features.items.5.title", "Sichere Daten in der Schweiz"),
+            title: t("landing.features.items.5.title", "Datenschutzkonforme Cloud in der Schweiz"),
             bullets: [
-                t("landing.features.items.5.bullets.0", "Daten bleiben in der Schweiz"),
-                t("landing.features.items.5.bullets.1", "Alles ist geschützt"),
-                t("landing.features.items.5.bullets.2", "Nur Berechtigte sehen deine Daten"),
-                t("landing.features.items.5.bullets.3", "Zusätzlicher Login-Schutz möglich"),
+                t("landing.features.items.5.bullets.0", "Hosting in Schweizer Rechenzentren"),
+                t("landing.features.items.5.bullets.1", "DSGVO- und CH-DSG-konforme Datenverarbeitung"),
+                t("landing.features.items.5.bullets.2", "Feingranulare Rollen- und Rechteverwaltung"),
+                t("landing.features.items.5.bullets.3", "Optionale Zwei-Faktor-Authentifizierung"),
             ],
         },
         {
             icon: "👥",
-            title: t("landing.features.items.6.title", "Team & Projekte verwalten"),
+            title: t("landing.features.items.6.title", "Teams, Kunden & Projekte steuern"),
             bullets: [
-                t("landing.features.items.6.bullets.0", "Mitarbeitende hinzufügen"),
-                t("landing.features.items.6.bullets.1", "Kunden und Projekte anlegen"),
-                t("landing.features.items.6.bullets.2", "Alles im Blick behalten"),
+                t(
+                    "landing.features.items.6.bullets.0",
+                    "Mitarbeitende, Kunden und Projekte zentral verwalten"
+                ),
+                t("landing.features.items.6.bullets.1", "Projektzeiten und Budgets live verfolgen"),
+                t("landing.features.items.6.bullets.2", "Rollen & Zugriffe pro Standort definieren"),
             ],
         },
         {
             icon: "📊",
-            title: t("landing.features.items.7.title", "Berichte zum Mitnehmen"),
+            title: t("landing.features.items.7.title", "Berichte und Auswertungen exportieren"),
             bullets: [
-                t("landing.features.items.7.bullets.0", "Übersichtliche Dateien herunterladen"),
-                t("landing.features.items.7.bullets.1", "Schnell sehen, wer wie viel gearbeitet hat"),
-                t("landing.features.items.7.bullets.2", "Praktisch für Steuer und Abrechnung"),
+                t("landing.features.items.7.bullets.0", "Übersichtliche Reports für HR und Steuerberater"),
+                t("landing.features.items.7.bullets.1", "Projektzeiten, Kosten und Auslastung auf einen Blick"),
+                t("landing.features.items.7.bullets.2", "Export als Excel, PDF oder DATEV-kompatible Dateien"),
             ],
         },
         {
             icon: "🤝",
-            title: t("landing.features.items.8.title", "Persönlicher Support inklusive"),
+            title: t("landing.features.items.8.title", "Persönlicher Support & Onboarding"),
             bullets: [
-                t("landing.features.items.8.bullets.0", "Direkter Draht zum Chrono-Team"),
+                t(
+                    "landing.features.items.8.bullets.0",
+                    "Direkter Draht zu unseren Zeiterfassungs-Expert:innen"
+                ),
                 t("landing.features.items.8.bullets.1", "Antwort in der Regel am selben Werktag"),
-                t("landing.features.items.8.bullets.2", "Onboarding-Hilfe für dein gesamtes Team"),
+                t("landing.features.items.8.bullets.2", "Geführtes Onboarding für dein gesamtes Team"),
             ],
         },
     ];
@@ -158,19 +168,25 @@ const LandingPage = () => {
         {
             n: "1",
             title: t("landing.steps.items.0.title", "Registrieren"),
-            text: t("landing.steps.items.0.text", "Kostenlos starten – ohne Kreditkarte."),
+            text: t(
+                "landing.steps.items.0.text",
+                "Kostenlos starten – ohne Kreditkarte und ohne Installationsaufwand."
+            ),
         },
         {
             n: "2",
             title: t("landing.steps.items.1.title", "Team & Projekte anlegen"),
-            text: t("landing.steps.items.1.text", "Mitarbeitende, Projekte und Kunden hinzufügen."),
+            text: t(
+                "landing.steps.items.1.text",
+                "Mitarbeitende, Kunden und Projekte anlegen – optional mit Schichtplänen."
+            ),
         },
         {
             n: "3",
             title: t("landing.steps.items.2.title", "Loslegen"),
             text: t(
                 "landing.steps.items.2.text",
-                "Stempeln, Urlaub beantragen, Abrechnung erstellen."
+                "Zeiten erfassen, Urlaub freigeben und die Payroll in wenigen Klicks abschließen."
             ),
         },
     ];
@@ -179,19 +195,42 @@ const LandingPage = () => {
         <div className="landing-page scoped-landing">
             <Navbar />
 
+            <div className="lp-logo-strip">
+                <div className="lp-logo-strip-inner">
+                    <img
+                        src={logo}
+                        alt={t("landing.logo.alt", "Chrono Logo")}
+                        className="lp-logo-strip-image"
+                        loading="lazy"
+                    />
+                    <p className="lp-logo-strip-text">
+                        {t(
+                            "landing.logo.tagline",
+                            "Chrono – Zeiterfassung Software und Payroll Plattform für KMU, Agenturen und Handwerk."
+                        )}
+                    </p>
+                </div>
+            </div>
+
             <main>
                 {/* HERO (einspaltig, ohne Mock) */}
                 <header className="lp-hero lp-section lp-section-lg" id="home">
                     <div className="lp-hero-single">
                         <div className="lp-hero-content">
-                            <div className="lp-hero-badge">{t("landing.hero.badge", "Fair · Klar · Zuverlässig")}</div>
+                            <div className="lp-hero-badge">
+                                {t("landing.hero.badge", "Zeiterfassung & Payroll für KMU")}
+                            </div>
                             <h1 className="lp-h1">
-                                {t("landing.hero.title", "Zeit erfassen, fair abrechnen – einfach, klar, zuverlässig.")}
+                                {t(
+                                    "landing.hero.title",
+                                    "Chrono Zeiterfassung Software für faire Arbeitszeiten und Lohnabrechnung."
+                                )}
                             </h1>
                             <br></br>
                             <p className="lp-lead">
-                                {t("landing.hero.sub",
-                                    "Chrono hilft Teams in der Schweiz & Deutschland, Zeiten korrekt zu erfassen, Urlaub sauber zu managen und Löhne sicher abzurechnen."
+                                {t(
+                                    "landing.hero.sub",
+                                    "Chrono ist die Zeiterfassungssoftware für Unternehmen in der Schweiz und Deutschland. Erfasse Arbeitszeiten gesetzeskonform, plane Projekte und schließe die Lohnabrechnung in wenigen Klicks ab."
                                 )}
                             </p>
 
@@ -218,9 +257,17 @@ const LandingPage = () => {
 
                 {/* FEATURES */}
                 <section className="lp-section" id="features">
-                    <h2 className="lp-h2">{t("landing.features.title", "Alles drin, was du brauchst – ohne Ballast.")}</h2>
+                    <h2 className="lp-h2">
+                        {t(
+                            "landing.features.title",
+                            "Alle Module für digitale Arbeitszeiterfassung und Payroll."
+                        )}
+                    </h2>
                     <p className="lp-section-sub">
-                        {t("landing.features.sub", "Fokussiert auf das Wesentliche: Zeiterfassung, Abrechnung, Urlaub und klare Admin-Prozesse.")}
+                        {t(
+                            "landing.features.sub",
+                            "Chrono vereint Zeiterfassung, Projektzeiterfassung, Schichtplanung und Lohnabrechnung in einer DSGVO-konformen Plattform."
+                        )}
                     </p>
                     <div className="lp-features-grid" role="list" aria-label="Featureliste">
                         {features.map((f, i) => (

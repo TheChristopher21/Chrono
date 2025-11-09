@@ -2,7 +2,7 @@
  * Navbar.jsx · kompakt mit Dropdowns & Icons (Aug 2025)
  ****************************************/
 import React, { useState, useEffect, useContext, useRef, useMemo } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { LanguageContext, useTranslation } from '../context/LanguageContext';
 import styles from '../styles/Navbar.module.css';
@@ -58,6 +58,7 @@ const Navbar = () => {
     const { t } = useTranslation();
     const { language, setLanguage } = useContext(LanguageContext);
     const location = useLocation();
+    const navigate = useNavigate();
 
     // Öffentliche Seiten bestimmen (wie gehabt)
     let publicRoutes = ['/login', '/register'];
@@ -121,6 +122,58 @@ const Navbar = () => {
     const userInitial = currentUser?.username?.[0]?.toUpperCase() || 'U';
     const onAdminRoute = location.pathname.startsWith('/admin');
 
+    const navToggleRef = useRef(null);
+    const closeMobileNav = () => {
+        if (navToggleRef.current) navToggleRef.current.checked = false;
+        setOpenLang(false);
+        setOpenAdmin(false);
+        setOpenUser(false);
+    };
+
+    const marketingSections = [
+        { key: '#home', label: t('navbar.home', 'Startseite') },
+        { key: '#features', label: t('navbar.featuresLink', 'Funktionen') },
+        { key: '#start', label: t('navbar.howItWorks', 'So funktioniert es') },
+        { key: '#kontakt', label: t('navbar.contact', 'Kontakt') },
+    ];
+
+    const marketingPages = [
+        { to: '/agb', label: t('navbar.terms', 'AGB') },
+        { to: '/impressum', label: t('navbar.imprint', 'Impressum') },
+        { to: '/datenschutz', label: t('navbar.privacy', 'Datenschutz') },
+    ];
+
+    const activeMarketingSection = location.pathname === '/' ? (location.hash || '#home') : null;
+
+    useEffect(() => {
+        if (location.pathname !== '/') return;
+        if (!location.hash) {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+            return;
+        }
+        const sectionId = location.hash.replace('#', '');
+        const element = document.getElementById(sectionId);
+        if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }, [location.pathname, location.hash]);
+
+    const handleSectionNavigation = (event, hash) => {
+        event.preventDefault();
+        closeMobileNav();
+        const target = hash === '#home' ? '/#home' : `/${hash}`;
+        const shouldReplace = location.pathname === '/' && location.hash === hash;
+        if (shouldReplace) {
+            const sectionId = hash.replace('#', '');
+            const element = document.getElementById(sectionId);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            return;
+        }
+        navigate(target);
+    };
+
     const companyFeatureKeys = useMemo(() => {
         const keys = currentUser?.companyFeatureKeys;
         if (!keys) return new Set();
@@ -143,7 +196,13 @@ const Navbar = () => {
                 </div>
 
                 {/* Hamburger Toggle (mobil) */}
-                <input type="checkbox" id="nav-toggle" className={styles['nav-toggle']} />
+                <input
+                    type="checkbox"
+                    id="nav-toggle"
+                    className={styles['nav-toggle']}
+                    ref={navToggleRef}
+                    onChange={() => setOpenLang(false)}
+                />
                 <label htmlFor="nav-toggle" className={styles['nav-toggle-label']} aria-label="Menü umschalten">
                     <span></span><span></span><span></span>
                 </label>
@@ -152,11 +211,41 @@ const Navbar = () => {
                 <ul className={styles['navbar-links']}>
                     {!authToken || isPublicPage ? (
                         <>
-                            <li><Link to="/login">{t('navbar.login', 'Login')}</Link></li>
-                            <li><Link to="/register">{t('navbar.register', 'Registrieren')}</Link></li>
+                            {marketingSections.map((section) => (
+                                <li key={section.key}>
+                                    <Link
+                                        to={`/${section.key}`}
+                                        onClick={(event) => handleSectionNavigation(event, section.key)}
+                                        className={`${styles.marketingLink} ${activeMarketingSection === section.key ? styles.activeLink : ''}`}
+                                    >
+                                        {section.label}
+                                    </Link>
+                                </li>
+                            ))}
+                            {marketingPages.map((page) => (
+                                <li key={page.to}>
+                                    <Link
+                                        to={page.to}
+                                        onClick={closeMobileNav}
+                                        className={`${styles.marketingLink} ${location.pathname === page.to ? styles.activeLink : ''}`}
+                                    >
+                                        {page.label}
+                                    </Link>
+                                </li>
+                            ))}
 
                             {/* Spacer und Controls für ausgeloggten Zustand */}
                             <li className={styles['flex-spacer']} aria-hidden="true"></li>
+                            <li>
+                                <Link to="/login" onClick={closeMobileNav} className={styles.marketingLink}>
+                                    {t('navbar.login', 'Login')}
+                                </Link>
+                            </li>
+                            <li>
+                                <Link to="/register" onClick={closeMobileNav} className={styles.marketingLink}>
+                                    {t('navbar.register', 'Registrieren')}
+                                </Link>
+                            </li>
                             <li>
                                 <button
                                     className={styles['icon-btn']}
