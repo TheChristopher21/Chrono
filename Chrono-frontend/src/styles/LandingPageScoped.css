@@ -77,6 +77,35 @@
 .landing-page.scoped-landing .lp-hero-content{
     max-width:860px; margin-left:0; text-align:left;
 }
+.landing-page.scoped-landing .lp-logo-strip{
+    background:var(--c-surface-glass);
+    border-bottom:1px solid var(--c-border);
+    padding:var(--space-2) 0;
+}
+.landing-page.scoped-landing .lp-logo-strip-inner{
+    width:min(1100px,92vw);
+    margin:0 auto;
+    display:flex;
+    align-items:center;
+    gap:1.4rem;
+    justify-content:flex-start;
+}
+.landing-page.scoped-landing .lp-logo-strip-image{
+    width:clamp(140px,18vw,220px);
+    height:auto;
+    display:block;
+}
+.landing-page.scoped-landing .lp-logo-strip-text{
+    font-weight:700;
+    font-size:clamp(1rem,1.8vw,1.25rem);
+    line-height:1.4;
+    color:var(--c-text);
+    max-width:620px;
+}
+@media (max-width:720px){
+    .landing-page.scoped-landing .lp-logo-strip-inner{flex-direction:column; align-items:flex-start; text-align:left;}
+    .landing-page.scoped-landing .lp-logo-strip-text{max-width:100%;}
+}
 .landing-page.scoped-landing .lp-hero-badge{
     display:inline-block; margin-bottom:.85rem; padding:.35rem .7rem; border-radius:999px;
     font-size:.78rem; color:#fff; background:linear-gradient(90deg,rgba(90,135,255,.6),rgba(90,135,255,.35));

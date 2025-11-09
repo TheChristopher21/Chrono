@@ -801,6 +801,13 @@ const translations = {
         // Navbar
         // ----------------------------------------------------------------------
         navbar: {
+            home: "Startseite",
+            featuresLink: "Funktionen",
+            howItWorks: "So funktioniert es",
+            contact: "Kontakt",
+            terms: "AGB",
+            imprint: "Impressum",
+            privacy: "Datenschutz",
             login: "Login",
             register: "Registrieren",
             logout: "Abmelden",
@@ -2212,6 +2219,13 @@ const translations = {
         // Navbar
         // ----------------------------------------------------------------------
         navbar: {
+            home: "Home",
+            featuresLink: "Features",
+            howItWorks: "How it works",
+            contact: "Contact",
+            terms: "Terms",
+            imprint: "Imprint",
+            privacy: "Privacy",
             login: "Login",
             register: "Register",
             logout: "Logout",
