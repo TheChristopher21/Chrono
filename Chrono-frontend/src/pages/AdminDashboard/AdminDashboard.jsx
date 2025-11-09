@@ -1906,40 +1906,50 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="team-overview-content">
-                    <AdminWeekSection
-                        ref={weekSectionRef}
-                        t={t}
-                        weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
-                        selectedMonday={selectedMonday}
-                        handlePrevWeek={handlePrevWeek}
-                        handleNextWeek={handleNextWeek}
-                        handleWeekJump={handleWeekJump}
-                        handleCurrentWeek={handleCurrentWeek}
-                        onFocusProblemWeek={focusWeekForProblem}
-                        dailySummariesForWeekSection={dailySummaries}
-                        allVacations={allVacations}
-                        allSickLeaves={allSickLeaves}
-                        allHolidays={holidaysByCanton}
-                        users={users}
-                        defaultExpectedHours={defaultExpectedHours}
-                        openEditModal={openEditModal}
-                        openPrintUserModal={openPrintUserModal}
-                        rawUserTrackingBalances={filteredWeeklyBalances}
-                        openNewEntryModal={openNewEntryModal}
-                        onDataReloadNeeded={handleDataReloadNeeded}
-                        onIssueSummaryChange={handleIssueSummaryUpdate}
-                        showSmartOverview={false}
-                        onQuickFixQueueChange={setQuickFixQueue}
-                    />
-
-                    <div className="team-calendar-card">
-                        <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
-                        <VacationCalendarAdmin
-                            vacationRequests={allVacations.filter(v => v.approved)}
-                            onReloadVacations={handleDataReloadNeeded}
+                    <section className="team-overview-main">
+                        <AdminWeekSection
+                            ref={weekSectionRef}
+                            t={t}
+                            weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
+                            selectedMonday={selectedMonday}
+                            handlePrevWeek={handlePrevWeek}
+                            handleNextWeek={handleNextWeek}
+                            handleWeekJump={handleWeekJump}
+                            handleCurrentWeek={handleCurrentWeek}
+                            onFocusProblemWeek={focusWeekForProblem}
+                            dailySummariesForWeekSection={dailySummaries}
+                            allVacations={allVacations}
+                            allSickLeaves={allSickLeaves}
+                            allHolidays={holidaysByCanton}
                             users={users}
+                            defaultExpectedHours={defaultExpectedHours}
+                            openEditModal={openEditModal}
+                            openPrintUserModal={openPrintUserModal}
+                            rawUserTrackingBalances={filteredWeeklyBalances}
+                            openNewEntryModal={openNewEntryModal}
+                            onDataReloadNeeded={handleDataReloadNeeded}
+                            onIssueSummaryChange={handleIssueSummaryUpdate}
+                            showSmartOverview={false}
+                            onQuickFixQueueChange={setQuickFixQueue}
                         />
-                    </div>
+
+                        <AdminQuickFixPanel
+                            t={t}
+                            items={quickFixQueue}
+                            onSelect={handleQuickFixSelect}
+                        />
+                    </section>
+
+                    <aside className="team-overview-side">
+                        <div className="team-calendar-card">
+                            <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
+                            <VacationCalendarAdmin
+                                vacationRequests={allVacations.filter(v => v.approved)}
+                                onReloadVacations={handleDataReloadNeeded}
+                                users={users}
+                            />
+                        </div>
+                    </aside>
                 </div>
             </div>
             {paletteOpen && (
