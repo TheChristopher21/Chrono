@@ -204,10 +204,14 @@
 
 .admin-dashboard.scoped-dashboard .dashboard-overview-grid {
   display: grid;
-  grid-template-columns: minmax(0, 3fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--u-gap);
   align-items: stretch;
   margin-bottom: var(--u-gap);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-overview-side {
+  width: 100%;
 }
 
 .admin-dashboard.scoped-dashboard .dashboard-overview-main {
@@ -572,8 +576,8 @@
 
 @media (min-width: 1100px) {
   .admin-dashboard.scoped-dashboard .team-overview-content {
-    grid-template-columns: minmax(0, 1.6fr) minmax(260px, 0.9fr);
-    align-items: start;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
   }
 }
 
