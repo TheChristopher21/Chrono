@@ -256,20 +256,26 @@ const AdminActionStream = ({
     }, [derivedItems, focusedId, handleRowClick, handleToggle, onApprove, onDeny, onFocusUser, onRequestFocus, selectedIds, t]);
 
     const summaryLabel = useMemo(() => {
+        const formatWithCount = (key, defaultValue, count) => t(key, {
+            count,
+            defaultValue,
+        });
+
         if (!statusSummary) {
-            return t('adminDashboard.actionStream.counter', '{count} offen', { count: pendingCount });
+            return formatWithCount('adminDashboard.actionStream.counter', '{{count}} offen', pendingCount);
         }
+
         const parts = [];
         if (typeof statusSummary.pending === 'number') {
-            parts.push(t('adminDashboard.actionStream.summary.pending', '{count} offen', { count: statusSummary.pending }));
+            parts.push(formatWithCount('adminDashboard.actionStream.summary.pending', '{{count}} offen', statusSummary.pending));
         }
         if (typeof statusSummary.vacations === 'number') {
-            parts.push(t('adminDashboard.actionStream.summary.vacations', '{count} Urlaub', { count: statusSummary.vacations }));
+            parts.push(formatWithCount('adminDashboard.actionStream.summary.vacations', '{{count}} Urlaub', statusSummary.vacations));
         }
         if (typeof statusSummary.corrections === 'number') {
-            parts.push(t('adminDashboard.actionStream.summary.corrections', '{count} Korrekturen', { count: statusSummary.corrections }));
+            parts.push(formatWithCount('adminDashboard.actionStream.summary.corrections', '{{count}} Korrekturen', statusSummary.corrections));
         }
-        return parts.join(' · ') || t('adminDashboard.actionStream.counter', '{count} offen', { count: pendingCount });
+        return parts.join(' · ') || formatWithCount('adminDashboard.actionStream.counter', '{{count}} offen', pendingCount);
     }, [statusSummary, pendingCount, t]);
 
     return (
