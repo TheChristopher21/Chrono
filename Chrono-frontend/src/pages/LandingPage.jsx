@@ -7,7 +7,6 @@ import { useTranslation } from "../context/LanguageContext";
 import { useNotification } from "../context/NotificationContext";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
-import logo from "../assets/logo.svg";
 
 // Feature block supports either a single text or a list of bullet points
 const FeatureCard = ({ icon, title, text, bullets }) => (
@@ -194,24 +193,6 @@ const LandingPage = () => {
     return (
         <div className="landing-page scoped-landing">
             <Navbar />
-
-            <div className="lp-logo-strip">
-                <div className="lp-logo-strip-inner">
-                    <img
-                        src={logo}
-                        alt={t("landing.logo.alt", "Chrono Logo")}
-                        className="lp-logo-strip-image"
-                        loading="lazy"
-                    />
-                    <p className="lp-logo-strip-text">
-                        {t(
-                            "landing.logo.tagline",
-                            "Chrono – Zeiterfassung Software und Payroll Plattform für KMU, Agenturen und Handwerk."
-                        )}
-                    </p>
-                </div>
-            </div>
-
             <main>
                 {/* HERO (einspaltig, ohne Mock) */}
                 <header className="lp-hero lp-section lp-section-lg" id="home">
