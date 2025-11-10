@@ -119,7 +119,7 @@ describe('VacationCalendarAdmin admin editing', () => {
                 overtimeDeductionMinutes: 360,
             }
         );
-        expect(notifyMock).toHaveBeenCalledWith('Urlaubseintrag wurde aktualisiert.');
+        expect(notifyMock).toHaveBeenCalledWith({ message: 'Urlaubseintrag wurde aktualisiert.', type: 'success' });
         expect(onReloadVacations).toHaveBeenCalled();
     });
 
@@ -184,7 +184,7 @@ describe('VacationCalendarAdmin admin editing', () => {
                 comment: 'updated',
             }
         );
-        expect(notifyMock).toHaveBeenCalledWith('Krankmeldung wurde aktualisiert.');
+        expect(notifyMock).toHaveBeenCalledWith({ message: 'Krankmeldung wurde aktualisiert.', type: 'success' });
         expect(onReloadVacations).toHaveBeenCalled();
     });
 });
