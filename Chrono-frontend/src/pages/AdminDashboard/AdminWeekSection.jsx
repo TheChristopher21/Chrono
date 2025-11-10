@@ -810,10 +810,22 @@ const AdminWeekSection = forwardRef(({
         return summary;
     }, [userAnalytics]);
 
+    const lastIssueSummaryRef = useRef(issueSummary);
+
     useEffect(() => {
-        if (typeof onIssueSummaryChange === 'function') {
+        const previousSummary = lastIssueSummaryRef.current;
+        const summaryKeys = ['missing', 'incomplete', 'autoCompleted', 'holidayPending', 'totalWithIssue'];
+        const hasMeaningfulChanges = !previousSummary || summaryKeys.some((key) => {
+            const previousValue = previousSummary?.[key] ?? 0;
+            const nextValue = issueSummary?.[key] ?? 0;
+            return previousValue !== nextValue;
+        });
+
+        if (hasMeaningfulChanges && typeof onIssueSummaryChange === 'function') {
             onIssueSummaryChange(issueSummary);
         }
+
+        lastIssueSummaryRef.current = issueSummary;
     }, [issueSummary, onIssueSummaryChange]);
 
     const filterUserCollection = useCallback((collection) => {
