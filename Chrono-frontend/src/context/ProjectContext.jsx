@@ -15,23 +15,32 @@ export const ProjectProvider = ({ children }) => {
 
   const fetchProjects = useCallback(async () => {
     try {
-      const [listRes, hierarchyRes] = await Promise.all([
-        api.get('/api/projects').catch((error) => {
-          console.error('Error loading project list', error);
-          return undefined;
-        }),
-        api.get('/api/projects/hierarchy').catch((error) => {
-          console.error('Error loading project hierarchy', error);
-          return undefined;
-        })
+      const [listResult, hierarchyResult] = await Promise.allSettled([
+        api.get('/api/projects'),
+        api.get('/api/projects/hierarchy')
       ]);
-      const listData = Array.isArray(listRes?.data) ? listRes.data : [];
-      const hierarchyData = Array.isArray(hierarchyRes?.data) ? hierarchyRes.data : [];
+
+      if (listResult.status === 'rejected') {
+        console.error('Error loading project list', listResult.reason);
+      }
+      if (hierarchyResult.status === 'rejected') {
+        console.error('Error loading project hierarchy', hierarchyResult.reason);
+      }
+
+      const listData =
+        listResult.status === 'fulfilled' && Array.isArray(listResult.value?.data)
+          ? listResult.value.data
+          : [];
+      const hierarchyData =
+        hierarchyResult.status === 'fulfilled' && Array.isArray(hierarchyResult.value?.data)
+          ? hierarchyResult.value.data
+          : [];
+
       setProjects(listData);
       setProjectHierarchy(hierarchyData);
     } catch (err) {
       console.error('Error loading projects', err);
-      notify(t('projectSaveError', 'Fehler beim Laden der Projekte'), 'error');
+      notify({ message: t('projectSaveError', 'Fehler beim Laden der Projekte'), type: 'error' });
     }
   }, [notify, t]);
 
@@ -49,7 +58,7 @@ export const ProjectProvider = ({ children }) => {
       return res.data;
     } catch (err) {
       console.error('Error creating project', err);
-      notify(t('projectSaveError', 'Fehler beim Anlegen'), 'error');
+      notify({ message: t('projectSaveError', 'Fehler beim Anlegen'), type: 'error' });
       throw err;
     }
   }, [fetchProjects, notify, t]);
@@ -68,7 +77,7 @@ export const ProjectProvider = ({ children }) => {
       return res.data;
     } catch (err) {
       console.error('Error updating project', err);
-      notify(t('projectSaveError', 'Fehler beim Speichern'), 'error');
+      notify({ message: t('projectSaveError', 'Fehler beim Speichern'), type: 'error' });
       throw err;
     }
   }, [fetchProjects, notify, t]);
@@ -79,7 +88,7 @@ export const ProjectProvider = ({ children }) => {
       await fetchProjects();
     } catch (err) {
       console.error('Error deleting project', err);
-      notify(t('projectSaveError', 'Fehler beim Löschen'), 'error');
+      notify({ message: t('projectSaveError', 'Fehler beim Löschen'), type: 'error' });
       throw err;
     }
   }, [fetchProjects, notify, t]);

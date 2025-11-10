@@ -32,6 +32,24 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const { currentUser } = useAuth();
     const { notify } = useNotification();
 
+    const tRef = useRef(t);
+    const notifyRef = useRef(notify);
+
+    useEffect(() => {
+        tRef.current = t;
+    }, [t]);
+
+    useEffect(() => {
+        notifyRef.current = notify;
+    }, [notify]);
+
+    const translate = useCallback((key, fallback) => tRef.current(key, fallback), []);
+
+    const pushNotification = useCallback((message, type = 'info') => {
+        if (!message) return;
+        notifyRef.current({ message, type });
+    }, []);
+
     const [showVacationModal, setShowVacationModal] = useState(false);
     const [newVacationUser, setNewVacationUser] = useState('');
     const [newVacationHalfDay, setNewVacationHalfDay] = useState(false);
@@ -63,18 +81,19 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const fetchAllUsers = useCallback(async () => {
         if (initialCompanyUsers && initialCompanyUsers.length > 0) {
             setUsers(initialCompanyUsers);
-        } else {
-            try {
-                const res = await api.get('/api/admin/users');
-                const fetchedUsers = Array.isArray(res.data) ? res.data : [];
-                setUsers(fetchedUsers);
-            } catch (err) {
-                console.error('Error fetching users:', err);
-                notify(t('errors.fetchUsersError', 'Fehler beim Laden der Benutzer.'), 'error');
-                setUsers([]);
-            }
+            return;
         }
-    }, [notify, t, initialCompanyUsers]);
+
+        try {
+            const res = await api.get('/api/admin/users');
+            const fetchedUsers = Array.isArray(res.data) ? res.data : [];
+            setUsers(fetchedUsers);
+        } catch (err) {
+            console.error('Error fetching users:', err);
+            pushNotification(translate('errors.fetchUsersError', 'Fehler beim Laden der Benutzer.'), 'error');
+            setUsers([]);
+        }
+    }, [initialCompanyUsers, pushNotification, translate]);
 
     useEffect(() => {
         fetchAllUsers();
@@ -109,9 +128,9 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             setHolidays(prevHolidays => ({ ...prevHolidays, ...response.data }));
             loadedHolidayKeysRef.current.add(key);
         } catch (error) {
-            console.error(t('errors.fetchHolidaysError', 'Fehler beim Laden der Feiertage:'), error);
+            console.error(translate('errors.fetchHolidaysError', 'Fehler beim Laden der Feiertage:'), error);
         }
-    }, [t]);
+    }, [translate]);
 
     const fetchAllSickLeaves = useCallback(async () => {
         try {
@@ -125,10 +144,10 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             const response = await api.get(endpoint, { params });
             setAllSickLeaves(Array.isArray(response.data) ? response.data : []);
         } catch (error) {
-            console.error(t('errors.fetchSickLeaveErrorAdmin', 'Fehler beim Laden der Krankmeldungen (Admin):'), error);
-            notify(t('errors.fetchSickLeaveErrorAdmin', 'Fehler beim Laden der Krankmeldungen (Admin).'), 'error');
+            console.error(translate('errors.fetchSickLeaveErrorAdmin', 'Fehler beim Laden der Krankmeldungen (Admin):'), error);
+            pushNotification(translate('errors.fetchSickLeaveErrorAdmin', 'Fehler beim Laden der Krankmeldungen (Admin).'), 'error');
         }
-    }, [currentUser, notify, t]);
+    }, [currentUser, pushNotification, translate]);
 
     useEffect(() => {
         const year = activeStartDate.getFullYear();
@@ -183,15 +202,15 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
     async function handleCreateVacation() {
         if (!currentUser || !currentUser.username) {
-            notify(t("errors.notLoggedIn", "Nicht eingeloggt oder Benutzername fehlt."), 'error');
+            pushNotification(translate("errors.notLoggedIn", "Nicht eingeloggt oder Benutzername fehlt."), 'error');
             return;
         }
         if (!vacationStartDate || !vacationEndDate) {
-            notify(t("adminVacation.datesMissing", "Bitte Start- und Enddatum angeben"), 'warning');
+            pushNotification(translate("adminVacation.datesMissing", "Bitte Start- und Enddatum angeben"), 'warning');
             return;
         }
         if (new Date(vacationEndDate) < new Date(vacationStartDate)) {
-            notify(t("adminVacation.endDateBeforeStart", "Das Enddatum darf nicht vor dem Startdatum liegen."), 'error');
+            pushNotification(translate("adminVacation.endDateBeforeStart", "Das Enddatum darf nicht vor dem Startdatum liegen."), 'error');
             return;
         }
 
@@ -204,20 +223,20 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                     halfDay: newVacationHalfDay,
                 };
                 await api.post('/api/vacation/companyCreate', null, { params });
-                notify(t("adminVacation.createdSuccess", "Urlaub erfolgreich erstellt und direkt genehmigt"), 'success');
+                pushNotification(translate("adminVacation.createdSuccess", "Urlaub erfolgreich erstellt und direkt genehmigt"), 'success');
                 if (onReloadVacations) onReloadVacations();
                 setShowVacationModal(false);
                 resetVacationForm();
             } catch (err) {
                 console.error('Error creating company vacation', err);
                 const errorMsg = err.response?.data?.message || err.response?.data || err.message || t('errors.unknownError');
-                notify(t("adminVacation.createError", "Fehler beim Anlegen des Urlaubs") + `: ${errorMsg}`, 'error');
+                pushNotification(`${translate("adminVacation.createError", "Fehler beim Anlegen des Urlaubs")}: ${errorMsg}`, 'error');
             }
             return;
         }
 
         if (!newVacationUser) {
-            notify(t("adminVacation.noUserSelected", "Bitte einen Benutzer auswählen"), 'warning');
+            pushNotification(translate("adminVacation.noUserSelected", "Bitte einen Benutzer auswählen"), 'warning');
             return;
         }
 
@@ -225,7 +244,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         if (newVacationUsesOvertime && selectedUserDetailsForVacation?.isPercentage) {
             const hours = parseFloat(overtimeDeductionHours);
             if (isNaN(hours) || hours <= 0) {
-                notify(t("adminVacation.invalidOvertimeHours", "Bitte eine gültige positive Stundenzahl für den Überstundenabzug eingeben."), 'error');
+                pushNotification(translate("adminVacation.invalidOvertimeHours", "Bitte eine gültige positive Stundenzahl für den Überstundenabzug eingeben."), 'error');
                 return;
             }
             overtimeDeductionMinutes = Math.round(hours * 60);
@@ -243,14 +262,14 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
         try {
             await api.post('/api/vacation/adminCreate', null, { params });
-            notify(t("adminVacation.createdSuccess", "Urlaub erfolgreich erstellt und direkt genehmigt"), 'success');
+            pushNotification(translate("adminVacation.createdSuccess", "Urlaub erfolgreich erstellt und direkt genehmigt"), 'success');
             if (onReloadVacations) onReloadVacations();
             setShowVacationModal(false);
             resetVacationForm();
         } catch (err) {
             console.error('Error creating vacation (adminCreate)', err);
             const errorMsg = err.response?.data?.message || err.response?.data || err.message || t('errors.unknownError');
-            notify(t("adminVacation.createError", "Fehler beim Anlegen des Urlaubs") + `: ${errorMsg}`, 'error');
+            pushNotification(`${translate("adminVacation.createError", "Fehler beim Anlegen des Urlaubs")}: ${errorMsg}`, 'error');
         }
     }
 
@@ -259,19 +278,19 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             return;
         }
         if (!currentUser || !currentUser.username) {
-            notify(t('errors.notLoggedIn', 'Nicht eingeloggt oder Benutzername fehlt.'), 'error');
+            pushNotification(translate('errors.notLoggedIn', 'Nicht eingeloggt oder Benutzername fehlt.'), 'error');
             return;
         }
         if (!vacationStartDate || !vacationEndDate) {
-            notify(t('adminVacation.datesMissing', 'Bitte Start- und Enddatum angeben'), 'warning');
+            pushNotification(translate('adminVacation.datesMissing', 'Bitte Start- und Enddatum angeben'), 'warning');
             return;
         }
         if (new Date(vacationEndDate) < new Date(vacationStartDate)) {
-            notify(t('adminVacation.endDateBeforeStart', 'Das Enddatum darf nicht vor dem Startdatum liegen.'), 'error');
+            pushNotification(translate('adminVacation.endDateBeforeStart', 'Das Enddatum darf nicht vor dem Startdatum liegen.'), 'error');
             return;
         }
         if (newVacationHalfDay && vacationStartDate !== vacationEndDate) {
-            notify(t('adminVacation.halfDayOneDay', 'Halbtags Urlaub ist nur für einen einzelnen Tag möglich.'), 'error');
+            pushNotification(translate('adminVacation.halfDayOneDay', 'Halbtags Urlaub ist nur für einen einzelnen Tag möglich.'), 'error');
             return;
         }
 
@@ -283,7 +302,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         if (usesOvertimeEffective && targetUserDetails?.isPercentage) {
             const hours = parseFloat(overtimeDeductionHours);
             if (isNaN(hours) || hours <= 0) {
-                notify(t('adminVacation.invalidOvertimeHours', 'Bitte eine gültige positive Stundenzahl für den Überstundenabzug eingeben.'), 'error');
+                pushNotification(translate('adminVacation.invalidOvertimeHours', 'Bitte eine gültige positive Stundenzahl für den Überstundenabzug eingeben.'), 'error');
                 return;
             }
             overtimeDeductionMinutes = Math.round(hours * 60);
@@ -303,14 +322,14 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
         try {
             await api.put(`/api/vacation/${editingVacation.id}`, payload);
-            notify(t('adminVacation.updateSuccess', 'Urlaubseintrag wurde aktualisiert.'), 'success');
+            pushNotification(translate('adminVacation.updateSuccess', 'Urlaubseintrag wurde aktualisiert.'), 'success');
             setShowVacationModal(false);
             resetVacationForm();
             if (onReloadVacations) onReloadVacations();
         } catch (err) {
             console.error('Error updating vacation (admin)', err);
             const errorMsg = err.response?.data?.message || err.response?.data || err.message || t('errors.unknownError');
-            notify(t('adminVacation.updateError', 'Fehler beim Aktualisieren des Urlaubs') + `: ${errorMsg}`, 'error');
+            pushNotification(`${translate('adminVacation.updateError', 'Fehler beim Aktualisieren des Urlaubs')}: ${errorMsg}`, 'error');
         }
     }
 
@@ -326,23 +345,23 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     async function handleCreateSickLeave() {
         // ... (Logik bleibt gleich)
         if (!currentUser?.username) {
-            notify(t("errors.notLoggedIn", "Admin nicht eingeloggt."), 'error');
+            pushNotification(translate("errors.notLoggedIn", "Admin nicht eingeloggt."), 'error');
             return;
         }
         if (!sickLeaveUser) {
-            notify(t("adminSickLeave.noUserSelected", "Bitte einen Benutzer für die Krankmeldung auswählen."), 'warning');
+            pushNotification(translate("adminSickLeave.noUserSelected", "Bitte einen Benutzer für die Krankmeldung auswählen."), 'warning');
             return;
         }
         if (!sickLeaveStartDate || !sickLeaveEndDate) {
-            notify(t("adminSickLeave.datesMissing", "Bitte Start- und Enddatum für die Krankmeldung angeben."), 'warning');
+            pushNotification(translate("adminSickLeave.datesMissing", "Bitte Start- und Enddatum für die Krankmeldung angeben."), 'warning');
             return;
         }
         if (new Date(sickLeaveEndDate) < new Date(sickLeaveStartDate)) {
-            notify(t("adminSickLeave.endDateBeforeStart", "Das Enddatum der Krankheit darf nicht vor dem Startdatum liegen."), 'error');
+            pushNotification(translate("adminSickLeave.endDateBeforeStart", "Das Enddatum der Krankheit darf nicht vor dem Startdatum liegen."), 'error');
             return;
         }
         if (isSickLeaveHalfDay && sickLeaveStartDate !== sickLeaveEndDate) {
-            notify(t('sickLeave.halfDayOneDay', 'Halbtägige Krankmeldung nur für einen einzelnen Tag.'), 'error');
+            pushNotification(translate('sickLeave.halfDayOneDay', 'Halbtägige Krankmeldung nur für einen einzelnen Tag.'), 'error');
             return;
         }
 
@@ -355,7 +374,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                 comment: sickLeaveComment,
             };
             await api.post('/api/sick-leave/report', null, { params });
-            notify(t("adminSickLeave.reportSuccess", "Krankmeldung erfolgreich für Benutzer eingetragen."), 'success');
+            pushNotification(translate("adminSickLeave.reportSuccess", "Krankmeldung erfolgreich für Benutzer eingetragen."), 'success');
             setShowSickLeaveModal(false);
             resetSickLeaveForm();
             fetchAllSickLeaves();
@@ -363,7 +382,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         } catch (err) {
             console.error('Error reporting sick leave (Admin):', err);
             const errorMsg = err.response?.data?.message || err.message || t('errors.unknownError');
-            notify(t("adminSickLeave.reportError", "Fehler beim Eintragen der Krankmeldung:") + ` ${errorMsg}`, 'error');
+            pushNotification(`${translate("adminSickLeave.reportError", "Fehler beim Eintragen der Krankmeldung:")} ${errorMsg}`, 'error');
         }
     }
 
@@ -372,15 +391,15 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             return;
         }
         if (!sickLeaveStartDate || !sickLeaveEndDate) {
-            notify(t('adminSickLeave.datesMissing', 'Bitte Start- und Enddatum für die Krankmeldung angeben.'), 'warning');
+            pushNotification(translate('adminSickLeave.datesMissing', 'Bitte Start- und Enddatum für die Krankmeldung angeben.'), 'warning');
             return;
         }
         if (new Date(sickLeaveEndDate) < new Date(sickLeaveStartDate)) {
-            notify(t('adminSickLeave.endDateBeforeStart', 'Das Enddatum der Krankheit darf nicht vor dem Startdatum liegen.'), 'error');
+            pushNotification(translate('adminSickLeave.endDateBeforeStart', 'Das Enddatum der Krankheit darf nicht vor dem Startdatum liegen.'), 'error');
             return;
         }
         if (isSickLeaveHalfDay && sickLeaveStartDate !== sickLeaveEndDate) {
-            notify(t('sickLeave.halfDayOneDay', 'Halbtägige Krankmeldung nur für einen einzelnen Tag.'), 'error');
+            pushNotification(translate('sickLeave.halfDayOneDay', 'Halbtägige Krankmeldung nur für einen einzelnen Tag.'), 'error');
             return;
         }
 
@@ -393,7 +412,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
         try {
             await api.put(`/api/sick-leave/${editingSickLeave.id}`, payload);
-            notify(t('adminSickLeave.updateSuccess', 'Krankmeldung wurde aktualisiert.'), 'success');
+            pushNotification(translate('adminSickLeave.updateSuccess', 'Krankmeldung wurde aktualisiert.'), 'success');
             setShowSickLeaveModal(false);
             resetSickLeaveForm();
             fetchAllSickLeaves();
@@ -401,7 +420,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         } catch (err) {
             console.error('Error updating sick leave (Admin):', err);
             const errorMsg = err.response?.data?.message || err.message || t('errors.unknownError');
-            notify(t('adminSickLeave.updateError', 'Fehler beim Aktualisieren der Krankmeldung:') + ` ${errorMsg}`, 'error');
+            pushNotification(`${translate('adminSickLeave.updateError', 'Fehler beim Aktualisieren der Krankmeldung:')} ${errorMsg}`, 'error');
         }
     }
 
@@ -583,7 +602,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const openSickLeaveModalAndReset = (dateClicked = null) => {
         resetSickLeaveForm();
         if (dateClicked) {
-            const dateStr = formatYMD(dateClicked);
+            const dateStr = formatLocalDateYMD(dateClicked);
             setSickLeaveStartDate(dateStr);
             setSickLeaveEndDate(dateStr);
         }
