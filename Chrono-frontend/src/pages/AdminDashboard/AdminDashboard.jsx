@@ -22,6 +22,7 @@ import {
     addDays,
     minutesToHHMM,
     formatDate,
+    formatDateWithWeekday,
     formatTime,
     processEntriesForReport,
     selectTrackableUsers,
@@ -1365,7 +1366,7 @@ const AdminDashboard = () => {
             doc.setFontSize(14);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(44, 62, 80);
-            doc.text(formatDate(new Date(dayData.date)), pageMargin + 5, yPos + 7);
+            doc.text(formatDateWithWeekday(new Date(dayData.date)), pageMargin + 5, yPos + 7);
             yPos += 10;
 
             const bodyYStart = yPos;

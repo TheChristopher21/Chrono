@@ -5,6 +5,7 @@ import {
     addDays,
     formatLocalDate,
     formatDate,
+    formatDateWithWeekday,
 } from '../../utils/dateUtils';
 import {
     formatTime,
@@ -19,6 +20,7 @@ export {
     addDays,
     formatLocalDate,
     formatDate,
+    formatDateWithWeekday,
     formatTime,
     formatPunchedTimeFromEntry,
     minutesToHHMM,

@@ -186,6 +186,15 @@ export function formatDate(dateInput) {
     const year = date.getFullYear();
     return `${day}.${month}.${year}`;
 }
+
+export function formatDateWithWeekday(dateInput, locale = 'de-DE') {
+    const formattedDate = formatDate(dateInput);
+    if (formattedDate === "-") return formattedDate;
+    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+    if (isNaN(date.getTime())) return formattedDate;
+    const weekday = date.toLocaleDateString(locale, { weekday: 'long' });
+    return `${formattedDate} (${weekday})`;
+}
 export function formatTime(dateInput) {
     if (!dateInput) {
         return "--:--";
