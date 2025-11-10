@@ -164,6 +164,21 @@ const AdminDashboard = () => {
     const [vacationOpenSignal, setVacationOpenSignal] = useState(0);
     const [correctionOpenSignal, setCorrectionOpenSignal] = useState(0);
 
+    const weekSectionRef = useRef(null);
+    const vacationSectionRef = useRef(null);
+    const correctionSectionRef = useRef(null);
+    const gSequenceRef = useRef({ last: 0, count: 0 });
+
+    const handleNavigateToVacations = useCallback(() => {
+        setVacationOpenSignal((prev) => prev + 1);
+        vacationSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, []);
+
+    const handleNavigateToCorrections = useCallback(() => {
+        setCorrectionOpenSignal((prev) => prev + 1);
+        correctionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, []);
+
     const filteredWeeklyBalances = useMemo(() => {
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
             return [];
@@ -882,11 +897,6 @@ const AdminDashboard = () => {
     });
     const [activeIssuePill, setActiveIssuePill] = useState(null);
 
-    const weekSectionRef = useRef(null);
-    const vacationSectionRef = useRef(null);
-    const correctionSectionRef = useRef(null);
-    const gSequenceRef = useRef({ last: 0, count: 0 });
-
     const scheduleNextFrame = useCallback((callback) => {
         if (typeof window !== 'undefined' && typeof window.requestAnimationFrame === 'function') {
             window.requestAnimationFrame(callback);
@@ -940,16 +950,6 @@ const AdminDashboard = () => {
         setActiveIssuePill(null);
         weekSectionRef.current?.focusPositiveBalances?.();
     }, [setActiveMainTab]);
-
-    const handleNavigateToVacations = useCallback(() => {
-        setVacationOpenSignal((prev) => prev + 1);
-        vacationSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, []);
-
-    const handleNavigateToCorrections = useCallback(() => {
-        setCorrectionOpenSignal((prev) => prev + 1);
-        correctionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, []);
 
     function handleFocusUserFromTask(username) {
         if (!username) return;
