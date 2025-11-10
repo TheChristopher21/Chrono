@@ -32,3 +32,18 @@ export function formatDate(dateInput) {
     const year = date.getFullYear();
     return `${day}.${month}.${year}`;
 }
+
+export function getWeekdayName(dateInput, locale = 'de-DE') {
+    if (!dateInput) return "-";
+    const date = (dateInput instanceof Date) ? dateInput : new Date(dateInput);
+    if (isNaN(date.getTime())) return "-";
+    return date.toLocaleDateString(locale, { weekday: 'long' });
+}
+
+export function formatDateWithWeekday(dateInput, locale = 'de-DE') {
+    const formattedDate = formatDate(dateInput);
+    if (formattedDate === "-") return formattedDate;
+    const weekday = getWeekdayName(dateInput, locale);
+    if (weekday === "-") return formattedDate;
+    return `${formattedDate} (${weekday})`;
+}

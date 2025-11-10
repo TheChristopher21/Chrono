@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "react-router-dom";
 import api from "../utils/api";
-import { formatDate, minutesToHHMM, formatTime } from "./HourlyDashboard/hourDashUtils";
+import { formatDate, formatDateWithWeekday, minutesToHHMM, formatTime } from "./HourlyDashboard/hourDashUtils";
 import jsPDF from "jspdf";
 import { useTranslation } from "../context/LanguageContext";
 import "../styles/PrintReportScoped.css";
@@ -146,7 +146,7 @@ useEffect(() => {
             doc.setFontSize(14);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(44, 62, 80);
-            doc.text(`${day.date.split('-')[2]}.${day.date.split('-')[1]}.${day.date.split('-')[0]}`, pageMargin + 5, yPos + 7);
+            doc.text(formatDateWithWeekday(day.date), pageMargin + 5, yPos + 7);
             yPos += 10;
 
             // Card Body
@@ -231,7 +231,7 @@ useEffect(() => {
                     reportData.map(day => (
                         <div key={day.date} className="day-card-report">
                             <div className="day-card-report-header">
-                                <h2>{formatDate(day.date)}</h2>
+                                <h2>{formatDateWithWeekday(day.date)}</h2>
                             </div>
                             <div className="day-card-report-body">
                                 <div className="overview-col">
