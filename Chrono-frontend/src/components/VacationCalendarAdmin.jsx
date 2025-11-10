@@ -40,6 +40,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const [vacationStartDate, setVacationStartDate] = useState('');
     const [vacationEndDate, setVacationEndDate] = useState('');
     const [isCompanyVacation, setIsCompanyVacation] = useState(false);
+    const [editingVacation, setEditingVacation] = useState(null);
 
     const [showSickLeaveModal, setShowSickLeaveModal] = useState(false);
     const [sickLeaveUser, setSickLeaveUser] = useState('');
@@ -48,6 +49,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const [isSickLeaveHalfDay, setIsSickLeaveHalfDay] = useState(false);
     const [sickLeaveComment, setSickLeaveComment] = useState('');
     const [allSickLeaves, setAllSickLeaves] = useState([]);
+    const [editingSickLeave, setEditingSickLeave] = useState(null);
 
     const [users, setUsers] = useState(initialCompanyUsers || []);
     const [holidays, setHolidays] = useState({});
@@ -166,6 +168,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         }
     }
     const resetVacationForm = useCallback(() => {
+        setEditingVacation(null);
         setNewVacationUser('');
         setVacationStartDate('');
         setVacationEndDate('');
@@ -176,6 +179,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     }, []);
 
     const resetSickLeaveForm = useCallback(() => {
+        setEditingSickLeave(null);
         setSickLeaveUser('');
         setSickLeaveStartDate('');
         setSickLeaveEndDate('');
@@ -256,7 +260,76 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         }
     }
 
-    async function handleReportSickLeave() {
+    async function handleUpdateVacation() {
+        if (!editingVacation) {
+            return;
+        }
+        if (!currentUser || !currentUser.username) {
+            notify(t('errors.notLoggedIn', 'Nicht eingeloggt oder Benutzername fehlt.'), 'error');
+            return;
+        }
+        if (!vacationStartDate || !vacationEndDate) {
+            notify(t('adminVacation.datesMissing', 'Bitte Start- und Enddatum angeben'), 'warning');
+            return;
+        }
+        if (new Date(vacationEndDate) < new Date(vacationStartDate)) {
+            notify(t('adminVacation.endDateBeforeStart', 'Das Enddatum darf nicht vor dem Startdatum liegen.'), 'error');
+            return;
+        }
+        if (newVacationHalfDay && vacationStartDate !== vacationEndDate) {
+            notify(t('adminVacation.halfDayOneDay', 'Halbtags Urlaub ist nur für einen einzelnen Tag möglich.'), 'error');
+            return;
+        }
+
+        const usernameForLookup = newVacationUser || editingVacation.username || '';
+        const targetUserDetails = users.find(u => u.username === usernameForLookup);
+        const usesOvertimeEffective = !isCompanyVacation && newVacationUsesOvertime;
+
+        let overtimeDeductionMinutes = null;
+        if (usesOvertimeEffective && targetUserDetails?.isPercentage) {
+            const hours = parseFloat(overtimeDeductionHours);
+            if (isNaN(hours) || hours <= 0) {
+                notify(t('adminVacation.invalidOvertimeHours', 'Bitte eine gültige positive Stundenzahl für den Überstundenabzug eingeben.'), 'error');
+                return;
+            }
+            overtimeDeductionMinutes = Math.round(hours * 60);
+        }
+
+        const payload = {
+            startDate: vacationStartDate,
+            endDate: vacationEndDate,
+            halfDay: newVacationHalfDay,
+            usesOvertime: usesOvertimeEffective,
+            approved: editingVacation?.approved ?? false,
+            denied: editingVacation?.denied ?? false,
+        };
+        if (overtimeDeductionMinutes !== null) {
+            payload.overtimeDeductionMinutes = overtimeDeductionMinutes;
+        }
+
+        try {
+            await api.put(`/api/vacation/${editingVacation.id}`, payload);
+            notify(t('adminVacation.updateSuccess', 'Urlaubseintrag wurde aktualisiert.'), 'success');
+            setShowVacationModal(false);
+            resetVacationForm();
+            if (onReloadVacations) onReloadVacations();
+        } catch (err) {
+            console.error('Error updating vacation (admin)', err);
+            const errorMsg = err.response?.data?.message || err.response?.data || err.message || t('errors.unknownError');
+            notify(t('adminVacation.updateError', 'Fehler beim Aktualisieren des Urlaubs') + `: ${errorMsg}`, 'error');
+        }
+    }
+
+    const handleSubmitVacation = async (event) => {
+        event.preventDefault();
+        if (editingVacation) {
+            await handleUpdateVacation();
+        } else {
+            await handleCreateVacation();
+        }
+    };
+
+    async function handleCreateSickLeave() {
         // ... (Logik bleibt gleich)
         if (!currentUser?.username) {
             notify(t("errors.notLoggedIn", "Admin nicht eingeloggt."), 'error');
@@ -300,6 +373,85 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         }
     }
 
+    async function handleUpdateSickLeave() {
+        if (!editingSickLeave) {
+            return;
+        }
+        if (!sickLeaveStartDate || !sickLeaveEndDate) {
+            notify(t('adminSickLeave.datesMissing', 'Bitte Start- und Enddatum für die Krankmeldung angeben.'), 'warning');
+            return;
+        }
+        if (new Date(sickLeaveEndDate) < new Date(sickLeaveStartDate)) {
+            notify(t('adminSickLeave.endDateBeforeStart', 'Das Enddatum der Krankheit darf nicht vor dem Startdatum liegen.'), 'error');
+            return;
+        }
+        if (isSickLeaveHalfDay && sickLeaveStartDate !== sickLeaveEndDate) {
+            notify(t('sickLeave.halfDayOneDay', 'Halbtägige Krankmeldung nur für einen einzelnen Tag.'), 'error');
+            return;
+        }
+
+        const payload = {
+            startDate: sickLeaveStartDate,
+            endDate: sickLeaveEndDate,
+            halfDay: isSickLeaveHalfDay,
+            comment: sickLeaveComment,
+        };
+
+        try {
+            await api.put(`/api/sick-leave/${editingSickLeave.id}`, payload);
+            notify(t('adminSickLeave.updateSuccess', 'Krankmeldung wurde aktualisiert.'), 'success');
+            setShowSickLeaveModal(false);
+            resetSickLeaveForm();
+            fetchAllSickLeaves();
+            if (onReloadVacations) onReloadVacations();
+        } catch (err) {
+            console.error('Error updating sick leave (Admin):', err);
+            const errorMsg = err.response?.data?.message || err.message || t('errors.unknownError');
+            notify(t('adminSickLeave.updateError', 'Fehler beim Aktualisieren der Krankmeldung:') + ` ${errorMsg}`, 'error');
+        }
+    }
+
+    const handleSubmitSickLeave = async (event) => {
+        event.preventDefault();
+        if (editingSickLeave) {
+            await handleUpdateSickLeave();
+        } else {
+            await handleCreateSickLeave();
+        }
+    };
+
+    const openVacationEditModal = (vacation) => {
+        if (!vacation) return;
+        setEditingVacation(vacation);
+        setIsCompanyVacation(Boolean(vacation.companyVacation));
+        const username = vacation.username || '';
+        setNewVacationUser(username);
+        setVacationStartDate(vacation.startDate || '');
+        setVacationEndDate(vacation.endDate || '');
+        setNewVacationHalfDay(Boolean(vacation.halfDay));
+        const usesOvertimeValue = Boolean(vacation.usesOvertime) && !vacation.companyVacation;
+        setNewVacationUsesOvertime(usesOvertimeValue);
+        if (usesOvertimeValue && vacation.overtimeDeductionMinutes) {
+            const hours = vacation.overtimeDeductionMinutes / 60;
+            const formatted = Number.isInteger(hours) ? String(hours) : hours.toFixed(2);
+            setOvertimeDeductionHours(formatted);
+        } else {
+            setOvertimeDeductionHours('');
+        }
+        setShowVacationModal(true);
+    };
+
+    const openSickLeaveEditModal = (sickLeave) => {
+        if (!sickLeave) return;
+        setEditingSickLeave(sickLeave);
+        setSickLeaveUser(sickLeave.username || '');
+        setSickLeaveStartDate(sickLeave.startDate || '');
+        setSickLeaveEndDate(sickLeave.endDate || '');
+        setIsSickLeaveHalfDay(Boolean(sickLeave.halfDay));
+        setSickLeaveComment(sickLeave.comment || '');
+        setShowSickLeaveModal(true);
+    };
+
     function tileContent({ date, view }) {
         if (view === 'month') {
             // 'date' ist das Date-Objekt, das vom Kalender für die Kachel bereitgestellt wird.
@@ -336,9 +488,18 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                     dayMarkers.push(
                         <div
                             key={vac.id || `vac-${dateString}-${index}`}
-                            className="vacation-marker"
+                            className={`vacation-marker${vac ? ' editable' : ''}`}
                             style={{ backgroundColor: bgColor, color: textColor }}
                             title={`${vac.username || ''}${vac.halfDay ? ` (${t('adminVacation.halfDayShort', '½')})` : ""}${vac.usesOvertime ? ` (${t('adminVacation.overtimeVacationShort', 'ÜS')})` : ""}`}
+                            role="button"
+                            tabIndex={0}
+                            onClick={(event) => { event.stopPropagation(); openVacationEditModal(vac); }}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    openVacationEditModal(vac);
+                                }
+                            }}
                         >
                             {displayName}
                         </div>
@@ -356,9 +517,21 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                 else sickDisplayName += ` (${t('sickLeave.sickShort', 'K')})`;
 
                 dayMarkers.push(
-                    <div key={`sick-${sick.id || `sick-${dateString}-${index}`}`} className="sick-leave-marker-admin"
-                         style={{ backgroundColor: sickColor, color: sickTextColor}}
-                         title={`${sick.username}: ${sick.halfDay ? t('sickLeave.halfDay', 'Halbtags krank') : t('sickLeave.fullDay', 'Ganztags krank')}${sick.comment ? ` (${sick.comment})` : ''}`}>
+                    <div
+                        key={`sick-${sick.id || `sick-${dateString}-${index}`}`}
+                        className={`sick-leave-marker-admin${sick ? ' editable' : ''}`}
+                        style={{ backgroundColor: sickColor, color: sickTextColor}}
+                        title={`${sick.username}: ${sick.halfDay ? t('sickLeave.halfDay', 'Halbtags krank') : t('sickLeave.fullDay', 'Ganztags krank')}${sick.comment ? ` (${sick.comment})` : ''}`}
+                        role="button"
+                        tabIndex={0}
+                        onClick={(event) => { event.stopPropagation(); openSickLeaveEditModal(sick); }}
+                        onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault();
+                                openSickLeaveEditModal(sick);
+                            }
+                        }}
+                    >
                         {sickDisplayName}
                     </div>
                 );
@@ -497,16 +670,28 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             {showVacationModal && (
                 <ModalOverlay visible>
                     <div className="modal-content large-calendar-modal">
-                        <h3>{t('adminVacation.modalTitle', 'Neuen Urlaub für Mitarbeiter anlegen')}</h3>
-                        <form onSubmit={(e) => { e.preventDefault(); handleCreateVacation(); }}>
+                        <h3>{editingVacation ? t('adminVacation.editModalTitle', 'Urlaubseintrag bearbeiten') : t('adminVacation.modalTitle', 'Neuen Urlaub für Mitarbeiter anlegen')}</h3>
+                        <form onSubmit={handleSubmitVacation}>
                             <div className="form-group form-group-checkbox">
-                                <input type="checkbox" id="companyVacationCheckbox" checked={isCompanyVacation} onChange={(e) => setIsCompanyVacation(e.target.checked)} />
+                                <input
+                                    type="checkbox"
+                                    id="companyVacationCheckbox"
+                                    checked={isCompanyVacation}
+                                    onChange={(e) => setIsCompanyVacation(e.target.checked)}
+                                    disabled={Boolean(editingVacation)}
+                                />
                                 <label htmlFor="companyVacationCheckbox">{t('adminVacation.companyVacationLabel', 'Betriebsurlaub')}</label>
                             </div>
                             {!isCompanyVacation && (
                                 <div className="form-group">
                                     <label htmlFor="vacationUserSelect">{t('adminVacation.userSelection', 'Benutzer Auswahl')}:</label>
-                                    <select id="vacationUserSelect" value={newVacationUser} onChange={handleVacationUserChange} required>
+                                    <select
+                                        id="vacationUserSelect"
+                                        value={newVacationUser}
+                                        onChange={handleVacationUserChange}
+                                        required
+                                        disabled={Boolean(editingVacation)}
+                                    >
                                         <option value="">{t('adminVacation.selectUserPlaceholder', 'Bitte Benutzer auswählen')}</option>
                                         {users.map((u) => (<option key={u.id} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
                                     </select>
@@ -543,7 +728,13 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                             </div>
                             {!isCompanyVacation && (
                                 <div className="form-group form-group-checkbox">
-                                    <input type="checkbox" id="vacUsesOvertimeCheckbox" checked={newVacationUsesOvertime} onChange={handleUsesOvertimeChange} disabled={!selectedUserDetailsForVacation} />
+                                    <input
+                                        type="checkbox"
+                                        id="vacUsesOvertimeCheckbox"
+                                        checked={newVacationUsesOvertime}
+                                        onChange={handleUsesOvertimeChange}
+                                        disabled={!selectedUserDetailsForVacation}
+                                    />
                                     <label htmlFor="vacUsesOvertimeCheckbox">{t('adminVacation.usesOvertimeLabel', 'Überstunden nutzen')}</label>
                                 </div>
                             )}
@@ -555,7 +746,9 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                 </div>
                             )}
                             <div className="modal-buttons">
-                                <button type="submit" className="button-confirm">{t('adminVacation.confirmButton', 'Urlaub erstellen')}</button>
+                                <button type="submit" className="button-confirm">
+                                    {editingVacation ? t('adminVacation.updateButton', 'Urlaub aktualisieren') : t('adminVacation.confirmButton', 'Urlaub erstellen')}
+                                </button>
                                 <button type="button" onClick={() => {setShowVacationModal(false); resetVacationForm();}} className="button-cancel">{t('cancel', 'Abbrechen')}</button>
                             </div>
                         </form>
@@ -566,11 +759,17 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             {showSickLeaveModal && (
                 <ModalOverlay visible>
                     <div className="modal-content">
-                        <h3>{t('adminSickLeave.modalTitle', 'Krankheit für Benutzer melden')}</h3>
-                        <form onSubmit={(e) => { e.preventDefault(); handleReportSickLeave(); }}>
+                        <h3>{editingSickLeave ? t('adminSickLeave.editModalTitle', 'Krankmeldung bearbeiten') : t('adminSickLeave.modalTitle', 'Krankheit für Benutzer melden')}</h3>
+                        <form onSubmit={handleSubmitSickLeave}>
                             <div className="form-group">
                                 <label htmlFor="sickLeaveUserSelect">{t('adminSickLeave.userSelection', 'Benutzer Auswahl')}:</label>
-                                <select id="sickLeaveUserSelect" value={sickLeaveUser} onChange={handleSickLeaveUserChange} required>
+                                <select
+                                    id="sickLeaveUserSelect"
+                                    value={sickLeaveUser}
+                                    onChange={handleSickLeaveUserChange}
+                                    required
+                                    disabled={Boolean(editingSickLeave)}
+                                >
                                     <option value="">{t('adminSickLeave.selectUserPlaceholder', 'Bitte Benutzer auswählen')}</option>
                                     {users.map((u) => (<option key={`sick-${u.id}`} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
                                 </select>
@@ -592,7 +791,9 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                 <textarea id="sickLeaveCommentInput" value={sickLeaveComment} onChange={e => setSickLeaveComment(e.target.value)} rows="3" placeholder={t('sickLeave.commentPlaceholder', 'Grund, Arztbesuch etc.')}></textarea>
                             </div>
                             <div className="modal-buttons">
-                                <button type="submit" className="button-confirm">{t('adminSickLeave.reportButtonModal', 'Krankmeldung speichern')}</button>
+                                <button type="submit" className="button-confirm">
+                                    {editingSickLeave ? t('adminSickLeave.updateButtonModal', 'Krankmeldung aktualisieren') : t('adminSickLeave.reportButtonModal', 'Krankmeldung speichern')}
+                                </button>
                                 <button type="button" onClick={() => {setShowSickLeaveModal(false); resetSickLeaveForm();}} className="button-cancel">{t('cancel', 'Abbrechen')}</button>
                             </div>
                         </form>
@@ -613,6 +814,10 @@ VacationCalendarAdmin.propTypes = {
             color: PropTypes.string,
             halfDay: PropTypes.bool,
             usesOvertime: PropTypes.bool,
+            approved: PropTypes.bool,
+            denied: PropTypes.bool,
+            companyVacation: PropTypes.bool,
+            overtimeDeductionMinutes: PropTypes.number,
         })
     ).isRequired,
     onReloadVacations: PropTypes.func,

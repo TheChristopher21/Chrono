@@ -150,4 +150,52 @@ public class SickLeaveService {
         // Saldo des betroffenen Benutzers neu berechnen, da die gelöschte Krankheit das Soll wieder beeinflusst
         timeTrackingService.rebuildUserBalance(targetUser);
     }
+
+    @Transactional
+    public SickLeave updateSickLeave(Long sickLeaveId,
+                                     String adminUsername,
+                                     LocalDate startDate,
+                                     LocalDate endDate,
+                                     boolean halfDay,
+                                     String comment) {
+        User admin = userRepo.findByUsername(adminUsername)
+                .orElseThrow(() -> new UserNotFoundException("Admin " + adminUsername + " nicht gefunden."));
+        SickLeave sickLeave = sickLeaveRepo.findById(sickLeaveId)
+                .orElseThrow(() -> new RuntimeException("Krankmeldung mit ID " + sickLeaveId + " nicht gefunden."));
+
+        User targetUser = sickLeave.getUser();
+        if (targetUser == null) {
+            throw new IllegalStateException("Krankmeldung ohne zugeordneten Benutzer kann nicht aktualisiert werden.");
+        }
+
+        boolean isSuperAdmin = admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        if (!isSuperAdmin) {
+            Company adminCompany = admin.getCompany();
+            Company targetUserCompany = targetUser.getCompany();
+            if (adminCompany == null || targetUserCompany == null || !adminCompany.getId().equals(targetUserCompany.getId())) {
+                throw new SecurityException("Admin " + adminUsername + " ist nicht berechtigt, diese Krankmeldung zu bearbeiten.");
+            }
+        }
+
+        if (startDate == null || endDate == null) {
+            throw new IllegalArgumentException("Start- und Enddatum dürfen nicht leer sein.");
+        }
+        if (endDate.isBefore(startDate)) {
+            throw new IllegalArgumentException("Das Enddatum darf nicht vor dem Startdatum liegen.");
+        }
+        if (halfDay && !startDate.isEqual(endDate)) {
+            throw new IllegalArgumentException("Halbtägige Krankmeldung ist nur für einen einzelnen Tag zulässig.");
+        }
+
+        sickLeave.setStartDate(startDate);
+        sickLeave.setEndDate(endDate);
+        sickLeave.setHalfDay(halfDay);
+        sickLeave.setComment(comment);
+
+        SickLeave saved = sickLeaveRepo.save(sickLeave);
+        timeTrackingService.rebuildUserBalance(targetUser);
+        logger.info("Krankmeldung ID {} für Benutzer {} durch Admin {} aktualisiert ({} - {}, halbtags={}).",
+                sickLeaveId, targetUser.getUsername(), adminUsername, startDate, endDate, halfDay);
+        return saved;
+    }
 }

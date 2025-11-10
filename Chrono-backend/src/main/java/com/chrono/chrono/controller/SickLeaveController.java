@@ -122,4 +122,70 @@ public class SickLeaveController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", e.getMessage()));
         }
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<?> updateSickLeave(@PathVariable Long id,
+                                             @RequestBody SickLeaveUpdateRequest body,
+                                             Principal principal) {
+        try {
+            SickLeave updated = sickLeaveService.updateSickLeave(
+                    id,
+                    principal.getName(),
+                    body.getStartDate(),
+                    body.getEndDate(),
+                    Boolean.TRUE.equals(body.getHalfDay()),
+                    body.getComment());
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        } catch (UserNotFoundException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("message", e.getMessage()));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("message", "Fehler beim Aktualisieren der Krankmeldung: " + e.getMessage()));
+        }
+    }
+
+    public static class SickLeaveUpdateRequest {
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+        private LocalDate startDate;
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+        private LocalDate endDate;
+        private Boolean halfDay;
+        private String comment;
+
+        public LocalDate getStartDate() {
+            return startDate;
+        }
+
+        public void setStartDate(LocalDate startDate) {
+            this.startDate = startDate;
+        }
+
+        public LocalDate getEndDate() {
+            return endDate;
+        }
+
+        public void setEndDate(LocalDate endDate) {
+            this.endDate = endDate;
+        }
+
+        public Boolean getHalfDay() {
+            return halfDay;
+        }
+
+        public void setHalfDay(Boolean halfDay) {
+            this.halfDay = halfDay;
+        }
+
+        public String getComment() {
+            return comment;
+        }
+
+        public void setComment(String comment) {
+            this.comment = comment;
+        }
+    }
 }

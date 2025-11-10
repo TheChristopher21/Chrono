@@ -184,6 +184,17 @@
   box-sizing: border-box;
 }
 
+.vacation-calendar-admin.scoped-vacation .vacation-marker.editable,
+.vacation-calendar-admin.scoped-vacation .sick-leave-marker-admin.editable {
+  cursor: pointer;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-marker.editable:focus,
+.vacation-calendar-admin.scoped-vacation .sick-leave-marker-admin.editable:focus {
+  outline: 2px solid var(--c-pri, #2a6df4);
+  outline-offset: 2px;
+}
+
 .vacation-calendar-admin.scoped-vacation .vacation-marker {
   font-size: 0.68rem;
   padding: 0.12rem 0.28rem;
