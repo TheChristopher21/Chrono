@@ -309,7 +309,7 @@ const DEFAULT_ISSUE_FILTER_STATE = {
 };
 
 
-const AdminWeekSection = forwardRef(({
+const AdminWeekSection = forwardRef(({ 
                                          t,
                                          weekDates,
                                          selectedMonday,
@@ -331,7 +331,6 @@ const AdminWeekSection = forwardRef(({
                                          onDataReloadNeeded,
                                          onIssueSummaryChange,
                                          showSmartOverview = true,
-                                         onQuickFixQueueChange = () => {},
                                      }, ref) => {
     const { notify } = useNotification();
     const { currentUser } = useAuth();
@@ -1056,37 +1055,6 @@ const AdminWeekSection = forwardRef(({
 
     const activeIssueFilterCount = Object.values(issueTypeFilters).filter(Boolean).length;
 
-    const quickFixMeta = useMemo(() => ({
-        missing: {
-            label: t('adminDashboard.smartOverview.quickFix.labels.missing', 'Fehlende Stempel'),
-            icon: '❗',
-            filterKey: 'missing',
-            problemType: 'missing',
-            priority: 1,
-        },
-        incomplete: {
-            label: t('adminDashboard.smartOverview.quickFix.labels.incomplete', 'Unvollständige Tage'),
-            icon: '⚠️',
-            filterKey: 'incomplete',
-            problemType: 'any_incomplete',
-            priority: 2,
-        },
-        autoCompleted: {
-            label: t('adminDashboard.smartOverview.quickFix.labels.autoCompleted', 'Automatisch beendet'),
-            icon: '🤖',
-            filterKey: 'autoCompleted',
-            problemType: 'auto_completed',
-            priority: 3,
-        },
-        holidayPending: {
-            label: t('adminDashboard.smartOverview.quickFix.labels.holidayPending', 'Feiertag offen'),
-            icon: '🎉❓',
-            filterKey: 'holidayPending',
-            problemType: 'holiday_pending_decision',
-            priority: 4,
-        },
-    }), [t]);
-
     const smartOverviewCards = useMemo(() => {
         const totalUsersCount = Array.isArray(trackableUsers) ? trackableUsers.length : 0;
         const stats = {
@@ -1149,44 +1117,6 @@ const AdminWeekSection = forwardRef(({
             },
         ];
     }, [trackableUsers, userAnalytics, issueSummary, t]);
-
-    const quickIssueQueue = useMemo(() => {
-        const queue = [];
-
-        userAnalytics.forEach(userData => {
-            if (!userData?.problemIndicators) return;
-            const indicators = userData.problemIndicators;
-            const priorityOrder = [
-                { count: indicators.missingEntriesCount || 0, meta: quickFixMeta.missing },
-                { count: indicators.incompleteDaysCount || 0, meta: quickFixMeta.incomplete },
-                { count: indicators.autoCompletedUncorrectedCount || 0, meta: quickFixMeta.autoCompleted },
-                { count: indicators.holidayPendingCount || 0, meta: quickFixMeta.holidayPending },
-            ];
-
-            const firstWithIssue = priorityOrder.find(item => item.count > 0 && item.meta);
-            if (firstWithIssue) {
-                queue.push({
-                    username: userData.username,
-                    count: firstWithIssue.count,
-                    ...firstWithIssue.meta,
-                });
-            }
-        });
-
-        queue.sort((a, b) => {
-            if (a.priority !== b.priority) return a.priority - b.priority;
-            if (b.count !== a.count) return b.count - a.count;
-            return a.username.localeCompare(b.username);
-        });
-
-        return queue.slice(0, 6);
-    }, [userAnalytics, quickFixMeta]);
-
-    useEffect(() => {
-        if (typeof onQuickFixQueueChange === 'function') {
-            onQuickFixQueueChange(quickIssueQueue);
-        }
-    }, [onQuickFixQueueChange, quickIssueQueue]);
 
     const scrollSectionIntoView = useCallback(() => {
         if (sectionRef.current) {
@@ -1594,43 +1524,6 @@ const AdminWeekSection = forwardRef(({
                                     <span className="card-description">{card.description}</span>
                                 </div>
                             ))}
-                        </div>
-                        <div className="smart-quick-fix-panel">
-                            <div className="smart-quick-fix-header">
-                                <h5>{t('adminDashboard.smartOverview.quickFix.title', 'Schnellkorrekturen')}</h5>
-                                <p>{t('adminDashboard.smartOverview.quickFix.subtitle', 'Spring direkt zu den wichtigsten Problemen.')}</p>
-                            </div>
-                            {quickIssueQueue.length === 0 ? (
-                                <p className="smart-quick-fix-empty">{t('adminDashboard.smartOverview.quickFix.empty', 'Aktuell keine offenen Problemfälle – alles im grünen Bereich!')}</p>
-                            ) : (
-                                <ul className="smart-quick-fix-list">
-                                    {quickIssueQueue.map(item => (
-                                        <li key={`${item.username}-${item.filterKey}`} className="smart-quick-fix-list-item">
-                                            <button
-                                                type="button"
-                                                className="smart-quick-fix-item"
-                                                onClick={() => {
-                                                    scrollSectionIntoView();
-                                                    if (hiddenUsers.has(item.username)) {
-                                                        handleUnhideUser(item.username);
-                                                    }
-                                                    setShowHiddenUsersManager(false);
-                                                    setShowOnlyIssues(true);
-                                                    setFiltersExclusive(item.filterKey);
-                                                    handleProblemIndicatorClick(item.username, item.problemType);
-                                                }}
-                                            >
-                                                <span className="smart-quick-fix-icon" aria-hidden="true">{item.icon}</span>
-                                                <span className="smart-quick-fix-label">
-                                                    <strong>{item.username}</strong>
-                                                    <span>{`${item.count}× ${item.label}`}</span>
-                                                </span>
-                                                <span className="smart-quick-fix-cta">{t('adminDashboard.smartOverview.quickFix.action', 'Öffnen')}</span>
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
                         </div>
                     </div>
                 </div>
@@ -2194,7 +2087,6 @@ AdminWeekSection.propTypes = {
     onDataReloadNeeded: PropTypes.func.isRequired,
     onIssueSummaryChange: PropTypes.func,
     showSmartOverview: PropTypes.bool,
-    onQuickFixQueueChange: PropTypes.func,
 };
 
 AdminWeekSection.displayName = 'AdminWeekSection';

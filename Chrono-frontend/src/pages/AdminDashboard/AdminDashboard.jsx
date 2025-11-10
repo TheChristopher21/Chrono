@@ -13,7 +13,6 @@ import EditTimeModal from './EditTimeModal';
 import PrintUserTimesModal from './PrintUserTimesModal';
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 import AdminDashboardKpis from './AdminDashboardKpis';
-import AdminQuickFixPanel from './AdminQuickFixPanel';
 import AdminVacationRequests from './AdminVacationRequests';
 import AdminCorrectionsList from './AdminCorrectionsList';
 
@@ -160,7 +159,6 @@ const AdminDashboard = () => {
     const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
     const [customViews, setCustomViews] = useState(() => loadStoredViews());
     const [, setActiveMainTab] = useState('team');
-    const [quickFixQueue, setQuickFixQueue] = useState([]);
     const [vacationOpenSignal, setVacationOpenSignal] = useState(0);
     const [correctionOpenSignal, setCorrectionOpenSignal] = useState(0);
 
@@ -961,15 +959,6 @@ const AdminDashboard = () => {
         correctionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
-    const handleQuickFixSelect = useCallback((item) => {
-        if (!item) return;
-        setActiveMainTab('team');
-        scheduleNextFrame(() => {
-            weekSectionRef.current?.focusQuickFixItem?.(item);
-        });
-    }, [scheduleNextFrame, setActiveMainTab]);
-
-
     useEffect(() => {
         persistFilters(inboxFilters, inboxSearch);
     }, [inboxFilters, inboxSearch]);
@@ -1499,13 +1488,6 @@ const AdminDashboard = () => {
                         onDataReloadNeeded={handleDataReloadNeeded}
                         onIssueSummaryChange={handleIssueSummaryUpdate}
                         showSmartOverview={false}
-                        onQuickFixQueueChange={setQuickFixQueue}
-                    />
-
-                    <AdminQuickFixPanel
-                        t={t}
-                        items={quickFixQueue}
-                        onSelect={handleQuickFixSelect}
                     />
                 </section>
 
