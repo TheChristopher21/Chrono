@@ -70,8 +70,10 @@ const deriveItemsFromLegacyProps = (allVacations, allCorrections) => {
     return [...pendingVacations, ...pendingCorrections].sort((a, b) => a.priority - b.priority);
 };
 
-const ensureText = (value) => {
-    if (value === null || value === undefined) return '';
+const asText = (value) => {
+    if (value === null || value === undefined) {
+        return '';
+    }
     return typeof value === 'string' ? value : String(value);
 };
 
@@ -261,11 +263,12 @@ const AdminActionStream = ({
     }, [derivedItems, focusedId, handleRowClick, handleToggle, onApprove, onDeny, onFocusUser, onRequestFocus, selectedIds, t]);
 
     const summaryLabel = useMemo(() => {
-        const formatWithCount = (key, defaultValue, count) => ensureText(t(key, {
-            count,
-            defaultValue,
-            returnObjects: false,
-        }));
+        const formatWithCount = (key, fallback, count) => asText(
+            t(key, fallback, {
+                count,
+                returnObjects: false,
+            }),
+        );
 
         if (!statusSummary) {
             return formatWithCount('adminDashboard.actionStream.counter', '{{count}} offen', pendingCount);
@@ -332,8 +335,7 @@ const AdminActionStream = ({
                 className="stream-table"
                 ref={containerRef}
                 role="grid"
-                aria-label={ensureText(t('adminDashboard.actionStream.title', {
-                    defaultValue: 'Priorisierte Aufgaben',
+                aria-label={asText(t('adminDashboard.actionStream.title', 'Priorisierte Aufgaben', {
                     returnObjects: false,
                 }))}
             >

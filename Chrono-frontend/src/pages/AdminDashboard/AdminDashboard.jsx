@@ -1828,76 +1828,76 @@ const AdminDashboard = () => {
                                     )}
                                 </div>
                             </div>
-                        <div className="sidebar-group saved-views">
-                            <div className="saved-views-header">
-                                <h4>{t('adminDashboard.inbox.savedViews', 'Gespeicherte Ansichten')}</h4>
-                                <button type="button" className="button-ghost" onClick={handleSaveCurrentView}>
-                                    {t('adminDashboard.inbox.saveView', 'Speichern')}
-                                </button>
-                            </div>
-                            <ul className="saved-view-list">
-                                {customViews.length === 0 && (
-                                    <li className="saved-view-empty">{t('adminDashboard.inbox.noSavedViews', 'Noch keine Ansichten gespeichert.')}</li>
-                                )}
-                                {customViews.map((view) => (
-                                    <li key={view.id} className={inboxFilters.savedViewId === view.id ? 'is-active' : ''}>
-                                        <button type="button" onClick={() => handleApplyCustomView(view)}>
-                                            {view.label}
-                                        </button>
-                                        <button type="button" className="remove" onClick={() => handleDeleteView(view.id)} aria-label={t('delete', 'Löschen')}>
-                                            ×
-                                        </button>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    </aside>
-                    <section className="inbox-center">
-                        {lowRiskPending.length > 0 && (
-                            <div className="low-risk-boost" role="region" aria-live="polite">
-                                <div className="boost-copy">
-                                    <span className="boost-eyebrow">⚡ {t('adminDashboard.lowRiskBoost.title', 'Zeitspar-Aktion')}</span>
-                                    <p>
-                                        {t(
-                                            'adminDashboard.lowRiskBoost.subtitle',
-                                            'Alle {count} Low-Risk-Anträge mit einem Klick genehmigen',
-                                            { count: lowRiskPending.length }
-                                        )}
-                                    </p>
+                            <div className="sidebar-group saved-views">
+                                <div className="saved-views-header">
+                                    <h4>{t('adminDashboard.inbox.savedViews', 'Gespeicherte Ansichten')}</h4>
+                                    <button type="button" className="button-ghost" onClick={handleSaveCurrentView}>
+                                        {t('adminDashboard.inbox.saveView', 'Speichern')}
+                                    </button>
                                 </div>
-                                <button
-                                    type="button"
-                                    className="button-primary"
-                                    onClick={handleAutoApproveLowRisk}
-                                >
-                                    {t('adminDashboard.lowRiskBoost.cta', 'Jetzt erledigen')}
-                                </button>
+                                <ul className="saved-view-list">
+                                    {customViews.length === 0 && (
+                                        <li className="saved-view-empty">{t('adminDashboard.inbox.noSavedViews', 'Noch keine Ansichten gespeichert.')}</li>
+                                    )}
+                                    {customViews.map((view) => (
+                                        <li key={view.id} className={inboxFilters.savedViewId === view.id ? 'is-active' : ''}>
+                                            <button type="button" onClick={() => handleApplyCustomView(view)}>
+                                                {view.label}
+                                            </button>
+                                            <button type="button" className="remove" onClick={() => handleDeleteView(view.id)} aria-label={t('delete', 'Löschen')}>
+                                                ×
+                                            </button>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
-                        )}
-                        <AdminActionStream
-                            t={t}
-                            items={filteredInboxItems}
-                            selectedIds={selectedInboxIds}
-                            focusedId={focusedInboxId}
-                            onRequestFocus={handleRequestFocus}
-                            onToggleSelect={handleToggleSelect}
-                            onToggleSelectRange={handleToggleRange}
-                            onApprove={(item) => approveItem(item, decisionDrafts[item.id] || '')}
-                            onDeny={(item) => denyItem(item, decisionDrafts[item.id] || '')}
-                            onBulkApprove={handleBulkApproveSelection}
-                            onBulkDeny={handleBulkDenySelection}
-                            onBulkAutoApprove={handleAutoApproveLowRisk}
-                            onFocusUser={handleFocusUserFromTask}
-                            searchTerm={inboxSearch}
-                            onSearchTermChange={handleSearchTermChange}
-                            statusSummary={statusSummary}
-                            searchInputRef={searchInputRef}
-                        />
-                    </section>
-                    <aside className="inbox-detail">
-                        {renderDetailPanel()}
-                    </aside>
-                </div>
+                        </aside>
+                        <section className="inbox-center">
+                            {lowRiskPending.length > 0 && (
+                                <div className="low-risk-boost" role="region" aria-live="polite">
+                                    <div className="boost-copy">
+                                        <span className="boost-eyebrow">⚡ {t('adminDashboard.lowRiskBoost.title', 'Zeitspar-Aktion')}</span>
+                                        <p>
+                                            {t(
+                                                'adminDashboard.lowRiskBoost.subtitle',
+                                                'Alle {count} Low-Risk-Anträge mit einem Klick genehmigen',
+                                                { count: lowRiskPending.length }
+                                            )}
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        className="button-primary"
+                                        onClick={handleAutoApproveLowRisk}
+                                    >
+                                        {t('adminDashboard.lowRiskBoost.cta', 'Jetzt erledigen')}
+                                    </button>
+                                </div>
+                            )}
+                            <AdminActionStream
+                                t={t}
+                                items={filteredInboxItems}
+                                selectedIds={selectedInboxIds}
+                                focusedId={focusedInboxId}
+                                onRequestFocus={handleRequestFocus}
+                                onToggleSelect={handleToggleSelect}
+                                onToggleSelectRange={handleToggleRange}
+                                onApprove={(item) => approveItem(item, decisionDrafts[item.id] || '')}
+                                onDeny={(item) => denyItem(item, decisionDrafts[item.id] || '')}
+                                onBulkApprove={handleBulkApproveSelection}
+                                onBulkDeny={handleBulkDenySelection}
+                                onBulkAutoApprove={handleAutoApproveLowRisk}
+                                onFocusUser={handleFocusUserFromTask}
+                                searchTerm={inboxSearch}
+                                onSearchTermChange={handleSearchTermChange}
+                                statusSummary={statusSummary}
+                                searchInputRef={searchInputRef}
+                            />
+                        </section>
+                        <aside className="inbox-detail">
+                            {renderDetailPanel()}
+                        </aside>
+                    </div>
                 </div>
             </div>
 
