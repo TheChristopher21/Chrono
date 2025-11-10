@@ -300,6 +300,52 @@ public class VacationService {
                 (Boolean.TRUE.equals(user.getIsPercentage()) && vr.getOvertimeDeductionMinutes() != null && vr.getOvertimeDeductionMinutes().equals(totalMinutesToDeduct))); //
     }
 
+    private int restoreOvertimeForVacation(VacationRequest vr, String logContext) {
+        User user = vr.getUser();
+        if (user == null) {
+            logger.warn("{}: VacationRequest ID {} hat keinen User. Keine Überstunden-Wiederherstellung möglich.", logContext, vr.getId());
+            return 0;
+        }
+        if (Boolean.TRUE.equals(user.getIsHourly())) {
+            logger.info("{}: User '{}' ist stundenbasiert. Keine Überstunden-Wiederherstellung erforderlich.", logContext, user.getUsername());
+            return 0;
+        }
+
+        int minutesToRestore;
+        if (vr.getOvertimeDeductionMinutes() != null && vr.getOvertimeDeductionMinutes() > 0) {
+            minutesToRestore = vr.getOvertimeDeductionMinutes();
+            logger.info("{}: Stelle {} Minuten aus gespeicherten overtimeDeductionMinutes für User '{}' wieder her (VacationRequest ID {}).",
+                    logContext, minutesToRestore, user.getUsername(), vr.getId());
+        } else {
+            long actualWorkDaysInVacationPeriod = 0;
+            for (LocalDate date = vr.getStartDate(); !date.isAfter(vr.getEndDate()); date = date.plusDays(1)) {
+                if (!workScheduleService.isDayOff(user, date)) {
+                    actualWorkDaysInVacationPeriod++;
+                }
+            }
+            if (actualWorkDaysInVacationPeriod > 0) {
+                int dailyMinutesValue = getDailyVacationMinutes(user);
+                minutesToRestore = (int) Math.round(actualWorkDaysInVacationPeriod * (vr.isHalfDay() && actualWorkDaysInVacationPeriod == 1 ? 0.5 : 1.0) * dailyMinutesValue);
+                logger.info("{}: Stelle {} Minuten (berechnet) für User '{}' wieder her (VacationRequest ID {}, Arbeitstage: {}).",
+                        logContext, minutesToRestore, user.getUsername(), vr.getId(), actualWorkDaysInVacationPeriod);
+            } else {
+                minutesToRestore = 0;
+                logger.info("{}: Keine Arbeitstage im Zeitraum für VacationRequest ID {}. Keine Minuten für User '{}' wiederherzustellen.",
+                        logContext, vr.getId(), user.getUsername());
+            }
+        }
+
+        if (minutesToRestore > 0) {
+            int currentBalance = user.getTrackingBalanceInMinutes() != null ? user.getTrackingBalanceInMinutes() : 0;
+            user.setTrackingBalanceInMinutes(currentBalance + minutesToRestore);
+            userRepo.save(user);
+            logger.info("{}: {} Minuten wurden User '{}' gutgeschrieben. Neuer Saldo: {}.",
+                    logContext, minutesToRestore, user.getUsername(), user.getTrackingBalanceInMinutes());
+        }
+
+        return minutesToRestore;
+    }
+
 
     public List<VacationRequest> getUserVacations(String username) {
         User user = userRepo.findByUsername(username)
@@ -371,35 +417,8 @@ public class VacationService {
             }
         }
 
-        if (vr.isApproved() && vr.isUsesOvertime() && (user.getIsHourly() == null || !user.getIsHourly())) { //
-            int minutesToRestore; //
-            if (vr.getOvertimeDeductionMinutes() != null && vr.getOvertimeDeductionMinutes() > 0) { //
-                minutesToRestore = vr.getOvertimeDeductionMinutes(); //
-                logger.info("Lösche genehmigten Überstundenurlaub ID {}: Stelle {} Minuten (aus vr.getOvertimeDeductionMinutes()) für User '{}' wieder her.", vacationId, minutesToRestore, user.getUsername()); //
-            } else {
-                long actualWorkDaysInVacationPeriod = 0; //
-                for (LocalDate date = vr.getStartDate(); !date.isAfter(vr.getEndDate()); date = date.plusDays(1)) { //
-                    // workScheduleService.isDayOff berücksichtigt Feiertage
-                    if (!workScheduleService.isDayOff(user, date)) { //
-                        actualWorkDaysInVacationPeriod++; //
-                    }
-                }
-                if (actualWorkDaysInVacationPeriod > 0) { //
-                    int dailyMinutesValue = getDailyVacationMinutes(user); //
-                    minutesToRestore = (int) Math.round(actualWorkDaysInVacationPeriod * (vr.isHalfDay() && actualWorkDaysInVacationPeriod == 1 ? 0.5 : 1.0) * dailyMinutesValue); //
-                    logger.info("Lösche genehmigten Überstundenurlaub ID {}: Stelle {} Minuten (berechnet) für User '{}' wieder her.", vacationId, minutesToRestore, user.getUsername()); //
-                } else {
-                    minutesToRestore = 0; //
-                    logger.info("Lösche genehmigten Überstundenurlaub ID {}: Keine Arbeitstage im Zeitraum, keine Minuten für User '{}' wiederhergestellt.", vacationId, user.getUsername()); //
-                }
-            }
-
-            if (minutesToRestore > 0) { //
-                int currentBalance = user.getTrackingBalanceInMinutes() != null ? user.getTrackingBalanceInMinutes() : 0; //
-                user.setTrackingBalanceInMinutes(currentBalance + minutesToRestore); //
-                userRepo.save(user); //
-                logger.info("VacationService: Genehmigter Überstundenurlaub ID {} gelöscht. {} Minuten wurden User '{}' gutgeschrieben. Neuer Saldo: {}.", vacationId, minutesToRestore, user.getUsername(), user.getTrackingBalanceInMinutes()); //
-            }
+        if (vr.isApproved() && vr.isUsesOvertime()) {
+            restoreOvertimeForVacation(vr, "Lösche genehmigten Überstundenurlaub ID " + vacationId);
         }
 
         vacationRepo.delete(vr); //
@@ -407,6 +426,100 @@ public class VacationService {
         VacationRequest deletedRequest = new VacationRequest(); //
         deletedRequest.setId(vacationId); //
         return deletedRequest; //
+    }
+
+    @Transactional
+    public VacationRequest adminUpdateVacation(Long vacationId,
+                                               String adminUsername,
+                                               LocalDate newStartDate,
+                                               LocalDate newEndDate,
+                                               Boolean halfDayParam,
+                                               Boolean usesOvertimeParam,
+                                               Integer overtimeDeductionMinutesParam,
+                                               Boolean approvedParam,
+                                               Boolean deniedParam) {
+        VacationRequest vr = vacationRepo.findById(vacationId)
+                .orElseThrow(() -> new RuntimeException("Vacation request " + vacationId + " not found"));
+        User admin = userRepo.findByUsername(adminUsername)
+                .orElseThrow(() -> new UserNotFoundException("Admin user " + adminUsername + " not found"));
+        User targetUser = vr.getUser();
+
+        if (targetUser == null) {
+            throw new IllegalStateException("Vacation request has no associated user.");
+        }
+
+        boolean isSuperAdmin = admin.getRoles().stream().anyMatch(role -> role.getRoleName().equals("ROLE_SUPERADMIN"));
+        if (!isSuperAdmin) {
+            Company adminCompany = admin.getCompany();
+            Company targetCompany = targetUser.getCompany();
+            if (adminCompany == null || targetCompany == null || !adminCompany.getId().equals(targetCompany.getId())) {
+                throw new SecurityException("Admin und Benutzer des Urlaubsantrags gehören nicht zur selben Firma oder Firma nicht gesetzt.");
+            }
+        }
+
+        LocalDate effectiveStart = newStartDate != null ? newStartDate : vr.getStartDate();
+        LocalDate effectiveEnd = newEndDate != null ? newEndDate : vr.getEndDate();
+
+        if (effectiveStart == null || effectiveEnd == null) {
+            throw new IllegalArgumentException("Start- und Enddatum dürfen nicht leer sein.");
+        }
+        if (effectiveEnd.isBefore(effectiveStart)) {
+            throw new IllegalArgumentException("Das Enddatum darf nicht vor dem Startdatum liegen.");
+        }
+
+        boolean newHalfDay = halfDayParam != null ? halfDayParam : vr.isHalfDay();
+        if (newHalfDay && !effectiveStart.isEqual(effectiveEnd)) {
+            throw new IllegalArgumentException("Halbtags Urlaub kann nur für einen einzelnen Tag eingetragen werden.");
+        }
+
+        boolean previousApproved = vr.isApproved();
+        boolean previousUsesOvertime = vr.isUsesOvertime();
+        boolean newApproved = approvedParam != null ? approvedParam : vr.isApproved();
+        boolean newDenied = deniedParam != null ? deniedParam : vr.isDenied();
+
+        if (newApproved) {
+            newDenied = false;
+        } else if (newDenied) {
+            newApproved = false;
+        }
+
+        boolean newUsesOvertime = usesOvertimeParam != null ? usesOvertimeParam : vr.isUsesOvertime();
+        if (vr.isCompanyVacation()) {
+            newUsesOvertime = false;
+        }
+
+        if (previousApproved && previousUsesOvertime) {
+            restoreOvertimeForVacation(vr, "Aktualisiere Urlaub ID " + vacationId);
+        }
+
+        vr.setStartDate(effectiveStart);
+        vr.setEndDate(effectiveEnd);
+        vr.setHalfDay(newHalfDay);
+        vr.setUsesOvertime(newUsesOvertime);
+        vr.setApproved(newApproved);
+        vr.setDenied(newDenied);
+
+        if (!newUsesOvertime) {
+            vr.setOvertimeDeductionMinutes(null);
+        } else if (Boolean.TRUE.equals(targetUser.getIsPercentage())) {
+            if (overtimeDeductionMinutesParam == null || overtimeDeductionMinutesParam <= 0) {
+                throw new IllegalArgumentException("Für prozentuale Mitarbeitende müssen abzuziehende Überstunden-Minuten angegeben werden.");
+            }
+            vr.setOvertimeDeductionMinutes(overtimeDeductionMinutesParam);
+        } else {
+            vr.setOvertimeDeductionMinutes(null);
+        }
+
+        VacationRequest saved = vacationRepo.save(vr);
+
+        if (saved.isApproved() && saved.isUsesOvertime() && (targetUser.getIsHourly() == null || !targetUser.getIsHourly())) {
+            applyOvertimeDeduction(saved);
+            saved = vacationRepo.save(saved);
+        }
+
+        logger.info("VacationService: Urlaub ID {} wurde von Admin '{}' aktualisiert (approved={}, denied={}, usesOvertime={}).",
+                vacationId, adminUsername, saved.isApproved(), saved.isDenied(), saved.isUsesOvertime());
+        return saved;
     }
 
 
