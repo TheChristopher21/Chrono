@@ -27,6 +27,15 @@ function getContrastYIQ(hexcolor) {
     return (yiq >= 128) ? '#000' : '#fff';
 }
 
+function parseDateString(dateString) {
+    if (!dateString) return null;
+    const [year, month, day] = dateString.split('-').map(Number);
+    if (!year || !month || !day) {
+        return null;
+    }
+    return new Date(year, month - 1, day);
+}
+
 const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUsers: initialCompanyUsers }) => {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
@@ -114,6 +123,50 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         }
         setCurrentCantonForHolidays(cantonToUse);
     }, [newVacationUser, sickLeaveUser, users, currentUser]);
+
+    useEffect(() => {
+        const candidateDates = [];
+
+        if (Array.isArray(vacationRequests)) {
+            vacationRequests.forEach(vacation => {
+                const parsed = parseDateString(vacation?.startDate);
+                if (parsed) {
+                    candidateDates.push(parsed);
+                }
+            });
+        }
+
+        if (Array.isArray(allSickLeaves)) {
+            allSickLeaves.forEach(sickLeave => {
+                const parsed = parseDateString(sickLeave?.startDate);
+                if (parsed) {
+                    candidateDates.push(parsed);
+                }
+            });
+        }
+
+        if (candidateDates.length === 0) {
+            return;
+        }
+
+        const earliest = new Date(Math.min(...candidateDates.map(date => date.getTime())));
+        const targetMonth = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
+
+        setActiveStartDate(prevDate => {
+            if (!prevDate) {
+                return targetMonth;
+            }
+
+            if (
+                prevDate.getFullYear() === targetMonth.getFullYear() &&
+                prevDate.getMonth() === targetMonth.getMonth()
+            ) {
+                return prevDate;
+            }
+
+            return targetMonth;
+        });
+    }, [vacationRequests, allSickLeaves]);
 
     const fetchHolidays = useCallback(async (year, canton) => {
         const key = `${year}-${canton || 'ALL'}`;
@@ -497,6 +550,17 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                     let displayName = vac.username || t('adminVacation.unknownUser', 'Unbekannt');
                     if (vac.halfDay) displayName += ` (${t('adminVacation.halfDayShort', '½')})`;
                     if (vac.usesOvertime) displayName += " 🌙";
+                    const isStartOfVacation = formatLocalDateYMD(date) === vac.startDate;
+                    const accessibilityProps = isStartOfVacation
+                        ? {
+                            role: 'button',
+                            tabIndex: 0,
+                            'aria-label': displayName,
+                        }
+                        : {
+                            tabIndex: -1,
+                            'aria-hidden': true,
+                        };
 
                     dayMarkers.push(
                         <div
@@ -504,11 +568,10 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                             className={`vacation-marker${vac ? ' editable' : ''}`}
                             style={{ backgroundColor: bgColor, color: textColor }}
                             title={`${vac.username || ''}${vac.halfDay ? ` (${t('adminVacation.halfDayShort', '½')})` : ""}${vac.usesOvertime ? ` (${t('adminVacation.overtimeVacationShort', 'ÜS')})` : ""}`}
-                            role="button"
-                            tabIndex={0}
-                            aria-label={displayName}
+                            {...accessibilityProps}
                             onClick={(event) => { event.stopPropagation(); openVacationEditModal(vac); }}
                             onKeyDown={(event) => {
+                                if (!isStartOfVacation) return;
                                 if (event.key === 'Enter' || event.key === ' ') {
                                     event.preventDefault();
                                     openVacationEditModal(vac);
@@ -529,6 +592,17 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                 let sickDisplayName = sick.username || t('adminSickLeave.unknownUser', 'Unbekannt');
                 if (sick.halfDay) sickDisplayName += ` (${t('adminSickLeave.halfDayShort', '½')} ${t('sickLeave.sickShort', 'K')})`;
                 else sickDisplayName += ` (${t('sickLeave.sickShort', 'K')})`;
+                const isStartOfSickLeave = formatLocalDateYMD(date) === sick.startDate;
+                const sickAccessibilityProps = isStartOfSickLeave
+                    ? {
+                        role: 'button',
+                        tabIndex: 0,
+                        'aria-label': sickDisplayName,
+                    }
+                    : {
+                        tabIndex: -1,
+                        'aria-hidden': true,
+                    };
 
                 dayMarkers.push(
                     <div
@@ -536,11 +610,10 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                         className={`sick-leave-marker-admin${sick ? ' editable' : ''}`}
                         style={{ backgroundColor: sickColor, color: sickTextColor}}
                         title={`${sick.username}: ${sick.halfDay ? t('sickLeave.halfDay', 'Halbtags krank') : t('sickLeave.fullDay', 'Ganztags krank')}${sick.comment ? ` (${sick.comment})` : ''}`}
-                        role="button"
-                        tabIndex={0}
-                        aria-label={sickDisplayName}
+                        {...sickAccessibilityProps}
                         onClick={(event) => { event.stopPropagation(); openSickLeaveEditModal(sick); }}
                         onKeyDown={(event) => {
+                            if (!isStartOfSickLeave) return;
                             if (event.key === 'Enter' || event.key === ' ') {
                                 event.preventDefault();
                                 openSickLeaveEditModal(sick);
