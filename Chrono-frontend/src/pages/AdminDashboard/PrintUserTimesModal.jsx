@@ -5,21 +5,62 @@ import PropTypes from "prop-types";
 const PrintUserTimesModal = ({
                                  printUserModalVisible,
                                  printUser,
+                                 availableUsers,
                                  printUserStartDate,
                                  printUserEndDate,
+                                 setPrintUser,
                                  setPrintUserStartDate,
                                  setPrintUserEndDate,
                                  handlePrintUserTimesPeriodSubmit,
                                  setPrintUserModalVisible,
                                  t
                              }) => {
+    const sortedUsers = React.useMemo(() => {
+        return [...availableUsers].sort((a, b) => {
+            const aName = `${a.firstName || ''} ${a.lastName || ''} ${a.username}`.trim().toLowerCase();
+            const bName = `${b.firstName || ''} ${b.lastName || ''} ${b.username}`.trim().toLowerCase();
+            if (aName < bName) return -1;
+            if (aName > bName) return 1;
+            return 0;
+        });
+    }, [availableUsers]);
+
+    const hasSelectedUserInList = sortedUsers.some(user => user.username === printUser);
+
     if (!printUserModalVisible) return null;
 
     return (
         <div className="admin-dashboard scoped-dashboard">
             <ModalOverlay visible={printUserModalVisible}>
                 <div className="modal-content">
-                    <h3>{t('adminDashboard.printUserTimesTitle', 'Zeiten drucken für')} {printUser}</h3>
+                    <h3>{t('adminDashboard.printUserTimesTitle', 'Zeiten drucken für')}</h3>
+                    <div className="form-group">
+                        <label htmlFor="print-user-select">
+                            {t('adminDashboard.selectUserLabel', 'Benutzer auswählen')}:
+                        </label>
+                        <select
+                            id="print-user-select"
+                            value={printUser || ''}
+                            onChange={(e) => setPrintUser(e.target.value)}
+                        >
+                            <option value="" disabled>
+                                {t('adminDashboard.selectUserPlaceholder', 'Bitte Benutzer wählen')}
+                            </option>
+                            {!hasSelectedUserInList && printUser && (
+                                <option value={printUser}>{printUser}</option>
+                            )}
+                            {sortedUsers.map(user => {
+                                const displayName = user.firstName && user.lastName
+                                    ? `${user.firstName} ${user.lastName} (${user.username})`
+                                    : user.username;
+                                return (
+                                    <option key={user.username} value={user.username}>
+                                        {displayName}
+                                    </option>
+                                );
+                            })}
+                        </select>
+                    </div>
                     <div className="form-group">
                         <label>{t('adminDashboard.startDate', 'Startdatum')}:</label>
                         <input
@@ -37,7 +78,7 @@ const PrintUserTimesModal = ({
                         />
                     </div>
                     <div className="modal-buttons">
-                        <button onClick={handlePrintUserTimesPeriodSubmit}>
+                        <button onClick={handlePrintUserTimesPeriodSubmit} disabled={!printUser}>
                             {t('adminDashboard.button.print', 'Drucken')}
                         </button>
                         <button onClick={() => setPrintUserModalVisible(false)}>
@@ -52,9 +93,15 @@ const PrintUserTimesModal = ({
 
 PrintUserTimesModal.propTypes = {
     printUserModalVisible: PropTypes.bool.isRequired,
-    printUser: PropTypes.string.isRequired,
+    printUser: PropTypes.string,
+    availableUsers: PropTypes.arrayOf(PropTypes.shape({
+        username: PropTypes.string.isRequired,
+        firstName: PropTypes.string,
+        lastName: PropTypes.string,
+    })).isRequired,
     printUserStartDate: PropTypes.string.isRequired,
     printUserEndDate: PropTypes.string.isRequired,
+    setPrintUser: PropTypes.func.isRequired,
     setPrintUserStartDate: PropTypes.func.isRequired,
     setPrintUserEndDate: PropTypes.func.isRequired,
     handlePrintUserTimesPeriodSubmit: PropTypes.func.isRequired,

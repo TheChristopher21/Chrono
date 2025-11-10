@@ -1574,8 +1574,10 @@ const AdminDashboard = () => {
             <PrintUserTimesModal
                 printUserModalVisible={printUserModalVisible}
                 printUser={printUser}
+                availableUsers={users}
                 printUserStartDate={printUserStartDate}
                 printUserEndDate={printUserEndDate}
+                setPrintUser={setPrintUser}
                 setPrintUserStartDate={setPrintUserStartDate}
                 setPrintUserEndDate={setPrintUserEndDate}
                 handlePrintUserTimesPeriodSubmit={handlePrintUserTimesPeriodSubmit}
