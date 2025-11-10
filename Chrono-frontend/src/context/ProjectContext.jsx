@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
 import api from '../utils/api';
 import { useNotification } from './NotificationContext';
 import { useTranslation } from './LanguageContext';
@@ -12,6 +12,32 @@ export const ProjectProvider = ({ children }) => {
   const { notify } = useNotification();
   const { t } = useTranslation();
   const { authToken, currentUser } = useAuth();
+  const isMountedRef = useRef(true);
+  const notifyRef = useRef(notify);
+  const translateRef = useRef(t);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    notifyRef.current = notify;
+  }, [notify]);
+
+  useEffect(() => {
+    translateRef.current = t;
+  }, [t]);
+
+  const translate = useCallback((key, fallback) => translateRef.current?.(key, fallback) ?? fallback ?? key, []);
+
+  const pushNotification = useCallback((message, type = 'info') => {
+    if (!message) {
+      return;
+    }
+    notifyRef.current?.({ message, type });
+  }, []);
 
   const fetchProjects = useCallback(async () => {
     try {
@@ -36,13 +62,15 @@ export const ProjectProvider = ({ children }) => {
           ? hierarchyResult.value.data
           : [];
 
-      setProjects(listData);
-      setProjectHierarchy(hierarchyData);
+      if (isMountedRef.current) {
+        setProjects(listData);
+        setProjectHierarchy(hierarchyData);
+      }
     } catch (err) {
       console.error('Error loading projects', err);
-      notify({ message: t('projectSaveError', 'Fehler beim Laden der Projekte'), type: 'error' });
+      pushNotification(translate('projectSaveError', 'Fehler beim Laden der Projekte'), 'error');
     }
-  }, [notify, t]);
+  }, [pushNotification, translate]);
 
   const createProject = useCallback(async ({ name, customerId, budgetMinutes, parentId, hourlyRate }) => {
     try {
@@ -58,10 +86,10 @@ export const ProjectProvider = ({ children }) => {
       return res.data;
     } catch (err) {
       console.error('Error creating project', err);
-      notify({ message: t('projectSaveError', 'Fehler beim Anlegen'), type: 'error' });
+      pushNotification(translate('projectSaveError', 'Fehler beim Anlegen'), 'error');
       throw err;
     }
-  }, [fetchProjects, notify, t]);
+  }, [fetchProjects, pushNotification, translate]);
 
   const updateProject = useCallback(async (id, { name, customerId, budgetMinutes, parentId, hourlyRate }) => {
     try {
@@ -77,10 +105,10 @@ export const ProjectProvider = ({ children }) => {
       return res.data;
     } catch (err) {
       console.error('Error updating project', err);
-      notify({ message: t('projectSaveError', 'Fehler beim Speichern'), type: 'error' });
+      pushNotification(translate('projectSaveError', 'Fehler beim Speichern'), 'error');
       throw err;
     }
-  }, [fetchProjects, notify, t]);
+  }, [fetchProjects, pushNotification, translate]);
 
   const deleteProject = useCallback(async (id) => {
     try {
@@ -88,20 +116,28 @@ export const ProjectProvider = ({ children }) => {
       await fetchProjects();
     } catch (err) {
       console.error('Error deleting project', err);
-      notify({ message: t('projectSaveError', 'Fehler beim Löschen'), type: 'error' });
+      pushNotification(translate('projectSaveError', 'Fehler beim Löschen'), 'error');
       throw err;
     }
-  }, [fetchProjects, notify, t]);
+  }, [fetchProjects, pushNotification, translate]);
+
+  const customerTrackingEnabled = currentUser?.customerTrackingEnabled;
 
   useEffect(() => {
-    if (authToken && currentUser?.customerTrackingEnabled) {
-
-      fetchProjects();
-    } else {
+    if (!authToken) {
       setProjects([]);
       setProjectHierarchy([]);
+      return;
     }
-  }, [fetchProjects, authToken, currentUser]);
+
+    if (customerTrackingEnabled === false) {
+      setProjects([]);
+      setProjectHierarchy([]);
+      return;
+    }
+
+    fetchProjects();
+  }, [fetchProjects, authToken, customerTrackingEnabled]);
 
 
   return (
