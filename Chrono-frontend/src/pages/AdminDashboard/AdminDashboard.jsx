@@ -353,6 +353,7 @@ const AdminDashboard = () => {
     const [paletteActiveIndex, setPaletteActiveIndex] = useState(0);
     const paletteInputRef = useRef(null);
     const searchInputRef = useRef(null);
+    const searchDebounceRef = useRef(null);
 
     const [selectedInboxIds, setSelectedInboxIds] = useState([]);
     const [focusedInboxId, setFocusedInboxId] = useState(null);
@@ -632,12 +633,21 @@ const AdminDashboard = () => {
     }, [clearSelection, decisionDrafts, denyItem, filteredInboxItems, selectedInboxIds]);
 
     const handleAutoApproveLowRisk = useCallback(async () => {
-        if (lowRiskPending.length === 0) {
+        const candidates = lowRiskPending.filter((item) => item.status === 'pending' && item.isLowRisk);
+        if (candidates.length === 0) {
             notify(t('adminDashboard.actionStream.noLowRisk', 'Keine Low-Risk-Korrekturen gefunden.'), 'info');
             return;
         }
-        await Promise.all(lowRiskPending.map((item) => approveItem(item, decisionDrafts[item.id] || '')));
+        await Promise.all(candidates.map((item) => approveItem(item, decisionDrafts[item.id] || '')));
         clearSelection();
+        notify(
+            t('adminDashboard.bulkDone', {
+                count: candidates.length,
+                defaultValue: '{{count}} Anträge verarbeitet',
+                returnObjects: false,
+            }),
+            'success',
+        );
     }, [approveItem, clearSelection, decisionDrafts, lowRiskPending, notify, t]);
 
     const handleDecisionSubmit = useCallback((mode, comment) => {
@@ -720,14 +730,26 @@ const AdminDashboard = () => {
         }
     }, [filteredCommands, paletteActiveIndex]);
 
+    useEffect(() => () => {
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
+        }
+    }, []);
+
     const handleSearchTermChange = useCallback((value) => {
-        setInboxSearch(value);
-        if (value && inboxFilters.savedViewId) {
-            clearSavedView();
+        if (searchDebounceRef.current) {
+            clearTimeout(searchDebounceRef.current);
         }
-        if (value) {
-            setActiveQuickFilter('custom');
-        }
+        searchDebounceRef.current = setTimeout(() => {
+            searchDebounceRef.current = null;
+            setInboxSearch(value);
+            if (value && inboxFilters.savedViewId) {
+                clearSavedView();
+            }
+            if (value) {
+                setActiveQuickFilter('custom');
+            }
+        }, 120);
     }, [clearSavedView, inboxFilters.savedViewId]);
 
     useEffect(() => {
