@@ -204,6 +204,105 @@ public class VacationController {
         }
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<?> updateVacation(@PathVariable Long id,
+                                            @RequestBody VacationUpdateRequest body,
+                                            Principal principal) {
+        try {
+            LocalDate start = body.getStartDate() != null ? LocalDate.parse(body.getStartDate()) : null;
+            LocalDate end = body.getEndDate() != null ? LocalDate.parse(body.getEndDate()) : null;
+
+            VacationRequest updated = vacationService.adminUpdateVacation(
+                    id,
+                    principal.getName(),
+                    start,
+                    end,
+                    body.getHalfDay(),
+                    body.getUsesOvertime(),
+                    body.getOvertimeDeductionMinutes(),
+                    body.getApproved(),
+                    body.getDenied());
+            return ResponseEntity.ok(updated);
+        } catch (IllegalArgumentException e) {
+            logger.warn("IllegalArgumentException in updateVacation for id {}: {}", id, e.getMessage());
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (SecurityException e) {
+            logger.warn("SecurityException in updateVacation for id {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", e.getMessage()));
+        } catch (RuntimeException e) {
+            logger.error("RuntimeException in updateVacation for id {}: {}", id, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Fehler beim Aktualisieren des Urlaubsantrags: " + e.getMessage()));
+        }
+    }
+
+    public static class VacationUpdateRequest {
+        private String startDate;
+        private String endDate;
+        private Boolean halfDay;
+        private Boolean usesOvertime;
+        private Integer overtimeDeductionMinutes;
+        private Boolean approved;
+        private Boolean denied;
+
+        public String getStartDate() {
+            return startDate;
+        }
+
+        public void setStartDate(String startDate) {
+            this.startDate = startDate;
+        }
+
+        public String getEndDate() {
+            return endDate;
+        }
+
+        public void setEndDate(String endDate) {
+            this.endDate = endDate;
+        }
+
+        public Boolean getHalfDay() {
+            return halfDay;
+        }
+
+        public void setHalfDay(Boolean halfDay) {
+            this.halfDay = halfDay;
+        }
+
+        public Boolean getUsesOvertime() {
+            return usesOvertime;
+        }
+
+        public void setUsesOvertime(Boolean usesOvertime) {
+            this.usesOvertime = usesOvertime;
+        }
+
+        public Integer getOvertimeDeductionMinutes() {
+            return overtimeDeductionMinutes;
+        }
+
+        public void setOvertimeDeductionMinutes(Integer overtimeDeductionMinutes) {
+            this.overtimeDeductionMinutes = overtimeDeductionMinutes;
+        }
+
+        public Boolean getApproved() {
+            return approved;
+        }
+
+        public void setApproved(Boolean approved) {
+            this.approved = approved;
+        }
+
+        public Boolean getDenied() {
+            return denied;
+        }
+
+        public void setDenied(Boolean denied) {
+            this.denied = denied;
+        }
+    }
+
     @GetMapping("/remaining")
     public ResponseEntity<?> getRemainingVacation(@RequestParam String username, @RequestParam int year, Principal principal) {
         User requestingUser = userService.getUserByUsername(principal.getName());
