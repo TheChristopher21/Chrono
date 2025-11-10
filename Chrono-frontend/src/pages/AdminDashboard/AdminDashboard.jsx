@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 
@@ -1431,6 +1431,8 @@ const AdminDashboard = () => {
         setPrintUserModalVisible(false);
     }
 
+    const handleNavigateTo = useCallback((path) => () => navigate(path), [navigate]);
+
     const adminActionPanel = (
         <section className="admin-action-panel" aria-label={t('adminDashboard.actions.title', 'Schnellzugriffe')}>
             <header className="admin-action-header">
@@ -1438,39 +1440,39 @@ const AdminDashboard = () => {
                 <p>{t('adminDashboard.actions.subtitle', 'Wichtige Werkzeuge für deinen Administrationsalltag.')}</p>
             </header>
             <div className="admin-action-buttons-container">
-                <Link
-                    to="/admin/import-times"
+                <button
+                    type="button"
+                    onClick={handleNavigateTo('/admin/import-times')}
                     className="admin-action-button button-primary"
-                    role="button"
                 >
                     {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
-                </Link>
+                </button>
                 {hasFeature('payroll') && (
-                    <Link
-                        to="/admin/payslips"
+                    <button
+                        type="button"
+                        onClick={handleNavigateTo('/admin/payslips')}
                         className="admin-action-button button-primary"
-                        role="button"
                     >
                         {t('navbar.payslips', 'Abrechnungen')}
-                    </Link>
+                    </button>
                 )}
                 {hasFeature('roster') && (
-                    <Link
-                        to="/admin/schedule"
+                    <button
+                        type="button"
+                        onClick={handleNavigateTo('/admin/schedule')}
                         className="admin-action-button button-primary"
-                        role="button"
                     >
                         {t('navbar.schedulePlanner', 'Dienstplan')}
-                    </Link>
+                    </button>
                 )}
                 {hasFeature('analytics') && (
-                    <Link
-                        to="/admin/analytics"
+                    <button
+                        type="button"
+                        onClick={handleOpenAnalytics}
                         className="admin-action-button button-secondary admin-analytics-button"
-                        role="button"
                     >
                         {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
-                    </Link>
+                    </button>
                 )}
                 <button
                     type="button"
