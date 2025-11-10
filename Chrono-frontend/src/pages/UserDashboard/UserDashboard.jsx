@@ -23,6 +23,7 @@ import {
     addDays,
     formatLocalDate,
     formatDate,
+    formatDateWithWeekday,
     formatTime,
     minutesToHHMM,
     getExpectedHoursForDay,
@@ -397,7 +398,7 @@ function UserDashboard() {
         );
 
         const tableBody = summariesToPrint.map(summary => {
-            const displayDate = formatDate(summary.date);
+            const displayDate = formatDateWithWeekday(summary.date);
             const primary = summary.primaryTimes || { firstStartTime: null, lastEndTime: null, isOpen: false };
             const workStart = primary.firstStartTime ? primary.firstStartTime.substring(0, 5) : '-';
             const workEnd = primary.lastEndTime ? primary.lastEndTime.substring(0, 5) : (primary.isOpen ? t('printReport.open') : '-');
