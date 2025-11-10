@@ -13,9 +13,9 @@ import EditTimeModal from './EditTimeModal';
 import PrintUserTimesModal from './PrintUserTimesModal';
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 import AdminDashboardKpis from './AdminDashboardKpis';
-import AdminActionStream from './AdminActionStream';
-import CorrectionDecisionModal from './CorrectionDecisionModal';
 import AdminQuickFixPanel from './AdminQuickFixPanel';
+import AdminVacationRequests from './AdminVacationRequests';
+import AdminCorrectionsList from './AdminCorrectionsList';
 
 import {
     getMondayOfWeek,
@@ -159,8 +159,10 @@ const AdminDashboard = () => {
     const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
     const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
     const [customViews, setCustomViews] = useState(() => loadStoredViews());
-    const [activeMainTab, setActiveMainTab] = useState('inbox');
+    const [, setActiveMainTab] = useState('team');
     const [quickFixQueue, setQuickFixQueue] = useState([]);
+    const [vacationOpenSignal, setVacationOpenSignal] = useState(0);
+    const [correctionOpenSignal, setCorrectionOpenSignal] = useState(0);
 
     const filteredWeeklyBalances = useMemo(() => {
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
@@ -650,33 +652,17 @@ const AdminDashboard = () => {
         );
     }, [approveItem, clearSelection, decisionDrafts, lowRiskPending, notify, t]);
 
-    const handleDecisionSubmit = useCallback((mode, comment) => {
-        if (!focusedInboxItem || focusedInboxItem.status !== 'pending') return;
-        if (mode === 'approve') {
-            approveItem(focusedInboxItem, comment || decisionDrafts[focusedInboxItem.id] || '');
-        } else {
-            denyItem(focusedInboxItem, comment || decisionDrafts[focusedInboxItem.id] || '');
-        }
-    }, [approveItem, decisionDrafts, denyItem, focusedInboxItem]);
-
-    const decisionComment = focusedInboxItem ? (decisionDrafts[focusedInboxItem.id] || '') : '';
-
-    const handleDetailCommentChange = useCallback((value) => {
-        if (!focusedInboxItem) return;
-        updateDecisionDraft(focusedInboxItem.id, value);
-    }, [focusedInboxItem, updateDecisionDraft]);
-
     const commandList = useMemo(() => {
         const base = [
             {
                 id: 'cmd-vacations',
                 label: t('adminDashboard.commandPalette.openVacations', 'Urlaubscenter öffnen'),
-                action: () => applyQuickFilter('builtin:vacations'),
+                action: () => handleNavigateToVacations(),
             },
             {
                 id: 'cmd-corrections',
                 label: t('adminDashboard.commandPalette.openCorrections', 'Korrekturcenter öffnen'),
-                action: () => applyQuickFilter('builtin:corrections'),
+                action: () => handleNavigateToCorrections(),
             },
             {
                 id: 'cmd-today-week',
@@ -700,7 +686,7 @@ const AdminDashboard = () => {
                 action: () => handleFocusUserFromTask(user.username),
             }));
         return [...base, ...userCommands];
-    }, [applyQuickFilter, handleAutoApproveLowRisk, handleFocusUserFromTask, handleCurrentWeek, t, users]);
+    }, [handleAutoApproveLowRisk, handleFocusUserFromTask, handleCurrentWeek, handleNavigateToCorrections, handleNavigateToVacations, t, users]);
 
     const filteredCommands = useMemo(() => {
         if (!paletteQuery) return commandList;
@@ -897,6 +883,8 @@ const AdminDashboard = () => {
     const [activeIssuePill, setActiveIssuePill] = useState(null);
 
     const weekSectionRef = useRef(null);
+    const vacationSectionRef = useRef(null);
+    const correctionSectionRef = useRef(null);
     const gSequenceRef = useRef({ last: 0, count: 0 });
 
     const scheduleNextFrame = useCallback((callback) => {
@@ -954,30 +942,23 @@ const AdminDashboard = () => {
     }, [setActiveMainTab]);
 
     const handleNavigateToVacations = useCallback(() => {
-        setActiveMainTab('inbox');
-        applyQuickFilter('builtin:vacations');
-    }, [applyQuickFilter, setActiveMainTab]);
+        setVacationOpenSignal((prev) => prev + 1);
+        vacationSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, []);
 
     const handleNavigateToCorrections = useCallback(() => {
-        setActiveMainTab('inbox');
-        applyQuickFilter('builtin:corrections');
-    }, [applyQuickFilter, setActiveMainTab]);
+        setCorrectionOpenSignal((prev) => prev + 1);
+        correctionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, []);
 
     function handleFocusUserFromTask(username) {
         if (!username) return;
         setActiveIssuePill(null);
-        applyFilter({
-            types: ['correction'],
-            user: username,
-            status: 'pending',
-            lowRiskOnly: false,
-        }, null);
-        setInboxSearch(username);
-        clearSelection();
-        setActiveMainTab('team');
         scheduleNextFrame(() => {
             weekSectionRef.current?.focusUser?.(username);
         });
+        setCorrectionOpenSignal((prev) => prev + 1);
+        correctionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 
     const handleQuickFixSelect = useCallback((item) => {
@@ -988,201 +969,6 @@ const AdminDashboard = () => {
         });
     }, [scheduleNextFrame, setActiveMainTab]);
 
-
-    const renderDetailPanel = useCallback(() => {
-        if (!focusedInboxItem) {
-            return (
-                <div className="inbox-detail-stack">
-                    <div className="inbox-detail-card empty">
-                        {t('adminDashboard.inbox.noSelection', 'Wähle links ein Element, um Details anzuzeigen.')}
-                    </div>
-                    <AdminQuickFixPanel
-                        t={t}
-                        items={quickFixQueue}
-                        onSelect={handleQuickFixSelect}
-                    />
-                    <div className="inbox-detail-card shortcut-hint-card" role="note">
-                        <h4>{t('adminDashboard.shortcuts.title', 'Zeitsparende Shortcuts')}</h4>
-                        <ul>
-                            <li><strong>J / K</strong> – {t('adminDashboard.shortcuts.navigate', 'Zeile wechseln')}</li>
-                            <li><strong>A</strong> / <strong>D</strong> – {t('adminDashboard.shortcuts.decide', 'Genehmigen bzw. ablehnen')}</li>
-                            <li><strong>O</strong> – {t('adminDashboard.shortcuts.open', 'Details öffnen')}</li>
-                            <li><strong>B</strong> – {t('adminDashboard.shortcuts.bulk', 'Mehrfachauswahl starten')}</li>
-                            <li><strong>Strg</strong>+<strong>K</strong> – {t('adminDashboard.shortcuts.palette', 'Befehlspalette öffnen')}</li>
-                        </ul>
-                    </div>
-                </div>
-            );
-        }
-
-        const statusKey = focusedInboxItem.status || 'pending';
-        const statusLabel = t(`status.${statusKey}`, statusKey);
-        const user = userMap.get(focusedInboxItem.username);
-        const typeLabel = focusedInboxItem.type === 'vacation'
-            ? t('adminDashboard.inbox.detail.typeVacation', 'Urlaubsantrag')
-            : t('adminDashboard.inbox.detail.typeCorrection', 'Korrekturantrag');
-
-        const metaRows = [
-            {
-                key: 'user',
-                label: t('adminDashboard.inbox.detail.user', 'Benutzer'),
-                value: focusedInboxItem.displayName || focusedInboxItem.username,
-            },
-            {
-                key: 'department',
-                label: t('adminDashboard.inbox.detail.department', 'Abteilung'),
-                value: focusedInboxItem.department || user?.departmentName || t('adminDashboard.inbox.detail.noDepartment', 'Keine Zuordnung'),
-            },
-            {
-                key: 'created',
-                label: t('adminDashboard.inbox.detail.created', 'Eingegangen'),
-                value: focusedInboxItem.createdAt ? formatDate(focusedInboxItem.createdAt) : '—',
-            },
-        ];
-
-        const renderVacationDetails = () => {
-            const vacation = focusedInboxItem.raw || {};
-            return (
-                <div className="detail-section">
-                    <h4>{t('adminDashboard.inbox.detail.period', 'Zeitraum')}</h4>
-                    <p className="meta-value">
-                        {vacation.startDate ? formatDate(vacation.startDate) : '—'}
-                        {' '}
-                        {vacation.endDate ? `– ${formatDate(vacation.endDate)}` : ''}
-                    </p>
-                    {vacation.comment && (
-                        <p className="detail-comment">{vacation.comment}</p>
-                    )}
-                    <div className="detail-flags">
-                        {vacation.halfDay && (
-                            <span className="flag">{t('adminDashboard.halfDayShort', '½ Tag')}</span>
-                        )}
-                        {vacation.usesOvertime && (
-                            <span className="flag overtime">{t('adminDashboard.overtimeVacationShort', 'ÜS')}</span>
-                        )}
-                    </div>
-                </div>
-            );
-        };
-
-        const renderCorrectionDetails = () => {
-            const correction = focusedInboxItem.raw || {};
-            return (
-                <div className="detail-section">
-                    {correction.reason && (
-                        <>
-                            <h4>{t('adminDashboard.inbox.detail.reason', 'Grund')}</h4>
-                            <p className="detail-comment">{correction.reason}</p>
-                        </>
-                    )}
-                    {Array.isArray(focusedInboxItem.entries) && focusedInboxItem.entries.length > 0 && (
-                        <>
-                            <h4>{t('adminDashboard.inbox.detail.entries', 'Zeitänderungen')}</h4>
-                            <ul className="correction-entry-list">
-                                {focusedInboxItem.entries.map((entry, index) => {
-                                    const entryDateSource = entry.date || entry.desiredTimestamp || entry.originalTimestamp;
-                                    const formattedEntryDate = entryDateSource ? formatDate(entryDateSource) : '';
-                                    const originalTime = entry.originalTimestamp ? formatTime(entry.originalTimestamp) : null;
-                                    const desiredTime = entry.desiredTimestamp ? formatTime(entry.desiredTimestamp) : null;
-                                    return (
-                                        <li key={`${focusedInboxItem.id}-entry-${index}`}>
-                                            <span className="meta-label">{formattedEntryDate}</span>
-                                            <div>
-                                                {originalTime && (
-                                                    <span className="detail-diff-original">{originalTime}</span>
-                                                )}
-                                                {(originalTime || desiredTime) && ' → '}
-                                                {desiredTime && (
-                                                    <strong className="detail-diff-desired">{desiredTime}</strong>
-                                                )}
-                                            </div>
-                                            {entry.comment && (
-                                                <p className="detail-entry-comment">{entry.comment}</p>
-                                            )}
-                                        </li>
-                                    );
-                                })}
-                            </ul>
-                        </>
-                    )}
-                    {focusedInboxItem.isLowRisk && (
-                        <p className="detail-hint success">
-                            {t('adminDashboard.inbox.detail.lowRiskHint', 'Als Low-Risk erkannt · für Bulk-Genehmigung geeignet')}
-                        </p>
-                    )}
-                </div>
-            );
-        };
-
-        const footerContent = focusedInboxItem.status === 'pending'
-            ? (
-                <CorrectionDecisionModal
-                    visible
-                    inline
-                    mode="approve"
-                    comment={decisionComment}
-                    setComment={handleDetailCommentChange}
-                    onSubmit={handleDecisionSubmit}
-                    title={t('adminDashboard.inbox.detail.decisionTitle', 'Kommentar & Entscheidung')}
-                    actions={[
-                        {
-                            mode: 'approve',
-                            label: t('adminDashboard.approveButton', 'Genehmigen'),
-                            primary: true,
-                        },
-                        {
-                            mode: 'deny',
-                            label: t('adminDashboard.rejectButton', 'Ablehnen'),
-                        },
-                    ]}
-                />
-            ) : (
-                <p className={`detail-hint status-${statusKey}`}>
-                    {t('adminDashboard.inbox.detail.processedInfo', 'Dieser Antrag wurde bereits bearbeitet.')}
-                </p>
-            );
-
-        return (
-            <div className="inbox-detail-card" key={focusedInboxItem.id}>
-                <div className="detail-header">
-                    <div>
-                        <h3>{typeLabel}</h3>
-                        <p className="detail-subtitle">{focusedInboxItem.displayName || focusedInboxItem.username}</p>
-                    </div>
-                    <span className={`detail-status status-${statusKey}`}>{statusLabel}</span>
-                </div>
-                <div className="detail-meta-grid">
-                    {metaRows.map((row) => (
-                        <div key={row.key}>
-                            <span className="meta-label">{row.label}</span>
-                            <span className="meta-value">{row.value || '—'}</span>
-                        </div>
-                    ))}
-                </div>
-                {focusedInboxItem.type === 'vacation' ? renderVacationDetails() : renderCorrectionDetails()}
-                <div className="detail-actions">
-                    <button
-                        type="button"
-                        className="button-secondary"
-                        onClick={() => handleFocusUserFromTask(focusedInboxItem.username)}
-                    >
-                        {t('adminDashboard.inbox.detail.focusUser', 'Im Kalender hervorheben')}
-                    </button>
-                </div>
-                {footerContent}
-            </div>
-        );
-    }, [
-        decisionComment,
-        focusedInboxItem,
-        handleDetailCommentChange,
-        handleDecisionSubmit,
-        handleQuickFixSelect,
-        handleFocusUserFromTask,
-        quickFixQueue,
-        t,
-        userMap,
-    ]);
 
     useEffect(() => {
         persistFilters(inboxFilters, inboxSearch);
@@ -1741,220 +1527,74 @@ const AdminDashboard = () => {
                 </aside>
             </section>
 
-            <div
-                className="dashboard-tab-navigation"
-                role="tablist"
-                aria-label={t('adminDashboard.tabNavigation', 'Arbeitsmodus auswählen')}
-            >
-                <button
-                    type="button"
-                    id="admin-dashboard-tab-inbox-button"
-                    role="tab"
-                    aria-controls="admin-dashboard-tab-inbox"
-                    aria-selected={activeMainTab === 'inbox'}
-                    className={`dashboard-tab-button${activeMainTab === 'inbox' ? ' is-active' : ''}`}
-                    onClick={() => setActiveMainTab('inbox')}
-                >
-                    {t('adminDashboard.tabInbox', 'Posteingang')}
-                </button>
-                <button
-                    type="button"
-                    id="admin-dashboard-tab-team-button"
-                    role="tab"
-                    aria-controls="admin-dashboard-tab-team"
-                    aria-selected={activeMainTab === 'team'}
-                    className={`dashboard-tab-button${activeMainTab === 'team' ? ' is-active' : ''}`}
-                    onClick={() => setActiveMainTab('team')}
-                >
-                    {t('adminDashboard.tabTeamOverview', 'Team-Übersicht')}
-                </button>
-            </div>
+            <div className="team-overview-content">
+                <section className="team-overview-main">
+                    <AdminWeekSection
+                        ref={weekSectionRef}
+                        t={t}
+                        weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
+                        selectedMonday={selectedMonday}
+                        handlePrevWeek={handlePrevWeek}
+                        handleNextWeek={handleNextWeek}
+                        handleWeekJump={handleWeekJump}
+                        handleCurrentWeek={handleCurrentWeek}
+                        onFocusProblemWeek={focusWeekForProblem}
+                        dailySummariesForWeekSection={dailySummaries}
+                        allVacations={allVacations}
+                        allSickLeaves={allSickLeaves}
+                        allHolidays={holidaysByCanton}
+                        users={users}
+                        defaultExpectedHours={defaultExpectedHours}
+                        openEditModal={openEditModal}
+                        openPrintUserModal={openPrintUserModal}
+                        rawUserTrackingBalances={filteredWeeklyBalances}
+                        openNewEntryModal={openNewEntryModal}
+                        onDataReloadNeeded={handleDataReloadNeeded}
+                        onIssueSummaryChange={handleIssueSummaryUpdate}
+                        showSmartOverview={false}
+                        onQuickFixQueueChange={setQuickFixQueue}
+                    />
 
-            <div
-                className={`dashboard-tab-panel${activeMainTab === 'inbox' ? ' is-active' : ''}`}
-                role="tabpanel"
-                id="admin-dashboard-tab-inbox"
-                aria-labelledby="admin-dashboard-tab-inbox-button"
-                aria-hidden={activeMainTab !== 'inbox'}
-            >
-                <div className="dashboard-content">
-                    <div className="unified-inbox-grid">
-                        <aside className="inbox-sidebar">
-                            <div className="sidebar-group">
-                                <h4>{t('adminDashboard.inbox.quickFilters', 'Quick Filter')}</h4>
-                                <p className="sidebar-description">
-                                    {t('adminDashboard.inbox.quickFiltersHint', 'Ein Klick zeigt dir die relevantesten Aufgabenbereiche.')}
-                                </p>
-                                <div className="chip-list">
-                                    {builtInViews.map((view) => (
-                                        <button
-                                            key={view.id}
-                                            type="button"
-                                            className={`chip-button${activeQuickFilter === view.id ? ' is-active' : ''}`}
-                                            onClick={view.action}
-                                        >
-                                            <span className="chip-label">{view.label}</span>
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
-                            <div className="sidebar-group">
-                                <h4>{t('adminDashboard.inbox.issues', 'Problemfilter')}</h4>
-                                <p className="sidebar-description">
-                                    {t('adminDashboard.inbox.issuesHint', 'Sortiere nach typischen Stolpersteinen und priorisiere deine Nacharbeit.')}
-                                </p>
-                                <div className="chip-list">
-                                    {issueChipConfig.map((chip) => (
-                                        <button
-                                            key={chip.key}
-                                            type="button"
-                                            className={`chip-button${activeIssuePill === chip.key ? ' is-active' : ''}${chip.count === 0 ? ' is-disabled' : ''}`}
-                                            onClick={() => handleFocusIssues(chip.key)}
-                                            disabled={chip.count === 0}
-                                        >
-                                            <span className="chip-icon" aria-hidden="true">{chip.icon}</span>
-                                            <span className="chip-label">{chip.label}</span>
-                                            <span className="chip-count">{chip.count}</span>
-                                        </button>
-                                    ))}
-                                    {hasIssues && (
-                                        <button
-                                            type="button"
-                                            className="chip-button ghost"
-                                            onClick={handleResetIssueFilters}
-                                        >
-                                            {t('adminDashboard.resetFilters', 'Filter zurücksetzen')}
-                                        </button>
-                                    )}
-                                </div>
-                            </div>
-                            <div className="sidebar-group saved-views">
-                                <div className="saved-views-header">
-                                    <h4>{t('adminDashboard.inbox.savedViews', 'Gespeicherte Ansichten')}</h4>
-                                    <button type="button" className="button-ghost" onClick={handleSaveCurrentView}>
-                                        {t('adminDashboard.inbox.saveView', 'Speichern')}
-                                    </button>
-                                </div>
-                                <ul className="saved-view-list">
-                                    {customViews.length === 0 && (
-                                        <li className="saved-view-empty">{t('adminDashboard.inbox.noSavedViews', 'Noch keine Ansichten gespeichert.')}</li>
-                                    )}
-                                    {customViews.map((view) => (
-                                        <li key={view.id} className={inboxFilters.savedViewId === view.id ? 'is-active' : ''}>
-                                            <button type="button" onClick={() => handleApplyCustomView(view)}>
-                                                {view.label}
-                                            </button>
-                                            <button type="button" className="remove" onClick={() => handleDeleteView(view.id)} aria-label={t('delete', 'Löschen')}>
-                                                ×
-                                            </button>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </aside>
-                        <section className="inbox-center">
-                            {lowRiskPending.length > 0 && (
-                                <div className="low-risk-boost" role="region" aria-live="polite">
-                                    <div className="boost-copy">
-                                        <span className="boost-eyebrow">⚡ {t('adminDashboard.lowRiskBoost.title', 'Zeitspar-Aktion')}</span>
-                                        <p>
-                                            {t(
-                                                'adminDashboard.lowRiskBoost.subtitle',
-                                                'Alle {count} Low-Risk-Anträge mit einem Klick genehmigen',
-                                                { count: lowRiskPending.length }
-                                            )}
-                                        </p>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        className="button-primary"
-                                        onClick={handleAutoApproveLowRisk}
-                                    >
-                                        {t('adminDashboard.lowRiskBoost.cta', 'Jetzt erledigen')}
-                                    </button>
-                                </div>
-                            )}
-                            <AdminActionStream
-                                t={t}
-                                items={filteredInboxItems}
-                                selectedIds={selectedInboxIds}
-                                focusedId={focusedInboxId}
-                                onRequestFocus={handleRequestFocus}
-                                onToggleSelect={handleToggleSelect}
-                                onToggleSelectRange={handleToggleRange}
-                                onApprove={(item) => approveItem(item, decisionDrafts[item.id] || '')}
-                                onDeny={(item) => denyItem(item, decisionDrafts[item.id] || '')}
-                                onBulkApprove={handleBulkApproveSelection}
-                                onBulkDeny={handleBulkDenySelection}
-                                onBulkAutoApprove={handleAutoApproveLowRisk}
-                                onFocusUser={handleFocusUserFromTask}
-                                searchTerm={inboxSearch}
-                                onSearchTermChange={handleSearchTermChange}
-                                statusSummary={statusSummary}
-                                searchInputRef={searchInputRef}
-                            />
-                        </section>
-                        <aside className="inbox-detail">
-                            {renderDetailPanel()}
-                        </aside>
-                    </div>
-                </div>
-            </div>
+                    <AdminQuickFixPanel
+                        t={t}
+                        items={quickFixQueue}
+                        onSelect={handleQuickFixSelect}
+                    />
+                </section>
 
-            <div
-                className={`dashboard-tab-panel${activeMainTab === 'team' ? ' is-active' : ''}`}
-                role="tabpanel"
-                id="admin-dashboard-tab-team"
-                aria-labelledby="admin-dashboard-tab-team-button"
-                aria-hidden={activeMainTab !== 'team'}
-            >
-                <div className="team-overview-content">
-                    <section className="team-overview-main">
-                        <AdminWeekSection
-                            ref={weekSectionRef}
-                            t={t}
-                            weekDates={Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i))}
-                            selectedMonday={selectedMonday}
-                            handlePrevWeek={handlePrevWeek}
-                            handleNextWeek={handleNextWeek}
-                            handleWeekJump={handleWeekJump}
-                            handleCurrentWeek={handleCurrentWeek}
-                            onFocusProblemWeek={focusWeekForProblem}
-                            dailySummariesForWeekSection={dailySummaries}
-                            allVacations={allVacations}
-                            allSickLeaves={allSickLeaves}
-                            allHolidays={holidaysByCanton}
+                <aside className="team-overview-side">
+                    <div className="team-calendar-card">
+                        <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
+                        <VacationCalendarAdmin
+                            vacationRequests={allVacations.filter(v => v.approved)}
+                            onReloadVacations={handleDataReloadNeeded}
                             users={users}
-                            defaultExpectedHours={defaultExpectedHours}
-                            openEditModal={openEditModal}
-                            openPrintUserModal={openPrintUserModal}
-                            rawUserTrackingBalances={filteredWeeklyBalances}
-                            openNewEntryModal={openNewEntryModal}
-                            onDataReloadNeeded={handleDataReloadNeeded}
-                            onIssueSummaryChange={handleIssueSummaryUpdate}
-                            showSmartOverview={false}
-                            onQuickFixQueueChange={setQuickFixQueue}
                         />
-
-                        <AdminQuickFixPanel
-                            t={t}
-                            items={quickFixQueue}
-                            onSelect={handleQuickFixSelect}
-                        />
-                    </section>
-
-                    <aside className="team-overview-side">
-                        <div className="team-calendar-card">
-                            <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
-                            <VacationCalendarAdmin
-                                vacationRequests={allVacations.filter(v => v.approved)}
-                                onReloadVacations={handleDataReloadNeeded}
-                                users={users}
-                            />
-                        </div>
-                    </aside>
-                </div>
+                    </div>
+                </aside>
             </div>
+
+            <section className="dashboard-requests-section">
+                <div ref={vacationSectionRef}>
+                    <AdminVacationRequests
+                        t={t}
+                        allVacations={allVacations}
+                        handleApproveVacation={handleApproveVacation}
+                        handleDenyVacation={handleDenyVacation}
+                        onReloadVacations={fetchAllVacations}
+                        openSignal={vacationOpenSignal}
+                    />
+                </div>
+                <div ref={correctionSectionRef}>
+                    <AdminCorrectionsList
+                        t={t}
+                        allCorrections={allCorrections}
+                        onApprove={handleApproveCorrection}
+                        onDeny={handleDenyCorrection}
+                        openSignal={correctionOpenSignal}
+                    />
+                </div>
+            </section>
             {paletteOpen && (
                 <div className="command-palette-overlay" role="dialog" aria-modal="true">
                     <div className="command-palette">
