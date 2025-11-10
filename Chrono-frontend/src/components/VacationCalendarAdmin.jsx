@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ModalOverlay from './ModalOverlay';
 import PropTypes from 'prop-types';
 import Calendar from 'react-calendar';
@@ -53,6 +53,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
     const [users, setUsers] = useState(initialCompanyUsers || []);
     const [holidays, setHolidays] = useState({});
+    const loadedHolidayKeysRef = useRef(new Set());
     const [activeStartDate, setActiveStartDate] = useState(new Date());
     const [currentCantonForHolidays, setCurrentCantonForHolidays] = useState(null);
     // const [selectedUserForSickLeaveDetails, setSelectedUserForSickLeaveDetails] = useState(null); // Entfernt, da currentCantonForHolidays ausreicht
@@ -96,12 +97,17 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     }, [newVacationUser, sickLeaveUser, users, currentUser]);
 
     const fetchHolidays = useCallback(async (year, canton) => {
+        const key = `${year}-${canton || 'ALL'}`;
+        if (loadedHolidayKeysRef.current.has(key)) {
+            return;
+        }
         try {
             const yearStartDate = `${year}-01-01`;
             const yearEndDate = `${year}-12-31`;
             const params = { year, cantonAbbreviation: canton || '', startDate: yearStartDate, endDate: yearEndDate };
             const response = await api.get('/api/holidays/details', { params });
             setHolidays(prevHolidays => ({ ...prevHolidays, ...response.data }));
+            loadedHolidayKeysRef.current.add(key);
         } catch (error) {
             console.error(t('errors.fetchHolidaysError', 'Fehler beim Laden der Feiertage:'), error);
         }
@@ -128,21 +134,9 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         const year = activeStartDate.getFullYear();
         const cantonToLoad = currentCantonForHolidays;
 
-        let holidaysLoadedForYearAndCanton = false;
-        for (const dateKey in holidays) {
-            if (dateKey.startsWith(String(year))) { // Grobe Prüfung fürs Jahr
-                // Hier könnte man eine genauere Prüfung einbauen, ob es für *diesen Kanton* geladen wurde,
-                // falls die Kantonsauswahl dynamischer ist und nicht nur beim User-Wechsel im Modal.
-                // Für den Moment reicht die Jahresprüfung, da der Kanton oben gesetzt wird.
-                holidaysLoadedForYearAndCanton = true;
-                break;
-            }
-        }
-        if (!holidaysLoadedForYearAndCanton) {
-            fetchHolidays(year, cantonToLoad);
-        }
+        fetchHolidays(year, cantonToLoad);
         fetchAllSickLeaves();
-    }, [activeStartDate, currentCantonForHolidays, fetchHolidays, holidays, fetchAllSickLeaves]);
+    }, [activeStartDate, currentCantonForHolidays, fetchHolidays, fetchAllSickLeaves]);
 
 
     function itemInRange(item, start, end, dateFieldPrefix = '') {
@@ -493,6 +487,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                             title={`${vac.username || ''}${vac.halfDay ? ` (${t('adminVacation.halfDayShort', '½')})` : ""}${vac.usesOvertime ? ` (${t('adminVacation.overtimeVacationShort', 'ÜS')})` : ""}`}
                             role="button"
                             tabIndex={0}
+                            aria-label={displayName}
                             onClick={(event) => { event.stopPropagation(); openVacationEditModal(vac); }}
                             onKeyDown={(event) => {
                                 if (event.key === 'Enter' || event.key === ' ') {
@@ -501,7 +496,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                 }
                             }}
                         >
-                            {displayName}
+                            <span aria-hidden="true">{displayName}</span>
                         </div>
                     );
                 });
@@ -524,6 +519,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                         title={`${sick.username}: ${sick.halfDay ? t('sickLeave.halfDay', 'Halbtags krank') : t('sickLeave.fullDay', 'Ganztags krank')}${sick.comment ? ` (${sick.comment})` : ''}`}
                         role="button"
                         tabIndex={0}
+                        aria-label={sickDisplayName}
                         onClick={(event) => { event.stopPropagation(); openSickLeaveEditModal(sick); }}
                         onKeyDown={(event) => {
                             if (event.key === 'Enter' || event.key === ' ') {
@@ -532,7 +528,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                             }
                         }}
                     >
-                        {sickDisplayName}
+                        <span aria-hidden="true">{sickDisplayName}</span>
                     </div>
                 );
             });

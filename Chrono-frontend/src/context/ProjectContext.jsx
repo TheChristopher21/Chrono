@@ -16,11 +16,19 @@ export const ProjectProvider = ({ children }) => {
   const fetchProjects = useCallback(async () => {
     try {
       const [listRes, hierarchyRes] = await Promise.all([
-        api.get('/api/projects'),
-        api.get('/api/projects/hierarchy')
+        api.get('/api/projects').catch((error) => {
+          console.error('Error loading project list', error);
+          return undefined;
+        }),
+        api.get('/api/projects/hierarchy').catch((error) => {
+          console.error('Error loading project hierarchy', error);
+          return undefined;
+        })
       ]);
-      setProjects(Array.isArray(listRes.data) ? listRes.data : []);
-      setProjectHierarchy(Array.isArray(hierarchyRes.data) ? hierarchyRes.data : []);
+      const listData = Array.isArray(listRes?.data) ? listRes.data : [];
+      const hierarchyData = Array.isArray(hierarchyRes?.data) ? hierarchyRes.data : [];
+      setProjects(listData);
+      setProjectHierarchy(hierarchyData);
     } catch (err) {
       console.error('Error loading projects', err);
       notify(t('projectSaveError', 'Fehler beim Laden der Projekte'), 'error');
