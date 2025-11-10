@@ -1431,60 +1431,6 @@ const AdminDashboard = () => {
         setPrintUserModalVisible(false);
     }
 
-    const handleNavigateTo = useCallback((path) => () => navigate(path), [navigate]);
-
-    const adminActionPanel = (
-        <section className="admin-action-panel" aria-label={t('adminDashboard.actions.title', 'Schnellzugriffe')}>
-            <header className="admin-action-header">
-                <h3>{t('adminDashboard.actions.title', 'Schnellzugriffe')}</h3>
-                <p>{t('adminDashboard.actions.subtitle', 'Wichtige Werkzeuge für deinen Administrationsalltag.')}</p>
-            </header>
-            <div className="admin-action-buttons-container">
-                <button
-                    type="button"
-                    onClick={handleNavigateTo('/admin/import-times')}
-                    className="admin-action-button button-primary"
-                >
-                    {t('adminDashboard.importTimeTrackingButton', 'Zeiten importieren')}
-                </button>
-                {hasFeature('payroll') && (
-                    <button
-                        type="button"
-                        onClick={handleNavigateTo('/admin/payslips')}
-                        className="admin-action-button button-primary"
-                    >
-                        {t('navbar.payslips', 'Abrechnungen')}
-                    </button>
-                )}
-                {hasFeature('roster') && (
-                    <button
-                        type="button"
-                        onClick={handleNavigateTo('/admin/schedule')}
-                        className="admin-action-button button-primary"
-                    >
-                        {t('navbar.schedulePlanner', 'Dienstplan')}
-                    </button>
-                )}
-                {hasFeature('analytics') && (
-                    <button
-                        type="button"
-                        onClick={handleOpenAnalytics}
-                        className="admin-action-button button-secondary admin-analytics-button"
-                    >
-                        {t('adminDashboard.analyticsButton', 'Analytics anzeigen')}
-                    </button>
-                )}
-                <button
-                    type="button"
-                    onClick={handleDataReloadNeeded}
-                    className="admin-action-button button-secondary"
-                >
-                    {t('adminDashboard.reloadDataButton', 'Daten neu laden')}
-                </button>
-            </div>
-        </section>
-    );
-
     return (
         <div className="admin-dashboard scoped-dashboard">
             <Navbar />
@@ -1525,7 +1471,6 @@ const AdminDashboard = () => {
                 </div>
                 <aside className="dashboard-overview-side">
                     {renderInboxSummary()}
-                    {adminActionPanel}
                 </aside>
             </section>
 
@@ -1564,16 +1509,6 @@ const AdminDashboard = () => {
                     />
                 </section>
 
-                <aside className="team-overview-side">
-                    <div className="team-calendar-card">
-                        <h4>{t('adminDashboard.vacationCalendarTitle')}</h4>
-                        <VacationCalendarAdmin
-                            vacationRequests={allVacations.filter(v => v.approved)}
-                            onReloadVacations={handleDataReloadNeeded}
-                            users={users}
-                        />
-                    </div>
-                </aside>
             </div>
 
             <section className="dashboard-requests-section">
@@ -1594,6 +1529,20 @@ const AdminDashboard = () => {
                         onApprove={handleApproveCorrection}
                         onDeny={handleDenyCorrection}
                         openSignal={correctionOpenSignal}
+                    />
+                </div>
+            </section>
+
+            <section
+                className="admin-calendar-section"
+                aria-label={t('adminDashboard.vacationCalendarAria', 'Abwesenheitskalender Übersicht')}
+            >
+                <div className="admin-calendar-card">
+                    <h3>{t('adminDashboard.vacationCalendarTitle')}</h3>
+                    <VacationCalendarAdmin
+                        vacationRequests={allVacations.filter(v => v.approved)}
+                        onReloadVacations={handleDataReloadNeeded}
+                        users={users}
                     />
                 </div>
             </section>
