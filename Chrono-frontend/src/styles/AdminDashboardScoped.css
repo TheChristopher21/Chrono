@@ -457,84 +457,6 @@
   gap: var(--u-gap-sm);
 }
 
-.admin-dashboard.scoped-dashboard .quick-fix-card {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-header h4 {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-header p {
-  margin: 0;
-  color: var(--c-muted);
-  font-size: 0.85rem;
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-item {
-  width: 100%;
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: var(--u-gap-sm);
-  padding: 0.65rem 0.75rem;
-  border-radius: var(--u-radius-md);
-  border: 1px solid var(--c-border);
-  background: var(--c-surface);
-  transition: transform var(--u-dur) var(--u-ease), box-shadow var(--u-dur) var(--u-ease);
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-item:hover,
-.admin-dashboard.scoped-dashboard .quick-fix-item:focus-visible {
-  transform: translateY(-1px);
-  box-shadow: var(--u-shadow-sm);
-  border-color: var(--c-primary);
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-icon {
-  font-size: 1.3rem;
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-label {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 0.15rem;
-  text-align: left;
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-label strong {
-  font-weight: 700;
-  color: var(--c-text);
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-label span {
-  color: var(--c-muted);
-  font-size: 0.85rem;
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-cta {
-  font-weight: 600;
-  color: var(--c-link);
-}
-
-.admin-dashboard.scoped-dashboard .quick-fix-empty {
-  margin: 0;
-  color: var(--c-muted);
-}
-
 .admin-dashboard.scoped-dashboard .shortcut-hint-card ul {
   list-style: none;
   margin: 0;
@@ -566,6 +488,10 @@
   flex-direction: column;
   gap: var(--u-gap);
   min-width: 0;
+}
+
+.admin-dashboard.scoped-dashboard .team-overview-main {
+  grid-column: 1 / -1;
 }
 
 .admin-dashboard.scoped-dashboard .admin-calendar-section {
@@ -1944,120 +1870,6 @@
 
 .admin-dashboard.scoped-dashboard .smart-overview-card.accent-danger {
   border-left-color: var(--c-error);
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-panel {
-  background: var(--c-card);
-  border: 1px solid var(--c-border);
-  border-radius: var(--u-radius-md);
-  padding: var(--u-gap-sm);
-  box-shadow: var(--u-shadow-sm);
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--u-gap-sm);
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-header h5 {
-  margin: 0;
-  font-size: 1rem;
-  font-weight: 600;
-  color: var(--c-text);
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-header p {
-  margin: 0.2rem 0 0;
-  font-size: 0.78rem;
-  color: var(--c-muted);
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 0.45rem;
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-list-item {
-  margin: 0;
-  padding: 0;
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-item {
-  width: 100%;
-  background: var(--c-surface);
-  border: 1px solid transparent;
-  border-radius: var(--u-radius-sm);
-  padding: 0.65rem 0.85rem;
-  display: flex;
-  gap: 0.65rem;
-  align-items: center;
-  cursor: pointer;
-  transition:
-    background-color var(--u-dur) var(--u-ease),
-    border-color var(--u-dur) var(--u-ease),
-    transform var(--u-dur) var(--u-ease);
-  color: inherit;
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-item:hover,
-.admin-dashboard.scoped-dashboard .smart-quick-fix-item:focus-visible {
-  background: var(--c-line);
-  border-color: var(--c-border);
-  transform: translateY(-1px);
-  outline: none;
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-item:focus-visible {
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--c-pri) 50%, transparent);
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-icon {
-  font-size: 1.2rem;
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-label {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  flex: 1;
-  min-width: 0;
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-label strong {
-  font-size: 0.9rem;
-  color: var(--c-text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-label span {
-  font-size: 0.78rem;
-  color: var(--c-muted);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-cta {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--c-pri);
-  white-space: nowrap;
-}
-
-.admin-dashboard.scoped-dashboard .smart-quick-fix-empty {
-  margin: 0;
-  background: var(--c-surface);
-  border: 1px dashed var(--c-border);
-  border-radius: var(--u-radius-sm);
-  padding: 0.85rem;
-  text-align: center;
-  color: var(--c-muted);
-  font-size: 0.82rem;
 }
 
 /* User Search Controls & Hidden Users Manager */
