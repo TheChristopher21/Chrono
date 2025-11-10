@@ -239,8 +239,7 @@
   gap: var(--u-gap);
 }
 
-.admin-dashboard.scoped-dashboard .dashboard-summary-card,
-.admin-dashboard.scoped-dashboard .admin-action-panel {
+.admin-dashboard.scoped-dashboard .dashboard-summary-card {
   background: var(--c-card);
   border: 1px solid var(--c-border);
   border-radius: var(--u-radius-md);
@@ -360,14 +359,6 @@
   color: var(--c-muted);
 }
 
-.admin-dashboard.scoped-dashboard .admin-action-panel {
-  gap: var(--u-gap-sm);
-}
-
-.admin-dashboard.scoped-dashboard .admin-action-panel .admin-action-buttons-container {
-  margin: 0;
-}
-
 @media (min-width: 1180px) {
   .admin-dashboard.scoped-dashboard .dashboard-overview-grid {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
@@ -411,17 +402,6 @@
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .summary-item.summary-accent {
   background: color-mix(in srgb, var(--c-pri) 12%, var(--c-surface));
 }
-.admin-dashboard.scoped-dashboard .admin-action-header h3 {
-  margin: 0;
-  font-size: 1.05rem;
-}
-
-.admin-dashboard.scoped-dashboard .admin-action-header p {
-  margin: 0.25rem 0 0;
-  color: var(--c-muted);
-  font-size: 0.85rem;
-}
-
 .admin-dashboard.scoped-dashboard .dashboard-tab-button:hover,
 .admin-dashboard.scoped-dashboard .dashboard-tab-button:focus-visible {
   border-color: var(--c-primary);
@@ -588,17 +568,35 @@
   min-width: 0;
 }
 
-.admin-dashboard.scoped-dashboard .team-calendar-card {
-  background: var(--c-card);
-  border-radius: var(--u-radius-md);
-  border: 1px solid var(--c-border);
-  box-shadow: var(--u-shadow-sm);
-  padding: clamp(1rem, 2.4vw, 1.5rem);
+.admin-dashboard.scoped-dashboard .admin-calendar-section {
+  margin-top: calc(var(--u-gap) * 2);
 }
 
-.admin-dashboard.scoped-dashboard .team-calendar-card h4 {
-  margin-top: 0;
-  margin-bottom: 0.75rem;
+.admin-dashboard.scoped-dashboard .admin-calendar-card {
+  background: var(--c-card);
+  border-radius: var(--u-radius-lg);
+  border: 1px solid var(--c-border);
+  box-shadow: var(--u-shadow-sm);
+  padding: clamp(1.4rem, 3vw, 2rem);
+  display: flex;
+  flex-direction: column;
+  gap: var(--u-gap);
+}
+
+.admin-dashboard.scoped-dashboard .admin-calendar-card h3 {
+  margin: 0;
+  font-size: clamp(1.3rem, 2vw, 1.6rem);
+  font-weight: 600;
+}
+
+.admin-dashboard.scoped-dashboard .admin-calendar-card .vacation-calendar-admin {
+  min-height: 520px;
+}
+
+@media (max-width: 960px) {
+  .admin-dashboard.scoped-dashboard .admin-calendar-card .vacation-calendar-admin {
+    min-height: 420px;
+  }
 }
 
 .admin-dashboard.scoped-dashboard .dashboard-requests-section {
@@ -731,16 +729,6 @@
   background: linear-gradient(135deg, rgba(96, 165, 250, 0.2), var(--c-surface));
 }
 
-/* Styles for top-level action buttons (Import/Reload) */
-.admin-dashboard.scoped-dashboard .admin-action-buttons-container {
-  margin-bottom: 0;
-  text-align: left;
-  display: flex;
-  gap: var(--u-gap-sm);
-  justify-content: flex-start;
-  flex-wrap: wrap;
-}
-
 .admin-dashboard.scoped-dashboard .issue-focus-ribbon {
   background: var(--c-card);
   border: 1px solid var(--c-border);
@@ -847,80 +835,6 @@
   background: rgba(245, 158, 11, 0.22);
   border-color: rgba(245, 158, 11, 0.55);
 }
-.admin-dashboard.scoped-dashboard .admin-action-button {
-  padding: 0.65rem 1.3rem;
-  font-size: 0.9rem;
-  font-weight: 500;
-  border-radius: var(--u-radius-sm);
-  cursor: pointer;
-  transition:
-    background-color var(--u-dur) var(--u-ease),
-    transform var(--u-dur) var(--u-ease),
-    border-color var(--u-dur) var(--u-ease);
-  text-decoration: none;
-  display: inline-block;
-  border: 1px solid transparent;
-  line-height: 1.4;
-}
-.admin-dashboard.scoped-dashboard .admin-action-button:hover {
-  transform: translateY(-1px);
-}
-
-.admin-dashboard.scoped-dashboard .admin-action-button.admin-analytics-button {
-  border-color: rgba(71, 91, 255, 0.3);
-  background: rgba(71, 91, 255, 0.08);
-  color: var(--c-text);
-}
-.admin-dashboard.scoped-dashboard .admin-action-button.admin-analytics-button:hover {
-  background: rgba(71, 91, 255, 0.16);
-  border-color: rgba(71, 91, 255, 0.55);
-}
-[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-action-button.admin-analytics-button {
-  background: rgba(71, 91, 255, 0.18);
-  border-color: rgba(71, 91, 255, 0.45);
-}
-[data-theme="dark"] .admin-dashboard.scoped-dashboard .admin-action-button.admin-analytics-button:hover {
-  background: rgba(71, 91, 255, 0.28);
-  border-color: rgba(71, 91, 255, 0.65);
-}
-
-/* Generic Button Styles */
-.admin-dashboard.scoped-dashboard .button-primary,
-.admin-dashboard.scoped-dashboard .admin-action-button.button-primary {
-  background-color: var(--c-pri);
-  color: #fff;
-  border-color: var(--c-pri);
-}
-.admin-dashboard.scoped-dashboard .button-primary:hover,
-.admin-dashboard.scoped-dashboard .admin-action-button.button-primary:hover {
-  background-color: var(--c-pri-dim);
-  border-color: var(--c-pri-dim);
-}
-[data-theme="dark"] .admin-dashboard.scoped-dashboard .button-primary,
-[data-theme="dark"]
-  .admin-dashboard.scoped-dashboard
-  .admin-action-button.button-primary {
-  color: #fff;
-}
-
-.admin-dashboard.scoped-dashboard .button-secondary,
-.admin-dashboard.scoped-dashboard .admin-action-button.button-secondary {
-  background-color: var(--c-surface);
-  color: var(--c-text);
-  border: 1px solid var(--c-border);
-}
-.admin-dashboard.scoped-dashboard .button-secondary:hover,
-.admin-dashboard.scoped-dashboard .admin-action-button.button-secondary:hover {
-  background-color: var(--c-line);
-  border-color: var(--c-muted);
-}
-[data-theme="dark"] .admin-dashboard.scoped-dashboard .button-secondary:hover,
-[data-theme="dark"]
-  .admin-dashboard.scoped-dashboard
-  .admin-action-button.button-secondary:hover {
-  background-color: var(--c-border);
-}
-
 .admin-dashboard.scoped-dashboard .button-danger-plain {
   background-color: transparent;
   color: var(--c-error);
@@ -953,17 +867,6 @@
   display: flex;
   flex-direction: column;
   gap: var(--u-gap);
-}
-
-@media (max-width: 640px) {
-  .admin-dashboard.scoped-dashboard .admin-action-buttons-container {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .admin-dashboard.scoped-dashboard .admin-action-button {
-    width: 100%;
-  }
 }
 
 .admin-dashboard.scoped-dashboard .dashboard-secondary-grid {
