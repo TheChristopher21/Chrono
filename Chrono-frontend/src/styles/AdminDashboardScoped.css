@@ -1542,6 +1542,45 @@
 .admin-dashboard.scoped-dashboard .week-section .section-header-controls {
   margin-bottom: var(--u-gap-md);
 }
+.admin-dashboard.scoped-dashboard .week-section .section-header-top-row {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  margin-bottom: var(--u-gap-sm);
+}
+.admin-dashboard.scoped-dashboard .week-section .section-header-top-row .print-times-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.55rem 1.1rem;
+  background: var(--c-pri);
+  color: #fff;
+  border: none;
+  border-radius: var(--u-radius-sm);
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--u-dur),
+    transform var(--u-dur),
+    opacity var(--u-dur);
+}
+.admin-dashboard.scoped-dashboard .week-section .section-header-top-row .print-times-button:hover:not(:disabled) {
+  background: var(--c-pri-dim);
+  transform: translateY(-1px);
+}
+.admin-dashboard.scoped-dashboard .week-section .section-header-top-row .print-times-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .week-section .section-header-top-row .print-times-button {
+  background: var(--c-pri-dim);
+  color: #fff;
+}
+[data-theme="dark"] .admin-dashboard.scoped-dashboard .week-section .section-header-top-row .print-times-button:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--c-pri-dim) 80%, black);
+}
 .admin-dashboard.scoped-dashboard .week-section .section-header-controls h3 {
   margin-bottom: var(--u-gap-sm);
   font-size: 1.4rem;

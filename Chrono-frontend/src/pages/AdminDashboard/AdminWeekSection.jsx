@@ -883,6 +883,23 @@ const AdminWeekSection = forwardRef(({
         [processedMonthlyUserData, monthSortConfig]
     );
 
+    const handlePrintOverview = useCallback(() => {
+        const fallbackUser = sortedUserData[0]?.username;
+        const targetUser = detailedUser || fallbackUser;
+
+        if (!targetUser) {
+            notify({
+                message: t('adminDashboard.noUserDataForWeek', 'Keine Benutzerdaten für diese Woche.'),
+                type: 'warn',
+            });
+            return;
+        }
+
+        openPrintUserModal(targetUser);
+    }, [detailedUser, notify, openPrintUserModal, sortedUserData, t]);
+
+    const isPrintOverviewDisabled = sortedUserData.length === 0;
+
     const requestSort = (key) => {
         let direction = 'ascending';
         if (sortConfig.key === key && sortConfig.direction === 'ascending') {
@@ -1389,6 +1406,17 @@ const AdminWeekSection = forwardRef(({
         <> {/* Added scoped-dashboard here */}
             <section ref={sectionRef} className="week-section content-section">
                 <div className="section-header-controls">
+                    <div className="section-header-top-row">
+                        <button
+                            type="button"
+                            className="print-times-button"
+                            onClick={handlePrintOverview}
+                            disabled={isPrintOverviewDisabled}
+                        >
+                            <span aria-hidden="true">🖨️</span>
+                            {t('adminDashboard.printButton', 'Zeiten drucken')}
+                        </button>
+                    </div>
                     <h3>
                         {activeTab === 'week'
                             ? t("adminDashboard.timeTrackingCurrentWeek", "Zeiterfassung Aktuelle Woche")
