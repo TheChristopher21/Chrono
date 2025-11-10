@@ -5,6 +5,17 @@
    (Light + Dark Mode, Responsive, Scrollbars, neue Elemente)
    ========================================================================= */
 
+:root {
+  --stat-pending-bg: rgba(255, 193, 7, 0.12);
+  --stat-pending-text: #b08900;
+  --stat-approved-bg: rgba(76, 175, 80, 0.12);
+  --stat-approved-text: #2e7d32;
+  --stat-denied-bg: rgba(244, 67, 54, 0.12);
+  --stat-denied-text: #c62828;
+  --c-success: #2e7d32;
+  --c-error: #c62828;
+}
+
 /* ------------------------ 1) Variablen (Light) ------------------------ */
 .admin-dashboard.scoped-dashboard {
   --c-pri: #475bff; /* Haupt-Farbe */
@@ -1443,23 +1454,22 @@
 .admin-dashboard.scoped-dashboard .action-stream .stream-row {
   box-sizing: border-box;
   display: grid;
-  grid-template-columns: auto auto 1fr auto;
-  align-items: stretch;
-  gap: var(--u-gap-sm);
-  padding: var(--u-gap-xs) var(--u-gap-sm);
-  border-bottom: 1px solid color-mix(in srgb, var(--c-border) 75%, transparent);
+  grid-template-columns: 38px 36px 1fr auto;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--c-border);
   background: var(--c-surface);
 }
 .admin-dashboard.scoped-dashboard .action-stream .stream-row:last-child {
   border-bottom: none;
 }
 .admin-dashboard.scoped-dashboard .action-stream .stream-row.is-selected {
-  background: color-mix(in srgb, var(--c-pri) 10%, var(--c-surface));
-  border-color: color-mix(in srgb, var(--c-pri) 25%, var(--c-border));
+  background: var(--c-surface);
 }
 .admin-dashboard.scoped-dashboard .action-stream .stream-row.is-focused {
-  outline: 1px solid color-mix(in srgb, var(--c-pri) 40%, transparent);
-  outline-offset: -1px;
+  outline: 2px solid var(--c-pri);
+  outline-offset: -2px;
 }
 .admin-dashboard.scoped-dashboard .action-stream .stream-row:hover {
   background: color-mix(in srgb, var(--c-pri) 6%, var(--c-surface));
@@ -1511,14 +1521,12 @@
   gap: 0.35rem;
 }
 .admin-dashboard.scoped-dashboard .action-stream .stream-entry-pill {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 2.2rem;
-  padding: 0.2rem 0.5rem;
-  border-radius: 999px;
-  background: color-mix(in srgb, var(--c-border) 40%, transparent);
-  font-size: 0.8rem;
+  display: inline-block;
+  margin-right: 0.35rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: var(--u-radius-sm);
+  background: var(--c-surface);
+  font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
 }
 .admin-dashboard.scoped-dashboard .action-stream .stream-flags {
@@ -1540,9 +1548,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  border-color: color-mix(in srgb, var(--c-success) 45%, transparent);
-  background: color-mix(in srgb, var(--c-success) 12%, var(--c-card));
-  color: color-mix(in srgb, var(--c-success) 80%, black);
+  background: rgba(76, 175, 80, 0.15);
+  color: var(--c-success);
+  border-color: transparent;
   font-weight: 600;
 }
 .admin-dashboard.scoped-dashboard .action-stream .stream-flag.low-risk span[aria-hidden="true"] {
@@ -1560,9 +1568,9 @@
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  border-color: color-mix(in srgb, var(--c-success) 45%, transparent);
-  background: color-mix(in srgb, var(--c-success) 12%, var(--c-card));
-  color: color-mix(in srgb, var(--c-success) 80%, black);
+  background: rgba(76, 175, 80, 0.15);
+  color: var(--c-success);
+  border-color: transparent;
   font-weight: 600;
 }
 .admin-dashboard.scoped-dashboard .stream-flag.low-risk span[aria-hidden="true"] {

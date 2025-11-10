@@ -70,6 +70,11 @@ const deriveItemsFromLegacyProps = (allVacations, allCorrections) => {
     return [...pendingVacations, ...pendingCorrections].sort((a, b) => a.priority - b.priority);
 };
 
+const ensureText = (value) => {
+    if (value === null || value === undefined) return '';
+    return typeof value === 'string' ? value : String(value);
+};
+
 const AdminActionStream = ({
     t,
     items,
@@ -256,10 +261,11 @@ const AdminActionStream = ({
     }, [derivedItems, focusedId, handleRowClick, handleToggle, onApprove, onDeny, onFocusUser, onRequestFocus, selectedIds, t]);
 
     const summaryLabel = useMemo(() => {
-        const formatWithCount = (key, defaultValue, count) => t(key, {
+        const formatWithCount = (key, defaultValue, count) => ensureText(t(key, {
             count,
             defaultValue,
-        });
+            returnObjects: false,
+        }));
 
         if (!statusSummary) {
             return formatWithCount('adminDashboard.actionStream.counter', '{{count}} offen', pendingCount);
@@ -322,7 +328,15 @@ const AdminActionStream = ({
                     </div>
                 </div>
             </div>
-            <div className="stream-table" ref={containerRef}>
+            <div
+                className="stream-table"
+                ref={containerRef}
+                role="grid"
+                aria-label={ensureText(t('adminDashboard.actionStream.title', {
+                    defaultValue: 'Priorisierte Aufgaben',
+                    returnObjects: false,
+                }))}
+            >
                 {derivedItems.length === 0 ? (
                     <div className="stream-empty">
                         {t('adminDashboard.actionStream.empty', 'Aktuell liegen keine offenen Aufgaben an.')}
@@ -333,6 +347,7 @@ const AdminActionStream = ({
                         itemCount={derivedItems.length}
                         itemSize={ROW_HEIGHT}
                         width={listWidth || DEFAULT_WIDTH}
+                        itemKey={(index) => derivedItems[index]?.id ?? index}
                     >
                         {renderRow}
                     </VirtualList>
