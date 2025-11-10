@@ -5,6 +5,8 @@ import {
     formatLocalDate,
     formatISO,
     formatDate,
+    formatDateWithWeekday,
+    getWeekdayName,
 } from '../../utils/dateUtils';
 import {
     formatTime,
@@ -21,6 +23,8 @@ export {
     formatLocalDate,
     formatISO,
     formatDate,
+    formatDateWithWeekday,
+    getWeekdayName,
     formatTime,
     minutesToHHMM,
     minutesToHours,
