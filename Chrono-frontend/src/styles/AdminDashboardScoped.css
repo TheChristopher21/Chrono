@@ -601,6 +601,16 @@
   margin-bottom: 0.75rem;
 }
 
+.admin-dashboard.scoped-dashboard .dashboard-requests-section {
+  margin-top: var(--u-gap);
+  display: grid;
+  gap: var(--u-gap);
+}
+
+.admin-dashboard.scoped-dashboard .dashboard-requests-section > div {
+  scroll-margin-top: calc(var(--u-gap) * 1.5);
+}
+
 @media (min-width: 1280px) {
   .admin-dashboard.scoped-dashboard .team-overview-content {
     grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
