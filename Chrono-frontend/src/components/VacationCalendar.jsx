@@ -355,6 +355,7 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
                     visible
                     className="modal-overlay vacation-modal-overlay"
                     data-context="vacation"
+                    onClose={() => setShowVacationModal(false)}
                 >
                     <div
                         className="modal-content vacation-modal-content"
@@ -471,6 +472,7 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
                     visible
                     className="modal-overlay vacation-modal-overlay sick-leave-modal-overlay"
                     data-context="vacation"
+                    onClose={() => setShowSickLeaveModal(false)}
                 >
                     <div
                         className="modal-content vacation-modal-content sick-leave-modal-content"
