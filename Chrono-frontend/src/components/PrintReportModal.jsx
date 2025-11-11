@@ -20,7 +20,11 @@ const PrintReportModal = ({
     const cls = cssScope ? ` ${cssScope}-print-modal` : "";
 
     return (
-        <ModalOverlay visible={visible} className={cls.trim()}>
+        <ModalOverlay
+            visible={visible}
+            className={cls.trim()}
+            onClose={onClose}
+        >
             <div className="modal-content">
                 <h3>{t("selectPeriod")}</h3>
 

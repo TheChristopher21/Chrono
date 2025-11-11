@@ -253,6 +253,16 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         setSickLeaveComment('');
     }, []);
 
+    const handleCloseVacationModal = useCallback(() => {
+        setShowVacationModal(false);
+        resetVacationForm();
+    }, [resetVacationForm]);
+
+    const handleCloseSickLeaveModal = useCallback(() => {
+        setShowSickLeaveModal(false);
+        resetSickLeaveForm();
+    }, [resetSickLeaveForm]);
+
     async function handleCreateVacation() {
         if (!currentUser || !currentUser.username) {
             pushNotification(translate("errors.notLoggedIn", "Nicht eingeloggt oder Benutzername fehlt."), 'error');
@@ -756,7 +766,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             </div>
 
             {showVacationModal && (
-                <ModalOverlay visible>
+                <ModalOverlay visible onClose={handleCloseVacationModal}>
                     <div className="modal-content large-calendar-modal">
                         <h3>{editingVacation ? t('adminVacation.editModalTitle', 'Urlaubseintrag bearbeiten') : t('adminVacation.modalTitle', 'Neuen Urlaub für Mitarbeiter anlegen')}</h3>
                         <form onSubmit={handleSubmitVacation}>
@@ -837,7 +847,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                 <button type="submit" className="button-confirm">
                                     {editingVacation ? t('adminVacation.updateButton', 'Urlaub aktualisieren') : t('adminVacation.confirmButton', 'Urlaub erstellen')}
                                 </button>
-                                <button type="button" onClick={() => {setShowVacationModal(false); resetVacationForm();}} className="button-cancel">{t('cancel', 'Abbrechen')}</button>
+                                <button type="button" onClick={handleCloseVacationModal} className="button-cancel">{t('cancel', 'Abbrechen')}</button>
                             </div>
                         </form>
                     </div>
@@ -845,7 +855,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             )}
 
             {showSickLeaveModal && (
-                <ModalOverlay visible>
+                <ModalOverlay visible onClose={handleCloseSickLeaveModal}>
                     <div className="modal-content">
                         <h3>{editingSickLeave ? t('adminSickLeave.editModalTitle', 'Krankmeldung bearbeiten') : t('adminSickLeave.modalTitle', 'Krankheit für Benutzer melden')}</h3>
                         <form onSubmit={handleSubmitSickLeave}>
@@ -882,7 +892,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                 <button type="submit" className="button-confirm">
                                     {editingSickLeave ? t('adminSickLeave.updateButtonModal', 'Krankmeldung aktualisieren') : t('adminSickLeave.reportButtonModal', 'Krankmeldung speichern')}
                                 </button>
-                                <button type="button" onClick={() => {setShowSickLeaveModal(false); resetSickLeaveForm();}} className="button-cancel">{t('cancel', 'Abbrechen')}</button>
+                                <button type="button" onClick={handleCloseSickLeaveModal} className="button-cancel">{t('cancel', 'Abbrechen')}</button>
                             </div>
                         </form>
                     </div>
