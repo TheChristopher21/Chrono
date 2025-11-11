@@ -2851,25 +2851,70 @@ export const LanguageProvider = ({ children }) => {
 
     /**
      * @param {string} key     z.B. "login.title"
-     * @param {string} fallback (optional) Fallback-Text, wenn Key fehlt
+     * @param {string|object} [fallbackOrOptions] Optionaler Fallback-Text oder Options-Objekt
+     * @param {object} [maybeOptions] Weitere Optionen (z.B. { name: "Max" })
      */
-    const t = (key, fallback) => {
+    const t = (key, fallbackOrOptions, maybeOptions) => {
+        const hasFallbackString = typeof fallbackOrOptions === "string";
+        const fallback = hasFallbackString
+            ? fallbackOrOptions
+            : typeof fallbackOrOptions?.defaultValue === "string"
+                ? fallbackOrOptions.defaultValue
+                : undefined;
+        const options = hasFallbackString ? maybeOptions : fallbackOrOptions;
+
         const keys = key.split(".");
         let translation = translations[language];
         for (const k of keys) {
-            if (translation[k] !== undefined) {
+            if (translation && Object.prototype.hasOwnProperty.call(translation, k)) {
                 translation = translation[k];
             } else {
-                return fallback || key; // Falls gewünscht
+                translation = undefined;
+                break;
             }
         }
-        if (typeof translation === "object") {
-            console.warn(
-                `Translation for key "${key}" is an object. Expected a string.`
-            );
-            return JSON.stringify(translation);
+
+        let value = translation;
+        if (typeof value === "object" && value !== null) {
+            if (options?.returnObjects === false) {
+                value = undefined;
+            } else {
+                console.warn(
+                    `Translation for key "${key}" is an object. Expected a string.`
+                );
+                return JSON.stringify(value);
+            }
         }
-        return translation;
+
+        if (typeof value !== "string") {
+            if (typeof fallback === "string") {
+                value = fallback;
+            } else if (typeof options?.defaultValue === "string") {
+                value = options.defaultValue;
+            } else if (typeof fallbackOrOptions === "object" && typeof fallbackOrOptions?.fallback === "string") {
+                value = fallbackOrOptions.fallback;
+            } else {
+                value = key;
+            }
+        }
+
+        if (typeof value === "string" && options && typeof options === "object") {
+            const interpolationValues = { ...options };
+            delete interpolationValues.defaultValue;
+            delete interpolationValues.returnObjects;
+
+            value = value.replace(/{{\s*(\w+)\s*}}/g, (match, token) => {
+                if (Object.prototype.hasOwnProperty.call(interpolationValues, token)) {
+                    const replacement = interpolationValues[token];
+                    return replacement === undefined || replacement === null
+                        ? ""
+                        : String(replacement);
+                }
+                return match;
+            });
+        }
+
+        return value;
     };
 
     return (
