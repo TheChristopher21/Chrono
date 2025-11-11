@@ -353,6 +353,32 @@
   color: var(--c-muted);
 }
 
+@media (min-width: 1180px) {
+  .admin-dashboard.scoped-dashboard .dashboard-summary-card {
+    min-height: 100%;
+    gap: var(--u-gap-xs);
+  }
+
+  .admin-dashboard.scoped-dashboard .summary-list {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--u-gap-xs);
+  }
+
+  .admin-dashboard.scoped-dashboard .summary-item {
+    padding: 0.55rem 0.65rem;
+  }
+
+  .admin-dashboard.scoped-dashboard .summary-item:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .admin-dashboard.scoped-dashboard .summary-description {
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+}
+
 .admin-dashboard.scoped-dashboard .sidebar-description {
   margin: 0 0 0.65rem;
   font-size: 0.8rem;
