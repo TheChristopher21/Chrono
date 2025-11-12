@@ -258,6 +258,9 @@ const PercentageDashboard = () => {
                 desiredTimestamp: `${correctionDate}T${entry.time}:00`,
                 desiredPunchType: entry.type
             });
+            if (entry.targetEntryId !== undefined && entry.targetEntryId !== null) {
+                params.append('targetEntryId', entry.targetEntryId);
+            }
             return api.post(`/api/correction/create?${params.toString()}`, null);
         });
         try {
