@@ -23,12 +23,13 @@ const CorrectionModal = ({
                 sortEntries(dailySummary?.entries).map((entry) => ({
                     time: formatTime(new Date(entry.entryTimestamp)),
                     type: entry.punchType,
+                    targetEntryId: entry.id ?? null,
                 })) || [];
 
             if (initialEntries.length === 0) {
                 setEntries([
-                    { time: '08:00', type: 'START' },
-                    { time: '17:00', type: 'ENDE' },
+                    { time: '08:00', type: 'START', targetEntryId: null },
+                    { time: '17:00', type: 'ENDE', targetEntryId: null },
                 ]);
             } else {
                 setEntries(initialEntries);
@@ -50,7 +51,7 @@ const CorrectionModal = ({
     const addEntry = () => {
         const last = entries[entries.length - 1];
         const nextType = last?.type === 'START' ? 'ENDE' : 'START';
-        setEntries([...entries, { time: '', type: nextType }]);
+        setEntries([...entries, { time: '', type: nextType, targetEntryId: null }]);
     };
 
     const removeEntry = (index) => {
@@ -167,6 +168,7 @@ CorrectionModal.propTypes = {
     dailySummary: PropTypes.shape({
         entries: PropTypes.arrayOf(
             PropTypes.shape({
+                id: PropTypes.oneOfType([PropTypes.number, PropTypes.string]),
                 entryTimestamp: PropTypes.string,
                 punchType: PropTypes.string,
             })
