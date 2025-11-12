@@ -15,6 +15,7 @@ import java.security.Principal;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/crm")
@@ -39,6 +40,22 @@ public class CrmController {
     private boolean allowed(User user, Customer customer) {
         return user != null && user.getCompany() != null && customer.getCompany() != null
                 && Objects.equals(user.getCompany().getId(), customer.getCompany().getId());
+    }
+
+    private String resolveDisplayName(User user) {
+        if (user == null) {
+            return null;
+        }
+        String fullName = Stream.of(user.getFirstName(), user.getLastName())
+                .filter(part -> part != null && !part.isBlank())
+                .collect(Collectors.joining(" "));
+        if (fullName != null && !fullName.isBlank()) {
+            return fullName;
+        }
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            return user.getEmail();
+        }
+        return user.getUsername();
     }
 
     @GetMapping("/customers/{id}/addresses")
@@ -99,6 +116,60 @@ public class CrmController {
                 .filter(address -> Objects.equals(address.getCustomer().getId(), customer.getId()))
                 .map(address -> {
                     crmService.deleteAddress(address);
+                    return ResponseEntity.noContent().<Void>build();
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/customers/{id}/documents")
+    public ResponseEntity<List<CrmDocumentDTO>> listDocuments(@PathVariable Long id, Principal principal) {
+        User user = getUser(principal);
+        Customer customer = customerService.findById(id).orElse(null);
+        if (customer == null || !allowed(user, customer)) {
+            return user == null ? ResponseEntity.status(401).build() : ResponseEntity.status(403).build();
+        }
+        List<CrmDocumentDTO> documents = crmService.listDocuments(customer).stream()
+                .map(CrmDocumentDTO::from)
+                .toList();
+        return ResponseEntity.ok(documents);
+    }
+
+    @PostMapping("/customers/{id}/documents")
+    public ResponseEntity<CrmDocumentDTO> addDocument(@PathVariable Long id,
+                                                      @RequestBody CreateCrmDocumentRequest request,
+                                                      Principal principal) {
+        if (request.getFileName() == null || request.getFileName().isBlank()) {
+            return ResponseEntity.badRequest().build();
+        }
+        User user = getUser(principal);
+        Customer customer = customerService.findById(id).orElse(null);
+        if (customer == null || !allowed(user, customer)) {
+            return user == null ? ResponseEntity.status(401).build() : ResponseEntity.status(403).build();
+        }
+        CrmDocument document = request.toEntity();
+        String uploadedBy = resolveDisplayName(user);
+        if (uploadedBy != null && !uploadedBy.isBlank()) {
+            document.setUploadedBy(uploadedBy);
+        }
+        CrmDocument saved = crmService.saveDocument(customer, document);
+        return ResponseEntity.created(URI.create("/api/crm/customers/" + id + "/documents/" + saved.getId()))
+                .body(CrmDocumentDTO.from(saved));
+    }
+
+    @DeleteMapping("/customers/{id}/documents/{documentId}")
+    public ResponseEntity<Void> deleteDocument(@PathVariable Long id,
+                                               @PathVariable Long documentId,
+                                               Principal principal) {
+        User user = getUser(principal);
+        Customer customer = customerService.findById(id).orElse(null);
+        if (customer == null || !allowed(user, customer)) {
+            return user == null ? ResponseEntity.status(401).build() : ResponseEntity.status(403).build();
+        }
+        return crmService.findDocument(documentId)
+                .filter(document -> document.getCustomer() != null
+                        && Objects.equals(document.getCustomer().getId(), customer.getId()))
+                .map(document -> {
+                    crmService.deleteDocument(document);
                     return ResponseEntity.noContent().<Void>build();
                 })
                 .orElse(ResponseEntity.notFound().build());
