@@ -213,7 +213,7 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
                                                 <td>
                                                     {/* 1-liner summary when collapsed */}
                                                     {g.entries.length === 1 ? (
-                                                        <SingleEntry entry={g.entries[0]} />
+                                                        <SingleEntry entry={g.entries[0]} t={t} />
                                                     ) : (
                                                         <span>{g.entries.length} {t("changes", "Änderungen")}</span>
                                                     )}
@@ -239,7 +239,7 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
                                                     <td colSpan={6}>
                                                         {g.entries.map((e) => (
                                                             <div key={e.id} className="detail-line">
-                                                                <SingleEntry entry={e} />
+                                                                <SingleEntry entry={e} t={t} />
                                                             </div>
                                                         ))}
                                                     </td>
@@ -271,18 +271,47 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
 }
 
 /* ⇢ Helper sub-component --------------------------------------------------- */
-const SingleEntry = ({ entry }) => {
-    const oldTimePart = entry.originalTimestamp ? (
-        <>
-            <s>{formatTime(entry.originalTimestamp)} {entry.originalPunchType}</s> →{' '}
-        </>
-    ) : null;
+const formatPunchTypeLabel = (type, t) => {
+    if (!type) return '';
+    return t(`punchTypes.${type}`, type);
+};
+
+const SingleEntry = ({ entry, t }) => {
+    const hasOriginal = Boolean(entry.originalTimestamp);
+    const originalLabel = t('adminDashboard.originalTimeLabel', 'Gestempelt');
+    const requestedLabel = t('adminDashboard.requestedTimeLabel', 'Beantragt');
+    const missingLabel = t('adminDashboard.noOriginalTimeLabel', 'Kein ursprünglicher Stempel');
+
+    const desiredTime = formatTime(entry.desiredTimestamp);
+    const desiredPunchLabel = formatPunchTypeLabel(entry.desiredPunchType, t);
+
+    const originalTime = hasOriginal ? formatTime(entry.originalTimestamp) : null;
+    const originalPunchLabel = hasOriginal ? formatPunchTypeLabel(entry.originalPunchType, t) : null;
 
     return (
-        <span>
-      {oldTimePart}
-            <strong>{formatTime(entry.desiredTimestamp)} {entry.desiredPunchType}</strong>
-    </span>
+        <span className="entry-comparison">
+            <span className={`entry-block entry-original${hasOriginal ? '' : ' entry-original--missing'}`}>
+                <span className="entry-label">{originalLabel}</span>
+                <span className="entry-value">
+                    {hasOriginal ? (
+                        <>
+                            <span className="entry-time">{originalTime}</span>
+                            {originalPunchLabel && <span className="entry-type">{originalPunchLabel}</span>}
+                        </>
+                    ) : (
+                        <span className="entry-time entry-time--missing">{missingLabel}</span>
+                    )}
+                </span>
+            </span>
+            <span className="entry-arrow">→</span>
+            <span className="entry-block entry-requested">
+                <span className="entry-label">{requestedLabel}</span>
+                <span className="entry-value">
+                    <span className="entry-time">{desiredTime}</span>
+                    {desiredPunchLabel && <span className="entry-type">{desiredPunchLabel}</span>}
+                </span>
+            </span>
+        </span>
     );
 };
 SingleEntry.propTypes = {
@@ -292,6 +321,7 @@ SingleEntry.propTypes = {
         originalPunchType: PropTypes.string,
         desiredPunchType: PropTypes.string.isRequired,
     }).isRequired,
+    t: PropTypes.func.isRequired,
 };
 
 /* ⇢ PropTypes -------------------------------------------------------------- */
