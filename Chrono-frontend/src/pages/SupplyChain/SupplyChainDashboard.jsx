@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Navbar from "../../components/Navbar.jsx";
 import api from "../../utils/api.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
@@ -76,6 +76,7 @@ const defaultWorkflowTemplate = JSON.stringify(
 const SupplyChainDashboard = () => {
     const { notify } = useNotification();
     const { t } = useTranslation();
+    const isMountedRef = useRef(true);
     const [products, setProducts] = useState([]);
     const [warehouses, setWarehouses] = useState([]);
     const [stock, setStock] = useState([]);
@@ -107,6 +108,20 @@ const SupplyChainDashboard = () => {
     const [serviceRequestForm, setServiceRequestForm] = useState({ customerName: "", subject: "", description: "" });
     const [serviceStatusForm, setServiceStatusForm] = useState({ requestId: "", status: "IN_PROGRESS", closedDate: "" });
     const [workflowSchema, setWorkflowSchema] = useState(defaultWorkflowTemplate);
+    const [replenishmentPreview, setReplenishmentPreview] = useState({
+        items: [],
+        evaluatedProducts: 0,
+        productsRequiringReplenishment: 0,
+    });
+    const [replenishmentLoading, setReplenishmentLoading] = useState(false);
+    const [replenishmentError, setReplenishmentError] = useState(null);
+
+    useEffect(() => {
+        isMountedRef.current = true;
+        return () => {
+            isMountedRef.current = false;
+        };
+    }, []);
 
     const productionStatusOptions = useMemo(() => [
         { value: "PLANNED", label: t("supplyChain.productionStatus.planned", "Geplant") },
@@ -129,6 +144,65 @@ const SupplyChainDashboard = () => {
             return { data: null, error: error instanceof Error ? error.message : String(error) };
         }
     }, [workflowSchema]);
+
+    const fetchReplenishmentPreview = useCallback(
+        async (showSuccessToast = false) => {
+            setReplenishmentLoading(true);
+            setReplenishmentError(null);
+            try {
+                const response = await api.post("/api/supply-chain/procurement/replenishment-preview", {
+                    planningHorizonDays: 28,
+                    safetyDays: 7,
+                    serviceLevelTarget: 0.95,
+                });
+                const data = response?.data ?? {};
+                if (!isMountedRef.current) {
+                    return;
+                }
+                const items = Array.isArray(data?.items) ? data.items : data?.items?.content ?? [];
+                setReplenishmentPreview({
+                    items,
+                    evaluatedProducts: Number.isFinite(data?.evaluatedProducts) ? data.evaluatedProducts : 0,
+                    productsRequiringReplenishment: Number.isFinite(data?.productsRequiringReplenishment)
+                        ? data.productsRequiringReplenishment
+                        : 0,
+                });
+                if (showSuccessToast) {
+                    notify(t("supplyChain.replenishmentPreviewSuccess", "Replenishment-Analyse aktualisiert."), "success");
+                }
+            } catch (error) {
+                console.error("Failed to load replenishment preview", error);
+                if (!isMountedRef.current) {
+                    return;
+                }
+                setReplenishmentError(error instanceof Error ? error : new Error(String(error)));
+                setReplenishmentPreview((prev) => ({
+                    items: Array.isArray(prev?.items) ? prev.items : [],
+                    evaluatedProducts: Number.isFinite(prev?.evaluatedProducts) ? prev.evaluatedProducts : 0,
+                    productsRequiringReplenishment: Number.isFinite(prev?.productsRequiringReplenishment)
+                        ? prev.productsRequiringReplenishment
+                        : 0,
+                }));
+                notify(
+                    t(
+                        "supplyChain.replenishmentPreviewFailed",
+                        "KI-Bedarfsanalyse konnte nicht geladen werden."
+                    ),
+                    "error"
+                );
+            } finally {
+                if (!isMountedRef.current) {
+                    return;
+                }
+                setReplenishmentLoading(false);
+            }
+        },
+        [notify, t]
+    );
+
+    const handleReplenishmentRefresh = useCallback(() => {
+        fetchReplenishmentPreview(true);
+    }, [fetchReplenishmentPreview]);
 
     useEffect(() => {
         let isMounted = true;
@@ -157,6 +231,7 @@ const SupplyChainDashboard = () => {
                 setStock(Array.isArray(stockData) ? stockData : stockData?.content ?? []);
                 setProductionOrders(Array.isArray(productionData) ? productionData : productionData?.content ?? []);
                 setServiceRequests(Array.isArray(serviceData) ? serviceData : serviceData?.content ?? []);
+                await fetchReplenishmentPreview(false);
             } catch (error) {
                 console.error("Failed to load supply chain data", error);
                 if (isMounted) {
@@ -173,7 +248,7 @@ const SupplyChainDashboard = () => {
         return () => {
             isMounted = false;
         };
-    }, [notify, t, refreshFlag]);
+    }, [fetchReplenishmentPreview, notify, t, refreshFlag]);
 
     const totalInventoryValue = useMemo(() => {
         return stock.reduce((sum, entry) => {
@@ -492,6 +567,102 @@ const SupplyChainDashboard = () => {
                         <h2>{t("supplyChain.openServiceRequests", "Offene Serviceeinsätze")}</h2>
                         <p className="metric">{openServiceTickets}</p>
                     </article>
+                </section>
+
+                <section className="card">
+                    <div className="card-header-row">
+                        <h2>{t("supplyChain.replenishmentInsightsHeadline", "KI-Bedarfsanalyse")}</h2>
+                        <button
+                            type="button"
+                            className="secondary"
+                            onClick={handleReplenishmentRefresh}
+                            disabled={replenishmentLoading}
+                        >
+                            {replenishmentLoading
+                                ? t("supplyChain.replenishmentInsightsRefreshing", "Analysiere...")
+                                : t("supplyChain.replenishmentInsightsRefresh", "Analyse aktualisieren")}
+                        </button>
+                    </div>
+                    <p className="muted">
+                        {t(
+                            "supplyChain.replenishmentInsightsSummary",
+                            "{{count}} von {{total}} Produkten benötigen Nachbestellung.",
+                            {
+                                count: replenishmentPreview.productsRequiringReplenishment,
+                                total: replenishmentPreview.evaluatedProducts,
+                            }
+                        )}
+                    </p>
+                    {replenishmentLoading ? (
+                        <p>{t("supplyChain.replenishmentInsightsLoading", "Analysiere Bestellbedarf...")}</p>
+                    ) : replenishmentError ? (
+                        <p className="error-message">
+                            {t(
+                                "supplyChain.replenishmentInsightsError",
+                                "Die KI-Bedarfsanalyse konnte nicht geladen werden."
+                            )}
+                        </p>
+                    ) : replenishmentPreview.items.length === 0 ? (
+                        <p>
+                            {t(
+                                "supplyChain.replenishmentInsightsEmpty",
+                                "Aktuell sind keine automatischen Nachbestellungen erforderlich."
+                            )}
+                        </p>
+                    ) : (
+                        <div className="table-wrapper">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>{t("supplyChain.product", "Produkt")}</th>
+                                        <th>{t("supplyChain.sku", "SKU")}</th>
+                                        <th>{t("supplyChain.recommendedQuantity", "Empf. Menge")}</th>
+                                        <th>{t("supplyChain.daysUntilStockout", "Tage bis Stockout")}</th>
+                                        <th>{t("supplyChain.aiConfidence", "KI-Confidence")}</th>
+                                        <th>{t("supplyChain.replenishmentRisk", "Risiko")}</th>
+                                        <th>{t("supplyChain.aiNarrative", "KI-Einschätzung")}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {replenishmentPreview.items.map((item) => {
+                                        const riskClass = item.stockOutRisk
+                                            ? "danger"
+                                            : item.overstockRisk
+                                            ? "warn"
+                                            : "safe";
+                                        const riskLabel = item.stockOutRisk
+                                            ? t("supplyChain.stockOutRisk", "Stockout-Risiko")
+                                            : item.overstockRisk
+                                            ? t("supplyChain.overstockRisk", "Überbestand-Risiko")
+                                            : t("supplyChain.stableStock", "Bestand stabil");
+                                        const recommendedQuantity = Number(item?.recommendedQuantity ?? 0);
+                                        const formattedQuantity = Number.isFinite(recommendedQuantity)
+                                            ? recommendedQuantity.toLocaleString()
+                                            : "-";
+                                        const daysUntilStockout = Number(item?.daysUntilStockout);
+                                        const formattedDays = Number.isFinite(daysUntilStockout) && daysUntilStockout >= 0
+                                            ? daysUntilStockout
+                                            : "-";
+                                        const aiConfidence = Number(item?.aiConfidence ?? 0);
+                                        const formattedConfidence = `${Math.round(aiConfidence * 100)}%`;
+                                        return (
+                                            <tr key={`${item.productId}-${item.sku ?? "no-sku"}`}>
+                                                <td>{item.productName}</td>
+                                                <td>{item.sku ?? "-"}</td>
+                                                <td>{formattedQuantity}</td>
+                                                <td>{formattedDays}</td>
+                                                <td>{formattedConfidence}</td>
+                                                <td>
+                                                    <span className={`status-chip ${riskClass}`}>{riskLabel}</span>
+                                                </td>
+                                                <td>{item.aiNarrative ?? item.rationale}</td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+                    )}
                 </section>
 
                 <section className="card">

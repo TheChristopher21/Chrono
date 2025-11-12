@@ -123,6 +123,12 @@ public class SupplyChainController {
         return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/procurement/replenishment-preview")
+    public ResponseEntity<ReplenishmentPreviewResponse> previewReplenishment(@RequestBody AutoReplenishRequest request) {
+        ReplenishmentPreviewResponse response = supplyChainService.previewReplenishment(request);
+        return ResponseEntity.ok(response);
+    }
+
     @PostMapping("/sales-orders")
     public ResponseEntity<SalesOrderDTO> createSalesOrder(@RequestBody CreateSalesOrderRequest request) {
         List<SalesOrderLine> lines = request.getLines() == null ? List.of() : request.getLines().stream()

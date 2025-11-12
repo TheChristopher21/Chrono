@@ -1,5 +1,8 @@
 package com.chrono.chrono.dto.inventory;
 
+import java.time.LocalDate;
+import java.util.Map;
+
 public class AutoReplenishItemDTO {
 
     private final Long productId;
@@ -12,6 +15,10 @@ public class AutoReplenishItemDTO {
     private final boolean overstockRisk;
     private final double serviceLevelTarget;
     private final String rationale;
+    private final int daysUntilStockout;
+    private final double aiConfidence;
+    private final String aiNarrative;
+    private final Map<LocalDate, Integer> aiDailyForecast;
 
     public AutoReplenishItemDTO(Long productId,
                                 String sku,
@@ -22,7 +29,11 @@ public class AutoReplenishItemDTO {
                                 boolean stockOutRisk,
                                 boolean overstockRisk,
                                 double serviceLevelTarget,
-                                String rationale) {
+                                String rationale,
+                                int daysUntilStockout,
+                                double aiConfidence,
+                                String aiNarrative,
+                                Map<LocalDate, Integer> aiDailyForecast) {
         this.productId = productId;
         this.sku = sku;
         this.productName = productName;
@@ -33,6 +44,10 @@ public class AutoReplenishItemDTO {
         this.overstockRisk = overstockRisk;
         this.serviceLevelTarget = serviceLevelTarget;
         this.rationale = rationale;
+        this.daysUntilStockout = daysUntilStockout;
+        this.aiConfidence = aiConfidence;
+        this.aiNarrative = aiNarrative;
+        this.aiDailyForecast = Map.copyOf(aiDailyForecast);
     }
 
     public Long getProductId() {
@@ -73,5 +88,21 @@ public class AutoReplenishItemDTO {
 
     public String getRationale() {
         return rationale;
+    }
+
+    public int getDaysUntilStockout() {
+        return daysUntilStockout;
+    }
+
+    public double getAiConfidence() {
+        return aiConfidence;
+    }
+
+    public String getAiNarrative() {
+        return aiNarrative;
+    }
+
+    public Map<LocalDate, Integer> getAiDailyForecast() {
+        return aiDailyForecast;
     }
 }
