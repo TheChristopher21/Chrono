@@ -4,6 +4,7 @@ import com.chrono.chrono.dto.inventory.AutoReplenishItemDTO;
 import com.chrono.chrono.dto.inventory.AutoReplenishPlanDTO;
 import com.chrono.chrono.dto.inventory.AutoReplenishRequest;
 import com.chrono.chrono.dto.inventory.AutoReplenishResponse;
+import com.chrono.chrono.dto.inventory.ReplenishmentPreviewResponse;
 import com.chrono.chrono.dto.inventory.AutoReplenishSupplierDTO;
 import com.chrono.chrono.dto.inventory.PurchaseOrderDTO;
 import com.chrono.chrono.dto.inventory.PlanWavePickRequest;
@@ -19,6 +20,7 @@ import com.chrono.chrono.services.accounting.AccountsPayableService;
 import com.chrono.chrono.warehouse.dto.PickRouteRequest;
 import com.chrono.chrono.warehouse.dto.PickRouteResponse;
 import com.chrono.chrono.warehouse.dto.PredictiveInventoryResponse;
+import com.chrono.chrono.warehouse.dto.PredictiveReplenishmentResponse;
 import com.chrono.chrono.warehouse.dto.SmartSourcingRequest;
 import com.chrono.chrono.warehouse.dto.SmartSourcingResponse;
 import com.chrono.chrono.warehouse.model.InventoryItem;
@@ -85,12 +87,16 @@ public class SupplyChainService {
 
     @Transactional
     public Product saveProduct(Product product) {
-        return productRepository.save(product);
+        Product saved = productRepository.save(product);
+        warehouseIntelligenceService.registerProduct(saved);
+        return saved;
     }
 
     @Transactional
     public Warehouse saveWarehouse(Warehouse warehouse) {
-        return warehouseRepository.save(warehouse);
+        Warehouse saved = warehouseRepository.save(warehouse);
+        warehouseIntelligenceService.registerWarehouse(saved);
+        return saved;
     }
 
     @Transactional
@@ -125,7 +131,9 @@ public class SupplyChainService {
         movement.setLotNumber(lotNumber);
         movement.setSerialNumber(serialNumber);
         movement.setExpirationDate(expirationDate);
-        return stockMovementRepository.save(movement);
+        StockMovement savedMovement = stockMovementRepository.save(movement);
+        warehouseIntelligenceService.applyStockMovement(product, warehouse, quantity, level.getQuantity());
+        return savedMovement;
     }
 
     @Transactional
@@ -282,55 +290,13 @@ public class SupplyChainService {
 
     @Transactional
     public AutoReplenishResponse autoReplenish(AutoReplenishRequest request) {
-        List<Product> candidates = resolveProductsForReplenishment(request);
-        if (candidates.isEmpty()) {
+        ReplenishmentComputation computation = computeReplenishmentPlans(request);
+        if (computation.candidates().isEmpty()) {
             return new AutoReplenishResponse(List.of(), 0, 0, 0, BigDecimal.ZERO);
         }
 
-        int planningHorizon = Optional.ofNullable(request.getPlanningHorizonDays()).orElse(28);
-        int safetyDays = Optional.ofNullable(request.getSafetyDays()).orElse(7);
-        double serviceLevel = Optional.ofNullable(request.getServiceLevelTarget()).orElse(0.95d);
-
-        Map<String, PurchasePlan> plansBySupplier = new LinkedHashMap<>();
-        int replenishedSkus = 0;
-
-        for (Product product : candidates) {
-            if (!product.isActive()) {
-                continue;
-            }
-            ReplenishmentNeed need = evaluateReplenishmentNeed(product, planningHorizon, safetyDays, serviceLevel);
-            if (!need.requiresReplenishment()) {
-                continue;
-            }
-
-            SmartSourcingRequest sourcingRequest = buildSmartSourcingRequest(product, need, request.getSupplierPreferences());
-            SmartSourcingResponse sourcingResponse = warehouseIntelligenceService.selectSupplier(sourcingRequest);
-            SmartSourcingResponse.SupplierScore supplier = sourcingResponse.getRecommended();
-            if (supplier == null) {
-                continue;
-            }
-
-            int finalQuantity = adjustQuantityForSupplier(need, supplier);
-            if (finalQuantity <= 0) {
-                continue;
-            }
-
-            AutoReplenishItemDTO item = buildAutoReplenishItem(product, need, finalQuantity, serviceLevel);
-            List<AutoReplenishSupplierDTO> rankedSuppliers = convertSuppliers(sourcingResponse.getRankedSuppliers());
-            PurchasePlan plan = plansBySupplier.computeIfAbsent(supplier.getSupplierId(), key -> new PurchasePlan(supplier, rankedSuppliers));
-            plan.items().add(item);
-
-            PurchaseOrderLine line = new PurchaseOrderLine();
-            line.setProduct(product);
-            line.setQuantity(BigDecimal.valueOf(finalQuantity));
-            line.setUnitCost(determineUnitCost(product));
-            plan.lines().add(line);
-            plan.incrementBudget(line.getUnitCost().multiply(line.getQuantity()));
-            replenishedSkus++;
-        }
-
-        if (plansBySupplier.isEmpty()) {
-            return new AutoReplenishResponse(List.of(), candidates.size(), 0, 0, BigDecimal.ZERO);
+        if (computation.plansBySupplier().isEmpty()) {
+            return new AutoReplenishResponse(List.of(), computation.candidates().size(), 0, 0, BigDecimal.ZERO);
         }
 
         List<AutoReplenishPlanDTO> planDTOs = new ArrayList<>();
@@ -338,7 +304,7 @@ public class SupplyChainService {
         int counter = 1;
         DateTimeFormatter formatter = DateTimeFormatter.BASIC_ISO_DATE;
 
-        for (PurchasePlan plan : plansBySupplier.values()) {
+        for (PurchasePlan plan : computation.plansBySupplier().values()) {
             if (plan.lines().isEmpty()) {
                 continue;
             }
@@ -365,10 +331,24 @@ public class SupplyChainService {
         }
 
         return new AutoReplenishResponse(planDTOs,
-                candidates.size(),
-                replenishedSkus,
+                computation.candidates().size(),
+                computation.replenishedSkus(),
                 planDTOs.size(),
                 totalBudget);
+    }
+
+    public ReplenishmentPreviewResponse previewReplenishment(AutoReplenishRequest request) {
+        ReplenishmentComputation computation = computeReplenishmentPlans(request);
+        if (computation.candidates().isEmpty() || computation.plansBySupplier().isEmpty()) {
+            return new ReplenishmentPreviewResponse(List.of(), computation.candidates().size(), 0);
+        }
+
+        List<AutoReplenishItemDTO> items = computation.plansBySupplier().values().stream()
+                .flatMap(plan -> plan.items().stream())
+                .sorted(Comparator.comparing(AutoReplenishItemDTO::getProductName, Comparator.nullsLast(String::compareToIgnoreCase)))
+                .toList();
+
+        return new ReplenishmentPreviewResponse(items, computation.candidates().size(), computation.replenishedSkus());
     }
 
     @Transactional(readOnly = true)
@@ -473,6 +453,13 @@ public class SupplyChainService {
             forecast = null;
         }
 
+        PredictiveReplenishmentResponse replenishmentAnalytics;
+        try {
+            replenishmentAnalytics = warehouseIntelligenceService.analyseReplenishment(product.getSku(), serviceLevel);
+        } catch (RuntimeException ex) {
+            replenishmentAnalytics = null;
+        }
+
         Map<LocalDate, Integer> forecastMap = forecast != null && forecast.getForecast() != null
                 ? forecast.getForecast()
                 : Map.of();
@@ -488,10 +475,14 @@ public class SupplyChainService {
                 .orElse(currentOnHand);
 
         int consumption = Math.max(0, currentOnHand - terminalProjection);
-        double dailyDemand = planningHorizonDays <= 0 ? 0 : (double) consumption / planningHorizonDays;
+        double dailyDemand = planningHorizonDays <= 0 ? 0 : (double) consumption / Math.max(planningHorizonDays, 1);
+        if (replenishmentAnalytics != null && replenishmentAnalytics.getAverageDailyDemand() > 0) {
+            dailyDemand = replenishmentAnalytics.getAverageDailyDemand();
+        }
+
         int safetyStock = Math.max((int) Math.ceil(Math.max(dailyDemand, 0) * Math.max(safetyDays, 1)),
                 (int) Math.ceil(5 * Math.max(serviceLevel, 0.5)));
-        int projectedShortfall = safetyStock - projectedMinimum;
+        int projectedShortfall = Math.max(safetyStock - projectedMinimum, 0);
 
         boolean stockOutRisk = forecast != null && forecast.isStockOutRisk();
         boolean overstockRisk = forecast != null && forecast.isOverstockRisk();
@@ -499,12 +490,29 @@ public class SupplyChainService {
         int horizonDemand = (int) Math.ceil(Math.max(dailyDemand, 0) * Math.max(planningHorizonDays, 1));
         int recommendedQuantity = 0;
         if (stockOutRisk || projectedShortfall > 0) {
-            recommendedQuantity = Math.max(Math.max(projectedShortfall, 0) + Math.max(horizonDemand, safetyStock), 0);
+            recommendedQuantity = Math.max(projectedShortfall + Math.max(horizonDemand, safetyStock), 0);
+        }
+
+        if (replenishmentAnalytics != null) {
+            safetyStock = Math.max(safetyStock, replenishmentAnalytics.getReorderPoint());
+            projectedShortfall = Math.max(projectedShortfall, Math.max(safetyStock - projectedMinimum, 0));
+            recommendedQuantity = Math.max(recommendedQuantity, replenishmentAnalytics.getRecommendedOrderQuantity());
+            if (replenishmentAnalytics.getAverageDailyDemand() > 0) {
+                dailyDemand = replenishmentAnalytics.getAverageDailyDemand();
+            }
+            if (replenishmentAnalytics.getDaysUntilStockout() <= Math.max(safetyDays, 1)) {
+                stockOutRisk = true;
+            }
+            if (replenishmentAnalytics.getRecommendedOrderQuantity() == 0
+                    && replenishmentAnalytics.getConfidence() > 0.75
+                    && currentOnHand > safetyStock * 1.5) {
+                overstockRisk = true;
+            }
         }
 
         return new ReplenishmentNeed(currentOnHand, projectedMinimum, safetyStock, projectedShortfall,
-                recommendedQuantity, stockOutRisk, overstockRisk, dailyDemand, serviceLevel,
-                planningHorizonDays, forecast);
+                Math.max(recommendedQuantity, 0), stockOutRisk, overstockRisk, dailyDemand, serviceLevel,
+                planningHorizonDays, forecast, replenishmentAnalytics);
     }
 
     private SmartSourcingRequest buildSmartSourcingRequest(Product product,
@@ -541,9 +549,11 @@ public class SupplyChainService {
                                                         ReplenishmentNeed need,
                                                         int finalQuantity,
                                                         double serviceLevel) {
+        PredictiveReplenishmentResponse analytics = need.analytics();
+        String aiInsight = analytics != null ? analytics.getRationale() : "Keine KI-Abweichung erkannt.";
         String rationale = String.format(Locale.ROOT,
-                "Forecast floor %d vs safety %d → order %d units over %d-day horizon",
-                need.projectedMinimum(), need.safetyStock(), finalQuantity, need.planningHorizonDays());
+                "Forecast floor %d vs safety %d → order %d units über %d Tage. %s",
+                need.projectedMinimum(), need.safetyStock(), finalQuantity, need.planningHorizonDays(), aiInsight);
         return new AutoReplenishItemDTO(
                 product.getId(),
                 product.getSku(),
@@ -554,7 +564,11 @@ public class SupplyChainService {
                 need.stockOutRisk(),
                 need.overstockRisk(),
                 serviceLevel,
-                rationale);
+                rationale,
+                analytics != null ? analytics.getDaysUntilStockout() : -1,
+                analytics != null ? analytics.getConfidence() : 0.0,
+                aiInsight,
+                analytics != null ? analytics.getDailyDemandForecast() : Map.of());
     }
 
     private List<AutoReplenishSupplierDTO> convertSuppliers(List<SmartSourcingResponse.SupplierScore> scores) {
@@ -589,6 +603,7 @@ public class SupplyChainService {
         private final double serviceLevel;
         private final int planningHorizonDays;
         private final PredictiveInventoryResponse forecast;
+        private final PredictiveReplenishmentResponse analytics;
 
         private ReplenishmentNeed(int currentOnHand,
                                    int projectedMinimum,
@@ -600,7 +615,8 @@ public class SupplyChainService {
                                    double dailyDemand,
                                    double serviceLevel,
                                    int planningHorizonDays,
-                                   PredictiveInventoryResponse forecast) {
+                                   PredictiveInventoryResponse forecast,
+                                   PredictiveReplenishmentResponse analytics) {
             this.currentOnHand = currentOnHand;
             this.projectedMinimum = projectedMinimum;
             this.safetyStock = safetyStock;
@@ -612,10 +628,15 @@ public class SupplyChainService {
             this.serviceLevel = serviceLevel;
             this.planningHorizonDays = planningHorizonDays;
             this.forecast = forecast;
+            this.analytics = analytics;
         }
 
         private boolean requiresReplenishment() {
-            return recommendedQuantity > 0 && (stockOutRisk || projectedShortfall > 0);
+            if (recommendedQuantity > 0 && (stockOutRisk || projectedShortfall > 0)) {
+                return true;
+            }
+            return analytics != null && analytics.getRecommendedOrderQuantity() > 0
+                    && analytics.getDaysUntilStockout() <= Math.max(planningHorizonDays / 2, 3);
         }
 
         private int currentOnHand() {
@@ -662,6 +683,61 @@ public class SupplyChainService {
         private PredictiveInventoryResponse forecast() {
             return forecast;
         }
+
+        private PredictiveReplenishmentResponse analytics() {
+            return analytics;
+        }
+    }
+
+    private ReplenishmentComputation computeReplenishmentPlans(AutoReplenishRequest request) {
+        List<Product> candidates = resolveProductsForReplenishment(request);
+        if (candidates.isEmpty()) {
+            return new ReplenishmentComputation(List.of(), Map.of(), 0);
+        }
+
+        int planningHorizon = Optional.ofNullable(request.getPlanningHorizonDays()).orElse(28);
+        int safetyDays = Optional.ofNullable(request.getSafetyDays()).orElse(7);
+        double serviceLevel = Optional.ofNullable(request.getServiceLevelTarget()).orElse(0.95d);
+
+        Map<String, PurchasePlan> plansBySupplier = new LinkedHashMap<>();
+        int replenishedSkus = 0;
+
+        for (Product product : candidates) {
+            if (!product.isActive()) {
+                continue;
+            }
+            ReplenishmentNeed need = evaluateReplenishmentNeed(product, planningHorizon, safetyDays, serviceLevel);
+            if (!need.requiresReplenishment()) {
+                continue;
+            }
+
+            SmartSourcingRequest sourcingRequest = buildSmartSourcingRequest(product, need, request.getSupplierPreferences());
+            SmartSourcingResponse sourcingResponse = warehouseIntelligenceService.selectSupplier(sourcingRequest);
+            SmartSourcingResponse.SupplierScore supplier = sourcingResponse.getRecommended();
+            if (supplier == null) {
+                continue;
+            }
+
+            int finalQuantity = adjustQuantityForSupplier(need, supplier);
+            if (finalQuantity <= 0) {
+                continue;
+            }
+
+            AutoReplenishItemDTO item = buildAutoReplenishItem(product, need, finalQuantity, serviceLevel);
+            List<AutoReplenishSupplierDTO> rankedSuppliers = convertSuppliers(sourcingResponse.getRankedSuppliers());
+            PurchasePlan plan = plansBySupplier.computeIfAbsent(supplier.getSupplierId(), key -> new PurchasePlan(supplier, rankedSuppliers));
+            plan.items().add(item);
+
+            PurchaseOrderLine line = new PurchaseOrderLine();
+            line.setProduct(product);
+            line.setQuantity(BigDecimal.valueOf(finalQuantity));
+            line.setUnitCost(determineUnitCost(product));
+            plan.lines().add(line);
+            plan.incrementBudget(line.getUnitCost().multiply(line.getQuantity()));
+            replenishedSkus++;
+        }
+
+        return new ReplenishmentComputation(candidates, plansBySupplier, replenishedSkus);
     }
 
     private static final class PurchasePlan {
@@ -702,6 +778,11 @@ public class SupplyChainService {
         private BigDecimal budget() {
             return budget;
         }
+    }
+
+    private record ReplenishmentComputation(List<Product> candidates,
+                                            Map<String, PurchasePlan> plansBySupplier,
+                                            int replenishedSkus) {
     }
 
     private Map<String, String> buildPrimaryZoneIndex(Map<String, WarehouseLocation> locationIndex) {

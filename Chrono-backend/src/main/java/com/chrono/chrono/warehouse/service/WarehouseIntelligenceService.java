@@ -1,7 +1,14 @@
 package com.chrono.chrono.warehouse.service;
 
+import com.chrono.chrono.entities.inventory.Product;
+import com.chrono.chrono.entities.inventory.StockLevel;
+import com.chrono.chrono.entities.inventory.Warehouse;
+import com.chrono.chrono.repositories.inventory.ProductRepository;
+import com.chrono.chrono.repositories.inventory.StockLevelRepository;
+import com.chrono.chrono.repositories.inventory.WarehouseRepository;
 import com.chrono.chrono.warehouse.dto.*;
 import com.chrono.chrono.warehouse.model.*;
+import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -16,16 +23,20 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.PriorityQueue;
+import java.util.NavigableMap;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Service
 public class WarehouseIntelligenceService {
@@ -44,6 +55,10 @@ public class WarehouseIntelligenceService {
             new BoxOption("BOX-L", "Parcel Large 60x40x40", 60, 40, 40, 25),
             new BoxOption("CRATE-XL", "Crate XL 80x60x60", 80, 60, 60, 50));
 
+    private final ProductRepository productRepository;
+    private final WarehouseRepository warehouseRepository;
+    private final StockLevelRepository stockLevelRepository;
+
     private final Map<String, WarehouseProduct> products = new ConcurrentHashMap<>();
     private final Map<String, WarehouseLocation> locations = new ConcurrentHashMap<>();
     private final List<InventoryItem> inventory = new ArrayList<>();
@@ -55,7 +70,21 @@ public class WarehouseIntelligenceService {
     private final Map<String, CategoryStatistics> categoryStatistics = new ConcurrentHashMap<>();
 
     public WarehouseIntelligenceService() {
+        this(null, null, null);
+    }
+
+    public WarehouseIntelligenceService(ProductRepository productRepository,
+                                        WarehouseRepository warehouseRepository,
+                                        StockLevelRepository stockLevelRepository) {
+        this.productRepository = productRepository;
+        this.warehouseRepository = warehouseRepository;
+        this.stockLevelRepository = stockLevelRepository;
         seedDemoData();
+    }
+
+    @PostConstruct
+    public void hydrateFromDatabase() {
+        refreshFromDatabase();
     }
 
     private void seedDemoData() {
@@ -111,6 +140,288 @@ public class WarehouseIntelligenceService {
 
         returnCases.add(new ReturnCase(UUID.randomUUID().toString(), smartGlove.getId(),
                 "Customer return - faulty sensor", "inspection", Instant.now().minusSeconds(86400)));
+    }
+
+    public void refreshFromDatabase() {
+        if (productRepository == null || warehouseRepository == null || stockLevelRepository == null) {
+            return;
+        }
+        productRepository.findAll().forEach(this::mapProductEntity);
+        warehouseRepository.findAll().forEach(this::mapWarehouseEntity);
+
+        List<StockLevel> levels = stockLevelRepository.findAll();
+        Set<String> touchedLocations = levels.stream()
+                .map(StockLevel::getWarehouse)
+                .filter(Objects::nonNull)
+                .map(this::mapWarehouseEntity)
+                .map(WarehouseLocation::getId)
+                .collect(Collectors.toSet());
+
+        if (!touchedLocations.isEmpty()) {
+            inventory.removeIf(item -> touchedLocations.contains(item.getLocationId()));
+            touchedLocations.forEach(locationId -> {
+                WarehouseLocation location = locations.get(locationId);
+                if (location != null) {
+                    location.setOccupied(0);
+                }
+            });
+        }
+
+        for (StockLevel level : levels) {
+            Product product = level.getProduct();
+            Warehouse warehouse = level.getWarehouse();
+            if (product == null || warehouse == null) {
+                continue;
+            }
+            WarehouseProduct mappedProduct = mapProductEntity(product);
+            WarehouseLocation location = mapWarehouseEntity(warehouse);
+            int absolute = toInt(level.getQuantity());
+            updateInventoryEntry(mappedProduct, location, absolute, absolute);
+        }
+
+        rebuildCategoryStatistics();
+        products.values().forEach(product -> product.setDemandSegment(classifyDemandSegment(product)));
+    }
+
+    public void registerProduct(Product product) {
+        if (product == null) {
+            return;
+        }
+        WarehouseProduct mapped = mapProductEntity(product);
+        rebuildCategoryStatistics();
+        mapped.setDemandSegment(classifyDemandSegment(mapped));
+    }
+
+    public void registerWarehouse(Warehouse warehouse) {
+        if (warehouse == null) {
+            return;
+        }
+        WarehouseLocation location = mapWarehouseEntity(warehouse);
+        if (inventory.stream().noneMatch(item -> location.getId().equals(item.getLocationId()))) {
+            location.setOccupied(0);
+        }
+    }
+
+    public void applyStockMovement(Product product,
+                                   Warehouse warehouse,
+                                   BigDecimal delta,
+                                   BigDecimal resultingQuantity) {
+        if (product == null || warehouse == null) {
+            return;
+        }
+        WarehouseProduct mappedProduct = mapProductEntity(product);
+        WarehouseLocation location = mapWarehouseEntity(warehouse);
+        int change = toInt(delta);
+        int absolute = resultingQuantity == null ? -1 : toInt(resultingQuantity);
+        updateInventoryEntry(mappedProduct, location, change, absolute);
+        if (change != 0) {
+            recordLedgerSnapshot(mappedProduct, location.getId(), change);
+        }
+        mappedProduct.setDemandSegment(classifyDemandSegment(mappedProduct));
+    }
+
+    private WarehouseProduct mapProductEntity(Product entity) {
+        if (entity == null) {
+            return null;
+        }
+        String productId = resolveProductId(entity);
+        WarehouseProduct product = products.computeIfAbsent(productId,
+                key -> new WarehouseProduct(key, entity.getName()));
+        product.setName(entity.getName());
+        if (entity.getUnitCost() != null) {
+            product.setCostPrice(entity.getUnitCost());
+        }
+        if (entity.getUnitPrice() != null) {
+            product.setSalesPrice(entity.getUnitPrice());
+        }
+        String category = resolveCategory(entity, product);
+        product.setCategory(category);
+        double weight = resolveWeight(entity, product);
+        product.setWeightKg(weight);
+        product.setVolumeCubicM(resolveVolume(entity, product, weight));
+        product.setLastUpdated(Instant.now());
+        applyAttributes(product, entity);
+        return product;
+    }
+
+    private WarehouseLocation mapWarehouseEntity(Warehouse entity) {
+        if (entity == null) {
+            return null;
+        }
+        String locationId = resolveWarehouseId(entity);
+        WarehouseLocation location = locations.computeIfAbsent(locationId, key -> {
+            double[] coords = deriveCoordinates(key);
+            return new WarehouseLocation(key, determineZone(key), coords[0], coords[1], coords[2],
+                    estimateCapacity(entity));
+        });
+        location.setZone(determineZone(locationId));
+        double[] coords = deriveCoordinates(locationId);
+        location.setX(coords[0]);
+        location.setY(coords[1]);
+        location.setZ(coords[2]);
+        location.setCapacity(estimateCapacity(entity));
+        return location;
+    }
+
+    private void updateInventoryEntry(WarehouseProduct product,
+                                      WarehouseLocation location,
+                                      int delta,
+                                      int absoluteQuantity) {
+        InventoryItem entry = inventory.stream()
+                .filter(item -> item.getProductId().equals(product.getId())
+                        && item.getLocationId().equals(location.getId()))
+                .findFirst()
+                .orElse(null);
+        if (entry == null) {
+            entry = new InventoryItem();
+            entry.setProductId(product.getId());
+            entry.setLocationId(location.getId());
+            entry.setLifecycleStatus("available");
+            inventory.add(entry);
+        }
+        int previous = entry.getQuantity();
+        int updated = absoluteQuantity >= 0 ? Math.max(0, absoluteQuantity)
+                : Math.max(0, previous + delta);
+        entry.setQuantity(updated);
+        entry.setLastMovement(Instant.now());
+        adjustLocationOccupancy(location.getId(), updated - previous);
+    }
+
+    private void recordLedgerSnapshot(WarehouseProduct product, String locationId, int change) {
+        MovementLogEntry entry = new MovementLogEntry();
+        entry.setId(UUID.randomUUID().toString());
+        entry.setProductId(product.getId());
+        if (change > 0) {
+            entry.setFromLocation(null);
+            entry.setToLocation(locationId);
+            entry.setQuantity(change);
+        } else {
+            entry.setFromLocation(locationId);
+            entry.setToLocation(null);
+            entry.setQuantity(Math.abs(change));
+        }
+        entry.setTimestamp(Instant.now());
+        entry.setHash(hashPayload(product.getId() + entry.getFromLocation()
+                + entry.getToLocation() + entry.getQuantity() + entry.getTimestamp()));
+        movementLedger.add(entry);
+    }
+
+    private String resolveProductId(Product entity) {
+        if (entity.getSku() != null && !entity.getSku().isBlank()) {
+            return entity.getSku().trim();
+        }
+        return "PRD-" + entity.getId();
+    }
+
+    private String resolveWarehouseId(Warehouse entity) {
+        if (entity.getCode() != null && !entity.getCode().isBlank()) {
+            return entity.getCode().trim();
+        }
+        return "WH-" + entity.getId();
+    }
+
+    private String resolveCategory(Product entity, WarehouseProduct current) {
+        String reference = (Optional.ofNullable(entity.getName()).orElse("") + " "
+                + Optional.ofNullable(entity.getDescription()).orElse(""))
+                .toLowerCase(Locale.ROOT);
+        for (Map.Entry<String, List<String>> entry : CATEGORY_KEYWORDS.entrySet()) {
+            if (entry.getValue().stream().anyMatch(reference::contains)) {
+                return entry.getKey();
+            }
+        }
+        return Optional.ofNullable(current.getCategory()).orElse("General");
+    }
+
+    private double resolveWeight(Product entity, WarehouseProduct current) {
+        if (current.getWeightKg() > 0) {
+            return current.getWeightKg();
+        }
+        BigDecimal reference = Optional.ofNullable(entity.getUnitCost())
+                .orElse(entity.getUnitPrice());
+        double base = reference == null ? 1.0 : Math.max(0.2, Math.min(reference.doubleValue() / 120.0, 35));
+        String uom = entity.getUnitOfMeasure();
+        if (uom != null) {
+            String normalized = uom.toLowerCase(Locale.ROOT);
+            if (normalized.contains("kg")) {
+                return Math.max(0.5, base);
+            }
+            if (normalized.contains("g")) {
+                return Math.max(0.2, base / 4);
+            }
+        }
+        return base;
+    }
+
+    private double resolveVolume(Product entity, WarehouseProduct current, double weight) {
+        if (current.getVolumeCubicM() > 0) {
+            return current.getVolumeCubicM();
+        }
+        String description = Optional.ofNullable(entity.getDescription()).orElse("")
+                .toLowerCase(Locale.ROOT);
+        if (description.contains("pallet")) {
+            return 0.9;
+        }
+        double base = weight / 250.0;
+        return Math.max(0.01, Math.min(base, 1.5));
+    }
+
+    private void applyAttributes(WarehouseProduct product, Product entity) {
+        if (entity.getUnitOfMeasure() != null && !entity.getUnitOfMeasure().isBlank()) {
+            String attribute = "UoM: " + entity.getUnitOfMeasure();
+            if (product.getAttributes().stream().noneMatch(attribute::equals)) {
+                product.addAttribute(attribute);
+            }
+        }
+        if (entity.getDescription() != null && !entity.getDescription().isBlank()) {
+            String snippet = entity.getDescription().strip();
+            if (snippet.length() > 64) {
+                snippet = snippet.substring(0, 64) + "…";
+            }
+            String attribute = "Desc: " + snippet;
+            if (product.getAttributes().stream().noneMatch(attribute::equals)) {
+                product.addAttribute(attribute);
+            }
+        }
+    }
+
+    private String determineZone(String locationId) {
+        if (locationId == null || locationId.isBlank()) {
+            return "A";
+        }
+        char first = Character.toUpperCase(locationId.charAt(0));
+        if (first >= 'A' && first <= 'Z') {
+            return String.valueOf(first);
+        }
+        return "A";
+    }
+
+    private double[] deriveCoordinates(String locationId) {
+        int hash = Math.abs(locationId.hashCode());
+        double x = 2 + (hash % 150) / 10.0;
+        double y = 2 + ((hash / 150) % 150) / 10.0;
+        double z = ((hash / 22500) % 3) + 1;
+        return new double[]{Math.round(x * 10.0) / 10.0,
+                Math.round(y * 10.0) / 10.0,
+                Math.round(z * 10.0) / 10.0};
+    }
+
+    private int estimateCapacity(Warehouse warehouse) {
+        String base = Optional.ofNullable(warehouse.getLocation()).orElse(warehouse.getName());
+        int hash = Math.abs(base == null ? 0 : base.hashCode());
+        return 80 + (hash % 140);
+    }
+
+    private void rebuildCategoryStatistics() {
+        categoryStatistics.clear();
+        products.values().forEach(product ->
+                updateCategoryStatistics(product.getCategory(), product.getWeightKg(), product.getVolumeCubicM()));
+    }
+
+    private int toInt(BigDecimal value) {
+        if (value == null) {
+            return 0;
+        }
+        return value.setScale(0, RoundingMode.HALF_UP).intValue();
     }
 
     public List<ProductResponse> listProducts() {
@@ -807,7 +1118,31 @@ public class WarehouseIntelligenceService {
     }
 
     private Map<LocalDate, Integer> generateForecast(String productId, int current) {
-        Map<LocalDate, Integer> forecast = new HashMap<>();
+        Map<LocalDate, Integer> forecast = new LinkedHashMap<>();
+        try {
+            PredictiveReplenishmentResponse analytics = analyseReplenishment(productId, 0.95d);
+            Map<LocalDate, Integer> dailyForecast = analytics.getDailyDemandForecast();
+            if (!dailyForecast.isEmpty()) {
+                int projection = current;
+                LocalDate today = LocalDate.now();
+                int dayOffset = 0;
+                for (int week = 1; week <= 6; week++) {
+                    double weeklyDemand = 0;
+                    for (int day = 0; day < 7; day++) {
+                        dayOffset++;
+                        LocalDate target = today.plusDays(dayOffset);
+                        int demand = dailyForecast.getOrDefault(target,
+                                (int) Math.round(analytics.getAverageDailyDemand()));
+                        weeklyDemand += Math.max(0, demand);
+                    }
+                    projection = Math.max(0, projection - (int) Math.round(weeklyDemand));
+                    forecast.put(today.plusWeeks(week), projection);
+                }
+                return forecast;
+            }
+        } catch (RuntimeException ignored) {
+        }
+
         Map<LocalDate, Integer> history = new HashMap<>();
         for (MovementLogEntry entry : movementLedger) {
             if (!Objects.equals(entry.getProductId(), productId)) {
@@ -857,6 +1192,178 @@ public class WarehouseIntelligenceService {
                 .average()
                 .orElse(5);
         return (int) Math.round(avgDailyConsumption * leadTime * 0.5);
+    }
+
+    public PredictiveReplenishmentResponse analyseReplenishment(String productId, double serviceLevelTarget) {
+        if (productId == null || productId.isBlank()) {
+            throw new IllegalArgumentException("Product id required for replenishment analysis");
+        }
+
+        int onHand = inventory.stream()
+                .filter(item -> productId.equals(item.getProductId()))
+                .mapToInt(InventoryItem::getQuantity)
+                .sum();
+
+        NavigableMap<LocalDate, Integer> dailySeries = buildDemandSeries(productId, 90);
+        if (dailySeries.isEmpty()) {
+            dailySeries = buildEmptySeries(30);
+        }
+
+        List<Double> demandValues = new ArrayList<>();
+        double alpha = 0.4;
+        double beta = 0.2;
+        double level = 0;
+        double trend = 0;
+        boolean initialised = false;
+
+        for (Map.Entry<LocalDate, Integer> entry : dailySeries.entrySet()) {
+            double demand = Math.max(0, entry.getValue());
+            demandValues.add(demand);
+            if (!initialised) {
+                level = demand;
+                trend = 0;
+                initialised = true;
+            } else {
+                double previousLevel = level;
+                level = alpha * demand + (1 - alpha) * (level + trend);
+                trend = beta * (level - previousLevel) + (1 - beta) * trend;
+            }
+        }
+
+        double averageDailyDemand = demandValues.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        double variance = demandValues.size() > 1
+                ? demandValues.stream()
+                .mapToDouble(value -> Math.pow(value - averageDailyDemand, 2))
+                .sum() / (demandValues.size() - 1)
+                : 0;
+        double volatility = Math.sqrt(variance);
+
+        Map<LocalDate, Integer> dailyForecast = new LinkedHashMap<>();
+        LocalDate today = LocalDate.now();
+        for (int offset = 1; offset <= 28; offset++) {
+            double projected = Math.max(0, level + (offset * trend));
+            dailyForecast.put(today.plusDays(offset), (int) Math.round(projected));
+        }
+
+        double leadTime = suppliers.isEmpty()
+                ? 5
+                : suppliers.values().stream().mapToDouble(SupplierProfile::getLeadTimeDays).average().orElse(5);
+        double zScore = zScoreForServiceLevel(serviceLevelTarget);
+        double leadTimeBuffer = Math.sqrt(Math.max(leadTime, 1));
+
+        int reorderPoint = (int) Math.round(Math.max(0,
+                averageDailyDemand * leadTime + zScore * volatility * leadTimeBuffer));
+
+        int coverageDays = Math.max(14, (int) Math.ceil(leadTime * 1.5));
+        double targetStock = averageDailyDemand * coverageDays
+                + zScore * volatility * Math.sqrt(Math.max(coverageDays, 1));
+        int recommendedOrder = (int) Math.max(0, Math.round(targetStock - onHand));
+
+        double expectedConsumption = dailyForecast.values().stream()
+                .mapToInt(Integer::intValue)
+                .average()
+                .orElse(averageDailyDemand);
+        if (expectedConsumption <= 0) {
+            expectedConsumption = averageDailyDemand;
+        }
+        if (expectedConsumption <= 0) {
+            expectedConsumption = 0.1;
+        }
+        int daysUntilStockout = onHand <= 0 ? 0 : (int) Math.floor(onHand / expectedConsumption);
+
+        double confidence = demandValues.isEmpty()
+                ? 0.4
+                : Math.max(0.1, Math.min(0.99, 1 - (volatility / (averageDailyDemand + 1.0))));
+        if (averageDailyDemand < 0.01) {
+            confidence = Math.min(confidence, 0.6);
+        }
+
+        String trendDescriptor;
+        if (Math.abs(trend) < 0.1) {
+            trendDescriptor = "stabil";
+        } else if (trend > 0) {
+            trendDescriptor = "steigend";
+        } else {
+            trendDescriptor = "rückläufig";
+        }
+
+        String rationale = String.format(Locale.ROOT,
+                "Ø Bedarf %.1f/Tag (%s) → Nachschubpunkt %d, Vorrat reicht %d Tage bei %.0f%% Servicelevel.",
+                averageDailyDemand,
+                trendDescriptor,
+                reorderPoint,
+                daysUntilStockout,
+                Math.max(serviceLevelTarget, 0.5) * 100);
+        if (recommendedOrder > 0) {
+            rationale += String.format(Locale.ROOT, " Empfohlene Bestellung: %d Stück.", recommendedOrder);
+        } else {
+            rationale += " Kein zusätzlicher Bestand erforderlich.";
+        }
+
+        return new PredictiveReplenishmentResponse(productId, averageDailyDemand, trend, volatility,
+                reorderPoint, recommendedOrder, daysUntilStockout, confidence, rationale, dailyForecast);
+    }
+
+    private NavigableMap<LocalDate, Integer> buildDemandSeries(String productId, int lookbackDays) {
+        NavigableMap<LocalDate, Integer> series = new TreeMap<>();
+        LocalDate today = LocalDate.now();
+        for (int i = lookbackDays; i >= 0; i--) {
+            series.put(today.minusDays(i), 0);
+        }
+        for (MovementLogEntry entry : movementLedger) {
+            if (!Objects.equals(entry.getProductId(), productId)) {
+                continue;
+            }
+            LocalDate date = entry.getTimestamp().atZone(ZoneId.systemDefault()).toLocalDate();
+            if (date.isBefore(today.minusDays(lookbackDays))) {
+                continue;
+            }
+            int outbound = entry.getFromLocation() != null && !entry.getFromLocation().isBlank()
+                    ? entry.getQuantity() : 0;
+            int inbound = entry.getToLocation() != null && !entry.getToLocation().isBlank()
+                    ? entry.getQuantity() : 0;
+            series.merge(date, outbound - inbound, Integer::sum);
+        }
+        return series;
+    }
+
+    private NavigableMap<LocalDate, Integer> buildEmptySeries(int days) {
+        NavigableMap<LocalDate, Integer> fallback = new TreeMap<>();
+        LocalDate today = LocalDate.now();
+        for (int i = days; i >= 0; i--) {
+            fallback.put(today.minusDays(i), 0);
+        }
+        return fallback;
+    }
+
+    private double zScoreForServiceLevel(double serviceLevelTarget) {
+        double[][] reference = new double[][]{
+                {0.50, 0.0},
+                {0.60, 0.253},
+                {0.70, 0.524},
+                {0.80, 0.842},
+                {0.85, 1.036},
+                {0.90, 1.282},
+                {0.95, 1.645},
+                {0.975, 1.96},
+                {0.98, 2.054},
+                {0.99, 2.326},
+                {0.995, 2.576},
+                {0.998, 2.878},
+                {0.999, 3.090}
+        };
+        double target = Math.max(0.5, Math.min(serviceLevelTarget, 0.999));
+        for (int i = 0; i < reference.length - 1; i++) {
+            double lowerLevel = reference[i][0];
+            double upperLevel = reference[i + 1][0];
+            if (target <= upperLevel) {
+                double lowerZ = reference[i][1];
+                double upperZ = reference[i + 1][1];
+                double ratio = (target - lowerLevel) / (upperLevel - lowerLevel);
+                return lowerZ + ratio * (upperZ - lowerZ);
+            }
+        }
+        return reference[reference.length - 1][1];
     }
 
     private void adjustInventoryOnMovement(WarehouseProduct product, String fromLocation, String toLocation,

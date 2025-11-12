@@ -153,6 +153,67 @@
     align-items: end;
 }
 
+.admin-page.supply-chain-page .card-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.admin-page.supply-chain-page .card-header-row .secondary {
+    margin-left: auto;
+}
+
+.admin-page.supply-chain-page .status-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.65rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.admin-page.supply-chain-page .status-chip.safe {
+    background: rgba(34, 197, 94, 0.18);
+    color: #15803d;
+}
+
+.admin-page.supply-chain-page .status-chip.warn {
+    background: rgba(251, 191, 36, 0.22);
+    color: #92400e;
+}
+
+.admin-page.supply-chain-page .status-chip.danger {
+    background: rgba(239, 68, 68, 0.2);
+    color: #b91c1c;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .status-chip.safe {
+    background: rgba(34, 197, 94, 0.25);
+    color: #bbf7d0;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .status-chip.warn {
+    background: rgba(251, 191, 36, 0.25);
+    color: #fcd34d;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .status-chip.danger {
+    background: rgba(248, 113, 113, 0.28);
+    color: #fecaca;
+}
+
+.admin-page.supply-chain-page .error-message {
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .admin-page.supply-chain-page .error-message {
+    color: #fecaca;
+}
+
 .admin-page.supply-chain-page .small-print {
     font-size: 0.8rem;
     margin: -0.25rem 0 0;
