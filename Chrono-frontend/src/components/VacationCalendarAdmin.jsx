@@ -718,32 +718,25 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
     return (
         <div className="vacation-calendar-admin scoped-vacation">
-            <h2>{t('adminCalendar.title', 'Admin Kalenderübersicht')}</h2>
-            <div className="calendar-toolbar">
-                {/* Monats-Navigation */}
-                <div className="toolbar-group">
+            <div className="calendar-header">
+                <h2>{t('adminCalendar.title', 'Admin Kalenderübersicht')}</h2>
+                <div className="month-navigation">
                     <button
                         type="button"
-                        className="btn-arrow"
                         onClick={goToPrevMonth}
                         aria-label={t('prevMonth', 'Vorheriger Monat')}
                         title={t('prevMonth', 'Vorheriger Monat')}
                     >
-                        «
+                        ‹
                     </button>
-
-                    <div className="toolbar-label month-label">
-                        {formatMonthYear(activeStartDate, t('calendarLocale','de-DE'))}
-                    </div>
-
+                    <span>{formatMonthYear(activeStartDate, t('calendarLocale', 'de-DE'))}</span>
                     <button
                         type="button"
-                        className="btn-arrow"
                         onClick={goToNextMonth}
                         aria-label={t('nextMonth', 'Nächster Monat')}
                         title={t('nextMonth', 'Nächster Monat')}
                     >
-                        »
+                        ›
                     </button>
                 </div>
             </div>
