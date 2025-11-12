@@ -60,6 +60,63 @@
   font-weight: 700;
 }
 
+.vacation-calendar-admin.scoped-vacation .calendar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  border-radius: var(--u-radius);
+  padding: 0.8rem 1.2rem;
+  box-shadow: var(--u-shadow-sm);
+  margin-bottom: 1rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-header h2 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--c-text);
+  text-align: left;
+}
+
+.vacation-calendar-admin.scoped-vacation .month-navigation {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .month-navigation span {
+  font-weight: 600;
+  color: var(--c-text);
+  min-width: 130px;
+  text-align: center;
+  text-transform: capitalize;
+}
+
+.vacation-calendar-admin.scoped-vacation .month-navigation button {
+  background: var(--c-pri);
+  color: #fff;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--u-shadow-sm);
+  transition: background var(--u-dur) var(--u-ease), transform var(--u-dur) var(--u-ease);
+}
+
+.vacation-calendar-admin.scoped-vacation .month-navigation button:hover {
+  background: var(--c-pri-dim);
+  transform: translateY(-1px);
+}
+
 .vacation-calendar-admin.scoped-vacation .admin-password-input {
   display: flex;
   align-items: center;
@@ -88,6 +145,7 @@
   box-shadow: var(--u-shadow-sm);
   padding: 1rem;
   width: 100% !important; /* override inline style */
+  margin-top: 1rem;
 }
 
 /* Navigation (Monatswechsel) */
@@ -914,35 +972,26 @@
 
 .vacation-calendar-admin.scoped-vacation .admin-calendar-actions {
   display: flex;
-  justify-content: space-around;
-  margin-top: 1.5rem;
+  justify-content: center;
+  align-items: center;
   gap: 1rem;
+  margin-top: 1.5rem;
+  flex-wrap: wrap;
 }
 
 .vacation-calendar-admin.scoped-vacation .create-vacation-button,
 .vacation-calendar-admin.scoped-vacation .report-sick-leave-button-admin {
-  flex-grow: 1;
-  padding: 0.7rem 1rem; /* Dein ursprüngliches Padding */
+  flex: 0 0 auto;
+  min-width: 180px;
+  padding: 0.7rem 1rem;
   font-size: 0.9rem;
-
-  /* NEU: Explizite Höhe für beide Buttons setzen */
-  height: 48px; /* Beispielwert - passe diesen Wert an,
-                     bis er für den Button mit dem meisten Inhalt gut aussieht.
-                     Wichtig ist, dass beide Buttons denselben Wert bekommen.
-                     Alternativ: min-height, falls die Höhe variieren darf, aber mindestens X sein soll.
-                  */
-
-  /* display: flex usw. für Textzentrierung beibehalten */
-  display: flex;
+  border-radius: var(--u-radius);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  line-height: 1.4; /* Behalte eine konsistente Zeilenhöhe bei */
-  box-sizing: border-box;
-
-  /* Bestehende Button-spezifische Stile (Farben, Hover etc.) bleiben erhalten */
-  /* ... (z.B. background-color, color, border-radius, transition etc. für create-vacation-button) ... */
-  /* ... (z.B. background-color, color, border-radius, transition etc. für report-sick-leave-button-admin) ... */
+  font-weight: 600;
+  box-shadow: var(--u-shadow-sm);
+  transition: transform var(--u-dur) var(--u-ease), background-color var(--u-dur) var(--u-ease);
 }
 .vacation-calendar-admin.scoped-vacation .report-sick-leave-button-admin {
   background-color: var(--c-warn, #ffc107); /* Beispiel: Warnfarbe für Krankmeldung */
