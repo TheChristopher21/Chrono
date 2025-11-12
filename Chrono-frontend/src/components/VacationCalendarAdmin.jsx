@@ -207,8 +207,11 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         const cantonToLoad = currentCantonForHolidays;
 
         fetchHolidays(year, cantonToLoad);
+    }, [activeStartDate, currentCantonForHolidays, fetchHolidays]);
+
+    useEffect(() => {
         fetchAllSickLeaves();
-    }, [activeStartDate, currentCantonForHolidays, fetchHolidays, fetchAllSickLeaves]);
+    }, [fetchAllSickLeaves]);
 
 
     function itemInRange(item, start, end, dateFieldPrefix = '') {
