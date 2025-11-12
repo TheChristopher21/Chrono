@@ -148,7 +148,6 @@
 }
 
 .admin-page.crm-page .form-grid input,
-.admin-page.crm-page .form-grid select,
 .admin-page.crm-page .form-grid textarea {
     border: 1px solid rgba(99, 102, 241, 0.3);
     border-radius: 12px;
@@ -163,10 +162,37 @@
 }
 
 [data-theme="dark"] .admin-page.crm-page .form-grid input,
-[data-theme="dark"] .admin-page.crm-page .form-grid select,
 [data-theme="dark"] .admin-page.crm-page .form-grid textarea {
     background: rgba(30, 41, 59, 0.85);
     border-color: rgba(165, 180, 252, 0.5);
+}
+
+.admin-page.crm-page select {
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    border-radius: 12px;
+    padding: 0.55rem 0.85rem;
+    font-size: 0.97rem;
+    background: rgba(249, 250, 255, 0.9);
+    color: inherit;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admin-page.crm-page select:focus {
+    outline: none;
+    border-color: rgba(67, 56, 202, 0.6);
+    box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25);
+}
+
+[data-theme="dark"] .admin-page.crm-page select {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: rgba(165, 180, 252, 0.55);
+    color: #e2e8f0;
+    color-scheme: dark;
+}
+
+[data-theme="dark"] .admin-page.crm-page select option {
+    background-color: #0f172a;
+    color: #e2e8f0;
 }
 
 .admin-page.crm-page .form-actions {
