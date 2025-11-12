@@ -205,6 +205,16 @@ public class CrmService {
     }
 
     @Transactional(readOnly = true)
+    public Optional<CrmDocument> findDocument(Long id) {
+        return crmDocumentRepository.findById(id);
+    }
+
+    @Transactional
+    public void deleteDocument(CrmDocument document) {
+        crmDocumentRepository.delete(document);
+    }
+
+    @Transactional(readOnly = true)
     public List<CrmLead> getLeadsByStatus(Company company, LeadStatus status) {
         return crmLeadRepository.findByCompanyAndStatus(company, status);
     }
