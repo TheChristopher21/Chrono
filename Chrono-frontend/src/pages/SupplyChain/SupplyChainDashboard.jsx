@@ -86,7 +86,7 @@ const SupplyChainDashboard = () => {
     const [refreshFlag, setRefreshFlag] = useState(0);
 
     const [productForm, setProductForm] = useState({ sku: "", name: "", description: "", unitCost: "", unitPrice: "" });
-    const [warehouseForm, setWarehouseForm] = useState({ name: "", location: "" });
+    const [warehouseForm, setWarehouseForm] = useState({ code: "", name: "", location: "" });
     const [adjustForm, setAdjustForm] = useState({
         productId: "",
         warehouseId: "",
@@ -290,9 +290,20 @@ const SupplyChainDashboard = () => {
     const handleWarehouseSubmit = async (event) => {
         event.preventDefault();
         try {
-            await api.post("/api/supply-chain/warehouses", warehouseForm);
+            const payload = {
+                code: warehouseForm.code.trim(),
+                name: warehouseForm.name.trim(),
+                location: warehouseForm.location.trim() || undefined,
+            };
+
+            if (!payload.code || !payload.name) {
+                notify(t("supplyChain.warehouseValidationError", "Code und Name sind erforderlich."), "error");
+                return;
+            }
+
+            await api.post("/api/supply-chain/warehouses", payload);
             notify(t("supplyChain.warehouseCreated", "Lager angelegt."), "success");
-            setWarehouseForm({ name: "", location: "" });
+            setWarehouseForm({ code: "", name: "", location: "" });
             setLoading(true);
             setRefreshFlag((value) => value + 1);
         } catch (error) {
@@ -799,6 +810,15 @@ const SupplyChainDashboard = () => {
                     <article className="card">
                         <h2>{t("supplyChain.newWarehouse", "Neues Lager")}</h2>
                         <form className="form-grid" onSubmit={handleWarehouseSubmit}>
+                            <label>
+                                {t("supplyChain.warehouseCode", "Code")}
+                                <input
+                                    type="text"
+                                    value={warehouseForm.code}
+                                    onChange={(e) => setWarehouseForm({ ...warehouseForm, code: e.target.value })}
+                                    required
+                                />
+                            </label>
                             <label>
                                 {t("supplyChain.warehouseName", "Name")}
                                 <input type="text" value={warehouseForm.name} onChange={(e) => setWarehouseForm({ ...warehouseForm, name: e.target.value })} required />

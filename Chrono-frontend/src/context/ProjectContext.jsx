@@ -130,6 +130,11 @@ export const ProjectProvider = ({ children }) => {
       return;
     }
 
+    if (customerTrackingEnabled == null) {
+      // Warten, bis der Benutzer vollständig geladen wurde, um unnötige 403-Fehler zu vermeiden.
+      return;
+    }
+
     if (customerTrackingEnabled === false) {
       setProjects([]);
       setProjectHierarchy([]);
