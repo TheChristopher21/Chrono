@@ -748,6 +748,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                 onActiveStartDateChange={onActiveStartDateChange}
                 onClickDay={(value) => { openVacationModalAndReset(value); }}
                 locale={t('calendarLocale', 'de-DE')}
+                showNavigation={false}
             />
             <div className="admin-calendar-actions">
                 <button onClick={() => openVacationModalAndReset()} className="create-vacation-button">
