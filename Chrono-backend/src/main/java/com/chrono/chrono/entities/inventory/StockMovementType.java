@@ -5,6 +5,8 @@ public enum StockMovementType {
     ISSUE,
     TRANSFER,
     ADJUSTMENT,
+    WRITE_OFF,
+    GAIN,
     PRODUCTION_CONSUMPTION,
     PRODUCTION_OUTPUT
 }
