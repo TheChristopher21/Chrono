@@ -641,7 +641,8 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     }
 
     const onActiveStartDateChange = ({ activeStartDate: newActiveStartDate }) => {
-        setActiveStartDate(newActiveStartDate);
+        if (!newActiveStartDate) return;
+        setActiveStartDate(startOfMonth(newActiveStartDate));
     };
 
     const handleVacationUserChange = (e) => {
@@ -713,8 +714,12 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
 
 
-    const goToPrevMonth = () => setActiveStartDate(startOfMonth(addMonths(activeStartDate, -1)));
-    const goToNextMonth = () => setActiveStartDate(startOfMonth(addMonths(activeStartDate,  +1)));
+    const goToPrevMonth = () => {
+        setActiveStartDate(prev => startOfMonth(addMonths(prev || new Date(), -1)));
+    };
+    const goToNextMonth = () => {
+        setActiveStartDate(prev => startOfMonth(addMonths(prev || new Date(),  +1)));
+    };
 
     return (
         <div className="vacation-calendar-admin scoped-vacation">
@@ -729,7 +734,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                     >
                         ‹
                     </button>
-                    <span>{formatMonthYear(activeStartDate, t('calendarLocale', 'de-DE'))}</span>
+                    <span>{formatMonthYear(activeStartDate || new Date(), t('calendarLocale', 'de-DE'))}</span>
                     <button
                         type="button"
                         onClick={goToNextMonth}
@@ -744,6 +749,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             <Calendar
                 className="calendar-lg"
                 value={activeStartDate}
+                activeStartDate={activeStartDate}
                 tileContent={tileContent}
                 onActiveStartDateChange={onActiveStartDateChange}
                 onClickDay={(value) => { openVacationModalAndReset(value); }}
