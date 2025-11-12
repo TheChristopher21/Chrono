@@ -12,9 +12,10 @@
 }
 
 .admin-page.supply-chain-page .admin-content {
-    width: min(1200px, 100%);
-    margin: 0 auto;
-    padding: 2.5rem 1.5rem 3rem;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    padding: 2.5rem clamp(1.5rem, 3vw, 3rem) 3rem;
     display: flex;
     flex-direction: column;
     gap: 1.75rem;
