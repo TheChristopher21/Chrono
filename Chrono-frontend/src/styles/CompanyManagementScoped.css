@@ -1,307 +1,691 @@
-/* =========================================================================
-   CompanyManagementScoped.css (Überarbeitet für Lesbarkeit)
-   Scope: .company-management-page.scoped-company
-   ========================================================================= */
-
-/* 1) LIGHT Mode Variablen (unverändert) */
 .company-management-page.scoped-company {
   --c-text: #1e1f22;
+  --c-muted: #5f6471;
   --c-bg: #f4f6ff;
   --c-card: #ffffff;
   --c-border: #d5d8e5;
-  --c-input-bg: #fdfdff; /* Etwas vom Kartenhintergrund abgehoben */
-
+  --c-border-strong: #bec3d6;
+  --c-input-bg: #f8f9ff;
   --c-primary: #475bff;
-  --c-primary-dim: #6b7cff;
-  --c-muted: #60646c;
+  --c-primary-hover: #3247ff;
   --c-danger: #e74c3c;
+  --c-danger-hover: #c0392b;
+  --c-success: #1abc9c;
+  --c-shadow: 0 18px 35px rgba(15, 23, 42, 0.08);
 
-  --u-radius: 14px;
-  --u-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-
-  font-family: "Poppins", sans-serif;
+  font-family: 'Poppins', sans-serif;
   background: var(--c-bg);
   color: var(--c-text);
-  padding: 1.5rem;
   min-height: 100vh;
+  padding: 2rem clamp(1.5rem, 3vw, 3rem) 3rem;
   box-sizing: border-box;
 }
 
-/* 2) DARK Mode Variablen (unverändert) */
 [data-theme="dark"] .company-management-page.scoped-company {
-  --c-text: #e5e7ec;
-  --c-bg: #15171c;
-  --c-card: #212429;
-  --c-border: #3a3f4b;
-  --c-input-bg: #2a2d33; /* Etwas vom Kartenhintergrund abgehoben */
-
-  --c-primary: #5a6aff;
-  --c-primary-dim: #7d8aff;
-  --c-muted: #8f96a3;
-  --c-danger: #ff5252;
+  --c-text: #e7e9f2;
+  --c-muted: #949db5;
+  --c-bg: #0d1017;
+  --c-card: #161a23;
+  --c-border: #252c3b;
+  --c-border-strong: #333b4d;
+  --c-input-bg: #1c2130;
+  --c-primary: #6c7bff;
+  --c-primary-hover: #8894ff;
+  --c-danger: #ff6b5f;
+  --c-danger-hover: #ff5143;
+  --c-shadow: 0 18px 40px rgba(2, 8, 20, 0.55);
 }
 
-/* =========================================================================
-   Struktur & Layout
-   ========================================================================= */
-
-/* Seitentitel */
-.company-management-page.scoped-company .cmp-title {
-  font-size: 1.8rem;
-  font-weight: 600;
-  margin-bottom: 2rem;
-  color: var(--c-text);
+.company-management-page.scoped-company * {
+  box-sizing: border-box;
 }
 
-/* Alle Sektionen bekommen mehr Abstand und einheitliches Styling */
-.company-management-page.scoped-company .cmp-section {
-  background: var(--c-card);
-  border-radius: var(--u-radius);
-  box-shadow: var(--u-shadow);
-  padding: 1.5rem 2rem;
-  margin-bottom: 2rem;
-  border: 1px solid var(--c-border);
-}
-
-.company-management-page.scoped-company .cmp-section h3 {
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  border-bottom: 1px solid var(--c-border);
-  padding-bottom: 0.75rem;
-  font-size: 1.2rem;
-  font-weight: 500;
-}
-
-/* =========================================================================
-   Formular-Styling (inkl. Changelog)
-   ========================================================================= */
-
-.company-management-page.scoped-company .cmp-form {
+.company-management-page.scoped-company .cmp-container {
+  max-width: 1320px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 2rem;
 }
 
-/* Gilt für alle Eingabefelder, inkl. textarea */
-.company-management-page.scoped-company .cmp-form input[type="text"],
-.company-management-page.scoped-company .cmp-form input[type="password"],
-.company-management-page.scoped-company .cmp-form input[type="email"],
-.company-management-page.scoped-company .cmp-form textarea {
-  width: 100%;
-  padding: 0.8rem 1rem;
-  border-radius: 8px;
-  border: 1px solid var(--c-border);
-  background: var(--c-input-bg);
-  color: var(--c-text);
-  font-size: 1rem;
-  transition:
-    border-color 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.company-management-page.scoped-company .cmp-form input:focus,
-.company-management-page.scoped-company .cmp-form textarea:focus {
-  outline: none;
-  border-color: var(--c-primary);
-  box-shadow: 0 0 0 3px var(--c-primary-dim-trans, rgba(90, 106, 255, 0.2));
-}
-
-.company-management-page.scoped-company .cmp-form button {
-  align-self: flex-start; /* Button nicht über die volle Breite */
-  padding: 0.8rem 1.5rem;
-  font-size: 1rem;
-  font-weight: 500;
-  border-radius: 8px;
-  border: none;
-  background: var(--c-primary);
-  color: white;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-}
-
-.company-management-page.scoped-company .cmp-form button:hover {
-  background: var(--c-primary-dim);
-}
-
-.company-management-page.scoped-company .cmp-feature-box {
-  border: 1px dashed var(--c-border);
-  border-radius: 12px;
-  padding: 1rem 1.25rem;
-  background: var(--c-input-bg);
+.company-management-page.scoped-company .cmp-topbar {
   display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
 }
 
-.company-management-page.scoped-company .cmp-feature-box__header {
+.company-management-page.scoped-company .cmp-breadcrumb {
   display: flex;
   flex-direction: column;
   gap: 0.35rem;
 }
 
-.company-management-page.scoped-company .cmp-feature-box__hint {
-  font-size: 0.85rem;
+.company-management-page.scoped-company .cmp-breadcrumb__title {
+  font-size: clamp(1.4rem, 2.8vw, 1.9rem);
+  font-weight: 600;
+}
+
+.company-management-page.scoped-company .cmp-breadcrumb__subtitle {
+  font-size: 0.95rem;
   color: var(--c-muted);
 }
 
-.company-management-page.scoped-company .cmp-feature-grid {
+.company-management-page.scoped-company .cmp-topbar-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.company-management-page.scoped-company .cmp-search {
+  position: relative;
+  flex: 1 1 240px;
+  min-width: 200px;
+}
+
+.company-management-page.scoped-company .cmp-search input {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--c-border);
+  background: var(--c-input-bg);
+  color: var(--c-text);
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.company-management-page.scoped-company .cmp-search input:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 4px rgba(71, 91, 255, 0.2);
+}
+
+.company-management-page.scoped-company .cmp-button,
+.company-management-page.scoped-company .cmp-icon-button {
+  border: none;
+  border-radius: 12px;
+  background: var(--c-card);
+  color: var(--c-text);
+  font-size: 0.95rem;
+  font-weight: 500;
+  padding: 0.75rem 1.2rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+.company-management-page.scoped-company .cmp-button:hover,
+.company-management-page.scoped-company .cmp-icon-button:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(15, 23, 42, 0.12);
+}
+
+.company-management-page.scoped-company .cmp-button--primary {
+  background: var(--c-primary);
+  color: #fff;
+}
+
+.company-management-page.scoped-company .cmp-button--primary:hover {
+  background: var(--c-primary-hover);
+}
+
+.company-management-page.scoped-company .cmp-button--danger {
+  background: rgba(231, 76, 60, 0.12);
+  color: var(--c-danger);
+}
+
+.company-management-page.scoped-company .cmp-button--danger:hover {
+  background: rgba(231, 76, 60, 0.22);
+}
+
+.company-management-page.scoped-company .cmp-icon-button {
+  width: 44px;
+  height: 44px;
+  justify-content: center;
+  padding: 0;
+  font-size: 1.3rem;
+}
+
+.company-management-page.scoped-company .cmp-icon-button.is-active {
+  border: 1px solid var(--c-primary);
+  background: rgba(71, 91, 255, 0.12);
+}
+
+.company-management-page.scoped-company .cmp-filter-bar {
+  background: var(--c-card);
+  border: 1px solid var(--c-border);
+  border-radius: 16px;
+  padding: 1rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  box-shadow: var(--c-shadow);
+}
+
+.company-management-page.scoped-company .cmp-filter-label {
+  font-weight: 500;
+}
+
+.company-management-page.scoped-company .cmp-filter-tabs {
+  display: inline-flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.company-management-page.scoped-company .cmp-filter-tab {
+  border: 1px solid var(--c-border);
+  background: transparent;
+  border-radius: 999px;
+  padding: 0.45rem 1.1rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.company-management-page.scoped-company .cmp-filter-tab.is-active {
+  border-color: var(--c-primary);
+  background: rgba(71, 91, 255, 0.16);
+  color: var(--c-primary);
+}
+
+.company-management-page.scoped-company .cmp-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  border-radius: 16px;
+  background: var(--c-card);
+  border: 1px dashed var(--c-border);
+  color: var(--c-muted);
+}
+
+.company-management-page.scoped-company .cmp-state--error {
+  color: var(--c-danger);
+  border-color: var(--c-danger);
+}
+
+.company-management-page.scoped-company .cmp-section {
+  background: var(--c-card);
+  border-radius: 20px;
+  border: 1px solid var(--c-border);
+  box-shadow: var(--c-shadow);
+  padding: clamp(1.6rem, 3vw, 2.2rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.company-management-page.scoped-company .cmp-section__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.company-management-page.scoped-company .cmp-section__header h3 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 600;
+}
+
+.company-management-page.scoped-company .cmp-section__header p {
+  margin: 0.35rem 0 0;
+  color: var(--c-muted);
+  font-size: 0.95rem;
+}
+
+.company-management-page.scoped-company .cmp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.company-management-page.scoped-company .cmp-form-group h4 {
+  margin: 0 0 1rem;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.company-management-page.scoped-company .cmp-form-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.company-management-page.scoped-company .cmp-form-grid--compact {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.company-management-page.scoped-company .cmp-form-grid--two {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.company-management-page.scoped-company .cmp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+  color: var(--c-muted);
+}
+
+.company-management-page.scoped-company .cmp-field span {
+  font-weight: 500;
+  color: var(--c-text);
+}
+
+.company-management-page.scoped-company .cmp-field input,
+.company-management-page.scoped-company .cmp-field textarea {
+  border-radius: 12px;
+  border: 1px solid var(--c-border);
+  background: var(--c-input-bg);
+  color: var(--c-text);
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  resize: vertical;
+  min-height: 48px;
+}
+
+.company-management-page.scoped-company .cmp-field textarea {
+  min-height: 180px;
+  line-height: 1.5;
+}
+
+.company-management-page.scoped-company .cmp-field input:focus,
+.company-management-page.scoped-company .cmp-field textarea:focus {
+  outline: none;
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 4px rgba(71, 91, 255, 0.18);
+}
+
+.company-management-page.scoped-company .cmp-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.company-management-page.scoped-company .cmp-text-link {
+  background: none;
+  border: none;
+  color: var(--c-primary);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+}
+
+.company-management-page.scoped-company .cmp-text-link:hover {
+  text-decoration: underline;
+}
+
+.company-management-page.scoped-company .cmp-collapsible {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  border: 1px dashed var(--c-border);
+  border-radius: 16px;
+  padding: 1.3rem;
+  background: rgba(71, 91, 255, 0.04);
+}
+
+.company-management-page.scoped-company .cmp-module-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.company-management-page.scoped-company .cmp-module-picker__header strong {
+  font-size: 1.05rem;
+}
+
+.company-management-page.scoped-company .cmp-module-picker__hint {
+  margin: 0.35rem 0 0;
+  color: var(--c-muted);
+  font-size: 0.85rem;
+}
+
+.company-management-page.scoped-company .cmp-module-picker__categories {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.company-management-page.scoped-company .cmp-module-category {
+  border: 1px solid var(--c-border);
+  border-radius: 16px;
+  padding: 1.1rem;
+  background: rgba(71, 91, 255, 0.03);
+}
+
+.company-management-page.scoped-company .cmp-module-category--core {
+  background: rgba(56, 132, 255, 0.05);
+}
+
+.company-management-page.scoped-company .cmp-module-category--business {
+  background: rgba(52, 168, 83, 0.05);
+}
+
+.company-management-page.scoped-company .cmp-module-category--premium {
+  background: rgba(156, 39, 176, 0.05);
+}
+
+.company-management-page.scoped-company .cmp-module-category__title {
+  font-weight: 600;
+  margin-bottom: 0.35rem;
+}
+
+.company-management-page.scoped-company .cmp-module-category__description {
+  margin: 0 0 0.9rem;
+  color: var(--c-muted);
+  font-size: 0.85rem;
+}
+
+.company-management-page.scoped-company .cmp-module-category__items {
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem;
 }
 
-.company-management-page.scoped-company .cmp-feature-toggle {
+.company-management-page.scoped-company .cmp-module-item {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
-  padding: 0.4rem 0.8rem;
+  gap: 0.5rem;
   border-radius: 999px;
   border: 1px solid var(--c-border);
+  padding: 0.45rem 0.9rem;
   background: var(--c-card);
   font-size: 0.9rem;
   cursor: pointer;
   transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.company-management-page.scoped-company .cmp-feature-toggle:hover {
+.company-management-page.scoped-company .cmp-module-item input {
+  accent-color: var(--c-primary);
+}
+
+.company-management-page.scoped-company .cmp-module-item:hover {
   border-color: var(--c-primary);
   background: rgba(71, 91, 255, 0.08);
 }
 
-.company-management-page.scoped-company .cmp-feature-toggle input {
+.company-management-page.scoped-company .cmp-module-item__icon {
+  font-size: 1.1rem;
+}
+
+.company-management-page.scoped-company .cmp-empty-state {
+  border: 1px dashed var(--c-border);
+  border-radius: 16px;
+  padding: 2.2rem;
+  text-align: center;
+  color: var(--c-muted);
+}
+
+.company-management-page.scoped-company .cmp-company-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.company-management-page.scoped-company .cmp-company-card {
+  border: 1px solid var(--c-border);
+  border-radius: 20px;
+  padding: 1.8rem;
+  background: linear-gradient(155deg, rgba(255, 255, 255, 0.92), rgba(247, 249, 255, 0.85));
+  box-shadow: var(--c-shadow);
+  display: flex;
+  flex-direction: column;
+  gap: 1.4rem;
+}
+
+.company-management-page.scoped-company .cmp-company-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.company-management-page.scoped-company .cmp-company-card__header h4 {
+  margin: 0 0 0.65rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.company-management-page.scoped-company .cmp-company-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.company-management-page.scoped-company .cmp-status-badge {
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--c-primary);
+}
+
+.company-management-page.scoped-company .cmp-status-badge--aktiv {
+  background: rgba(34, 197, 94, 0.15);
+  color: #17803d;
+}
+
+.company-management-page.scoped-company .cmp-status-badge--deaktiviert {
+  background: rgba(156, 163, 175, 0.18);
+  color: #4b5563;
+}
+
+.company-management-page.scoped-company .cmp-status-badge--gekündigt {
+  background: rgba(231, 76, 60, 0.18);
+  color: var(--c-danger);
+}
+
+.company-management-page.scoped-company .cmp-tag {
+  background: rgba(71, 91, 255, 0.12);
+  color: var(--c-primary);
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  font-size: 0.78rem;
+  font-weight: 500;
+}
+
+.company-management-page.scoped-company .cmp-tag--users {
+  background: rgba(59, 130, 246, 0.15);
+  color: #1d4ed8;
+}
+
+.company-management-page.scoped-company .cmp-company-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.company-management-page.scoped-company .cmp-company-card__actions .cmp-button {
+  padding: 0.55rem 1rem;
+}
+
+.company-management-page.scoped-company .cmp-company-card__modules {
+  display: grid;
+  gap: 1.2rem;
+}
+
+.company-management-page.scoped-company .cmp-module-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: var(--c-muted);
+  display: block;
+  margin-bottom: 0.4rem;
+}
+
+.company-management-page.scoped-company .cmp-module-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.company-management-page.scoped-company .cmp-module-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 999px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  background: rgba(71, 91, 255, 0.15);
+  color: var(--c-primary);
+}
+
+.company-management-page.scoped-company .cmp-module-chip--core {
+  background: rgba(56, 132, 255, 0.16);
+  color: #1d4ed8;
+}
+
+.company-management-page.scoped-company .cmp-module-chip--business {
+  background: rgba(16, 185, 129, 0.16);
+  color: #047857;
+}
+
+.company-management-page.scoped-company .cmp-module-chip--premium {
+  background: rgba(168, 85, 247, 0.16);
+  color: #6d28d9;
+}
+
+.company-management-page.scoped-company .cmp-module-chip--inactive {
+  background: rgba(148, 163, 184, 0.18);
+  color: #475569;
+}
+
+.company-management-page.scoped-company .cmp-module-empty {
+  margin: 0;
+  color: var(--c-muted);
+  font-size: 0.85rem;
+}
+
+.company-management-page.scoped-company .cmp-company-card__footer {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+
+.company-management-page.scoped-company .cmp-company-card__footer span {
+  color: var(--c-muted);
+  font-size: 0.8rem;
+}
+
+.company-management-page.scoped-company .cmp-company-card__footer strong {
+  display: block;
+  margin-top: 0.2rem;
+}
+
+.company-management-page.scoped-company .cmp-payments {
+  overflow-x: auto;
+}
+
+.company-management-page.scoped-company .cmp-payments-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.company-management-page.scoped-company .cmp-payments-table th,
+.company-management-page.scoped-company .cmp-payments-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid var(--c-border);
+  text-align: left;
+}
+
+.company-management-page.scoped-company .cmp-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.company-management-page.scoped-company .cmp-edit-form__grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.company-management-page.scoped-company .cmp-edit-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.company-management-page.scoped-company .cmp-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 500;
+}
+
+.company-management-page.scoped-company .cmp-toggle input {
+  width: 18px;
+  height: 18px;
   accent-color: var(--c-primary);
 }
 
-.company-management-page.scoped-company .cmp-modules {
-  display: flex;
-  flex-direction: column;
-  gap: 0.35rem;
-  margin-top: 0.5rem;
-}
-
-.company-management-page.scoped-company .cmp-modules__label {
-  font-size: 0.85rem;
-  color: var(--c-muted);
-}
-
-.company-management-page.scoped-company .cmp-modules__hint {
-  font-size: 0.75rem;
-  color: var(--c-muted);
-}
-
-.company-management-page.scoped-company .cmp-feature-chip-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.company-management-page.scoped-company .cmp-feature-chip {
+.company-management-page.scoped-company .cmp-edit-actions__buttons {
   display: inline-flex;
-  align-items: center;
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  background: rgba(71, 91, 255, 0.15);
-  color: var(--c-primary);
-  font-size: 0.78rem;
-  font-weight: 600;
+  gap: 0.6rem;
 }
 
-.company-management-page.scoped-company .cmp-feature-chip--empty {
-  background: none;
-  border: 1px dashed var(--c-border);
-  color: var(--c-muted);
-  font-weight: 500;
+.company-management-page.scoped-company .cmp-release-grid {
+  display: grid;
+  gap: 1.5rem;
+  grid-template-columns: minmax(220px, 320px) minmax(280px, 1fr);
 }
 
-/* Speziell für das Changelog-Formular, falls nötig */
-.company-management-page.scoped-company .changelog-form-section .form-group {
+.company-management-page.scoped-company .cmp-release-grid__left,
+.company-management-page.scoped-company .cmp-release-grid__right {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-}
-
-.company-management-page.scoped-company .changelog-form-section label {
-  font-weight: 500;
-  font-size: 0.9rem;
-}
-
-/* =========================================================================
-   Listen-Styling (Firmen)
-   ========================================================================= */
-
-.company-management-page.scoped-company .cmp-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1rem; /* Abstand zwischen den Firmen */
-}
-
-.company-management-page.scoped-company .cmp-item {
-  background: var(--c-card); /* Eigener Hintergrund für bessere Trennung */
-  border-radius: 10px;
-  border: 1px solid var(--c-border);
-  padding: 1.5rem;
-  transition: box-shadow 0.2s ease;
-}
-
-.company-management-page.scoped-company .cmp-item:hover {
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
-}
-[data-theme="dark"] .company-management-page.scoped-company .cmp-item:hover {
-  border-color: #4a5061;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-}
-
-.company-management-page.scoped-company .cmp-company-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  flex-wrap: wrap;
   gap: 1rem;
 }
 
-.company-management-page.scoped-company .cmp-info {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  flex-wrap: wrap;
+.company-management-page.scoped-company .text-uppercase {
+  text-transform: uppercase;
 }
 
-.company-management-page.scoped-company .cmp-info strong {
-  font-size: 1.1rem;
-  font-weight: 600;
+@media (max-width: 920px) {
+  .company-management-page.scoped-company .cmp-company-card__header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .company-management-page.scoped-company .cmp-company-card__actions {
+    justify-content: flex-start;
+  }
+
+  .company-management-page.scoped-company .cmp-release-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-.company-management-page.scoped-company .cmp-canton,
-.company-management-page.scoped-company .cmp-users,
-.company-management-page.scoped-company .cmp-payment,
-.company-management-page.scoped-company .cmp-active,
-.company-management-page.scoped-company .cmp-inactive {
-  font-size: 0.9rem;
-  color: var(--c-muted);
-  background-color: var(--c-bg); /* Hintergrund für bessere Lesbarkeit */
-  padding: 0.2rem 0.6rem;
-  border-radius: 10px;
-}
+@media (max-width: 640px) {
+  .company-management-page.scoped-company {
+    padding: 1.5rem 1rem 2.5rem;
+  }
 
-.company-management-page.scoped-company .cmp-active {
-  color: #27ae60;
-  background-color: rgba(39, 174, 96, 0.1);
-}
-.company-management-page.scoped-company .cmp-inactive {
-  color: #c0392b;
-  background-color: rgba(192, 57, 43, 0.1);
-}
+  .company-management-page.scoped-company .cmp-topbar {
+    gap: 1rem;
+  }
 
-.company-management-page.scoped-company .cmp-btns {
-  display: flex;
-  gap: 0.5rem;
-  flex-wrap: wrap;
-}
+  .company-management-page.scoped-company .cmp-button,
+  .company-management-page.scoped-company .cmp-icon-button {
+    width: 100%;
+    justify-content: center;
+  }
 
-.company-management-page.scoped-company .cmp-btns button {
-  padding: 0.4rem 0.8rem;
-  font-size: 0.85rem;
+  .company-management-page.scoped-company .cmp-topbar-actions {
+    width: 100%;
+  }
+
+  .company-management-page.scoped-company .cmp-search {
+    flex: 1 1 100%;
+  }
 }

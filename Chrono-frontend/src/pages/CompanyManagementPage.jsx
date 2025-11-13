@@ -1,9 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../utils/api';
 import { useTranslation } from '../context/LanguageContext';
 import Navbar from '../components/Navbar';
-import '../styles/CompanyManagementScoped.css'; // Scoped CSS für Light/Dark etc.
-import { useAuth } from '../context/AuthContext'; // Importieren, falls noch nicht geschehen
+import '../styles/CompanyManagementScoped.css';
+import { useAuth } from '../context/AuthContext';
 import { FEATURE_CATALOG } from '../constants/registrationFeatures';
 
 const OPTIONAL_FEATURES = FEATURE_CATALOG.filter((feature) => !feature.alwaysAvailable);
@@ -14,6 +14,78 @@ const FEATURE_LABEL_MAP = FEATURE_CATALOG.reduce((acc, feature) => {
     acc[feature.key] = feature.name;
     return acc;
 }, {});
+
+const MODULE_ICON_MAP = {
+    notifyVacation: '🌴',
+    notifyOvertime: '⏱️',
+    customerTrackingEnabled: '👥',
+    payroll: '💼',
+    projects: '📁',
+    accounting: '💰',
+    crm: '📊',
+    supplyChain: '🚚',
+    banking: '🏦',
+    analytics: '📈',
+    signature: '✍️',
+    chatbot: '🤖',
+    premiumSupport: '🛟',
+    roster: '📅',
+};
+
+const MODULE_CATEGORIES = [
+    {
+        key: 'core',
+        title: 'Basisfunktionen',
+        description: 'Sofort nutzbare Essentials für jede Firma',
+        items: [
+            { type: 'boolean', key: 'notifyVacation', label: 'Urlaub' },
+            { type: 'boolean', key: 'notifyOvertime', label: 'Überstunden' },
+            { type: 'boolean', key: 'customerTrackingEnabled', label: 'Kunden-Zeiterfassung' },
+        ],
+    },
+    {
+        key: 'business',
+        title: 'Business-Module',
+        description: 'Erweiterte Produktivität für Teams',
+        items: [
+            { type: 'feature', key: 'payroll', label: 'Lohnabrechnung' },
+            { type: 'feature', key: 'projects', label: 'Projekte/Kunden' },
+            { type: 'feature', key: 'accounting', label: 'Finanzen' },
+            { type: 'feature', key: 'crm', label: 'CRM/Opportunities' },
+            { type: 'feature', key: 'supplyChain', label: 'Supply Chain' },
+            { type: 'feature', key: 'banking', label: 'Banking' },
+        ],
+    },
+    {
+        key: 'premium',
+        title: 'Premium & Extras',
+        description: 'Highlights für besondere Anforderungen',
+        items: [
+            { type: 'feature', key: 'analytics', label: 'Dashboards' },
+            { type: 'feature', key: 'signature', label: 'Signaturen' },
+            { type: 'feature', key: 'chatbot', label: 'Chatbot' },
+            { type: 'feature', key: 'premiumSupport', label: 'Premium Support' },
+            { type: 'feature', key: 'roster', label: 'Dienstplan' },
+        ],
+    },
+];
+
+const CATEGORY_BY_FEATURE = MODULE_CATEGORIES.reduce((acc, category) => {
+    category.items.forEach((item) => {
+        if (item.type === 'feature') {
+            acc[item.key] = category.key;
+        }
+    });
+    return acc;
+}, {});
+
+const STATUS_FILTERS = [
+    { key: 'all', label: 'Alle' },
+    { key: 'active', label: 'Aktiv' },
+    { key: 'inactive', label: 'Inaktiv' },
+    { key: 'canceled', label: 'Gekündigt' },
+];
+
 const toFeatureKeyArray = (rawKeys) => {
     if (!rawKeys) {
         return [];
@@ -35,12 +107,12 @@ const toFeatureKeyArray = (rawKeys) => {
                 return parsed;
             }
         } catch (error) {
-            // Ignored – fallback to comma-separated parsing below
+            // ignore and fallback below
         }
 
         return trimmed
             .split(',')
-            .map((key) => key.replace(/[\[\]\"]+/g, '').trim())
+            .map((key) => key.replace(/[\[\]"']+/g, '').trim())
             .filter(Boolean);
     }
 
@@ -60,17 +132,78 @@ const normalizeFeatureSelection = (keys = []) => {
     return OPTIONAL_FEATURES.filter((feature) => keyArray.includes(feature.key)).map((feature) => feature.key);
 };
 
+const ModulePicker = ({
+    title = 'Module freischalten',
+    hint,
+    selectedFeatures = [],
+    onToggleFeature,
+    toggles = {},
+    onToggleBoolean,
+}) => (
+    <div className="cmp-module-picker">
+        <div className="cmp-module-picker__header">
+            <div>
+                <strong>{title}</strong>
+                <p className="cmp-module-picker__hint">
+                    {hint || `Immer verfügbar: ${ALWAYS_AVAILABLE_LABELS.join(', ')}`}
+                </p>
+            </div>
+        </div>
+        <div className="cmp-module-picker__categories">
+            {MODULE_CATEGORIES.map((category) => (
+                <div key={category.key} className={`cmp-module-category cmp-module-category--${category.key}`}>
+                    <div className="cmp-module-category__title">{category.title}</div>
+                    <p className="cmp-module-category__description">{category.description}</p>
+                    <div className="cmp-module-category__items">
+                        {category.items.map((item) => {
+                            const icon = MODULE_ICON_MAP[item.key] || '•';
+                            const checked =
+                                item.type === 'feature'
+                                    ? selectedFeatures.includes(item.key)
+                                    : Boolean(toggles[item.key]);
+                            const toggle = () => {
+                                if (item.type === 'feature') {
+                                    onToggleFeature?.(item.key);
+                                } else {
+                                    onToggleBoolean?.(item.key, !checked);
+                                }
+                            };
+
+                            return (
+                                <label key={item.key} className="cmp-module-item">
+                                    <input type="checkbox" checked={checked} onChange={toggle} />
+                                    <span className="cmp-module-item__icon" aria-hidden="true">
+                                        {icon}
+                                    </span>
+                                    <span className="cmp-module-item__label">{item.label}</span>
+                                </label>
+                            );
+                        })}
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
+const formatDate = (value) => {
+    if (!value && value !== 0) return '–';
+    const date = typeof value === 'number' ? new Date(value) : new Date(value);
+    if (Number.isNaN(date.getTime())) {
+        return '–';
+    }
+    return date.toLocaleDateString();
+};
+
 const CompanyManagementPage = () => {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
-        // Firmenliste
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    // Neues Formular: "Nur Firma anlegen"
     const [newCompanyName, setNewCompanyName] = useState('');
-    const [newCompanyCanton, setNewCompanyCanton] = useState(''); // NEU
+    const [newCompanyCanton, setNewCompanyCanton] = useState('');
     const [newAddressLine1, setNewAddressLine1] = useState('');
     const [newAddressLine2, setNewAddressLine2] = useState('');
     const [newPostalCode, setNewPostalCode] = useState('');
@@ -82,7 +215,6 @@ const CompanyManagementPage = () => {
     const [newCustomerTrackingEnabled, setNewCustomerTrackingEnabled] = useState(false);
     const [newEnabledFeatures, setNewEnabledFeatures] = useState([]);
 
-    // Alternativ: "Firma + Admin" anlegen
     const [createWithAdmin, setCreateWithAdmin] = useState({
         companyName: '',
         adminUsername: '',
@@ -94,24 +226,31 @@ const CompanyManagementPage = () => {
         addressLine2: '',
         postalCode: '',
         city: '',
-        companyCanton: '' // NEU
-        ,
+        companyCanton: '',
         slackWebhookUrl: '',
         teamsWebhookUrl: '',
         notifyVacation: false,
         notifyOvertime: false,
         customerTrackingEnabled: false,
-        enabledFeatures: []
+        enabledFeatures: [],
     });
 
-    // Edit-Mode
-    const [editingCompany, setEditingCompany] = useState(null); // Wird { id, name, active, cantonAbbreviation } enthalten
+    const [editingCompany, setEditingCompany] = useState(null);
     const [paymentDetails, setPaymentDetails] = useState({});
     const [openPayments, setOpenPayments] = useState({});
 
     const [changelogVersion, setChangelogVersion] = useState('');
     const [changelogTitle, setChangelogTitle] = useState('');
     const [changelogContent, setChangelogContent] = useState('');
+
+    const [searchTerm, setSearchTerm] = useState('');
+    const [statusFilter, setStatusFilter] = useState('all');
+    const [showFilterBar, setShowFilterBar] = useState(false);
+    const [showQuickAdvanced, setShowQuickAdvanced] = useState(false);
+
+    const quickCreateRef = useRef(null);
+    const advancedCreateRef = useRef(null);
+    const companiesRef = useRef(null);
 
     useEffect(() => {
         fetchCompanies();
@@ -148,6 +287,15 @@ const CompanyManagementPage = () => {
         });
     };
 
+    const handleQuickBooleanToggle = (key, value) => {
+        const setters = {
+            notifyVacation: setNewNotifyVacation,
+            notifyOvertime: setNewNotifyOvertime,
+            customerTrackingEnabled: setNewCustomerTrackingEnabled,
+        };
+        setters[key]?.(value);
+    };
+
     const toggleCreateWithAdminFeature = (featureKey) => {
         setCreateWithAdmin((prev) => {
             const current = prev.enabledFeatures || [];
@@ -156,6 +304,10 @@ const CompanyManagementPage = () => {
                 : [...current, featureKey];
             return { ...prev, enabledFeatures: normalizeFeatureSelection(next) };
         });
+    };
+
+    const handleCreateWithAdminBooleanToggle = (key, value) => {
+        setCreateWithAdmin((prev) => ({ ...prev, [key]: value }));
     };
 
     const toggleEditingCompanyFeature = (featureKey) => {
@@ -169,11 +321,14 @@ const CompanyManagementPage = () => {
         });
     };
 
+    const handleEditingBooleanToggle = (key, value) => {
+        setEditingCompany((prev) => (prev ? { ...prev, [key]: value } : prev));
+    };
+
     async function handleCreateCompany(e) {
         e.preventDefault();
         if (!newCompanyName.trim()) return;
         try {
-            // NEU: cantonAbbreviation im Payload
             const payload = {
                 name: newCompanyName.trim(),
                 addressLine1: newAddressLine1.trim() || null,
@@ -187,7 +342,7 @@ const CompanyManagementPage = () => {
                 notifyVacation: newNotifyVacation,
                 notifyOvertime: newNotifyOvertime,
                 customerTrackingEnabled: newCustomerTrackingEnabled,
-                enabledFeatures: newEnabledFeatures
+                enabledFeatures: newEnabledFeatures,
             };
             await api.post('/api/superadmin/companies', payload);
             setNewCompanyName('');
@@ -195,17 +350,17 @@ const CompanyManagementPage = () => {
             setNewAddressLine2('');
             setNewPostalCode('');
             setNewCity('');
-            setNewCompanyCanton(''); // NEU
+            setNewCompanyCanton('');
             setNewSlackWebhook('');
             setNewTeamsWebhook('');
             setNewNotifyVacation(false);
             setNewNotifyOvertime(false);
             setNewCustomerTrackingEnabled(false);
             setNewEnabledFeatures([]);
+            setShowQuickAdvanced(false);
             fetchCompanies();
         } catch (err) {
             console.error('Error creating company:', err);
-            // Hier ggf. User-Feedback geben
         }
     }
 
@@ -233,14 +388,13 @@ const CompanyManagementPage = () => {
                 addressLine2: createWithAdmin.addressLine2.trim() || null,
                 postalCode: createWithAdmin.postalCode.trim() || null,
                 city: createWithAdmin.city.trim() || null,
-                // NEU: cantonAbbreviation im Payload
                 cantonAbbreviation: createWithAdmin.companyCanton.trim().toUpperCase() || null,
                 slackWebhookUrl: createWithAdmin.slackWebhookUrl || null,
                 teamsWebhookUrl: createWithAdmin.teamsWebhookUrl || null,
                 notifyVacation: createWithAdmin.notifyVacation,
                 notifyOvertime: createWithAdmin.notifyOvertime,
                 customerTrackingEnabled: createWithAdmin.customerTrackingEnabled,
-                enabledFeatures: createWithAdmin.enabledFeatures
+                enabledFeatures: createWithAdmin.enabledFeatures,
             };
 
             const res = await api.post('/api/superadmin/companies/create-with-admin', payload);
@@ -257,20 +411,20 @@ const CompanyManagementPage = () => {
                 addressLine2: '',
                 postalCode: '',
                 city: '',
-                companyCanton: '', // NEU
+                companyCanton: '',
                 slackWebhookUrl: '',
                 teamsWebhookUrl: '',
                 notifyVacation: false,
                 notifyOvertime: false,
                 customerTrackingEnabled: false,
-                enabledFeatures: []
+                enabledFeatures: [],
             });
 
             fetchCompanies();
             alert('Firma + AdminUser wurden erfolgreich erstellt.');
         } catch (err) {
             console.error('Error create-with-admin:', err);
-            let backendErrorMessage = err.message; // Standard-Axios-Fehlermeldung
+            let backendErrorMessage = err.message;
             if (err.response && err.response.data) {
                 if (typeof err.response.data === 'string' && err.response.data.length > 0) {
                     backendErrorMessage = err.response.data;
@@ -284,10 +438,10 @@ const CompanyManagementPage = () => {
 
     async function toggleActive(co) {
         try {
-            const updated = { // Sende alle Felder, die das Backend erwartet, oder nur die geänderten
+            const updated = {
                 name: co.name,
                 active: !co.active,
-                cantonAbbreviation: co.cantonAbbreviation // Behalte den Kanton bei
+                cantonAbbreviation: co.cantonAbbreviation,
             };
             await api.put(`/api/superadmin/companies/${co.id}`, updated);
             fetchCompanies();
@@ -302,10 +456,9 @@ const CompanyManagementPage = () => {
             await api.post('/api/changelog', {
                 version: changelogVersion,
                 title: changelogTitle,
-                content: changelogContent
+                content: changelogContent,
             });
             alert('Changelog erfolgreich veröffentlicht!');
-            // Formular zurücksetzen
             setChangelogVersion('');
             setChangelogTitle('');
             setChangelogContent('');
@@ -314,8 +467,8 @@ const CompanyManagementPage = () => {
             alert('Fehler: Konnte Changelog nicht veröffentlichen.');
         }
     };
+
     function startEdit(company) {
-        // Stelle sicher, dass cantonAbbreviation im State ist, auch wenn es null ist
         setEditingCompany({
             ...company,
             cantonAbbreviation: company.cantonAbbreviation || '',
@@ -328,7 +481,7 @@ const CompanyManagementPage = () => {
             notifyVacation: company.notifyVacation || false,
             notifyOvertime: company.notifyOvertime || false,
             customerTrackingEnabled: company.customerTrackingEnabled || false,
-            enabledFeatures: normalizeFeatureSelection(company.enabledFeatures || [])
+            enabledFeatures: normalizeFeatureSelection(company.enabledFeatures || []),
         });
     }
 
@@ -340,7 +493,6 @@ const CompanyManagementPage = () => {
             const payload = {
                 name: editingCompany.name.trim(),
                 active: editingCompany.active,
-                // NEU: cantonAbbreviation im Payload
                 cantonAbbreviation: editingCompany.cantonAbbreviation.trim().toUpperCase() || null,
                 addressLine1: editingCompany.addressLine1.trim() || null,
                 addressLine2: editingCompany.addressLine2.trim() || null,
@@ -351,7 +503,7 @@ const CompanyManagementPage = () => {
                 notifyVacation: editingCompany.notifyVacation,
                 notifyOvertime: editingCompany.notifyOvertime,
                 customerTrackingEnabled: editingCompany.customerTrackingEnabled,
-                enabledFeatures: editingCompany.enabledFeatures || []
+                enabledFeatures: editingCompany.enabledFeatures || [],
             };
             await api.put(`/api/superadmin/companies/${editingCompany.id}`, payload);
             setEditingCompany(null);
@@ -402,537 +554,815 @@ const CompanyManagementPage = () => {
         });
     }
 
+    const filteredCompanies = useMemo(() => {
+        const term = searchTerm.trim().toLowerCase();
+        return companies.filter((company) => {
+            const matchesTerm = term
+                ? [company.name, company.city, company.cantonAbbreviation, company.licenseType]
+                      .filter(Boolean)
+                      .some((value) => value.toLowerCase().includes(term))
+                : true;
+
+            const matchesStatus =
+                statusFilter === 'all'
+                    ? true
+                    : statusFilter === 'active'
+                    ? company.active
+                    : statusFilter === 'inactive'
+                    ? !company.active && !company.canceled
+                    : company.canceled;
+
+            return matchesTerm && matchesStatus;
+        });
+    }, [companies, searchTerm, statusFilter]);
+
     return (
         <div className="company-management-page scoped-company">
             <Navbar />
-            <h2 className="cmp-title">
-                {t('company.management.title', 'Firmen-Verwaltung (SUPERADMIN)')}
-            </h2>
+            <div className="cmp-container">
+                <header className="cmp-topbar">
+                    <div className="cmp-breadcrumb">
+                        <span className="cmp-breadcrumb__title">🏢 Firmenverwaltung</span>
+                        <span className="cmp-breadcrumb__subtitle">SuperAdmin</span>
+                    </div>
+                    <div className="cmp-topbar-actions">
+                        <div className="cmp-search">
+                            <input
+                                type="text"
+                                placeholder="Firma suchen…"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                aria-label="Firma suchen"
+                            />
+                        </div>
+                        <button
+                            type="button"
+                            className="cmp-button cmp-button--primary"
+                            onClick={() => {
+                                quickCreateRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                                setShowQuickAdvanced(false);
+                            }}
+                        >
+                            Neue Firma
+                        </button>
+                        <button
+                            type="button"
+                            className="cmp-button"
+                            onClick={() => {
+                                advancedCreateRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }}
+                        >
+                            Neue Firma + Admin
+                        </button>
+                        <button
+                            type="button"
+                            className={`cmp-icon-button${showFilterBar ? ' is-active' : ''}`}
+                            onClick={() => setShowFilterBar((prev) => !prev)}
+                            aria-label="Filter anzeigen"
+                            aria-pressed={showFilterBar}
+                        >
+                            <span aria-hidden="true">⚙️</span>
+                        </button>
+                    </div>
+                </header>
 
-            {loading ? (
-                <p>{t('loading', 'Lade...')}</p>
-            ) : error ? (
-                <p style={{ color: 'red' }}>{error}</p>
-            ) : (
-                <>
-                    <section className="cmp-section">
-                        <h3>Nur Firma anlegen</h3>
-                        <form onSubmit={handleCreateCompany} className="cmp-form">
-                            <input
-                                type="text"
-                                placeholder="Firmenname"
-                                value={newCompanyName}
-                                onChange={(e) => setNewCompanyName(e.target.value)}
-                                required
-                            />
-                            <input
-                                type="text"
-                                placeholder="Adresse 1"
-                                value={newAddressLine1}
-                                onChange={(e) => setNewAddressLine1(e.target.value)}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Adresse 2"
-                                value={newAddressLine2}
-                                onChange={(e) => setNewAddressLine2(e.target.value)}
-                            />
-                            <input
-                                type="text"
-                                placeholder="PLZ"
-                                value={newPostalCode}
-                                onChange={(e) => setNewPostalCode(e.target.value)}
-                                style={{ width: '80px' }}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Ort"
-                                value={newCity}
-                                onChange={(e) => setNewCity(e.target.value)}
-                            />
-                            {/* NEUES FELD für Kanton */}
-                            <input
-                                type="text"
-                                placeholder="Kanton (z.B. SG, ZH)"
-                                value={newCompanyCanton}
-                                onChange={(e) => setNewCompanyCanton(e.target.value)}
-                                maxLength="2"
-                                className="text-uppercase"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Slack Webhook URL"
-                                value={newSlackWebhook}
-                                onChange={(e) => setNewSlackWebhook(e.target.value)}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Teams Webhook URL"
-                                value={newTeamsWebhook}
-                                onChange={(e) => setNewTeamsWebhook(e.target.value)}
-                            />
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={newNotifyVacation}
-                                    onChange={(e) => setNewNotifyVacation(e.target.checked)}
-                                />
-                                Urlaub-Benachrichtigungen
-                            </label>
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={newNotifyOvertime}
-                                    onChange={(e) => setNewNotifyOvertime(e.target.checked)}
-                                />
-                                Überstundenwarnungen
-                            </label>
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={newCustomerTrackingEnabled}
-                                    onChange={(e) => setNewCustomerTrackingEnabled(e.target.checked)}
-                                />
-                                Kunden-Zeiterfassung aktivieren
-                            </label>
-                            <div className="cmp-feature-box">
-                                <div className="cmp-feature-box__header">
-                                    <strong>Zusatzmodule freischalten</strong>
-                                    <span className="cmp-feature-box__hint">
-                                        Immer verfügbar: {ALWAYS_AVAILABLE_LABELS.join(', ')}
-                                    </span>
-                                </div>
-                                <div className="cmp-feature-grid">
-                                    {OPTIONAL_FEATURES.map((feature) => (
-                                        <label key={feature.key} className="cmp-feature-toggle">
-                                            <input
-                                                type="checkbox"
-                                                checked={newEnabledFeatures.includes(feature.key)}
-                                                onChange={() => toggleNewCompanyFeature(feature.key)}
-                                            />
-                                            <span>{feature.name}</span>
-                                        </label>
-                                    ))}
+                {showFilterBar && (
+                    <div className="cmp-filter-bar">
+                        <span className="cmp-filter-label">Status:</span>
+                        <div className="cmp-filter-tabs">
+                            {STATUS_FILTERS.map((option) => (
+                                <button
+                                    key={option.key}
+                                    type="button"
+                                    className={`cmp-filter-tab${statusFilter === option.key ? ' is-active' : ''}`}
+                                    onClick={() => setStatusFilter(option.key)}
+                                >
+                                    {option.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {loading ? (
+                    <div className="cmp-state">{t('loading', 'Lade...')}</div>
+                ) : error ? (
+                    <div className="cmp-state cmp-state--error">{error}</div>
+                ) : (
+                    <>
+                        <section className="cmp-section cmp-section--quick" ref={quickCreateRef}>
+                            <div className="cmp-section__header">
+                                <div>
+                                    <h3>Neue Firma anlegen</h3>
+                                    <p>Lege mit drei Feldern in Sekunden eine Firma an.</p>
                                 </div>
                             </div>
-                            <button type="submit">Erstellen</button>
-                        </form>
-                    </section>
-
-                    <section className="cmp-section">
-                        <h3>Firma + Admin anlegen</h3>
-                        <form onSubmit={handleCreateWithAdmin} className="cmp-form">
-                            <input
-                                type="text"
-                                placeholder="Firmenname (*)"
-                                value={createWithAdmin.companyName}
-                                onChange={(e) =>
-                                    setCreateWithAdmin({ ...createWithAdmin, companyName: e.target.value })
-                                }
-                                required
-                            />
-                            <input
-                                type="text"
-                                placeholder="Adresse 1"
-                                value={createWithAdmin.addressLine1}
-                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, addressLine1: e.target.value })}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Adresse 2"
-                                value={createWithAdmin.addressLine2}
-                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, addressLine2: e.target.value })}
-                            />
-                            <input
-                                type="text"
-                                placeholder="PLZ"
-                                value={createWithAdmin.postalCode}
-                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, postalCode: e.target.value })}
-                                style={{ width: '80px' }}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Ort"
-                                value={createWithAdmin.city}
-                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, city: e.target.value })}
-                            />
-                            {/* NEUES FELD für Kanton */}
-                            <input
-                                type="text"
-                                placeholder="Kanton Firma (z.B. SG)"
-                                value={createWithAdmin.companyCanton}
-                                onChange={(e) =>
-                                    setCreateWithAdmin({ ...createWithAdmin, companyCanton: e.target.value })
-                                }
-                                maxLength="2"
-                                className="text-uppercase"
-                            />
-                            <input
-                                type="text"
-                                placeholder="Slack Webhook URL"
-                                value={createWithAdmin.slackWebhookUrl}
-                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, slackWebhookUrl: e.target.value })}
-                            />
-                            <input
-                                type="text"
-                                placeholder="Teams Webhook URL"
-                                value={createWithAdmin.teamsWebhookUrl}
-                                onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, teamsWebhookUrl: e.target.value })}
-                            />
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={createWithAdmin.notifyVacation}
-                                    onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, notifyVacation: e.target.checked })}
-                                />
-                                Urlaub-Benachrichtigungen
-                            </label>
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={createWithAdmin.notifyOvertime}
-                                    onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, notifyOvertime: e.target.checked })}
-                                />
-                                Überstundenwarnungen
-                            </label>
-                            <label>
-                                <input
-                                    type="checkbox"
-                                    checked={createWithAdmin.customerTrackingEnabled}
-                                    onChange={(e) => setCreateWithAdmin({ ...createWithAdmin, customerTrackingEnabled: e.target.checked })}
-                                />
-                                Kunden-Zeiterfassung aktivieren
-                            </label>
-                            <div className="cmp-feature-box">
-                                <div className="cmp-feature-box__header">
-                                    <strong>Zusatzmodule freischalten</strong>
-                                    <span className="cmp-feature-box__hint">
-                                        Immer verfügbar: {ALWAYS_AVAILABLE_LABELS.join(', ')}
-                                    </span>
+                            <form onSubmit={handleCreateCompany} className="cmp-form">
+                                <div className="cmp-form-grid cmp-form-grid--compact">
+                                    <label className="cmp-field">
+                                        <span>Firmenname</span>
+                                        <input
+                                            type="text"
+                                            value={newCompanyName}
+                                            onChange={(e) => setNewCompanyName(e.target.value)}
+                                            required
+                                        />
+                                    </label>
+                                    <label className="cmp-field">
+                                        <span>Kanton</span>
+                                        <input
+                                            type="text"
+                                            value={newCompanyCanton}
+                                            onChange={(e) => setNewCompanyCanton(e.target.value.toUpperCase())}
+                                            maxLength={2}
+                                            className="text-uppercase"
+                                        />
+                                    </label>
+                                    <label className="cmp-field">
+                                        <span>Ort</span>
+                                        <input
+                                            type="text"
+                                            value={newCity}
+                                            onChange={(e) => setNewCity(e.target.value)}
+                                        />
+                                    </label>
                                 </div>
-                                <div className="cmp-feature-grid">
-                                    {OPTIONAL_FEATURES.map((feature) => (
-                                        <label key={feature.key} className="cmp-feature-toggle">
-                                            <input
-                                                type="checkbox"
-                                                checked={createWithAdmin.enabledFeatures.includes(feature.key)}
-                                                onChange={() => toggleCreateWithAdminFeature(feature.key)}
-                                            />
-                                            <span>{feature.name}</span>
-                                        </label>
-                                    ))}
+                                <div className="cmp-form-actions">
+                                    <button
+                                        type="button"
+                                        className="cmp-text-link"
+                                        onClick={() => setShowQuickAdvanced((prev) => !prev)}
+                                    >
+                                        {showQuickAdvanced ? 'Erweiterte Felder ausblenden' : 'Erweiterte Felder anzeigen'}
+                                    </button>
+                                </div>
+                                {showQuickAdvanced && (
+                                    <div className="cmp-collapsible">
+                                        <div className="cmp-form-grid cmp-form-grid--two">
+                                            <label className="cmp-field">
+                                                <span>Adresse</span>
+                                                <input
+                                                    type="text"
+                                                    value={newAddressLine1}
+                                                    onChange={(e) => setNewAddressLine1(e.target.value)}
+                                                />
+                                            </label>
+                                            <label className="cmp-field">
+                                                <span>Adresszusatz</span>
+                                                <input
+                                                    type="text"
+                                                    value={newAddressLine2}
+                                                    onChange={(e) => setNewAddressLine2(e.target.value)}
+                                                />
+                                            </label>
+                                            <label className="cmp-field">
+                                                <span>PLZ</span>
+                                                <input
+                                                    type="text"
+                                                    value={newPostalCode}
+                                                    onChange={(e) => setNewPostalCode(e.target.value)}
+                                                />
+                                            </label>
+                                            <label className="cmp-field">
+                                                <span>Slack Webhook</span>
+                                                <input
+                                                    type="text"
+                                                    value={newSlackWebhook}
+                                                    onChange={(e) => setNewSlackWebhook(e.target.value)}
+                                                />
+                                            </label>
+                                            <label className="cmp-field">
+                                                <span>Teams Webhook</span>
+                                                <input
+                                                    type="text"
+                                                    value={newTeamsWebhook}
+                                                    onChange={(e) => setNewTeamsWebhook(e.target.value)}
+                                                />
+                                            </label>
+                                        </div>
+                                        <ModulePicker
+                                            selectedFeatures={newEnabledFeatures}
+                                            onToggleFeature={toggleNewCompanyFeature}
+                                            toggles={{
+                                                notifyVacation: newNotifyVacation,
+                                                notifyOvertime: newNotifyOvertime,
+                                                customerTrackingEnabled: newCustomerTrackingEnabled,
+                                            }}
+                                            onToggleBoolean={handleQuickBooleanToggle}
+                                        />
+                                    </div>
+                                )}
+                                <div className="cmp-form-actions">
+                                    <button type="submit" className="cmp-button cmp-button--primary">
+                                        Firma erstellen
+                                    </button>
+                                </div>
+                            </form>
+                        </section>
+
+                        <section className="cmp-section cmp-section--advanced" ref={advancedCreateRef}>
+                            <div className="cmp-section__header">
+                                <div>
+                                    <h3>Neue Firma + Admin anlegen</h3>
+                                    <p>Alle Daten in einem strukturierten Formular erfassen.</p>
                                 </div>
                             </div>
-                            <input
-                                type="text"
-                                placeholder="Admin-Username (*)"
-                                value={createWithAdmin.adminUsername}
-                                onChange={(e) =>
-                                    setCreateWithAdmin({ ...createWithAdmin, adminUsername: e.target.value })
-                                }
-                                required
-                            />
-                            <input
-                                type="password"
-                                placeholder="Admin-Passwort (*)"
-                                value={createWithAdmin.adminPassword}
-                                onChange={(e) =>
-                                    setCreateWithAdmin({ ...createWithAdmin, adminPassword: e.target.value })
-                                }
-                                required
-                            />
-                            <input
-                                type="text"
-                                placeholder="Admin Vorname (optional)"
-                                value={createWithAdmin.adminFirstName}
-                                onChange={(e) =>
-                                    setCreateWithAdmin({ ...createWithAdmin, adminFirstName: e.target.value })
-                                }
-                            />
-                            <input
-                                type="text"
-                                placeholder="Admin Nachname (optional)"
-                                value={createWithAdmin.adminLastName}
-                                onChange={(e) =>
-                                    setCreateWithAdmin({ ...createWithAdmin, adminLastName: e.target.value })
-                                }
-                            />
-                            <input
-                                type="email"
-                                placeholder="Admin E-Mail (optional)"
-                                value={createWithAdmin.adminEmail}
-                                onChange={(e) =>
-                                    setCreateWithAdmin({ ...createWithAdmin, adminEmail: e.target.value })
-                                }
-                            />
-                            <button type="submit">Firma+Admin erstellen</button>
-                        </form>
-                    </section>
-
-                    <section className="cmp-section">
-                        <h3>Bestehende Firmen</h3>
-                        <ul className="cmp-list">
-                            {companies.map((co) => {
-                                const optionalFeatures = normalizeFeatureSelection(co.enabledFeatures);
-                                return (
-                                    <li key={co.id} className="cmp-item">
-                                    {editingCompany && editingCompany.id === co.id ? (
-                                        <form onSubmit={handleSaveEdit} className="cmp-inline-form">
-                                            {/* ... Ihr Code für das Bearbeitungs-Formular ... */}
+                            <form onSubmit={handleCreateWithAdmin} className="cmp-form">
+                                <div className="cmp-form-group">
+                                    <h4>Firmendaten</h4>
+                                    <div className="cmp-form-grid cmp-form-grid--two">
+                                        <label className="cmp-field">
+                                            <span>Firmenname</span>
                                             <input
                                                 type="text"
-                                                value={editingCompany.name}
+                                                value={createWithAdmin.companyName}
                                                 onChange={(e) =>
-                                                    setEditingCompany({ ...editingCompany, name: e.target.value })
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        companyName: e.target.value,
+                                                    })
                                                 }
                                                 required
                                             />
-                                            <input
-                                                type="text"
-                                                placeholder="Adresse 1"
-                                                value={editingCompany.addressLine1}
-                                                onChange={(e) => setEditingCompany({ ...editingCompany, addressLine1: e.target.value })}
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Adresse 2"
-                                                value={editingCompany.addressLine2}
-                                                onChange={(e) => setEditingCompany({ ...editingCompany, addressLine2: e.target.value })}
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="PLZ"
-                                                value={editingCompany.postalCode}
-                                                onChange={(e) => setEditingCompany({ ...editingCompany, postalCode: e.target.value })}
-                                                style={{ width: '80px' }}
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Ort"
-                                                value={editingCompany.city}
-                                                onChange={(e) => setEditingCompany({ ...editingCompany, city: e.target.value })}
-                                            />
-                                            <input
-                                                type="text"
-                                                placeholder="Kanton"
-                                            value={editingCompany.cantonAbbreviation}
-                                            onChange={(e) =>
-                                                setEditingCompany({ ...editingCompany, cantonAbbreviation: e.target.value })
-                                            }
-                                            maxLength="2"
-                                            className="text-uppercase"
-                                            style={{ width: '80px' }}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Slack Webhook URL"
-                                            value={editingCompany.slackWebhookUrl}
-                                            onChange={(e) => setEditingCompany({ ...editingCompany, slackWebhookUrl: e.target.value })}
-                                        />
-                                        <input
-                                            type="text"
-                                            placeholder="Teams Webhook URL"
-                                            value={editingCompany.teamsWebhookUrl}
-                                            onChange={(e) => setEditingCompany({ ...editingCompany, teamsWebhookUrl: e.target.value })}
-                                        />
-                                        <label>
-                                            <input
-                                                type="checkbox"
-                                                checked={editingCompany.notifyVacation}
-                                                onChange={(e) => setEditingCompany({ ...editingCompany, notifyVacation: e.target.checked })}
-                                            />
-                                            Urlaub-Benachrichtigungen
                                         </label>
-                                        <label>
+                                        <label className="cmp-field">
+                                            <span>Kanton</span>
                                             <input
-                                                type="checkbox"
-                                                checked={editingCompany.notifyOvertime}
-                                                onChange={(e) => setEditingCompany({ ...editingCompany, notifyOvertime: e.target.checked })}
+                                                type="text"
+                                                value={createWithAdmin.companyCanton}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        companyCanton: e.target.value.toUpperCase(),
+                                                    })
+                                                }
+                                                maxLength={2}
+                                                className="text-uppercase"
                                             />
-                                            Überstundenwarnungen
                                         </label>
-                                        <label>
+                                        <label className="cmp-field">
+                                            <span>Adresse</span>
                                             <input
-                                                type="checkbox"
-                                                checked={editingCompany.customerTrackingEnabled}
-                                                onChange={(e) => setEditingCompany({ ...editingCompany, customerTrackingEnabled: e.target.checked })}
+                                                type="text"
+                                                value={createWithAdmin.addressLine1}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        addressLine1: e.target.value,
+                                                    })
+                                                }
                                             />
-                                            Kunden-Zeiterfassung aktivieren
                                         </label>
-                                        <div className="cmp-feature-box">
-                                            <div className="cmp-feature-box__header">
-                                                <strong>Zusatzmodule freischalten</strong>
-                                                <span className="cmp-feature-box__hint">
-                                                    Immer verfügbar: {ALWAYS_AVAILABLE_LABELS.join(', ')}
-                                                </span>
-                                            </div>
-                                            <div className="cmp-feature-grid">
-                                                {OPTIONAL_FEATURES.map((feature) => (
-                                                    <label key={feature.key} className="cmp-feature-toggle">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={editingCompany.enabledFeatures?.includes(feature.key) || false}
-                                                            onChange={() => toggleEditingCompanyFeature(feature.key)}
-                                                        />
-                                                        <span>{feature.name}</span>
-                                                    </label>
-                                                ))}
-                                            </div>
-                                        </div>
-                                        <label style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                                                <input
-                                                    type="checkbox"
-                                                    checked={editingCompany.active}
-                                                    onChange={(e) =>
-                                                        setEditingCompany({ ...editingCompany, active: e.target.checked })
-                                                    }
-                                                />
-                                                Aktiv?
-                                            </label>
-                                            <button type="submit">Speichern</button>
-                                            <button type="button" onClick={() => setEditingCompany(null)}>
-                                                Abbruch
-                                            </button>
-                                        </form>
-                                    ) : (
-                                        <>
-                                            <div className="cmp-company-row">
-                                                <div className="cmp-info">
-                                                    <strong>{co.name}</strong>
-                                                    {co.cantonAbbreviation && <span className="cmp-canton">({co.cantonAbbreviation})</span>}
-                                                    <span className={co.active ? 'cmp-active' : 'cmp-inactive'}>
-                        {co.active ? '(Aktiv)' : '(Inaktiv)'}
-                    </span>
-                                                    <span className="cmp-users">{co.userCount} User</span>
-                                                    <span className="cmp-payment">
-                        {co.paid ? 'Bezahlt' : 'Offen'}
-                                                        {co.paymentMethod ? ` - ${co.paymentMethod}` : ''}
-                                                        {co.canceled ? ' (gekündigt)' : ''}
-                    </span>
-                                                    <div className="cmp-modules">
-                                                        <span className="cmp-modules__label">Zusatzmodule:</span>
-                                                        {optionalFeatures.length ? (
-                                                            <div className="cmp-feature-chip-row">
-                                                                {optionalFeatures.map((key) => (
-                                                                    <span key={key} className="cmp-feature-chip">
-                                                                        {FEATURE_LABEL_MAP[key] || key}
-                                                                    </span>
-                                                                ))}
-                                                            </div>
-                                                        ) : (
-                                                            <span className="cmp-feature-chip cmp-feature-chip--empty">
-                                                                Keine zusätzlichen Module
-                                                            </span>
-                                                        )}
-                                                        <span className="cmp-modules__hint">
-                                                            Immer verfügbar: {ALWAYS_AVAILABLE_LABELS.join(', ')}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                                <div className="cmp-btns">
-                                                    <button onClick={() => startEdit(co)}>Bearbeiten</button>
-                                                    <button onClick={() => toggleActive(co)}>
-                                                        {co.active ? 'Deaktiv' : 'Aktiv'}
-                                                    </button>
-                                                    <button
-                                                        onClick={() =>
-                                                            handleUpdatePayment(
-                                                                co,
-                                                                !co.paid,
-                                                                co.paymentMethod || 'manuell'
-                                                            )
-                                                        }
-                                                    >
-                                                        Payment {co.paid ? 'zurücksetzen' : 'bestätigen'}
-                                                    </button>
-                                                    <button onClick={() => togglePayments(co)}>
-                                                        {openPayments[co.id]
-                                                            ? 'Zahlungen ausblenden'
-                                                            : 'Zahlungen anzeigen'}
-                                                    </button>
-                                                    <button className="danger" onClick={() => handleDeleteCompany(co.id)}>
-                                                        Löschen
-                                                    </button>
-                                                </div>
-                                            </div>
+                                        <label className="cmp-field">
+                                            <span>Adresszusatz</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.addressLine2}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        addressLine2: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>PLZ</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.postalCode}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        postalCode: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Ort</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.city}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        city: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Slack Webhook</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.slackWebhookUrl}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        slackWebhookUrl: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Teams Webhook</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.teamsWebhookUrl}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        teamsWebhookUrl: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
 
-                                            {openPayments[co.id] && (
-                                                <table className="cmp-payments-table">
-                                                    <thead>
-                                                    <tr>
-                                                        <th>ID</th>
-                                                        <th>Betrag</th>
-                                                        <th>Status</th>
-                                                        <th>Erstellt</th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    {(paymentDetails[co.id] || []).map((p) => (
-                                                        <tr key={p.id}>
-                                                            <td>{p.id}</td>
-                                                            <td>
-                                                                {(p.amount / 100).toFixed(2)}{' '}
-                                                                {p.currency?.toUpperCase()}
-                                                            </td>
-                                                            <td>{p.status}</td>
-                                                            <td>
-                                                                {new Date(p.created * 1000).toLocaleString()}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                    </tbody>
-                                                </table>
-                                            )}
-                                        </>
-                                    )}
-                                </li>
-                                );
-                            })}
-                        </ul>
+                                <div className="cmp-form-group">
+                                    <h4>Module freischalten</h4>
+                                    <ModulePicker
+                                        selectedFeatures={createWithAdmin.enabledFeatures}
+                                        onToggleFeature={toggleCreateWithAdminFeature}
+                                        toggles={{
+                                            notifyVacation: createWithAdmin.notifyVacation,
+                                            notifyOvertime: createWithAdmin.notifyOvertime,
+                                            customerTrackingEnabled: createWithAdmin.customerTrackingEnabled,
+                                        }}
+                                        onToggleBoolean={handleCreateWithAdminBooleanToggle}
+                                    />
+                                </div>
+
+                                <div className="cmp-form-group">
+                                    <h4>Admin-Daten</h4>
+                                    <div className="cmp-form-grid cmp-form-grid--two">
+                                        <label className="cmp-field">
+                                            <span>Admin E-Mail</span>
+                                            <input
+                                                type="email"
+                                                value={createWithAdmin.adminEmail}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminEmail: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Admin Benutzername</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.adminUsername}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminUsername: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Admin Passwort</span>
+                                            <input
+                                                type="password"
+                                                value={createWithAdmin.adminPassword}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminPassword: e.target.value,
+                                                    })
+                                                }
+                                                required
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Vorname</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.adminFirstName}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminFirstName: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>Nachname</span>
+                                            <input
+                                                type="text"
+                                                value={createWithAdmin.adminLastName}
+                                                onChange={(e) =>
+                                                    setCreateWithAdmin({
+                                                        ...createWithAdmin,
+                                                        adminLastName: e.target.value,
+                                                    })
+                                                }
+                                            />
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="cmp-form-actions">
+                                    <button type="submit" className="cmp-button cmp-button--primary">
+                                        Firma + Admin erstellen
+                                    </button>
+                                </div>
+                            </form>
+                        </section>
+
+                        <section className="cmp-section cmp-section--companies" ref={companiesRef}>
+                            <div className="cmp-section__header">
+                                <div>
+                                    <h3>Bestehende Firmen</h3>
+                                    <p>Alle Kundenkonten mit Status, Modulen und Aktionen.</p>
+                                </div>
+                            </div>
+
+                            {filteredCompanies.length === 0 ? (
+                                <div className="cmp-empty-state">
+                                    <p>Keine Firmen gefunden. Passe deine Suche oder Filter an.</p>
+                                </div>
+                            ) : (
+                                <div className="cmp-company-grid">
+                                    {filteredCompanies.map((co) => {
+                                        const activeFeatures = normalizeFeatureSelection(co.enabledFeatures);
+                                        const inactiveFeatures = OPTIONAL_FEATURES.map((feature) => feature.key).filter(
+                                            (key) => !activeFeatures.includes(key)
+                                        );
+                                        const activeBooleanKeys = ['notifyVacation', 'notifyOvertime', 'customerTrackingEnabled'].filter(
+                                            (key) => Boolean(co[key])
+                                        );
+                                        const activeModules = [
+                                            ...activeBooleanKeys.map((key) => ({
+                                                key,
+                                                label:
+                                                    MODULE_CATEGORIES.find((category) =>
+                                                        category.items.some((item) => item.key === key)
+                                                    )?.items.find((item) => item.key === key)?.label || key,
+                                                category: 'core',
+                                            })),
+                                            ...activeFeatures.map((key) => ({
+                                                key,
+                                                label: FEATURE_LABEL_MAP[key] || key,
+                                                category: CATEGORY_BY_FEATURE[key] || 'business',
+                                            })),
+                                        ];
+
+                                        const statusLabel = co.canceled
+                                            ? 'Gekündigt'
+                                            : co.active
+                                            ? 'Aktiv'
+                                            : 'Deaktiviert';
+
+                                        return (
+                                            <article key={co.id} className="cmp-company-card">
+                                                {editingCompany && editingCompany.id === co.id ? (
+                                                    <form onSubmit={handleSaveEdit} className="cmp-edit-form">
+                                                        <div className="cmp-edit-form__grid">
+                                                            <label className="cmp-field">
+                                                                <span>Firmenname</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCompany.name}
+                                                                    onChange={(e) =>
+                                                                        setEditingCompany({
+                                                                            ...editingCompany,
+                                                                            name: e.target.value,
+                                                                        })
+                                                                    }
+                                                                    required
+                                                                />
+                                                            </label>
+                                                            <label className="cmp-field">
+                                                                <span>Kanton</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCompany.cantonAbbreviation}
+                                                                    onChange={(e) =>
+                                                                        setEditingCompany({
+                                                                            ...editingCompany,
+                                                                            cantonAbbreviation: e.target.value,
+                                                                        })
+                                                                    }
+                                                                    maxLength={2}
+                                                                    className="text-uppercase"
+                                                                />
+                                                            </label>
+                                                            <label className="cmp-field">
+                                                                <span>Adresse</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCompany.addressLine1}
+                                                                    onChange={(e) =>
+                                                                        setEditingCompany({
+                                                                            ...editingCompany,
+                                                                            addressLine1: e.target.value,
+                                                                        })
+                                                                    }
+                                                                />
+                                                            </label>
+                                                            <label className="cmp-field">
+                                                                <span>Adresszusatz</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCompany.addressLine2}
+                                                                    onChange={(e) =>
+                                                                        setEditingCompany({
+                                                                            ...editingCompany,
+                                                                            addressLine2: e.target.value,
+                                                                        })
+                                                                    }
+                                                                />
+                                                            </label>
+                                                            <label className="cmp-field">
+                                                                <span>PLZ</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCompany.postalCode}
+                                                                    onChange={(e) =>
+                                                                        setEditingCompany({
+                                                                            ...editingCompany,
+                                                                            postalCode: e.target.value,
+                                                                        })
+                                                                    }
+                                                                />
+                                                            </label>
+                                                            <label className="cmp-field">
+                                                                <span>Ort</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCompany.city}
+                                                                    onChange={(e) =>
+                                                                        setEditingCompany({
+                                                                            ...editingCompany,
+                                                                            city: e.target.value,
+                                                                        })
+                                                                    }
+                                                                />
+                                                            </label>
+                                                            <label className="cmp-field">
+                                                                <span>Slack Webhook</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCompany.slackWebhookUrl}
+                                                                    onChange={(e) =>
+                                                                        setEditingCompany({
+                                                                            ...editingCompany,
+                                                                            slackWebhookUrl: e.target.value,
+                                                                        })
+                                                                    }
+                                                                />
+                                                            </label>
+                                                            <label className="cmp-field">
+                                                                <span>Teams Webhook</span>
+                                                                <input
+                                                                    type="text"
+                                                                    value={editingCompany.teamsWebhookUrl}
+                                                                    onChange={(e) =>
+                                                                        setEditingCompany({
+                                                                            ...editingCompany,
+                                                                            teamsWebhookUrl: e.target.value,
+                                                                        })
+                                                                    }
+                                                                />
+                                                            </label>
+                                                        </div>
+
+                                                        <ModulePicker
+                                                            selectedFeatures={editingCompany.enabledFeatures || []}
+                                                            onToggleFeature={toggleEditingCompanyFeature}
+                                                            toggles={{
+                                                                notifyVacation: editingCompany.notifyVacation,
+                                                                notifyOvertime: editingCompany.notifyOvertime,
+                                                                customerTrackingEnabled: editingCompany.customerTrackingEnabled,
+                                                            }}
+                                                            onToggleBoolean={handleEditingBooleanToggle}
+                                                        />
+
+                                                        <div className="cmp-edit-actions">
+                                                            <label className="cmp-toggle">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={editingCompany.active}
+                                                                    onChange={(e) =>
+                                                                        setEditingCompany({
+                                                                            ...editingCompany,
+                                                                            active: e.target.checked,
+                                                                        })
+                                                                    }
+                                                                />
+                                                                <span>Aktiv</span>
+                                                            </label>
+                                                            <div className="cmp-edit-actions__buttons">
+                                                                <button
+                                                                    type="button"
+                                                                    className="cmp-button"
+                                                                    onClick={() => setEditingCompany(null)}
+                                                                >
+                                                                    Abbrechen
+                                                                </button>
+                                                                <button type="submit" className="cmp-button cmp-button--primary">
+                                                                    Speichern
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                ) : (
+                                                    <>
+                                                        <div className="cmp-company-card__header">
+                                                            <div>
+                                                                <h4>{co.name}</h4>
+                                                                <div className="cmp-company-card__meta">
+                                                                    <span className={`cmp-status-badge cmp-status-badge--${statusLabel.toLowerCase()}`}>
+                                                                        {statusLabel}
+                                                                    </span>
+                                                                    {typeof co.userCount === 'number' && (
+                                                                        <span className="cmp-tag cmp-tag--users">{co.userCount} Nutzer</span>
+                                                                    )}
+                                                                    {co.city && <span className="cmp-tag">{co.city}</span>}
+                                                                    {co.cantonAbbreviation && <span className="cmp-tag">{co.cantonAbbreviation}</span>}
+                                                                    {co.licenseType && <span className="cmp-tag">{co.licenseType}</span>}
+                                                                </div>
+                                                            </div>
+                                                            <div className="cmp-company-card__actions">
+                                                                <button type="button" className="cmp-button" onClick={() => startEdit(co)}>
+                                                                    Bearbeiten
+                                                                </button>
+                                                                <button type="button" className="cmp-button" onClick={() => togglePayments(co)}>
+                                                                    Zahlungen
+                                                                </button>
+                                                                <button type="button" className="cmp-button" onClick={() => toggleActive(co)}>
+                                                                    {co.active ? 'Deaktivieren' : 'Aktivieren'}
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="cmp-button"
+                                                                    onClick={() =>
+                                                                        handleUpdatePayment(
+                                                                            co,
+                                                                            !co.paid,
+                                                                            co.paymentMethod || 'manuell'
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    {co.paid ? 'Zahlung zurücksetzen' : 'Zahlung bestätigen'}
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="cmp-button cmp-button--danger"
+                                                                    onClick={() => handleDeleteCompany(co.id)}
+                                                                >
+                                                                    Löschen
+                                                                </button>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="cmp-company-card__modules">
+                                                            <div>
+                                                                <span className="cmp-module-title">Aktive Module</span>
+                                                                {activeModules.length > 0 ? (
+                                                                    <div className="cmp-module-chip-row">
+                                                                        {activeModules.map((module) => (
+                                                                            <span
+                                                                                key={module.key}
+                                                                                className={`cmp-module-chip cmp-module-chip--${module.category}`}
+                                                                            >
+                                                                                {MODULE_ICON_MAP[module.key] || '•'} {module.label}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="cmp-module-empty">Keine Zusatzmodule aktiviert</p>
+                                                                )}
+                                                            </div>
+                                                            <div>
+                                                                <span className="cmp-module-title">Verfügbare Module</span>
+                                                                {inactiveFeatures.length > 0 ? (
+                                                                    <div className="cmp-module-chip-row">
+                                                                        {inactiveFeatures.map((key) => (
+                                                                            <span key={key} className="cmp-module-chip cmp-module-chip--inactive">
+                                                                                {MODULE_ICON_MAP[key] || '•'} {FEATURE_LABEL_MAP[key] || key}
+                                                                            </span>
+                                                                        ))}
+                                                                    </div>
+                                                                ) : (
+                                                                    <p className="cmp-module-empty">Alle Module sind aktiviert</p>
+                                                                )}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="cmp-company-card__footer">
+                                                            <div>
+                                                                <span>Erstellt am</span>
+                                                                <strong>{formatDate(co.createdAt)}</strong>
+                                                            </div>
+                                                            <div>
+                                                                <span>Zuletzt aktualisiert</span>
+                                                                <strong>{formatDate(co.updatedAt)}</strong>
+                                                            </div>
+                                                            <div>
+                                                                <span>Letzte Zahlung</span>
+                                                                <strong>{formatDate(co.lastPaymentAt || co.lastPaymentDate)}</strong>
+                                                            </div>
+                                                        </div>
+
+                                                        {openPayments[co.id] && (
+                                                            <div className="cmp-payments">
+                                                                <table className="cmp-payments-table">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>ID</th>
+                                                                            <th>Betrag</th>
+                                                                            <th>Status</th>
+                                                                            <th>Erstellt</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {(paymentDetails[co.id] || []).map((p) => (
+                                                                            <tr key={p.id}>
+                                                                                <td>{p.id}</td>
+                                                                                <td>
+                                                                                    {(p.amount / 100).toFixed(2)} {p.currency?.toUpperCase()}
+                                                                                </td>
+                                                                                <td>{p.status}</td>
+                                                                                <td>{formatDate(p.created * 1000)}</td>
+                                                                            </tr>
+                                                                        ))}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        )}
+                                                    </>
+                                                )}
+                                            </article>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </section>
+
                         {currentUser?.roles?.includes('ROLE_SUPERADMIN') && (
-                            <section className="cmp-section">
-                                <h2>Release Notes / Changelog erstellen</h2>
+                            <section className="cmp-section cmp-section--release">
+                                <div className="cmp-section__header">
+                                    <div>
+                                        <h3>Release Notes erstellen</h3>
+                                        <p>Dokumentiere Änderungen und veröffentliche sie mit einem Klick.</p>
+                                    </div>
+                                </div>
                                 <form onSubmit={handlePublishChangelog} className="cmp-form">
-                                    <div className="form-group">
-                                        <label htmlFor="version">Version (z.B. v1.1.0)</label>
-                                        <input
-                                            id="version"
-                                            type="text"
-                                            value={changelogVersion}
-                                            onChange={(e) => setChangelogVersion(e.target.value)}
-                                            required
-                                            placeholder="v1.1.0"
-                                        />
+                                    <div className="cmp-release-grid">
+                                        <div className="cmp-release-grid__left">
+                                            <label className="cmp-field">
+                                                <span>Version</span>
+                                                <input
+                                                    type="text"
+                                                    value={changelogVersion}
+                                                    onChange={(e) => setChangelogVersion(e.target.value)}
+                                                    placeholder="v1.1.0"
+                                                    required
+                                                />
+                                            </label>
+                                            <label className="cmp-field">
+                                                <span>Titel</span>
+                                                <input
+                                                    type="text"
+                                                    value={changelogTitle}
+                                                    onChange={(e) => setChangelogTitle(e.target.value)}
+                                                    placeholder="Neue Funktionen im Dashboard"
+                                                    required
+                                                />
+                                            </label>
+                                        </div>
+                                        <div className="cmp-release-grid__right">
+                                            <label className="cmp-field">
+                                                <span>Änderungen</span>
+                                                <textarea
+                                                    value={changelogContent}
+                                                    onChange={(e) => setChangelogContent(e.target.value)}
+                                                    placeholder="- Neues Feature: ...\n- Bugfix: ..."
+                                                    rows={10}
+                                                    required
+                                                />
+                                            </label>
+                                        </div>
                                     </div>
-                                    <div className="form-group">
-                                        <label htmlFor="title">Titel</label>
-                                        <input
-                                            id="title"
-                                            type="text"
-                                            value={changelogTitle}
-                                            onChange={(e) => setChangelogTitle(e.target.value)}
-                                            required
-                                            placeholder="Neue Funktionen im Dashboard"
-                                        />
+                                    <div className="cmp-form-actions">
+                                        <button type="submit" className="cmp-button cmp-button--primary">
+                                            Release veröffentlichen
+                                        </button>
                                     </div>
-                                    <div className="form-group">
-                                        <label htmlFor="content">Änderungen (Markdown wird unterstützt)</label>
-                                        <textarea
-                                            id="content"
-                                            rows="10"
-                                            value={changelogContent}
-                                            onChange={(e) => setChangelogContent(e.target.value)}
-                                            required
-                                            placeholder="- Neues Feature: ...\n- Bugfix: ..."
-                                        ></textarea>
-                                    </div>
-                                    <button type="submit" className="button">Veröffentlichen</button>
                                 </form>
                             </section>
                         )}
-                    </section>
-                </>
-            )}
+                    </>
+                )}
+            </div>
         </div>
     );
 };
