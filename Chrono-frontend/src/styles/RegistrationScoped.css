@@ -59,7 +59,7 @@
 }
 
 .registration-page.scoped-registration .registration-content {
-  max-width: 1280px;
+  max-width: min(92vw, 1440px);
   width: 100%;
   margin: 0 auto;
   display: flex;
