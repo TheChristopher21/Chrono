@@ -8,20 +8,19 @@ import { useNotification } from "../context/NotificationContext";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
 
-// Feature block supports either a single text or a list of bullet points
-const FeatureCard = ({ icon, title, text, bullets }) => (
+// Feature block for homepage highlights
+const FeatureCard = ({ icon, title, lines }) => (
     <article className="lp-feature-card" role="listitem">
         <div className="lp-feature-icon" aria-hidden="true">{icon}</div>
         <h3 className="lp-h3">{title}</h3>
-        {bullets ? (
-            <ul className="lp-text-muted">
-                {bullets.map((b, i) => (
-                    <li key={i}>{b}</li>
-                ))}
-            </ul>
-        ) : (
-            <p className="lp-text-muted">{text}</p>
-        )}
+        <p className="lp-text-muted">
+            {lines.map((line, index) => (
+                <React.Fragment key={index}>
+                    {line}
+                    {index !== lines.length - 1 && <br />}
+                </React.Fragment>
+            ))}
+        </p>
     </article>
 );
 
@@ -71,94 +70,35 @@ const LandingPage = () => {
 
     const features = [
         {
-            icon: "🧾",
-            title: t("landing.features.items.0.title", "Arbeitszeiterfassung & Payroll verbinden"),
-            bullets: [
-                t("landing.features.items.0.bullets.0", "Arbeitszeiten gesetzeskonform dokumentieren"),
-                t("landing.features.items.0.bullets.1", "Lohnarten und Zuschläge automatisch berechnen"),
-                t("landing.features.items.0.bullets.2", "Transparente Stundennachweise für Mitarbeitende"),
+            icon: "⏱️",
+            title: t("landing.features.tracking.title", "Zeiterfassung & Projekte"),
+            lines: [
+                t("landing.features.tracking.line1", "Mitarbeitende stempeln per Browser, NFC oder App."),
+                t("landing.features.tracking.line2", "Zeiten sofort Projekten und Kunden zuordnen."),
             ],
         },
         {
-            icon: "🇨🇭🇩🇪",
-            title: t("landing.features.items.1.title", "Payroll für Schweiz & Deutschland"),
-            bullets: [
-                t("landing.features.items.1.bullets.0", "Kantonale und deutsche Vorgaben bereits hinterlegt"),
-                t("landing.features.items.1.bullets.1", "Lohnabrechnungen als PDF oder Excel exportieren"),
-                t("landing.features.items.1.bullets.2", "Brutto- und Nettolöhne mit wenigen Klicks anpassen"),
+            icon: "🏖️",
+            title: t("landing.features.leave.title", "Urlaub & Abwesenheiten"),
+            lines: [
+                t("landing.features.leave.line1", "Urlaub online beantragen, genehmigen und auswerten."),
+                t("landing.features.leave.line2", "Resttage und Überstunden immer im Blick."),
             ],
         },
         {
-            icon: "👆",
-            title: t("landing.features.items.2.title", "Stempeln via Terminal oder Web-App"),
-            bullets: [
-                t("landing.features.items.2.bullets.0", "Terminal, NFC-Karte oder Browser nutzen"),
-                t("landing.features.items.2.bullets.1", "Mobile Zeiterfassung für Teams im Außendienst"),
-                t("landing.features.items.2.bullets.2", "Offline-Puffer sorgt für verlässliche Buchungen"),
+            icon: "💼",
+            title: t("landing.features.payroll.title", "Lohnabrechnung CH & DE"),
+            lines: [
+                t("landing.features.payroll.line1", "Lohnabrechnungen rechtssicher erstellen."),
+                t("landing.features.payroll.line2", "Export für Treuhänder und Buchhaltung."),
             ],
         },
         {
-            icon: "📅",
-            title: t("landing.features.items.3.title", "Urlaub, Überstunden & Gleitzeit im Blick"),
-            bullets: [
-                t("landing.features.items.3.bullets.0", "Abwesenheiten digital beantragen und freigeben"),
-                t("landing.features.items.3.bullets.1", "Resturlaub und Salden in Echtzeit einsehen"),
-                t(
-                    "landing.features.items.3.bullets.2",
-                    "Überstunden automatisch in die Lohnabrechnung übernehmen"
-                ),
-            ],
-        },
-        {
-            icon: "🔔",
-            title: t("landing.features.items.4.title", "Automatische Hinweise & Erinnerungen"),
-            bullets: [
-                t("landing.features.items.4.bullets.0", "Benachrichtigung bei neuen Lohnabrechnungen"),
-                t("landing.features.items.4.bullets.1", "Automatische Info zu Urlaubs- und Korrekturanträgen"),
-                t("landing.features.items.4.bullets.2", "Erinnerung, wenn du vergisst auszustempeln"),
-            ],
-        },
-        {
-            icon: "🛡️",
-            title: t("landing.features.items.5.title", "Datenschutzkonforme Cloud in der Schweiz"),
-            bullets: [
-                t("landing.features.items.5.bullets.0", "Hosting in Schweizer Rechenzentren"),
-                t("landing.features.items.5.bullets.1", "DSGVO- und CH-DSG-konforme Datenverarbeitung"),
-                t("landing.features.items.5.bullets.2", "Feingranulare Rollen- und Rechteverwaltung"),
-                t("landing.features.items.5.bullets.3", "Optionale Zwei-Faktor-Authentifizierung"),
-            ],
-        },
-        {
-            icon: "👥",
-            title: t("landing.features.items.6.title", "Teams, Kunden & Projekte steuern"),
-            bullets: [
-                t(
-                    "landing.features.items.6.bullets.0",
-                    "Mitarbeitende, Kunden und Projekte zentral verwalten"
-                ),
-                t("landing.features.items.6.bullets.1", "Projektzeiten und Budgets live verfolgen"),
-                t("landing.features.items.6.bullets.2", "Rollen & Zugriffe pro Standort definieren"),
-            ],
-        },
-        {
-            icon: "📊",
-            title: t("landing.features.items.7.title", "Berichte und Auswertungen exportieren"),
-            bullets: [
-                t("landing.features.items.7.bullets.0", "Übersichtliche Reports für HR und Steuerberater"),
-                t("landing.features.items.7.bullets.1", "Projektzeiten, Kosten und Auslastung auf einen Blick"),
-                t("landing.features.items.7.bullets.2", "Export als Excel, PDF oder DATEV-kompatible Dateien"),
-            ],
-        },
-        {
-            icon: "🤝",
-            title: t("landing.features.items.8.title", "Persönlicher Support & Onboarding"),
-            bullets: [
-                t(
-                    "landing.features.items.8.bullets.0",
-                    "Direkter Draht zu unseren Zeiterfassungs-Expert:innen"
-                ),
-                t("landing.features.items.8.bullets.1", "Antwort in der Regel am selben Werktag"),
-                t("landing.features.items.8.bullets.2", "Geführtes Onboarding für dein gesamtes Team"),
+            icon: "📈",
+            title: t("landing.features.reporting.title", "Auswertungen & Berichte"),
+            lines: [
+                t("landing.features.reporting.line1", "Sieh auf einen Blick, wer wann wie viel gearbeitet hat."),
+                t("landing.features.reporting.line2", "Praktisch für Steuer, Revision und Planung."),
             ],
         },
     ];
@@ -166,132 +106,248 @@ const LandingPage = () => {
     const steps = [
         {
             n: "1",
-            title: t("landing.steps.items.0.title", "Registrieren"),
+            title: t("landing.steps.register.title", "Registrieren"),
             text: t(
-                "landing.steps.items.0.text",
-                "Kostenlos starten – ohne Kreditkarte und ohne Installationsaufwand."
+                "landing.steps.register.text",
+                "Konto anlegen – ganz ohne Kreditkarte."
             ),
         },
         {
             n: "2",
-            title: t("landing.steps.items.1.title", "Team & Projekte anlegen"),
+            title: t("landing.steps.setup.title", "Team & Projekte hinzufügen"),
             text: t(
-                "landing.steps.items.1.text",
-                "Mitarbeitende, Kunden und Projekte anlegen – optional mit Schichtplänen."
+                "landing.steps.setup.text",
+                "Mitarbeitende, Kunden und Projekte erfassen."
             ),
         },
         {
             n: "3",
-            title: t("landing.steps.items.2.title", "Loslegen"),
+            title: t("landing.steps.start.title", "Loslegen"),
             text: t(
-                "landing.steps.items.2.text",
-                "Zeiten erfassen, Urlaub freigeben und die Payroll in wenigen Klicks abschließen."
+                "landing.steps.start.text",
+                "Stempeln, Urlaub beantragen, Löhne erstellen."
             ),
         },
+    ];
+
+    const logos = [
+        t("landing.social.hotel", "Hotel"),
+        t("landing.social.construction", "Bauunternehmen"),
+        t("landing.social.cleaning", "Reinigungsfirma"),
+        t("landing.social.gastro", "Gastronomie"),
+        t("landing.social.treuhand", "Treuhand"),
+        t("landing.social.fitness", "Fitnessstudio"),
     ];
 
     return (
         <div className="landing-page scoped-landing">
             <Navbar />
             <main>
-                {/* HERO (einspaltig, ohne Mock) */}
+                {/* HERO */}
                 <header className="lp-hero lp-section lp-section-lg" id="home">
-                    <div className="lp-hero-single">
-                        <div className="lp-hero-content">
-                            <div className="lp-hero-badge">
-                                {t("landing.hero.badge", "Zeiterfassung & Payroll für KMU")}
-                            </div>
+                    <div className="lp-hero-inner">
+                        <div className="lp-hero-copy">
+                            <span className="lp-hero-badge">
+                                {t("landing.hero.badge", "fair · klar · zuverlässig")}
+                            </span>
                             <h1 className="lp-h1">
                                 {t(
                                     "landing.hero.title",
-                                    "Chrono Zeiterfassung Software für faire Arbeitszeiten und Lohnabrechnung."
+                                    "Zeiten erfassen. Löhne abrechnen. Urlaub managen."
                                 )}
+                                <span className="lp-hero-subline">
+                                    {t(
+                                        "landing.hero.subline",
+                                        "Alles in einer Plattform – made in Switzerland."
+                                    )}
+                                </span>
                             </h1>
-                            <br></br>
                             <p className="lp-lead">
                                 {t(
-                                    "landing.hero.sub",
-                                    "Chrono ist die Zeiterfassungssoftware für Unternehmen in der Schweiz und Deutschland. Erfasse Arbeitszeiten gesetzeskonform, plane Projekte und schließe die Lohnabrechnung in wenigen Klicks ab."
+                                    "landing.hero.text",
+                                    "Chrono hilft Teams in der Schweiz & Deutschland, Arbeitszeiten sauber zu erfassen, Abwesenheiten zu planen und Löhne rechtssicher abzurechnen – ohne Excel-Chaos."
                                 )}
                             </p>
-
                             <div className="lp-cta-buttons">
                                 <Link className="lp-btn lp-primary" to="/register">
                                     {t("landing.cta.try", "Kostenlos testen")}
                                 </Link>
-                                <Link className="lp-btn lp-secondary" to="/login">
-                                    {t("landing.cta.login", "Anmelden")}
-                                </Link>
-                                <button className="lp-btn lp-secondary" onClick={handleDemo}>
-                                    {t("landing.cta.demo", "Demo ansehen")}
+                                <button className="lp-btn lp-secondary" type="button" onClick={handleDemo}>
+                                    {t("landing.cta.demo", "Live-Demo ansehen")}
                                 </button>
                             </div>
-
-                            <ul className="lp-usp-chips" role="list">
-                                <li>{t("landing.hero.chips.server", "🇨🇭 Schweizer Server")}</li>
-                                <li>{t("landing.hero.chips.gdpr", "🔐 DSGVO-konform")}</li>
-                                <li>{t("landing.hero.chips.noExcel", "🧮 Kein Excel-Chaos")}</li>
-                            </ul>
+                            <p className="lp-hero-note">
+                                {t(
+                                    "landing.hero.note",
+                                    "🕒 Ohne Kreditkarte · jederzeit kündbar · Schweizer Server"
+                                )}
+                            </p>
+                        </div>
+                        <div className="lp-hero-mock" aria-hidden="true">
+                            <div className="lp-mock-window">
+                                <div className="lp-mock-header">Chrono Dashboard</div>
+                                <div className="lp-mock-body">
+                                    <div className="lp-mock-chart">
+                                        <div className="lp-mock-bar" style={{ height: "68%" }} />
+                                        <div className="lp-mock-bar" style={{ height: "54%" }} />
+                                        <div className="lp-mock-bar" style={{ height: "82%" }} />
+                                        <div className="lp-mock-bar" style={{ height: "45%" }} />
+                                        <div className="lp-mock-bar" style={{ height: "72%" }} />
+                                    </div>
+                                    <div className="lp-mock-table">
+                                        <div className="lp-mock-row">
+                                            <span>Anna Keller</span>
+                                            <span>40 h</span>
+                                            <span className="lp-mock-pill lp-pill-positive">+12 h Überstunden</span>
+                                        </div>
+                                        <div className="lp-mock-row">
+                                            <span>David Steiner</span>
+                                            <span>38 h</span>
+                                            <span className="lp-mock-pill">Urlaub genehmigt</span>
+                                        </div>
+                                        <div className="lp-mock-row">
+                                            <span>J. Nguyen</span>
+                                            <span>32 h</span>
+                                            <span>Projekt Zephyr</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </header>
 
+                {/* SOCIAL PROOF */}
+                <section className="lp-social-proof" aria-label={t("landing.social.title", "Vertrauen von Teams aus CH & DE")}>
+                    <div className="lp-container">
+                        <h2 className="lp-h2">{t("landing.social.title", "Vertrauen von Teams aus CH & DE")}</h2>
+                        <ul className="lp-logo-row" role="list">
+                            {logos.map((logo, index) => (
+                                <li key={index}>{logo}</li>
+                            ))}
+                        </ul>
+                        <p className="lp-text-muted lp-social-note">
+                            {t(
+                                "landing.social.note",
+                                "Chrono läuft auf sicheren Schweizer Servern und ist vollständig DSGVO-konform."
+                            )}
+                        </p>
+                    </div>
+                </section>
+
                 {/* FEATURES */}
                 <section className="lp-section" id="features">
-                    <h2 className="lp-h2">
-                        {t(
-                            "landing.features.title",
-                            "Alle Module für digitale Arbeitszeiterfassung und Payroll."
-                        )}
-                    </h2>
-                    <p className="lp-section-sub">
-                        {t(
-                            "landing.features.sub",
-                            "Chrono vereint Zeiterfassung, Projektzeiterfassung, Schichtplanung und Lohnabrechnung in einer DSGVO-konformen Plattform."
-                        )}
-                    </p>
-                    <div className="lp-features-grid" role="list" aria-label="Featureliste">
-                        {features.map((f, i) => (
-                            <FeatureCard key={i} icon={f.icon} title={f.title} bullets={f.bullets} text={f.text} />
-                        ))}
+                    <div className="lp-container">
+                        <h2 className="lp-h2">
+                            {t("landing.features.title", "Alles drin, was du brauchst – ohne Ballast.")}
+                        </h2>
+                        <div className="lp-features-grid" role="list" aria-label="Produktfunktionen">
+                            {features.map((feature, index) => (
+                                <FeatureCard key={index} icon={feature.icon} title={feature.title} lines={feature.lines} />
+                            ))}
+                        </div>
                     </div>
                 </section>
 
                 {/* STEPS */}
                 <section className="lp-section" id="start">
-                    <h2 className="lp-h2">{t("landing.steps.title", "So startest du in 3 Schritten")}</h2>
-                    <div className="lp-steps-grid">
-                        {steps.map((s, i) => (
-                            <StepCard key={i} n={s.n} title={s.title} text={s.text} />
-                        ))}
+                    <div className="lp-container">
+                        <h2 className="lp-h2">{t("landing.steps.title", "So startest du mit Chrono in 3 Schritten")}</h2>
+                        <div className="lp-steps-grid">
+                            {steps.map((step, index) => (
+                                <StepCard key={index} n={step.n} title={step.title} text={step.text} />
+                            ))}
+                        </div>
+                        <Link className="lp-text-link" to="/register">
+                            {t("landing.steps.link", "Zum Registrieren →")}
+                        </Link>
+                    </div>
+                </section>
+
+                {/* PRICING */}
+                <section className="lp-pricing" id="preise">
+                    <div className="lp-container lp-pricing-inner">
+                        <div className="lp-pricing-copy">
+                            <h2 className="lp-h2">{t("landing.pricing.title", "Baukasten-Preismodell – zahle nur, was du brauchst.")}</h2>
+                            <p className="lp-text-muted">
+                                {t(
+                                    "landing.pricing.text",
+                                    "Ab 5 CHF pro Mitarbeitendem im Monat. Module für Urlaub, Lohnabrechnung und mehr einfach dazubuchen."
+                                )}
+                            </p>
+                        </div>
+                        <Link className="lp-btn lp-primary" to="/preise">
+                            {t("landing.pricing.cta", "Preise ansehen & Konfiguration starten")}
+                        </Link>
                     </div>
                 </section>
 
                 {/* CONTACT */}
-                <section className="lp-section" id="kontakt" aria-labelledby="kontakt-title">
-                    <h2 id="kontakt-title" className="lp-h2">{t("landing.contact.title", "Kontakt aufnehmen")}</h2>
-                    <form className="lp-contact-form" onSubmit={submitContact}>
-                        <div className="lp-form-row">
-                            <div className="lp-form-group">
-                                <label htmlFor="name" className="lp-label">{t("landing.contact.name", "Name")}</label>
-                                <input id="name" name="name" type="text" required value={contact.name} onChange={onChange} className="lp-input" />
+                <section className="lp-contact" id="kontakt" aria-labelledby="kontakt-title">
+                    <div className="lp-container lp-contact-inner">
+                        <div className="lp-contact-copy">
+                            <h2 id="kontakt-title" className="lp-h2">{t("landing.contact.title", "Lass uns über dein Team sprechen")}</h2>
+                            <p className="lp-text-muted">
+                                {t(
+                                    "landing.contact.text",
+                                    "Du willst Chrono zuerst sehen oder hast Fragen zur Lohnabrechnung in CH/DE? Schreib uns – wir melden uns in der Regel noch am selben Werktag."
+                                )}
+                            </p>
+                        </div>
+                        <form className="lp-contact-form" onSubmit={submitContact}>
+                            <div className="lp-form-row">
+                                <div className="lp-form-group">
+                                    <label htmlFor="name" className="lp-label">{t("landing.contact.name", "Name")}</label>
+                                    <input
+                                        id="name"
+                                        name="name"
+                                        type="text"
+                                        required
+                                        value={contact.name}
+                                        onChange={onChange}
+                                        className="lp-input"
+                                    />
+                                </div>
+                                <div className="lp-form-group">
+                                    <label htmlFor="email" className="lp-label">{t("landing.contact.email", "E-Mail")}</label>
+                                    <input
+                                        id="email"
+                                        name="email"
+                                        type="email"
+                                        required
+                                        value={contact.email}
+                                        onChange={onChange}
+                                        className="lp-input"
+                                    />
+                                </div>
                             </div>
+
                             <div className="lp-form-group">
-                                <label htmlFor="email" className="lp-label">{t("landing.contact.email", "E-Mail")}</label>
-                                <input id="email" name="email" type="email" required value={contact.email} onChange={onChange} className="lp-input" />
+                                <label htmlFor="message" className="lp-label">{t("landing.contact.msg", "Nachricht")}</label>
+                                <textarea
+                                    id="message"
+                                    name="message"
+                                    rows={4}
+                                    required
+                                    value={contact.message}
+                                    onChange={onChange}
+                                    placeholder={t("landing.contact.placeholder", "Wie können wir helfen?")}
+                                    className="lp-textarea"
+                                />
                             </div>
-                        </div>
 
-                        <div className="lp-form-group">
-                            <label htmlFor="message" className="lp-label">{t("landing.contact.msg", "Nachricht")}</label>
-                            <textarea id="message" name="message" rows={4} required value={contact.message} onChange={onChange} placeholder={t("landing.contact.placeholder", "Wie kann ich helfen?")} className="lp-textarea" />
-                        </div>
-
-                        <div className="lp-form-actions">
-                            <button className="lp-btn lp-primary" type="submit">{t("landing.contact.send", "Senden")}</button>
-                            <p className="lp-form-hint lp-text-muted">{t("landing.contact.hint", "Antwort in der Regel innerhalb von 24h.")}</p>
-                        </div>
-                    </form>
+                            <div className="lp-form-actions">
+                                <button className="lp-btn lp-primary" type="submit" disabled={sending}>
+                                    {sending
+                                        ? t("landing.contact.sending", "Wird gesendet…")
+                                        : t("landing.contact.send", "Nachricht senden")}
+                                </button>
+                                <p className="lp-form-hint lp-text-muted">
+                                    {t("landing.contact.hint", "Antwort in der Regel noch am selben Werktag.")}
+                                </p>
+                            </div>
+                        </form>
+                    </div>
                 </section>
             </main>
 
