@@ -266,11 +266,51 @@
     z-index: -1;
 }
 
+.landing-page.scoped-landing .lp-mock-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+    padding-bottom: 1.1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .landing-page.scoped-landing .lp-mock-toolbar {
+    border-color: rgba(120, 140, 200, 0.18);
+}
+
+.landing-page.scoped-landing .lp-mock-breadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+    letter-spacing: 0.02em;
+}
+
+.landing-page.scoped-landing .lp-mock-divider {
+    opacity: 0.6;
+}
+
+.landing-page.scoped-landing .lp-mock-toolbar-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
 .landing-page.scoped-landing .lp-mock-header {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
     gap: 1.4rem;
+    flex-wrap: wrap;
+}
+
+.landing-page.scoped-landing .lp-mock-heading {
+    display: grid;
+    gap: 0.3rem;
 }
 
 .landing-page.scoped-landing .lp-mock-eyebrow {
@@ -285,6 +325,7 @@
     margin: 0.2rem 0 0.25rem;
     font-size: 1.35rem;
     font-weight: 700;
+    min-width: 0;
 }
 
 .landing-page.scoped-landing .lp-mock-subtitle {
@@ -295,7 +336,15 @@
 .landing-page.scoped-landing .lp-mock-header-meta {
     display: flex;
     align-items: center;
-    gap: 0.75rem;
+    gap: 0.85rem;
+    flex-wrap: wrap;
+}
+
+.landing-page.scoped-landing .lp-mock-chip-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
 }
 
 .landing-page.scoped-landing .lp-mock-tag {
@@ -338,9 +387,44 @@
     color: var(--c-text-muted);
 }
 
+.landing-page.scoped-landing .lp-mock-filter-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.8rem;
+}
+
+.landing-page.scoped-landing .lp-mock-filter {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: var(--radius);
+    padding: 0.75rem 1rem;
+    display: grid;
+    gap: 0.2rem;
+}
+
+[data-theme="light"] .landing-page.scoped-landing .lp-mock-filter {
+    background: rgba(240, 244, 255, 0.85);
+    border-color: rgba(120, 140, 200, 0.18);
+}
+
+.landing-page.scoped-landing .lp-mock-filter-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .landing-page.scoped-landing .lp-mock-filter-label {
+    color: rgba(40, 55, 120, 0.6);
+}
+
+.landing-page.scoped-landing .lp-mock-filter-value {
+    font-weight: 600;
+}
+
 .landing-page.scoped-landing .lp-mock-body {
     display: grid;
-    gap: 1.6rem;
+    gap: 1.8rem;
 }
 
 .landing-page.scoped-landing .lp-mock-kpi-grid {
@@ -393,14 +477,22 @@
     color: var(--c-text-muted);
 }
 
-.landing-page.scoped-landing .lp-mock-panels {
+
+.landing-page.scoped-landing .lp-mock-main-grid {
     display: grid;
     gap: 1.1rem;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+    align-items: start;
+}
+
+.landing-page.scoped-landing .lp-mock-sidebar {
+    display: grid;
+    gap: 1.1rem;
 }
 
 .landing-page.scoped-landing .lp-mock-table-card,
-.landing-page.scoped-landing .lp-mock-inbox-card {
+.landing-page.scoped-landing .lp-mock-inbox-card,
+.landing-page.scoped-landing .lp-mock-week-card {
     background: rgba(12, 20, 45, 0.78);
     border-radius: var(--radius);
     border: 1px solid rgba(255, 255, 255, 0.1);
@@ -411,7 +503,8 @@
 }
 
 [data-theme="light"] .landing-page.scoped-landing .lp-mock-table-card,
-[data-theme="light"] .landing-page.scoped-landing .lp-mock-inbox-card {
+[data-theme="light"] .landing-page.scoped-landing .lp-mock-inbox-card,
+[data-theme="light"] .landing-page.scoped-landing .lp-mock-week-card {
     background: rgba(250, 252, 255, 0.96);
     border-color: rgba(120, 140, 200, 0.18);
     box-shadow: none;
@@ -548,6 +641,113 @@
 
 .landing-page.scoped-landing .lp-mock-inbox-footer {
     margin-top: 0.2rem;
+    font-size: 0.85rem;
+    color: var(--c-primary);
+    font-weight: 700;
+}
+
+.landing-page.scoped-landing .lp-mock-week-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.landing-page.scoped-landing .lp-mock-week-days {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.landing-page.scoped-landing .lp-mock-week-day {
+    display: grid;
+    gap: 0.35rem;
+}
+
+.landing-page.scoped-landing .lp-mock-week-day-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    color: var(--c-text);
+}
+
+.landing-page.scoped-landing .lp-mock-week-label {
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+}
+
+.landing-page.scoped-landing .lp-mock-week-hours {
+    font-size: 0.9rem;
+    color: var(--c-text-muted);
+}
+
+.landing-page.scoped-landing .lp-mock-progress {
+    position: relative;
+    height: 6px;
+    border-radius: 999px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .landing-page.scoped-landing .lp-mock-progress {
+    background: rgba(160, 180, 230, 0.25);
+}
+
+.landing-page.scoped-landing .lp-mock-progress-fill {
+    height: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, rgba(86, 135, 255, 0.9), rgba(120, 180, 255, 0.6));
+}
+
+.landing-page.scoped-landing .lp-mock-progress-fill.is-positive {
+    background: linear-gradient(90deg, rgba(121, 240, 193, 0.95), rgba(84, 210, 169, 0.7));
+}
+
+.landing-page.scoped-landing .lp-mock-progress-fill.is-warning {
+    background: linear-gradient(90deg, rgba(255, 200, 90, 0.95), rgba(255, 170, 70, 0.75));
+}
+
+.landing-page.scoped-landing .lp-mock-progress-fill.is-info {
+    background: linear-gradient(90deg, rgba(120, 160, 255, 0.95), rgba(80, 120, 250, 0.7));
+}
+
+.landing-page.scoped-landing .lp-mock-progress-fill.is-muted {
+    background: linear-gradient(90deg, rgba(120, 140, 200, 0.4), rgba(90, 110, 160, 0.3));
+}
+
+.landing-page.scoped-landing .lp-mock-week-meta {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--c-text-muted);
+}
+
+.landing-page.scoped-landing .lp-mock-week-meta.positive {
+    color: #72f3ba;
+}
+
+.landing-page.scoped-landing .lp-mock-week-meta.neutral {
+    color: var(--c-text-muted);
+}
+
+.landing-page.scoped-landing .lp-mock-week-meta.warning {
+    color: #ffd166;
+}
+
+.landing-page.scoped-landing .lp-mock-week-meta.info {
+    color: #a7c5ff;
+}
+
+.landing-page.scoped-landing .lp-mock-week-meta.muted {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="light"] .landing-page.scoped-landing .lp-mock-week-meta.muted {
+    color: rgba(40, 55, 120, 0.6);
+}
+
+.landing-page.scoped-landing .lp-mock-week-footer {
+    margin-top: 0.4rem;
     font-size: 0.85rem;
     color: var(--c-primary);
     font-weight: 700;
@@ -832,11 +1032,15 @@
         margin: 0 auto;
     }
 
+    .landing-page.scoped-landing .lp-mock-filter-row {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
     .landing-page.scoped-landing .lp-mock-kpi-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .landing-page.scoped-landing .lp-mock-panels {
+    .landing-page.scoped-landing .lp-mock-main-grid {
         grid-template-columns: 1fr;
     }
 
@@ -885,6 +1089,16 @@
         grid-template-columns: 1fr;
     }
 
+    .landing-page.scoped-landing .lp-mock-toolbar {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.6rem;
+    }
+
+    .landing-page.scoped-landing .lp-mock-filter-row {
+        grid-template-columns: 1fr;
+    }
+
     .landing-page.scoped-landing .lp-mock-header {
         flex-direction: column;
         align-items: flex-start;
@@ -915,6 +1129,12 @@
     }
 
     .landing-page.scoped-landing .lp-mock-inbox-head {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+    }
+
+    .landing-page.scoped-landing .lp-mock-week-head {
         flex-direction: column;
         align-items: flex-start;
         gap: 0.4rem;
