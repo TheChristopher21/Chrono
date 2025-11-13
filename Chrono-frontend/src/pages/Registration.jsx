@@ -1,572 +1,427 @@
-import { useState, useEffect, useMemo } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import "../styles/RegistrationScoped.css";
 import api from "../utils/api";
 import { useNotification } from "../context/NotificationContext";
-import { BASE_FEATURE, FEATURE_CATALOG, TOGGLABLE_FEATURE_KEYS } from "../constants/registrationFeatures";
+import { BASE_FEATURE } from "../constants/registrationFeatures";
 
-const INSTALL_FEE = 250;
-const OPTIONAL_TRAINING_COST = 120;
-const YEARLY_DISCOUNT_FACTOR = 10; // 2 Monate geschenkt
+const COUNTRY_OPTIONS = [
+    { value: "ch", label: "Schweiz" },
+    { value: "de", label: "Deutschland" },
+    { value: "other", label: "anderes" },
+];
+
+const MODULE_OPTIONS = [
+    {
+        key: BASE_FEATURE.key,
+        label: "Zeiterfassung (Basis)",
+        description: "Pflichtmodul – bildet die Grundlage für deinen Chrono-Account.",
+        required: true,
+    },
+    {
+        key: "vacation",
+        label: "Urlaub & Abwesenheiten",
+        description: "Abwesenheiten planen, genehmigen und transparent kommunizieren.",
+    },
+    {
+        key: "payroll",
+        label: "Lohnabrechnung (CH & DE)",
+        description: "Löhne vorbereiten und gesetzeskonform abrechnen.",
+    },
+    {
+        key: "projects",
+        label: "Projekte & Auswertungen",
+        description: "Projektzeiten erfassen, Budgets überwachen und Reports teilen.",
+    },
+    {
+        key: "nfc",
+        label: "NFC-Terminals / Stempeluhren",
+        description: "Zeiten bequem per Terminal oder Smartphone stempeln.",
+    },
+];
+
+const INITIAL_CONFIGURATION = {
+    country: COUNTRY_OPTIONS[0].value,
+    industry: "",
+    employeeCount: 10,
+    locations: "",
+};
+
+const INITIAL_FORM = {
+    companyName: "",
+    contactName: "",
+    email: "",
+    phone: "",
+    additionalInfo: "",
+};
 
 const Registration = () => {
     const navigate = useNavigate();
-    const location = useLocation();
     const { notify } = useNotification();
 
-    const companyId = useMemo(() => {
-        const params = new URLSearchParams(location.search);
-        const value = params.get("companyId");
-        if (!value) return null;
-        const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed : null;
-    }, [location.search]);
-
-    const [form, setForm] = useState({
-        companyName: "",
-        contactName: "",
-        email: "",
-        phone: "",
-        additionalInfo: "",
-    });
-
-    const [employeeCount, setEmployeeCount] = useState(1);
-    const [selectedFeatures, setSelectedFeatures] = useState(
-        FEATURE_CATALOG.filter((f) => f.required).map((f) => f.key)
-    );
-    const [billingPeriod, setBillingPeriod] = useState("monthly");
-    const [includeOptionalTraining, setIncludeOptionalTraining] = useState(false);
-
-    const [calculatedPrice, setCalculatedPrice] = useState(0);
-    const [priceBreakdown, setPriceBreakdown] = useState(null);
+    const [configuration, setConfiguration] = useState(INITIAL_CONFIGURATION);
+    const [form, setForm] = useState(INITIAL_FORM);
+    const [selectedFeatures, setSelectedFeatures] = useState([BASE_FEATURE.key]);
+    const [consents, setConsents] = useState({ terms: false, contact: false });
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
-    const [companyFeatureKeys, setCompanyFeatureKeys] = useState([]);
-    const [featureError, setFeatureError] = useState("");
-    const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
 
-    const visibleFeatures = useMemo(() => {
-        return FEATURE_CATALOG.filter(
-            (feature) => feature.alwaysAvailable || companyFeatureKeys.includes(feature.key)
-        );
-    }, [companyFeatureKeys]);
+    const handleConfigurationChange = (field, value) => {
+        setConfiguration((prev) => ({ ...prev, [field]: value }));
+    };
 
-    const visibleFeatureKeys = useMemo(() => new Set(visibleFeatures.map((feature) => feature.key)), [visibleFeatures]);
+    const handleFormChange = (event) => {
+        const { name, value } = event.target;
+        setForm((prev) => ({ ...prev, [name]: value }));
+    };
 
-    useEffect(() => {
-        let isMounted = true;
-        if (companyId == null) {
-            if (isMounted) {
-                setCompanyFeatureKeys(TOGGLABLE_FEATURE_KEYS);
-                setFeatureError("");
-                setIsLoadingFeatures(false);
-            }
-            return () => {
-                isMounted = false;
-            };
-        }
+    const handleConsentChange = (event) => {
+        const { name, checked } = event.target;
+        setConsents((prev) => ({ ...prev, [name]: checked }));
+    };
 
-        const loadFeatures = async () => {
-            setIsLoadingFeatures(true);
-            setFeatureError("");
-            try {
-                const response = await api.get("/api/public/registration-features", {
-                    params: { companyId },
-                });
-                const payload = response.data;
-                const rawKeys = Array.isArray(payload)
-                    ? payload
-                    : Array.isArray(payload?.enabledFeatures)
-                    ? payload.enabledFeatures
-                    : [];
-                const sanitized = rawKeys.filter((key) => TOGGLABLE_FEATURE_KEYS.includes(key));
-                if (isMounted) {
-                    setCompanyFeatureKeys(sanitized);
-                }
-            } catch (fetchError) {
-                console.error("Fehler beim Laden der Firmenmodule", fetchError);
-                if (isMounted) {
-                    setFeatureError(
-                        "Die freigeschalteten Module konnten nicht geladen werden. Es werden vorerst alle Zusatzmodule angezeigt."
-                    );
-                    setCompanyFeatureKeys(TOGGLABLE_FEATURE_KEYS);
-                }
-            } finally {
-                if (isMounted) {
-                    setIsLoadingFeatures(false);
-                }
-            }
-        };
-
-        loadFeatures();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [companyId]);
-
-    useEffect(() => {
-        setSelectedFeatures((prev) => prev.filter((key) => visibleFeatureKeys.has(key)));
-    }, [visibleFeatureKeys]);
-
-    // Preisberechnung
-    useEffect(() => {
-        const selectedFeatureObjects = FEATURE_CATALOG.filter((f) => selectedFeatures.includes(f.key));
-        const perEmployeeAddOnRate = selectedFeatureObjects
-            .filter((f) => f.priceType === "perEmployee")
-            .reduce((acc, f) => acc + f.price, 0);
-        const flatAddOnMonthly = selectedFeatureObjects
-            .filter((f) => f.priceType === "flat")
-            .reduce((acc, f) => acc + f.price, 0);
-
-        const basePerEmployeeMonthly = BASE_FEATURE.price * employeeCount;
-        const addOnPerEmployeeMonthly = perEmployeeAddOnRate * employeeCount;
-        const addOnFlatMonthly = flatAddOnMonthly;
-        const addOnCount = selectedFeatureObjects.length;
-
-        let discountRate = 0;
-        if (addOnCount >= 5) {
-            discountRate = 0.15;
-        } else if (addOnCount >= 3) {
-            discountRate = 0.1;
-        }
-
-        const addOnTotalBeforeDiscount = addOnPerEmployeeMonthly + addOnFlatMonthly;
-        const addOnDiscountValue = addOnTotalBeforeDiscount * discountRate;
-        const discountPerEmployeeShare =
-            addOnPerEmployeeMonthly > 0 && addOnTotalBeforeDiscount > 0
-                ? (addOnDiscountValue * (addOnPerEmployeeMonthly / addOnTotalBeforeDiscount)) /
-                  Math.max(employeeCount, 1)
-                : 0;
-        const effectivePerEmployeeRate = BASE_FEATURE.price + perEmployeeAddOnRate - discountPerEmployeeShare;
-        const monthlyTotalBeforeFactor = basePerEmployeeMonthly + addOnTotalBeforeDiscount - addOnDiscountValue;
-
-        let periodLabel = "pro Monat";
-        let displayTotalPeriod = monthlyTotalBeforeFactor;
-        if (billingPeriod === "yearly") {
-            displayTotalPeriod = monthlyTotalBeforeFactor * YEARLY_DISCOUNT_FACTOR;
-            periodLabel = "pro Jahr (12 Monate, 2 gratis)";
-        }
-
-        const installationFee = INSTALL_FEE;
-        const optionalTraining = includeOptionalTraining ? OPTIONAL_TRAINING_COST : 0;
-        const totalFirstPayment = displayTotalPeriod + installationFee + optionalTraining;
-
-        setCalculatedPrice(totalFirstPayment);
-        setPriceBreakdown({
-            perEmployeeRate: effectivePerEmployeeRate,
-            basePerEmployeeMonthly,
-            addOnPerEmployeeMonthly,
-            addOnFlatMonthly,
-            addOnDiscountRate: discountRate,
-            addOnDiscountValue,
-            totalPerPeriod: displayTotalPeriod,
-            installationFee,
-            optionalTraining,
-            periodLabel,
-            isYearly: billingPeriod === "yearly",
-            perPeriodSingle: monthlyTotalBeforeFactor,
-            addOnCount,
-        });
-    }, [selectedFeatures, employeeCount, billingPeriod, includeOptionalTraining]);
-
-    const handleChange = (e) =>
-        setForm({ ...form, [e.target.name]: e.target.value });
-
-    const handleFeatureChange = (featureKey) => {
-        if (!visibleFeatureKeys.has(featureKey)) {
+    const toggleFeature = (featureKey) => {
+        const feature = MODULE_OPTIONS.find((option) => option.key === featureKey);
+        if (!feature || feature.required) {
             return;
         }
-        const featureObj = FEATURE_CATALOG.find((f) => f.key === featureKey);
-        if (featureObj.required) return; // Pflichtmodul, nicht abwählbar
+
         setSelectedFeatures((prev) =>
-            prev.includes(featureKey)
-                ? prev.filter((k) => k !== featureKey)
-                : [...prev, featureKey]
+            prev.includes(featureKey) ? prev.filter((key) => key !== featureKey) : [...prev, featureKey]
         );
     };
 
-    const handleEmployeeCountChange = (e) => {
-        let val = parseInt(e.target.value, 10);
-        if (isNaN(val) || val < 1) val = 1;
-        if (val > 200) val = 200;
-        setEmployeeCount(val);
-    };
-    const handleBillingPeriodChange = (e) =>
-        setBillingPeriod(e.target.value);
-    const handleOptionalTrainingChange = (e) =>
-        setIncludeOptionalTraining(e.target.checked);
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        setError("");
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (employeeCount < 1) {
-            setError("Bitte geben Sie mindestens 1 Mitarbeiter an.");
+        if (!consents.terms || !consents.contact) {
+            setError("Bitte akzeptiere unsere Bedingungen, damit wir deine Anfrage bearbeiten können.");
             return;
         }
+
+        if (configuration.employeeCount < 1 || configuration.employeeCount > 200) {
+            setError("Bitte wähle eine Mitarbeiterzahl zwischen 1 und 200.");
+            return;
+        }
+
         setIsSubmitting(true);
-        setError("");
         try {
-            const selectedFeatureObjects = FEATURE_CATALOG.filter((f) => selectedFeatures.includes(f.key));
-            const selectedFeatureNames = selectedFeatureObjects.map((f) => f.name);
+            const selectedFeatureNames = MODULE_OPTIONS.filter((option) => selectedFeatures.includes(option.key)).map(
+                (option) => option.label
+            );
+
             const payload = {
                 ...form,
                 selectedFeatures,
                 selectedFeatureNames,
-                employeeCount,
-                billingPeriod,
-                includeOptionalTraining,
-                priceBreakdown,
-                calculatedPrice,
-                companyId: companyId ?? null,
+                employeeCount: configuration.employeeCount,
+                configuration,
+                consents,
+                billingPeriod: null,
+                includeOptionalTraining: false,
+                priceBreakdown: null,
+                calculatedPrice: null,
+                companyId: null,
             };
+
             await api.post("/api/apply", payload);
             setSuccess(true);
-            notify("Anfrage erfolgreich gesendet! Sie erhalten in Kürze Ihr individuelles Angebot.", "success");
-        } catch (err) {
-            setError("Fehler bei der Übermittlung: " + (err.response?.data?.message || err.message));
-            notify("Fehler bei der Übermittlung: " + (err.message), "error");
+            notify("Danke! Deine Anfrage ist bei uns angekommen.", "success");
+        } catch (submitError) {
+            console.error("Fehler bei der Übermittlung", submitError);
+            setError(
+                "Fehler bei der Übermittlung: " + (submitError.response?.data?.message || submitError.message || "Unbekannter Fehler")
+            );
+            notify("Fehler bei der Übermittlung: " + (submitError.message || "Unbekannter Fehler"), "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    function formatCHF(value) {
-        if (typeof value !== "number" || isNaN(value)) {
-            return "0,00 CHF";
-        }
-        return value.toFixed(2).replace(".", ",") + " CHF";
-    }
-
-    const getFeaturePriceLabel = (feature) => {
-        const formatted = formatCHF(feature.price);
-        if (feature.priceType === "flat") {
-            return `+${formatted} / Monat gesamt`;
-        }
-        return `+${formatted} / Monat je MA`;
+    const handleNavigateHome = () => {
+        navigate("/");
     };
 
-    // --------- HERO/INTRO UND UI ------------------------------------
+    if (success) {
+        return (
+            <>
+                <Navbar />
+                <main className="registration-page scoped-registration success-state">
+                    <section className="registration-success">
+                        <div className="success-card">
+                            <h1>Danke, deine Chrono-Anfrage ist bei uns eingegangen.</h1>
+                            <p>
+                                Wir prüfen deine Angaben und richten deinen Account persönlich ein. In der Regel erhältst du innerhalb
+                                eines Werktags eine E-Mail mit deinen Zugangsdaten oder Rückfragen.
+                            </p>
+                            <p className="success-note">
+                                Wenn du in der Zwischenzeit Fragen hast, erreichst du uns unter support@chrono-app.ch oder
+                                +41&nbsp;71&nbsp;000&nbsp;00&nbsp;00.
+                            </p>
+                            <button type="button" className="primary-button" onClick={handleNavigateHome}>
+                                Zur Startseite
+                            </button>
+                        </div>
+                    </section>
+                </main>
+            </>
+        );
+    }
+
     return (
         <>
             <Navbar />
-            <div className="registration-page scoped-registration">
+            <main className="registration-page scoped-registration">
                 <div className="registration-content">
-                    <section className="hero-section">
-                        <h1>Baukasten-Preismodell – Zahle nur, was du brauchst!</h1>
-                        <p className="hero-subline">
-                            <strong>Wähle individuell die Module für deine perfekte Zeiterfassungslösung.</strong>
-                            <br />
-                            Sofort transparent, jederzeit unverbindlich anfragen.
+                    <section className="registration-hero">
+                        <h1>Chrono anfragen &amp; Zugang erhalten</h1>
+                        <p>
+                            Sag uns kurz, wie dein Unternehmen aussieht und welche Module du brauchst. Wir prüfen deine Angaben und
+                            richten deinen Chrono-Account persönlich für dich ein.
                         </p>
+                        <div className="info-badge">🔒 Kein automatischer Account – wir schalten dich nach Prüfung frei.</div>
                     </section>
 
-                    <section className="unique-sell-callout">
-                        <span role="img" aria-label="star">⭐</span>
-                        <strong>Modular, fair und flexibel!</strong>
-                        <span className="unique-badge">Jetzt zusammenstellen & sparen.</span>
-                    </section>
+                    <form className="registration-card" onSubmit={handleSubmit}>
+                        <div className="card-column configuration-column">
+                            <h2>Konfiguration</h2>
 
-                    <section className="pricing-section">
-                        <h2>Baukasten & Preise</h2>
-                        <p className="pricing-intro">
-                            Wähle deine Wunsch-Module und erhalte sofort den Preis.<br />
-                            <span className="money-back">100 % unverbindlich – keine Zahlung bis Vertragsabschluss.</span>
-                        </p>
-
-                        <div className="central-employee-input">
-                            <label htmlFor="employeeCount">Anzahl Mitarbeiter (1–200):</label>
-                            <input
-                                type="number"
-                                id="employeeCount"
-                                name="employeeCount"
-                                min={1}
-                                max={200}
-                                value={employeeCount}
-                                onChange={handleEmployeeCountChange}
-                                disabled={isSubmitting}
-                            />
-                            <p className="employee-note">
-                                Für sehr große Unternehmen mit mehr als 200 Mitarbeitenden erstellen wir
-                                gerne ein individuelles Angebot. Bitte stellen Sie eine direkte Anfrage
-                                über unser Kontaktformular.
-                            </p>
-                        </div>
-
-
-                        <div className="billing-toggle" role="radiogroup" aria-label="Zahlungsintervall auswählen">
-                            <label
-                                className={`billing-option${billingPeriod === "monthly" ? " is-active" : ""}`}
-                            >
-                                <input
-                                    type="radio"
-                                    name="billingPeriod"
-                                    value="monthly"
-                                    checked={billingPeriod === "monthly"}
-                                    onChange={handleBillingPeriodChange}
-                                />
-                                <span className="billing-option__indicator" aria-hidden="true" />
-                                <span className="billing-option__label">Monatliche Zahlung</span>
-                            </label>
-                            <label
-                                className={`billing-option${billingPeriod === "yearly" ? " is-active" : ""}`}
-                            >
-                                <input
-                                    type="radio"
-                                    name="billingPeriod"
-                                    value="yearly"
-                                    checked={billingPeriod === "yearly"}
-                                    onChange={handleBillingPeriodChange}
-                                />
-                                <span className="billing-option__indicator" aria-hidden="true" />
-                                <span className="billing-option__label">
-                                    Jährliche Zahlung <span className="deal-badge">2 Monate geschenkt!</span>
-                                </span>
-                            </label>
-                        </div>
-
-                        <div className="pricing-cards" style={{ flexWrap: "wrap", justifyContent: "flex-start" }}>
-                            {/* Pflichtmodul */}
-                            <div className="pricing-card selected" style={{ '--card-accent-color': '#475bff' }}>
-                                <div className="card-badge-row">
-                                    <span className="selected-badge">Pflichtmodul</span>
-                                </div>
-                                <h3>{BASE_FEATURE.name}</h3>
-                                <p className="price-line base-fee">
-                                    <strong>{formatCHF(BASE_FEATURE.price)} / Monat je MA</strong>
-                                </p>
-                                <ul className="features-list">
-                                    <li>{BASE_FEATURE.description}</li>
-                                </ul>
-                            </div>
-                            {/* Zusatzmodule */}
-                            {visibleFeatures.map((feature) => (
-                                <div
-                                    key={feature.key}
-                                    className={`pricing-card${selectedFeatures.includes(feature.key) ? " selected" : ""}`}
-                                    onClick={() => handleFeatureChange(feature.key)}
-                                    style={{ '--card-accent-color': selectedFeatures.includes(feature.key) ? "#2ecc71" : "var(--c-border)" }}
-                                >
-                                    <div className="card-badge-row">
-                                        {feature.required && <span className="selected-badge">Pflicht</span>}
-                                        {selectedFeatures.includes(feature.key) && !feature.required && (
-                                            <span className="selected-badge">Gewählt</span>
-                                        )}
+                            <div className="form-group">
+                                <h3>Unternehmen</h3>
+                                <div className="form-control">
+                                    <span className="label">Land</span>
+                                    <div className="segmented-control" role="radiogroup" aria-label="Land auswählen">
+                                        {COUNTRY_OPTIONS.map((option) => (
+                                            <label
+                                                key={option.value}
+                                                className={`segment ${
+                                                    configuration.country === option.value ? "is-active" : ""
+                                                }`}
+                                            >
+                                                <input
+                                                    type="radio"
+                                                    name="country"
+                                                    value={option.value}
+                                                    checked={configuration.country === option.value}
+                                                    onChange={(event) =>
+                                                        handleConfigurationChange("country", event.target.value)
+                                                    }
+                                                />
+                                                <span>{option.label}</span>
+                                            </label>
+                                        ))}
                                     </div>
-                                    <h3>{feature.name}</h3>
-                                    <p className="price-line base-fee">
-                                        <strong>{getFeaturePriceLabel(feature)}</strong>
-                                    </p>
-                                    <ul className="features-list">
-                                        <li>{feature.description}</li>
-                                    </ul>
                                 </div>
-                            ))}
+
+                                <label className="form-control" htmlFor="industry">
+                                    <span className="label">Branche (optional)</span>
+                                    <input
+                                        id="industry"
+                                        name="industry"
+                                        type="text"
+                                        placeholder="z. B. Agentur, Produktion, Dienstleistung"
+                                        value={configuration.industry}
+                                        onChange={(event) => handleConfigurationChange("industry", event.target.value)}
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="form-group">
+                                <h3>Mitarbeitende</h3>
+                                <label className="form-control" htmlFor="employeeCount">
+                                    <span className="label">
+                                        Anzahl Mitarbeitende <span className="value">{configuration.employeeCount}</span>
+                                    </span>
+                                    <input
+                                        id="employeeCount"
+                                        name="employeeCount"
+                                        type="range"
+                                        min={1}
+                                        max={200}
+                                        value={configuration.employeeCount}
+                                        onChange={(event) =>
+                                            handleConfigurationChange("employeeCount", Number(event.target.value))
+                                        }
+                                    />
+                                </label>
+                                <div className="slider-input">
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        max={200}
+                                        value={configuration.employeeCount}
+                                        onChange={(event) =>
+                                            handleConfigurationChange(
+                                                "employeeCount",
+                                                Math.max(1, Math.min(200, Number(event.target.value) || 1))
+                                            )
+                                        }
+                                    />
+                                    <span className="hint">Skaliert flexibel mit deinem Team.</span>
+                                </div>
+
+                                <label className="form-control" htmlFor="locations">
+                                    <span className="label">Standorte (optional)</span>
+                                    <input
+                                        id="locations"
+                                        name="locations"
+                                        type="text"
+                                        placeholder="z. B. St. Gallen, Zürich"
+                                        value={configuration.locations}
+                                        onChange={(event) => handleConfigurationChange("locations", event.target.value)}
+                                    />
+                                </label>
+                            </div>
+
+                            <div className="form-group">
+                                <h3>Module wählen</h3>
+                                <p className="group-subline">Welche Bereiche möchtest du mit Chrono abdecken?</p>
+                                <div className="module-grid">
+                                    {MODULE_OPTIONS.map((option) => {
+                                        const isChecked = selectedFeatures.includes(option.key);
+                                        const moduleClassName = [
+                                            "module-option",
+                                            isChecked ? "is-selected" : "",
+                                            option.required ? "is-required" : "",
+                                        ]
+                                            .filter(Boolean)
+                                            .join(" ");
+
+                                        return (
+                                            <label key={option.key} className={moduleClassName}>
+                                                <input
+                                                    type="checkbox"
+                                                    name="modules"
+                                                    value={option.key}
+                                                    checked={isChecked}
+                                                    disabled={option.required}
+                                                    onChange={() => toggleFeature(option.key)}
+                                                />
+                                                <span className="module-label">{option.label}</span>
+                                                <span className="module-description">{option.description}</span>
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+                                <p className="module-hint">
+                                    Die Auswahl hilft uns, dir ein passendes Setup und ein klares Angebot vorzuschlagen.
+                                </p>
+                            </div>
                         </div>
 
-                        <div className="feature-availability-note">
-                            {isLoadingFeatures ? (
-                                <span>Freigeschaltete Module werden geladen...</span>
-                            ) : featureError ? (
-                                <span className="feature-warning">{featureError}</span>
-                            ) : companyId != null ? (
-                                <>
-                                    <span>
-                                        Module, die für Ihre Firma freigegeben wurden, sind auswählbar. Basis, Urlaub und NFC sind
-                                        immer verfügbar.
-                                    </span>
-                                    {visibleFeatures.filter((feature) => !feature.alwaysAvailable).length === 0 && (
-                                        <span className="feature-muted">
-                                            Aktuell wurden keine zusätzlichen Module freigeschaltet. Bei Bedarf im SuperAdmin-Panel
-                                            aktivieren.
-                                        </span>
-                                    )}
-                                </>
-                            ) : (
-                                <>
-                                    <span>
-                                        Hinweis: Ohne Firmen-ID zeigen wir alle verfügbaren Zusatzmodule an. Wenn Ihre Firma einen
-                                        individuellen Link bereitstellt, spiegeln wir die dort definierten Freigaben wider.
-                                    </span>
-                                    <span className="feature-muted">
-                                        Tipp: SuperAdmins können im Firmen-Panel entscheiden, welche Module für Mitarbeiter:innen
-                                        freigeschaltet werden.
-                                    </span>
-                                </>
-                            )}
-                        </div>
+                        <div className="card-column contact-column">
+                            <h2>Kontaktdaten &amp; Anfrage senden</h2>
 
-                        <div className="training-option-section">
-                            <h4>Optionales Add-on:</h4>
-                            <label htmlFor="includeOptionalTraining" className="training-label">
+                            <div className="manual-note">
+                                Wir richten deinen Zugang persönlich ein und melden uns mit Rückfragen oder Zugangsdaten.
+                            </div>
+
+                            <label className="form-control" htmlFor="companyName">
+                                <span className="label">Firmenname</span>
+                                <input
+                                    id="companyName"
+                                    name="companyName"
+                                    type="text"
+                                    required
+                                    value={form.companyName}
+                                    onChange={handleFormChange}
+                                    placeholder="z. B. Chrono Solutions GmbH"
+                                />
+                            </label>
+
+                            <label className="form-control" htmlFor="contactName">
+                                <span className="label">Ansprechperson</span>
+                                <input
+                                    id="contactName"
+                                    name="contactName"
+                                    type="text"
+                                    required
+                                    value={form.contactName}
+                                    onChange={handleFormChange}
+                                    placeholder="Vor- und Nachname"
+                                />
+                            </label>
+
+                            <label className="form-control" htmlFor="email">
+                                <span className="label">E-Mail</span>
+                                <input
+                                    id="email"
+                                    name="email"
+                                    type="email"
+                                    required
+                                    value={form.email}
+                                    onChange={handleFormChange}
+                                    placeholder="name@unternehmen.ch"
+                                />
+                            </label>
+
+                            <label className="form-control" htmlFor="phone">
+                                <span className="label">Telefon (optional)</span>
+                                <input
+                                    id="phone"
+                                    name="phone"
+                                    type="tel"
+                                    value={form.phone}
+                                    onChange={handleFormChange}
+                                    placeholder="+41 71 000 00 00"
+                                />
+                            </label>
+
+                            <label className="form-control" htmlFor="additionalInfo">
+                                <span className="label">Weitere Informationen oder Fragen</span>
+                                <textarea
+                                    id="additionalInfo"
+                                    name="additionalInfo"
+                                    rows={4}
+                                    value={form.additionalInfo}
+                                    onChange={handleFormChange}
+                                    placeholder="Was sollen wir bei der Einrichtung beachten?"
+                                />
+                            </label>
+
+                            <label className="checkbox-control">
                                 <input
                                     type="checkbox"
-                                    id="includeOptionalTraining"
-                                    name="includeOptionalTraining"
-                                    checked={includeOptionalTraining}
-                                    onChange={handleOptionalTrainingChange}
+                                    name="terms"
+                                    checked={consents.terms}
+                                    onChange={handleConsentChange}
+                                    required
                                 />
-                                Individuelles Onboarding (1h, persönlich) für <strong>{formatCHF(OPTIONAL_TRAINING_COST)}</strong> (einmalig).
+                                <span>
+                                    Ich habe die AGB und Datenschutzerklärung gelesen und akzeptiert.
+                                </span>
                             </label>
+
+                            <label className="checkbox-control">
+                                <input
+                                    type="checkbox"
+                                    name="contact"
+                                    checked={consents.contact}
+                                    onChange={handleConsentChange}
+                                    required
+                                />
+                                <span>
+                                    Ich bin damit einverstanden, dass Chrono mich per E-Mail/Telefon zur Einrichtung kontaktiert.
+                                </span>
+                            </label>
+
+                            {error && <div className="form-error">{error}</div>}
+
+                            <button type="submit" className="primary-button" disabled={isSubmitting}>
+                                {isSubmitting ? "Senden …" : "Unverbindliche Anfrage senden"}
+                            </button>
+
+                            <p className="response-hint">
+                                💡 Du erhältst von uns in der Regel innerhalb eines Werktags eine Rückmeldung mit Zugangsdaten oder
+                                Rückfragen.
+                            </p>
                         </div>
-                        <p className="pricing-footnote">
-                            * Alle Preise zzgl. MwSt. | Jährliche Zahlung = 2 Monate geschenkt.<br />
-                            Bundle-Rabatt: ab 3 Add-ons 10 % auf Zusatzmodule, ab 5 Add-ons 15 %.<br />
-                            Einmalige Installationspauschale: {formatCHF(INSTALL_FEE)} (inkl. System-Setup und Ersteinrichtung)
-                        </p>
-                    </section>
-
-                    <section className="application-section">
-                        <h2>Unverbindliche Angebotsanfrage senden</h2>
-                        {priceBreakdown && (
-                            <div className="price-preview card">
-                                <h4>Ihre Konfiguration:</h4>
-                                <p className="price-item">
-                                    <span className="label">Mitarbeiter:</span>
-                                    <span className="value">{employeeCount}</span>
-                                </p>
-                                <p className="price-item">
-                                    <span className="label">Zahlungsweise:</span>
-                                    <span className="value">{billingPeriod === "monthly" ? "Monatlich" : "Jährlich"}</span>
-                                </p>
-                                <hr />
-                                <p className="price-item">
-                                    <span className="label">Ausgewählte Features:</span>
-                                    <span className="value">
-                                        {[BASE_FEATURE,
-                                            ...FEATURE_CATALOG.filter((feature) =>
-                                                selectedFeatures.includes(feature.key)
-                                            ),
-                                        ]
-                                            .map((feature) => feature.name)
-                                            .join(", ")}
-                                    </span>
-                                </p>
-                                <p className="price-item">
-                                    <span className="label">Preis je Mitarbeiter:</span>
-                                    <span className="value">{formatCHF(priceBreakdown.perEmployeeRate)} / Monat</span>
-                                </p>
-                                {priceBreakdown.addOnFlatMonthly > 0 && (
-                                    <p className="price-item">
-                                        <span className="label">Fixpreis-Module gesamt:</span>
-                                        <span className="value">{formatCHF(priceBreakdown.addOnFlatMonthly)}</span>
-                                    </p>
-                                )}
-                                {priceBreakdown.addOnDiscountValue > 0 && (
-                                    <p className="price-item sub-hint">
-                                        <span className="label">Bundle-Rabatt ({Math.round(priceBreakdown.addOnDiscountRate * 100)} %):</span>
-                                        <span className="value">{formatCHF(-priceBreakdown.addOnDiscountValue)}</span>
-                                    </p>
-                                )}
-                                <p className="price-item">
-                                    <span className="label">Gesamtkosten {priceBreakdown.periodLabel}:</span>
-                                    <span className="value">{formatCHF(priceBreakdown.totalPerPeriod)}</span>
-                                </p>
-                                {priceBreakdown.isYearly && (
-                                    <p className="price-item sub-hint">
-                                        <span className="label">(entspricht pro Monat):</span>
-                                        <span className="value">
-                      {formatCHF(priceBreakdown.perPeriodSingle)}
-                    </span>
-                                    </p>
-                                )}
-                                <hr />
-                                <p className="price-item">
-                                    <span className="label">Einmalige Installationsgebühr:</span>
-                                    <span className="value">{formatCHF(priceBreakdown.installationFee)}</span>
-                                </p>
-                                {includeOptionalTraining && (
-                                    <p className="price-item">
-                                        <span className="label">Onboarding (optional):</span>
-                                        <span className="value">{formatCHF(priceBreakdown.optionalTraining)}</span>
-                                    </p>
-                                )}
-                                <hr />
-                                <div className="total-price-wrapper">
-                                    <p className="price-item total-price">
-                    <span className="label">
-                      Gesamtbetrag für erste Zahlung:
-                    </span>
-                                        <span className="value">{formatCHF(calculatedPrice)}</span>
-                                    </p>
-                                </div>
-                                <p className="price-item sub-hint">
-                                    <span className="label">Folgezahlungen:</span>
-                                    <span className="value">
-                    {formatCHF(priceBreakdown.perPeriodSingle)} {billingPeriod === "monthly" ? "monatlich" : "pro Monat (bei Jahreszahlung)"}
-                  </span>
-                                </p>
-                            </div>
-                        )}
-
-                        {error && <p className="error-message">{error}</p>}
-                        {success ? (
-                            <div className="success-message-box">
-                                <h3>Vielen Dank für Ihre Anfrage!</h3>
-                                <p>Wir haben Ihre Konfiguration erhalten und prüfen diese.</p>
-                                <p>
-                                    Sie erhalten in Kürze (üblicherweise innerhalb von 1–2 Werktagen) Ihr individuelles Angebot und weitere Informationen per E-Mail.
-                                    <br />
-                                    Bitte prüfen Sie auch Ihren Spam-Ordner.
-                                </p>
-                                <button onClick={() => navigate('/')} style={{ marginTop: '1rem' }}>
-                                    Zurück zur Startseite
-                                </button>
-                            </div>
-                        ) : (
-                            <form onSubmit={handleSubmit}>
-                                <input
-                                    type="text"
-                                    name="companyName"
-                                    value={form.companyName}
-                                    onChange={handleChange}
-                                    placeholder="Firmenname"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    name="contactName"
-                                    value={form.contactName}
-                                    onChange={handleChange}
-                                    placeholder="Ansprechpartner*in"
-                                    required
-                                />
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={form.email}
-                                    onChange={handleChange}
-                                    placeholder="E-Mail"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    value={form.phone}
-                                    onChange={handleChange}
-                                    placeholder="Telefon (optional)"
-                                />
-                                <textarea
-                                    name="additionalInfo"
-                                    value={form.additionalInfo}
-                                    onChange={handleChange}
-                                    placeholder="Weitere Informationen oder Fragen zu Ihrer Anfrage..."
-                                    rows="4"
-                                />
-                                <button type="submit" disabled={isSubmitting || calculatedPrice <= 0}>
-                                    {isSubmitting ? "Anfrage wird gesendet..." : "Angebotsanfrage senden"}
-                                </button>
-                            </form>
-                        )}
-                    </section>
-                    <div style={{ marginTop: "40px", textAlign: "center", fontSize: "0.9rem" }}>
-                        <Link to="/impressum" style={{ marginRight: "1rem" }}>Impressum</Link>
-                        <Link to="/agb" style={{ marginRight: "1rem" }}>AGB</Link>
-                        <a href="https://www.instagram.com/itschronologisch" target="_blank" rel="noopener noreferrer">Instagram</a>
-                    </div>
+                    </form>
                 </div>
-            </div>
+            </main>
         </>
     );
 };
