@@ -271,124 +271,100 @@ const translations = {
         // ----------------------------------------------------------------------
         landing: {
             hero: {
-                badge: "Fair · Klar · Zuverlässig",
-                title: "Zeit erfassen, fair abrechnen – einfach, klar, zuverlässig.",
-                sub: "Chrono hilft Teams in der Schweiz & Deutschland, Zeiten korrekt zu erfassen, Urlaub sauber zu managen und Löhne sicher abzurechnen.",
-                chips: {
-                    server: "🇨🇭 Schweizer Server",
-                    gdpr: "🔐 DSGVO-konform",
-                    noExcel: "🧮 Kein Excel-Chaos",
-                },
+                badge: "fair · klar · zuverlässig",
+                title: "Zeiten erfassen. Löhne abrechnen. Urlaub managen.",
+                subline: "Alles in einer Plattform – made in Switzerland.",
+                text: "Chrono hilft Teams in der Schweiz & Deutschland, Arbeitszeiten sauber zu erfassen, Abwesenheiten zu planen und Löhne rechtssicher abzurechnen – ohne Excel-Chaos.",
+                note: "🕒 Ohne Kreditkarte · jederzeit kündbar · Schweizer Server",
             },
             cta: {
                 try: "Kostenlos testen",
-                login: "Anmelden",
-                demo: "Demo ansehen",
+                demo: "Live-Demo ansehen",
+            },
+            social: {
+                title: "Vertrauen von Teams aus CH & DE",
+                note: "Chrono läuft auf sicheren Schweizer Servern und ist vollständig DSGVO-konform.",
+                hotel: "Hotel",
+                construction: "Bauunternehmen",
+                cleaning: "Reinigungsfirma",
+                gastro: "Gastronomie",
+                treuhand: "Treuhand",
+                fitness: "Fitnessstudio",
             },
             features: {
                 title: "Alles drin, was du brauchst – ohne Ballast.",
-                sub: "Fokussiert auf das Wesentliche: Zeiterfassung, Abrechnung, Urlaub und klare Admin-Prozesse.",
-                items: [
-                    {
-                        title: "Arbeitszeit & Lohn in einem",
-                        bullets: [
-                            "Arbeitsstunden festhalten",
-                            "Urlaub und Extra-Zeit sehen",
-                            "Alles an einem Ort",
-                        ],
-                    },
-                    {
-                        title: "Lohnzettel für CH & DE",
-                        bullets: [
-                            "Als Datei speichern",
-                            "Angaben leicht ändern",
-                            "Schweiz und Deutschland abgedeckt",
-                        ],
-                    },
-                    {
-                        title: "Stempeln mit Karte oder Web",
-                        bullets: [
-                            "Mit Karte ein- und ausstempeln",
-                            "Auch im Browser oder Handy",
-                            "Geht sogar ohne Internet",
-                        ],
-                    },
-                    {
-                        title: "Urlaub & Überstunden im Blick",
-                        bullets: [
-                            "Urlaub online beantragen",
-                            "Resttage sofort sehen",
-                            "Überstunden automatisch verrechnet",
-                        ],
-                    },
-                    {
-                        title: "Hinweise & Erinnerungen",
-                        bullets: [
-                            "Info bei neuem Lohnzettel",
-                            "Hinweis bei Anträgen",
-                            "Erinnerung, wenn du vergisst auszustempeln",
-                        ],
-                    },
-                    {
-                        title: "Sichere Daten in der Schweiz",
-                        bullets: [
-                            "Daten bleiben in der Schweiz",
-                            "Alles ist geschützt",
-                            "Nur Berechtigte sehen deine Daten",
-                            "Zusätzlicher Login-Schutz möglich",
-                        ],
-                    },
-                    {
-                        title: "Team & Projekte verwalten",
-                        bullets: [
-                            "Mitarbeitende hinzufügen",
-                            "Kunden und Projekte anlegen",
-                            "Alles im Blick behalten",
-                        ],
-                    },
-                    {
-                        title: "Berichte zum Mitnehmen",
-                        bullets: [
-                            "Übersichtliche Dateien herunterladen",
-                            "Schnell sehen, wer wie viel gearbeitet hat",
-                            "Praktisch für Steuer und Abrechnung",
-                        ],
-                    },
-                    {
-                        title: "Persönlicher Support inklusive",
-                        bullets: [
-                            "Direkter Draht zum Chrono-Team",
-                            "Antwort in der Regel am selben Werktag",
-                            "Onboarding-Hilfe für dein gesamtes Team",
-                        ],
-                    },
-                ],
+                tracking: {
+                    title: "Zeiterfassung & Projekte",
+                    line1: "Mitarbeitende stempeln per Browser, NFC oder App.",
+                    line2: "Zeiten sofort Projekten und Kunden zuordnen.",
+                },
+                leave: {
+                    title: "Urlaub & Abwesenheiten",
+                    line1: "Urlaub online beantragen, genehmigen und auswerten.",
+                    line2: "Resttage und Überstunden immer im Blick.",
+                },
+                payroll: {
+                    title: "Lohnabrechnung CH & DE",
+                    line1: "Lohnabrechnungen rechtssicher erstellen.",
+                    line2: "Export für Treuhänder und Buchhaltung.",
+                },
+                reporting: {
+                    title: "Auswertungen & Berichte",
+                    line1: "Sieh auf einen Blick, wer wann wie viel gearbeitet hat.",
+                    line2: "Praktisch für Steuer, Revision und Planung.",
+                },
+                teamwork: {
+                    title: "Teamarbeit leicht gemacht",
+                    line1: "Alle wissen, wer was übernimmt.",
+                    line2: "Aufgaben bleiben transparent für das ganze Team.",
+                },
+                reminders: {
+                    title: "Erinnerungen kommen von selbst",
+                    line1: "Chrono erinnert an fehlende Zeiten oder Freigaben.",
+                    line2: "So geht nichts Wichtiges verloren.",
+                },
+                security: {
+                    title: "Deine Daten sind geschützt",
+                    line1: "Alle Infos liegen sicher auf Schweizer Servern.",
+                    line2: "Du bestimmst, wer was sehen darf.",
+                },
+                access: {
+                    title: "Chrono läuft überall",
+                    line1: "Nutze Chrono am Computer, Tablet oder Handy.",
+                    line2: "Auch unterwegs schnell Zeiten eintragen.",
+                },
             },
             steps: {
-                title: "So startest du in 3 Schritten",
-                items: [
-                    {
-                        title: "Registrieren",
-                        text: "Kostenlos starten – ohne Kreditkarte.",
-                    },
-                    {
-                        title: "Team & Projekte anlegen",
-                        text: "Mitarbeitende, Projekte und Kunden hinzufügen.",
-                    },
-                    {
-                        title: "Loslegen",
-                        text: "Stempeln, Urlaub beantragen, Abrechnung erstellen.",
-                    },
-                ],
+                title: "So startest du mit Chrono in 3 Schritten",
+                register: {
+                    title: "Registrieren",
+                    text: "Konto anlegen – ganz ohne Kreditkarte.",
+                },
+                setup: {
+                    title: "Team & Projekte hinzufügen",
+                    text: "Mitarbeitende, Kunden und Projekte erfassen.",
+                },
+                start: {
+                    title: "Loslegen",
+                    text: "Stempeln, Urlaub beantragen, Löhne erstellen.",
+                },
+                link: "Zum Registrieren →",
+            },
+            pricing: {
+                title: "Baukasten-Preismodell – zahle nur, was du brauchst.",
+                text: "Ab 5 CHF pro Mitarbeitendem im Monat. Module für Urlaub, Lohnabrechnung und mehr einfach dazubuchen.",
+                cta: "Preise ansehen & Konfiguration starten",
             },
             contact: {
-                title: "Kontakt aufnehmen",
+                title: "Lass uns über dein Team sprechen",
+                text: "Du willst Chrono zuerst sehen oder hast Fragen zur Lohnabrechnung in CH/DE? Schreib uns – wir melden uns in der Regel noch am selben Werktag.",
                 name: "Name",
                 email: "E-Mail",
                 msg: "Nachricht",
-                placeholder: "Wie kann ich helfen?",
-                send: "Senden",
-                hint: "Antwort in der Regel innerhalb von 24h.",
+                placeholder: "Wie können wir helfen?",
+                send: "Nachricht senden",
+                sending: "Wird gesendet…",
+                hint: "Antwort in der Regel noch am selben Werktag.",
                 success: "Nachricht gesendet.",
                 error: "Fehler beim Senden.",
             },
@@ -398,6 +374,129 @@ const translations = {
                 terms: "AGB",
             },
             demoError: "Demo-Anmeldung fehlgeschlagen",
+        },
+        // ----------------------------------------------------------------------
+        // Registration
+        // ----------------------------------------------------------------------
+        registration: {
+            success: {
+                title: "Danke, deine Chrono-Anfrage ist bei uns eingegangen.",
+                text1: "Wir prüfen deine Angaben und richten deinen Account persönlich ein. In der Regel erhältst du innerhalb eines Werktags eine E-Mail mit deinen Zugangsdaten oder Rückfragen.",
+                note: "Wenn du in der Zwischenzeit Fragen hast, erreichst du uns unter support@chrono-app.ch oder +41 71 000 00 00.",
+                backButton: "Zur Startseite",
+            },
+            hero: {
+                title: "Chrono anfragen & Zugang erhalten",
+                text: "Sag uns kurz, wie dein Unternehmen aussieht und welche Module du brauchst. Wir prüfen deine Angaben und richten deinen Chrono-Account persönlich für dich ein.",
+                badge: "🔒 Kein automatischer Account – wir schalten dich nach Prüfung frei.",
+            },
+            configuration: {
+                title: "Konfiguration",
+                companyTitle: "Unternehmen",
+                countryLabel: "Land",
+                countryAria: "Land auswählen",
+                industryLabel: "Branche (optional)",
+                industryPlaceholder: "z. B. Agentur, Produktion, Dienstleistung",
+                employeesTitle: "Mitarbeitende",
+                employeeLabel: "Anzahl Mitarbeitende",
+                sliderHint: "Skaliert flexibel mit deinem Team.",
+                locationsLabel: "Standorte (optional)",
+                locationsPlaceholder: "z. B. St. Gallen, Zürich",
+            },
+            modules: {
+                title: "Module wählen",
+                subtitle: "Welche Bereiche möchtest du mit Chrono abdecken?",
+                hint: "Die Auswahl hilft uns, dir ein passendes Setup und ein klares Angebot vorzuschlagen.",
+                base: {
+                    name: "Zeiterfassung (Basis)",
+                    description: "Pflichtmodul – bildet die Grundlage für deinen Chrono-Account.",
+                },
+                vacation: {
+                    name: "Urlaubs- & Abwesenheitsmodul",
+                    description: "Digitale Urlaubsanträge, Abwesenheitsübersicht, Freigabe-Workflow.",
+                },
+                payroll: {
+                    name: "Lohnabrechnung",
+                    description: "Lohnabrechnung (DE & CH), Gehaltsabrechnungen als PDF, Abrechnungsexport.",
+                },
+                projects: {
+                    name: "Projektzeiten & Kundenverwaltung",
+                    description: "Erfassen von Projektzeiten und Kunden, Berichte & Auswertungen.",
+                },
+                accounting: {
+                    name: "Finanzbuchhaltung & Anlagen",
+                    description: "Hauptbuch, Debitoren/Kreditoren, Anlagenverwaltung inkl. automatischer Übergabe aus Payroll & Billing.",
+                },
+                crm: {
+                    name: "CRM & Opportunity-Management",
+                    description: "Leads, Aktivitäten, Kampagnen und Pipeline-Visualisierung mit Team-Zugriff.",
+                },
+                supplyChain: {
+                    name: "Supply Chain & Lager",
+                    description: "Artikel-, Lager- und Auftragsverwaltung, Wareneingang/-ausgang, Produktion & Servicefälle.",
+                },
+                banking: {
+                    name: "Banking & Zahlungsverkehr",
+                    description: "ISO-20022 pain.001 Export, Zahlungsfreigaben, sichere Nachrichten & Idempotency-Workflows.",
+                },
+                analytics: {
+                    name: "Reporting & BI-Dashboards",
+                    description: "Drill-down-Kennzahlen, Forecasts und Export in Echtzeit über alle Module.",
+                },
+                signature: {
+                    name: "Digitale Signaturen & sichere Zustellung",
+                    description: "Elektronische Signatur von Lohnabrechnungen, Verträgen & Rechnungen mit verschlüsselter Zustellung.",
+                },
+                nfc: {
+                    name: "NFC-Stempeluhr",
+                    description: "Stempeln per NFC-Karte oder Chip am Terminal oder Smartphone.",
+                },
+                chatbot: {
+                    name: "Integrierter Support-Chatbot",
+                    description: "KI-basierte Hilfe & Erklärungen direkt in der App.",
+                },
+                premiumSupport: {
+                    name: "Premium-Support (SLA 2h)",
+                    description: "Telefonischer Premium-Support, dedizierte Success-Manager & priorisierte Umsetzung.",
+                },
+                roster: {
+                    name: "Dienstplan & Schichtplanung",
+                    description: "Intelligente Schichtplanung mit Drag & Drop, Konflikterkennung, Mitarbeiterwünschen, Urlaubsabgleich und Export als PDF/Excel.",
+                },
+            },
+            contact: {
+                title: "Kontaktdaten & Anfrage senden",
+                note: "Wir richten deinen Zugang persönlich ein und melden uns mit Rückfragen oder Zugangsdaten.",
+                companyLabel: "Firmenname",
+                companyPlaceholder: "z. B. Chrono Solutions GmbH",
+                contactLabel: "Ansprechperson",
+                contactPlaceholder: "Vor- und Nachname",
+                emailLabel: "E-Mail",
+                emailPlaceholder: "name@unternehmen.ch",
+                phoneLabel: "Telefon (optional)",
+                phonePlaceholder: "+41 71 000 00 00",
+                moreLabel: "Weitere Informationen oder Fragen",
+                morePlaceholder: "Was sollen wir bei der Einrichtung beachten?",
+                terms: "Ich habe die AGB und Datenschutzerklärung gelesen und akzeptiert.",
+                contactConsent: "Ich bin damit einverstanden, dass Chrono mich per E-Mail/Telefon zur Einrichtung kontaktiert.",
+                submit: "Unverbindliche Anfrage senden",
+                sending: "Senden …",
+                responseHint: "💡 Du erhältst von uns in der Regel innerhalb eines Werktags eine Rückmeldung mit Zugangsdaten oder Rückfragen.",
+            },
+            notifications: {
+                success: "Danke! Deine Anfrage ist bei uns angekommen.",
+                errorPrefix: "Fehler bei der Übermittlung: ",
+            },
+            errors: {
+                acceptTerms: "Bitte akzeptiere unsere Bedingungen, damit wir deine Anfrage bearbeiten können.",
+                employeeRange: "Bitte wähle eine Mitarbeiterzahl zwischen 1 und 200.",
+                unknown: "Unbekannter Fehler",
+            },
+            countries: {
+                ch: "Schweiz",
+                de: "Deutschland",
+                other: "anderes",
+            },
         },
         // ----------------------------------------------------------------------
         // Personal Data
@@ -1702,116 +1801,100 @@ const translations = {
         // ----------------------------------------------------------------------
         landing: {
             hero: {
-                badge: "Fair · Clear · Reliable",
-                title: "Track time, invoice fairly – simple, clear, reliable.",
-                sub: "Chrono helps teams in Switzerland & Germany track time accurately, manage vacation cleanly and process payroll securely.",
-                chips: {
-                    server: "🇨🇭 Swiss servers",
-                    gdpr: "🔐 GDPR compliant",
-                    noExcel: "🧮 No Excel chaos",
-                },
+                badge: "fair · clear · reliable",
+                title: "Track time. Run payroll. Manage leave.",
+                subline: "All in one platform – made in Switzerland.",
+                text: "Chrono helps teams in Switzerland & Germany capture working hours cleanly, plan absences and run payroll compliantly – without Excel chaos.",
+                note: "🕒 No credit card · cancel anytime · Swiss hosting",
             },
             cta: {
                 try: "Try for free",
-                login: "Log in",
-                demo: "View demo",
+                demo: "Watch live demo",
+            },
+            social: {
+                title: "Trusted by teams in CH & DE",
+                note: "Chrono runs on secure Swiss servers and is fully GDPR compliant.",
+                hotel: "Hospitality",
+                construction: "Construction",
+                cleaning: "Cleaning services",
+                gastro: "Gastronomy",
+                treuhand: "Accounting",
+                fitness: "Fitness studio",
             },
             features: {
                 title: "Everything you need – no clutter.",
-                sub: "Focused on the essentials: time tracking, payroll, vacation and clear admin processes.",
-                items: [
-                    {
-                        title: "Time tracking & payroll in one",
-                        bullets: [
-                            "Record working hours",
-                            "See vacation and overtime",
-                            "Everything in one place",
-                        ],
-                    },
-                    {
-                        title: "Payslips for CH & DE",
-                        bullets: [
-                            "Save as file",
-                            "Easily adjust details",
-                            "Covers Switzerland and Germany",
-                        ],
-                    },
-                    {
-                        title: "Stamp via card or web",
-                        bullets: [
-                            "Clock in/out with card",
-                            "Also in browser or phone",
-                            "Even works offline",
-                        ],
-                    },
-                    {
-                        title: "Vacation & overtime at a glance",
-                        bullets: [
-                            "Apply for vacation online",
-                            "See remaining days instantly",
-                            "Overtime deducted automatically",
-                        ],
-                    },
-                    {
-                        title: "Notifications & reminders",
-                        bullets: [
-                            "Info on new payslip",
-                            "Hint on requests",
-                            "Reminder if you forget to clock out",
-                        ],
-                    },
-                    {
-                        title: "Secure data in Switzerland",
-                        bullets: [
-                            "Data stays in Switzerland",
-                            "Everything is protected",
-                            "Only authorized people see your data",
-                            "Optional extra login protection",
-                        ],
-                    },
-                    {
-                        title: "Manage team & projects",
-                        bullets: [
-                            "Add employees",
-                            "Create customers and projects",
-                            "Keep everything in view",
-                        ],
-                    },
-                    {
-                        title: "Reports to go",
-                        bullets: [
-                            "Download clear files",
-                            "Quickly see who worked how much",
-                            "Useful for taxes and payroll",
-                        ],
-                    },
-                ],
+                tracking: {
+                    title: "Time tracking & projects",
+                    line1: "Employees clock in via browser, NFC or app.",
+                    line2: "Assign hours to customers and projects instantly.",
+                },
+                leave: {
+                    title: "Leave & absences",
+                    line1: "Request, approve and analyse vacation online.",
+                    line2: "Always see remaining days and overtime.",
+                },
+                payroll: {
+                    title: "Payroll for CH & DE",
+                    line1: "Create compliant payslips in minutes.",
+                    line2: "Export for trustees and accounting.",
+                },
+                reporting: {
+                    title: "Analytics & reports",
+                    line1: "See who worked when at a glance.",
+                    line2: "Perfect for taxes, audits and planning.",
+                },
+                teamwork: {
+                    title: "Smooth teamwork",
+                    line1: "Everyone knows who handles what.",
+                    line2: "Keep responsibilities transparent for the whole team.",
+                },
+                reminders: {
+                    title: "Smart reminders",
+                    line1: "Chrono nudges about missing times or approvals.",
+                    line2: "Never miss an important task again.",
+                },
+                security: {
+                    title: "Your data stays protected",
+                    line1: "Hosted securely on Swiss infrastructure.",
+                    line2: "You control who sees which data.",
+                },
+                access: {
+                    title: "Chrono works everywhere",
+                    line1: "Use Chrono on desktop, tablet or phone.",
+                    line2: "Log hours on the go in seconds.",
+                },
             },
             steps: {
-                title: "Get started in 3 steps",
-                items: [
-                    {
-                        title: "Register",
-                        text: "Start for free – no credit card needed.",
-                    },
-                    {
-                        title: "Set up team & projects",
-                        text: "Add employees, projects and customers.",
-                    },
-                    {
-                        title: "Get going",
-                        text: "Clock time, request vacation, create payroll.",
-                    },
-                ],
+                title: "Get started with Chrono in 3 steps",
+                register: {
+                    title: "Register",
+                    text: "Create your account – no credit card needed.",
+                },
+                setup: {
+                    title: "Add team & projects",
+                    text: "Capture employees, customers and projects.",
+                },
+                start: {
+                    title: "Start working",
+                    text: "Clock time, request leave, run payroll.",
+                },
+                link: "Go to registration →",
+            },
+            pricing: {
+                title: "Modular pricing – pay only what you need.",
+                text: "From CHF 5 per employee a month. Add modules for leave, payroll and more whenever you need them.",
+                cta: "View pricing & start configuration",
             },
             contact: {
-                title: "Get in touch",
+                title: "Let’s talk about your team",
+                text: "Want to see Chrono first or have payroll questions for CH/DE? Drop us a line – we usually respond the same business day.",
                 name: "Name",
                 email: "Email",
                 msg: "Message",
-                placeholder: "How can I help?",
-                send: "Send",
-                hint: "Usually replies within 24h.",
+                placeholder: "How can we help?",
+                send: "Send message",
+                sending: "Sending…",
+                hint: "Reply typically within one business day.",
                 success: "Message sent.",
                 error: "Error sending message.",
             },
@@ -1821,6 +1904,129 @@ const translations = {
                 terms: "Terms",
             },
             demoError: "Demo login failed",
+        },
+        // ----------------------------------------------------------------------
+        // Registration
+        // ----------------------------------------------------------------------
+        registration: {
+            success: {
+                title: "Thanks! We received your Chrono request.",
+                text1: "We’ll review your details and set up your account manually. You usually receive your login details or questions within one business day.",
+                note: "If you need anything meanwhile, contact us at support@chrono-app.ch or +41 71 000 00 00.",
+                backButton: "Back to homepage",
+            },
+            hero: {
+                title: "Request Chrono access",
+                text: "Tell us a bit about your company and the modules you need. We’ll verify everything and activate your Chrono account personally.",
+                badge: "🔒 No instant account – we enable access after a manual review.",
+            },
+            configuration: {
+                title: "Configuration",
+                companyTitle: "Company",
+                countryLabel: "Country",
+                countryAria: "Select country",
+                industryLabel: "Industry (optional)",
+                industryPlaceholder: "e.g. agency, manufacturing, services",
+                employeesTitle: "Employees",
+                employeeLabel: "Number of employees",
+                sliderHint: "Scales flexibly with your team.",
+                locationsLabel: "Locations (optional)",
+                locationsPlaceholder: "e.g. St. Gallen, Zurich",
+            },
+            modules: {
+                title: "Choose modules",
+                subtitle: "Which areas do you want to cover with Chrono?",
+                hint: "Your selection helps us propose the right setup and a transparent offer.",
+                base: {
+                    name: "Time tracking (base)",
+                    description: "Mandatory module – forms the foundation of your Chrono account.",
+                },
+                vacation: {
+                    name: "Leave & absence module",
+                    description: "Digital vacation requests, absence overview and approval workflow.",
+                },
+                payroll: {
+                    name: "Payroll",
+                    description: "Payroll for DE & CH, PDF payslips and export for accounting.",
+                },
+                projects: {
+                    name: "Project time & customer management",
+                    description: "Track project time and customers with reports & analytics.",
+                },
+                accounting: {
+                    name: "Financial accounting & assets",
+                    description: "General ledger, AR/AP, asset management with automatic transfers from payroll & billing.",
+                },
+                crm: {
+                    name: "CRM & opportunity management",
+                    description: "Leads, activities, campaigns and pipeline insights for the team.",
+                },
+                supplyChain: {
+                    name: "Supply chain & inventory",
+                    description: "Item, stock and order management incl. production & service cases.",
+                },
+                banking: {
+                    name: "Banking & payments",
+                    description: "ISO-20022 pain.001 export, payment approvals, secure messaging & idempotent workflows.",
+                },
+                analytics: {
+                    name: "Reporting & BI dashboards",
+                    description: "Real-time drill-down KPIs, forecasts and exports across all modules.",
+                },
+                signature: {
+                    name: "Digital signatures & delivery",
+                    description: "Electronically sign payslips, contracts and invoices with encrypted delivery.",
+                },
+                nfc: {
+                    name: "NFC time clock",
+                    description: "Clock via NFC card or chip on the terminal or smartphone.",
+                },
+                chatbot: {
+                    name: "Integrated support chatbot",
+                    description: "AI-based help and explanations right inside the app.",
+                },
+                premiumSupport: {
+                    name: "Premium support (SLA 2h)",
+                    description: "Priority phone support, dedicated success manager and fast-track handling.",
+                },
+                roster: {
+                    name: "Roster & shift planning",
+                    description: "Smart shift planning with drag & drop, conflict checks, employee wishes and vacation sync.",
+                },
+            },
+            contact: {
+                title: "Contact details & send request",
+                note: "We activate your access manually and will get back with questions or login details.",
+                companyLabel: "Company name",
+                companyPlaceholder: "e.g. Chrono Solutions Ltd",
+                contactLabel: "Contact person",
+                contactPlaceholder: "First and last name",
+                emailLabel: "Email",
+                emailPlaceholder: "name@company.com",
+                phoneLabel: "Phone (optional)",
+                phonePlaceholder: "+41 71 000 00 00",
+                moreLabel: "Additional information or questions",
+                morePlaceholder: "Anything we should consider for the setup?",
+                terms: "I have read and accept the Terms & Conditions and Privacy Policy.",
+                contactConsent: "I agree that Chrono may contact me via email/phone to set up the account.",
+                submit: "Send non-binding request",
+                sending: "Sending…",
+                responseHint: "💡 We usually reply within one business day with access details or follow-up questions.",
+            },
+            notifications: {
+                success: "Thanks! Your request has been submitted.",
+                errorPrefix: "Error submitting request: ",
+            },
+            errors: {
+                acceptTerms: "Please accept the conditions so we can process your request.",
+                employeeRange: "Please choose an employee count between 1 and 200.",
+                unknown: "Unknown error",
+            },
+            countries: {
+                ch: "Switzerland",
+                de: "Germany",
+                other: "other",
+            },
         },
         // ----------------------------------------------------------------------
         // Personal Data
