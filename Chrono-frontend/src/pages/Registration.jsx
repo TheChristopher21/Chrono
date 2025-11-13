@@ -55,6 +55,10 @@ const Registration = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
 
+    const employeeSliderStyle = {
+        "--progress": `${((configuration.employeeCount - 1) / 199) * 100}%`,
+    };
+
     const handleConfigurationChange = (field, value) => {
         setConfiguration((prev) => ({ ...prev, [field]: value }));
     };
@@ -229,6 +233,7 @@ const Registration = () => {
                                         min={1}
                                         max={200}
                                         value={configuration.employeeCount}
+                                        style={employeeSliderStyle}
                                         onChange={(event) =>
                                             handleConfigurationChange("employeeCount", Number(event.target.value))
                                         }
