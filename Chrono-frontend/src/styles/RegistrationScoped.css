@@ -14,6 +14,8 @@
   --input-border: rgba(15, 23, 42, 0.1);
   --input-border-focus: rgba(43, 96, 255, 0.5);
   --input-text: #0f172a;
+  --range-track: rgba(43, 96, 255, 0.18);
+  --range-fill: rgba(43, 96, 255, 0.4);
   --checkbox-bg: #ffffff;
   --checkbox-border: rgba(15, 23, 42, 0.2);
   --checkbox-checked: #2b60ff;
@@ -49,6 +51,8 @@
   --input-border: rgba(148, 163, 184, 0.3);
   --input-border-focus: rgba(99, 102, 241, 0.6);
   --input-text: #f8fafc;
+  --range-track: rgba(148, 163, 184, 0.28);
+  --range-fill: rgba(99, 102, 241, 0.55);
   --checkbox-bg: rgba(15, 23, 42, 0.85);
   --checkbox-border: rgba(148, 163, 184, 0.4);
   --checkbox-checked: #8ba9ff;
@@ -254,6 +258,27 @@
 .slider-input input[type="number"] {
   width: 5rem;
   text-align: center;
+  padding: 0.6rem 0.75rem;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--input-text);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.slider-input input[type="number"]:focus {
+  outline: none;
+  border-color: var(--input-border-focus);
+  box-shadow: 0 0 0 3px rgba(43, 96, 255, 0.18);
+}
+
+.slider-input input[type="number"]::-webkit-outer-spin-button,
+.slider-input input[type="number"]::-webkit-inner-spin-button {
+  margin: 0;
+}
+
+.slider-input input[type="number"] {
+  -moz-appearance: textfield;
 }
 
 .slider-input .hint {
@@ -261,8 +286,71 @@
   font-size: 0.85rem;
 }
 
-input[type="range"] {
+.form-control input[type="range"] {
+  width: 100%;
+  height: 0.6rem;
+  margin: 0;
+  border-radius: 999px;
+  background: linear-gradient(
+    to right,
+    var(--range-fill) 0%,
+    var(--range-fill) var(--progress, 0%),
+    var(--range-track) var(--progress, 0%),
+    var(--range-track) 100%
+  );
+  appearance: none;
   accent-color: var(--accent);
+  transition: background var(--transition);
+}
+
+.form-control input[type="range"]::-webkit-slider-runnable-track {
+  height: 0.6rem;
+  background: transparent;
+  border-radius: 999px;
+}
+
+.form-control input[type="range"]::-moz-range-track {
+  height: 0.6rem;
+  background: transparent;
+  border-radius: 999px;
+}
+
+.form-control input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.12);
+  margin-top: -0.25rem;
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.form-control input[type="range"]::-moz-range-thumb {
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 2px rgba(15, 23, 42, 0.12);
+  cursor: pointer;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.form-control input[type="range"]:focus::-webkit-slider-thumb,
+.form-control input[type="range"]:hover::-webkit-slider-thumb,
+.form-control input[type="range"]:focus::-moz-range-thumb,
+.form-control input[type="range"]:hover::-moz-range-thumb {
+  transform: scale(1.05);
+  box-shadow: 0 0 0 6px rgba(43, 96, 255, 0.18);
+}
+
+[data-theme="dark"] .form-control input[type="range"]::-webkit-slider-thumb,
+[data-theme="dark"] .form-control input[type="range"]::-moz-range-thumb {
+  border-color: rgba(15, 23, 42, 0.75);
+  box-shadow: 0 0 0 2px rgba(2, 6, 23, 0.45);
 }
 
 .module-grid {
