@@ -184,31 +184,102 @@ const LandingPage = () => {
                             </p>
                         </div>
                         <div className="lp-hero-mock" aria-hidden="true">
-                            <div className="lp-mock-window">
-                                <div className="lp-mock-header">Chrono Dashboard</div>
-                                <div className="lp-mock-body">
-                                    <div className="lp-mock-chart">
-                                        <div className="lp-mock-bar" style={{ height: "68%" }} />
-                                        <div className="lp-mock-bar" style={{ height: "54%" }} />
-                                        <div className="lp-mock-bar" style={{ height: "82%" }} />
-                                        <div className="lp-mock-bar" style={{ height: "45%" }} />
-                                        <div className="lp-mock-bar" style={{ height: "72%" }} />
+                            <div className="lp-mock-window" role="presentation">
+                                <div className="lp-mock-header">
+                                    <div>
+                                        <span className="lp-mock-eyebrow">Chrono Admin</span>
+                                        <h4 className="lp-mock-title">Team Dashboard</h4>
+                                        <span className="lp-mock-subtitle">KW 12 · 18.–24. März</span>
                                     </div>
-                                    <div className="lp-mock-table">
-                                        <div className="lp-mock-row">
-                                            <span>Anna Keller</span>
-                                            <span>40 h</span>
-                                            <span className="lp-mock-pill lp-pill-positive">+12 h Überstunden</span>
+                                    <div className="lp-mock-header-meta">
+                                        <span className="lp-mock-tag">Team Zürich</span>
+                                        <div className="lp-mock-avatar-group">
+                                            <span className="lp-mock-avatar">AK</span>
+                                            <span className="lp-mock-avatar">DS</span>
+                                            <span className="lp-mock-avatar">JN</span>
+                                            <span className="lp-mock-avatar more">+8</span>
                                         </div>
-                                        <div className="lp-mock-row">
-                                            <span>David Steiner</span>
-                                            <span>38 h</span>
-                                            <span className="lp-mock-pill">Urlaub genehmigt</span>
+                                    </div>
+                                </div>
+                                <div className="lp-mock-body">
+                                    <div className="lp-mock-kpi-grid">
+                                        <div className="lp-mock-kpi">
+                                            <span className="lp-mock-kpi-label">Arbeitsstunden</span>
+                                            <span className="lp-mock-kpi-value">1’245 h</span>
+                                            <span className="lp-mock-kpi-trend positive">+8% vs. Vorwoche</span>
                                         </div>
-                                        <div className="lp-mock-row">
-                                            <span>J. Nguyen</span>
-                                            <span>32 h</span>
-                                            <span>Projekt Zephyr</span>
+                                        <div className="lp-mock-kpi">
+                                            <span className="lp-mock-kpi-label">Überstunden</span>
+                                            <span className="lp-mock-kpi-value">+184 h</span>
+                                            <span className="lp-mock-kpi-trend warning">3 Teams über Ziel</span>
+                                        </div>
+                                        <div className="lp-mock-kpi">
+                                            <span className="lp-mock-kpi-label">Urlaub & Absenzen</span>
+                                            <span className="lp-mock-kpi-value">12 offen</span>
+                                            <span className="lp-mock-kpi-trend neutral">4 neue heute</span>
+                                        </div>
+                                        <div className="lp-mock-kpi">
+                                            <span className="lp-mock-kpi-label">Lohnläufe</span>
+                                            <span className="lp-mock-kpi-value">100%</span>
+                                            <span className="lp-mock-kpi-trend positive">Abgeschlossen</span>
+                                        </div>
+                                    </div>
+                                    <div className="lp-mock-panels">
+                                        <div className="lp-mock-table-card">
+                                            <div className="lp-mock-table-head">
+                                                <span>Mitarbeitende</span>
+                                                <span>Saldo</span>
+                                                <span>Status</span>
+                                            </div>
+                                            <div className="lp-mock-table-row">
+                                                <div>
+                                                    <span className="lp-mock-name">Anna Keller</span>
+                                                    <span className="lp-mock-meta">Marketing · 100%</span>
+                                                </div>
+                                                <span className="lp-mock-hours">+12:30 h</span>
+                                                <span className="lp-mock-badge is-positive">Überstunden</span>
+                                            </div>
+                                            <div className="lp-mock-table-row">
+                                                <div>
+                                                    <span className="lp-mock-name">David Steiner</span>
+                                                    <span className="lp-mock-meta">Produktion · 80%</span>
+                                                </div>
+                                                <span className="lp-mock-hours">-04:15 h</span>
+                                                <span className="lp-mock-badge is-warning">Fehlzeit</span>
+                                            </div>
+                                            <div className="lp-mock-table-row">
+                                                <div>
+                                                    <span className="lp-mock-name">J. Nguyen</span>
+                                                    <span className="lp-mock-meta">Projekt Zephyr</span>
+                                                </div>
+                                                <span className="lp-mock-hours">+02:40 h</span>
+                                                <span className="lp-mock-badge is-info">Projektarbeit</span>
+                                            </div>
+                                            <div className="lp-mock-table-foot">
+                                                <span>Mehr Details</span>
+                                                <span className="lp-mock-pill lp-pill-ghost">Teamzeiten öffnen</span>
+                                            </div>
+                                        </div>
+                                        <div className="lp-mock-inbox-card">
+                                            <div className="lp-mock-inbox-head">
+                                                <span>Anfragen</span>
+                                                <span className="lp-mock-pill lp-pill-quiet">4 offen</span>
+                                            </div>
+                                            <div className="lp-mock-inbox-list">
+                                                <div className="lp-mock-inbox-item is-pending">
+                                                    <span className="lp-mock-inbox-title">Urlaub · Karin Frei</span>
+                                                    <span className="lp-mock-inbox-meta">21.–24. März · wartet</span>
+                                                </div>
+                                                <div className="lp-mock-inbox-item is-positive">
+                                                    <span className="lp-mock-inbox-title">Korrektur · Luca Meier</span>
+                                                    <span className="lp-mock-inbox-meta">Check-in angepasst · genehmigt</span>
+                                                </div>
+                                                <div className="lp-mock-inbox-item is-warning">
+                                                    <span className="lp-mock-inbox-title">Sick Leave · Jana Roth</span>
+                                                    <span className="lp-mock-inbox-meta">seit 2 Tagen · Arztzeugnis fehlt</span>
+                                                </div>
+                                                <div className="lp-mock-inbox-footer">Alle Anfragen ansehen →</div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
