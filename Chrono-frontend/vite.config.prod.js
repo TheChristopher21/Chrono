@@ -8,8 +8,16 @@ export default defineConfig(({ mode }) => {
     return {
         plugins: [react()],
 
-        /* Die gebauten Assets liegen relativ zum index.html */
-        base: "./",
+        /*
+         * Statische Assets müssen auch nach einem direkten Seiten-Reload auf
+         * einer Deep-Link-Route (z. B. /adminDashboard) korrekt geladen
+         * werden. Mit einem relativen Pfad ("./") versucht der Browser die
+         * Module unter /adminDashboard/assets/... zu laden, was von Nginx auf
+         * die index.html umgeleitet wird und den "Failed to load module
+         * script"-Fehler auslöst. Durch einen absoluten Basis-Pfad bleiben die
+         * Asset-URLs immer bei /assets/… verankert.
+         */
+        base: "/",
 
         build: { chunkSizeWarningLimit: 10_000 },
 
