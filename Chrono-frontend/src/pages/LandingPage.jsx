@@ -185,20 +185,48 @@ const LandingPage = () => {
                         </div>
                         <div className="lp-hero-mock" aria-hidden="true">
                             <div className="lp-mock-window" role="presentation">
+                                <div className="lp-mock-toolbar">
+                                    <div className="lp-mock-breadcrumb">
+                                        <span>Chrono Admin</span>
+                                        <span className="lp-mock-divider">›</span>
+                                        <span>Teamübersicht</span>
+                                    </div>
+                                    <div className="lp-mock-toolbar-meta">
+                                        <span className="lp-mock-pill lp-pill-quiet">KW 12 · 18.–24. März</span>
+                                        <span className="lp-mock-pill lp-pill-ghost">Letztes Update 08:45</span>
+                                    </div>
+                                </div>
                                 <div className="lp-mock-header">
-                                    <div>
+                                    <div className="lp-mock-heading">
                                         <span className="lp-mock-eyebrow">Chrono Admin</span>
                                         <h4 className="lp-mock-title">Team Dashboard</h4>
-                                        <span className="lp-mock-subtitle">KW 12 · 18.–24. März</span>
+                                        <span className="lp-mock-subtitle">Team Zürich · 28 Mitarbeitende</span>
                                     </div>
                                     <div className="lp-mock-header-meta">
-                                        <span className="lp-mock-tag">Team Zürich</span>
+                                        <div className="lp-mock-chip-group">
+                                            <span className="lp-mock-tag">Team Zürich</span>
+                                            <span className="lp-mock-pill lp-pill-quiet">3 Standorte</span>
+                                        </div>
                                         <div className="lp-mock-avatar-group">
                                             <span className="lp-mock-avatar">AK</span>
                                             <span className="lp-mock-avatar">DS</span>
                                             <span className="lp-mock-avatar">JN</span>
                                             <span className="lp-mock-avatar more">+8</span>
                                         </div>
+                                    </div>
+                                </div>
+                                <div className="lp-mock-filter-row">
+                                    <div className="lp-mock-filter">
+                                        <span className="lp-mock-filter-label">Zeitraum</span>
+                                        <span className="lp-mock-filter-value">Diese Woche</span>
+                                    </div>
+                                    <div className="lp-mock-filter">
+                                        <span className="lp-mock-filter-label">Standort</span>
+                                        <span className="lp-mock-filter-value">Alle Standorte</span>
+                                    </div>
+                                    <div className="lp-mock-filter">
+                                        <span className="lp-mock-filter-label">Ansicht</span>
+                                        <span className="lp-mock-filter-value">Verantwortliche</span>
                                     </div>
                                 </div>
                                 <div className="lp-mock-body">
@@ -224,7 +252,7 @@ const LandingPage = () => {
                                             <span className="lp-mock-kpi-trend positive">Abgeschlossen</span>
                                         </div>
                                     </div>
-                                    <div className="lp-mock-panels">
+                                    <div className="lp-mock-main-grid">
                                         <div className="lp-mock-table-card">
                                             <div className="lp-mock-table-head">
                                                 <span>Mitarbeitende</span>
@@ -260,25 +288,86 @@ const LandingPage = () => {
                                                 <span className="lp-mock-pill lp-pill-ghost">Teamzeiten öffnen</span>
                                             </div>
                                         </div>
-                                        <div className="lp-mock-inbox-card">
-                                            <div className="lp-mock-inbox-head">
-                                                <span>Anfragen</span>
-                                                <span className="lp-mock-pill lp-pill-quiet">4 offen</span>
+                                        <div className="lp-mock-sidebar">
+                                            <div className="lp-mock-inbox-card">
+                                                <div className="lp-mock-inbox-head">
+                                                    <span>Anfragen</span>
+                                                    <span className="lp-mock-pill lp-pill-quiet">4 offen</span>
+                                                </div>
+                                                <div className="lp-mock-inbox-list">
+                                                    <div className="lp-mock-inbox-item is-pending">
+                                                        <span className="lp-mock-inbox-title">Urlaub · Karin Frei</span>
+                                                        <span className="lp-mock-inbox-meta">21.–24. März · wartet</span>
+                                                    </div>
+                                                    <div className="lp-mock-inbox-item is-positive">
+                                                        <span className="lp-mock-inbox-title">Korrektur · Luca Meier</span>
+                                                        <span className="lp-mock-inbox-meta">Check-in angepasst · genehmigt</span>
+                                                    </div>
+                                                    <div className="lp-mock-inbox-item is-warning">
+                                                        <span className="lp-mock-inbox-title">Sick Leave · Jana Roth</span>
+                                                        <span className="lp-mock-inbox-meta">seit 2 Tagen · Arztzeugnis fehlt</span>
+                                                    </div>
+                                                    <div className="lp-mock-inbox-footer">Alle Anfragen ansehen →</div>
+                                                </div>
                                             </div>
-                                            <div className="lp-mock-inbox-list">
-                                                <div className="lp-mock-inbox-item is-pending">
-                                                    <span className="lp-mock-inbox-title">Urlaub · Karin Frei</span>
-                                                    <span className="lp-mock-inbox-meta">21.–24. März · wartet</span>
+                                            <div className="lp-mock-week-card">
+                                                <div className="lp-mock-week-head">
+                                                    <span>Wochenverlauf</span>
+                                                    <span className="lp-mock-pill lp-pill-quiet">Soll 212 h</span>
                                                 </div>
-                                                <div className="lp-mock-inbox-item is-positive">
-                                                    <span className="lp-mock-inbox-title">Korrektur · Luca Meier</span>
-                                                    <span className="lp-mock-inbox-meta">Check-in angepasst · genehmigt</span>
+                                                <div className="lp-mock-week-days">
+                                                    <div className="lp-mock-week-day">
+                                                        <div className="lp-mock-week-day-header">
+                                                            <span className="lp-mock-week-label">Mo</span>
+                                                            <span className="lp-mock-week-hours">9:15 h</span>
+                                                        </div>
+                                                        <div className="lp-mock-progress">
+                                                            <div className="lp-mock-progress-fill is-positive" style={{ width: "92%" }} />
+                                                        </div>
+                                                        <span className="lp-mock-week-meta positive">+04:30 h</span>
+                                                    </div>
+                                                    <div className="lp-mock-week-day">
+                                                        <div className="lp-mock-week-day-header">
+                                                            <span className="lp-mock-week-label">Di</span>
+                                                            <span className="lp-mock-week-hours">8:05 h</span>
+                                                        </div>
+                                                        <div className="lp-mock-progress">
+                                                            <div className="lp-mock-progress-fill" style={{ width: "84%" }} />
+                                                        </div>
+                                                        <span className="lp-mock-week-meta neutral">Im Rahmen</span>
+                                                    </div>
+                                                    <div className="lp-mock-week-day">
+                                                        <div className="lp-mock-week-day-header">
+                                                            <span className="lp-mock-week-label">Mi</span>
+                                                            <span className="lp-mock-week-hours">6:10 h</span>
+                                                        </div>
+                                                        <div className="lp-mock-progress">
+                                                            <div className="lp-mock-progress-fill is-warning" style={{ width: "58%" }} />
+                                                        </div>
+                                                        <span className="lp-mock-week-meta warning">-02:15 h</span>
+                                                    </div>
+                                                    <div className="lp-mock-week-day">
+                                                        <div className="lp-mock-week-day-header">
+                                                            <span className="lp-mock-week-label">Do</span>
+                                                            <span className="lp-mock-week-hours">7:40 h</span>
+                                                        </div>
+                                                        <div className="lp-mock-progress">
+                                                            <div className="lp-mock-progress-fill is-info" style={{ width: "76%" }} />
+                                                        </div>
+                                                        <span className="lp-mock-week-meta info">Urlaubsspitze</span>
+                                                    </div>
+                                                    <div className="lp-mock-week-day">
+                                                        <div className="lp-mock-week-day-header">
+                                                            <span className="lp-mock-week-label">Fr</span>
+                                                            <span className="lp-mock-week-hours">4:00 h</span>
+                                                        </div>
+                                                        <div className="lp-mock-progress">
+                                                            <div className="lp-mock-progress-fill is-muted" style={{ width: "44%" }} />
+                                                        </div>
+                                                        <span className="lp-mock-week-meta muted">Feiertag (ZH)</span>
+                                                    </div>
                                                 </div>
-                                                <div className="lp-mock-inbox-item is-warning">
-                                                    <span className="lp-mock-inbox-title">Sick Leave · Jana Roth</span>
-                                                    <span className="lp-mock-inbox-meta">seit 2 Tagen · Arztzeugnis fehlt</span>
-                                                </div>
-                                                <div className="lp-mock-inbox-footer">Alle Anfragen ansehen →</div>
+                                                <div className="lp-mock-week-footer">Teamplanung öffnen →</div>
                                             </div>
                                         </div>
                                     </div>
