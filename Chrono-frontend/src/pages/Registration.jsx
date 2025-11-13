@@ -1,569 +1,294 @@
-import { useState, useEffect, useMemo } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useMemo, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import "../styles/RegistrationScoped.css";
-import api from "../utils/api";
 import { useNotification } from "../context/NotificationContext";
-import { BASE_FEATURE, FEATURE_CATALOG, TOGGLABLE_FEATURE_KEYS } from "../constants/registrationFeatures";
 
-const INSTALL_FEE = 250;
-const OPTIONAL_TRAINING_COST = 120;
-const YEARLY_DISCOUNT_FACTOR = 10; // 2 Monate geschenkt
+const COUNTRIES = [
+    { value: "ch", label: "Schweiz" },
+    { value: "de", label: "Deutschland" },
+    { value: "other", label: "Andere" },
+];
 
 const Registration = () => {
     const navigate = useNavigate();
-    const location = useLocation();
     const { notify } = useNotification();
 
-    const companyId = useMemo(() => {
-        const params = new URLSearchParams(location.search);
-        const value = params.get("companyId");
-        if (!value) return null;
-        const parsed = Number(value);
-        return Number.isFinite(parsed) ? parsed : null;
-    }, [location.search]);
+    const [step, setStep] = useState(1);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hasSubmitted, setHasSubmitted] = useState(false);
+    const [error, setError] = useState("");
 
-    const [form, setForm] = useState({
+    const [formData, setFormData] = useState({
         companyName: "",
-        contactName: "",
+        firstName: "",
+        lastName: "",
         email: "",
-        phone: "",
-        additionalInfo: "",
+        password: "",
+        country: COUNTRIES[0].value,
+        employeeCount: "",
+        acceptedTerms: false,
     });
 
-    const [employeeCount, setEmployeeCount] = useState(1);
-    const [selectedFeatures, setSelectedFeatures] = useState(
-        FEATURE_CATALOG.filter((f) => f.required).map((f) => f.key)
-    );
-    const [billingPeriod, setBillingPeriod] = useState("monthly");
-    const [includeOptionalTraining, setIncludeOptionalTraining] = useState(false);
+    const stepIndicator = useMemo(() => `${step} von 2`, [step]);
 
-    const [calculatedPrice, setCalculatedPrice] = useState(0);
-    const [priceBreakdown, setPriceBreakdown] = useState(null);
-    const [error, setError] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [success, setSuccess] = useState(false);
-    const [companyFeatureKeys, setCompanyFeatureKeys] = useState([]);
-    const [featureError, setFeatureError] = useState("");
-    const [isLoadingFeatures, setIsLoadingFeatures] = useState(false);
-
-    const visibleFeatures = useMemo(() => {
-        return FEATURE_CATALOG.filter(
-            (feature) => feature.alwaysAvailable || companyFeatureKeys.includes(feature.key)
-        );
-    }, [companyFeatureKeys]);
-
-    const visibleFeatureKeys = useMemo(() => new Set(visibleFeatures.map((feature) => feature.key)), [visibleFeatures]);
-
-    useEffect(() => {
-        let isMounted = true;
-        if (companyId == null) {
-            if (isMounted) {
-                setCompanyFeatureKeys(TOGGLABLE_FEATURE_KEYS);
-                setFeatureError("");
-                setIsLoadingFeatures(false);
-            }
-            return () => {
-                isMounted = false;
-            };
-        }
-
-        const loadFeatures = async () => {
-            setIsLoadingFeatures(true);
-            setFeatureError("");
-            try {
-                const response = await api.get("/api/public/registration-features", {
-                    params: { companyId },
-                });
-                const payload = response.data;
-                const rawKeys = Array.isArray(payload)
-                    ? payload
-                    : Array.isArray(payload?.enabledFeatures)
-                    ? payload.enabledFeatures
-                    : [];
-                const sanitized = rawKeys.filter((key) => TOGGLABLE_FEATURE_KEYS.includes(key));
-                if (isMounted) {
-                    setCompanyFeatureKeys(sanitized);
-                }
-            } catch (fetchError) {
-                console.error("Fehler beim Laden der Firmenmodule", fetchError);
-                if (isMounted) {
-                    setFeatureError(
-                        "Die freigeschalteten Module konnten nicht geladen werden. Es werden vorerst alle Zusatzmodule angezeigt."
-                    );
-                    setCompanyFeatureKeys(TOGGLABLE_FEATURE_KEYS);
-                }
-            } finally {
-                if (isMounted) {
-                    setIsLoadingFeatures(false);
-                }
-            }
-        };
-
-        loadFeatures();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [companyId]);
-
-    useEffect(() => {
-        setSelectedFeatures((prev) => prev.filter((key) => visibleFeatureKeys.has(key)));
-    }, [visibleFeatureKeys]);
-
-    // Preisberechnung
-    useEffect(() => {
-        const selectedFeatureObjects = FEATURE_CATALOG.filter((f) => selectedFeatures.includes(f.key));
-        const perEmployeeAddOnRate = selectedFeatureObjects
-            .filter((f) => f.priceType === "perEmployee")
-            .reduce((acc, f) => acc + f.price, 0);
-        const flatAddOnMonthly = selectedFeatureObjects
-            .filter((f) => f.priceType === "flat")
-            .reduce((acc, f) => acc + f.price, 0);
-
-        const basePerEmployeeMonthly = BASE_FEATURE.price * employeeCount;
-        const addOnPerEmployeeMonthly = perEmployeeAddOnRate * employeeCount;
-        const addOnFlatMonthly = flatAddOnMonthly;
-        const addOnCount = selectedFeatureObjects.length;
-
-        let discountRate = 0;
-        if (addOnCount >= 5) {
-            discountRate = 0.15;
-        } else if (addOnCount >= 3) {
-            discountRate = 0.1;
-        }
-
-        const addOnTotalBeforeDiscount = addOnPerEmployeeMonthly + addOnFlatMonthly;
-        const addOnDiscountValue = addOnTotalBeforeDiscount * discountRate;
-        const discountPerEmployeeShare =
-            addOnPerEmployeeMonthly > 0 && addOnTotalBeforeDiscount > 0
-                ? (addOnDiscountValue * (addOnPerEmployeeMonthly / addOnTotalBeforeDiscount)) /
-                  Math.max(employeeCount, 1)
-                : 0;
-        const effectivePerEmployeeRate = BASE_FEATURE.price + perEmployeeAddOnRate - discountPerEmployeeShare;
-        const monthlyTotalBeforeFactor = basePerEmployeeMonthly + addOnTotalBeforeDiscount - addOnDiscountValue;
-
-        let periodLabel = "pro Monat";
-        let displayTotalPeriod = monthlyTotalBeforeFactor;
-        if (billingPeriod === "yearly") {
-            displayTotalPeriod = monthlyTotalBeforeFactor * YEARLY_DISCOUNT_FACTOR;
-            periodLabel = "pro Jahr (12 Monate, 2 gratis)";
-        }
-
-        const installationFee = INSTALL_FEE;
-        const optionalTraining = includeOptionalTraining ? OPTIONAL_TRAINING_COST : 0;
-        const totalFirstPayment = displayTotalPeriod + installationFee + optionalTraining;
-
-        setCalculatedPrice(totalFirstPayment);
-        setPriceBreakdown({
-            perEmployeeRate: effectivePerEmployeeRate,
-            basePerEmployeeMonthly,
-            addOnPerEmployeeMonthly,
-            addOnFlatMonthly,
-            addOnDiscountRate: discountRate,
-            addOnDiscountValue,
-            totalPerPeriod: displayTotalPeriod,
-            installationFee,
-            optionalTraining,
-            periodLabel,
-            isYearly: billingPeriod === "yearly",
-            perPeriodSingle: monthlyTotalBeforeFactor,
-            addOnCount,
-        });
-    }, [selectedFeatures, employeeCount, billingPeriod, includeOptionalTraining]);
-
-    const handleChange = (e) =>
-        setForm({ ...form, [e.target.name]: e.target.value });
-
-    const handleFeatureChange = (featureKey) => {
-        if (!visibleFeatureKeys.has(featureKey)) {
-            return;
-        }
-        const featureObj = FEATURE_CATALOG.find((f) => f.key === featureKey);
-        if (featureObj.required) return; // Pflichtmodul, nicht abwählbar
-        setSelectedFeatures((prev) =>
-            prev.includes(featureKey)
-                ? prev.filter((k) => k !== featureKey)
-                : [...prev, featureKey]
-        );
+    const handleChange = (event) => {
+        const { name, type, value, checked } = event.target;
+        setFormData((prev) => ({
+            ...prev,
+            [name]: type === "checkbox" ? checked : value,
+        }));
     };
 
-    const handleEmployeeCountChange = (e) => {
-        let val = parseInt(e.target.value, 10);
-        if (isNaN(val) || val < 1) val = 1;
-        if (val > 200) val = 200;
-        setEmployeeCount(val);
-    };
-    const handleBillingPeriodChange = (e) =>
-        setBillingPeriod(e.target.value);
-    const handleOptionalTrainingChange = (e) =>
-        setIncludeOptionalTraining(e.target.checked);
+    const stepOneIsValid = useMemo(() => {
+        return (
+            formData.firstName.trim().length > 1 &&
+            formData.lastName.trim().length > 1 &&
+            formData.email.trim() !== "" &&
+            formData.password.trim().length >= 8
+        );
+    }, [formData.firstName, formData.lastName, formData.email, formData.password]);
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (employeeCount < 1) {
-            setError("Bitte geben Sie mindestens 1 Mitarbeiter an.");
+    const handleNext = (event) => {
+        event.preventDefault();
+        if (!stepOneIsValid) {
+            setError("Bitte fülle die Felder von Schritt 1 vollständig aus (Passwort mindestens 8 Zeichen).");
             return;
         }
-        setIsSubmitting(true);
         setError("");
+        setStep(2);
+    };
+
+    const handleBack = (event) => {
+        event.preventDefault();
+        setError("");
+        setStep(1);
+    };
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        if (!formData.acceptedTerms) {
+            setError("Bitte akzeptiere die AGB und Datenschutzbestimmungen.");
+            return;
+        }
+        setError("");
+        setIsSubmitting(true);
         try {
-            const selectedFeatureObjects = FEATURE_CATALOG.filter((f) => selectedFeatures.includes(f.key));
-            const selectedFeatureNames = selectedFeatureObjects.map((f) => f.name);
-            const payload = {
-                ...form,
-                selectedFeatures,
-                selectedFeatureNames,
-                employeeCount,
-                billingPeriod,
-                includeOptionalTraining,
-                priceBreakdown,
-                calculatedPrice,
-                companyId: companyId ?? null,
-            };
-            await api.post("/api/apply", payload);
-            setSuccess(true);
-            notify("Anfrage erfolgreich gesendet! Sie erhalten in Kürze Ihr individuelles Angebot.", "success");
-        } catch (err) {
-            setError("Fehler bei der Übermittlung: " + (err.response?.data?.message || err.message));
-            notify("Fehler bei der Übermittlung: " + (err.message), "error");
+            // Hier könnte ein echter API-Call eingefügt werden.
+            await new Promise((resolve) => setTimeout(resolve, 600));
+            setHasSubmitted(true);
+            notify("Dein Konto wurde angelegt. Du kannst dich jetzt anmelden!", "success");
+        } catch (submitError) {
+            console.error("Registrierung fehlgeschlagen", submitError);
+            setError("Etwas ist schiefgelaufen. Bitte versuche es erneut.");
+            notify("Registrierung fehlgeschlagen", "error");
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    function formatCHF(value) {
-        if (typeof value !== "number" || isNaN(value)) {
-            return "0,00 CHF";
-        }
-        return value.toFixed(2).replace(".", ",") + " CHF";
-    }
-
-    const getFeaturePriceLabel = (feature) => {
-        const formatted = formatCHF(feature.price);
-        if (feature.priceType === "flat") {
-            return `+${formatted} / Monat gesamt`;
-        }
-        return `+${formatted} / Monat je MA`;
+    const handleGoToLogin = () => {
+        navigate("/login");
     };
 
-    // --------- HERO/INTRO UND UI ------------------------------------
     return (
         <>
             <Navbar />
-            <div className="registration-page scoped-registration">
-                <div className="registration-content">
-                    <section className="hero-section">
-                        <h1>Baukasten-Preismodell – Zahle nur, was du brauchst!</h1>
-                        <p className="hero-subline">
-                            <strong>Wähle individuell die Module für deine perfekte Zeiterfassungslösung.</strong>
-                            <br />
-                            Sofort transparent, jederzeit unverbindlich anfragen.
+            <div className="registration-page register-flow">
+                <div className="registration-wrapper">
+                    <div className="breadcrumb">
+                        <Link to="/">← Zurück zur Startseite</Link>
+                    </div>
+
+                    <div className="registration-hero">
+                        <p className="step-pill">Schritt {stepIndicator}</p>
+                        <h1>Jetzt kostenlos starten – ohne Kreditkarte.</h1>
+                        <p className="registration-subline">
+                            Erstelle dein Chrono-Konto in weniger als 1 Minute und teste alle Funktionen in Ruhe mit
+                            deinem Team.
                         </p>
-                    </section>
+                    </div>
 
-                    <section className="unique-sell-callout">
-                        <span role="img" aria-label="star">⭐</span>
-                        <strong>Modular, fair und flexibel!</strong>
-                        <span className="unique-badge">Jetzt zusammenstellen & sparen.</span>
-                    </section>
-
-                    <section className="pricing-section">
-                        <h2>Baukasten & Preise</h2>
-                        <p className="pricing-intro">
-                            Wähle deine Wunsch-Module und erhalte sofort den Preis.<br />
-                            <span className="money-back">100 % unverbindlich – keine Zahlung bis Vertragsabschluss.</span>
-                        </p>
-
-                        <div className="central-employee-input">
-                            <label htmlFor="employeeCount">Anzahl Mitarbeiter (1–200):</label>
-                            <input
-                                type="number"
-                                id="employeeCount"
-                                name="employeeCount"
-                                min={1}
-                                max={200}
-                                value={employeeCount}
-                                onChange={handleEmployeeCountChange}
-                                disabled={isSubmitting}
-                            />
-                            <p className="employee-note">
-                                Für sehr große Unternehmen mit mehr als 200 Mitarbeitenden erstellen wir
-                                gerne ein individuelles Angebot. Bitte stellen Sie eine direkte Anfrage
-                                über unser Kontaktformular.
-                            </p>
-                        </div>
-
-
-                        <div className="billing-toggle" role="radiogroup" aria-label="Zahlungsintervall auswählen">
-                            <label
-                                className={`billing-option${billingPeriod === "monthly" ? " is-active" : ""}`}
-                            >
-                                <input
-                                    type="radio"
-                                    name="billingPeriod"
-                                    value="monthly"
-                                    checked={billingPeriod === "monthly"}
-                                    onChange={handleBillingPeriodChange}
-                                />
-                                <span className="billing-option__indicator" aria-hidden="true" />
-                                <span className="billing-option__label">Monatliche Zahlung</span>
-                            </label>
-                            <label
-                                className={`billing-option${billingPeriod === "yearly" ? " is-active" : ""}`}
-                            >
-                                <input
-                                    type="radio"
-                                    name="billingPeriod"
-                                    value="yearly"
-                                    checked={billingPeriod === "yearly"}
-                                    onChange={handleBillingPeriodChange}
-                                />
-                                <span className="billing-option__indicator" aria-hidden="true" />
-                                <span className="billing-option__label">
-                                    Jährliche Zahlung <span className="deal-badge">2 Monate geschenkt!</span>
-                                </span>
-                            </label>
-                        </div>
-
-                        <div className="pricing-cards" style={{ flexWrap: "wrap", justifyContent: "flex-start" }}>
-                            {/* Pflichtmodul */}
-                            <div className="pricing-card selected" style={{ '--card-accent-color': '#475bff' }}>
-                                <div className="card-badge-row">
-                                    <span className="selected-badge">Pflichtmodul</span>
-                                </div>
-                                <h3>{BASE_FEATURE.name}</h3>
-                                <p className="price-line base-fee">
-                                    <strong>{formatCHF(BASE_FEATURE.price)} / Monat je MA</strong>
-                                </p>
-                                <ul className="features-list">
-                                    <li>{BASE_FEATURE.description}</li>
-                                </ul>
-                            </div>
-                            {/* Zusatzmodule */}
-                            {visibleFeatures.map((feature) => (
-                                <div
-                                    key={feature.key}
-                                    className={`pricing-card${selectedFeatures.includes(feature.key) ? " selected" : ""}`}
-                                    onClick={() => handleFeatureChange(feature.key)}
-                                    style={{ '--card-accent-color': selectedFeatures.includes(feature.key) ? "#2ecc71" : "var(--c-border)" }}
-                                >
-                                    <div className="card-badge-row">
-                                        {feature.required && <span className="selected-badge">Pflicht</span>}
-                                        {selectedFeatures.includes(feature.key) && !feature.required && (
-                                            <span className="selected-badge">Gewählt</span>
-                                        )}
-                                    </div>
-                                    <h3>{feature.name}</h3>
-                                    <p className="price-line base-fee">
-                                        <strong>{getFeaturePriceLabel(feature)}</strong>
+                    <div className="registration-layout">
+                        <div className="registration-form-card">
+                            {hasSubmitted ? (
+                                <div className="registration-success">
+                                    <h2>Geschafft! 🎉</h2>
+                                    <p>
+                                        Dein Zugang ist bereit. Wir haben dir gerade eine Bestätigung per E-Mail geschickt –
+                                        melde dich im nächsten Schritt einfach mit deinen Daten an.
                                     </p>
-                                    <ul className="features-list">
-                                        <li>{feature.description}</li>
-                                    </ul>
+                                    <button type="button" className="primary-button" onClick={handleGoToLogin}>
+                                        Zum Login
+                                    </button>
                                 </div>
-                            ))}
-                        </div>
-
-                        <div className="feature-availability-note">
-                            {isLoadingFeatures ? (
-                                <span>Freigeschaltete Module werden geladen...</span>
-                            ) : featureError ? (
-                                <span className="feature-warning">{featureError}</span>
-                            ) : companyId != null ? (
-                                <>
-                                    <span>
-                                        Module, die für Ihre Firma freigegeben wurden, sind auswählbar. Basis, Urlaub und NFC sind
-                                        immer verfügbar.
-                                    </span>
-                                    {visibleFeatures.filter((feature) => !feature.alwaysAvailable).length === 0 && (
-                                        <span className="feature-muted">
-                                            Aktuell wurden keine zusätzlichen Module freigeschaltet. Bei Bedarf im SuperAdmin-Panel
-                                            aktivieren.
-                                        </span>
-                                    )}
-                                </>
                             ) : (
-                                <>
-                                    <span>
-                                        Hinweis: Ohne Firmen-ID zeigen wir alle verfügbaren Zusatzmodule an. Wenn Ihre Firma einen
-                                        individuellen Link bereitstellt, spiegeln wir die dort definierten Freigaben wider.
-                                    </span>
-                                    <span className="feature-muted">
-                                        Tipp: SuperAdmins können im Firmen-Panel entscheiden, welche Module für Mitarbeiter:innen
-                                        freigeschaltet werden.
-                                    </span>
-                                </>
+                                <form onSubmit={step === 1 ? handleNext : handleSubmit} className="register-form">
+                                    <fieldset disabled={isSubmitting}>
+                                        {step === 1 ? (
+                                            <>
+                                                <label className="input-field">
+                                                    <span>Vorname</span>
+                                                    <input
+                                                        type="text"
+                                                        name="firstName"
+                                                        value={formData.firstName}
+                                                        onChange={handleChange}
+                                                        placeholder="Max"
+                                                        autoComplete="given-name"
+                                                        required
+                                                    />
+                                                </label>
+                                                <label className="input-field">
+                                                    <span>Nachname</span>
+                                                    <input
+                                                        type="text"
+                                                        name="lastName"
+                                                        value={formData.lastName}
+                                                        onChange={handleChange}
+                                                        placeholder="Muster"
+                                                        autoComplete="family-name"
+                                                        required
+                                                    />
+                                                </label>
+                                                <label className="input-field">
+                                                    <span>E-Mail</span>
+                                                    <input
+                                                        type="email"
+                                                        name="email"
+                                                        value={formData.email}
+                                                        onChange={handleChange}
+                                                        placeholder="max@firma.ch"
+                                                        autoComplete="email"
+                                                        required
+                                                    />
+                                                </label>
+                                                <label className="input-field">
+                                                    <span>Passwort</span>
+                                                    <input
+                                                        type="password"
+                                                        name="password"
+                                                        value={formData.password}
+                                                        onChange={handleChange}
+                                                        placeholder="Mindestens 8 Zeichen"
+                                                        autoComplete="new-password"
+                                                        required
+                                                    />
+                                                </label>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <label className="input-field">
+                                                    <span>Firmenname</span>
+                                                    <input
+                                                        type="text"
+                                                        name="companyName"
+                                                        value={formData.companyName}
+                                                        onChange={handleChange}
+                                                        placeholder="Chrono AG"
+                                                        autoComplete="organization"
+                                                        required
+                                                    />
+                                                </label>
+                                                <label className="input-field">
+                                                    <span>Land</span>
+                                                    <select
+                                                        name="country"
+                                                        value={formData.country}
+                                                        onChange={handleChange}
+                                                        required
+                                                    >
+                                                        {COUNTRIES.map((country) => (
+                                                            <option key={country.value} value={country.value}>
+                                                                {country.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </label>
+                                                <label className="input-field">
+                                                    <span>Mitarbeiteranzahl (optional)</span>
+                                                    <input
+                                                        type="number"
+                                                        name="employeeCount"
+                                                        min={1}
+                                                        value={formData.employeeCount}
+                                                        onChange={handleChange}
+                                                        placeholder="z. B. 25"
+                                                    />
+                                                </label>
+                                                <label className="checkbox-field">
+                                                    <input
+                                                        type="checkbox"
+                                                        name="acceptedTerms"
+                                                        checked={formData.acceptedTerms}
+                                                        onChange={handleChange}
+                                                        required
+                                                    />
+                                                    <span>
+                                                        Ich akzeptiere die <Link to="/agb">AGB</Link> und{' '}
+                                                        <Link to="/datenschutz">Datenschutzbestimmungen</Link>.
+                                                    </span>
+                                                </label>
+                                            </>
+                                        )}
+                                    </fieldset>
+                                    {error && <p className="form-error">{error}</p>}
+                                    <div className="form-actions">
+                                        {step === 2 && (
+                                            <button type="button" className="secondary-button" onClick={handleBack}>
+                                                Zurück
+                                            </button>
+                                        )}
+                                        <button
+                                            type="submit"
+                                            className="primary-button"
+                                            disabled={isSubmitting || (step === 1 && !stepOneIsValid)}
+                                        >
+                                            {step === 1 ? "Weiter" : isSubmitting ? "Wird erstellt…" : "Konto erstellen"}
+                                        </button>
+                                    </div>
+                                    {step === 1 ? (
+                                        <p className="form-footnote">Keine Kreditkarte erforderlich.</p>
+                                    ) : (
+                                        <p className="form-footnote">
+                                            Du bekommst im nächsten Schritt Zugang zu deinem Chrono-Dashboard.
+                                        </p>
+                                    )}
+                                </form>
                             )}
                         </div>
 
-                        <div className="training-option-section">
-                            <h4>Optionales Add-on:</h4>
-                            <label htmlFor="includeOptionalTraining" className="training-label">
-                                <input
-                                    type="checkbox"
-                                    id="includeOptionalTraining"
-                                    name="includeOptionalTraining"
-                                    checked={includeOptionalTraining}
-                                    onChange={handleOptionalTrainingChange}
-                                />
-                                Individuelles Onboarding (1h, persönlich) für <strong>{formatCHF(OPTIONAL_TRAINING_COST)}</strong> (einmalig).
-                            </label>
-                        </div>
-                        <p className="pricing-footnote">
-                            * Alle Preise zzgl. MwSt. | Jährliche Zahlung = 2 Monate geschenkt.<br />
-                            Bundle-Rabatt: ab 3 Add-ons 10 % auf Zusatzmodule, ab 5 Add-ons 15 %.<br />
-                            Einmalige Installationspauschale: {formatCHF(INSTALL_FEE)} (inkl. System-Setup und Ersteinrichtung)
-                        </p>
-                    </section>
-
-                    <section className="application-section">
-                        <h2>Unverbindliche Angebotsanfrage senden</h2>
-                        {priceBreakdown && (
-                            <div className="price-preview card">
-                                <h4>Ihre Konfiguration:</h4>
-                                <p className="price-item">
-                                    <span className="label">Mitarbeiter:</span>
-                                    <span className="value">{employeeCount}</span>
-                                </p>
-                                <p className="price-item">
-                                    <span className="label">Zahlungsweise:</span>
-                                    <span className="value">{billingPeriod === "monthly" ? "Monatlich" : "Jährlich"}</span>
-                                </p>
-                                <hr />
-                                <p className="price-item">
-                                    <span className="label">Ausgewählte Features:</span>
-                                    <span className="value">
-                                        {[BASE_FEATURE,
-                                            ...FEATURE_CATALOG.filter((feature) =>
-                                                selectedFeatures.includes(feature.key)
-                                            ),
-                                        ]
-                                            .map((feature) => feature.name)
-                                            .join(", ")}
-                                    </span>
-                                </p>
-                                <p className="price-item">
-                                    <span className="label">Preis je Mitarbeiter:</span>
-                                    <span className="value">{formatCHF(priceBreakdown.perEmployeeRate)} / Monat</span>
-                                </p>
-                                {priceBreakdown.addOnFlatMonthly > 0 && (
-                                    <p className="price-item">
-                                        <span className="label">Fixpreis-Module gesamt:</span>
-                                        <span className="value">{formatCHF(priceBreakdown.addOnFlatMonthly)}</span>
-                                    </p>
-                                )}
-                                {priceBreakdown.addOnDiscountValue > 0 && (
-                                    <p className="price-item sub-hint">
-                                        <span className="label">Bundle-Rabatt ({Math.round(priceBreakdown.addOnDiscountRate * 100)} %):</span>
-                                        <span className="value">{formatCHF(-priceBreakdown.addOnDiscountValue)}</span>
-                                    </p>
-                                )}
-                                <p className="price-item">
-                                    <span className="label">Gesamtkosten {priceBreakdown.periodLabel}:</span>
-                                    <span className="value">{formatCHF(priceBreakdown.totalPerPeriod)}</span>
-                                </p>
-                                {priceBreakdown.isYearly && (
-                                    <p className="price-item sub-hint">
-                                        <span className="label">(entspricht pro Monat):</span>
-                                        <span className="value">
-                      {formatCHF(priceBreakdown.perPeriodSingle)}
-                    </span>
-                                    </p>
-                                )}
-                                <hr />
-                                <p className="price-item">
-                                    <span className="label">Einmalige Installationsgebühr:</span>
-                                    <span className="value">{formatCHF(priceBreakdown.installationFee)}</span>
-                                </p>
-                                {includeOptionalTraining && (
-                                    <p className="price-item">
-                                        <span className="label">Onboarding (optional):</span>
-                                        <span className="value">{formatCHF(priceBreakdown.optionalTraining)}</span>
-                                    </p>
-                                )}
-                                <hr />
-                                <div className="total-price-wrapper">
-                                    <p className="price-item total-price">
-                    <span className="label">
-                      Gesamtbetrag für erste Zahlung:
-                    </span>
-                                        <span className="value">{formatCHF(calculatedPrice)}</span>
-                                    </p>
-                                </div>
-                                <p className="price-item sub-hint">
-                                    <span className="label">Folgezahlungen:</span>
-                                    <span className="value">
-                    {formatCHF(priceBreakdown.perPeriodSingle)} {billingPeriod === "monthly" ? "monatlich" : "pro Monat (bei Jahreszahlung)"}
-                  </span>
-                                </p>
+                        <aside className="registration-aside">
+                            <div className="trust-card">
+                                <ul>
+                                    <li>
+                                        <span className="check-icon" aria-hidden="true">
+                                            ✅
+                                        </span>
+                                        <span>14 Tage kostenlos testen</span>
+                                    </li>
+                                    <li>
+                                        <span className="check-icon" aria-hidden="true">
+                                            ✅
+                                        </span>
+                                        <span>Keine Kreditkarte erforderlich</span>
+                                    </li>
+                                    <li>
+                                        <span className="check-icon" aria-hidden="true">
+                                            ✅
+                                        </span>
+                                        <span>Schweizer Server &amp; DSGVO-konform</span>
+                                    </li>
+                                </ul>
                             </div>
-                        )}
 
-                        {error && <p className="error-message">{error}</p>}
-                        {success ? (
-                            <div className="success-message-box">
-                                <h3>Vielen Dank für Ihre Anfrage!</h3>
-                                <p>Wir haben Ihre Konfiguration erhalten und prüfen diese.</p>
-                                <p>
-                                    Sie erhalten in Kürze (üblicherweise innerhalb von 1–2 Werktagen) Ihr individuelles Angebot und weitere Informationen per E-Mail.
-                                    <br />
-                                    Bitte prüfen Sie auch Ihren Spam-Ordner.
+                            <div className="testimonial-card">
+                                <p className="testimonial-quote">
+                                    „Seit wir Chrono nutzen, ist unsere Lohnabrechnung von 3 Stunden auf 20 Minuten geschrumpft.“
                                 </p>
-                                <button onClick={() => navigate('/')} style={{ marginTop: '1rem' }}>
-                                    Zurück zur Startseite
-                                </button>
+                                <p className="testimonial-author">– Anna Müller, Inhaberin einer Reinigungsfirma</p>
                             </div>
-                        ) : (
-                            <form onSubmit={handleSubmit}>
-                                <input
-                                    type="text"
-                                    name="companyName"
-                                    value={form.companyName}
-                                    onChange={handleChange}
-                                    placeholder="Firmenname"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    name="contactName"
-                                    value={form.contactName}
-                                    onChange={handleChange}
-                                    placeholder="Ansprechpartner*in"
-                                    required
-                                />
-                                <input
-                                    type="email"
-                                    name="email"
-                                    value={form.email}
-                                    onChange={handleChange}
-                                    placeholder="E-Mail"
-                                    required
-                                />
-                                <input
-                                    type="text"
-                                    name="phone"
-                                    value={form.phone}
-                                    onChange={handleChange}
-                                    placeholder="Telefon (optional)"
-                                />
-                                <textarea
-                                    name="additionalInfo"
-                                    value={form.additionalInfo}
-                                    onChange={handleChange}
-                                    placeholder="Weitere Informationen oder Fragen zu Ihrer Anfrage..."
-                                    rows="4"
-                                />
-                                <button type="submit" disabled={isSubmitting || calculatedPrice <= 0}>
-                                    {isSubmitting ? "Anfrage wird gesendet..." : "Angebotsanfrage senden"}
-                                </button>
-                            </form>
-                        )}
-                    </section>
-                    <div style={{ marginTop: "40px", textAlign: "center", fontSize: "0.9rem" }}>
-                        <Link to="/impressum" style={{ marginRight: "1rem" }}>Impressum</Link>
-                        <Link to="/agb" style={{ marginRight: "1rem" }}>AGB</Link>
-                        <a href="https://www.instagram.com/itschronologisch" target="_blank" rel="noopener noreferrer">Instagram</a>
+                        </aside>
                     </div>
                 </div>
             </div>
