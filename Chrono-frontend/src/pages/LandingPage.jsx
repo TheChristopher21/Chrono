@@ -101,6 +101,38 @@ const LandingPage = () => {
                 t("landing.features.reporting.line2", "Praktisch für Steuer, Revision und Planung."),
             ],
         },
+        {
+            icon: "🤝",
+            title: t("landing.features.teamwork.title", "Teamarbeit leicht gemacht"),
+            lines: [
+                t("landing.features.teamwork.line1", "Alle wissen, wer was übernimmt."),
+                t("landing.features.teamwork.line2", "Aufgaben bleiben transparent für das ganze Team."),
+            ],
+        },
+        {
+            icon: "🔔",
+            title: t("landing.features.reminders.title", "Erinnerungen kommen von selbst"),
+            lines: [
+                t("landing.features.reminders.line1", "Chrono erinnert an fehlende Zeiten oder Freigaben."),
+                t("landing.features.reminders.line2", "So geht nichts Wichtiges verloren."),
+            ],
+        },
+        {
+            icon: "🔒",
+            title: t("landing.features.security.title", "Deine Daten sind geschützt"),
+            lines: [
+                t("landing.features.security.line1", "Alle Infos liegen sicher auf Schweizer Servern."),
+                t("landing.features.security.line2", "Du bestimmst, wer was sehen darf."),
+            ],
+        },
+        {
+            icon: "📲",
+            title: t("landing.features.access.title", "Chrono läuft überall"),
+            lines: [
+                t("landing.features.access.line1", "Nutze Chrono am Computer, Tablet oder Handy."),
+                t("landing.features.access.line2", "Auch unterwegs schnell Zeiten eintragen."),
+            ],
+        },
     ];
 
     const steps = [
