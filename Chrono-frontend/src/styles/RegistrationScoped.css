@@ -207,6 +207,10 @@
   gap: 0.4rem;
 }
 
+[data-theme="dark"] .segmented-control {
+  background: rgba(148, 163, 184, 0.15);
+}
+
 .segment {
   position: relative;
   cursor: pointer;
@@ -236,6 +240,11 @@
   color: var(--text-color);
 }
 
+[data-theme="dark"] .segment:not(.is-active):hover {
+  background: rgba(43, 96, 255, 0.22);
+  color: var(--text-color);
+}
+
 .slider-input {
   display: flex;
   align-items: center;
@@ -259,6 +268,7 @@ input[type="range"] {
 .module-grid {
   display: grid;
   gap: 0.85rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 .module-option {
@@ -297,6 +307,15 @@ input[type="range"] {
   background: rgba(43, 96, 255, 0.08);
 }
 
+[data-theme="dark"] .module-option {
+  background: rgba(15, 23, 42, 0.92);
+  border-color: rgba(148, 163, 184, 0.25);
+}
+
+[data-theme="dark"] .module-option .module-description {
+  color: rgba(226, 232, 240, 0.8);
+}
+
 .module-option.is-required {
   cursor: not-allowed;
   opacity: 0.85;
@@ -307,12 +326,23 @@ input[type="range"] {
   font-size: 0.85rem;
 }
 
+[data-theme="dark"] .module-option.is-selected {
+  background: rgba(43, 96, 255, 0.22);
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 12px 24px rgba(43, 96, 255, 0.28);
+}
+
 .manual-note {
   background: rgba(43, 96, 255, 0.08);
   border-radius: var(--radius-sm);
   padding: 0.9rem 1rem;
   font-size: 0.92rem;
   color: var(--text-muted);
+}
+
+[data-theme="dark"] .manual-note {
+  background: rgba(43, 96, 255, 0.16);
+  color: rgba(226, 232, 240, 0.88);
 }
 
 .checkbox-control {

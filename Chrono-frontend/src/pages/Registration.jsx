@@ -4,7 +4,7 @@ import Navbar from "../components/Navbar";
 import "../styles/RegistrationScoped.css";
 import api from "../utils/api";
 import { useNotification } from "../context/NotificationContext";
-import { BASE_FEATURE } from "../constants/registrationFeatures";
+import { BASE_FEATURE, FEATURE_CATALOG } from "../constants/registrationFeatures";
 
 const COUNTRY_OPTIONS = [
     { value: "ch", label: "Schweiz" },
@@ -15,30 +15,17 @@ const COUNTRY_OPTIONS = [
 const MODULE_OPTIONS = [
     {
         key: BASE_FEATURE.key,
-        label: "Zeiterfassung (Basis)",
-        description: "Pflichtmodul – bildet die Grundlage für deinen Chrono-Account.",
+        label: BASE_FEATURE.name || "Zeiterfassung (Basis)",
+        description:
+            BASE_FEATURE.description || "Pflichtmodul – bildet die Grundlage für deinen Chrono-Account.",
         required: true,
     },
-    {
-        key: "vacation",
-        label: "Urlaub & Abwesenheiten",
-        description: "Abwesenheiten planen, genehmigen und transparent kommunizieren.",
-    },
-    {
-        key: "payroll",
-        label: "Lohnabrechnung (CH & DE)",
-        description: "Löhne vorbereiten und gesetzeskonform abrechnen.",
-    },
-    {
-        key: "projects",
-        label: "Projekte & Auswertungen",
-        description: "Projektzeiten erfassen, Budgets überwachen und Reports teilen.",
-    },
-    {
-        key: "nfc",
-        label: "NFC-Terminals / Stempeluhren",
-        description: "Zeiten bequem per Terminal oder Smartphone stempeln.",
-    },
+    ...FEATURE_CATALOG.filter((feature) => feature.key !== BASE_FEATURE.key).map((feature) => ({
+        key: feature.key,
+        label: feature.name,
+        description: feature.description,
+        required: Boolean(feature.required),
+    })),
 ];
 
 const INITIAL_CONFIGURATION = {
