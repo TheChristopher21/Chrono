@@ -295,59 +295,65 @@ const LandingPage = () => {
                                 )}
                             </p>
                         </div>
-                        <form className="lp-contact-form" onSubmit={submitContact}>
-                            <div className="lp-form-row">
+                        <details className="lp-contact-accordion" open>
+                            <summary className="lp-contact-summary">
+                                {t("landing.contact.summary", "Kontaktformular öffnen")}
+                                <span aria-hidden="true" className="lp-contact-summary-icon">⌄</span>
+                            </summary>
+                            <form className="lp-contact-form" onSubmit={submitContact}>
+                                <div className="lp-form-row">
+                                    <div className="lp-form-group">
+                                        <label htmlFor="name" className="lp-label">{t("landing.contact.name", "Name")}</label>
+                                        <input
+                                            id="name"
+                                            name="name"
+                                            type="text"
+                                            required
+                                            value={contact.name}
+                                            onChange={onChange}
+                                            className="lp-input"
+                                        />
+                                    </div>
+                                    <div className="lp-form-group">
+                                        <label htmlFor="email" className="lp-label">{t("landing.contact.email", "E-Mail")}</label>
+                                        <input
+                                            id="email"
+                                            name="email"
+                                            type="email"
+                                            required
+                                            value={contact.email}
+                                            onChange={onChange}
+                                            className="lp-input"
+                                        />
+                                    </div>
+                                </div>
+
                                 <div className="lp-form-group">
-                                    <label htmlFor="name" className="lp-label">{t("landing.contact.name", "Name")}</label>
-                                    <input
-                                        id="name"
-                                        name="name"
-                                        type="text"
+                                    <label htmlFor="message" className="lp-label">{t("landing.contact.msg", "Nachricht")}</label>
+                                    <textarea
+                                        id="message"
+                                        name="message"
+                                        rows={4}
                                         required
-                                        value={contact.name}
+                                        value={contact.message}
                                         onChange={onChange}
-                                        className="lp-input"
+                                        placeholder={t("landing.contact.placeholder", "Wie können wir helfen?")}
+                                        className="lp-textarea"
                                     />
                                 </div>
-                                <div className="lp-form-group">
-                                    <label htmlFor="email" className="lp-label">{t("landing.contact.email", "E-Mail")}</label>
-                                    <input
-                                        id="email"
-                                        name="email"
-                                        type="email"
-                                        required
-                                        value={contact.email}
-                                        onChange={onChange}
-                                        className="lp-input"
-                                    />
+
+                                <div className="lp-form-actions">
+                                    <button className="lp-btn lp-primary" type="submit" disabled={sending}>
+                                        {sending
+                                            ? t("landing.contact.sending", "Wird gesendet…")
+                                            : t("landing.contact.send", "Nachricht senden")}
+                                    </button>
+                                    <p className="lp-form-hint lp-text-muted">
+                                        {t("landing.contact.hint", "Antwort in der Regel noch am selben Werktag.")}
+                                    </p>
                                 </div>
-                            </div>
-
-                            <div className="lp-form-group">
-                                <label htmlFor="message" className="lp-label">{t("landing.contact.msg", "Nachricht")}</label>
-                                <textarea
-                                    id="message"
-                                    name="message"
-                                    rows={4}
-                                    required
-                                    value={contact.message}
-                                    onChange={onChange}
-                                    placeholder={t("landing.contact.placeholder", "Wie können wir helfen?")}
-                                    className="lp-textarea"
-                                />
-                            </div>
-
-                            <div className="lp-form-actions">
-                                <button className="lp-btn lp-primary" type="submit" disabled={sending}>
-                                    {sending
-                                        ? t("landing.contact.sending", "Wird gesendet…")
-                                        : t("landing.contact.send", "Nachricht senden")}
-                                </button>
-                                <p className="lp-form-hint lp-text-muted">
-                                    {t("landing.contact.hint", "Antwort in der Regel noch am selben Werktag.")}
-                                </p>
-                            </div>
-                        </form>
+                            </form>
+                        </details>
                     </div>
                 </section>
             </main>

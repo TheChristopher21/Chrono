@@ -5,9 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 // NEU: Imports für Auth-Status und ActionButtons
 import { useAuth } from "./context/AuthContext.jsx";
 import ActionButtons from "./components/ActionButtons.jsx";
+import MobileTabBar from "./components/MobileTabBar.jsx";
 
 // Globale Styles
 import "./styles/global.css";
+import "./styles/mobile-tokens.css";
 import "./styles/Button.css";
 import "./styles/Login.css";
 import "./styles/PercentageDashboardScoped.css";
@@ -268,7 +270,10 @@ function App() {
                     </Routes>
 
                     {/* NEU: Fügt den Chatbot (via ActionButtons) auf allen Seiten für eingeloggte User hinzu */}
-                    {authToken && <ActionButtons />}
+                    {authToken && <>
+                        <ActionButtons />
+                        <MobileTabBar />
+                    </>}
                 </div>
             </ErrorBoundary>
         </QueryClientProvider>
