@@ -397,3 +397,55 @@
         justify-content: center;
     }
 }
+
+@media (max-width: 480px) {
+    .scoped-login .login-left {
+        padding: calc(var(--space-mobile-lg, 1.8rem) + env(safe-area-inset-top, 0px)) var(--space-mobile) var(--space-mobile-lg, 1.8rem);
+    }
+
+    .scoped-login .login-left-content {
+        border-radius: var(--radius-mobile-lg, 28px);
+        padding: var(--space-mobile-lg, 1.8rem);
+        gap: var(--space-mobile, 1rem);
+    }
+
+    .scoped-login .login-form input {
+        font-size: 1rem;
+        padding: 1rem 1.1rem;
+    }
+
+    .scoped-login .login-btn {
+        font-size: 1.05rem;
+        padding: 1.05rem 1.2rem;
+    }
+
+    .scoped-login .login-right {
+        min-height: 180px;
+    }
+
+    .scoped-login .login-foot-inner {
+        gap: 0.5rem;
+    }
+}
+
+@media (max-width: 360px) {
+    .scoped-login .login-left-content {
+        padding: var(--space-mobile, 1rem);
+    }
+
+    .scoped-login .login-h1 {
+        font-size: clamp(1.5rem, 8vw, 1.8rem);
+    }
+
+    .scoped-login .login-btn {
+        font-size: 1rem;
+    }
+
+    .scoped-login .login-form input {
+        padding: 0.9rem 1rem;
+    }
+
+    .scoped-login .login-foot-links {
+        gap: 0.6rem;
+    }
+}
