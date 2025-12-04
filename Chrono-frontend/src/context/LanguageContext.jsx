@@ -1592,13 +1592,13 @@ const translations = {
                 <ol>
                     <li>
                         <div class="legal-section">
-                            <h3>1. Geltungsbereich</h3>
+                            <h3>Geltungsbereich</h3>
                             <p>Diese Allgemeinen Geschäftsbedingungen (AGB) regeln das Vertragsverhältnis zwischen dem Anbieter Chrono (nachfolgend „Anbieter“) und den Nutzern der SaaS-Anwendung „Chrono“. Abweichende Bedingungen des Kunden gelten nur, wenn der Anbieter ihnen ausdrücklich schriftlich zustimmt.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>2. Leistungsgegenstand</h3>
+                            <h3>Leistungsgegenstand</h3>
                             <p>Der Anbieter stellt die Cloud-Software „Chrono“ zur Verfügung. Diese umfasst insbesondere:</p>
                             <ul>
                                 <li>Zeiterfassung</li>
@@ -1613,19 +1613,19 @@ const translations = {
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>3. Vertragsschluss & Testphase</h3>
+                            <h3>Vertragsschluss & Testphase</h3>
                             <p>Der Vertrag kommt durch Online-Registrierung und die Annahme durch den Anbieter zustande. Kostenlos angebotene Testphasen enden automatisch. Ein Übergang in ein kostenpflichtiges Abonnement erfolgt nur durch aktive Wahl des Kunden.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>4. Preise & Zahlungsbedingungen</h3>
+                            <h3>Preise & Zahlungsbedingungen</h3>
                             <p>Es gelten die zum Zeitpunkt des Vertragsabschlusses veröffentlichten Preise. Nutzungsentgelte sind – je nach Abrechnungszeitraum – im Voraus fällig. Bei Zahlungsverzug ist der Anbieter berechtigt, den Zugang zur Software zu sperren, bis die Zahlung erfolgt ist. Preisanpassungen sind möglich mit einer Vorankündigung von 30 Tagen; bestehende Verträge können in diesem Zeitraum gekündigt werden.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>5. Nutzungsrechte</h3>
+                            <h3>Nutzungsrechte</h3>
                             <p>Der Anbieter räumt dem Kunden ein einfaches, nicht übertragbares, nicht exklusives Nutzungsrecht für die Dauer des Vertrags ein. Der Kunde erhält kein Eigentum an der Software. Es ist untersagt:</p>
                             <ul>
                                 <li>die Software zu kopieren, zu verändern oder zu dekompilieren,</li>
@@ -1636,61 +1636,61 @@ const translations = {
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>6. Pflichten des Kunden</h3>
+                            <h3>Pflichten des Kunden</h3>
                             <p>Der Kunde verpflichtet sich, Zugangsdaten geheim zu halten, nur rechtmäßige Daten einzutragen und keine schädlichen Inhalte (Malware, Bots etc.) zu übertragen. Der Kunde haftet für alle Aktivitäten, die über sein Konto erfolgen.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>7. Datenschutz & Subprozessoren</h3>
+                            <h3>Datenschutz & Subprozessoren</h3>
                             <p>Der Anbieter verarbeitet personenbezogene Daten ausschließlich zur Vertragserfüllung und gemäß Schweizer Datenschutzgesetz (DSG). Details sind in der Datenschutzerklärung beschrieben. Der Kunde erklärt sich einverstanden, dass der Anbieter Subdienstleister (z. B. Hosting-Provider, E-Mail-Dienst, Payment-Anbieter) einsetzt. Eine aktuelle Liste kann jederzeit beim Anbieter angefragt werden.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>8. Datenspeicherung, Backups & Export</h3>
+                            <h3>Datenspeicherung, Backups & Export</h3>
                             <p>Der Anbieter führt regelmäßige Backups durch, übernimmt jedoch keine Garantie für vollständige Datenwiederherstellung. Der Kunde kann seine Daten während der Vertragslaufzeit jederzeit exportieren (z. B. als CSV/Excel/PDF). Nach Vertragsende werden Kundendaten 30 Tage gespeichert und anschließend endgültig gelöscht, sofern keine gesetzlichen Aufbewahrungspflichten entgegenstehen.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>9. Verfügbarkeit & Wartung</h3>
+                            <h3>Verfügbarkeit & Wartung</h3>
                             <p>Der Anbieter gewährleistet eine branchenübliche Verfügbarkeit der Plattform. Geplante Wartungsarbeiten, die zu Einschränkungen führen, werden – soweit möglich – vorab angekündigt. Ereignisse höherer Gewalt (z. B. Stromausfälle, Angriffe auf Rechenzentren, Internetstörungen) begründen keinen Anspruch auf Schadensersatz.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>10. Support</h3>
+                            <h3>Support</h3>
                             <p>Der Anbieter stellt Support per E-Mail oder Ticketsystem zur Verfügung. Antworten erfolgen nach bestem Bemühen, jedoch ohne garantierte Reaktionszeit, sofern nicht vertraglich anders vereinbart.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>11. Missbrauch & Sperrung</h3>
+                            <h3>Missbrauch & Sperrung</h3>
                             <p>Der Anbieter ist berechtigt, den Zugang ganz oder teilweise zu sperren, wenn Sicherheitsrisiken bestehen, gesetzliche Verstöße vorliegen, der Kunde die Software missbräuchlich nutzt oder Zahlungsverzug besteht.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>12. Haftung</h3>
+                            <h3>Haftung</h3>
                             <p>Der Anbieter haftet unbeschränkt bei Vorsatz, grober Fahrlässigkeit oder Verletzung von Leben, Körper oder Gesundheit. Bei leichter Fahrlässigkeit haftet der Anbieter nur für vorhersehbare, vertragstypische Schäden. Für Datenverlust haftet der Anbieter nur, wenn dieser trotz angemessener Backup-Strategie entstanden ist. Eine Haftung für entgangenen Gewinn, mittelbare Schäden oder Folgeschäden ist ausgeschlossen.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>13. Vertragslaufzeit & Kündigung</h3>
+                            <h3>Vertragslaufzeit & Kündigung</h3>
                             <p>Der Vertrag läuft auf unbestimmte Zeit. Der Kunde kann jederzeit zum Ende des Abrechnungszeitraums kündigen. Der Anbieter kann mit einer Frist von 30 Tagen kündigen. Bei schwerwiegenden Vertragsverstößen ist eine fristlose Kündigung möglich.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>14. Gerichtsstand & anwendbares Recht</h3>
+                            <h3>Gerichtsstand & anwendbares Recht</h3>
                             <p>Es gilt Schweizer Recht. Gerichtsstand ist der Sitz des Anbieters.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>15. Salvatorische Klausel</h3>
+                            <h3>Salvatorische Klausel</h3>
                             <p>Sollten einzelne Bestimmungen unwirksam sein oder werden, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt. Anstelle der unwirksamen Regelung tritt eine Bestimmung, die dem wirtschaftlichen Zweck am nächsten kommt.</p>
                         </div>
                     </li>
@@ -3299,13 +3299,13 @@ const translations = {
                 <ol>
                     <li>
                         <div class="legal-section">
-                            <h3>1. Scope</h3>
+                            <h3>Scope</h3>
                             <p>These terms and conditions govern the contractual relationship between Chrono ("provider") and users of the “Chrono” SaaS application. Deviating customer terms apply only with the provider’s express written consent.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>2. Services</h3>
+                            <h3>Services</h3>
                             <p>The provider delivers the cloud software “Chrono”, including in particular:</p>
                             <ul>
                                 <li>time tracking</li>
@@ -3320,19 +3320,19 @@ const translations = {
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>3. Contract & Trial</h3>
+                            <h3>Contract & Trial</h3>
                             <p>The contract is formed through online registration and acceptance by the provider. Free trials end automatically. A paid subscription starts only when the customer actively selects it.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>4. Prices & Payment</h3>
+                            <h3>Prices & Payment</h3>
                             <p>The prices published at the time of contract conclusion apply. Usage fees are due in advance for the billing period. If payment is overdue, the provider may suspend access until payment is received. Price adjustments are possible with 30 days’ prior notice; contracts can be cancelled during that period.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>5. Usage rights</h3>
+                            <h3>Usage rights</h3>
                             <p>The provider grants the customer a simple, non-transferable, non-exclusive right of use for the term of the contract. The customer does not acquire ownership of the software. It is prohibited to:</p>
                             <ul>
                                 <li>copy, modify or decompile the software,</li>
@@ -3343,61 +3343,61 @@ const translations = {
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>6. Customer obligations</h3>
+                            <h3>Customer obligations</h3>
                             <p>The customer must keep login data confidential, enter only lawful data and refrain from transmitting harmful content (malware, bots, etc.). The customer is liable for all activities carried out via their account.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>7. Data protection & sub-processors</h3>
+                            <h3>Data protection & sub-processors</h3>
                             <p>The provider processes personal data solely to fulfil the contract and in line with Swiss data protection law (DSG). Details are set out in the privacy notice. The customer agrees that the provider may use sub-service providers (e.g. hosting, email, payment). An up-to-date list can be requested at any time.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>8. Data storage, backups & export</h3>
+                            <h3>Data storage, backups & export</h3>
                             <p>The provider performs regular backups but does not guarantee complete data restoration. Customers can export their data at any time during the contract (e.g. CSV/Excel/PDF). After termination, customer data is stored for 30 days and then permanently deleted unless statutory retention duties apply.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>9. Availability & maintenance</h3>
+                            <h3>Availability & maintenance</h3>
                             <p>The provider ensures industry-standard availability. Planned maintenance causing restrictions will be announced in advance where possible. Force majeure events (e.g. power outages, data centre attacks, internet disruptions) do not give rise to compensation claims.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>10. Support</h3>
+                            <h3>Support</h3>
                             <p>Support is provided via email or ticket system. Responses are given on a best-effort basis without guaranteed response times unless otherwise agreed in the contract.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>11. Misuse & suspension</h3>
+                            <h3>Misuse & suspension</h3>
                             <p>The provider may partially or fully block access if security risks exist, legal violations occur, the software is misused or payments are overdue.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>12. Liability</h3>
+                            <h3>Liability</h3>
                             <p>The provider is fully liable for intent, gross negligence or injury to life, body or health. For slight negligence, liability is limited to foreseeable, typical contractual damages. The provider is liable for data loss only if it occurred despite an appropriate backup strategy. Liability for loss of profit, indirect or consequential damages is excluded.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>13. Term & termination</h3>
+                            <h3>Term & termination</h3>
                             <p>The contract runs for an indefinite term. The customer may terminate at the end of the billing period at any time. The provider may terminate with 30 days’ notice. In case of serious breaches, termination without notice is permitted.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>14. Governing law & venue</h3>
+                            <h3>Governing law & venue</h3>
                             <p>Swiss law applies. The place of jurisdiction is the provider’s seat.</p>
                         </div>
                     </li>
                     <li>
                         <div class="legal-section">
-                            <h3>15. Severability</h3>
+                            <h3>Severability</h3>
                             <p>If any provision is or becomes invalid, the validity of the remaining provisions remains unaffected. The invalid provision will be replaced by one that best reflects its economic intent.</p>
                         </div>
                     </li>
