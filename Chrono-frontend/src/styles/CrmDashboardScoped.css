@@ -69,6 +69,25 @@
     grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
 }
 
+.admin-page.crm-page .summary-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.admin-page.crm-page .stat-card {
+    display: grid;
+    gap: 0.45rem;
+}
+
+.admin-page.crm-page .stat-card .stat-label {
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    color: #4338ca;
+}
+
+[data-theme="dark"] .admin-page.crm-page .stat-card .stat-label {
+    color: #c7d2fe;
+}
+
 .admin-page.crm-page .metric {
     font-size: clamp(1.6rem, 3vw, 2.2rem);
     font-weight: 600;
@@ -130,6 +149,10 @@
     display: grid;
     gap: clamp(1.1rem, 2.2vw, 1.75rem);
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.admin-page.crm-page .focus-grid {
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
 .admin-page.crm-page .form-grid {
@@ -223,6 +246,76 @@
     align-items: center;
     gap: 1rem;
     margin-bottom: 1rem;
+}
+
+.admin-page.crm-page .eyebrow {
+    margin: 0;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #6366f1;
+}
+
+[data-theme="dark"] .admin-page.crm-page .eyebrow {
+    color: #c7d2fe;
+}
+
+.admin-page.crm-page .pill-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.admin-page.crm-page .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.45rem 0.75rem;
+    border-radius: 999px;
+    background: rgba(79, 70, 229, 0.08);
+    color: #312e81;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+[data-theme="dark"] .admin-page.crm-page .pill {
+    background: rgba(129, 140, 248, 0.12);
+    color: #e0e7ff;
+}
+
+.admin-page.crm-page .marketing-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1rem;
+    align-items: start;
+}
+
+.admin-page.crm-page .timeline {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    gap: 0.65rem;
+}
+
+.admin-page.crm-page .timeline li {
+    position: relative;
+    padding-left: 1rem;
+}
+
+.admin-page.crm-page .timeline li::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0.55rem;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #818cf8, #a855f7);
+}
+
+.admin-page.crm-page .timeline-title {
+    font-weight: 600;
 }
 
 .admin-page.crm-page .full-width {

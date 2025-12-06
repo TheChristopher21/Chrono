@@ -18,9 +18,9 @@ const CrmDashboard = () => {
     const [customerActivities, setCustomerActivities] = useState([]);
     const [customerAddresses, setCustomerAddresses] = useState([]);
     const [customerDocuments, setCustomerDocuments] = useState([]);
-    const [leadFilter, setLeadFilter] = useState("QUALIFIED");
-    const [oppFilter, setOppFilter] = useState("NEGOTIATION");
-    const [campaignFilter, setCampaignFilter] = useState("ACTIVE");
+    const [leadFilter, setLeadFilter] = useState("ALL");
+    const [oppFilter, setOppFilter] = useState("ALL");
+    const [campaignFilter, setCampaignFilter] = useState("ALL");
     const [leadForm, setLeadForm] = useState({ companyName: "", contactName: "", email: "", status: "NEW" });
     const [opportunityForm, setOpportunityForm] = useState({ title: "", value: "", probability: "", stage: "QUALIFICATION" });
     const [campaignForm, setCampaignForm] = useState({ name: "", status: "PLANNED", channel: "", startDate: "", endDate: "", budget: "" });
@@ -47,10 +47,13 @@ const CrmDashboard = () => {
         }
         const load = async () => {
             try {
+                const leadParams = leadFilter === "ALL" ? {} : { status: leadFilter };
+                const opportunityParams = oppFilter === "ALL" ? {} : { stage: oppFilter };
+                const campaignParams = campaignFilter === "ALL" ? {} : { status: campaignFilter };
                 const [leadRes, oppRes, campRes, customerRes] = await Promise.all([
-                    api.get("/api/crm/leads", { params: { status: leadFilter } }),
-                    api.get("/api/crm/opportunities", { params: { stage: oppFilter } }),
-                    api.get("/api/crm/campaigns", { params: { status: campaignFilter } }),
+                    api.get("/api/crm/leads", { params: leadParams }),
+                    api.get("/api/crm/opportunities", { params: opportunityParams }),
+                    api.get("/api/crm/campaigns", { params: campaignParams }),
                     api.get("/api/customers")
                 ]);
                 setAccessDenied(false);
@@ -342,6 +345,42 @@ const CrmDashboard = () => {
     const opportunityStages = useMemo(() => ["QUALIFICATION", "PROPOSAL", "NEGOTIATION", "WON", "LOST"], []);
     const campaignStatuses = useMemo(() => ["PLANNED", "ACTIVE", "COMPLETED", "ARCHIVED"], []);
 
+    const leadStatusCounts = useMemo(() => {
+        return leadStatuses.map((status) => ({
+            status,
+            count: leads.filter((lead) => lead.status === status).length
+        }));
+    }, [leadStatuses, leads]);
+
+    const opportunityStageCounts = useMemo(() => {
+        return opportunityStages.map((stage) => ({
+            stage,
+            count: opportunities.filter((opp) => opp.stage === stage).length
+        }));
+    }, [opportunityStages, opportunities]);
+
+    const totalPipelineValue = useMemo(() => {
+        return opportunities.reduce((sum, opp) => (typeof opp.value === "number" ? sum + opp.value : sum), 0);
+    }, [opportunities]);
+
+    const activeCampaigns = useMemo(() => campaigns.filter((campaign) => campaign.status === "ACTIVE"), [campaigns]);
+
+    const upcomingCampaigns = useMemo(() => {
+        return campaigns
+            .filter((campaign) => campaign.startDate)
+            .sort((a, b) => new Date(a.startDate) - new Date(b.startDate))
+            .slice(0, 3);
+    }, [campaigns]);
+
+    const campaignChannels = useMemo(() => {
+        const counts = {};
+        campaigns.forEach((campaign) => {
+            const channel = campaign.channel || t("crm.noChannel", "Kein Kanal definiert");
+            counts[channel] = (counts[channel] || 0) + 1;
+        });
+        return Object.entries(counts).sort((a, b) => b[1] - a[1]);
+    }, [campaigns, t]);
+
     return (
         <div className="admin-page crm-page">
 
@@ -352,6 +391,29 @@ const CrmDashboard = () => {
                     <p className="muted">{t("crm.subtitle", "Leads, Aktivitäten und Kampagnen im Überblick")}</p>
                 </header>
 
+                <section className="card-grid summary-grid">
+                    <article className="card stat-card">
+                        <div className="stat-label">{t("crm.customerOverview", "Kunden")}</div>
+                        <div className="metric">{customers.length}</div>
+                        <p className="muted">{t("crm.customerCount", "Aktive Accounts im Blick")}</p>
+                    </article>
+                    <article className="card stat-card">
+                        <div className="stat-label">{t("crm.leads", "Leads")}</div>
+                        <div className="metric">{leads.length}</div>
+                        <p className="muted">{t("crm.newLeads", "Neu hinzugefügt und qualifiziert")}</p>
+                    </article>
+                    <article className="card stat-card">
+                        <div className="stat-label">{t("crm.opportunities", "Opportunities")}</div>
+                        <div className="metric">CHF {totalPipelineValue.toLocaleString("de-CH")}</div>
+                        <p className="muted">{t("crm.pipelineValue", "Gesamter Pipeline-Wert")}</p>
+                    </article>
+                    <article className="card stat-card">
+                        <div className="stat-label">{t("crm.campaigns", "Kampagnen")}</div>
+                        <div className="metric">{activeCampaigns.length}</div>
+                        <p className="muted">{t("crm.activeCampaigns", "Derzeit aktive Marketinginitiativen")}</p>
+                    </article>
+                </section>
+
                 {accessDenied ? (
                     <section className="card">
                         <h2>{t("crm.featureDisabledTitle", "CRM nicht freigeschaltet")}</h2>
@@ -361,6 +423,94 @@ const CrmDashboard = () => {
                     </section>
                 ) : (
                     <>
+                        <section className="card-grid focus-grid">
+                            <article className="card">
+                                <div className="section-header">
+                                    <div>
+                                        <p className="eyebrow">{t("crm.leadStatus", "Lead-Status")}</p>
+                                        <h2>{t("crm.leadFlow", "Lead-Fluss")}</h2>
+                                    </div>
+                                    <select value={leadFilter} onChange={(e) => setLeadFilter(e.target.value)}>
+                                        <option value="ALL">{t("common.all", "Alle")}</option>
+                                        {leadStatuses.map((status) => (
+                                            <option key={status} value={status}>{status}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="pill-row">
+                                    {leadStatusCounts.map(({ status, count }) => (
+                                        <span key={status} className="pill">
+                                            {status} · {count}
+                                        </span>
+                                    ))}
+                                </div>
+                            </article>
+                            <article className="card">
+                                <div className="section-header">
+                                    <div>
+                                        <p className="eyebrow">{t("crm.opportunityStages", "Phasen")}</p>
+                                        <h2>{t("crm.pipeline", "Pipeline")}</h2>
+                                    </div>
+                                    <select value={oppFilter} onChange={(e) => setOppFilter(e.target.value)}>
+                                        <option value="ALL">{t("common.all", "Alle")}</option>
+                                        {opportunityStages.map((stage) => (
+                                            <option key={stage} value={stage}>{stage}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="pill-row">
+                                    {opportunityStageCounts.map(({ stage, count }) => (
+                                        <span key={stage} className="pill">
+                                            {stage} · {count}
+                                        </span>
+                                    ))}
+                                </div>
+                            </article>
+                            <article className="card full-width">
+                                <div className="section-header">
+                                    <div>
+                                        <p className="eyebrow">{t("crm.marketing", "Marketing")}</p>
+                                        <h2>{t("crm.marketingOverview", "Kampagnen-Überblick")}</h2>
+                                    </div>
+                                    <select value={campaignFilter} onChange={(e) => setCampaignFilter(e.target.value)}>
+                                        <option value="ALL">{t("common.all", "Alle")}</option>
+                                        {campaignStatuses.map((status) => (
+                                            <option key={status} value={status}>{status}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div className="marketing-grid">
+                                    <div>
+                                        <p className="eyebrow">{t("crm.channelMix", "Kanäle")}</p>
+                                        <div className="pill-row">
+                                            {campaignChannels.map(([channel, amount]) => (
+                                                <span key={channel} className="pill">
+                                                    {channel} · {amount}
+                                                </span>
+                                            ))}
+                                            {campaignChannels.length === 0 && (
+                                                <span className="pill muted">{t("crm.noCampaigns", "Keine aktiven Kampagnen")}</span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <p className="eyebrow">{t("crm.upcoming", "Bevorstehend")}</p>
+                                        <ul className="timeline">
+                                            {upcomingCampaigns.map((campaign) => (
+                                                <li key={campaign.id}>
+                                                    <div className="timeline-title">{campaign.name}</div>
+                                                    <div className="muted">{campaign.startDate ? formatDateTime(campaign.startDate) : t("crm.noStartDate", "Kein Startdatum")}</div>
+                                                </li>
+                                            ))}
+                                            {upcomingCampaigns.length === 0 && (
+                                                <li className="muted">{t("crm.noCampaigns", "Keine aktiven Kampagnen")}</li>
+                                            )}
+                                        </ul>
+                                    </div>
+                                </div>
+                            </article>
+                        </section>
+
                         <section className="card-grid">
                             <article className="card">
                                 <h2>{t("crm.customerOverview", "Kunden")}</h2>
