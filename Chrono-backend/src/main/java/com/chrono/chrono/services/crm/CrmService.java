@@ -215,17 +215,26 @@ public class CrmService {
     }
 
     @Transactional(readOnly = true)
-    public List<CrmLead> getLeadsByStatus(Company company, LeadStatus status) {
+    public List<CrmLead> getLeads(Company company, LeadStatus status) {
+        if (status == null) {
+            return crmLeadRepository.findByCompany(company);
+        }
         return crmLeadRepository.findByCompanyAndStatus(company, status);
     }
 
     @Transactional(readOnly = true)
-    public List<Opportunity> getOpportunitiesByStage(Company company, OpportunityStage stage) {
+    public List<Opportunity> getOpportunities(Company company, OpportunityStage stage) {
+        if (stage == null) {
+            return opportunityRepository.findByCompany(company);
+        }
         return opportunityRepository.findByCompanyAndStage(company, stage);
     }
 
     @Transactional(readOnly = true)
-    public List<Campaign> getCampaignsByStatus(Company company, CampaignStatus status) {
+    public List<Campaign> getCampaigns(Company company, CampaignStatus status) {
+        if (status == null) {
+            return campaignRepository.findByCompany(company);
+        }
         return campaignRepository.findByCompanyAndStatus(company, status);
     }
 

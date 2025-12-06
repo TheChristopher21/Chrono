@@ -8,5 +8,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface CrmLeadRepository extends JpaRepository<CrmLead, Long> {
+    List<CrmLead> findByCompany(Company company);
     List<CrmLead> findByCompanyAndStatus(Company company, LeadStatus status);
 }
