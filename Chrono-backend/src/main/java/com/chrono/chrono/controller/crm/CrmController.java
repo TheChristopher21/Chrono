@@ -337,12 +337,12 @@ public class CrmController {
     }
 
     @GetMapping("/leads")
-    public ResponseEntity<List<CrmLeadDTO>> listLeads(@RequestParam LeadStatus status, Principal principal) {
+    public ResponseEntity<List<CrmLeadDTO>> listLeads(@RequestParam(required = false) LeadStatus status, Principal principal) {
         User user = getUser(principal);
         if (user == null || user.getCompany() == null) {
             return ResponseEntity.status(401).build();
         }
-        List<CrmLeadDTO> leads = crmService.getLeadsByStatus(user.getCompany(), status).stream()
+        List<CrmLeadDTO> leads = crmService.getLeads(user.getCompany(), status).stream()
                 .map(CrmLeadDTO::from)
                 .toList();
         return ResponseEntity.ok(leads);
@@ -388,12 +388,12 @@ public class CrmController {
     }
 
     @GetMapping("/opportunities")
-    public ResponseEntity<List<OpportunityDTO>> listOpportunities(@RequestParam OpportunityStage stage, Principal principal) {
+    public ResponseEntity<List<OpportunityDTO>> listOpportunities(@RequestParam(required = false) OpportunityStage stage, Principal principal) {
         User user = getUser(principal);
         if (user == null || user.getCompany() == null) {
             return ResponseEntity.status(401).build();
         }
-        List<OpportunityDTO> opportunities = crmService.getOpportunitiesByStage(user.getCompany(), stage).stream()
+        List<OpportunityDTO> opportunities = crmService.getOpportunities(user.getCompany(), stage).stream()
                 .map(OpportunityDTO::from)
                 .toList();
         return ResponseEntity.ok(opportunities);
@@ -430,12 +430,12 @@ public class CrmController {
     }
 
     @GetMapping("/campaigns")
-    public ResponseEntity<List<CampaignDTO>> listCampaigns(@RequestParam CampaignStatus status, Principal principal) {
+    public ResponseEntity<List<CampaignDTO>> listCampaigns(@RequestParam(required = false) CampaignStatus status, Principal principal) {
         User user = getUser(principal);
         if (user == null || user.getCompany() == null) {
             return ResponseEntity.status(401).build();
         }
-        List<CampaignDTO> campaigns = crmService.getCampaignsByStatus(user.getCompany(), status).stream()
+        List<CampaignDTO> campaigns = crmService.getCampaigns(user.getCompany(), status).stream()
                 .map(CampaignDTO::from)
                 .toList();
         return ResponseEntity.ok(campaigns);
