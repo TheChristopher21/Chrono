@@ -4,7 +4,15 @@ import api from "../../utils/api.js";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import { useTranslation } from "../../context/LanguageContext.jsx";
 import "../../styles/CrmDashboardScoped.css";
+import KpiSummary from "../../components/crm/KpiSummary.jsx";
+import PipelineOverview from "../../components/crm/PipelineOverview.jsx";
+import SalesBoard from "../../components/crm/SalesBoard.jsx";
+import MarketingBoard from "../../components/crm/MarketingBoard.jsx";
+import EntitySlideOver from "../../components/crm/EntitySlideOver.jsx";
+import TeamPerformance from "../../components/crm/TeamPerformance.jsx";
 
+const DATE_RANGE_PRESETS = ["LAST_30_DAYS", "THIS_QUARTER", "THIS_YEAR", "CUSTOM"];
+const OWNER_FILTERS = ["ALL", "ME"];
 
 const CrmDashboard = () => {
     const { notify } = useNotification();
@@ -13,7 +21,8 @@ const CrmDashboard = () => {
     const [opportunities, setOpportunities] = useState([]);
     const [campaigns, setCampaigns] = useState([]);
     const [customers, setCustomers] = useState([]);
-    const [selectedCustomer, setSelectedCustomer] = useState(null);
+    const [selectedEntity, setSelectedEntity] = useState(null);
+    const [selectedEntityType, setSelectedEntityType] = useState(null);
     const [customerContacts, setCustomerContacts] = useState([]);
     const [customerActivities, setCustomerActivities] = useState([]);
     const [customerAddresses, setCustomerAddresses] = useState([]);
@@ -21,6 +30,8 @@ const CrmDashboard = () => {
     const [leadFilter, setLeadFilter] = useState("ALL");
     const [oppFilter, setOppFilter] = useState("ALL");
     const [campaignFilter, setCampaignFilter] = useState("ALL");
+    const [dateRange, setDateRange] = useState("LAST_30_DAYS");
+    const [ownerFilter, setOwnerFilter] = useState("ALL");
     const [leadForm, setLeadForm] = useState({ companyName: "", contactName: "", email: "", status: "NEW" });
     const [opportunityForm, setOpportunityForm] = useState({ title: "", value: "", probability: "", stage: "QUALIFICATION" });
     const [campaignForm, setCampaignForm] = useState({ name: "", status: "PLANNED", channel: "", startDate: "", endDate: "", budget: "" });
@@ -47,14 +58,32 @@ const CrmDashboard = () => {
         }
         const load = async () => {
             try {
-                const leadParams = leadFilter === "ALL" ? {} : { status: leadFilter };
-                const opportunityParams = oppFilter === "ALL" ? {} : { stage: oppFilter };
-                const campaignParams = campaignFilter === "ALL" ? {} : { status: campaignFilter };
+                const ownerParam = ownerFilter === "ME" ? "me" : undefined;
+                const leadParams = {
+                    ...(leadFilter === "ALL" ? {} : { status: leadFilter }),
+                    ...(dateRange ? { dateRange } : {}),
+                    ...(ownerParam ? { owner: ownerParam } : {})
+                };
+                const opportunityParams = {
+                    ...(oppFilter === "ALL" ? {} : { stage: oppFilter }),
+                    ...(dateRange ? { dateRange } : {}),
+                    ...(ownerParam ? { owner: ownerParam } : {})
+                };
+                const campaignParams = {
+                    ...(campaignFilter === "ALL" ? {} : { status: campaignFilter }),
+                    ...(dateRange ? { dateRange } : {}),
+                    ...(ownerParam ? { owner: ownerParam } : {})
+                };
+                const customerParams = {
+                    ...(dateRange ? { dateRange } : {}),
+                    ...(ownerParam ? { owner: ownerParam } : {})
+                };
+
                 const [leadRes, oppRes, campRes, customerRes] = await Promise.all([
                     api.get("/api/crm/leads", { params: leadParams }),
                     api.get("/api/crm/opportunities", { params: opportunityParams }),
                     api.get("/api/crm/campaigns", { params: campaignParams }),
-                    api.get("/api/customers")
+                    api.get("/api/customers", { params: customerParams })
                 ]);
                 setAccessDenied(false);
                 setLeads(leadRes.data ?? []);
@@ -78,11 +107,12 @@ const CrmDashboard = () => {
             }
         };
         load();
-    }, [notify, t, leadFilter, oppFilter, campaignFilter, accessDenied]);
+    }, [notify, t, leadFilter, oppFilter, campaignFilter, accessDenied, dateRange, ownerFilter]);
 
     const loadCustomerDetails = async (customer) => {
         if (!customer) {
-            setSelectedCustomer(null);
+            setSelectedEntity(null);
+            setSelectedEntityType(null);
             setCustomerContacts([]);
             setCustomerActivities([]);
             setCustomerAddresses([]);
@@ -92,7 +122,8 @@ const CrmDashboard = () => {
         if (accessDenied) {
             return;
         }
-        setSelectedCustomer(customer);
+        setSelectedEntity(customer);
+        setSelectedEntityType("customer");
         try {
             const [contactRes, activityRes, addressRes, documentRes] = await Promise.all([
                 api.get(`/api/crm/customers/${customer.id}/contacts`),
@@ -130,9 +161,13 @@ const CrmDashboard = () => {
         }
     };
 
-    const handleLeadStatusChange = async (leadId, status) => {
+    const handleLeadStatusChange = async (leadId, status, ownerId) => {
         try {
-            await api.patch(`/api/crm/leads/${leadId}`, { status });
+            const payload = { status };
+            if (ownerId) {
+                payload.ownerId = ownerId;
+            }
+            await api.patch(`/api/crm/leads/${leadId}`, payload);
             notify(t("crm.leadUpdated", "Lead aktualisiert."), "success");
             setLeadFilter(status);
         } catch (error) {
@@ -160,9 +195,13 @@ const CrmDashboard = () => {
         }
     };
 
-    const handleOpportunityStageChange = async (id, stage) => {
+    const handleOpportunityStageChange = async (id, stage, ownerId) => {
         try {
-            await api.patch(`/api/crm/opportunities/${id}`, { stage });
+            const payload = { stage };
+            if (ownerId) {
+                payload.ownerId = ownerId;
+            }
+            await api.patch(`/api/crm/opportunities/${id}`, payload);
             notify(t("crm.opportunityUpdated", "Opportunity aktualisiert."), "success");
             setOppFilter(stage);
         } catch (error) {
@@ -206,19 +245,19 @@ const CrmDashboard = () => {
 
     const handleAddressSubmit = async (event) => {
         event.preventDefault();
-        if (!selectedCustomer) return;
+        if (!selectedEntity || selectedEntityType !== "customer") return;
         try {
             const payload = { type: addressForm.type, street: addressForm.street, postalCode: addressForm.postalCode, city: addressForm.city, country: addressForm.country };
             const endpoint = addressForm.id
-                ? `/api/crm/customers/${selectedCustomer.id}/addresses/${addressForm.id}`
-                : `/api/crm/customers/${selectedCustomer.id}/addresses`;
+                ? `/api/crm/customers/${selectedEntity.id}/addresses/${addressForm.id}`
+                : `/api/crm/customers/${selectedEntity.id}/addresses`;
             if (addressForm.id) {
                 await api.put(endpoint, payload);
             } else {
                 await api.post(endpoint, payload);
             }
             notify(t("crm.addressSaved", "Adresse gespeichert."), "success");
-            await loadCustomerDetails(selectedCustomer);
+            await loadCustomerDetails(selectedEntity);
             setAddressForm({ id: null, street: "", postalCode: "", city: "", country: "", type: "OFFICE" });
         } catch (error) {
             console.error("Failed to save address", error);
@@ -227,11 +266,11 @@ const CrmDashboard = () => {
     };
 
     const handleAddressDelete = async (addressId) => {
-        if (!selectedCustomer) return;
+        if (!selectedEntity || selectedEntityType !== "customer") return;
         try {
-            await api.delete(`/api/crm/customers/${selectedCustomer.id}/addresses/${addressId}`);
+            await api.delete(`/api/crm/customers/${selectedEntity.id}/addresses/${addressId}`);
             notify(t("crm.addressDeleted", "Adresse gelöscht."), "success");
-            await loadCustomerDetails(selectedCustomer);
+            await loadCustomerDetails(selectedEntity);
         } catch (error) {
             console.error("Failed to delete address", error);
             notify(t("crm.addressDeleteFailed", "Adresse konnte nicht gelöscht werden."), "error");
@@ -240,19 +279,19 @@ const CrmDashboard = () => {
 
     const handleContactSubmit = async (event) => {
         event.preventDefault();
-        if (!selectedCustomer) return;
+        if (!selectedEntity || selectedEntityType !== "customer") return;
         try {
             const payload = { firstName: contactForm.firstName, lastName: contactForm.lastName, email: contactForm.email, phone: contactForm.phone, role: contactForm.role };
             const endpoint = contactForm.id
-                ? `/api/crm/customers/${selectedCustomer.id}/contacts/${contactForm.id}`
-                : `/api/crm/customers/${selectedCustomer.id}/contacts`;
+                ? `/api/crm/customers/${selectedEntity.id}/contacts/${contactForm.id}`
+                : `/api/crm/customers/${selectedEntity.id}/contacts`;
             if (contactForm.id) {
                 await api.put(endpoint, payload);
             } else {
                 await api.post(endpoint, payload);
             }
             notify(t("crm.contactSaved", "Kontakt gespeichert."), "success");
-            await loadCustomerDetails(selectedCustomer);
+            await loadCustomerDetails(selectedEntity);
             setContactForm({ id: null, firstName: "", lastName: "", email: "", phone: "", role: "" });
         } catch (error) {
             console.error("Failed to save contact", error);
@@ -261,11 +300,11 @@ const CrmDashboard = () => {
     };
 
     const handleContactDelete = async (id) => {
-        if (!selectedCustomer) return;
+        if (!selectedEntity || selectedEntityType !== "customer") return;
         try {
-            await api.delete(`/api/crm/customers/${selectedCustomer.id}/contacts/${id}`);
+            await api.delete(`/api/crm/customers/${selectedEntity.id}/contacts/${id}`);
             notify(t("crm.contactDeleted", "Kontakt gelöscht."), "success");
-            await loadCustomerDetails(selectedCustomer);
+            await loadCustomerDetails(selectedEntity);
         } catch (error) {
             console.error("Failed to delete contact", error);
             notify(t("crm.contactDeleteFailed", "Kontakt konnte nicht gelöscht werden."), "error");
@@ -274,7 +313,7 @@ const CrmDashboard = () => {
 
     const handleActivitySubmit = async (event) => {
         event.preventDefault();
-        if (!selectedCustomer) return;
+        if (!selectedEntity || selectedEntityType !== "customer") return;
         try {
             const payload = {
                 type: activityForm.type,
@@ -283,15 +322,15 @@ const CrmDashboard = () => {
                 timestamp: activityForm.timestamp ? new Date(activityForm.timestamp).toISOString() : undefined
             };
             const endpoint = activityForm.id
-                ? `/api/crm/customers/${selectedCustomer.id}/activities/${activityForm.id}`
-                : `/api/crm/customers/${selectedCustomer.id}/activities`;
+                ? `/api/crm/customers/${selectedEntity.id}/activities/${activityForm.id}`
+                : `/api/crm/customers/${selectedEntity.id}/activities`;
             if (activityForm.id) {
                 await api.put(endpoint, payload);
             } else {
                 await api.post(endpoint, payload);
             }
             notify(t("crm.activitySaved", "Aktivität gespeichert."), "success");
-            await loadCustomerDetails(selectedCustomer);
+            await loadCustomerDetails(selectedEntity);
             setActivityForm({ id: null, notes: "", timestamp: "", contactId: "", type: "NOTE" });
         } catch (error) {
             console.error("Failed to save activity", error);
@@ -300,11 +339,11 @@ const CrmDashboard = () => {
     };
 
     const handleActivityDelete = async (id) => {
-        if (!selectedCustomer) return;
+        if (!selectedEntity || selectedEntityType !== "customer") return;
         try {
-            await api.delete(`/api/crm/customers/${selectedCustomer.id}/activities/${id}`);
+            await api.delete(`/api/crm/customers/${selectedEntity.id}/activities/${id}`);
             notify(t("crm.activityDeleted", "Aktivität gelöscht."), "success");
-            await loadCustomerDetails(selectedCustomer);
+            await loadCustomerDetails(selectedEntity);
         } catch (error) {
             console.error("Failed to delete activity", error);
             notify(t("crm.activityDeleteFailed", "Aktivität konnte nicht gelöscht werden."), "error");
@@ -313,15 +352,15 @@ const CrmDashboard = () => {
 
     const handleDocumentSubmit = async (event) => {
         event.preventDefault();
-        if (!selectedCustomer) return;
+        if (!selectedEntity || selectedEntityType !== "customer") return;
         try {
             const payload = {
                 fileName: documentForm.fileName,
                 url: documentForm.url ? documentForm.url.trim() : undefined
             };
-            await api.post(`/api/crm/customers/${selectedCustomer.id}/documents`, payload);
+            await api.post(`/api/crm/customers/${selectedEntity.id}/documents`, payload);
             notify(t("crm.documentSaved", "Dokument gespeichert."), "success");
-            await loadCustomerDetails(selectedCustomer);
+            await loadCustomerDetails(selectedEntity);
             setDocumentForm({ fileName: "", url: "" });
         } catch (error) {
             console.error("Failed to save document", error);
@@ -330,11 +369,11 @@ const CrmDashboard = () => {
     };
 
     const handleDocumentDelete = async (id) => {
-        if (!selectedCustomer) return;
+        if (!selectedEntity || selectedEntityType !== "customer") return;
         try {
-            await api.delete(`/api/crm/customers/${selectedCustomer.id}/documents/${id}`);
+            await api.delete(`/api/crm/customers/${selectedEntity.id}/documents/${id}`);
             notify(t("crm.documentDeleted", "Dokument gelöscht."), "success");
-            await loadCustomerDetails(selectedCustomer);
+            await loadCustomerDetails(selectedEntity);
         } catch (error) {
             console.error("Failed to delete document", error);
             notify(t("crm.documentDeleteFailed", "Dokument konnte nicht gelöscht werden."), "error");
@@ -381,38 +420,86 @@ const CrmDashboard = () => {
         return Object.entries(counts).sort((a, b) => b[1] - a[1]);
     }, [campaigns, t]);
 
+    const averageDealValue = useMemo(() => {
+        const opportunityCount = opportunities.length;
+        if (opportunityCount === 0) return 0;
+        return totalPipelineValue / opportunityCount;
+    }, [totalPipelineValue, opportunities]);
+
+    const winRate = useMemo(() => {
+        const won = opportunities.filter((opp) => opp.stage === "WON").length;
+        const lost = opportunities.filter((opp) => opp.stage === "LOST").length;
+        if (won + lost === 0) return 0;
+        return (won / (won + lost)) * 100;
+    }, [opportunities]);
+
+    const ownerOptions = useMemo(() => {
+        const owners = new Set();
+        [...leads, ...opportunities, ...customers].forEach((entity) => {
+            if (entity.owner) {
+                owners.add(entity.owner);
+            }
+            if (entity.ownerName) {
+                owners.add(entity.ownerName);
+            }
+        });
+        return Array.from(owners);
+    }, [leads, opportunities, customers]);
+
+    const handleEntityOpen = (type, entity) => {
+        setSelectedEntityType(type);
+        if (type === "customer") {
+            loadCustomerDetails(entity);
+        } else {
+            setSelectedEntity(entity);
+        }
+    };
+
+    const closeSlideOver = () => {
+        setSelectedEntity(null);
+        setSelectedEntityType(null);
+        resetCustomerForms();
+    };
+
     return (
         <div className="admin-page crm-page">
-
             <Navbar />
             <main className="admin-content">
                 <header className="admin-header">
-                    <h1>{t("crm.title", "CRM & Marketing")}</h1>
-                    <p className="muted">{t("crm.subtitle", "Leads, Aktivitäten und Kampagnen im Überblick")}</p>
+                    <div>
+                        <h1>{t("crm.title", "CRM & Marketing")}</h1>
+                        <p className="muted">{t("crm.subtitle", "Leads, Aktivitäten und Kampagnen im Überblick")}</p>
+                    </div>
+                    <div className="crm-filter-bar">
+                        <label>
+                            {t("crm.dateRange", "Zeitraum")}
+                            <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
+                                {DATE_RANGE_PRESETS.map((preset) => (
+                                    <option key={preset} value={preset}>{preset}</option>
+                                ))}
+                            </select>
+                        </label>
+                        <label>
+                            {t("crm.owner", "Owner")}
+                            <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+                                {OWNER_FILTERS.map((filter) => (
+                                    <option key={filter} value={filter}>{filter}</option>
+                                ))}
+                            </select>
+                        </label>
+                    </div>
                 </header>
 
-                <section className="card-grid summary-grid">
-                    <article className="card stat-card">
-                        <div className="stat-label">{t("crm.customerOverview", "Kunden")}</div>
-                        <div className="metric">{customers.length}</div>
-                        <p className="muted">{t("crm.customerCount", "Aktive Accounts im Blick")}</p>
-                    </article>
-                    <article className="card stat-card">
-                        <div className="stat-label">{t("crm.leads", "Leads")}</div>
-                        <div className="metric">{leads.length}</div>
-                        <p className="muted">{t("crm.newLeads", "Neu hinzugefügt und qualifiziert")}</p>
-                    </article>
-                    <article className="card stat-card">
-                        <div className="stat-label">{t("crm.opportunities", "Opportunities")}</div>
-                        <div className="metric">CHF {totalPipelineValue.toLocaleString("de-CH")}</div>
-                        <p className="muted">{t("crm.pipelineValue", "Gesamter Pipeline-Wert")}</p>
-                    </article>
-                    <article className="card stat-card">
-                        <div className="stat-label">{t("crm.campaigns", "Kampagnen")}</div>
-                        <div className="metric">{activeCampaigns.length}</div>
-                        <p className="muted">{t("crm.activeCampaigns", "Derzeit aktive Marketinginitiativen")}</p>
-                    </article>
-                </section>
+                <KpiSummary
+                    customers={customers.length}
+                    leads={leads.length}
+                    pipelineValue={totalPipelineValue}
+                    activeCampaigns={activeCampaigns.length}
+                    averageDealValue={averageDealValue}
+                    winRate={winRate}
+                    dateRange={dateRange}
+                    ownerFilter={ownerFilter}
+                />
 
                 {accessDenied ? (
                     <section className="card">
@@ -423,528 +510,102 @@ const CrmDashboard = () => {
                     </section>
                 ) : (
                     <>
-                        <section className="card-grid focus-grid">
-                            <article className="card">
-                                <div className="section-header">
-                                    <div>
-                                        <p className="eyebrow">{t("crm.leadStatus", "Lead-Status")}</p>
-                                        <h2>{t("crm.leadFlow", "Lead-Fluss")}</h2>
-                                    </div>
-                                    <select value={leadFilter} onChange={(e) => setLeadFilter(e.target.value)}>
-                                        <option value="ALL">{t("common.all", "Alle")}</option>
-                                        {leadStatuses.map((status) => (
-                                            <option key={status} value={status}>{status}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="pill-row">
-                                    {leadStatusCounts.map(({ status, count }) => (
-                                        <span key={status} className="pill">
-                                            {status} · {count}
-                                        </span>
-                                    ))}
-                                </div>
-                            </article>
-                            <article className="card">
-                                <div className="section-header">
-                                    <div>
-                                        <p className="eyebrow">{t("crm.opportunityStages", "Phasen")}</p>
-                                        <h2>{t("crm.pipeline", "Pipeline")}</h2>
-                                    </div>
-                                    <select value={oppFilter} onChange={(e) => setOppFilter(e.target.value)}>
-                                        <option value="ALL">{t("common.all", "Alle")}</option>
-                                        {opportunityStages.map((stage) => (
-                                            <option key={stage} value={stage}>{stage}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="pill-row">
-                                    {opportunityStageCounts.map(({ stage, count }) => (
-                                        <span key={stage} className="pill">
-                                            {stage} · {count}
-                                        </span>
-                                    ))}
-                                </div>
-                            </article>
-                            <article className="card full-width">
-                                <div className="section-header">
-                                    <div>
-                                        <p className="eyebrow">{t("crm.marketing", "Marketing")}</p>
-                                        <h2>{t("crm.marketingOverview", "Kampagnen-Überblick")}</h2>
-                                    </div>
-                                    <select value={campaignFilter} onChange={(e) => setCampaignFilter(e.target.value)}>
-                                        <option value="ALL">{t("common.all", "Alle")}</option>
-                                        {campaignStatuses.map((status) => (
-                                            <option key={status} value={status}>{status}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="marketing-grid">
-                                    <div>
-                                        <p className="eyebrow">{t("crm.channelMix", "Kanäle")}</p>
-                                        <div className="pill-row">
-                                            {campaignChannels.map(([channel, amount]) => (
-                                                <span key={channel} className="pill">
-                                                    {channel} · {amount}
-                                                </span>
-                                            ))}
-                                            {campaignChannels.length === 0 && (
-                                                <span className="pill muted">{t("crm.noCampaigns", "Keine aktiven Kampagnen")}</span>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="eyebrow">{t("crm.upcoming", "Bevorstehend")}</p>
-                                        <ul className="timeline">
-                                            {upcomingCampaigns.map((campaign) => (
-                                                <li key={campaign.id}>
-                                                    <div className="timeline-title">{campaign.name}</div>
-                                                    <div className="muted">{campaign.startDate ? formatDateTime(campaign.startDate) : t("crm.noStartDate", "Kein Startdatum")}</div>
-                                                </li>
-                                            ))}
-                                            {upcomingCampaigns.length === 0 && (
-                                                <li className="muted">{t("crm.noCampaigns", "Keine aktiven Kampagnen")}</li>
-                                            )}
-                                        </ul>
-                                    </div>
-                                </div>
-                            </article>
-                        </section>
+                        <PipelineOverview
+                            leadFilter={leadFilter}
+                            setLeadFilter={setLeadFilter}
+                            oppFilter={oppFilter}
+                            setOppFilter={setOppFilter}
+                            campaignFilter={campaignFilter}
+                            setCampaignFilter={setCampaignFilter}
+                            leadStatuses={leadStatuses}
+                            opportunityStages={opportunityStages}
+                            campaignStatuses={campaignStatuses}
+                            leadStatusCounts={leadStatusCounts}
+                            opportunityStageCounts={opportunityStageCounts}
+                            campaignChannels={campaignChannels}
+                            upcomingCampaigns={upcomingCampaigns}
+                            formatDateTime={formatDateTime}
+                        />
 
-                        <section className="card-grid">
-                            <article className="card">
-                                <h2>{t("crm.customerOverview", "Kunden")}</h2>
-                                <ul className="list-unstyled">
-                                    {customers.map((customer) => (
-                                        <li key={customer.id}>
-                                            <button
-                                                type="button"
-                                                className={`link-button${selectedCustomer?.id === customer.id ? " active" : ""}`}
-                                                onClick={() => loadCustomerDetails(customer)}
-                                            >
-                                                {customer.name}
-                                            </button>
-                                        </li>
-                                    ))}
-                                    {customers.length === 0 && <li>{t("crm.noCustomers", "Keine Kunden")}</li>}
-                                </ul>
-                            </article>
-                            {selectedCustomer && (
-                                <article className="card customer-detail">
-                                    <header>
-                                        <h2>{selectedCustomer.name}</h2>
-                                        <button
-                                            type="button"
-                                            className="ghost"
-                                            onClick={() => {
-                                                setSelectedCustomer(null);
-                                                setCustomerContacts([]);
-                                                setCustomerActivities([]);
-                                                setCustomerAddresses([]);
-                                                setCustomerDocuments([]);
-                                                resetCustomerForms();
-                                            }}
-                                        >
-                                            {t("common.close", "Schließen")}
-                                        </button>
-                                    </header>
-                                    <div className="detail-grid">
-                                        <section>
-                                            <h3>{t("crm.addresses", "Adressen")}</h3>
-                                            <ul className="list-unstyled">
-                                                {customerAddresses.map((address) => (
-                                                    <li key={address.id}>
-                                                        <div>
-                                                            <strong>{address.type}</strong>: {address.street}, {address.postalCode} {address.city}
-                                                        </div>
-                                                        <div className="action-row">
-                                                            <button
-                                                                type="button"
-                                                                className="link-button"
-                                                                onClick={() => setAddressForm({ id: address.id, street: address.street ?? "", postalCode: address.postalCode ?? "", city: address.city ?? "", country: address.country ?? "", type: address.type ?? "OFFICE" })}
-                                                            >
-                                                                {t("common.edit", "Bearbeiten")}
-                                                            </button>
-                                                            <button type="button" className="link-button danger" onClick={() => handleAddressDelete(address.id)}>{t("common.delete", "Löschen")}</button>
-                                                        </div>
-                                                    </li>
-                                                ))}
-                                                {customerAddresses.length === 0 && <li>{t("crm.noAddresses", "Keine Adressen")}</li>}
-                                            </ul>
-                                            <form className="form-grid" onSubmit={handleAddressSubmit}>
-                                                <label>
-                                                    {t("crm.street", "Straße")}
-                                                    <input type="text" value={addressForm.street} onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })} required />
-                                                </label>
-                                                <label>
-                                                    {t("crm.postalCode", "PLZ")}
-                                                    <input type="text" value={addressForm.postalCode} onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })} />
-                                                </label>
-                                                <label>
-                                                    {t("crm.city", "Ort")}
-                                                    <input type="text" value={addressForm.city} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} />
-                                                </label>
-                                                <label>
-                                                    {t("crm.country", "Land")}
-                                                    <input type="text" value={addressForm.country} onChange={(e) => setAddressForm({ ...addressForm, country: e.target.value })} />
-                                                </label>
-                                                <label>
-                                                    {t("crm.addressType", "Typ")}
-                                                    <select value={addressForm.type} onChange={(e) => setAddressForm({ ...addressForm, type: e.target.value })}>
-                                                        <option value="OFFICE">{t("crm.office", "Büro")}</option>
-                                                        <option value="BILLING">{t("crm.billing", "Rechnung")}</option>
-                                                        <option value="SHIPPING">{t("crm.shipping", "Versand")}</option>
-                                                    </select>
-                                                </label>
-                                                <div className="form-actions">
-                                                    <button type="submit" className="primary">{addressForm.id ? t("common.update", "Aktualisieren") : t("common.add", "Hinzufügen")}</button>
-                                                    {addressForm.id && <button type="button" className="ghost" onClick={() => setAddressForm({ id: null, street: "", postalCode: "", city: "", country: "", type: "OFFICE" })}>{t("common.cancel", "Abbrechen")}</button>}
-                                                </div>
-                                            </form>
-                                        </section>
-                                        <section>
-                                            <h3>{t("crm.contacts", "Kontakte")}</h3>
-                                            <ul className="list-unstyled">
-                                                {customerContacts.map((contact) => (
-                                                    <li key={contact.id}>
-                                                        <div>
-                                                            <strong>{contact.firstName} {contact.lastName}</strong> – {contact.email}
-                                                            {contact.role && <span className="muted"> ({contact.role})</span>}
-                                                        </div>
-                                                        <div className="action-row">
-                                                            <button
-                                                                type="button"
-                                                                className="link-button"
-                                                                onClick={() => setContactForm({ id: contact.id, firstName: contact.firstName ?? "", lastName: contact.lastName ?? "", email: contact.email ?? "", phone: contact.phone ?? "", role: contact.role ?? "" })}
-                                                            >
-                                                                {t("common.edit", "Bearbeiten")}
-                                                            </button>
-                                                            <button type="button" className="link-button danger" onClick={() => handleContactDelete(contact.id)}>{t("common.delete", "Löschen")}</button>
-                                                        </div>
-                                                    </li>
-                                                ))}
-                                                {customerContacts.length === 0 && <li>{t("crm.noContacts", "Keine Kontakte")}</li>}
-                                            </ul>
-                                            <form className="form-grid" onSubmit={handleContactSubmit}>
-                                                <label>
-                                                    {t("crm.firstName", "Vorname")}
-                                                    <input type="text" value={contactForm.firstName} onChange={(e) => setContactForm({ ...contactForm, firstName: e.target.value })} required />
-                                                </label>
-                                                <label>
-                                                    {t("crm.lastName", "Nachname")}
-                                                    <input type="text" value={contactForm.lastName} onChange={(e) => setContactForm({ ...contactForm, lastName: e.target.value })} required />
-                                                </label>
-                                                <label>
-                                                    Email
-                                                    <input type="email" value={contactForm.email} onChange={(e) => setContactForm({ ...contactForm, email: e.target.value })} />
-                                                </label>
-                                                <label>
-                                                    {t("crm.phone", "Telefon")}
-                                                    <input type="text" value={contactForm.phone} onChange={(e) => setContactForm({ ...contactForm, phone: e.target.value })} />
-                                                </label>
-                                                <label>
-                                                    {t("crm.role", "Funktion")}
-                                                    <input type="text" value={contactForm.role} onChange={(e) => setContactForm({ ...contactForm, role: e.target.value })} />
-                                                </label>
-                                                <div className="form-actions">
-                                                    <button type="submit" className="primary">{contactForm.id ? t("common.update", "Aktualisieren") : t("common.add", "Hinzufügen")}</button>
-                                                    {contactForm.id && <button type="button" className="ghost" onClick={() => setContactForm({ id: null, firstName: "", lastName: "", email: "", phone: "", role: "" })}>{t("common.cancel", "Abbrechen")}</button>}
-                                                </div>
-                                            </form>
-                                        </section>
-                                        <section className="activities">
-                                            <h3>{t("crm.activities", "Aktivitäten")}</h3>
-                                            <ul className="list-unstyled">
-                                                {customerActivities.map((activity) => (
-                                                    <li key={activity.id}>
-                                                        <div>
-                                                            <strong>{activity.type}</strong> – {activity.notes}
-                                                            {activity.createdAt && <span className="muted"> ({formatDateTime(activity.createdAt)})</span>}
-                                                        </div>
-                                                        <div className="action-row">
-                                                            <button
-                                                                type="button"
-                                                                className="link-button"
-                                                                onClick={() => setActivityForm({ id: activity.id, notes: activity.notes ?? "", timestamp: activity.createdAt ? activity.createdAt.replace("Z", "").slice(0, 16) : "", contactId: activity.contactId ?? "", type: activity.type ?? "NOTE" })}
-                                                            >
-                                                                {t("common.edit", "Bearbeiten")}
-                                                            </button>
-                                                            <button type="button" className="link-button danger" onClick={() => handleActivityDelete(activity.id)}>{t("common.delete", "Löschen")}</button>
-                                                        </div>
-                                                    </li>
-                                                ))}
-                                                {customerActivities.length === 0 && <li>{t("crm.noActivities", "Keine Aktivitäten")}</li>}
-                                            </ul>
-                                            <form className="form-grid" onSubmit={handleActivitySubmit}>
-                                                <label>
-                                                    {t("crm.type", "Typ")}
-                                                    <select value={activityForm.type} onChange={(e) => setActivityForm({ ...activityForm, type: e.target.value })}>
-                                                        <option value="NOTE">{t("crm.note", "Notiz")}</option>
-                                                        <option value="CALL">{t("crm.call", "Anruf")}</option>
-                                                        <option value="EMAIL">Email</option>
-                                                        <option value="MEETING">{t("crm.meeting", "Meeting")}</option>
-                                                    </select>
-                                                </label>
-                                                <label>
-                                                    {t("crm.timestamp", "Zeitpunkt")}
-                                                    <input type="datetime-local" value={activityForm.timestamp} onChange={(e) => setActivityForm({ ...activityForm, timestamp: e.target.value })} />
-                                                </label>
-                                                <label>
-                                                    {t("crm.contact", "Kontakt")}
-                                                    <select value={activityForm.contactId} onChange={(e) => setActivityForm({ ...activityForm, contactId: e.target.value })}>
-                                                        <option value="">{t("crm.optional", "Optional")}</option>
-                                                        {customerContacts.map((contact) => (
-                                                            <option key={contact.id} value={contact.id}>{contact.firstName} {contact.lastName}</option>
-                                                        ))}
-                                                    </select>
-                                                </label>
-                                                <label className="full-width">
-                                                    {t("crm.notes", "Notizen")}
-                                                    <textarea value={activityForm.notes} onChange={(e) => setActivityForm({ ...activityForm, notes: e.target.value })} required />
-                                                </label>
-                                                <div className="form-actions">
-                                                    <button type="submit" className="primary">{activityForm.id ? t("common.update", "Aktualisieren") : t("common.add", "Hinzufügen")}</button>
-                                                    {activityForm.id && <button type="button" className="ghost" onClick={() => setActivityForm({ id: null, notes: "", timestamp: "", contactId: "", type: "NOTE" })}>{t("common.cancel", "Abbrechen")}</button>}
-                                                </div>
-                                            </form>
-                                        </section>
-                                        <section>
-                                            <h3>{t("crm.documents", "Dokumente")}</h3>
-                                            <ul className="list-unstyled">
-                                                {customerDocuments.map((document) => (
-                                                    <li key={document.id}>
-                                                        <div>
-                                                            <strong>{document.fileName}</strong>
-                                                            {document.uploadedBy && <span className="muted"> ({document.uploadedBy})</span>}
-                                                        </div>
-                                                        <div className="muted">
-                                                            {document.uploadedAt ? formatDateTime(document.uploadedAt) : t("crm.noTimestamp", "Kein Zeitstempel")}
-                                                        </div>
-                                                        <div className="action-row">
-                                                            {document.url && (
-                                                                <a className="link-button" href={document.url} target="_blank" rel="noreferrer">
-                                                                    {t("crm.openDocument", "Öffnen")}
-                                                                </a>
-                                                            )}
-                                                            <button type="button" className="link-button danger" onClick={() => handleDocumentDelete(document.id)}>{t("common.delete", "Löschen")}</button>
-                                                        </div>
-                                                    </li>
-                                                ))}
-                                                {customerDocuments.length === 0 && <li>{t("crm.noDocuments", "Keine Dokumente")}</li>}
-                                            </ul>
-                                            <form className="form-grid" onSubmit={handleDocumentSubmit}>
-                                                <label>
-                                                    {t("crm.documentName", "Dateiname")}
-                                                    <input type="text" value={documentForm.fileName} onChange={(e) => setDocumentForm({ ...documentForm, fileName: e.target.value })} required />
-                                                </label>
-                                                <label className="full-width">
-                                                    {t("crm.documentUrl", "Link (optional)")}
-                                                    <input type="url" value={documentForm.url} onChange={(e) => setDocumentForm({ ...documentForm, url: e.target.value })} />
-                                                </label>
-                                                <div className="form-actions">
-                                                    <button type="submit" className="primary">{t("crm.addDocument", "Dokument hinzufügen")}</button>
-                                                </div>
-                                            </form>
-                                        </section>
-                                    </div>
-                                </article>
-                            )}
-                        </section>
+                        <SalesBoard
+                            t={t}
+                            leads={leads}
+                            opportunities={opportunities}
+                            customers={customers}
+                            leadStatuses={leadStatuses}
+                            opportunityStages={opportunityStages}
+                            ownerOptions={ownerOptions}
+                            onLeadUpdate={handleLeadStatusChange}
+                            onOpportunityUpdate={handleOpportunityStageChange}
+                            onLeadCreate={handleLeadSubmit}
+                            onOpportunityCreate={handleOpportunitySubmit}
+                            leadForm={leadForm}
+                            setLeadForm={setLeadForm}
+                            opportunityForm={opportunityForm}
+                            setOpportunityForm={setOpportunityForm}
+                            onEntitySelect={handleEntityOpen}
+                            dateRange={dateRange}
+                            ownerFilter={ownerFilter}
+                        />
 
-                        <section className="card">
-                            <div className="section-header">
-                                <h2>{t("crm.leadList", "Leads")}</h2>
-                                <select value={leadFilter} onChange={(e) => setLeadFilter(e.target.value)}>
-                                    {leadStatuses.map((status) => (
-                                        <option key={status} value={status}>{status}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="two-column">
-                                <ul className="list-unstyled">
-                                    {leads.map((lead) => (
-                                        <li key={lead.id}>
-                                            <div>
-                                                <strong>{lead.companyName || lead.contactName}</strong> – {lead.email}
-                                            </div>
-                                            <div className="action-row">
-                                                <label>
-                                                    {t("crm.status", "Status")}
-                                                    <select value={lead.status} onChange={(e) => handleLeadStatusChange(lead.id, e.target.value)}>
-                                                        {leadStatuses.map((status) => (
-                                                            <option key={status} value={status}>{status}</option>
-                                                        ))}
-                                                    </select>
-                                                </label>
-                                            </div>
-                                        </li>
-                                    ))}
-                                    {leads.length === 0 && <li>{t("crm.noLeads", "Keine Leads")}</li>}
-                                </ul>
-                                <form className="form-grid" onSubmit={handleLeadSubmit}>
-                                    <label>
-                                        {t("crm.company", "Firma")}
-                                        <input type="text" value={leadForm.companyName} onChange={(e) => setLeadForm({ ...leadForm, companyName: e.target.value })} />
-                                    </label>
-                                    <label>
-                                        {t("crm.contactName", "Ansprechpartner")}
-                                        <input type="text" value={leadForm.contactName} onChange={(e) => setLeadForm({ ...leadForm, contactName: e.target.value })} />
-                                    </label>
-                                    <label>
-                                        Email
-                                        <input type="email" value={leadForm.email} onChange={(e) => setLeadForm({ ...leadForm, email: e.target.value })} required />
-                                    </label>
-                                    <label>
-                                        {t("crm.status", "Status")}
-                                        <select value={leadForm.status} onChange={(e) => setLeadForm({ ...leadForm, status: e.target.value })}>
-                                            {leadStatuses.map((status) => (
-                                                <option key={status} value={status}>{status}</option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                    <button type="submit" className="primary">{t("crm.addLead", "Lead anlegen")}</button>
-                                </form>
-                            </div>
-                        </section>
+                        <MarketingBoard
+                            t={t}
+                            campaigns={campaigns}
+                            campaignStatuses={campaignStatuses}
+                            campaignFilter={campaignFilter}
+                            setCampaignFilter={setCampaignFilter}
+                            campaignForm={campaignForm}
+                            setCampaignForm={setCampaignForm}
+                            onCampaignCreate={handleCampaignSubmit}
+                            onCampaignUpdate={handleCampaignUpdate}
+                            upcomingCampaigns={upcomingCampaigns}
+                            formatDateTime={formatDateTime}
+                            dateRange={dateRange}
+                            ownerFilter={ownerFilter}
+                        />
 
-                        <section className="card">
-                            <div className="section-header">
-                                <h2>{t("crm.opportunityList", "Opportunities")}</h2>
-                                <select value={oppFilter} onChange={(e) => setOppFilter(e.target.value)}>
-                                    {opportunityStages.map((stage) => (
-                                        <option key={stage} value={stage}>{stage}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="two-column">
-                                <ul className="list-unstyled">
-                                    {opportunities.map((opportunity) => (
-                                        <li key={opportunity.id}>
-                                            <div>
-                                                <strong>{opportunity.title}</strong> – CHF {Number(opportunity.value ?? 0).toFixed(2)}
-                                            </div>
-                                            <div className="action-row">
-                                                <label>
-                                                    {t("crm.stage", "Phase")}
-                                                    <select value={opportunity.stage} onChange={(e) => handleOpportunityStageChange(opportunity.id, e.target.value)}>
-                                                        {opportunityStages.map((stage) => (
-                                                            <option key={stage} value={stage}>{stage}</option>
-                                                        ))}
-                                                    </select>
-                                                </label>
-                                            </div>
-                                        </li>
-                                    ))}
-                                    {opportunities.length === 0 && <li>{t("crm.noOpportunities", "Keine Opportunities")}</li>}
-                                </ul>
-                                <form className="form-grid" onSubmit={handleOpportunitySubmit}>
-                                    <label>
-                                        {t("crm.title", "Titel")}
-                                        <input type="text" value={opportunityForm.title} onChange={(e) => setOpportunityForm({ ...opportunityForm, title: e.target.value })} required />
-                                    </label>
-                                    <label>
-                                        {t("crm.value", "Wert")}
-                                        <input type="number" step="0.01" value={opportunityForm.value} onChange={(e) => setOpportunityForm({ ...opportunityForm, value: e.target.value })} />
-                                    </label>
-                                    <label>
-                                        {t("crm.probability", "Wahrscheinlichkeit")}
-                                        <input type="number" step="0.01" value={opportunityForm.probability} onChange={(e) => setOpportunityForm({ ...opportunityForm, probability: e.target.value })} />
-                                    </label>
-                                    <label>
-                                        {t("crm.stage", "Phase")}
-                                        <select value={opportunityForm.stage} onChange={(e) => setOpportunityForm({ ...opportunityForm, stage: e.target.value })}>
-                                            {opportunityStages.map((stage) => (
-                                                <option key={stage} value={stage}>{stage}</option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                    <button type="submit" className="primary">{t("crm.addOpportunity", "Opportunity anlegen")}</button>
-                                </form>
-                            </div>
-                        </section>
-
-                        <section className="card">
-                            <div className="section-header">
-                                <h2>{t("crm.campaignList", "Kampagnen")}</h2>
-                                <select value={campaignFilter} onChange={(e) => setCampaignFilter(e.target.value)}>
-                                    {campaignStatuses.map((status) => (
-                                        <option key={status} value={status}>{status}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="two-column">
-                                <ul className="list-unstyled">
-                                    {campaigns.map((campaign) => {
-                                        const channelLabel = campaign.channel || t("crm.noChannel", "Kein Kanal definiert");
-                                        const budgetLabel = typeof campaign.budget === "number"
-                                            ? `CHF ${campaign.budget.toLocaleString("de-CH")}`
-                                            : t("crm.noBudget", "Kein Budget hinterlegt");
-                                        let dateLabel = "";
-                                        if (campaign.startDate && campaign.endDate) {
-                                            dateLabel = `${campaign.startDate} – ${campaign.endDate}`;
-                                        } else if (campaign.startDate) {
-                                            dateLabel = `${t("crm.startDate", "Start")}: ${campaign.startDate}`;
-                                        } else if (campaign.endDate) {
-                                            dateLabel = `${t("crm.endDate", "Ende")}: ${campaign.endDate}`;
-                                        }
-                                        return (
-                                            <li key={campaign.id}>
-                                                <div>
-                                                    <strong>{campaign.name}</strong> – {channelLabel}
-                                                    <span className="muted"> · {budgetLabel}</span>
-                                                </div>
-                                                {dateLabel && <div className="muted">{dateLabel}</div>}
-                                                <div className="action-row">
-                                                    <label>
-                                                        {t("crm.status", "Status")}
-                                                        <select value={campaign.status} onChange={(e) => handleCampaignUpdate(campaign.id, e.target.value)}>
-                                                            {campaignStatuses.map((status) => (
-                                                                <option key={status} value={status}>{status}</option>
-                                                            ))}
-                                                        </select>
-                                                    </label>
-                                                </div>
-                                            </li>
-                                        );
-                                    })}
-                                    {campaigns.length === 0 && <li>{t("crm.noCampaigns", "Keine aktiven Kampagnen")}</li>}
-                                </ul>
-                                <form className="form-grid" onSubmit={handleCampaignSubmit}>
-                                    <label>
-                                        {t("crm.campaignName", "Name")}
-                                        <input type="text" value={campaignForm.name} onChange={(e) => setCampaignForm({ ...campaignForm, name: e.target.value })} required />
-                                    </label>
-                                    <label>
-                                        {t("crm.channel", "Kanal")}
-                                        <input type="text" value={campaignForm.channel} onChange={(e) => setCampaignForm({ ...campaignForm, channel: e.target.value })} />
-                                    </label>
-                                    <label>
-                                        {t("crm.startDate", "Start")}
-                                        <input type="date" value={campaignForm.startDate} onChange={(e) => setCampaignForm({ ...campaignForm, startDate: e.target.value })} />
-                                    </label>
-                                    <label>
-                                        {t("crm.endDate", "Ende")}
-                                        <input type="date" value={campaignForm.endDate} onChange={(e) => setCampaignForm({ ...campaignForm, endDate: e.target.value })} />
-                                    </label>
-                                    <label>
-                                        {t("crm.budget", "Budget")}
-                                        <input type="number" min="0" step="1" value={campaignForm.budget} onChange={(e) => setCampaignForm({ ...campaignForm, budget: e.target.value })} />
-                                    </label>
-                                    <label>
-                                        {t("crm.status", "Status")}
-                                        <select value={campaignForm.status} onChange={(e) => setCampaignForm({ ...campaignForm, status: e.target.value })}>
-                                            {campaignStatuses.map((status) => (
-                                                <option key={status} value={status}>{status}</option>
-                                            ))}
-                                        </select>
-                                    </label>
-                                    <button type="submit" className="primary">{t("crm.addCampaign", "Kampagne anlegen")}</button>
-                                </form>
-                            </div>
-                        </section>
+                        <TeamPerformance
+                            t={t}
+                            leads={leads}
+                            opportunities={opportunities}
+                            activities={customerActivities}
+                            ownerOptions={ownerOptions}
+                            dateRange={dateRange}
+                            ownerFilter={ownerFilter}
+                        />
                     </>
                 )}
             </main>
+
+            <EntitySlideOver
+                t={t}
+                isOpen={!!selectedEntity}
+                entityType={selectedEntityType}
+                entity={selectedEntity}
+                onClose={closeSlideOver}
+                contacts={customerContacts}
+                activities={customerActivities}
+                addresses={customerAddresses}
+                documents={customerDocuments}
+                contactForm={contactForm}
+                setContactForm={setContactForm}
+                activityForm={activityForm}
+                setActivityForm={setActivityForm}
+                addressForm={addressForm}
+                setAddressForm={setAddressForm}
+                documentForm={documentForm}
+                setDocumentForm={setDocumentForm}
+                onContactSubmit={handleContactSubmit}
+                onContactDelete={handleContactDelete}
+                onActivitySubmit={handleActivitySubmit}
+                onActivityDelete={handleActivityDelete}
+                onAddressSubmit={handleAddressSubmit}
+                onAddressDelete={handleAddressDelete}
+                onDocumentSubmit={handleDocumentSubmit}
+                onDocumentDelete={handleDocumentDelete}
+                formatDateTime={formatDateTime}
+                resetForms={resetCustomerForms}
+            />
         </div>
     );
 };
