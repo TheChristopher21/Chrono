@@ -44,13 +44,41 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+        if (user.getPassword() == null) {
+            throw new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE);
+        }
+
+        String storedPassword = user.getPassword();
+        String normalizedPassword = normalizeLegacyBcryptHash(storedPassword);
+
+        if (!storedPassword.equals(normalizedPassword)) {
+            user.setPassword(normalizedPassword);
+            userRepository.save(user);
+        }
+
+        if (!passwordEncoder.matches(request.getPassword(), normalizedPassword)) {
             throw new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE);
         }
 
         // Token (mit user-Daten gehasht) generieren
         String token = jwtUtil.generateTokenWithUser(user);
         return new AuthResponse(token);
+    }
+
+    private String normalizeLegacyBcryptHash(String password) {
+        if (password == null) {
+            return null;
+        }
+
+        // Some legacy hashes were stored without the BCrypt version prefix (e.g. "$10$...").
+        // Spring's BCryptPasswordEncoder expects the full prefix ("$2a$10$...") and
+        // rejects the shortened variant. To keep affected users able to log in, pad the
+        // missing "$2a" prefix once and persist the corrected hash.
+        if (password.startsWith("$") && !password.startsWith("$2")) {
+            return "$2a" + password;
+        }
+
+        return password;
     }
 
     /**
