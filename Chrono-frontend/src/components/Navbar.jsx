@@ -425,7 +425,10 @@ const Navbar = () => {
                                     <Link to="/whats-new" onClick={() => setOpenUser(false)}>
                                         {t('navbar.history','Update-Verlauf')}
                                     </Link>
-                                    <Link to="/admin/change-password" onClick={() => setOpenUser(false)}>
+                                    <Link
+                                        to={isAdmin ? '/admin/change-password' : '/personal-data'}
+                                        onClick={() => setOpenUser(false)}
+                                    >
                                         {t('admin.changePasswordTitle','Passwort ändern')}
                                     </Link>
                                     <button className={styles['navbar-logout']} onClick={() => { setOpenUser(false); logout(); }}>
