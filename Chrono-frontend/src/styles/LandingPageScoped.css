@@ -3,12 +3,12 @@
    ========================================================================== */
 
 .landing-page.scoped-landing {
-    --hue: 223;
+    --hue: 227;
     --radius: 18px;
     --radius-lg: 26px;
-    --shadow-sm: 0 12px 40px rgba(15, 25, 55, 0.12);
-    --shadow-md: 0 24px 60px rgba(12, 28, 64, 0.18);
-    --shadow-lg: 0 40px 90px rgba(12, 20, 48, 0.25);
+    --shadow-sm: 0 16px 40px rgba(9, 16, 36, 0.18);
+    --shadow-md: 0 24px 70px rgba(10, 18, 45, 0.25);
+    --shadow-lg: 0 48px 120px rgba(8, 14, 38, 0.36);
     --space-1: 0.5rem;
     --space-2: 0.9rem;
     --space-3: 1.35rem;
@@ -17,23 +17,25 @@
     --space-6: 3.6rem;
     --space-7: 5rem;
 
-    --c-bg: #050918;
+    --c-bg: #040713;
     --c-surface: rgba(12, 20, 45, 0.82);
-    --c-surface-2: rgba(18, 28, 58, 0.86);
-    --c-surface-3: rgba(255, 255, 255, 0.06);
+    --c-surface-2: rgba(18, 30, 64, 0.86);
+    --c-surface-3: rgba(255, 255, 255, 0.08);
     --c-text: #f5f7ff;
     --c-text-muted: #a9b4d9;
     --c-border: rgba(120, 140, 200, 0.16);
-    --c-primary: hsl(var(--hue) 92% 65%);
-    --c-primary-2: hsl(var(--hue) 92% 58%);
+    --c-primary: hsl(var(--hue) 92% 63%);
+    --c-primary-2: hsl(var(--hue) 90% 55%);
+    --c-accent: #48e5c2;
 
     isolation: isolate;
     position: relative;
     font-family: "Inter", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     color: var(--c-text);
-    background: radial-gradient(circle at 10% 10%, rgba(63, 110, 255, 0.25), transparent 55%),
-        radial-gradient(circle at 90% 0%, rgba(58, 90, 255, 0.18), transparent 50%),
-        linear-gradient(180deg, #020510 0%, #080d1c 100%);
+    background: radial-gradient(circle at 12% 15%, rgba(75, 130, 255, 0.28), transparent 52%),
+        radial-gradient(circle at 88% 0%, rgba(58, 110, 255, 0.22), transparent 48%),
+        radial-gradient(circle at 60% 80%, rgba(72, 229, 194, 0.12), transparent 58%),
+        linear-gradient(180deg, #020510 0%, #070c1f 100%);
     min-height: 100vh;
 }
 
@@ -43,26 +45,28 @@
 }
 
 [data-theme="light"] .landing-page.scoped-landing {
-    --c-bg: #f7f8ff;
-    --c-surface: rgba(255, 255, 255, 0.94);
-    --c-surface-2: rgba(235, 240, 255, 0.92);
+    --c-bg: #f6f8ff;
+    --c-surface: rgba(255, 255, 255, 0.96);
+    --c-surface-2: rgba(235, 240, 255, 0.94);
     --c-surface-3: rgba(35, 65, 160, 0.06);
     --c-text: #10142a;
     --c-text-muted: #495477;
     --c-border: rgba(40, 70, 160, 0.12);
-    --c-primary: hsl(var(--hue) 90% 58%);
-    --c-primary-2: hsl(var(--hue) 88% 50%);
+    --c-primary: hsl(var(--hue) 90% 55%);
+    --c-primary-2: hsl(var(--hue) 88% 48%);
+    --c-accent: #1cc7a5;
     background: radial-gradient(circle at 20% 10%, rgba(90, 120, 255, 0.18), transparent 55%),
         radial-gradient(circle at 80% 0%, rgba(160, 180, 255, 0.2), transparent 52%),
-        linear-gradient(180deg, #eef2ff 0%, #f7f8ff 100%);
+        radial-gradient(circle at 55% 80%, rgba(72, 229, 194, 0.15), transparent 56%),
+        linear-gradient(180deg, #edf2ff 0%, #f7f8ff 100%);
 }
 
 .landing-page.scoped-landing::before {
     content: "";
     position: fixed;
     inset: 0;
-    background: radial-gradient(800px 520px at 82% 12%, rgba(63, 130, 255, 0.2), transparent 70%),
-        radial-gradient(680px 520px at 12% 88%, rgba(35, 70, 200, 0.18), transparent 65%);
+    background: radial-gradient(800px 520px at 82% 12%, rgba(63, 130, 255, 0.22), transparent 70%),
+        radial-gradient(680px 520px at 12% 88%, rgba(72, 229, 194, 0.18), transparent 65%);
     opacity: 0.7;
     pointer-events: none;
     z-index: -1;
@@ -73,10 +77,16 @@
     margin: 0 auto;
 }
 
+.landing-page.scoped-landing .lp-section-lead {
+    margin-top: 0.8rem;
+    font-size: 1.05rem;
+    line-height: 1.7;
+}
+
 /* Typography */
 .landing-page.scoped-landing .lp-h1 {
     margin: 0 0 var(--space-3) 0;
-    font-size: clamp(2.6rem, 5vw, 3.9rem);
+    font-size: clamp(2.7rem, 5.2vw, 4.2rem);
     line-height: 1.05;
     font-weight: 900;
     letter-spacing: -0.01em;
@@ -179,14 +189,14 @@
 
 /* Hero */
 .landing-page.scoped-landing .lp-hero {
-    padding-block: var(--space-7);
+    padding-block: calc(var(--space-7) * 1.1);
 }
 
 .landing-page.scoped-landing .lp-hero-inner {
     width: min(1320px, 96vw);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.9fr);
     align-items: center;
     gap: clamp(2.5rem, 6vw, 4rem);
     justify-items: start;
@@ -210,6 +220,7 @@
     color: var(--c-text);
     background: rgba(255, 255, 255, 0.12);
     border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(12px);
 }
 
 [data-theme="light"] .landing-page.scoped-landing .lp-hero-badge {
@@ -234,6 +245,153 @@
     margin-top: var(--space-2);
     font-weight: 600;
     color: var(--c-text-muted);
+}
+
+.landing-page.scoped-landing .lp-hero-stats {
+    margin-top: var(--space-4);
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-3);
+    padding: var(--space-3);
+    border-radius: var(--radius);
+    border: 1px solid var(--c-border);
+    background: var(--c-surface-3);
+    backdrop-filter: blur(12px);
+}
+
+.landing-page.scoped-landing .lp-hero-stat-value {
+    margin: 0;
+    font-weight: 800;
+    font-size: 1.4rem;
+}
+
+.landing-page.scoped-landing .lp-hero-stat-label {
+    margin: 0.35rem 0 0;
+    color: var(--c-text-muted);
+    font-size: 0.95rem;
+}
+
+.landing-page.scoped-landing .lp-hero-visual {
+    position: relative;
+    display: grid;
+    gap: var(--space-3);
+    width: 100%;
+}
+
+.landing-page.scoped-landing .lp-hero-card {
+    background: var(--c-surface);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-4);
+    box-shadow: var(--shadow-md);
+    display: grid;
+    gap: 0.9rem;
+}
+
+.landing-page.scoped-landing .lp-hero-card-primary {
+    background: linear-gradient(160deg, rgba(70, 110, 255, 0.25), rgba(12, 20, 45, 0.9));
+    border-color: rgba(110, 150, 255, 0.4);
+}
+
+.landing-page.scoped-landing .lp-hero-card-secondary {
+    margin-left: auto;
+    width: 92%;
+}
+
+.landing-page.scoped-landing .lp-hero-card-tertiary {
+    margin-left: 1.5rem;
+    width: 88%;
+    background: var(--c-surface-2);
+}
+
+.landing-page.scoped-landing .lp-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 700;
+    color: var(--c-text);
+}
+
+.landing-page.scoped-landing .lp-card-pill {
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(72, 229, 194, 0.18);
+    color: var(--c-accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.landing-page.scoped-landing .lp-card-metric {
+    font-size: 2.6rem;
+    font-weight: 800;
+}
+
+.landing-page.scoped-landing .lp-card-sub {
+    margin: 0;
+    color: var(--c-text-muted);
+    font-size: 0.95rem;
+}
+
+.landing-page.scoped-landing .lp-card-list {
+    display: grid;
+    gap: 0.5rem;
+}
+
+.landing-page.scoped-landing .lp-card-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-weight: 600;
+    color: var(--c-text);
+}
+
+.landing-page.scoped-landing .lp-card-title {
+    margin: 0;
+    font-weight: 700;
+    font-size: 1.05rem;
+}
+
+.landing-page.scoped-landing .lp-card-approval {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0.8rem;
+    border-radius: 12px;
+    background: var(--c-surface-3);
+    font-weight: 600;
+}
+
+.landing-page.scoped-landing .lp-card-chip {
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    background: rgba(72, 229, 194, 0.16);
+    color: var(--c-accent);
+    font-size: 0.75rem;
+    font-weight: 700;
+}
+
+.landing-page.scoped-landing .lp-card-chip-outline {
+    background: transparent;
+    border: 1px solid var(--c-border);
+    color: var(--c-text-muted);
+}
+
+.landing-page.scoped-landing .lp-card-progress {
+    position: relative;
+    height: 8px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.12);
+    overflow: hidden;
+}
+
+.landing-page.scoped-landing .lp-card-progress span {
+    position: absolute;
+    inset: 0;
+    width: 72%;
+    border-radius: 999px;
+    background: linear-gradient(120deg, var(--c-primary), var(--c-accent));
 }
 
 /* Social Proof */
@@ -277,6 +435,26 @@
 .landing-page.scoped-landing .lp-section {
     padding-block: var(--space-6);
     text-align: center;
+}
+
+.landing-page.scoped-landing .lp-highlights {
+    padding-block: calc(var(--space-6) * 1.05);
+}
+
+.landing-page.scoped-landing .lp-highlights-grid {
+    margin-top: var(--space-4);
+    display: grid;
+    gap: var(--space-3);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.landing-page.scoped-landing .lp-highlight-card {
+    background: var(--c-surface);
+    border-radius: var(--radius);
+    border: 1px solid var(--c-border);
+    padding: var(--space-4);
+    text-align: left;
+    box-shadow: var(--shadow-sm);
 }
 
 .landing-page.scoped-landing .lp-features-grid {
@@ -519,6 +697,11 @@
         grid-template-columns: 1fr;
     }
 
+    .landing-page.scoped-landing .lp-hero-visual {
+        max-width: 560px;
+        margin-inline: auto;
+    }
+
     .landing-page.scoped-landing .lp-hero-copy {
         text-align: center;
     }
@@ -530,9 +713,18 @@
     .landing-page.scoped-landing .lp-hero-note {
         text-align: center;
     }
+
+    .landing-page.scoped-landing .lp-hero-stats {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        text-align: center;
+    }
 }
 
 @media (max-width: 820px) {
+    .landing-page.scoped-landing .lp-highlights-grid {
+        grid-template-columns: 1fr;
+    }
+
     .landing-page.scoped-landing .lp-steps-grid {
         grid-template-columns: 1fr;
     }
@@ -552,6 +744,10 @@
 
     .landing-page.scoped-landing .lp-pricing-copy {
         text-align: center;
+    }
+
+    .landing-page.scoped-landing .lp-hero-stats {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -598,6 +794,12 @@
 
     .landing-page.scoped-landing .lp-contact-accordion:not([open]) .lp-contact-form {
         display: none;
+    }
+
+    .landing-page.scoped-landing .lp-hero-card-secondary,
+    .landing-page.scoped-landing .lp-hero-card-tertiary {
+        margin-left: 0;
+        width: 100%;
     }
 }
 

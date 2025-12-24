@@ -162,6 +162,30 @@ const LandingPage = () => {
         },
     ];
 
+    const highlights = [
+        {
+            title: t("landing.highlights.time.title", "Alles auf einen Blick"),
+            text: t(
+                "landing.highlights.time.text",
+                "Dashboards zeigen Zeiten, Abwesenheiten und Lohnläufe in Echtzeit – ohne Spreadsheet-Wirrwarr."
+            ),
+        },
+        {
+            title: t("landing.highlights.security.title", "Schweizer Infrastruktur"),
+            text: t(
+                "landing.highlights.security.text",
+                "DSGVO-konform, Hosting in der Schweiz und Rollenrechte, die du frei definierst."
+            ),
+        },
+        {
+            title: t("landing.highlights.team.title", "Für Teams gebaut"),
+            text: t(
+                "landing.highlights.team.text",
+                "Mobil, im Browser oder mit NFC – Chrono passt sich deinen Abläufen an."
+            ),
+        },
+    ];
+
     const logos = [
         t("landing.social.hotel", "Hotel"),
         t("landing.social.construction", "Bauunternehmen"),
@@ -214,6 +238,68 @@ const LandingPage = () => {
                                     "🕒 Ohne Kreditkarte · jederzeit kündbar · Schweizer Server"
                                 )}
                             </p>
+                            <div className="lp-hero-stats">
+                                <div>
+                                    <p className="lp-hero-stat-value">4.9★</p>
+                                    <p className="lp-hero-stat-label">
+                                        {t("landing.hero.stats.rating", "Bewertet von Teams")}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="lp-hero-stat-value">60%</p>
+                                    <p className="lp-hero-stat-label">
+                                        {t("landing.hero.stats.time", "Weniger Admin-Aufwand")}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="lp-hero-stat-value">48h</p>
+                                    <p className="lp-hero-stat-label">
+                                        {t("landing.hero.stats.setup", "Schneller Start")}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="lp-hero-visual" aria-hidden="true">
+                            <div className="lp-hero-card lp-hero-card-primary">
+                                <div className="lp-card-header">
+                                    <span>{t("landing.hero.card.today", "Heute")}</span>
+                                    <span className="lp-card-pill">Live</span>
+                                </div>
+                                <div className="lp-card-metric">8:42</div>
+                                <p className="lp-card-sub">{t("landing.hero.card.metric", "Erfasste Zeit")}</p>
+                                <div className="lp-card-list">
+                                    <div className="lp-card-row">
+                                        <span>{t("landing.hero.card.project1", "Projekt Alpenblick")}</span>
+                                        <span>4:10</span>
+                                    </div>
+                                    <div className="lp-card-row">
+                                        <span>{t("landing.hero.card.project2", "Rezeption")}</span>
+                                        <span>2:05</span>
+                                    </div>
+                                    <div className="lp-card-row">
+                                        <span>{t("landing.hero.card.project3", "Team-Meeting")}</span>
+                                        <span>1:32</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="lp-hero-card lp-hero-card-secondary">
+                                <p className="lp-card-title">{t("landing.hero.card.approvals", "Freigaben")}</p>
+                                <div className="lp-card-approval">
+                                    <span>{t("landing.hero.card.leave", "Urlaub Anna Keller")}</span>
+                                    <span className="lp-card-chip">{t("landing.hero.card.approved", "Genehmigt")}</span>
+                                </div>
+                                <div className="lp-card-approval">
+                                    <span>{t("landing.hero.card.times", "Zeiten Bauprojekt")}</span>
+                                    <span className="lp-card-chip lp-card-chip-outline">{t("landing.hero.card.review", "Prüfen")}</span>
+                                </div>
+                            </div>
+                            <div className="lp-hero-card lp-hero-card-tertiary">
+                                <p className="lp-card-title">{t("landing.hero.card.payroll", "Lohnlauf bereit")}</p>
+                                <p className="lp-card-sub">{t("landing.hero.card.payrollText", "3 Mitarbeitende · 2 Klicks")}</p>
+                                <div className="lp-card-progress">
+                                    <span />
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </header>
@@ -233,6 +319,27 @@ const LandingPage = () => {
                                 "Chrono läuft auf sicheren Schweizer Servern und ist vollständig DSGVO-konform."
                             )}
                         </p>
+                    </div>
+                </section>
+
+                {/* HIGHLIGHTS */}
+                <section className="lp-section lp-highlights" aria-label={t("landing.highlights.title", "Warum Chrono?")}>
+                    <div className="lp-container">
+                        <h2 className="lp-h2">{t("landing.highlights.title", "Warum Chrono?")}</h2>
+                        <p className="lp-text-muted lp-section-lead">
+                            {t(
+                                "landing.highlights.lead",
+                                "Eine Plattform, die mit deinem Team wächst – ohne komplizierte Umstellungen."
+                            )}
+                        </p>
+                        <div className="lp-highlights-grid" role="list">
+                            {highlights.map((item, index) => (
+                                <article key={index} className="lp-highlight-card" role="listitem">
+                                    <h3 className="lp-h3">{item.title}</h3>
+                                    <p className="lp-text-muted">{item.text}</p>
+                                </article>
+                            ))}
+                        </div>
                     </div>
                 </section>
 
