@@ -46,6 +46,27 @@ const Registration = () => {
         [t]
     );
 
+    const pricingConfig = useMemo(() => {
+        if (configuration.country === "ch") {
+            return { currency: "CHF", locale: "de-CH" };
+        }
+        if (configuration.country === "de") {
+            return { currency: "EUR", locale: "de-DE" };
+        }
+        return null;
+    }, [configuration.country]);
+
+    const formatCurrency = (value) => {
+        if (!pricingConfig) {
+            return "";
+        }
+
+        return new Intl.NumberFormat(pricingConfig.locale, {
+            style: "currency",
+            currency: pricingConfig.currency,
+        }).format(value);
+    };
+
     const moduleOptions = useMemo(
         () => [
             {
@@ -59,6 +80,8 @@ const Registration = () => {
                     BASE_FEATURE.description ||
                         "Pflichtmodul – bildet die Grundlage für deinen Chrono-Account."
                 ),
+                price: BASE_FEATURE.price,
+                priceType: BASE_FEATURE.priceType,
                 required: true,
             },
             ...FEATURE_CATALOG.filter((feature) => feature.key !== BASE_FEATURE.key).map((feature) => ({
@@ -68,11 +91,46 @@ const Registration = () => {
                     `registration.modules.${feature.key}.description`,
                     feature.description
                 ),
+                price: feature.price,
+                priceType: feature.priceType,
                 required: Boolean(feature.required),
             })),
         ],
         [t]
     );
+
+    const selectedModuleOptions = useMemo(
+        () => moduleOptions.filter((option) => selectedFeatures.includes(option.key)),
+        [moduleOptions, selectedFeatures]
+    );
+
+    const priceSummary = useMemo(() => {
+        if (!pricingConfig) {
+            return null;
+        }
+
+        const breakdown = selectedModuleOptions.map((option) => {
+            const total =
+                option.priceType === "perEmployee"
+                    ? option.price * configuration.employeeCount
+                    : option.price;
+
+            return {
+                key: option.key,
+                label: option.label,
+                priceType: option.priceType,
+                unitPrice: option.price,
+                total,
+            };
+        });
+
+        const total = breakdown.reduce((sum, item) => sum + item.total, 0);
+
+        return {
+            breakdown,
+            total,
+        };
+    }, [configuration.employeeCount, pricingConfig, selectedModuleOptions]);
 
     const employeeSliderStyle = {
         "--progress": `${((configuration.employeeCount - 1) / 199) * 100}%`,
@@ -129,11 +187,30 @@ const Registration = () => {
 
         setIsSubmitting(true);
         try {
-            const selectedFeatureNames = moduleOptions
-                .filter((option) => selectedFeatures.includes(option.key))
-                .map(
-                    (option) => option.label
-                );
+            const selectedFeatureNames = selectedModuleOptions.map((option) => option.label);
+
+            const priceBreakdown = priceSummary
+                ? {
+                    country: configuration.country,
+                    currency: pricingConfig.currency,
+                    employeeCount: configuration.employeeCount,
+                    items: priceSummary.breakdown.map((item) => ({
+                        key: item.key,
+                        label: item.label,
+                        priceType: item.priceType,
+                        unitPrice: item.unitPrice,
+                        total: item.total,
+                    })),
+                    total: priceSummary.total,
+                }
+                : null;
+
+            const calculatedPrice = priceSummary
+                ? {
+                    total: priceSummary.total,
+                    currency: pricingConfig.currency,
+                }
+                : null;
 
             const payload = {
                 ...form,
@@ -144,8 +221,8 @@ const Registration = () => {
                 consents,
                 billingPeriod: null,
                 includeOptionalTraining: false,
-                priceBreakdown: null,
-                calculatedPrice: null,
+                priceBreakdown,
+                calculatedPrice,
                 companyId: null,
             };
 
@@ -354,12 +431,87 @@ const Registration = () => {
                                                     onChange={() => toggleFeature(option.key)}
                                                 />
                                                 <span className="module-label">{option.label}</span>
+                                                <span className="module-price">
+                                                    {pricingConfig
+                                                        ? option.priceType === "perEmployee"
+                                                            ? t(
+                                                                "registration.pricing.perEmployeeShort",
+                                                                "{{price}} / MA",
+                                                                { price: formatCurrency(option.price) }
+                                                            )
+                                                            : t(
+                                                                "registration.pricing.flatShort",
+                                                                "{{price}} / Monat",
+                                                                { price: formatCurrency(option.price) }
+                                                            )
+                                                        : t("registration.pricing.onRequest", "Preis auf Anfrage")}
+                                                </span>
                                                 <span className="module-description">{option.description}</span>
                                             </label>
                                         );
                                     })}
                                 </div>
                                 <p className="module-hint">{t("registration.modules.hint")}</p>
+                                <div className="pricing-summary">
+                                    <div className="pricing-header">
+                                        <h4>{t("registration.pricing.title", "Preisübersicht")}</h4>
+                                        {pricingConfig && (
+                                            <span className="pricing-country">
+                                                {t(
+                                                    "registration.pricing.countryHint",
+                                                    "Preise für {{country}}",
+                                                    { country: t(`registration.countries.${configuration.country}`) }
+                                                )}
+                                            </span>
+                                        )}
+                                    </div>
+                                    {pricingConfig && priceSummary ? (
+                                        <>
+                                            <ul className="pricing-list">
+                                                {priceSummary.breakdown.map((item) => (
+                                                    <li key={item.key} className="pricing-row">
+                                                        <div className="pricing-row-info">
+                                                            <span className="pricing-row-label">{item.label}</span>
+                                                            <span className="pricing-row-detail">
+                                                                {item.priceType === "perEmployee"
+                                                                    ? t(
+                                                                        "registration.pricing.perEmployeeDetail",
+                                                                        "{{price}} × {{count}} MA",
+                                                                        {
+                                                                            price: formatCurrency(item.unitPrice),
+                                                                            count: configuration.employeeCount,
+                                                                        }
+                                                                    )
+                                                                    : t(
+                                                                        "registration.pricing.flatDetail",
+                                                                        "{{price}} / Monat",
+                                                                        { price: formatCurrency(item.unitPrice) }
+                                                                    )}
+                                                            </span>
+                                                        </div>
+                                                        <span className="pricing-row-value">
+                                                            {formatCurrency(item.total)}
+                                                        </span>
+                                                    </li>
+                                                ))}
+                                            </ul>
+                                            <div className="pricing-total">
+                                                <span>{t("registration.pricing.total", "Gesamt pro Monat")}</span>
+                                                <span>{formatCurrency(priceSummary.total)}</span>
+                                            </div>
+                                            <p className="pricing-disclaimer">
+                                                {t("registration.pricing.disclaimer", "Alle Preise exkl. MwSt.")}
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <p className="pricing-on-request">
+                                            {t(
+                                                "registration.pricing.onRequestDetail",
+                                                "Preise für dieses Land auf Anfrage."
+                                            )}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
