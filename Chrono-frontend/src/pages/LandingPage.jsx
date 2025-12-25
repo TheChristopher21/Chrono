@@ -217,7 +217,7 @@ const LandingPage = () => {
                         </div>
                         <div className="lp-hero-media">
                             <img
-                                src="/img/portrait-placeholder.svg"
+                                src="/img/Ich.png"
                                 alt={t("landing.hero.photoAlt", "Portraitfoto der Gründerin/des Gründers")}
                                 className="lp-hero-photo"
                                 loading="lazy"

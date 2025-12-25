@@ -1,4 +1,4 @@
-import React from "react";
+import "react";
 import { useTranslation } from "../../context/LanguageContext.jsx";
 
 const KpiSummary = ({ customers, leads, pipelineValue, activeCampaigns, averageDealValue, winRate, dateRange, ownerFilter }) => {
