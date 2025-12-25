@@ -276,6 +276,8 @@ const translations = {
                 subline: "Alles in einer Plattform – made in Switzerland.",
                 text: "Chrono hilft Teams in der Schweiz & Deutschland, Arbeitszeiten sauber zu erfassen, Abwesenheiten zu planen und Löhne rechtssicher abzurechnen – ohne Excel-Chaos.",
                 note: "🕒 Ohne Kreditkarte · jederzeit kündbar · Schweizer Server",
+                aboutTitle: "Über mich",
+                aboutText: "Ich habe Chrono entwickelt, damit Teams ihre Zeit klar, fair und einfach organisieren können – mit Fokus auf die Schweiz.",
             },
             cta: {
                 try: "Kostenlos testen",
@@ -1994,6 +1996,8 @@ const translations = {
                 subline: "All in one platform – made in Switzerland.",
                 text: "Chrono helps teams in Switzerland & Germany capture working hours cleanly, plan absences and run payroll compliantly – without Excel chaos.",
                 note: "🕒 No credit card · cancel anytime · Swiss hosting",
+                aboutTitle: "About me",
+                aboutText: "I built Chrono so teams can organize time clearly, fairly and effortlessly — with a focus on Switzerland.",
             },
             cta: {
                 try: "Try for free",
