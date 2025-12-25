@@ -186,7 +186,7 @@
     width: min(1320px, 96vw);
     margin: 0 auto;
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
     align-items: center;
     gap: clamp(2.5rem, 6vw, 4rem);
     justify-items: start;
@@ -234,6 +234,22 @@
     margin-top: var(--space-2);
     font-weight: 600;
     color: var(--c-text-muted);
+}
+
+.landing-page.scoped-landing .lp-hero-media {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.landing-page.scoped-landing .lp-hero-photo {
+    width: min(420px, 100%);
+    aspect-ratio: 4 / 5;
+    object-fit: cover;
+    border-radius: 32px;
+    border: 1px solid var(--c-border);
+    box-shadow: var(--shadow-lg);
+    background: var(--c-surface);
 }
 
 /* Social Proof */
@@ -529,6 +545,14 @@
 
     .landing-page.scoped-landing .lp-hero-note {
         text-align: center;
+    }
+
+    .landing-page.scoped-landing .lp-hero-media {
+        justify-content: center;
+    }
+
+    .landing-page.scoped-landing .lp-hero-photo {
+        width: min(320px, 80vw);
     }
 }
 
