@@ -216,12 +216,23 @@ const LandingPage = () => {
                             </p>
                         </div>
                         <div className="lp-hero-media">
-                            <img
-                                src="/img/Ich.png"
-                                alt={t("landing.hero.photoAlt", "Portraitfoto der Gründerin/des Gründers")}
-                                className="lp-hero-photo"
-                                loading="lazy"
-                            />
+                            <div className="lp-hero-media-stack">
+                                <img
+                                    src="/img/Ich.png"
+                                    alt={t("landing.hero.photoAlt", "Portraitfoto der Gründerin/des Gründers")}
+                                    className="lp-hero-photo"
+                                    loading="lazy"
+                                />
+                                <div className="lp-hero-about">
+                                    <h3 className="lp-h3">{t("landing.hero.aboutTitle", "Über mich")}</h3>
+                                    <p className="lp-text-muted">
+                                        {t(
+                                            "landing.hero.aboutText",
+                                            "Ich habe Chrono entwickelt, damit Teams ihre Zeit klar, fair und einfach organisieren können – mit Fokus auf die Schweiz."
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </header>
