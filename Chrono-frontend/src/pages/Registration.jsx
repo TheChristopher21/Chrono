@@ -205,12 +205,7 @@ const Registration = () => {
                 }
                 : null;
 
-            const calculatedPrice = priceSummary
-                ? {
-                    total: priceSummary.total,
-                    currency: pricingConfig.currency,
-                }
-                : null;
+            const calculatedPrice = priceSummary ? priceSummary.total : null;
 
             const payload = {
                 ...form,
