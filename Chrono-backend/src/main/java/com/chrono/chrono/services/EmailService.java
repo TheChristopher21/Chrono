@@ -4,13 +4,18 @@ import com.chrono.chrono.dto.ApplicationData;
 import com.chrono.chrono.dto.ContactMessage;
 import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.entities.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.MailException;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Service
 public class EmailService {
+
+    private static final Logger logger = LoggerFactory.getLogger(EmailService.class);
 
     private final JavaMailSender mailSender;
 
@@ -59,7 +64,7 @@ public class EmailService {
         mailText.append("\nWeitere Infos:\n").append(data.getAdditionalInfo());
 
         message.setText(mailText.toString());
-        mailSender.send(message);
+        sendSafely(message, "registration");
     }
 
     public void sendContactMail(ContactMessage contact) {
@@ -71,7 +76,7 @@ public class EmailService {
                 "E-Mail: " + contact.getEmail() + "\n\n" +
                 contact.getMessage();
         msg.setText(text);
-        mailSender.send(msg);
+        sendSafely(msg, "contact");
     }
 
     public void sendPayslipGeneratedMail(User user, Payslip payslip) {
@@ -82,7 +87,7 @@ public class EmailService {
         msg.setTo(user.getEmail());
         msg.setSubject("Neue Gehaltsabrechnung bereit");
         msg.setText("Ihre Abrechnung vom " + payslip.getPeriodStart() + " bis " + payslip.getPeriodEnd() + " ist erstellt.");
-        mailSender.send(msg);
+        sendSafely(msg, "payslip-generated");
     }
 
     public void sendPayslipApprovedMail(User user, Payslip payslip) {
@@ -93,6 +98,14 @@ public class EmailService {
         msg.setTo(user.getEmail());
         msg.setSubject("Gehaltsabrechnung freigegeben");
         msg.setText("Ihre Abrechnung vom " + payslip.getPeriodStart() + " bis " + payslip.getPeriodEnd() + " wurde freigegeben.");
-        mailSender.send(msg);
+        sendSafely(msg, "payslip-approved");
+    }
+
+    private void sendSafely(SimpleMailMessage message, String context) {
+        try {
+            mailSender.send(message);
+        } catch (MailException ex) {
+            logger.error("Failed to send {} email.", context, ex);
+        }
     }
 }
