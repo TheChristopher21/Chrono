@@ -1,5 +1,6 @@
 package com.chrono.chrono.dto.accounting;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -52,8 +53,8 @@ public class CreateJournalEntryRequest {
 
     public static class CreateJournalEntryRequestLine {
         private Long accountId;
-        private double debit;
-        private double credit;
+        private BigDecimal debit;
+        private BigDecimal credit;
         private String memo;
 
         public Long getAccountId() {
@@ -64,19 +65,19 @@ public class CreateJournalEntryRequest {
             this.accountId = accountId;
         }
 
-        public double getDebit() {
+        public BigDecimal getDebit() {
             return debit;
         }
 
-        public void setDebit(double debit) {
+        public void setDebit(BigDecimal debit) {
             this.debit = debit;
         }
 
-        public double getCredit() {
+        public BigDecimal getCredit() {
             return credit;
         }
 
-        public void setCredit(double credit) {
+        public void setCredit(BigDecimal credit) {
             this.credit = credit;
         }
 

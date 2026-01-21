@@ -4,6 +4,7 @@
     flex-direction: column;
     background: linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
     color: #1f2937;
+    font-variant-numeric: tabular-nums;
 }
 
 [data-theme="dark"] .admin-page.accounting-page {
@@ -12,12 +13,20 @@
 }
 
 .admin-page.accounting-page .admin-content {
-    width: min(1200px, 100%);
+    width: min(1400px, 100%);
     margin: 0 auto;
     padding: 2.5rem 1.5rem 3rem;
     display: flex;
     flex-direction: column;
     gap: 1.75rem;
+}
+
+.admin-page.accounting-page .admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 1rem;
+    flex-wrap: wrap;
 }
 
 .admin-page.accounting-page .admin-header h1 {
@@ -33,6 +42,62 @@
 
 [data-theme="dark"] .admin-page.accounting-page .admin-header .muted {
     color: #94a3b8;
+}
+
+.admin-page.accounting-page .header-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.admin-page.accounting-page .command-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem 2rem;
+    padding: 1rem 1.25rem;
+    border-radius: 16px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(255, 255, 255, 0.75);
+    backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .admin-page.accounting-page .command-bar {
+    background: rgba(30, 41, 59, 0.7);
+    border-color: rgba(71, 85, 105, 0.55);
+}
+
+.admin-page.accounting-page .command-group {
+    display: flex;
+    gap: 0.75rem;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.admin-page.accounting-page .command-search input {
+    min-width: 240px;
+}
+
+.admin-page.accounting-page .tab-bar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+    padding-bottom: 0.75rem;
+}
+
+.admin-page.accounting-page .tab {
+    border: 1px solid rgba(148, 163, 184, 0.5);
+    background: transparent;
+    padding: 0.55rem 1rem;
+    border-radius: 999px;
+    font-weight: 500;
+    color: inherit;
+}
+
+.admin-page.accounting-page .tab.active {
+    background: #1d4ed8;
+    border-color: #1d4ed8;
+    color: #fff;
 }
 
 .admin-page.accounting-page .card,
@@ -60,6 +125,12 @@
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
+.admin-page.accounting-page .overview-grid {
+    display: grid;
+    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
 .admin-page.accounting-page .metric {
     font-size: clamp(1.6rem, 3vw, 2.3rem);
     font-weight: 600;
@@ -69,6 +140,16 @@
 
 [data-theme="dark"] .admin-page.accounting-page .metric {
     color: #60a5fa;
+}
+
+.admin-page.accounting-page .aging-grid {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.admin-page.accounting-page .aging-grid span {
+    display: block;
 }
 
 .admin-page.accounting-page .form-grid {
@@ -102,6 +183,13 @@
     border-color: rgba(100, 116, 139, 0.7);
 }
 
+.admin-page.accounting-page .toggle {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
 .admin-page.accounting-page .table-wrapper {
     overflow-x: auto;
     border-radius: 12px;
@@ -114,11 +202,31 @@
     font-size: 0.95rem;
 }
 
+.admin-page.accounting-page thead th {
+    position: sticky;
+    top: 0;
+    background: rgba(248, 250, 252, 0.95);
+    backdrop-filter: blur(6px);
+    z-index: 1;
+}
+
+[data-theme="dark"] .admin-page.accounting-page thead th {
+    background: rgba(30, 41, 59, 0.95);
+}
+
 .admin-page.accounting-page th,
 .admin-page.accounting-page td {
-    padding: 0.75rem 1rem;
+    padding: 0.7rem 1rem;
     text-align: left;
     border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.admin-page.accounting-page tbody tr:nth-child(even) {
+    background: rgba(226, 232, 240, 0.25);
+}
+
+[data-theme="dark"] .admin-page.accounting-page tbody tr:nth-child(even) {
+    background: rgba(30, 41, 59, 0.6);
 }
 
 .admin-page.accounting-page th {
@@ -138,26 +246,9 @@
     background: rgba(59, 130, 246, 0.15);
 }
 
-.admin-page.accounting-page .list-unstyled {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-}
-
-.admin-page.accounting-page .list-unstyled li {
-    font-size: 0.95rem;
-    color: inherit;
-}
-
-.admin-page.accounting-page .invoice-line {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+.admin-page.accounting-page .numeric {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
 }
 
 .admin-page.accounting-page .section-header {
@@ -182,6 +273,136 @@
     align-items: end;
 }
 
+.admin-page.accounting-page .journal-summary {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    font-weight: 500;
+}
+
+.admin-page.accounting-page .table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.admin-page.accounting-page .pagination {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.admin-page.accounting-page .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.admin-page.accounting-page .badge-open {
+    background: rgba(59, 130, 246, 0.15);
+    color: #2563eb;
+}
+
+.admin-page.accounting-page .badge-due-soon {
+    background: rgba(234, 179, 8, 0.2);
+    color: #a16207;
+}
+
+.admin-page.accounting-page .badge-overdue {
+    background: rgba(239, 68, 68, 0.15);
+    color: #b91c1c;
+}
+
+.admin-page.accounting-page .badge-paid,
+.admin-page.accounting-page .badge-success {
+    background: rgba(34, 197, 94, 0.15);
+    color: #15803d;
+}
+
+.admin-page.accounting-page .badge-warning {
+    background: rgba(251, 191, 36, 0.2);
+    color: #b45309;
+}
+
+.admin-page.accounting-page .badge-muted {
+    background: rgba(148, 163, 184, 0.3);
+    color: #475569;
+}
+
+.admin-page.accounting-page .detail-drawer {
+    margin-top: 1rem;
+    border-radius: 14px;
+    border: 1px solid rgba(148, 163, 184, 0.25);
+    background: rgba(255, 255, 255, 0.85);
+    padding: 1rem 1.25rem;
+}
+
+[data-theme="dark"] .admin-page.accounting-page .detail-drawer {
+    background: rgba(30, 41, 59, 0.8);
+    border-color: rgba(71, 85, 105, 0.55);
+}
+
+.admin-page.accounting-page .detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.admin-page.accounting-page .detail-lines {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+}
+
+.admin-page.accounting-page .detail-lines li {
+    display: grid;
+    grid-template-columns: 2fr 2fr 1fr 1fr;
+    gap: 0.75rem;
+    font-size: 0.9rem;
+}
+
+.admin-page.accounting-page .detail-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.admin-page.accounting-page .list-unstyled {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.admin-page.accounting-page .list-unstyled li {
+    font-size: 0.95rem;
+    color: inherit;
+}
+
+.admin-page.accounting-page .invoice-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+}
+
 .admin-page.accounting-page .modal-backdrop {
     position: fixed;
     inset: 0;
@@ -197,7 +418,7 @@
     background: #fff;
     border-radius: 16px;
     padding: 1.5rem;
-    width: min(500px, 100%);
+    width: min(520px, 100%);
     box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
 }
 
@@ -213,12 +434,22 @@
     grid-column: 1 / -1;
 }
 
+.admin-page.accounting-page .form-error {
+    grid-column: 1 / -1;
+    color: #dc2626;
+    font-weight: 500;
+}
+
 @media (max-width: 768px) {
     .admin-page.accounting-page .admin-content {
         padding: 1.75rem 1rem 2.5rem;
     }
 
     .admin-page.accounting-page .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .admin-page.accounting-page .detail-lines li {
         grid-template-columns: 1fr;
     }
 }

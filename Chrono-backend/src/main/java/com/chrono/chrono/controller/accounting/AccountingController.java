@@ -15,6 +15,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,8 +23,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
+import jakarta.validation.Valid;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
@@ -86,7 +90,7 @@ public class AccountingController {
     }
 
     @PostMapping("/journal")
-    public ResponseEntity<JournalEntryDTO> createJournalEntry(@RequestBody CreateJournalEntryRequest request) {
+    public ResponseEntity<JournalEntryDTO> createJournalEntry(@Valid @RequestBody CreateJournalEntryRequest request) {
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(request.getEntryDate() != null ? request.getEntryDate() : LocalDate.now());
         entry.setDescription(request.getDescription());
@@ -94,11 +98,23 @@ public class AccountingController {
         entry.setDocumentReference(request.getDocumentReference());
         List<JournalEntryLine> lines = request.getLines() == null ? List.of() : request.getLines().stream()
                 .map(line -> {
-                    Account account = accountRepository.findById(line.getAccountId()).orElseThrow();
+                    if (line.getAccountId() == null) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Account is required");
+                    }
+                    Account account = accountRepository.findById(line.getAccountId())
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Account not found"));
+                    BigDecimal debit = line.getDebit() == null ? BigDecimal.ZERO : line.getDebit();
+                    BigDecimal credit = line.getCredit() == null ? BigDecimal.ZERO : line.getCredit();
+                    if (debit.compareTo(BigDecimal.ZERO) > 0 && credit.compareTo(BigDecimal.ZERO) > 0) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debit and credit cannot both be set");
+                    }
+                    if (debit.compareTo(BigDecimal.ZERO) == 0 && credit.compareTo(BigDecimal.ZERO) == 0) {
+                        throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Debit or credit must be set");
+                    }
                     JournalEntryLine jel = new JournalEntryLine();
                     jel.setAccount(account);
-                    jel.setDebit(BigDecimal.valueOf(line.getDebit()));
-                    jel.setCredit(BigDecimal.valueOf(line.getCredit()));
+                    jel.setDebit(debit.setScale(2, RoundingMode.HALF_UP));
+                    jel.setCredit(credit.setScale(2, RoundingMode.HALF_UP));
                     jel.setMemo(line.getMemo());
                     return jel;
                 }).toList();
