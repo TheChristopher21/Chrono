@@ -182,13 +182,20 @@
 .admin-page.accounting-page .command-bar select,
 .admin-page.accounting-page .journal-line input,
 .admin-page.accounting-page .journal-line select {
-    border: 1px solid rgba(148, 163, 184, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.7);
     border-radius: 10px;
     padding: 0.65rem 0.85rem;
     font-size: 0.95rem;
-    background: rgba(248, 250, 252, 0.9);
-    color: inherit;
+    background: rgba(248, 250, 252, 0.96);
+    color: #0f172a;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.admin-page.accounting-page .form-grid select:hover,
+.admin-page.accounting-page .command-bar select:hover,
+.admin-page.accounting-page .journal-line select:hover {
+    border-color: rgba(94, 124, 170, 0.85);
+    background: rgba(241, 245, 249, 0.98);
 }
 
 .admin-page.accounting-page .form-grid input:focus,
@@ -216,9 +223,17 @@
 [data-theme="dark"] .admin-page.accounting-page .command-bar select,
 [data-theme="dark"] .admin-page.accounting-page .journal-line input,
 [data-theme="dark"] .admin-page.accounting-page .journal-line select {
-    background: rgba(30, 41, 59, 0.92);
-    border-color: rgba(100, 116, 139, 0.7);
+    background: rgba(15, 23, 42, 0.88);
+    border-color: rgba(100, 116, 139, 0.8);
+    color: #e2e8f0;
     color-scheme: dark;
+}
+
+[data-theme="dark"] .admin-page.accounting-page .form-grid select:hover,
+[data-theme="dark"] .admin-page.accounting-page .command-bar select:hover,
+[data-theme="dark"] .admin-page.accounting-page .journal-line select:hover {
+    border-color: rgba(125, 150, 180, 0.9);
+    background: rgba(15, 23, 42, 0.96);
 }
 
 [data-theme="dark"] .admin-page.accounting-page .form-grid input::placeholder,
@@ -253,6 +268,11 @@
 [data-theme="dark"] .admin-page.accounting-page select option {
     background: #0f172a;
     color: #e2e8f0;
+}
+
+.admin-page.accounting-page select option {
+    background: #f8fafc;
+    color: #0f172a;
 }
 
 [data-theme="dark"] .admin-page.accounting-page input[type="date"]::-webkit-calendar-picker-indicator {
