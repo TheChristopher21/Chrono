@@ -30,6 +30,7 @@ const EntitySlideOver = ({
     resetForms
 }) => {
     const [activeTab, setActiveTab] = useState("overview");
+    const formatCurrency = (value) => `CHF (Schweizer Franken) ${Number(value || 0).toLocaleString("de-CH")}`;
 
     const title = useMemo(() => {
         if (!entity) return "";
@@ -52,7 +53,7 @@ const EntitySlideOver = ({
                     <button className="ghost" onClick={onClose}>{t("common.close", "Schließen")}</button>
                 </header>
 
-                <div className="crm-tabs">
+                        <div className="crm-tabs">
                     <button className={activeTab === "overview" ? "active" : ""} onClick={() => setActiveTab("overview")}>{t("crm.overview", "Überblick")}</button>
                     <button className={activeTab === "contacts" ? "active" : ""} onClick={() => setActiveTab("contacts")}>{t("crm.contacts", "Kontakte")}</button>
                     <button className={activeTab === "activities" ? "active" : ""} onClick={() => setActiveTab("activities")}>{t("crm.activities", "Aktivitäten")}</button>
@@ -63,11 +64,11 @@ const EntitySlideOver = ({
                 <div className="slide-over-content">
                     {activeTab === "overview" && (
                         <div className="stack">
-                            <div className="muted tiny">ID: {entity.id}</div>
+                            <div className="muted tiny">ID (Identifikationsnummer): {entity.id}</div>
                             {entityType === "opportunity" && (
                                 <>
                                     <div>{t("crm.stage", "Phase")}: {entity.stage}</div>
-                                    <div>{t("crm.value", "Wert")}: {entity.value ? `CHF ${entity.value.toLocaleString("de-CH")}` : "-"}</div>
+                                    <div>{t("crm.value", "Wert")}: {entity.value ? formatCurrency(entity.value) : "-"}</div>
                                 </>
                             )}
                             {entityType === "lead" && (
@@ -78,7 +79,7 @@ const EntitySlideOver = ({
                             )}
                             {entityType === "customer" && (
                                 <>
-                                    <div>{t("crm.owner", "Owner")}: {entity.ownerName || entity.owner || t("crm.noOwner", "Kein Owner")}</div>
+                                    <div>{t("crm.owner", "Owner (Verantwortlich)")}: {entity.ownerName || entity.owner || t("crm.noOwner", "Kein Owner (Verantwortlicher)")}</div>
                                     <div>{t("crm.segment", "Segment")}: {entity.segment || "-"}</div>
                                 </>
                             )}
@@ -210,29 +211,29 @@ const EntitySlideOver = ({
                                         <div><strong>{address.type}</strong></div>
                                         <div className="muted">{address.street}, {address.postalCode} {address.city}</div>
                                         <div className="action-row">
-                                            <button type="button" className="link-button danger" onClick={() => onAddressDelete(address.id)}>{t("common.delete", "Löschen")}</button>
-                                        </div>
-                                    </li>
-                                ))}
-                                {addresses.length === 0 && <li className="muted">{t("crm.noAddresses", "Keine Adressen")}</li>}
-                            </ul>
-                            <form className="form-grid" onSubmit={onAddressSubmit}>
-                                <label>
-                                    {t("crm.type", "Typ")}
-                                    <select value={addressForm.type} onChange={(e) => setAddressForm({ ...addressForm, type: e.target.value })}>
-                                        <option value="OFFICE">{t("crm.office", "Office")}</option>
-                                        <option value="BILLING">{t("crm.billing", "Rechnung")}</option>
-                                        <option value="SHIPPING">{t("crm.shipping", "Versand")}</option>
-                                    </select>
-                                </label>
-                                <label>
-                                    {t("crm.street", "Straße")}
-                                    <input type="text" value={addressForm.street} onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })} required />
-                                </label>
-                                <label>
-                                    {t("crm.postalCode", "PLZ")}
-                                    <input type="text" value={addressForm.postalCode} onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })} required />
-                                </label>
+                                    <button type="button" className="link-button danger" onClick={() => onAddressDelete(address.id)}>{t("common.delete", "Löschen")}</button>
+                                </div>
+                            </li>
+                        ))}
+                        {addresses.length === 0 && <li className="muted">{t("crm.noAddresses", "Keine Adressen")}</li>}
+                    </ul>
+                    <form className="form-grid" onSubmit={onAddressSubmit}>
+                        <label>
+                            {t("crm.type", "Typ")}
+                            <select value={addressForm.type} onChange={(e) => setAddressForm({ ...addressForm, type: e.target.value })}>
+                                <option value="OFFICE">{t("crm.office", "Office")}</option>
+                                <option value="BILLING">{t("crm.billing", "Rechnung")}</option>
+                                <option value="SHIPPING">{t("crm.shipping", "Versand")}</option>
+                            </select>
+                        </label>
+                        <label>
+                            {t("crm.street", "Straße")}
+                            <input type="text" value={addressForm.street} onChange={(e) => setAddressForm({ ...addressForm, street: e.target.value })} required />
+                        </label>
+                        <label>
+                            {t("crm.postalCode", "PLZ (Postleitzahl)")}
+                            <input type="text" value={addressForm.postalCode} onChange={(e) => setAddressForm({ ...addressForm, postalCode: e.target.value })} required />
+                        </label>
                                 <label>
                                     {t("crm.city", "Stadt")}
                                     <input type="text" value={addressForm.city} onChange={(e) => setAddressForm({ ...addressForm, city: e.target.value })} required />

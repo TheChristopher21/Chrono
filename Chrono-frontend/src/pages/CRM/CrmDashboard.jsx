@@ -32,6 +32,7 @@ const CrmDashboard = () => {
     const [campaignFilter, setCampaignFilter] = useState("ALL");
     const [dateRange, setDateRange] = useState("LAST_30_DAYS");
     const [ownerFilter, setOwnerFilter] = useState("ALL");
+    const [activeSection, setActiveSection] = useState("overview");
     const [leadForm, setLeadForm] = useState({ companyName: "", contactName: "", email: "", status: "NEW" });
     const [opportunityForm, setOpportunityForm] = useState({ title: "", value: "", probability: "", stage: "QUALIFICATION" });
     const [campaignForm, setCampaignForm] = useState({ name: "", status: "PLANNED", channel: "", startDate: "", endDate: "", budget: "" });
@@ -94,7 +95,7 @@ const CrmDashboard = () => {
                 console.error("Failed to load CRM data", error);
                 if (error?.response?.status === 403) {
                     if (!accessDenied) {
-                        notify(t("crm.featureDisabled", "Das CRM-Modul ist für Ihre Firma nicht freigeschaltet."), "warning");
+                        notify(t("crm.featureDisabled", "Das CRM (Customer Relationship Management)-Modul ist für Ihre Firma nicht freigeschaltet."), "warning");
                     }
                     setAccessDenied(true);
                     setLeads([]);
@@ -102,7 +103,7 @@ const CrmDashboard = () => {
                     setCampaigns([]);
                     setCustomers([]);
                 } else {
-                    notify(t("crm.loadError", "CRM-Daten konnten nicht geladen werden."), "error");
+                    notify(t("crm.loadError", "CRM (Customer Relationship Management)-Daten konnten nicht geladen werden."), "error");
                 }
             }
         };
@@ -384,6 +385,43 @@ const CrmDashboard = () => {
     const opportunityStages = useMemo(() => ["QUALIFICATION", "PROPOSAL", "NEGOTIATION", "WON", "LOST"], []);
     const campaignStatuses = useMemo(() => ["PLANNED", "ACTIVE", "COMPLETED", "ARCHIVED"], []);
 
+    const dateRangeLabels = useMemo(() => ({
+        LAST_30_DAYS: t("crm.last30Days", "Letzte 30 Tage"),
+        THIS_QUARTER: t("crm.thisQuarter", "Dieses Quartal"),
+        THIS_YEAR: t("crm.thisYear", "Dieses Jahr"),
+        CUSTOM: t("crm.customRange", "Benutzerdefiniert")
+    }), [t]);
+
+    const ownerFilterLabels = useMemo(() => ({
+        ALL: t("crm.ownerAll", "Alle Owner (Verantwortliche)"),
+        ME: t("crm.ownerMe", "Nur ich")
+    }), [t]);
+
+    const leadStatusLabels = useMemo(() => ({
+        NEW: t("crm.statusNew", "NEW (Neu)"),
+        QUALIFIED: t("crm.statusQualified", "QUALIFIED (Qualifiziert)"),
+        CONVERTED: t("crm.statusConverted", "CONVERTED (Umgewandelt)"),
+        DISQUALIFIED: t("crm.statusDisqualified", "DISQUALIFIED (Nicht qualifiziert)")
+    }), [t]);
+
+    const opportunityStageLabels = useMemo(() => ({
+        QUALIFICATION: t("crm.stageQualification", "QUALIFICATION (Qualifizierung)"),
+        PROPOSAL: t("crm.stageProposal", "PROPOSAL (Angebot)"),
+        NEGOTIATION: t("crm.stageNegotiation", "NEGOTIATION (Verhandlung)"),
+        WON: t("crm.stageWon", "WON (Gewonnen)"),
+        LOST: t("crm.stageLost", "LOST (Verloren)")
+    }), [t]);
+
+    const campaignStatusLabels = useMemo(() => ({
+        PLANNED: t("crm.statusPlanned", "PLANNED (Geplant)"),
+        ACTIVE: t("crm.statusActive", "ACTIVE (Aktiv)"),
+        COMPLETED: t("crm.statusCompleted", "COMPLETED (Abgeschlossen)"),
+        ARCHIVED: t("crm.statusArchived", "ARCHIVED (Archiviert)")
+    }), [t]);
+
+    const dateRangeLabel = dateRangeLabels[dateRange] ?? dateRange;
+    const ownerFilterLabel = ownerFilterLabels[ownerFilter] ?? ownerFilter;
+
     const leadStatusCounts = useMemo(() => {
         return leadStatuses.map((status) => ({
             status,
@@ -467,7 +505,7 @@ const CrmDashboard = () => {
             <main className="admin-content">
                 <header className="admin-header">
                     <div>
-                        <h1>{t("crm.title", "CRM & Marketing")}</h1>
+                        <h1>{t("crm.title", "CRM (Customer Relationship Management) & Marketing")}</h1>
                         <p className="muted">{t("crm.subtitle", "Leads, Aktivitäten und Kampagnen im Überblick")}</p>
                     </div>
                     <div className="crm-filter-bar">
@@ -475,15 +513,15 @@ const CrmDashboard = () => {
                             {t("crm.dateRange", "Zeitraum")}
                             <select value={dateRange} onChange={(e) => setDateRange(e.target.value)}>
                                 {DATE_RANGE_PRESETS.map((preset) => (
-                                    <option key={preset} value={preset}>{preset}</option>
+                                    <option key={preset} value={preset}>{dateRangeLabels[preset] ?? preset}</option>
                                 ))}
                             </select>
                         </label>
                         <label>
-                            {t("crm.owner", "Owner")}
+                            {t("crm.owner", "Owner (Verantwortlich)")}
                             <select value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
                                 {OWNER_FILTERS.map((filter) => (
-                                    <option key={filter} value={filter}>{filter}</option>
+                                    <option key={filter} value={filter}>{ownerFilterLabels[filter] ?? filter}</option>
                                 ))}
                             </select>
                         </label>
@@ -497,82 +535,143 @@ const CrmDashboard = () => {
                     activeCampaigns={activeCampaigns.length}
                     averageDealValue={averageDealValue}
                     winRate={winRate}
-                    dateRange={dateRange}
-                    ownerFilter={ownerFilter}
+                    dateRangeLabel={dateRangeLabel}
+                    ownerFilterLabel={ownerFilterLabel}
                 />
 
                 {accessDenied ? (
                     <section className="card">
-                        <h2>{t("crm.featureDisabledTitle", "CRM nicht freigeschaltet")}</h2>
+                        <h2>{t("crm.featureDisabledTitle", "CRM (Customer Relationship Management) nicht freigeschaltet")}</h2>
                         <p className="muted">
-                            {t("crm.featureDisabledHint", "Bitte wenden Sie sich an den Chrono-Support, um das CRM-Modul zu aktivieren.")}
+                            {t("crm.featureDisabledHint", "Bitte wenden Sie sich an den Chrono-Support, um das CRM (Customer Relationship Management)-Modul zu aktivieren.")}
                         </p>
                     </section>
                 ) : (
                     <>
-                        <PipelineOverview
-                            leadFilter={leadFilter}
-                            setLeadFilter={setLeadFilter}
-                            oppFilter={oppFilter}
-                            setOppFilter={setOppFilter}
-                            campaignFilter={campaignFilter}
-                            setCampaignFilter={setCampaignFilter}
-                            leadStatuses={leadStatuses}
-                            opportunityStages={opportunityStages}
-                            campaignStatuses={campaignStatuses}
-                            leadStatusCounts={leadStatusCounts}
-                            opportunityStageCounts={opportunityStageCounts}
-                            campaignChannels={campaignChannels}
-                            upcomingCampaigns={upcomingCampaigns}
-                            formatDateTime={formatDateTime}
-                        />
+                        <div className="crm-section-tabs" role="tablist" aria-label={t("crm.sections", "CRM (Customer Relationship Management) Bereiche")}>
+                            {[
+                                { key: "overview", label: t("crm.tabOverview", "Übersicht") },
+                                { key: "sales", label: t("crm.tabSales", "Vertrieb") },
+                                { key: "marketing", label: t("crm.tabMarketing", "Marketing") },
+                                { key: "team", label: t("crm.tabTeam", "Team") }
+                            ].map((tab) => (
+                                <button
+                                    key={tab.key}
+                                    type="button"
+                                    id={`crm-tab-${tab.key}`}
+                                    role="tab"
+                                    aria-selected={activeSection === tab.key}
+                                    aria-controls={`crm-panel-${tab.key}`}
+                                    className={activeSection === tab.key ? "active" : ""}
+                                    onClick={() => setActiveSection(tab.key)}
+                                >
+                                    {tab.label}
+                                </button>
+                            ))}
+                        </div>
 
-                        <SalesBoard
-                            t={t}
-                            leads={leads}
-                            opportunities={opportunities}
-                            customers={customers}
-                            leadStatuses={leadStatuses}
-                            opportunityStages={opportunityStages}
-                            ownerOptions={ownerOptions}
-                            onLeadUpdate={handleLeadStatusChange}
-                            onOpportunityUpdate={handleOpportunityStageChange}
-                            onLeadCreate={handleLeadSubmit}
-                            onOpportunityCreate={handleOpportunitySubmit}
-                            leadForm={leadForm}
-                            setLeadForm={setLeadForm}
-                            opportunityForm={opportunityForm}
-                            setOpportunityForm={setOpportunityForm}
-                            onEntitySelect={handleEntityOpen}
-                            dateRange={dateRange}
-                            ownerFilter={ownerFilter}
-                        />
+                        <div className="crm-tab-panels">
+                            <div
+                                id="crm-panel-overview"
+                                role="tabpanel"
+                                aria-labelledby="crm-tab-overview"
+                                className="crm-tab-panel"
+                                hidden={activeSection !== "overview"}
+                            >
+                                <PipelineOverview
+                                    leadFilter={leadFilter}
+                                    setLeadFilter={setLeadFilter}
+                                    oppFilter={oppFilter}
+                                    setOppFilter={setOppFilter}
+                                    campaignFilter={campaignFilter}
+                                    setCampaignFilter={setCampaignFilter}
+                                    leadStatuses={leadStatuses}
+                                    opportunityStages={opportunityStages}
+                                    campaignStatuses={campaignStatuses}
+                                    leadStatusCounts={leadStatusCounts}
+                                    opportunityStageCounts={opportunityStageCounts}
+                                    campaignChannels={campaignChannels}
+                                    upcomingCampaigns={upcomingCampaigns}
+                                    formatDateTime={formatDateTime}
+                                    leadStatusLabels={leadStatusLabels}
+                                    opportunityStageLabels={opportunityStageLabels}
+                                    campaignStatusLabels={campaignStatusLabels}
+                                />
+                            </div>
 
-                        <MarketingBoard
-                            t={t}
-                            campaigns={campaigns}
-                            campaignStatuses={campaignStatuses}
-                            campaignFilter={campaignFilter}
-                            setCampaignFilter={setCampaignFilter}
-                            campaignForm={campaignForm}
-                            setCampaignForm={setCampaignForm}
-                            onCampaignCreate={handleCampaignSubmit}
-                            onCampaignUpdate={handleCampaignUpdate}
-                            upcomingCampaigns={upcomingCampaigns}
-                            formatDateTime={formatDateTime}
-                            dateRange={dateRange}
-                            ownerFilter={ownerFilter}
-                        />
+                            <div
+                                id="crm-panel-sales"
+                                role="tabpanel"
+                                aria-labelledby="crm-tab-sales"
+                                className="crm-tab-panel"
+                                hidden={activeSection !== "sales"}
+                            >
+                                <SalesBoard
+                                    t={t}
+                                    leads={leads}
+                                    opportunities={opportunities}
+                                    customers={customers}
+                                    leadStatuses={leadStatuses}
+                                    opportunityStages={opportunityStages}
+                                    ownerOptions={ownerOptions}
+                                    onLeadUpdate={handleLeadStatusChange}
+                                    onOpportunityUpdate={handleOpportunityStageChange}
+                                    onLeadCreate={handleLeadSubmit}
+                                    onOpportunityCreate={handleOpportunitySubmit}
+                                    leadForm={leadForm}
+                                    setLeadForm={setLeadForm}
+                                    opportunityForm={opportunityForm}
+                                    setOpportunityForm={setOpportunityForm}
+                                    onEntitySelect={handleEntityOpen}
+                                    dateRangeLabel={dateRangeLabel}
+                                    ownerFilterLabel={ownerFilterLabel}
+                                    leadStatusLabels={leadStatusLabels}
+                                    opportunityStageLabels={opportunityStageLabels}
+                                />
+                            </div>
 
-                        <TeamPerformance
-                            t={t}
-                            leads={leads}
-                            opportunities={opportunities}
-                            activities={customerActivities}
-                            ownerOptions={ownerOptions}
-                            dateRange={dateRange}
-                            ownerFilter={ownerFilter}
-                        />
+                            <div
+                                id="crm-panel-marketing"
+                                role="tabpanel"
+                                aria-labelledby="crm-tab-marketing"
+                                className="crm-tab-panel"
+                                hidden={activeSection !== "marketing"}
+                            >
+                                <MarketingBoard
+                                    t={t}
+                                    campaigns={campaigns}
+                                    campaignStatuses={campaignStatuses}
+                                    campaignFilter={campaignFilter}
+                                    setCampaignFilter={setCampaignFilter}
+                                    campaignForm={campaignForm}
+                                    setCampaignForm={setCampaignForm}
+                                    onCampaignCreate={handleCampaignSubmit}
+                                    onCampaignUpdate={handleCampaignUpdate}
+                                    upcomingCampaigns={upcomingCampaigns}
+                                    formatDateTime={formatDateTime}
+                                    dateRangeLabel={dateRangeLabel}
+                                    ownerFilterLabel={ownerFilterLabel}
+                                    campaignStatusLabels={campaignStatusLabels}
+                                />
+                            </div>
+
+                            <div
+                                id="crm-panel-team"
+                                role="tabpanel"
+                                aria-labelledby="crm-tab-team"
+                                className="crm-tab-panel"
+                                hidden={activeSection !== "team"}
+                            >
+                                <TeamPerformance
+                                    t={t}
+                                    leads={leads}
+                                    opportunities={opportunities}
+                                    activities={customerActivities}
+                                    dateRangeLabel={dateRangeLabel}
+                                    ownerFilterLabel={ownerFilterLabel}
+                                />
+                            </div>
+                        </div>
                     </>
                 )}
             </main>

@@ -18,14 +18,24 @@ const SalesBoard = ({
     opportunityForm,
     setOpportunityForm,
     onEntitySelect,
-    dateRange,
-    ownerFilter
+    dateRangeLabel,
+    ownerFilterLabel,
+    leadStatusLabels,
+    opportunityStageLabels
 }) => {
     const { t: translate } = useTranslation();
     const [activeTab, setActiveTab] = useState("leads");
     const [search, setSearch] = useState("");
     const [statusFilter, setStatusFilter] = useState("ALL");
     const [ownerSelection, setOwnerSelection] = useState("ALL");
+
+    const formatCurrency = (value) => {
+        return `CHF (Schweizer Franken) ${Number(value || 0).toLocaleString("de-CH")}`;
+    };
+
+    const resolveStatusLabel = (status) => {
+        return leadStatusLabels?.[status] ?? opportunityStageLabels?.[status] ?? status;
+    };
 
     const filteredLeads = useMemo(() => {
         return leads.filter((lead) => {
@@ -67,7 +77,7 @@ const SalesBoard = ({
                         <th>{t("crm.contactName", "Ansprechpartner")}</th>
                         <th>Email</th>
                         <th>{t("crm.status", "Status")}</th>
-                        <th>{t("crm.owner", "Owner")}</th>
+                        <th>{t("crm.owner", "Owner (Verantwortlich)")}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -80,7 +90,7 @@ const SalesBoard = ({
                             <td>
                                 <select value={lead.status} onChange={(e) => onLeadUpdate(lead.id, e.target.value, lead.ownerId)}>
                                     {leadStatuses.map((status) => (
-                                        <option key={status} value={status}>{status}</option>
+                                        <option key={status} value={status}>{resolveStatusLabel(status)}</option>
                                     ))}
                                 </select>
                             </td>
@@ -89,7 +99,7 @@ const SalesBoard = ({
                                     value={lead.ownerId || lead.owner || ""}
                                     onChange={(e) => onLeadUpdate(lead.id, lead.status, e.target.value || undefined)}
                                 >
-                                    <option value="">{translate("crm.noOwner", "Kein Owner")}</option>
+                                    <option value="">{translate("crm.noOwner", "Kein Owner (Verantwortlicher)")}</option>
                                     {ownerOptions.map((owner) => (
                                         <option key={owner} value={owner}>{owner}</option>
                                     ))}
@@ -121,7 +131,7 @@ const SalesBoard = ({
                     {t("crm.status", "Status")}
                     <select value={leadForm.status} onChange={(e) => setLeadForm({ ...leadForm, status: e.target.value })}>
                         {leadStatuses.map((status) => (
-                            <option key={status} value={status}>{status}</option>
+                            <option key={status} value={status}>{resolveStatusLabel(status)}</option>
                         ))}
                     </select>
                 </label>
@@ -141,7 +151,7 @@ const SalesBoard = ({
                         <th>{t("crm.opportunity", "Opportunity")}</th>
                         <th>{t("crm.value", "Wert")}</th>
                         <th>{t("crm.stage", "Phase")}</th>
-                        <th>{t("crm.owner", "Owner")}</th>
+                        <th>{t("crm.owner", "Owner (Verantwortlich)")}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -149,11 +159,11 @@ const SalesBoard = ({
                         <tr key={opp.id} onClick={() => onEntitySelect("opportunity", opp)}>
                             <td><input type="checkbox" aria-label={t("common.select", "Auswählen")} /></td>
                             <td>{opp.title}</td>
-                            <td>{typeof opp.value === "number" ? `CHF ${opp.value.toLocaleString("de-CH")}` : "-"}</td>
+                            <td>{typeof opp.value === "number" ? formatCurrency(opp.value) : "-"}</td>
                             <td>
                                 <select value={opp.stage} onChange={(e) => onOpportunityUpdate(opp.id, e.target.value, opp.ownerId)}>
                                     {opportunityStages.map((stage) => (
-                                        <option key={stage} value={stage}>{stage}</option>
+                                        <option key={stage} value={stage}>{resolveStatusLabel(stage)}</option>
                                     ))}
                                 </select>
                             </td>
@@ -162,7 +172,7 @@ const SalesBoard = ({
                                     value={opp.ownerId || opp.owner || ""}
                                     onChange={(e) => onOpportunityUpdate(opp.id, opp.stage, e.target.value || undefined)}
                                 >
-                                    <option value="">{translate("crm.noOwner", "Kein Owner")}</option>
+                                    <option value="">{translate("crm.noOwner", "Kein Owner (Verantwortlicher)")}</option>
                                     {ownerOptions.map((owner) => (
                                         <option key={owner} value={owner}>{owner}</option>
                                     ))}
@@ -190,7 +200,7 @@ const SalesBoard = ({
                     {t("crm.stage", "Phase")}
                     <select value={opportunityForm.stage} onChange={(e) => setOpportunityForm({ ...opportunityForm, stage: e.target.value })}>
                         {opportunityStages.map((stage) => (
-                            <option key={stage} value={stage}>{stage}</option>
+                            <option key={stage} value={stage}>{resolveStatusLabel(stage)}</option>
                         ))}
                     </select>
                 </label>
@@ -208,7 +218,7 @@ const SalesBoard = ({
                     <tr>
                         <th><input type="checkbox" aria-label={t("common.selectAll", "Alle auswählen")} /></th>
                         <th>{t("crm.customer", "Kunde")}</th>
-                        <th>{t("crm.owner", "Owner")}</th>
+                        <th>{t("crm.owner", "Owner (Verantwortlich)")}</th>
                         <th>{t("crm.region", "Region")}</th>
                     </tr>
                 </thead>
@@ -217,7 +227,7 @@ const SalesBoard = ({
                         <tr key={customer.id} onClick={() => onEntitySelect("customer", customer)}>
                             <td><input type="checkbox" aria-label={t("common.select", "Auswählen")} /></td>
                             <td>{customer.name || customer.companyName}</td>
-                            <td>{customer.ownerName || customer.owner || translate("crm.noOwner", "Kein Owner")}</td>
+                            <td>{customer.ownerName || customer.owner || translate("crm.noOwner", "Kein Owner (Verantwortlicher)")}</td>
                             <td>{customer.region || translate("crm.noRegion", "Keine Region")}</td>
                         </tr>
                     ))}
@@ -241,10 +251,10 @@ const SalesBoard = ({
         <section className="card">
             <div className="section-header">
                 <div>
-                    <p className="eyebrow">{t("crm.salesBoard", "Sales Board")}</p>
+                    <p className="eyebrow">{t("crm.salesBoard", "Sales Board (Vertriebsübersicht)")}</p>
                     <h2>{t("crm.revenueEngine", "Umsatz-Engine")}</h2>
                 </div>
-                <div className="muted tiny">{dateRange} · {ownerFilter}</div>
+                <div className="muted tiny">{dateRangeLabel} · {ownerFilterLabel}</div>
             </div>
             <div className="crm-tabs">
                 <button className={activeTab === "leads" ? "active" : ""} onClick={() => setActiveTab("leads")}>{t("crm.leads", "Leads")}</button>
@@ -259,14 +269,16 @@ const SalesBoard = ({
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
-                <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
-                    <option value="ALL">{t("common.all", "Alle")}</option>
-                    {(activeTab === "leads" ? leadStatuses : opportunityStages).map((status) => (
-                        <option key={status} value={status}>{status}</option>
-                    ))}
-                </select>
+                {activeTab !== "accounts" && (
+                    <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+                        <option value="ALL">{t("common.all", "Alle")}</option>
+                        {(activeTab === "leads" ? leadStatuses : opportunityStages).map((status) => (
+                            <option key={status} value={status}>{resolveStatusLabel(status)}</option>
+                        ))}
+                    </select>
+                )}
                 <select value={ownerSelection} onChange={(e) => setOwnerSelection(e.target.value)}>
-                    <option value="ALL">{t("crm.allOwners", "Alle Owner")}</option>
+                    <option value="ALL">{t("crm.allOwners", "Alle Owner (Verantwortliche)")}</option>
                     {ownerOptions.map((owner) => (
                         <option key={owner} value={owner}>{owner}</option>
                     ))}
