@@ -15,7 +15,10 @@ const PipelineOverview = ({
     opportunityStageCounts,
     campaignChannels,
     upcomingCampaigns,
-    formatDateTime
+    formatDateTime,
+    leadStatusLabels,
+    opportunityStageLabels,
+    campaignStatusLabels
 }) => {
     const { t } = useTranslation();
 
@@ -30,14 +33,14 @@ const PipelineOverview = ({
                     <select value={leadFilter} onChange={(e) => setLeadFilter(e.target.value)}>
                         <option value="ALL">{t("common.all", "Alle")}</option>
                         {leadStatuses.map((status) => (
-                            <option key={status} value={status}>{status}</option>
+                            <option key={status} value={status}>{leadStatusLabels?.[status] ?? status}</option>
                         ))}
                     </select>
                 </div>
                 <div className="pill-row">
                     {leadStatusCounts.map(({ status, count }) => (
                         <span key={status} className="pill">
-                            {status} · {count}
+                            {leadStatusLabels?.[status] ?? status} · {count}
                         </span>
                     ))}
                 </div>
@@ -51,14 +54,14 @@ const PipelineOverview = ({
                     <select value={oppFilter} onChange={(e) => setOppFilter(e.target.value)}>
                         <option value="ALL">{t("common.all", "Alle")}</option>
                         {opportunityStages.map((stage) => (
-                            <option key={stage} value={stage}>{stage}</option>
+                            <option key={stage} value={stage}>{opportunityStageLabels?.[stage] ?? stage}</option>
                         ))}
                     </select>
                 </div>
                 <div className="pill-row">
                     {opportunityStageCounts.map(({ stage, count }) => (
                         <span key={stage} className="pill">
-                            {stage} · {count}
+                            {opportunityStageLabels?.[stage] ?? stage} · {count}
                         </span>
                     ))}
                 </div>
@@ -72,7 +75,7 @@ const PipelineOverview = ({
                     <select value={campaignFilter} onChange={(e) => setCampaignFilter(e.target.value)}>
                         <option value="ALL">{t("common.all", "Alle")}</option>
                         {campaignStatuses.map((status) => (
-                            <option key={status} value={status}>{status}</option>
+                            <option key={status} value={status}>{campaignStatusLabels?.[status] ?? status}</option>
                         ))}
                     </select>
                 </div>

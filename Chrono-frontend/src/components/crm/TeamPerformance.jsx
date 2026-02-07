@@ -1,6 +1,6 @@
 import React, { useMemo } from "react";
 
-const TeamPerformance = ({ t, leads, opportunities, activities, ownerOptions, dateRange, ownerFilter }) => {
+const TeamPerformance = ({ t, leads, opportunities, activities, dateRangeLabel, ownerFilterLabel }) => {
     const leaderboard = useMemo(() => {
         const stats = {};
         const ensureOwner = (ownerKey) => {
@@ -38,20 +38,24 @@ const TeamPerformance = ({ t, leads, opportunities, activities, ownerOptions, da
 
     const maxPipeline = leaderboard[0]?.pipeline || 1;
 
+    const formatCurrency = (value) => {
+        return `CHF (Schweizer Franken) ${Number(value || 0).toLocaleString("de-CH")}`;
+    };
+
     return (
         <section className="card">
             <div className="section-header">
                 <div>
-                    <p className="eyebrow">{t("crm.teamPerformance", "Team Performance")}</p>
-                    <h2>{t("crm.leaderboard", "Leaderboard")}</h2>
+                    <p className="eyebrow">{t("crm.teamPerformance", "Team Performance (Teamleistung)")}</p>
+                    <h2>{t("crm.leaderboard", "Leaderboard (Rangliste)")}</h2>
                 </div>
-                <div className="muted tiny">{dateRange} · {ownerFilter}</div>
+                <div className="muted tiny">{dateRangeLabel} · {ownerFilterLabel}</div>
             </div>
             <div className="table-wrapper">
                 <table className="crm-table">
                     <thead>
                         <tr>
-                            <th>{t("crm.owner", "Owner")}</th>
+                            <th>{t("crm.owner", "Owner (Verantwortlich)")}</th>
                             <th>{t("crm.leads", "Leads")}</th>
                             <th>{t("crm.opportunities", "Opportunities")}</th>
                             <th>{t("crm.pipeline", "Pipeline")}</th>
@@ -70,7 +74,7 @@ const TeamPerformance = ({ t, leads, opportunities, activities, ownerOptions, da
                                 </td>
                                 <td>{row.leads}</td>
                                 <td>{row.opportunities}</td>
-                                <td>{row.pipeline ? `CHF ${row.pipeline.toLocaleString("de-CH")}` : "-"}</td>
+                                <td>{row.pipeline ? formatCurrency(row.pipeline) : "-"}</td>
                                 <td>{row.won}</td>
                                 <td>{row.activities}</td>
                             </tr>

@@ -12,11 +12,20 @@ const MarketingBoard = ({
     onCampaignUpdate,
     upcomingCampaigns,
     formatDateTime,
-    dateRange,
-    ownerFilter
+    dateRangeLabel,
+    ownerFilterLabel,
+    campaignStatusLabels
 }) => {
     const [channelFilter, setChannelFilter] = useState("ALL");
     const [search, setSearch] = useState("");
+
+    const formatCurrency = (value) => {
+        return `CHF (Schweizer Franken) ${Number(value || 0).toLocaleString("de-CH")}`;
+    };
+
+    const resolveStatusLabel = (status) => {
+        return campaignStatusLabels?.[status] ?? status;
+    };
 
     const channels = useMemo(() => {
         const unique = new Set();
@@ -42,9 +51,9 @@ const MarketingBoard = ({
             <div className="section-header">
                 <div>
                     <p className="eyebrow">{t("crm.marketing", "Marketing")}</p>
-                    <h2>{t("crm.marketingBoard", "Marketing Board")}</h2>
+                    <h2>{t("crm.marketingBoard", "Marketing Board (Kampagnenübersicht)")}</h2>
                 </div>
-                <div className="muted tiny">{dateRange} · {ownerFilter}</div>
+                <div className="muted tiny">{dateRangeLabel} · {ownerFilterLabel}</div>
             </div>
 
             <div className="filter-row">
@@ -57,7 +66,7 @@ const MarketingBoard = ({
                 <select value={campaignFilter} onChange={(e) => setCampaignFilter(e.target.value)}>
                     <option value="ALL">{t("common.all", "Alle")}</option>
                     {campaignStatuses.map((status) => (
-                        <option key={status} value={status}>{status}</option>
+                        <option key={status} value={status}>{resolveStatusLabel(status)}</option>
                     ))}
                 </select>
                 <select value={channelFilter} onChange={(e) => setChannelFilter(e.target.value)}>
@@ -89,13 +98,13 @@ const MarketingBoard = ({
                                     <td>
                                         <select value={campaign.status} onChange={(e) => onCampaignUpdate(campaign.id, e.target.value)}>
                                             {campaignStatuses.map((status) => (
-                                                <option key={status} value={status}>{status}</option>
+                                                <option key={status} value={status}>{resolveStatusLabel(status)}</option>
                                             ))}
                                         </select>
                                     </td>
                                     <td>{campaign.startDate ? formatDateTime(campaign.startDate) : "-"}</td>
                                     <td>{campaign.endDate ? formatDateTime(campaign.endDate) : "-"}</td>
-                                    <td>{campaign.budget ? `CHF ${campaign.budget.toLocaleString("de-CH")}` : t("crm.noBudget", "Kein Budget")}</td>
+                                    <td>{campaign.budget ? formatCurrency(campaign.budget) : t("crm.noBudget", "Kein Budget")}</td>
                                 </tr>
                             ))}
                             {filteredCampaigns.length === 0 && (
@@ -119,7 +128,7 @@ const MarketingBoard = ({
                             {t("crm.status", "Status")}
                             <select value={campaignForm.status} onChange={(e) => setCampaignForm({ ...campaignForm, status: e.target.value })}>
                                 {campaignStatuses.map((status) => (
-                                    <option key={status} value={status}>{status}</option>
+                                    <option key={status} value={status}>{resolveStatusLabel(status)}</option>
                                 ))}
                             </select>
                         </label>
