@@ -36,7 +36,7 @@ const defaultWorkflowTemplate = JSON.stringify(
                 checklist: [
                     { id: "packaging", label: "Verpackung unbeschädigt?", type: "boolean" },
                     { id: "quantity", label: "Menge bestätigt?", type: "number", binding: { field: "receivedQuantity" } },
-                    { id: "expirationDate", label: "MHD (YYYY-MM-DD)", type: "date" },
+                    { id: "expirationDate", label: "MHD (Mindesthaltbarkeitsdatum, YYYY-MM-DD)", type: "date" },
                 ],
                 requires: ["scan-item"],
             },
@@ -436,7 +436,7 @@ const SupplyChainDashboard = () => {
                 notify(
                     t(
                         "supplyChain.replenishmentPreviewFailed",
-                        "KI-Bedarfsanalyse konnte nicht geladen werden."
+                        "KI (Künstliche Intelligenz)-Bedarfsanalyse konnte nicht geladen werden."
                     ),
                     "error"
                 );
@@ -788,7 +788,7 @@ const SupplyChainDashboard = () => {
         try {
             if (navigator?.clipboard?.writeText) {
                 await navigator.clipboard.writeText(workflowSchema);
-                notify(t("supplyChain.workflowCopied", "Workflow-JSON kopiert."), "success");
+                notify(t("supplyChain.workflowCopied", "Workflow-JSON (JavaScript Object Notation) kopiert."), "success");
             } else {
                 throw new Error("Clipboard API unavailable");
             }
@@ -873,7 +873,7 @@ const SupplyChainDashboard = () => {
                                         <article className="card insight-card">
                                             <div className="panel-header">
                                                 <div>
-                                                    <h2>{t("supplyChain.replenishmentInsightsHeadline", "KI-Bedarfsanalyse")}</h2>
+                                                    <h2>{t("supplyChain.replenishmentInsightsHeadline", "KI (Künstliche Intelligenz)-Bedarfsanalyse")}</h2>
                                                     <p className="muted">
                                                         {t(
                                                             "supplyChain.replenishmentInsightsSummary",
@@ -926,7 +926,7 @@ const SupplyChainDashboard = () => {
                                                     <p>{t("supplyChain.replenishmentInsightsLoading", "Analysiere Bestellbedarf...")}</p>
                                                 ) : replenishmentError ? (
                                                     <p className="error-message">
-                                                        {t("supplyChain.replenishmentInsightsError", "Die KI-Bedarfsanalyse konnte nicht geladen werden.")}
+                                                        {t("supplyChain.replenishmentInsightsError", "Die KI (Künstliche Intelligenz)-Bedarfsanalyse konnte nicht geladen werden.")}
                                                     </p>
                                                 ) : !hasReplenishmentResults ? (
                                                     <p>
@@ -959,7 +959,7 @@ const SupplyChainDashboard = () => {
                                                                     <li key={`${item.productId ?? ""}-${item.sku ?? "no-sku"}`}>
                                                                         <div>
                                                                             <strong>{item.productName}</strong>
-                                                                            <span className="muted">SKU: {item.sku ?? "-"}</span>
+                                                                            <span className="muted">SKU (Stock Keeping Unit): {item.sku ?? "-"}</span>
                                                                         </div>
                                                                         <div className="insight-meta">
                                                                             <span className={`status-chip ${riskClass}`}>{riskLabel}</span>
@@ -1074,7 +1074,7 @@ const SupplyChainDashboard = () => {
                                             </div>
                                             <form className="form-grid" onSubmit={handleProductSubmit}>
                                                 <label>
-                                                    SKU
+                                                    SKU (Stock Keeping Unit)
                                                     <input
                                                         type="text"
                                                         value={productForm.sku}
@@ -1221,7 +1221,10 @@ const SupplyChainDashboard = () => {
                                                         : t("supplyChain.showOptionalFields", "Optionale Angaben anzeigen")}
                                                 </button>
                                                 <span className="muted small-print">
-                                                    {t("supplyChain.traceabilityHint", "Optionale Angaben aktivieren FEFO/MEFO-gerechte Entnahmen.")}
+                                                    {t(
+                                                        "supplyChain.traceabilityHint",
+                                                        "Optionale Angaben aktivieren FEFO (First Expired, First Out)/MEFO (Minimum Expiration, First Out)-gerechte Entnahmen."
+                                                    )}
                                                 </span>
                                             </div>
                                             <div className={`optional-fields${showAdjustmentDetails ? " open" : ""}`}>
@@ -1250,7 +1253,7 @@ const SupplyChainDashboard = () => {
                                                     />
                                                 </label>
                                                 <label>
-                                                    {t("supplyChain.expirationDate", "MHD")}
+                                                    {t("supplyChain.expirationDate", "MHD (Mindesthaltbarkeitsdatum)")}
                                                     <input
                                                         type="date"
                                                         value={adjustForm.expirationDate}
@@ -1397,7 +1400,7 @@ const SupplyChainDashboard = () => {
                                             </div>
                                             <form onSubmit={handleReceiveSubmit} className="form-grid">
                                                 <label>
-                                                    {t("supplyChain.purchaseOrderId", "Bestell-ID")}
+                                                    {t("supplyChain.purchaseOrderId", "Bestell-ID (Identifikationsnummer)")}
                                                     <input
                                                         type="number"
                                                         value={receiveForm.orderId}
@@ -1507,7 +1510,7 @@ const SupplyChainDashboard = () => {
                                             </div>
                                             <form className="form-grid" onSubmit={handleProductionStatusSubmit}>
                                                 <label>
-                                                    {t("supplyChain.productionOrderId", "Produktionsauftrag ID")}
+                                                    {t("supplyChain.productionOrderId", "Produktionsauftrag ID (Identifikationsnummer)")}
                                                     <input
                                                         type="number"
                                                         value={productionStatusForm.orderId}
@@ -1685,7 +1688,7 @@ const SupplyChainDashboard = () => {
                                             </div>
                                             <form onSubmit={handleFulfillSubmit} className="form-grid">
                                                 <label>
-                                                    {t("supplyChain.salesOrderId", "Auftrags-ID")}
+                                                    {t("supplyChain.salesOrderId", "Auftrags-ID (Identifikationsnummer)")}
                                                     <input
                                                         type="number"
                                                         value={fulfillForm.orderId}
@@ -1758,7 +1761,7 @@ const SupplyChainDashboard = () => {
                                             </div>
                                             <form className="form-grid" onSubmit={handleServiceStatusSubmit}>
                                                 <label>
-                                                    {t("supplyChain.serviceRequestId", "Serviceeinsatz ID")}
+                                                    {t("supplyChain.serviceRequestId", "Serviceeinsatz ID (Identifikationsnummer)")}
                                                     <input
                                                         type="number"
                                                         value={serviceStatusForm.requestId}
@@ -1804,7 +1807,7 @@ const SupplyChainDashboard = () => {
                                                 <table>
                                                     <thead>
                                                         <tr>
-                                                            <th>{t("supplyChain.id", "ID")}</th>
+                                                            <th>{t("supplyChain.id", "ID (Identifikationsnummer)")}</th>
                                                             <th>{t("supplyChain.subject", "Thema")}</th>
                                                             <th>{t("supplyChain.customer", "Kunde")}</th>
                                                             <th>{t("supplyChain.status", "Status")}</th>
@@ -1836,12 +1839,15 @@ const SupplyChainDashboard = () => {
                                         <div className="panel-header">
                                             <h2>{t("supplyChain.mobileWorkflowDesigner", "Low-Code Mobile Workflow Designer")}</h2>
                                             <p className="muted">
-                                                {t("supplyChain.mobileWorkflowSubtitle", "Konfigurieren Sie mobile MDE-Prozesse ohne Deployment – einfach JSON anpassen und sofort ausrollen.")}
+                                                {t(
+                                                    "supplyChain.mobileWorkflowSubtitle",
+                                                    "Konfigurieren Sie mobile MDE (Mobile Datenerfassung)-Prozesse ohne Deployment – einfach JSON (JavaScript Object Notation) anpassen und sofort ausrollen."
+                                                )}
                                             </p>
                                         </div>
                                         <div className="workflow-designer">
                                             <label>
-                                                {t("supplyChain.workflowJsonLabel", "Workflow-Definition (JSON)")}
+                                                {t("supplyChain.workflowJsonLabel", "Workflow-Definition (JSON, JavaScript Object Notation)")}
                                                 <textarea
                                                     value={workflowSchema}
                                                     onChange={(event) => setWorkflowSchema(event.target.value)}
@@ -1890,7 +1896,7 @@ const SupplyChainDashboard = () => {
                                                 {t("supplyChain.workflowResetCta", "Template wiederherstellen")}
                                             </button>
                                             <button type="button" className="primary" onClick={handleWorkflowCopy}>
-                                                {t("supplyChain.workflowCopyCta", "JSON kopieren")}
+                                                {t("supplyChain.workflowCopyCta", "JSON (JavaScript Object Notation) kopieren")}
                                             </button>
                                         </div>
                                     </article>
