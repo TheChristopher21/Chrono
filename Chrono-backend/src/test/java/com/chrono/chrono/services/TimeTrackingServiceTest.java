@@ -4,6 +4,7 @@ import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.entities.DailyNote;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.repositories.CustomerRepository;
 import com.chrono.chrono.repositories.DailyNoteRepository;
 import com.chrono.chrono.repositories.PayslipRepository;
@@ -111,6 +112,48 @@ class TimeTrackingServiceTest {
         int diff = timeTrackingService.computeDailyWorkDifference(user, date, Collections.emptyList(), List.of(start, end));
 
         assertEquals(-60, diff);
+    }
+
+
+    @Test
+    void computeDailyWorkDifference_companyVacationWithPunchesCountsWorkedTimeInsteadOfVacation() {
+        TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, date.atTime(16, 0), TimeTrackingEntry.PunchType.ENDE);
+
+        VacationRequest companyVacation = new VacationRequest();
+        companyVacation.setApproved(true);
+        companyVacation.setCompanyVacation(true);
+        companyVacation.setStartDate(date);
+        companyVacation.setEndDate(date);
+
+        when(dailyNoteRepository.findByUserAndNoteDate(user, date)).thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(date), any())).thenAnswer(invocation -> {
+            List<VacationRequest> vacations = invocation.getArgument(2);
+            return vacations.stream().anyMatch(VacationRequest::isCompanyVacation) ? 0 : 480;
+        });
+
+        int diff = timeTrackingService.computeDailyWorkDifference(user, date, List.of(companyVacation), List.of(start, end));
+
+        assertEquals(-60, diff);
+    }
+
+    @Test
+    void computeDailyWorkDifference_companyVacationWithoutPunchesStaysVacationDay() {
+        VacationRequest companyVacation = new VacationRequest();
+        companyVacation.setApproved(true);
+        companyVacation.setCompanyVacation(true);
+        companyVacation.setStartDate(date);
+        companyVacation.setEndDate(date);
+
+        when(dailyNoteRepository.findByUserAndNoteDate(user, date)).thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(date), any())).thenAnswer(invocation -> {
+            List<VacationRequest> vacations = invocation.getArgument(2);
+            return vacations.stream().anyMatch(VacationRequest::isCompanyVacation) ? 0 : 480;
+        });
+
+        int diff = timeTrackingService.computeDailyWorkDifference(user, date, List.of(companyVacation), Collections.emptyList());
+
+        assertEquals(0, diff);
     }
 
     @Test
