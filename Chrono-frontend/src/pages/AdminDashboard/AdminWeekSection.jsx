@@ -258,6 +258,25 @@ const EMPTY_PROBLEM_INDICATORS = {
     problematicDays: [],
 };
 
+const doesProblemMatchType = (problem, problemType) => {
+    if (!problem || !problem.type) return false;
+
+    if (problemType === 'any_incomplete') {
+        return problem.type.startsWith('incomplete_');
+    }
+
+    if (problemType === 'auto_completed') {
+        return problem.type === 'auto_completed_uncorrected'
+            || problem.type === 'auto_completed_incomplete_uncorrected';
+    }
+
+    if (problemType === 'any_problem') {
+        return !['holiday_pending_decision'].includes(problem.type);
+    }
+
+    return problem.type === problemType;
+};
+
 const sortUserCollection = (collection, sortConfig) => {
     const items = Array.isArray(collection) ? [...collection] : [];
     if (!sortConfig?.key) {
@@ -1166,19 +1185,29 @@ const AdminWeekSection = forwardRef(({
 
     const handleProblemIndicatorClick = (username, problemType, dateIso = null) => {
         let targetDateIso = dateIso;
-        // If no specific date is provided, find the first problematic day of that type for the user
+
+        // If no specific date is provided, open the first matching day, then cycle through
+        // further matches on repeated clicks of the same symbol.
         if (!targetDateIso) {
             const userProcData = processedUserData.find(ud => ud.username === username);
             if (userProcData?.problemIndicators?.problematicDays?.length > 0) {
                 const problemDays = userProcData.problemIndicators.problematicDays;
-                const firstProblemOfType = problemDays.find(p =>
-                    p.type === problemType ||
-                    (problemType === 'any_incomplete' && p.type.startsWith('incomplete_')) ||
-                    (problemType === 'auto_completed' && (p.type === 'auto_completed_uncorrected' || p.type === 'auto_completed_incomplete_uncorrected')) ||
-                    (problemType === 'any_problem' && !['holiday_pending_decision'].includes(p.type)) // Exclude pending holiday for generic 'any_problem'
-                );
-                if (firstProblemOfType) {
-                    targetDateIso = firstProblemOfType.dateIso;
+                const matchingProblems = problemDays.filter(p => doesProblemMatchType(p, problemType));
+
+                if (matchingProblems.length > 0) {
+                    const isRepeatClickOnSameIcon = focusedProblem.username === username
+                        && focusedProblem.type === problemType
+                        && focusedProblem.dateIso;
+
+                    if (isRepeatClickOnSameIcon) {
+                        const currentIndex = matchingProblems.findIndex(p => p.dateIso === focusedProblem.dateIso);
+                        const nextIndex = currentIndex >= 0
+                            ? (currentIndex + 1) % matchingProblems.length
+                            : 0;
+                        targetDateIso = matchingProblems[nextIndex]?.dateIso || matchingProblems[0]?.dateIso;
+                    } else {
+                        targetDateIso = matchingProblems[0]?.dateIso;
+                    }
                 } else if (problemType === 'holiday_pending_decision') {
                     // Specifically look for holiday_pending_decision if that was clicked
                     const firstHolidayPending = problemDays.find(p => p.type === 'holiday_pending_decision');
