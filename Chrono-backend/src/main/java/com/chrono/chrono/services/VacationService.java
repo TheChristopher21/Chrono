@@ -256,12 +256,8 @@ public class VacationService {
         LocalDate end = vr.getEndDate(); //
         boolean isHalfDay = vr.isHalfDay(); //
         long actualWorkDaysInVacationPeriod = 0; //
-        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-
-
         for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) { //
-            // workScheduleService.isDayOff berücksichtigt Wochenenden UND Feiertage
-            if (!workScheduleService.isDayOff(user, date)) { //
+            if (isChargeableVacationDay(user, date)) {
                 actualWorkDaysInVacationPeriod++; //
             }
         }
@@ -319,7 +315,7 @@ public class VacationService {
         } else {
             long actualWorkDaysInVacationPeriod = 0;
             for (LocalDate date = vr.getStartDate(); !date.isAfter(vr.getEndDate()); date = date.plusDays(1)) {
-                if (!workScheduleService.isDayOff(user, date)) {
+                if (isChargeableVacationDay(user, date)) {
                     actualWorkDaysInVacationPeriod++;
                 }
             }
@@ -535,9 +531,6 @@ public class VacationService {
                 : 25.0; //
         List<VacationRequest> vacations = vacationRepo.findByUserAndApprovedTrue(user); //
         double usedDays = 0.0; //
-        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-
-
         for (VacationRequest vr : vacations) { //
             if (!vr.isUsesOvertime() && !vr.isCompanyVacation()) { //
                 LocalDate startDate = vr.getStartDate(); //
@@ -545,8 +538,7 @@ public class VacationService {
 
                 for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) { //
                     if (date.getYear() == year) { //
-                        // workScheduleService.isDayOff berücksichtigt Feiertage und Wochenenden
-                        if (!workScheduleService.isDayOff(user, date)) { //
+                        if (isChargeableVacationDay(user, date)) {
                             usedDays += vr.isHalfDay() ? 0.5 : 1.0; //
                         }
                     }
@@ -564,8 +556,6 @@ public class VacationService {
         List<VacationRequest> userVacations = vacationRepo.findByUser(user); //
         boolean userSaldoChanged = false; //
         int totalRestoredMinutes = 0; //
-        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-
         for (VacationRequest vr : userVacations) { //
             if (vr.isApproved() && vr.isUsesOvertime() && (user.getIsHourly() == null || !user.getIsHourly())) { //
                 int minutesToRestore; //
@@ -574,8 +564,7 @@ public class VacationService {
                 } else {
                     long actualWorkDaysInVacationPeriod = 0; //
                     for (LocalDate date = vr.getStartDate(); !date.isAfter(vr.getEndDate()); date = date.plusDays(1)) { //
-                        // workScheduleService.isDayOff berücksichtigt Feiertage
-                        if (!workScheduleService.isDayOff(user, date)) { //
+                        if (isChargeableVacationDay(user, date)) {
                             actualWorkDaysInVacationPeriod++; //
                         }
                     }
@@ -613,7 +602,7 @@ public class VacationService {
     private double calculateRequestedVacationDays(User user, LocalDate start, LocalDate end, boolean halfDay) {
         double days = 0.0;
         for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
-            if (!workScheduleService.isDayOff(user, d)) {
+            if (isChargeableVacationDay(user, d)) {
                 days += 1.0;
             }
         }
@@ -621,6 +610,14 @@ public class VacationService {
             days -= 0.5;
         }
         return days;
+    }
+
+    private boolean isChargeableVacationDay(User user, LocalDate date) {
+        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
+        if (holidayService.isHoliday(date, cantonAbbreviation)) {
+            return false;
+        }
+        return !workScheduleService.isDayOff(user, date);
     }
 
 

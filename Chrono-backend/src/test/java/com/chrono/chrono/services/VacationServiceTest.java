@@ -118,6 +118,30 @@ class VacationServiceTest {
         assertThat(userCaptor.getAllValues().get(1).getTrackingBalanceInMinutes()).isEqualTo(720);
     }
 
+
+    @Test
+    void calculateRemainingVacationDays_ignoresPublicHolidayDays() {
+        employee.setAnnualVacationDays(25.0);
+
+        VacationRequest holidayOverlapVacation = new VacationRequest();
+        holidayOverlapVacation.setUser(employee);
+        holidayOverlapVacation.setApproved(true);
+        holidayOverlapVacation.setUsesOvertime(false);
+        holidayOverlapVacation.setCompanyVacation(false);
+        holidayOverlapVacation.setHalfDay(false);
+        holidayOverlapVacation.setStartDate(LocalDate.of(2024, 1, 1));
+        holidayOverlapVacation.setEndDate(LocalDate.of(2024, 1, 2));
+
+        when(userRepository.findByUsername("worker")).thenReturn(Optional.of(employee));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(employee)).thenReturn(java.util.List.of(holidayOverlapVacation));
+        when(holidayService.isHoliday(LocalDate.of(2024, 1, 1), null)).thenReturn(true);
+        when(holidayService.isHoliday(LocalDate.of(2024, 1, 2), null)).thenReturn(false);
+        when(workScheduleService.isDayOff(eq(employee), any(LocalDate.class))).thenReturn(false);
+
+        double remaining = vacationService.calculateRemainingVacationDays("worker", 2024);
+
+        assertThat(remaining).isEqualTo(24.0);
+    }
     @Test
     void adminUpdateVacation_throwsWhenAdminMissing() {
         when(vacationRequestRepository.findById(10L)).thenReturn(Optional.of(existingRequest));
