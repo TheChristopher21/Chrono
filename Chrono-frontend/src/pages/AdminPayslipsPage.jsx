@@ -130,6 +130,13 @@ const AdminPayslipsPage = () => {
     api.get('/api/payslips/admin/backup');
   };
 
+  const formatBilledOvertime = (ps) => {
+    if (!ps?.payoutOvertime || !ps?.overtimeHours || ps.overtimeHours <= 0) {
+      return '-';
+    }
+    return `${ps.overtimeHours.toFixed(2)} ${t('payslips.hoursUnit', 'Std.')}`;
+  };
+
   const uploadLogo = () => {
     if (!logoFile) return;
     const formData = new FormData();
@@ -226,6 +233,7 @@ const AdminPayslipsPage = () => {
                 <th>{t('payslips.period', 'Zeitraum')}</th>
                 <th>{t('payslips.gross', 'Brutto')}</th>
                 <th>{t('payslips.net', 'Netto')}</th>
+                <th>{t('payslips.billedOvertime', 'Abgerechnete Überstunden')}</th>
                 <th>{t('payslips.payoutDate', 'Auszahlungsdatum')}</th>
                 <th className="actions-col">{t('payslips.actions', 'Aktionen')}</th>
               </tr>
@@ -238,6 +246,7 @@ const AdminPayslipsPage = () => {
                       <td data-label={t('payslips.period', 'Zeitraum')}>{ps.periodStart} - {ps.periodEnd}</td>
                       <td data-label={t('payslips.gross', 'Brutto')}>{ps.grossSalary?.toFixed(2)} {ps.currency || 'CHF'}</td>
                       <td data-label={t('payslips.net', 'Netto')}>{ps.netSalary?.toFixed(2)} {ps.currency || 'CHF'}</td>
+                      <td data-label={t('payslips.billedOvertime', 'Abgerechnete Überstunden')}>{formatBilledOvertime(ps)}</td>
                       <td data-label={t('payslips.payoutDate', 'Auszahlungsdatum')}>{ps.payoutDate}</td>
                       <td data-label={t('payslips.actions', 'Aktionen')} className="actions-col">
                         <button onClick={() => editPayoutDate(ps.id, ps.payoutDate)}>{t('payslips.editPayout', 'Datum ändern')}</button>
@@ -247,7 +256,7 @@ const AdminPayslipsPage = () => {
                     </tr>
                     {(ps.employerContribList && ps.employerContribList.length > 0) || ps.employerContributions ? (
                       <tr className="employer-details">
-                        <td colSpan="6">
+                        <td colSpan="7">
                           <strong>{t('payslips.employerContrib', 'Arbeitgeberbeiträge')}:</strong>
                           {ps.employerContribList && ps.employerContribList.length > 0 && (
                             <ul>

@@ -58,6 +58,7 @@ public class PdfService {
             String deductionsHeader = en ? "Deductions" : "Abzüge";
             String employerHeader = en ? "Employer contribution" : "Arbeitgeberbeitrag";
             String overtimeLabel = en ? "Overtime balance" : "Überstundensaldo";
+            String billedOvertimeLabel = en ? "Billed overtime" : "Abgerechnete Überstunden";
             String vacationLabel = en ? "Remaining vacation" : "Resturlaub";
             String totalsHeader = en ? "Total" : "Summe";
             String grossLabel = en ? "Gross salary" : "Bruttolohn";
@@ -310,12 +311,17 @@ public class PdfService {
                     ps.getUser().getUsername(),
                     ps.getPeriodEnd() != null ? ps.getPeriodEnd().getYear() : LocalDate.now().getYear());
 
-            if (overtimeMinutes != 0 || vacationDays > 0) {
+            boolean hasBilledOvertime = ps.isPayoutOvertime() && ps.getOvertimeHours() != null && ps.getOvertimeHours() > 0;
+            if (overtimeMinutes != 0 || vacationDays > 0 || hasBilledOvertime) {
                 PdfPTable saldoTable = new PdfPTable(2);
                 saldoTable.setWidthPercentage(55);
                 saldoTable.setSpacingAfter(8);
                 String overtimeUnit = en ? "hrs" : "Std.";
                 String vacationUnit = en ? "days" : "Tage";
+                if (hasBilledOvertime) {
+                    saldoTable.addCell(cell(billedOvertimeLabel, labelFont, true));
+                    saldoTable.addCell(cell(String.format("%.2f %s", ps.getOvertimeHours(), overtimeUnit), normalFont, false));
+                }
                 if (overtimeMinutes != 0) {
                     saldoTable.addCell(cell(overtimeLabel, labelFont, true));
                     saldoTable.addCell(cell(String.format("%.1f %s", overtimeHours, overtimeUnit), normalFont, false));
