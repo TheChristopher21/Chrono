@@ -124,50 +124,6 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         setCurrentCantonForHolidays(cantonToUse);
     }, [newVacationUser, sickLeaveUser, users, currentUser]);
 
-    useEffect(() => {
-        const candidateDates = [];
-
-        if (Array.isArray(vacationRequests)) {
-            vacationRequests.forEach(vacation => {
-                const parsed = parseDateString(vacation?.startDate);
-                if (parsed) {
-                    candidateDates.push(parsed);
-                }
-            });
-        }
-
-        if (Array.isArray(allSickLeaves)) {
-            allSickLeaves.forEach(sickLeave => {
-                const parsed = parseDateString(sickLeave?.startDate);
-                if (parsed) {
-                    candidateDates.push(parsed);
-                }
-            });
-        }
-
-        if (candidateDates.length === 0) {
-            return;
-        }
-
-        const earliest = new Date(Math.min(...candidateDates.map(date => date.getTime())));
-        const targetMonth = new Date(earliest.getFullYear(), earliest.getMonth(), 1);
-
-        setActiveStartDate(prevDate => {
-            if (!prevDate) {
-                return targetMonth;
-            }
-
-            if (
-                prevDate.getFullYear() === targetMonth.getFullYear() &&
-                prevDate.getMonth() === targetMonth.getMonth()
-            ) {
-                return prevDate;
-            }
-
-            return targetMonth;
-        });
-    }, [vacationRequests, allSickLeaves]);
-
     const fetchHolidays = useCallback(async (year, canton) => {
         const key = `${year}-${canton || 'ALL'}`;
         if (loadedHolidayKeysRef.current.has(key)) {

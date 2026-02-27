@@ -69,8 +69,8 @@ describe('VacationCalendarAdmin admin editing', () => {
         const vacation = {
             id: 33,
             username: 'employee1',
-            startDate: '2024-02-05',
-            endDate: '2024-02-06',
+            startDate: formatLocalDateYMD(new Date()),
+            endDate: formatLocalDateYMD(new Date()),
             halfDay: false,
             usesOvertime: true,
             overtimeDeductionMinutes: 480,
@@ -121,6 +121,40 @@ describe('VacationCalendarAdmin admin editing', () => {
         );
         expect(notifyMock).toHaveBeenCalledWith({ message: 'Urlaubseintrag wurde aktualisiert.', type: 'success' });
         expect(onReloadVacations).toHaveBeenCalled();
+    });
+
+
+    it('shows the current month initially instead of the earliest vacation month', async () => {
+        api.get.mockImplementation((url) => {
+            if (url.includes('/api/holidays/details')) {
+                return Promise.resolve({ data: {} });
+            }
+            if (url.includes('/api/sick-leave')) {
+                return Promise.resolve({ data: [] });
+            }
+            return Promise.resolve({ data: [] });
+        });
+
+        render(
+            <VacationCalendarAdmin
+                vacationRequests={[
+                    {
+                        id: 100,
+                        username: 'employee1',
+                        startDate: '2025-04-01',
+                        endDate: '2025-04-01',
+                        color: '#336699',
+                    }
+                ]}
+                onReloadVacations={vi.fn()}
+                companyUsers={companyUsers}
+            />
+        );
+
+        const expectedCurrentMonth = new Date().toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+        await waitFor(() => {
+            expect(screen.getByText(expectedCurrentMonth)).toBeInTheDocument();
+        });
     });
 
     it('updates sick leave entries with admin-provided values', async () => {
