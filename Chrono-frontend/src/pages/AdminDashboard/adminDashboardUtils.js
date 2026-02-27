@@ -415,6 +415,27 @@ export function isLateTime(timeString) {
     } catch (e) { return false; }
 }
 
+function hasDuplicatePunchTimes(entries = []) {
+    const startTimes = new Set();
+    const endTimes = new Set();
+
+    for (const entry of entries) {
+        if (!entry || !entry.punchType) continue;
+        const normalizedTime = formatTime(entry.entryTimestamp);
+        if (!normalizedTime || normalizedTime === '--:--') continue;
+
+        if (entry.punchType === 'START') {
+            if (startTimes.has(normalizedTime)) return true;
+            startTimes.add(normalizedTime);
+        } else if (entry.punchType === 'ENDE') {
+            if (endTimes.has(normalizedTime)) return true;
+            endTimes.add(normalizedTime);
+        }
+    }
+
+    return false;
+}
+
 export function getDetailedGlobalProblemIndicators(
     userDailySummaries,
     userApprovedVacations, userConfig, defaultExpectedHours, userSickLeaves,
@@ -468,6 +489,15 @@ export function getDetailedGlobalProblemIndicators(
                     indicators.incompleteDaysCount++;
                     indicators.problematicDays.push({ dateIso: isoDate, type: 'incomplete_work_end_missing' });
                 }
+
+                const hasIncompleteProblem = indicators.problematicDays.some(
+                    p => p.dateIso === isoDate && p.type.startsWith('incomplete_')
+                );
+                if (hasDuplicatePunchTimes(summary.entries) && !hasIncompleteProblem) {
+                    indicators.incompleteDaysCount++;
+                    indicators.problematicDays.push({ dateIso: isoDate, type: 'incomplete_duplicate_punch_times' });
+                }
+
                 if (summary.needsCorrection) {
                     indicators.autoCompletedUncorrectedCount++;
                     const existingProblemIndex = indicators.problematicDays.findIndex(p => p.dateIso === isoDate && p.type.startsWith('incomplete'));
