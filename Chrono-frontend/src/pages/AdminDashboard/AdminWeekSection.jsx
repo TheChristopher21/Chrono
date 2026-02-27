@@ -30,7 +30,7 @@ import {
     addDays,
     selectTrackableUsers,
 } from "./adminDashboardUtils"; // Ensure this path is correct
-import {parseISO} from "date-fns"; // Make sure date-fns is installed
+import { parseISO, isValid } from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
 
 const HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY = 'adminDashboard_holidayOptions_v1';
@@ -366,6 +366,11 @@ const AdminWeekSection = forwardRef(({
     const [focusedProblem, setFocusedProblem] = useState({ username: null, dateIso: null, type: null });
     const [showOnlyIssues, setShowOnlyIssues] = useState(false);
     const [issueTypeFilters, setIssueTypeFilters] = useState(() => ({ ...DEFAULT_ISSUE_FILTER_STATE }));
+    const [weekJumpInputValue, setWeekJumpInputValue] = useState(() => formatLocalDateYMD(selectedMonday));
+
+    useEffect(() => {
+        setWeekJumpInputValue(formatLocalDateYMD(selectedMonday));
+    }, [selectedMonday]);
 
     const readHiddenUsersFromStorage = useCallback(() => {
         if (!browserHasStorage) return new Set();
@@ -1430,6 +1435,21 @@ const AdminWeekSection = forwardRef(({
         },
     }), [scrollSectionIntoView, setFiltersExclusive]);
 
+    const commitWeekJumpInput = useCallback((rawValue) => {
+        if (!rawValue) {
+            setWeekJumpInputValue(formatLocalDateYMD(selectedMonday));
+            return;
+        }
+
+        const parsedDate = parseISO(rawValue);
+        if (isValid(parsedDate)) {
+            handleWeekJump({ target: { value: rawValue } });
+            return;
+        }
+
+        setWeekJumpInputValue(formatLocalDateYMD(selectedMonday));
+    }, [handleWeekJump, selectedMonday]);
+
 
     return (
         <> {/* Added scoped-dashboard here */}
@@ -1456,8 +1476,15 @@ const AdminWeekSection = forwardRef(({
                             <button onClick={handlePrevWeek} aria-label={t('adminDashboard.prevWeek', 'Vorige Woche')}>←</button>
                             <input
                                 type="date"
-                                value={formatLocalDateYMD(selectedMonday)}
-                                onChange={handleWeekJump}
+                                value={weekJumpInputValue}
+                                onChange={(e) => setWeekJumpInputValue(e.target.value)}
+                                onBlur={(e) => commitWeekJumpInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                        commitWeekJumpInput(e.currentTarget.value);
+                                        e.currentTarget.blur();
+                                    }
+                                }}
                                 aria-label={t('adminDashboard.jumpToDate', 'Datum auswählen')}
                             />
                             <button onClick={handleNextWeek} aria-label={t('adminDashboard.nextWeek', 'Nächste Woche')}>→</button>
