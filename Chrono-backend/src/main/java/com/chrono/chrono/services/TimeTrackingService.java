@@ -448,8 +448,17 @@ public class TimeTrackingService {
     public int computeDailyWorkDifference(User user, LocalDate date, List<VacationRequest> approvedVacations, List<TimeTrackingEntry> entriesForDay) {
         DailyTimeSummaryDTO summary = calculateDailySummaryFromEntries(entriesForDay, user, date);
         int workedMinutes = summary.getWorkedMinutes();
-        // Die Methode im WorkScheduleService erwartet jetzt auch approvedVacations
-        int adjustedExpectedMinutes = workScheduleService.computeExpectedWorkMinutes(user, date, approvedVacations);
+        // Bei Betriebsurlaub gilt: nur dann als Urlaub behandeln, wenn nicht gestempelt wurde.
+        List<VacationRequest> vacationsForExpectedMinutes = approvedVacations;
+        boolean hasPunchesOnCompanyVacationDay = !entriesForDay.isEmpty() && approvedVacations.stream()
+                .anyMatch(vr -> vr.isCompanyVacation() && !date.isBefore(vr.getStartDate()) && !date.isAfter(vr.getEndDate()));
+        if (hasPunchesOnCompanyVacationDay) {
+            vacationsForExpectedMinutes = approvedVacations.stream()
+                    .filter(vr -> !vr.isCompanyVacation() || date.isBefore(vr.getStartDate()) || date.isAfter(vr.getEndDate()))
+                    .collect(Collectors.toList());
+        }
+
+        int adjustedExpectedMinutes = workScheduleService.computeExpectedWorkMinutes(user, date, vacationsForExpectedMinutes);
         return workedMinutes - adjustedExpectedMinutes;
     }
 
