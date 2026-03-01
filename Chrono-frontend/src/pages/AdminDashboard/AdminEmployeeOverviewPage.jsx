@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import ModalOverlay from '../../components/ModalOverlay';
+import EditTimeModal from './EditTimeModal';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import api from '../../utils/api';
@@ -18,6 +20,23 @@ import '../../styles/AdminEmployeeOverviewScoped.css';
 const isWorkDay = (dateObj) => {
     const day = dateObj.getDay();
     return day !== 0 && day !== 6;
+};
+
+const isDateInRange = (dateString, startDate, endDate) => {
+    if (!dateString || !startDate || !endDate) return false;
+    return dateString >= startDate && dateString <= endDate;
+};
+
+const getRequestStatusLabel = (request, t) => {
+    if (request?.approved) return t('approved', 'Genehmigt');
+    if (request?.denied) return t('denied', 'Abgelehnt');
+    return t('pending', 'Offen');
+};
+
+const getRequestStatusClass = (request) => {
+    if (request?.approved) return 'ok';
+    if (request?.denied) return 'bad';
+    return 'pending';
 };
 
 const countVacationDays = (vacations) => {
@@ -41,6 +60,7 @@ const countVacationDays = (vacations) => {
 const AdminEmployeeOverviewPage = () => {
     const { username: encodedUsername } = useParams();
     const username = decodeURIComponent(encodedUsername || '');
+    const todayYmd = formatLocalDateYMD(new Date());
     const { t } = useTranslation();
     const { notify } = useNotification();
 
@@ -50,16 +70,29 @@ const AdminEmployeeOverviewPage = () => {
     const [vacations, setVacations] = useState([]);
     const [corrections, setCorrections] = useState([]);
     const [trackingBalances, setTrackingBalances] = useState([]);
+    const [sickLeaves, setSickLeaves] = useState([]);
+
+    const [activeRequestTab, setActiveRequestTab] = useState('vacation');
+    const [selectedRequest, setSelectedRequest] = useState(null);
+
+    const [quickAction, setQuickAction] = useState(null);
+    const [vacationForm, setVacationForm] = useState({ startDate: todayYmd, endDate: todayYmd, halfDay: false });
+    const [sickForm, setSickForm] = useState({ startDate: todayYmd, endDate: todayYmd, halfDay: false, comment: '' });
+
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [editDate, setEditDate] = useState(null);
+    const [editDayEntries, setEditDayEntries] = useState([]);
 
     const fetchAllData = useCallback(async () => {
         setLoading(true);
         try {
-            const [usersRes, summariesRes, vacationsRes, correctionsRes, balancesRes] = await Promise.all([
+            const [usersRes, summariesRes, vacationsRes, correctionsRes, balancesRes, sickLeaveRes] = await Promise.all([
                 api.get('/api/admin/users'),
                 api.get('/api/admin/timetracking/all-summaries'),
                 api.get('/api/vacation/all'),
                 api.get('/api/correction/all'),
                 api.get('/api/admin/timetracking/admin/tracking-balances'),
+                api.get('/api/sick-leave/company'),
             ]);
 
             setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
@@ -67,6 +100,7 @@ const AdminEmployeeOverviewPage = () => {
             setVacations(Array.isArray(vacationsRes.data) ? vacationsRes.data : []);
             setCorrections(Array.isArray(correctionsRes.data) ? correctionsRes.data : []);
             setTrackingBalances(Array.isArray(balancesRes.data) ? balancesRes.data : []);
+            setSickLeaves(Array.isArray(sickLeaveRes.data) ? sickLeaveRes.data : []);
         } catch (error) {
             console.error('Fehler beim Laden der Mitarbeiter-Übersicht:', error);
             notify(t('adminEmployeeOverview.fetchError', 'Mitarbeiter-Übersicht konnte nicht geladen werden.'), 'error');
@@ -108,7 +142,9 @@ const AdminEmployeeOverviewPage = () => {
     );
 
     const employeeVacations = useMemo(
-        () => vacations.filter((vacation) => vacation?.username === username),
+        () => vacations
+            .filter((vacation) => vacation?.username === username)
+            .sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)),
         [vacations, username],
     );
 
@@ -117,6 +153,18 @@ const AdminEmployeeOverviewPage = () => {
             .filter((correction) => correction?.username === username)
             .sort((a, b) => new Date(b.requestDate || 0) - new Date(a.requestDate || 0)),
         [corrections, username],
+    );
+
+    const employeeSickLeaves = useMemo(
+        () => sickLeaves
+            .filter((entry) => entry?.username === username)
+            .sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)),
+        [sickLeaves, username],
+    );
+
+    const todaysSummary = useMemo(
+        () => employeeSummaries.find((entry) => entry?.date === todayYmd) || null,
+        [employeeSummaries, todayYmd],
     );
 
     const vacationStats = useMemo(() => {
@@ -144,11 +192,168 @@ const AdminEmployeeOverviewPage = () => {
         [weeklySummaries],
     );
 
-    const correctionStats = useMemo(() => ({
-        pending: employeeCorrections.filter((correction) => !correction.approved && !correction.denied).length,
-        approved: employeeCorrections.filter((correction) => correction.approved).length,
-        denied: employeeCorrections.filter((correction) => correction.denied).length,
-    }), [employeeCorrections]);
+    const weeklyTargetMinutes = useMemo(() => {
+        const workDays = weekDates.filter((dateString) => {
+            const dateObj = new Date(`${dateString}T00:00:00`);
+            return isWorkDay(dateObj);
+        }).length;
+        const perDay = Number(employee?.weeklyHours) > 0 ? (Number(employee.weeklyHours) * 60) / 5 : 0;
+        return Math.round(perDay * workDays);
+    }, [employee, weekDates]);
+
+    const weeklyDeltaMinutes = totalWorkedWeekMinutes - weeklyTargetMinutes;
+
+    const openItemsCount = useMemo(
+        () => employeeVacations.filter((vac) => !vac.approved && !vac.denied).length
+            + employeeCorrections.filter((corr) => !corr.approved && !corr.denied).length,
+        [employeeVacations, employeeCorrections],
+    );
+
+    const currentStatus = useMemo(() => {
+        const todayVacation = employeeVacations.find((vac) => !vac.denied && isDateInRange(todayYmd, vac.startDate, vac.endDate));
+        if (todayVacation) return { key: 'vacation', label: t('onVacation', 'In Urlaub') };
+
+        const todaySick = employeeSickLeaves.find((entry) => isDateInRange(todayYmd, entry.startDate, entry.endDate));
+        if (todaySick) return { key: 'sick', label: t('sickLeave.status.sick', 'Krank') };
+
+        return { key: 'active', label: t('active', 'Aktiv') };
+    }, [employeeSickLeaves, employeeVacations, t, todayYmd]);
+
+    const nextAbsence = useMemo(() => {
+        const upcoming = [
+            ...employeeVacations
+                .filter((item) => !item.denied && item.endDate >= todayYmd)
+                .map((item) => ({
+                    type: 'Urlaub',
+                    startDate: item.startDate,
+                    endDate: item.endDate,
+                })),
+            ...employeeSickLeaves
+                .filter((item) => item.endDate >= todayYmd)
+                .map((item) => ({
+                    type: 'Krank',
+                    startDate: item.startDate,
+                    endDate: item.endDate,
+                })),
+        ].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+        return upcoming[0] || null;
+    }, [employeeSickLeaves, employeeVacations, todayYmd]);
+
+    const weeklyAbsenceDays = useMemo(() => {
+        const coveredDays = new Set();
+        weekDates.forEach((dateStr) => {
+            const absent = employeeVacations.some((item) => !item.denied && isDateInRange(dateStr, item.startDate, item.endDate))
+                || employeeSickLeaves.some((item) => isDateInRange(dateStr, item.startDate, item.endDate));
+            if (absent) coveredDays.add(dateStr);
+        });
+        return coveredDays.size;
+    }, [employeeSickLeaves, employeeVacations, weekDates]);
+
+    const requestList = activeRequestTab === 'vacation' ? employeeVacations : employeeCorrections;
+
+    const handleApproveVacation = async (id) => {
+        try {
+            await api.post(`/api/vacation/approve/${id}`);
+            notify(t('adminDashboard.vacationApprovedMsg', 'Urlaub genehmigt.'), 'success');
+            setSelectedRequest(null);
+            fetchAllData();
+        } catch (err) {
+            notify(t('adminDashboard.vacationApproveErrorMsg', 'Fehler beim Genehmigen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
+        }
+    };
+
+    const handleDenyVacation = async (id) => {
+        try {
+            await api.post(`/api/vacation/deny/${id}`);
+            notify(t('adminDashboard.vacationDeniedMsg', 'Urlaub abgelehnt.'), 'success');
+            setSelectedRequest(null);
+            fetchAllData();
+        } catch (err) {
+            notify(t('adminDashboard.vacationDenyErrorMsg', 'Fehler beim Ablehnen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
+        }
+    };
+
+    const handleApproveCorrection = async (id) => {
+        try {
+            await api.post(`/api/correction/approve/${id}`, null, { params: { comment: '' } });
+            notify(`${t('adminDashboard.correctionApprovedMsg', 'Korrektur genehmigt')} #${id}`, 'success');
+            setSelectedRequest(null);
+            fetchAllData();
+        } catch (err) {
+            notify(`${t('adminDashboard.correctionErrorMsg', 'Fehler bei Korrekturantrag')} #${id}`, 'error');
+        }
+    };
+
+    const handleDenyCorrection = async (id) => {
+        try {
+            await api.post(`/api/correction/deny/${id}`, null, { params: { comment: '' } });
+            notify(`${t('adminDashboard.correctionDeniedMsg', 'Korrektur abgelehnt')} #${id}`, 'success');
+            setSelectedRequest(null);
+            fetchAllData();
+        } catch (err) {
+            notify(`${t('adminDashboard.correctionErrorMsg', 'Fehler bei Korrekturantrag')} #${id}`, 'error');
+        }
+    };
+
+    const handleQuickVacationSave = async (event) => {
+        event.preventDefault();
+        try {
+            await api.post('/api/vacation/adminCreate', null, {
+                params: {
+                    username,
+                    startDate: vacationForm.startDate,
+                    endDate: vacationForm.endDate,
+                    halfDay: vacationForm.halfDay,
+                },
+            });
+            notify(t('adminVacation.createdSuccess', 'Urlaub erfolgreich erstellt und direkt genehmigt'), 'success');
+            setQuickAction(null);
+            fetchAllData();
+        } catch (err) {
+            notify(t('adminVacation.createError', 'Fehler beim Anlegen des Urlaubs') + ': ' + (err.response?.data?.message || err.message), 'error');
+        }
+    };
+
+    const handleQuickSickSave = async (event) => {
+        event.preventDefault();
+        try {
+            await api.post('/api/sick-leave/report', null, {
+                params: {
+                    targetUsername: username,
+                    startDate: sickForm.startDate,
+                    endDate: sickForm.endDate,
+                    halfDay: sickForm.halfDay,
+                    comment: sickForm.comment,
+                },
+            });
+            notify(t('adminSickLeave.reportSuccess', 'Krankmeldung erfolgreich für Benutzer eingetragen.'), 'success');
+            setQuickAction(null);
+            fetchAllData();
+        } catch (err) {
+            notify(t('adminSickLeave.reportError', 'Fehler beim Eintragen der Krankmeldung:') + ' ' + (err.response?.data?.message || err.message), 'error');
+        }
+    };
+
+    const openEditModal = (targetDateString) => {
+        const dayData = employeeSummaries.find((entry) => entry?.date === targetDateString);
+        setEditDate(new Date(`${targetDateString}T00:00:00`));
+        setEditDayEntries(dayData?.entries || []);
+        setEditModalVisible(true);
+    };
+
+    const handleEditSubmit = async (updatedEntriesForDay) => {
+        if (!editDate || !username) return;
+        const formattedDate = formatLocalDateYMD(editDate);
+        try {
+            await api.put(`/api/admin/timetracking/editDay/${username}/${formattedDate}`, updatedEntriesForDay);
+            notify(t('adminDashboard.editSuccessfulMsg', 'Zeiten erfolgreich bearbeitet.'), 'success');
+            setEditModalVisible(false);
+            fetchAllData();
+        } catch (err) {
+            notify(t('adminDashboard.editFailed', 'Fehler beim Bearbeiten') + ': ' + (err.response?.data?.message || err.message), 'error');
+        }
+    };
 
     return (
         <div className="employee-overview-page">
@@ -158,18 +363,25 @@ const AdminEmployeeOverviewPage = () => {
                     <div>
                         <h1>{t('adminEmployeeOverview.title', 'Mitarbeiter-Übersicht')}</h1>
                         <p>
-                            {t('adminEmployeeOverview.subtitle', 'Alle relevanten Informationen auf einen Blick für')}{' '}
-                            <strong>{username}</strong>
+                            <strong>{employee?.firstName || ''} {employee?.lastName || ''} ({username})</strong>
+                            {' · '}
+                            {employee?.role || t('role', 'Rolle')}
+                            {employee?.department ? ` · ${employee.department}` : ''}
+                            {employee?.team ? ` · ${employee.team}` : ''}
                         </p>
                     </div>
-                    <Link className="back-to-dashboard-button" to="/admin/dashboard">
-                        {t('adminEmployeeOverview.backToDashboard', 'Zurück zum Dashboard')}
-                    </Link>
+                    <div className="header-right-actions">
+                        <span className={`status-pill ${currentStatus.key}`}>{currentStatus.label}</span>
+                        <button className="quick-action-btn" onClick={() => setQuickAction('vacation')}>+ Urlaub eintragen</button>
+                        <button className="quick-action-btn" onClick={() => setQuickAction('sick')}>+ Krank eintragen</button>
+                        <button className="quick-action-btn" onClick={() => openEditModal(todayYmd)}>+ Korrektur erfassen</button>
+                        <Link className="back-to-dashboard-button" to="/admin/dashboard">{t('adminEmployeeOverview.backToDashboard', 'Zurück zum Dashboard')}</Link>
+                    </div>
                 </section>
 
                 {loading ? (
-                    <section className="card-style employee-overview-state">
-                        {t('loading', 'Lade...')}
+                    <section className="employee-overview-skeleton-grid">
+                        {Array.from({ length: 8 }).map((_, idx) => <div key={idx} className="skeleton-card card-style" />)}
                     </section>
                 ) : !employee ? (
                     <section className="card-style employee-overview-state">
@@ -179,89 +391,176 @@ const AdminEmployeeOverviewPage = () => {
                     <>
                         <section className="employee-overview-kpis">
                             <article className="card-style kpi-card">
-                                <h3>{t('adminEmployeeOverview.timeWeek', 'Zeiterfassung – aktuelle Woche')}</h3>
-                                <p>{t('actualHours', 'Ist')}: <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></p>
-                                <p>{t('breakTime', 'Pause')}: <strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
-                                <p>{t('balanceTotal', 'Gesamtsaldo')}: <strong>{minutesToHHMM(employeeBalance?.trackingBalance || 0)}</strong></p>
+                                <h3>Heute</h3>
+                                <p><strong>{todaysSummary ? t('adminDashboard.stamped', 'Gestempelt') : t('adminDashboard.noDataShort', 'Keine Daten')}</strong></p>
+                                <p>{todaysSummary ? `${minutesToHHMM(todaysSummary.workedMinutes || 0)} · ${minutesToHHMM(todaysSummary.breakMinutes || 0)}` : t('adminEmployeeOverview.noTrackingData', 'Keine Zeiterfassungen vorhanden.')}</p>
                             </article>
                             <article className="card-style kpi-card">
-                                <h3>{t('vacationTitle', 'Urlaubstage')}</h3>
+                                <h3>Woche</h3>
+                                <p>Soll {minutesToHHMM(weeklyTargetMinutes)} / Ist <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></p>
+                                <p>{t('overtime', 'Überstunden')}: <strong>{minutesToHHMM(weeklyDeltaMinutes)}</strong></p>
+                            </article>
+                            <article className="card-style kpi-card">
+                                <h3>{t('vacationTitle', 'Urlaub')}</h3>
                                 <p>{t('remainingVacation', 'Verfügbar')}: <strong>{vacationStats.availableDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
-                                <p>{t('adminEmployeeOverview.plannedVacation', 'Geplant')}: <strong>{vacationStats.plannedDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
-                                <p>{t('myVacations', 'Genommen')}: <strong>{vacationStats.takenDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
+                                <p>{t('adminEmployeeOverview.plannedVacation', 'Geplant')}: {vacationStats.plannedDays.toFixed(1)} · {t('myVacations', 'Genommen')}: {vacationStats.takenDays.toFixed(1)}</p>
                             </article>
                             <article className="card-style kpi-card">
-                                <h3>{t('correctionRequests', 'Anträge')}</h3>
-                                <p>{t('adminEmployeeOverview.pending', 'Offen')}: <strong>{correctionStats.pending}</strong></p>
-                                <p>{t('adminEmployeeOverview.approved', 'Genehmigt')}: <strong>{correctionStats.approved}</strong></p>
-                                <p>{t('adminEmployeeOverview.denied', 'Abgelehnt')}: <strong>{correctionStats.denied}</strong></p>
+                                <h3>{t('adminEmployeeOverview.pending', 'Offen')}</h3>
+                                <p><strong>{openItemsCount}</strong> {t('adminDashboard.openRequests', 'Anträge')}</p>
+                                <p>{t('balanceTotal', 'Gesamtsaldo')}: {minutesToHHMM(employeeBalance?.trackingBalance || 0)}</p>
                             </article>
                         </section>
 
                         <section className="employee-overview-grid">
-                            <article className="card-style employee-overview-card calendar-card">
-                                <h2>{t('adminEmployeeOverview.calendarTitle', 'Kalender & direkte Aktionen')}</h2>
-                                <p className="card-subtitle">{t('adminEmployeeOverview.calendarSubtitle', 'Urlaub/Krank direkt für diesen Mitarbeiter erfassen.')}</p>
-                                <VacationCalendarAdmin
-                                    vacationRequests={employeeVacations}
-                                    onReloadVacations={fetchAllData}
-                                    companyUsers={users}
-                                    focusUsername={username}
-                                />
-                            </article>
+                            <div className="left-column">
+                                <article className="card-style employee-overview-card">
+                                    <div className="card-heading-row">
+                                        <h2>Zeiterfassung – diese Woche</h2>
+                                        <button className="text-link-btn" onClick={() => openEditModal(todayYmd)}>{t('adminDashboard.details', 'Details anzeigen')}</button>
+                                    </div>
+                                    <div className="week-compact-grid">
+                                        {weekDates.map((dateString) => {
+                                            const dayEntry = weeklySummaries.find((entry) => entry.date === dateString);
+                                            return (
+                                                <button key={dateString} className="week-day-tile" onClick={() => openEditModal(dateString)}>
+                                                    <span>{formatDateWithWeekday(new Date(`${dateString}T00:00:00`))}</span>
+                                                    <strong>{dayEntry ? minutesToHHMM(dayEntry.workedMinutes || 0) : '--:--'}</strong>
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                    <div className="mini-stats-row">
+                                        <span>Gesamtstunden: <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></span>
+                                        <span>Überstunden/Minus: <strong>{minutesToHHMM(weeklyDeltaMinutes)}</strong></span>
+                                        <span>Fehlzeiten: <strong>{weeklyAbsenceDays} Tage</strong></span>
+                                    </div>
+                                </article>
 
-                            <article className="card-style employee-overview-card">
-                                <h2>{t('adminEmployeeOverview.latestTracking', 'Letzte Zeiterfassungs-Tage')}</h2>
-                                <div className="compact-list">
-                                    {employeeSummaries.slice(0, 8).map((entry) => (
-                                        <div className="compact-list-item" key={`${entry.username}-${entry.date}`}>
-                                            <span>{formatDateWithWeekday(new Date(`${entry.date}T00:00:00`))}</span>
-                                            <span>{minutesToHHMM(entry.workedMinutes || 0)} / {minutesToHHMM(entry.breakMinutes || 0)}</span>
+                                <article className="card-style employee-overview-card">
+                                    <div className="card-heading-row">
+                                        <h2>{t('correctionRequests', 'Anträge')}</h2>
+                                        <div className="request-tabs">
+                                            <button className={activeRequestTab === 'vacation' ? 'active' : ''} onClick={() => setActiveRequestTab('vacation')}>Urlaub</button>
+                                            <button className={activeRequestTab === 'correction' ? 'active' : ''} onClick={() => setActiveRequestTab('correction')}>Korrektur</button>
                                         </div>
-                                    ))}
-                                    {employeeSummaries.length === 0 && (
-                                        <p className="empty-state">{t('adminEmployeeOverview.noTrackingData', 'Keine Zeiterfassungen vorhanden.')}</p>
-                                    )}
-                                </div>
-                            </article>
+                                    </div>
+                                    <div className="compact-list">
+                                        {requestList.slice(0, 5).map((item) => (
+                                            <button
+                                                className="compact-list-item"
+                                                key={`${activeRequestTab}-${item.id}`}
+                                                onClick={() => setSelectedRequest({ type: activeRequestTab, data: item })}
+                                            >
+                                                <span>
+                                                    {activeRequestTab === 'vacation'
+                                                        ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
+                                                        : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-')}
+                                                </span>
+                                                <span className={`status-pill ${getRequestStatusClass(item)}`}>{getRequestStatusLabel(item, t)}</span>
+                                            </button>
+                                        ))}
+                                        {requestList.length === 0 && <p className="empty-state">{t('adminCorrections.noRequestsFound', 'Keine Anträge vorhanden.')}</p>}
+                                    </div>
+                                    {requestList.length > 5 && <button className="text-link-btn">Alle anzeigen</button>}
+                                </article>
+                            </div>
 
-                            <article className="card-style employee-overview-card">
-                                <h2>{t('adminEmployeeOverview.vacationRequestsTitle', 'Urlaubsanträge')}</h2>
-                                <div className="compact-list">
-                                    {employeeVacations.slice().sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)).slice(0, 8).map((vacation) => (
-                                        <div className="compact-list-item" key={`vac-${vacation.id}`}>
-                                            <span>{formatDate(new Date(`${vacation.startDate}T00:00:00`))} – {formatDate(new Date(`${vacation.endDate}T00:00:00`))}</span>
-                                            <span className={`status-pill ${vacation.approved ? 'ok' : vacation.denied ? 'bad' : 'pending'}`}>
-                                                {vacation.approved ? t('approved', 'Genehmigt') : vacation.denied ? t('denied', 'Abgelehnt') : t('pending', 'Offen')}
-                                            </span>
-                                        </div>
-                                    ))}
-                                    {employeeVacations.length === 0 && (
-                                        <p className="empty-state">{t('adminEmployeeOverview.noVacationRequests', 'Keine Urlaubsanträge vorhanden.')}</p>
-                                    )}
-                                </div>
-                            </article>
-
-                            <article className="card-style employee-overview-card">
-                                <h2>{t('adminEmployeeOverview.correctionsTitle', 'Korrekturanträge')}</h2>
-                                <div className="compact-list">
-                                    {employeeCorrections.slice(0, 8).map((correction) => (
-                                        <div className="compact-list-item" key={`corr-${correction.id}`}>
-                                            <span>{correction.requestDate ? formatDate(new Date(correction.requestDate)) : '-'}</span>
-                                            <span className={`status-pill ${correction.approved ? 'ok' : correction.denied ? 'bad' : 'pending'}`}>
-                                                {correction.approved ? t('approved', 'Genehmigt') : correction.denied ? t('denied', 'Abgelehnt') : t('pending', 'Offen')}
-                                            </span>
-                                        </div>
-                                    ))}
-                                    {employeeCorrections.length === 0 && (
-                                        <p className="empty-state">{t('adminEmployeeOverview.noCorrections', 'Keine Korrekturanträge vorhanden.')}</p>
-                                    )}
-                                </div>
-                            </article>
+                            <div className="right-column">
+                                <article className="card-style employee-overview-card calendar-card">
+                                    <h2>{t('adminEmployeeOverview.calendarTitle', 'Kalender')}</h2>
+                                    <p className="card-subtitle">{t('adminEmployeeOverview.calendarSubtitle', 'Urlaub/Krank direkt für diesen Mitarbeiter erfassen.')}</p>
+                                    <VacationCalendarAdmin
+                                        vacationRequests={employeeVacations}
+                                        onReloadVacations={fetchAllData}
+                                        companyUsers={users}
+                                        focusUsername={username}
+                                    />
+                                </article>
+                                <article className="card-style employee-overview-card absence-summary-card">
+                                    <h2>Abwesenheits-Zusammenfassung</h2>
+                                    <p>Nächste Abwesenheit: <strong>{nextAbsence ? `${nextAbsence.type} · ${formatDate(new Date(`${nextAbsence.startDate}T00:00:00`))}` : 'Keine geplant'}</strong></p>
+                                    <p>Aktueller Status: <strong>{currentStatus.label}</strong></p>
+                                    <p>Diese Woche: <strong>{weeklyAbsenceDays} Tage abwesend</strong></p>
+                                    <p>{t('breakTime', 'Pause')} (Woche): <strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
+                                </article>
+                            </div>
                         </section>
                     </>
                 )}
             </main>
+
+            {quickAction === 'vacation' && (
+                <ModalOverlay visible>
+                    <div className="modal-content employee-quick-modal">
+                        <h3>Urlaub eintragen – {username}</h3>
+                        <form onSubmit={handleQuickVacationSave} className="quick-form-grid">
+                            <label>Von<input type="date" value={vacationForm.startDate} onChange={(e) => setVacationForm((prev) => ({ ...prev, startDate: e.target.value }))} required /></label>
+                            <label>Bis<input type="date" value={vacationForm.endDate} onChange={(e) => setVacationForm((prev) => ({ ...prev, endDate: e.target.value }))} required /></label>
+                            <label className="checkbox-label"><input type="checkbox" checked={vacationForm.halfDay} onChange={(e) => setVacationForm((prev) => ({ ...prev, halfDay: e.target.checked }))} />Halbtag</label>
+                            <div className="modal-actions">
+                                <button type="button" onClick={() => setQuickAction(null)}>{t('cancel', 'Abbrechen')}</button>
+                                <button type="submit">{t('save', 'Speichern')}</button>
+                            </div>
+                        </form>
+                    </div>
+                </ModalOverlay>
+            )}
+
+            {quickAction === 'sick' && (
+                <ModalOverlay visible>
+                    <div className="modal-content employee-quick-modal">
+                        <h3>Krankmeldung eintragen – {username}</h3>
+                        <form onSubmit={handleQuickSickSave} className="quick-form-grid">
+                            <label>Von<input type="date" value={sickForm.startDate} onChange={(e) => setSickForm((prev) => ({ ...prev, startDate: e.target.value }))} required /></label>
+                            <label>Bis<input type="date" value={sickForm.endDate} onChange={(e) => setSickForm((prev) => ({ ...prev, endDate: e.target.value }))} required /></label>
+                            <label>Notiz<input type="text" value={sickForm.comment} onChange={(e) => setSickForm((prev) => ({ ...prev, comment: e.target.value }))} /></label>
+                            <label className="checkbox-label"><input type="checkbox" checked={sickForm.halfDay} onChange={(e) => setSickForm((prev) => ({ ...prev, halfDay: e.target.checked }))} />Halbtag</label>
+                            <div className="modal-actions">
+                                <button type="button" onClick={() => setQuickAction(null)}>{t('cancel', 'Abbrechen')}</button>
+                                <button type="submit">{t('save', 'Speichern')}</button>
+                            </div>
+                        </form>
+                    </div>
+                </ModalOverlay>
+            )}
+
+            {selectedRequest && (
+                <ModalOverlay visible>
+                    <div className="modal-content employee-quick-modal">
+                        <h3>{selectedRequest.type === 'vacation' ? 'Urlaubsantrag' : 'Korrekturantrag'} #{selectedRequest.data.id}</h3>
+                        <p>Status: <span className={`status-pill ${getRequestStatusClass(selectedRequest.data)}`}>{getRequestStatusLabel(selectedRequest.data, t)}</span></p>
+                        {selectedRequest.type === 'vacation' ? (
+                            <p>{formatDate(new Date(`${selectedRequest.data.startDate}T00:00:00`))} – {formatDate(new Date(`${selectedRequest.data.endDate}T00:00:00`))}</p>
+                        ) : (
+                            <>
+                                <p>Datum: {selectedRequest.data.requestDate ? formatDate(new Date(selectedRequest.data.requestDate)) : '-'}</p>
+                                <p>{selectedRequest.data.reason || '-'}</p>
+                            </>
+                        )}
+                        <div className="modal-actions">
+                            <button type="button" onClick={() => setSelectedRequest(null)}>{t('close', 'Schließen')}</button>
+                            {!selectedRequest.data.approved && !selectedRequest.data.denied && (
+                                <>
+                                    <button type="button" onClick={() => (selectedRequest.type === 'vacation' ? handleApproveVacation(selectedRequest.data.id) : handleApproveCorrection(selectedRequest.data.id))}>{t('approve', 'Genehmigen')}</button>
+                                    <button type="button" className="deny" onClick={() => (selectedRequest.type === 'vacation' ? handleDenyVacation(selectedRequest.data.id) : handleDenyCorrection(selectedRequest.data.id))}>{t('deny', 'Ablehnen')}</button>
+                                </>
+                            )}
+                        </div>
+                    </div>
+                </ModalOverlay>
+            )}
+
+            <EditTimeModal
+                t={t}
+                isVisible={editModalVisible}
+                targetDate={editDate}
+                dayEntries={editDayEntries}
+                targetUsername={username}
+                onSubmit={handleEditSubmit}
+                onClose={() => setEditModalVisible(false)}
+                users={users}
+            />
         </div>
     );
 };
