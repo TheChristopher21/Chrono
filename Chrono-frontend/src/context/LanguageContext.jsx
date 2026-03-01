@@ -1123,7 +1123,7 @@ const translations = {
         missingDateRange: "Zeitraum fehlt",
         weekBalance: "Wochensaldo",
         monthBalance: "Monatssaldo",
-        overallBalance: "Gesamtsaldo",
+        overallBalance: "Gesamtüberstunden",
         overtimeBalance: "Überstundenkonto",
         overtimeBalanceInfo: "Summe der Überstunden abzüglich genutzter Stunden.",
         noCorrections: "Keine Korrekturanträge vorhanden",
