@@ -41,6 +41,9 @@ const getRequestStatusClass = (request) => {
     return 'pending';
 };
 
+const getMonthStart = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+const getMonthEnd = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
+
 const formatPunchTypeLabel = (type, t) => {
     if (!type) return '';
     return t(`punchTypes.${type}`, type);
@@ -90,6 +93,8 @@ const AdminEmployeeOverviewPage = () => {
     const [editDate, setEditDate] = useState(null);
     const [editDayEntries, setEditDayEntries] = useState([]);
     const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
+    const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
+    const [timeRangeMode, setTimeRangeMode] = useState('week');
     const [problemCursor, setProblemCursor] = useState(-1);
 
     const fetchAllData = useCallback(async () => {
@@ -139,14 +144,26 @@ const AdminEmployeeOverviewPage = () => {
         [selectedMonday],
     );
 
-    const weeklySummaries = useMemo(
-        () => employeeSummaries.filter((entry) => weekDates.includes(entry?.date)),
-        [employeeSummaries, weekDates],
+    const monthDates = useMemo(() => {
+        const start = getMonthStart(selectedMonth);
+        const end = getMonthEnd(selectedMonth);
+        const dates = [];
+        for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, 1)) {
+            dates.push(formatLocalDateYMD(cursor));
+        }
+        return dates;
+    }, [selectedMonth]);
+
+    const visibleDates = timeRangeMode === 'month' ? monthDates : weekDates;
+
+    const periodSummaries = useMemo(
+        () => employeeSummaries.filter((entry) => visibleDates.includes(entry?.date)),
+        [employeeSummaries, visibleDates],
     );
 
-    const weeklyEntriesOverview = useMemo(
-        () => weekDates.map((dateString) => {
-            const summary = weeklySummaries.find((entry) => entry?.date === dateString);
+    const periodEntriesOverview = useMemo(
+        () => visibleDates.map((dateString) => {
+            const summary = periodSummaries.find((entry) => entry?.date === dateString);
             const entries = Array.isArray(summary?.entries)
                 ? [...summary.entries].sort((a, b) => new Date(a?.entryTimestamp || 0) - new Date(b?.entryTimestamp || 0))
                 : [];
@@ -156,7 +173,7 @@ const AdminEmployeeOverviewPage = () => {
                 entries,
             };
         }),
-        [weekDates, weeklySummaries],
+        [visibleDates, periodSummaries],
     );
 
     const employeeBalance = useMemo(
@@ -206,25 +223,25 @@ const AdminEmployeeOverviewPage = () => {
     }, [employee, employeeVacations]);
 
     const totalWorkedWeekMinutes = useMemo(
-        () => weeklySummaries.reduce((sum, entry) => sum + (entry?.workedMinutes || 0), 0),
-        [weeklySummaries],
+        () => periodSummaries.reduce((sum, entry) => sum + (entry?.workedMinutes || 0), 0),
+        [periodSummaries],
     );
 
     const totalBreakWeekMinutes = useMemo(
-        () => weeklySummaries.reduce((sum, entry) => sum + (entry?.breakMinutes || 0), 0),
-        [weeklySummaries],
+        () => periodSummaries.reduce((sum, entry) => sum + (entry?.breakMinutes || 0), 0),
+        [periodSummaries],
     );
 
-    const weeklyTargetMinutes = useMemo(() => {
-        const workDays = weekDates.filter((dateString) => {
+    const periodTargetMinutes = useMemo(() => {
+        const workDays = visibleDates.filter((dateString) => {
             const dateObj = new Date(`${dateString}T00:00:00`);
             return isWorkDay(dateObj);
         }).length;
         const perDay = Number(employee?.weeklyHours) > 0 ? (Number(employee.weeklyHours) * 60) / 5 : 0;
         return Math.round(perDay * workDays);
-    }, [employee, weekDates]);
+    }, [employee, visibleDates]);
 
-    const weeklyDeltaMinutes = totalWorkedWeekMinutes - weeklyTargetMinutes;
+    const periodDeltaMinutes = totalWorkedWeekMinutes - periodTargetMinutes;
 
     const openItemsCount = useMemo(
         () => employeeVacations.filter((vac) => !vac.approved && !vac.denied).length
@@ -272,6 +289,17 @@ const AdminEmployeeOverviewPage = () => {
         });
         return coveredDays.size;
     }, [employeeSickLeaves, employeeVacations, weekDates]);
+
+
+    const periodAbsenceDays = useMemo(() => {
+        const coveredDays = new Set();
+        visibleDates.forEach((dateStr) => {
+            const absent = employeeVacations.some((item) => !item.denied && isDateInRange(dateStr, item.startDate, item.endDate))
+                || employeeSickLeaves.some((item) => isDateInRange(dateStr, item.startDate, item.endDate));
+            if (absent) coveredDays.add(dateStr);
+        });
+        return coveredDays.size;
+    }, [employeeSickLeaves, employeeVacations, visibleDates]);
 
     const problemIndicators = useMemo(() => {
         const approvedVacations = employeeVacations.filter((vacation) => vacation?.approved);
@@ -465,6 +493,18 @@ const AdminEmployeeOverviewPage = () => {
         setProblemCursor(-1);
     };
 
+    const goToPreviousMonth = () => {
+        setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+    };
+
+    const goToNextMonth = () => {
+        setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+    };
+
+    const goToCurrentMonth = () => {
+        setSelectedMonth(getMonthStart(new Date()));
+    };
+
     const handleCycleProblem = () => {
         if (weeklyProblems.length === 0) return;
         const nextIndex = (problemCursor + 1) % weeklyProblems.length;
@@ -511,8 +551,8 @@ const AdminEmployeeOverviewPage = () => {
                             </article>
                             <article className="card-style kpi-card">
                                 <h3>Woche</h3>
-                                <p>Soll {minutesToHHMM(weeklyTargetMinutes)} / Ist <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></p>
-                                <p>{t('overtime', 'Überstunden')}: <strong>{minutesToHHMM(weeklyDeltaMinutes)}</strong></p>
+                                <p>Soll {minutesToHHMM(periodTargetMinutes)} / Ist <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></p>
+                                <p>{t('overtime', 'Überstunden')}: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></p>
                             </article>
                             <article className="card-style kpi-card">
                                 <h3>{t('vacationTitle', 'Urlaub')}</h3>
@@ -530,27 +570,42 @@ const AdminEmployeeOverviewPage = () => {
                             <div className="left-column">
                                 <article className="card-style employee-overview-card">
                                     <div className="card-heading-row">
-                                        <h2>Zeiterfassung – diese Woche</h2>
+                                        <h2>Zeiterfassung</h2>
+                                        <div className="request-tabs">
+                                            <button className={timeRangeMode === 'week' ? 'active' : ''} onClick={() => setTimeRangeMode('week')}>Woche</button>
+                                            <button className={timeRangeMode === 'month' ? 'active' : ''} onClick={() => setTimeRangeMode('month')}>Monat</button>
+                                        </div>
                                     </div>
                                     <div className="week-navigation-row">
-                                        <button type="button" className="text-link-btn" onClick={goToPreviousWeek}>←</button>
-                                        <strong>
-                                            {formatDate(new Date(`${weekDates[0]}T00:00:00`))} – {formatDate(new Date(`${weekDates[6]}T00:00:00`))}
-                                        </strong>
-                                        <button type="button" className="text-link-btn" onClick={goToNextWeek}>→</button>
-                                        <button type="button" className="text-link-btn" onClick={goToCurrentWeek}>Diese Woche</button>
+                                        {timeRangeMode === 'month' ? (
+                                            <>
+                                                <button type="button" className="text-link-btn" onClick={goToPreviousMonth}>←</button>
+                                                <strong>{selectedMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}</strong>
+                                                <button type="button" className="text-link-btn" onClick={goToNextMonth}>→</button>
+                                                <button type="button" className="text-link-btn" onClick={goToCurrentMonth}>Dieser Monat</button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button type="button" className="text-link-btn" onClick={goToPreviousWeek}>←</button>
+                                                <strong>
+                                                    {formatDate(new Date(`${weekDates[0]}T00:00:00`))} – {formatDate(new Date(`${weekDates[6]}T00:00:00`))}
+                                                </strong>
+                                                <button type="button" className="text-link-btn" onClick={goToNextWeek}>→</button>
+                                                <button type="button" className="text-link-btn" onClick={goToCurrentWeek}>Diese Woche</button>
+                                            </>
+                                        )}
                                     </div>
                                     <div className="mini-stats-row">
                                         <span>Gesamtstunden: <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></span>
-                                        <span>Überstunden/Minus: <strong>{minutesToHHMM(weeklyDeltaMinutes)}</strong></span>
-                                        <span>Fehlzeiten: <strong>{weeklyAbsenceDays} Tage</strong></span>
+                                        <span>Überstunden/Minus: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></span>
+                                        <span>Fehlzeiten: <strong>{periodAbsenceDays} Tage</strong></span>
                                     </div>
                                     <div className="punch-overview-list">
                                         <div className="card-heading-row">
                                             <h3>Gestempelte Zeiten</h3>
                                         </div>
                                         <div className="compact-list">
-                                            {weeklyEntriesOverview.map(({ dateString, summary, entries }) => (
+                                            {periodEntriesOverview.map(({ dateString, summary, entries }) => (
                                                 <div className="punch-overview-item" key={`punch-${dateString}`}>
                                                     <div className="punch-overview-header">
                                                         <strong>{formatDateWithWeekday(new Date(`${dateString}T00:00:00`))}</strong>
