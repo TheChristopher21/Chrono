@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import ModalOverlay from './ModalOverlay';
 import PropTypes from 'prop-types';
 import Calendar from 'react-calendar';
@@ -36,7 +36,7 @@ function parseDateString(dateString) {
     return new Date(year, month - 1, day);
 }
 
-const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUsers: initialCompanyUsers }) => {
+const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUsers: initialCompanyUsers, focusUsername = null }) => {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -86,6 +86,27 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     // const [selectedUserForSickLeaveDetails, setSelectedUserForSickLeaveDetails] = useState(null); // Entfernt, da currentCantonForHolidays ausreicht
 
     const selectedUserDetailsForVacation = users.find(u => u.username === newVacationUser);
+
+    const scopedUsers = useMemo(() => {
+        if (!focusUsername) return users;
+        return users.filter((user) => user?.username === focusUsername);
+    }, [focusUsername, users]);
+
+    const scopedVacationRequests = useMemo(() => {
+        if (!focusUsername) return vacationRequests;
+        return vacationRequests.filter((vacation) => vacation?.username === focusUsername);
+    }, [focusUsername, vacationRequests]);
+
+    const scopedSickLeaves = useMemo(() => {
+        if (!focusUsername) return allSickLeaves;
+        return allSickLeaves.filter((sickLeave) => sickLeave?.username === focusUsername);
+    }, [focusUsername, allSickLeaves]);
+
+    useEffect(() => {
+        if (!focusUsername) return;
+        setNewVacationUser(focusUsername);
+        setSickLeaveUser(focusUsername);
+    }, [focusUsername]);
 
     const fetchAllUsers = useCallback(async () => {
         if (initialCompanyUsers && initialCompanyUsers.length > 0) {
@@ -511,7 +532,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
             // Urlaubs-Marker
             // Die 'itemInRange'-Funktion sollte ebenfalls mit dem lokalen 'date'-Objekt und den YYYY-MM-DD Strings aus 'vac' arbeiten.
-            const vacsToday = vacationRequests.filter((vac) => itemInRange(vac, date, date));
+            const vacsToday = scopedVacationRequests.filter((vac) => itemInRange(vac, date, date));
             if (vacsToday.length > 0) {
                 vacsToday.forEach((vac, index) => {
                     const bgColor = vac.color || '#767676';
@@ -554,7 +575,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             }
 
             // Krankheitsmarker
-            const sickTodayList = allSickLeaves.filter(sl => itemInRange(sl, date, date));
+            const sickTodayList = scopedSickLeaves.filter(sl => itemInRange(sl, date, date));
             sickTodayList.forEach((sick, index) => {
                 const sickColor = sick.color || '#FF6347';
                 const sickTextColor = getContrastYIQ(sickColor);
@@ -607,7 +628,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const handleVacationUserChange = (e) => {
         const selectedUsername = e.target.value;
         setNewVacationUser(selectedUsername);
-        const userDetails = users.find(u => u.username === selectedUsername);
+        const userDetails = scopedUsers.find(u => u.username === selectedUsername);
         if (!userDetails || !userDetails.isPercentage) {
             setNewVacationUsesOvertime(false);
             setOvertimeDeductionHours('');
@@ -750,7 +771,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                         disabled={Boolean(editingVacation)}
                                     >
                                         <option value="">{t('adminVacation.selectUserPlaceholder', 'Bitte Benutzer auswählen')}</option>
-                                        {users.map((u) => (<option key={u.id} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
+                                        {scopedUsers.map((u) => (<option key={u.id} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
                                     </select>
                                 </div>
                             )}
@@ -828,7 +849,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                     disabled={Boolean(editingSickLeave)}
                                 >
                                     <option value="">{t('adminSickLeave.selectUserPlaceholder', 'Bitte Benutzer auswählen')}</option>
-                                    {users.map((u) => (<option key={`sick-${u.id}`} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
+                                    {scopedUsers.map((u) => (<option key={`sick-${u.id}`} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
                                 </select>
                             </div>
                             <div className="form-group">
@@ -878,7 +899,8 @@ VacationCalendarAdmin.propTypes = {
         })
     ).isRequired,
     onReloadVacations: PropTypes.func,
-    companyUsers: PropTypes.array
+    companyUsers: PropTypes.array,
+    focusUsername: PropTypes.string,
 };
 
 export default VacationCalendarAdmin;

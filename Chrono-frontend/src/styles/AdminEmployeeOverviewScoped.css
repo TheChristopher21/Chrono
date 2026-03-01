@@ -1,0 +1,166 @@
+.employee-overview-page {
+  min-height: 100vh;
+  background: radial-gradient(circle at top left, #1f2432, #131722 60%);
+  color: #e5e7eb;
+}
+
+.employee-overview-main {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.employee-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.employee-overview-header h1 {
+  margin: 0;
+  font-size: 1.5rem;
+}
+
+.employee-overview-header p {
+  margin: 0.35rem 0 0;
+  color: #a7b0c3;
+}
+
+.back-to-dashboard-button {
+  background: #4f46e5;
+  color: #fff;
+  border-radius: 0.55rem;
+  padding: 0.55rem 0.85rem;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.employee-overview-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.kpi-card h3 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.kpi-card p {
+  margin: 0.3rem 0;
+}
+
+.employee-overview-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  grid-template-areas:
+    "calendar tracking vacations"
+    "calendar corrections corrections";
+  gap: 1rem;
+  align-items: start;
+}
+
+.employee-overview-card {
+  overflow: hidden;
+}
+
+.calendar-card {
+  grid-area: calendar;
+}
+
+.employee-overview-grid > .employee-overview-card:nth-child(2) {
+  grid-area: tracking;
+}
+
+.employee-overview-grid > .employee-overview-card:nth-child(3) {
+  grid-area: vacations;
+}
+
+.employee-overview-grid > .employee-overview-card:nth-child(4) {
+  grid-area: corrections;
+}
+
+.card-subtitle {
+  margin: 0.35rem 0 1rem;
+  color: #a7b0c3;
+  font-size: 0.88rem;
+}
+
+.compact-list {
+  display: grid;
+  gap: 0.5rem;
+  max-height: 18rem;
+  overflow: auto;
+  padding-right: 0.25rem;
+}
+
+.compact-list-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 0.55rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.88rem;
+}
+
+.status-pill {
+  border-radius: 999px;
+  padding: 0.12rem 0.5rem;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.status-pill.ok {
+  background: rgba(34, 197, 94, 0.2);
+  color: #4ade80;
+}
+
+.status-pill.bad {
+  background: rgba(239, 68, 68, 0.2);
+  color: #f87171;
+}
+
+.status-pill.pending {
+  background: rgba(250, 204, 21, 0.2);
+  color: #facc15;
+}
+
+.employee-overview-state {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.empty-state {
+  margin: 0.4rem 0;
+  color: #94a3b8;
+}
+
+@media (max-width: 1200px) {
+  .employee-overview-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas: none;
+  }
+
+  .calendar-card,
+  .employee-overview-grid > .employee-overview-card:nth-child(2),
+  .employee-overview-grid > .employee-overview-card:nth-child(3),
+  .employee-overview-grid > .employee-overview-card:nth-child(4) {
+    grid-area: auto;
+  }
+}
+
+@media (max-width: 900px) {
+  .employee-overview-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-overview-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

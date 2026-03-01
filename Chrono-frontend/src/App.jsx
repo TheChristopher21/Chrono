@@ -22,6 +22,7 @@ import UserDashboard from "./pages/UserDashboard/UserDashboard.jsx";
 import PercentagePunch from "./pages/PercentageDashboard/PercentageDashboard.jsx";
 import PersonalDataPage from "./pages/PersonalDataPage.jsx";
 import AdminDashboard from "./pages/AdminDashboard/AdminDashboard.jsx";
+import AdminEmployeeOverviewPage from "./pages/AdminDashboard/AdminEmployeeOverviewPage.jsx";
 import AdminUserManagementPage from "./pages/AdminUserManagement/AdminUserManagementPage.jsx";
 import AdminChangePassword from "./pages/AdminChangePassword.jsx";
 import AdminCustomersPage from "./pages/AdminCustomers/AdminCustomersPage.jsx";
@@ -83,6 +84,7 @@ function App() {
 
                         {/* Admin-Routen */}
                         <Route path="/admin/dashboard" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminDashboard /></PrivateRoute>} />
+                        <Route path="/admin/dashboard/mitarbeiter/:username" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminEmployeeOverviewPage /></PrivateRoute>} />
                         <Route path="/admin/users" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminUserManagementPage /></PrivateRoute>} />
                         <Route path="/admin/change-password" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminChangePassword /></PrivateRoute>} />
                         <Route
