@@ -84,7 +84,7 @@ const AdminEmployeeOverviewPage = () => {
     const [sickLeaves, setSickLeaves] = useState([]);
 
     const [activeRequestTab, setActiveRequestTab] = useState('vacation');
-    const [selectedRequest, setSelectedRequest] = useState(null);
+    const [decisionNotes, setDecisionNotes] = useState({});
 
     const [quickAction, setQuickAction] = useState(null);
     const [vacationForm, setVacationForm] = useState({ startDate: todayYmd, endDate: todayYmd, halfDay: false });
@@ -410,7 +410,6 @@ const AdminEmployeeOverviewPage = () => {
         try {
             await api.post(`/api/vacation/approve/${id}`);
             notify(t('adminDashboard.vacationApprovedMsg', 'Urlaub genehmigt.'), 'success');
-            setSelectedRequest(null);
             fetchAllData();
         } catch (err) {
             notify(t('adminDashboard.vacationApproveErrorMsg', 'Fehler beim Genehmigen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
@@ -421,29 +420,26 @@ const AdminEmployeeOverviewPage = () => {
         try {
             await api.post(`/api/vacation/deny/${id}`);
             notify(t('adminDashboard.vacationDeniedMsg', 'Urlaub abgelehnt.'), 'success');
-            setSelectedRequest(null);
             fetchAllData();
         } catch (err) {
             notify(t('adminDashboard.vacationDenyErrorMsg', 'Fehler beim Ablehnen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
         }
     };
 
-    const handleApproveCorrection = async (id) => {
+    const handleApproveCorrection = async (id, comment = '') => {
         try {
-            await api.post(`/api/correction/approve/${id}`, null, { params: { comment: '' } });
+            await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionApprovedMsg', 'Korrektur genehmigt')} #${id}`, 'success');
-            setSelectedRequest(null);
             fetchAllData();
         } catch (err) {
             notify(`${t('adminDashboard.correctionErrorMsg', 'Fehler bei Korrekturantrag')} #${id}`, 'error');
         }
     };
 
-    const handleDenyCorrection = async (id) => {
+    const handleDenyCorrection = async (id, comment = '') => {
         try {
-            await api.post(`/api/correction/deny/${id}`, null, { params: { comment: '' } });
+            await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
             notify(`${t('adminDashboard.correctionDeniedMsg', 'Korrektur abgelehnt')} #${id}`, 'success');
-            setSelectedRequest(null);
             fetchAllData();
         } catch (err) {
             notify(`${t('adminDashboard.correctionErrorMsg', 'Fehler bei Korrekturantrag')} #${id}`, 'error');
@@ -489,12 +485,58 @@ const AdminEmployeeOverviewPage = () => {
         }
     };
 
-    const openEditModal = (targetDateString) => {
+    const openEditModal = useCallback((targetDateString) => {
         const dayData = employeeSummaries.find((entry) => entry?.date === targetDateString);
         setEditDate(new Date(`${targetDateString}T00:00:00`));
         setEditDayEntries(dayData?.entries || []);
         setEditModalVisible(true);
-    };
+    }, [employeeSummaries]);
+
+    const getDecisionNoteKey = useCallback((tab, id) => `${tab}-${id}`, []);
+
+    const handleRequestNoteChange = useCallback((tab, id, value) => {
+        const key = getDecisionNoteKey(tab, id);
+        setDecisionNotes((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+    }, [getDecisionNoteKey]);
+
+    const getRequestAnchorDate = useCallback((tab, item) => {
+        if (tab === 'vacation') return item?.startDate || null;
+        if (!item?.requestDate) return null;
+        return formatLocalDateYMD(new Date(item.requestDate));
+    }, []);
+
+    const handleOpenRequestDate = useCallback((tab, item) => {
+        const targetDate = getRequestAnchorDate(tab, item);
+        if (!targetDate) return;
+        setTimeRangeMode('week');
+        setSelectedMonday(getMondayOfWeek(new Date(`${targetDate}T00:00:00`)));
+        openEditModal(targetDate);
+    }, [getRequestAnchorDate, openEditModal]);
+
+    const handleRequestDecision = useCallback(async (tab, item, decision) => {
+        if (!item?.id) return;
+        const key = getDecisionNoteKey(tab, item.id);
+        const note = (decisionNotes[key] || '').trim();
+
+        if (tab === 'vacation') {
+            if (decision === 'approve') await handleApproveVacation(item.id);
+            if (decision === 'deny') await handleDenyVacation(item.id);
+        }
+
+        if (tab === 'correction') {
+            if (decision === 'approve') await handleApproveCorrection(item.id, note);
+            if (decision === 'deny') await handleDenyCorrection(item.id, note);
+        }
+
+        setDecisionNotes((prev) => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+        });
+    }, [decisionNotes, getDecisionNoteKey, handleApproveCorrection, handleApproveVacation, handleDenyCorrection, handleDenyVacation]);
 
     const handleEditSubmit = async (updatedEntriesForDay) => {
         if (!editDate || !username) return;
@@ -725,12 +767,14 @@ const AdminEmployeeOverviewPage = () => {
                             <div className="right-column">
                                 <article className="card-style employee-overview-card absence-summary-card">
                                     <h2>Abwesenheits-Zusammenfassung</h2>
-                                    <p>{t('remainingVacation', 'Verfügbar')}: <strong>{vacationStats.availableDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
-                                    <p>{t('adminEmployeeOverview.plannedVacation', 'Geplant')}: <strong>{vacationStats.plannedDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
-                                    <p>Nächste Abwesenheit: <strong>{nextAbsence ? `${nextAbsence.type} · ${formatDate(new Date(`${nextAbsence.startDate}T00:00:00`))}` : 'Keine geplant'}</strong></p>
-                                    <p>Aktueller Status: <strong>{currentStatus.label}</strong></p>
-                                    <p>Diese Woche: <strong>{weeklyAbsenceDays} Tage abwesend</strong></p>
-                                    <p>{t('breakTime', 'Pause')} (Woche): <strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
+                                    <div className="absence-summary-list">
+                                        <p><span>{t('remainingVacation', 'Verfügbar')}</span><strong>{vacationStats.availableDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
+                                        <p><span>{t('adminEmployeeOverview.plannedVacation', 'Geplant')}</span><strong>{vacationStats.plannedDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
+                                        <p><span>Nächste Abwesenheit</span><strong>{nextAbsence ? `${nextAbsence.type} · ${formatDate(new Date(`${nextAbsence.startDate}T00:00:00`))}` : 'Keine geplant'}</strong></p>
+                                        <p><span>Aktueller Status</span><strong>{currentStatus.label}</strong></p>
+                                        <p><span>Diese Woche</span><strong>{weeklyAbsenceDays} Tage abwesend</strong></p>
+                                        <p><span>{t('breakTime', 'Pause')} (Woche)</span><strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
+                                    </div>
                                 </article>
                                 <section className="calendar-requests-layout">
                                     <article className="card-style employee-overview-card calendar-card">
@@ -753,27 +797,59 @@ const AdminEmployeeOverviewPage = () => {
                                             </div>
                                         </div>
                                         <div className="compact-list vacation-requests-scroll">
-                                            {requestList.map((item) => (
-                                                <button
-                                                    className="compact-list-item"
-                                                    key={`${activeRequestTab}-${item.id}`}
-                                                    onClick={() => setSelectedRequest({ type: activeRequestTab, data: item })}
-                                                >
-                                                    <div className="request-item-content">
-                                                        <span>
-                                                            {activeRequestTab === 'vacation'
-                                                                ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
-                                                                : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-')}
-                                                        </span>
-                                                        {activeRequestTab === 'correction' && (
-                                                            <div className="request-correction-preview">
-                                                                {renderCorrectionChange(item)}
+                                            {requestList.map((item) => {
+                                                const tab = activeRequestTab;
+                                                const noteKey = getDecisionNoteKey(tab, item.id);
+                                                const requestDateLabel = tab === 'vacation'
+                                                    ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
+                                                    : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-');
+                                                const isPending = !item.approved && !item.denied;
+
+                                                return (
+                                                    <article className="compact-list-item request-list-card" key={`${tab}-${item.id}`}>
+                                                        <button
+                                                            type="button"
+                                                            className="request-jump-btn"
+                                                            onClick={() => handleOpenRequestDate(tab, item)}
+                                                        >
+                                                            <div className="request-item-content">
+                                                                <span className="request-item-main">{requestDateLabel}</span>
+                                                                {tab === 'correction' && (
+                                                                    <div className="request-correction-preview">
+                                                                        {renderCorrectionChange(item)}
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                            <span className={`status-pill ${getRequestStatusClass(item)}`}>{getRequestStatusLabel(item, t)}</span>
+                                                        </button>
+
+                                                        {isPending && (
+                                                            <div className="request-inline-actions">
+                                                                <input
+                                                                    type="text"
+                                                                    value={decisionNotes[noteKey] || ''}
+                                                                    onChange={(event) => handleRequestNoteChange(tab, item.id, event.target.value)}
+                                                                    placeholder="Notiz (optional)"
+                                                                />
+                                                                <button
+                                                                    type="button"
+                                                                    className="inline-approve"
+                                                                    onClick={() => handleRequestDecision(tab, item, 'approve')}
+                                                                >
+                                                                    {t('approve', 'Genehmigen')}
+                                                                </button>
+                                                                <button
+                                                                    type="button"
+                                                                    className="inline-deny"
+                                                                    onClick={() => handleRequestDecision(tab, item, 'deny')}
+                                                                >
+                                                                    {t('deny', 'Ablehnen')}
+                                                                </button>
                                                             </div>
                                                         )}
-                                                    </div>
-                                                    <span className={`status-pill ${getRequestStatusClass(item)}`}>{getRequestStatusLabel(item, t)}</span>
-                                                </button>
-                                            ))}
+                                                    </article>
+                                                );
+                                            })}
                                             {requestList.length === 0 && <p className="empty-state">{t('adminCorrections.noRequestsFound', 'Keine Anträge vorhanden.')}</p>}
                                         </div>
                                     </article>
@@ -819,31 +895,6 @@ const AdminEmployeeOverviewPage = () => {
                 </ModalOverlay>
             )}
 
-            {selectedRequest && (
-                <ModalOverlay visible>
-                    <div className="modal-content employee-quick-modal">
-                        <h3>{selectedRequest.type === 'vacation' ? 'Urlaubsantrag' : 'Korrekturantrag'} #{selectedRequest.data.id}</h3>
-                        <p>Status: <span className={`status-pill ${getRequestStatusClass(selectedRequest.data)}`}>{getRequestStatusLabel(selectedRequest.data, t)}</span></p>
-                        {selectedRequest.type === 'vacation' ? (
-                            <p>{formatDate(new Date(`${selectedRequest.data.startDate}T00:00:00`))} – {formatDate(new Date(`${selectedRequest.data.endDate}T00:00:00`))}</p>
-                        ) : (
-                            <>
-                                <p>Datum: {selectedRequest.data.requestDate ? formatDate(new Date(selectedRequest.data.requestDate)) : '-'}</p>
-                                <p>{selectedRequest.data.reason || '-'}</p>
-                            </>
-                        )}
-                        <div className="modal-actions">
-                            <button type="button" onClick={() => setSelectedRequest(null)}>{t('close', 'Schließen')}</button>
-                            {!selectedRequest.data.approved && !selectedRequest.data.denied && (
-                                <>
-                                    <button type="button" onClick={() => (selectedRequest.type === 'vacation' ? handleApproveVacation(selectedRequest.data.id) : handleApproveCorrection(selectedRequest.data.id))}>{t('approve', 'Genehmigen')}</button>
-                                    <button type="button" className="deny" onClick={() => (selectedRequest.type === 'vacation' ? handleDenyVacation(selectedRequest.data.id) : handleDenyCorrection(selectedRequest.data.id))}>{t('deny', 'Ablehnen')}</button>
-                                </>
-                            )}
-                        </div>
-                    </div>
-                </ModalOverlay>
-            )}
 
             <EditTimeModal
                 t={t}
