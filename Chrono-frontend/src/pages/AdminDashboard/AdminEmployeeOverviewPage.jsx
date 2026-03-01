@@ -41,6 +41,11 @@ const getRequestStatusClass = (request) => {
     return 'pending';
 };
 
+const formatPunchTypeLabel = (type, t) => {
+    if (!type) return '';
+    return t(`punchTypes.${type}`, type);
+};
+
 const countVacationDays = (vacations) => {
     if (!Array.isArray(vacations) || vacations.length === 0) return 0;
     return vacations.reduce((sum, vacation) => {
@@ -302,6 +307,46 @@ const AdminEmployeeOverviewPage = () => {
         return t(`punchTypes.${punchType}`, punchType);
     }, [t]);
 
+    const renderCorrectionChange = useCallback((correction) => {
+        if (!correction) return null;
+
+        const hasOriginal = Boolean(correction.originalTimestamp);
+        const originalLabel = t('adminDashboard.originalTimeLabel', 'Gestempelt');
+        const requestedLabel = t('adminDashboard.requestedTimeLabel', 'Beantragt');
+        const missingLabel = t('adminDashboard.noOriginalTimeLabel', 'Kein ursprünglicher Stempel');
+
+        const originalTime = hasOriginal ? formatTime(correction.originalTimestamp) : null;
+        const desiredTime = formatTime(correction.desiredTimestamp);
+        const originalPunchLabel = hasOriginal ? formatPunchTypeLabel(correction.originalPunchType, t) : null;
+        const desiredPunchLabel = formatPunchTypeLabel(correction.desiredPunchType, t);
+
+        return (
+            <span className="entry-comparison">
+                <span className={`entry-block entry-original${hasOriginal ? '' : ' entry-original--missing'}`}>
+                    <span className="entry-label">{originalLabel}</span>
+                    <span className="entry-value">
+                        {hasOriginal ? (
+                            <>
+                                <span className="entry-time">{originalTime}</span>
+                                {originalPunchLabel && <span className="entry-type">{originalPunchLabel}</span>}
+                            </>
+                        ) : (
+                            <span className="entry-time entry-time--missing">{missingLabel}</span>
+                        )}
+                    </span>
+                </span>
+                <span className="entry-arrow">→</span>
+                <span className="entry-block entry-requested">
+                    <span className="entry-label">{requestedLabel}</span>
+                    <span className="entry-value">
+                        <span className="entry-time">{desiredTime}</span>
+                        {desiredPunchLabel && <span className="entry-type">{desiredPunchLabel}</span>}
+                    </span>
+                </span>
+            </span>
+        );
+    }, [t]);
+
     const handleApproveVacation = async (id) => {
         try {
             await api.post(`/api/vacation/approve/${id}`);
@@ -489,7 +534,7 @@ const AdminEmployeeOverviewPage = () => {
                                 <article className="card-style employee-overview-card">
                                     <div className="card-heading-row">
                                         <h2>Zeiterfassung – diese Woche</h2>
-                                        <button className="text-link-btn" onClick={() => openEditModal(todayYmd)}>{t('adminDashboard.details', 'Details anzeigen')}</button>
+                                        <button className="text-link-btn" onClick={() => openEditModal(todayYmd)}>Zeiten korrigieren</button>
                                     </div>
                                     <div className="week-navigation-row">
                                         <button type="button" className="text-link-btn" onClick={goToPreviousWeek}>←</button>
@@ -592,11 +637,18 @@ const AdminEmployeeOverviewPage = () => {
                                                 key={`${activeRequestTab}-${item.id}`}
                                                 onClick={() => setSelectedRequest({ type: activeRequestTab, data: item })}
                                             >
-                                                <span>
-                                                    {activeRequestTab === 'vacation'
-                                                        ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
-                                                        : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-')}
-                                                </span>
+                                                <div className="request-item-content">
+                                                    <span>
+                                                        {activeRequestTab === 'vacation'
+                                                            ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
+                                                            : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-')}
+                                                    </span>
+                                                    {activeRequestTab === 'correction' && (
+                                                        <div className="request-correction-preview">
+                                                            {renderCorrectionChange(item)}
+                                                        </div>
+                                                    )}
+                                                </div>
                                                 <span className={`status-pill ${getRequestStatusClass(item)}`}>{getRequestStatusLabel(item, t)}</span>
                                             </button>
                                         ))}
