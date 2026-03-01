@@ -544,17 +544,6 @@ const AdminEmployeeOverviewPage = () => {
                                         <button type="button" className="text-link-btn" onClick={goToNextWeek}>→</button>
                                         <button type="button" className="text-link-btn" onClick={goToCurrentWeek}>Diese Woche</button>
                                     </div>
-                                    <div className="week-compact-grid">
-                                        {weekDates.map((dateString) => {
-                                            const dayEntry = weeklySummaries.find((entry) => entry.date === dateString);
-                                            return (
-                                                <button key={dateString} className="week-day-tile" onClick={() => openEditModal(dateString)}>
-                                                    <span>{formatDateWithWeekday(new Date(`${dateString}T00:00:00`))}</span>
-                                                    <strong>{dayEntry ? minutesToHHMM(dayEntry.workedMinutes || 0) : '--:--'}</strong>
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
                                     <div className="mini-stats-row">
                                         <span>Gesamtstunden: <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></span>
                                         <span>Überstunden/Minus: <strong>{minutesToHHMM(weeklyDeltaMinutes)}</strong></span>
