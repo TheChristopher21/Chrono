@@ -14,3 +14,4 @@ letsencrypt/
 ollama_data/
 open-webui_data/
 knowledge_base/
+backup.sh
