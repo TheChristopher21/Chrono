@@ -19,15 +19,20 @@ import org.springframework.web.client.RestTemplate;
 
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.CompanyKnowledge;
+import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.CompanyKnowledgeService;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -46,6 +51,8 @@ public class ChatService {
     private final RestTemplate longTimeoutRestTemplate; // The special patient RestTemplate
     private final ObjectMapper objectMapper = new ObjectMapper();
     private final CompanyKnowledgeService companyKnowledgeService;
+    private final VacationService vacationService;
+    private final UserRepository userRepository;
     private String knowledgeBaseContent = "";
     private static final List<String> FALLBACKS = Arrays.asList(
             "Das habe ich leider nicht im Repertoire, aber ich lerne gerne dazu! Versuche es gerne nochmal anders oder schau in die Hilfeseite.",
@@ -62,10 +69,14 @@ public class ChatService {
     // Modified constructor to accept both RestTemplates and the knowledge service
     public ChatService(RestTemplate restTemplate,
                        @Qualifier("longTimeoutRestTemplate") RestTemplate longTimeoutRestTemplate,
-                       CompanyKnowledgeService companyKnowledgeService) {
+                       CompanyKnowledgeService companyKnowledgeService,
+                       VacationService vacationService,
+                       UserRepository userRepository) {
         this.restTemplate = restTemplate;
         this.longTimeoutRestTemplate = longTimeoutRestTemplate;
         this.companyKnowledgeService = companyKnowledgeService;
+        this.vacationService = vacationService;
+        this.userRepository = userRepository;
         loadKnowledgeBaseFromResources();
     }
 
@@ -118,6 +129,13 @@ public class ChatService {
 
     // Public method for chat requests, uses the STANDARD RestTemplate
     public String ask(String message, User user) {
+        if (user != null && isAdmin(user)) {
+            String adminAnswer = answerAdminDataQuestion(message, user);
+            if (adminAnswer != null) {
+                return adminAnswer;
+            }
+        }
+
         if (message != null) {
             String lower = message.toLowerCase();
             Map<String, String> links = new HashMap<>();
@@ -162,11 +180,13 @@ public class ChatService {
                     : "Es ist kein Benutzer eingeloggt.";
 
             String companyKnowledge = getCompanyKnowledgeForUser(user);
+            String adminContext = buildAdminOperationalContext(user, message);
             String fullPrompt = "Antworte auf die folgende Frage nur basierend auf dem untenstehenden Kontext. Antworte in der gleichen Sprache wie die Frage.\n\n" +
                     "Benutzerkontext: " + userContext + "\n\n" +
                     "--- KONTEXT ---\n" +
                     this.knowledgeBaseContent +
                     companyKnowledge +
+                    adminContext +
                     "\n--- FRAGE ---\n" +
                     message;
 
@@ -217,5 +237,187 @@ public class ChatService {
             }
         }
         return sb.toString();
+    }
+
+    private String answerAdminDataQuestion(String message, User requester) {
+        if (message == null || requester.getCompany() == null) {
+            return null;
+        }
+
+        String normalized = normalize(message);
+        boolean asksVacation = normalized.contains("urlaub") || normalized.contains("vacation") || normalized.contains("ferientag");
+        boolean asksOvertime = normalized.contains("uberstunden") || normalized.contains("ueberstunden") || normalized.contains("overtime");
+
+        if (!asksVacation && !asksOvertime) {
+            return null;
+        }
+
+        List<User> companyUsers = getCompanyUsersForAdmin(requester);
+        if (companyUsers.isEmpty()) {
+            return "Ich konnte keine Mitarbeitenden für deine Firma finden.";
+        }
+
+        Optional<User> explicitTarget = findMentionedUser(companyUsers, normalized);
+        if (explicitTarget.isPresent()) {
+            return buildDetailedUserSummary(explicitTarget.get(), asksVacation, asksOvertime);
+        }
+
+        if (asksVacation) {
+            return buildCompanyVacationOverview(companyUsers);
+        }
+
+        return buildCompanyOvertimeOverview(companyUsers);
+    }
+
+    private List<User> getCompanyUsersForAdmin(User admin) {
+        if (admin.getCompany() == null || admin.getCompany().getId() == null) {
+            return List.of();
+        }
+        List<User> users = userRepository.findByCompany_IdAndDeletedFalse(admin.getCompany().getId());
+        if (!users.isEmpty()) {
+            return users;
+        }
+        return userRepository.findByCompany_Id(admin.getCompany().getId());
+    }
+
+    private Optional<User> findMentionedUser(List<User> users, String normalizedMessage) {
+        return users.stream()
+                .filter(u -> {
+                    String username = normalize(u.getUsername());
+                    return !username.isBlank() && normalizedMessage.contains(username);
+                })
+                .findFirst();
+    }
+
+    private String buildDetailedUserSummary(User target, boolean includeVacation, boolean includeOvertime) {
+        int currentYear = LocalDate.now().getYear();
+        StringBuilder sb = new StringBuilder();
+        sb.append("Für '").append(target.getUsername()).append("': ");
+
+        if (includeVacation) {
+            double remaining = vacationService.calculateRemainingVacationDays(target.getUsername(), currentYear);
+            int annual = target.getAnnualVacationDays() != null ? target.getAnnualVacationDays() : 25;
+            sb.append(String.format(Locale.GERMAN,
+                    "Resturlaub %d: %.1f Tage (von %d). ",
+                    currentYear,
+                    remaining,
+                    annual));
+        }
+
+        if (includeOvertime) {
+            int minutes = target.getTrackingBalanceInMinutes() != null ? target.getTrackingBalanceInMinutes() : 0;
+            int hours = Math.abs(minutes) / 60;
+            int mins = Math.abs(minutes) % 60;
+            String sign = minutes < 0 ? "-" : "";
+            sb.append("Überstunden-Saldo: ").append(sign).append(hours).append(":")
+                    .append(String.format("%02d", mins)).append(" Stunden.");
+        }
+
+        return sb.toString().trim();
+    }
+
+    private String buildCompanyVacationOverview(List<User> users) {
+        int currentYear = LocalDate.now().getYear();
+        List<User> sorted = users.stream()
+                .sorted(Comparator.comparing(User::getUsername, String.CASE_INSENSITIVE_ORDER))
+                .limit(20)
+                .toList();
+
+        String summary = sorted.stream()
+                .map(u -> {
+                    double remaining = vacationService.calculateRemainingVacationDays(u.getUsername(), currentYear);
+                    return String.format(Locale.GERMAN, "%s: %.1f Tage", u.getUsername(), remaining);
+                })
+                .collect(Collectors.joining(" | "));
+
+        return "Hier ist der Resturlaub für " + currentYear + " (Top " + sorted.size() + " Mitarbeitende): " + summary +
+                ". Tipp: Frag z. B. 'Wie viel Urlaub hat USERNAME?', dann gebe ich dir Details.";
+    }
+
+    private String buildCompanyOvertimeOverview(List<User> users) {
+        List<User> sorted = users.stream()
+                .sorted(Comparator.comparing(User::getUsername, String.CASE_INSENSITIVE_ORDER))
+                .limit(20)
+                .toList();
+
+        String summary = sorted.stream()
+                .map(u -> {
+                    int minutes = u.getTrackingBalanceInMinutes() != null ? u.getTrackingBalanceInMinutes() : 0;
+                    int hours = Math.abs(minutes) / 60;
+                    int mins = Math.abs(minutes) % 60;
+                    String sign = minutes < 0 ? "-" : "";
+                    return String.format("%s: %s%d:%02d h", u.getUsername(), sign, hours, mins);
+                })
+                .collect(Collectors.joining(" | "));
+
+        return "Hier ist der Überstunden-Saldo (Top " + sorted.size() + " Mitarbeitende): " + summary +
+                ". Tipp: Frag z. B. 'Wie viele Überstunden hat USERNAME?' für Details.";
+    }
+
+    private String buildAdminOperationalContext(User user, String message) {
+        if (user == null || !isAdmin(user) || user.getCompany() == null || message == null) {
+            return "";
+        }
+
+        String normalized = normalize(message);
+        boolean wantsOperationalInsight = normalized.contains("team") || normalized.contains("mitarbeiter")
+                || normalized.contains("company") || normalized.contains("firma")
+                || normalized.contains("urlaub") || normalized.contains("uberstunden")
+                || normalized.contains("ueberstunden") || normalized.contains("status")
+                || normalized.contains("wer") || normalized.contains("who");
+
+        if (!wantsOperationalInsight) {
+            return "";
+        }
+
+        List<User> users = getCompanyUsersForAdmin(user).stream()
+                .sorted(Comparator.comparing(User::getUsername, String.CASE_INSENSITIVE_ORDER))
+                .limit(25)
+                .toList();
+
+        if (users.isEmpty()) {
+            return "";
+        }
+
+        int currentYear = LocalDate.now().getYear();
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n\n--- ADMIN-OPERATIVER KONTEXT (AKTUELL) ---\n")
+                .append("Firma: ").append(user.getCompany().getName() != null ? user.getCompany().getName() : "Unbekannt").append("\n")
+                .append("Mitarbeitende: ").append(users.size()).append("\n");
+
+        for (User companyUser : users) {
+            double remainingVacation = 0.0;
+            try {
+                remainingVacation = vacationService.calculateRemainingVacationDays(companyUser.getUsername(), currentYear);
+            } catch (Exception e) {
+                logger.debug("Konnte Resturlaub für {} nicht berechnen: {}", companyUser.getUsername(), e.getMessage());
+            }
+
+            int minutes = companyUser.getTrackingBalanceInMinutes() != null ? companyUser.getTrackingBalanceInMinutes() : 0;
+            sb.append("- ").append(companyUser.getUsername())
+                    .append(" | Resturlaub ").append(String.format(Locale.GERMAN, "%.1f", remainingVacation)).append(" Tage")
+                    .append(" | Überstunden ").append(minutes)
+                    .append(" Minuten")
+                    .append(" | Jahresurlaub ").append(companyUser.getAnnualVacationDays() != null ? companyUser.getAnnualVacationDays() : 25)
+                    .append("\n");
+        }
+
+        return sb.toString();
+    }
+
+    private boolean isAdmin(User user) {
+        return user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(r -> "ROLE_ADMIN".equals(r.getRoleName()) || "ROLE_SUPERADMIN".equals(r.getRoleName()));
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return "";
+        }
+        return value.toLowerCase(Locale.ROOT)
+                .replace("ä", "ae")
+                .replace("ö", "oe")
+                .replace("ü", "ue")
+                .replace("ß", "ss");
     }
 }
