@@ -699,15 +699,6 @@ function UserDashboard() {
                     </div>
                 </section>
 
-                <section className="vacation-section content-section">
-                    <h3 className="section-title">{t('vacationTitle', 'Urlaub & Abwesenheiten')}</h3>
-                    <VacationCalendar
-                        vacationRequests={vacationRequests}
-                        userProfile={userProfile}
-                        onRefreshVacations={fetchDataForUser}
-                    />
-                </section>
-
                 <UserCorrectionsPanel
                     t={t}
                     showCorrectionsPanel={showCorrectionsPanel}
@@ -718,6 +709,15 @@ function UserDashboard() {
                     setShowAllCorrections={setShowAllCorrections}
                     sortedCorrections={sortedCorrections}
                 />
+
+                <section className="vacation-section content-section">
+                    <h3 className="section-title">{t('vacationTitle', 'Urlaub & Abwesenheiten')}</h3>
+                    <VacationCalendar
+                        vacationRequests={vacationRequests}
+                        userProfile={userProfile}
+                        onRefreshVacations={fetchDataForUser}
+                    />
+                </section>
 
                 {modalInfo.isVisible && (
                     <CustomerTimeAssignModal

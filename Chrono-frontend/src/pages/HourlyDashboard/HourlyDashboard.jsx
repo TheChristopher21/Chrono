@@ -362,13 +362,6 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 cssScope="hourly"
             />
 
-            <HourlyVacationSection
-                t={t}
-                userProfile={userProfile}
-                vacationRequests={vacationRequests}
-                onRefreshVacations={fetchDataForUser}
-            />
-
             <HourlyCorrectionsPanel
                 t={t}
                 correctionRequests={correctionRequests}
@@ -378,6 +371,13 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 setShowCorrectionsPanel={setShowCorrectionsPanel}
                 showAllCorrections={showAllCorrections}
                 setShowAllCorrections={setShowAllCorrections}
+            />
+
+            <HourlyVacationSection
+                t={t}
+                userProfile={userProfile}
+                vacationRequests={vacationRequests}
+                onRefreshVacations={fetchDataForUser}
             />
 
             <CorrectionModal
