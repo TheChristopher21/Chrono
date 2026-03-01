@@ -789,7 +789,7 @@ const AdminWeekSection = forwardRef(({
                     holidayOptions: allHolidayOptionsForUser,
                 };
             });
-    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser]);
+    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser, selectedMonday, weeklyDeltaAcknowledged]);
 
     const userAnalyticsMap = useMemo(() => {
         const map = new Map();
