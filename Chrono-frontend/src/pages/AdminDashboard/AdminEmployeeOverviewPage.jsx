@@ -720,39 +720,6 @@ const AdminEmployeeOverviewPage = () => {
                                     </div>
                                 </article>
 
-                                <article className="card-style employee-overview-card">
-                                    <div className="card-heading-row">
-                                        <h2>{t('correctionRequests', 'Anträge')}</h2>
-                                        <div className="request-tabs">
-                                            <button className={activeRequestTab === 'vacation' ? 'active' : ''} onClick={() => setActiveRequestTab('vacation')}>Urlaub</button>
-                                            <button className={activeRequestTab === 'correction' ? 'active' : ''} onClick={() => setActiveRequestTab('correction')}>Korrektur</button>
-                                        </div>
-                                    </div>
-                                    <div className="compact-list">
-                                        {requestList.map((item) => (
-                                            <button
-                                                className="compact-list-item"
-                                                key={`${activeRequestTab}-${item.id}`}
-                                                onClick={() => setSelectedRequest({ type: activeRequestTab, data: item })}
-                                            >
-                                                <div className="request-item-content">
-                                                    <span>
-                                                        {activeRequestTab === 'vacation'
-                                                            ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
-                                                            : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-')}
-                                                    </span>
-                                                    {activeRequestTab === 'correction' && (
-                                                        <div className="request-correction-preview">
-                                                            {renderCorrectionChange(item)}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <span className={`status-pill ${getRequestStatusClass(item)}`}>{getRequestStatusLabel(item, t)}</span>
-                                            </button>
-                                        ))}
-                                        {requestList.length === 0 && <p className="empty-state">{t('adminCorrections.noRequestsFound', 'Keine Anträge vorhanden.')}</p>}
-                                    </div>
-                                </article>
                             </div>
 
                             <div className="right-column">
@@ -765,16 +732,52 @@ const AdminEmployeeOverviewPage = () => {
                                     <p>Diese Woche: <strong>{weeklyAbsenceDays} Tage abwesend</strong></p>
                                     <p>{t('breakTime', 'Pause')} (Woche): <strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
                                 </article>
-                                <article className="card-style employee-overview-card calendar-card">
-                                    <h2>{t('adminEmployeeOverview.calendarTitle', 'Kalender')}</h2>
-                                    <p className="card-subtitle">{t('adminEmployeeOverview.calendarSubtitle', 'Urlaub/Krank direkt für diesen Mitarbeiter erfassen.')}</p>
-                                    <VacationCalendarAdmin
-                                        vacationRequests={employeeVacations}
-                                        onReloadVacations={fetchAllData}
-                                        companyUsers={users}
-                                        focusUsername={username}
-                                    />
-                                </article>
+                                <section className="calendar-requests-layout">
+                                    <article className="card-style employee-overview-card calendar-card">
+                                        <h2>{t('adminEmployeeOverview.calendarTitle', 'Kalender')}</h2>
+                                        <p className="card-subtitle">{t('adminEmployeeOverview.calendarSubtitle', 'Urlaub/Krank direkt für diesen Mitarbeiter erfassen.')}</p>
+                                        <VacationCalendarAdmin
+                                            vacationRequests={employeeVacations}
+                                            onReloadVacations={fetchAllData}
+                                            companyUsers={users}
+                                            focusUsername={username}
+                                        />
+                                    </article>
+
+                                    <article className="card-style employee-overview-card vacation-requests-card">
+                                        <div className="card-heading-row">
+                                            <h2>{t('correctionRequests', 'Anträge')}</h2>
+                                            <div className="request-tabs">
+                                                <button className={activeRequestTab === 'vacation' ? 'active' : ''} onClick={() => setActiveRequestTab('vacation')}>Urlaub</button>
+                                                <button className={activeRequestTab === 'correction' ? 'active' : ''} onClick={() => setActiveRequestTab('correction')}>Korrektur</button>
+                                            </div>
+                                        </div>
+                                        <div className="compact-list vacation-requests-scroll">
+                                            {requestList.map((item) => (
+                                                <button
+                                                    className="compact-list-item"
+                                                    key={`${activeRequestTab}-${item.id}`}
+                                                    onClick={() => setSelectedRequest({ type: activeRequestTab, data: item })}
+                                                >
+                                                    <div className="request-item-content">
+                                                        <span>
+                                                            {activeRequestTab === 'vacation'
+                                                                ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
+                                                                : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-')}
+                                                        </span>
+                                                        {activeRequestTab === 'correction' && (
+                                                            <div className="request-correction-preview">
+                                                                {renderCorrectionChange(item)}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <span className={`status-pill ${getRequestStatusClass(item)}`}>{getRequestStatusLabel(item, t)}</span>
+                                                </button>
+                                            ))}
+                                            {requestList.length === 0 && <p className="empty-state">{t('adminCorrections.noRequestsFound', 'Keine Anträge vorhanden.')}</p>}
+                                        </div>
+                                    </article>
+                                </section>
                             </div>
                         </section>
                     </>
