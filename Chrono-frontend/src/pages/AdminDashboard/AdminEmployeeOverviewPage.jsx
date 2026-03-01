@@ -97,6 +97,7 @@ const AdminEmployeeOverviewPage = () => {
     const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
     const [timeRangeMode, setTimeRangeMode] = useState('week');
     const [problemCursor, setProblemCursor] = useState(-1);
+    const [problemCategoryCursor, setProblemCategoryCursor] = useState({});
 
     const fetchAllData = useCallback(async () => {
         setLoading(true);
@@ -337,6 +338,13 @@ const AdminEmployeeOverviewPage = () => {
         return (problemIndicators.problematicDays || []).filter((problem) => datesInWeek.has(problem.dateIso));
     }, [problemIndicators, weekDates]);
 
+    const problemGroups = useMemo(() => ({
+        missing: weeklyProblems.filter((problem) => problem.type === 'missing'),
+        incomplete: weeklyProblems.filter((problem) => problem.type.startsWith('incomplete_')),
+        autoCompleted: weeklyProblems.filter((problem) => problem.type === 'auto_completed_uncorrected' || problem.type === 'auto_completed_incomplete_uncorrected'),
+        holidayPending: weeklyProblems.filter((problem) => problem.type === 'holiday_pending_decision'),
+    }), [weeklyProblems]);
+
     const problemLabelByType = useMemo(() => ({
         missing: t('adminDashboard.issueRibbon.missing', 'Fehlende Zeiten'),
         incomplete_work_end_missing: t('adminDashboard.issueRibbon.incomplete', 'Unvollständig'),
@@ -499,16 +507,19 @@ const AdminEmployeeOverviewPage = () => {
     const goToPreviousWeek = () => {
         setSelectedMonday((prev) => addDays(prev, -7));
         setProblemCursor(-1);
+        setProblemCategoryCursor({});
     };
 
     const goToNextWeek = () => {
         setSelectedMonday((prev) => addDays(prev, 7));
         setProblemCursor(-1);
+        setProblemCategoryCursor({});
     };
 
     const goToCurrentWeek = () => {
         setSelectedMonday(getMondayOfWeek(new Date()));
         setProblemCursor(-1);
+        setProblemCategoryCursor({});
     };
 
     const goToPreviousMonth = () => {
@@ -528,6 +539,21 @@ const AdminEmployeeOverviewPage = () => {
         const nextIndex = (problemCursor + 1) % weeklyProblems.length;
         setProblemCursor(nextIndex);
         openEditModal(weeklyProblems[nextIndex].dateIso);
+    };
+
+    const handleProblemCategoryClick = (categoryKey) => {
+        const categoryProblems = problemGroups[categoryKey] || [];
+        if (categoryProblems.length === 0) return;
+
+        setProblemCategoryCursor((prev) => {
+            const currentIndex = Number.isInteger(prev[categoryKey]) ? prev[categoryKey] : -1;
+            const nextIndex = (currentIndex + 1) % categoryProblems.length;
+            openEditModal(categoryProblems[nextIndex].dateIso);
+            return {
+                ...prev,
+                [categoryKey]: nextIndex,
+            };
+        });
     };
 
     return (
@@ -561,6 +587,31 @@ const AdminEmployeeOverviewPage = () => {
                     </section>
                 ) : (
                     <>
+                        <section className="card-style employee-overview-problem-ribbon">
+                            <div className="card-heading-row">
+                                <h2>{t('adminDashboard.issueRibbon.title', 'Problemfokus')}</h2>
+                                <button type="button" className="text-link-btn" onClick={handleCycleProblem} disabled={weeklyProblems.length === 0}>
+                                    {weeklyProblems.length > 0
+                                        ? `Zum Problem (${((problemCursor + 1) % weeklyProblems.length) + 1}/${weeklyProblems.length})`
+                                        : 'Keine Problemfälle'}
+                                </button>
+                            </div>
+                            <div className="problem-ribbon-row" role="list" aria-label={t('adminDashboard.issueFilters.groupLabel', 'Problemtypen filtern')}>
+                                <button type="button" className="problem-ribbon-chip" onClick={() => handleProblemCategoryClick('missing')} disabled={problemGroups.missing.length === 0}>
+                                    {problemLabelByType.missing} ({problemGroups.missing.length})
+                                </button>
+                                <button type="button" className="problem-ribbon-chip" onClick={() => handleProblemCategoryClick('incomplete')} disabled={problemGroups.incomplete.length === 0}>
+                                    {problemLabelByType.incomplete_work_end_missing} ({problemGroups.incomplete.length})
+                                </button>
+                                <button type="button" className="problem-ribbon-chip" onClick={() => handleProblemCategoryClick('autoCompleted')} disabled={problemGroups.autoCompleted.length === 0}>
+                                    {problemLabelByType.auto_completed_uncorrected} ({problemGroups.autoCompleted.length})
+                                </button>
+                                <button type="button" className="problem-ribbon-chip" onClick={() => handleProblemCategoryClick('holidayPending')} disabled={problemGroups.holidayPending.length === 0}>
+                                    {problemLabelByType.holiday_pending_decision} ({problemGroups.holidayPending.length})
+                                </button>
+                            </div>
+                        </section>
+
                         <section className="employee-overview-kpis">
                             <article className="card-style kpi-card">
                                 <h3>Heute</h3>
@@ -665,30 +716,6 @@ const AdminEmployeeOverviewPage = () => {
                                                     );
                                                 })}
                                             </div>
-                                        </div>
-                                    </div>
-                                    <div className="problem-case-card">
-                                        <div className="card-heading-row">
-                                            <h3>Problemfälle</h3>
-                                            <button type="button" className="text-link-btn" onClick={handleCycleProblem} disabled={weeklyProblems.length === 0}>
-                                                {weeklyProblems.length > 0
-                                                    ? `Zum Problem (${((problemCursor + 1) % weeklyProblems.length) + 1}/${weeklyProblems.length})`
-                                                    : 'Keine Problemfälle'}
-                                            </button>
-                                        </div>
-                                        <div className="compact-list">
-                                            {weeklyProblems.map((problem) => (
-                                                <button
-                                                    key={`${problem.dateIso}-${problem.type}`}
-                                                    type="button"
-                                                    className="compact-list-item"
-                                                    onClick={() => openEditModal(problem.dateIso)}
-                                                >
-                                                    <span>{formatDateWithWeekday(new Date(`${problem.dateIso}T00:00:00`))}</span>
-                                                    <span className="status-pill pending">{problemLabelByType[problem.type] || problem.type}</span>
-                                                </button>
-                                            ))}
-                                            {weeklyProblems.length === 0 && <p className="empty-state">Keine Problemfälle in dieser Woche.</p>}
                                         </div>
                                     </div>
                                 </article>

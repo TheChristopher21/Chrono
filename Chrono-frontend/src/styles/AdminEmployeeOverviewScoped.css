@@ -53,6 +53,32 @@
   gap: 0.85rem;
 }
 
+.employee-overview-problem-ribbon {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.problem-ribbon-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.problem-ribbon-chip {
+  background: rgba(79, 70, 229, 0.22);
+  border: 1px solid rgba(129, 140, 248, 0.42);
+  color: #e0e7ff;
+  border-radius: 999px;
+  padding: 0.36rem 0.75rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.problem-ribbon-chip:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
 .kpi-card h3 { margin: 0 0 0.5rem; font-size: 1rem; }
 .kpi-card p { margin: 0.28rem 0; font-size: 0.9rem; }
 
