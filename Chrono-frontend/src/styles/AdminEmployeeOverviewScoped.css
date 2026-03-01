@@ -58,7 +58,7 @@
 
 .employee-overview-grid {
   display: grid;
-  grid-template-columns: minmax(320px, 40%) minmax(520px, 60%);
+  grid-template-columns: 1fr;
   gap: 1rem;
   align-items: start;
 }
