@@ -181,6 +181,78 @@
 .request-tabs button.active { background: #4f46e5; border-color: transparent; }
 
 .compact-list { display: grid; gap: 0.5rem; }
+
+.request-item-content {
+  display: grid;
+  gap: 0.35rem;
+  text-align: left;
+}
+
+.request-correction-preview {
+  font-size: 0.78rem;
+}
+
+.entry-comparison {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.entry-block {
+  display: inline-grid;
+  gap: 0.1rem;
+  min-width: 132px;
+  padding: 0.25rem 0.45rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+}
+
+.entry-original {
+  background: rgba(30, 41, 59, 0.55);
+}
+
+.entry-original--missing {
+  border-style: dashed;
+}
+
+.entry-requested {
+  background: rgba(79, 70, 229, 0.22);
+  border-color: rgba(129, 140, 248, 0.4);
+}
+
+.entry-label {
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.entry-value {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  color: #e2e8f0;
+}
+
+.entry-time {
+  font-weight: 600;
+}
+
+.entry-time--missing {
+  color: #fbbf24;
+}
+
+.entry-type {
+  font-size: 0.7rem;
+  color: #cbd5e1;
+}
+
+.entry-arrow {
+  color: #a5b4fc;
+  font-weight: 600;
+}
+
 .compact-list-item {
   display: flex;
   justify-content: space-between;
