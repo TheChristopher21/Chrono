@@ -95,6 +95,13 @@
   gap: 1rem;
 }
 
+.calendar-requests-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 4fr) minmax(260px, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
 .employee-overview-card { overflow: hidden; }
 
 .card-subtitle { margin: 0.35rem 0 0.85rem; color: #a7b0c3; font-size: 0.88rem; }
@@ -207,6 +214,19 @@
 .request-tabs button.active { background: #4f46e5; border-color: transparent; }
 
 .compact-list { display: grid; gap: 0.5rem; }
+
+.vacation-requests-card {
+  min-width: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.vacation-requests-scroll {
+  max-height: 680px;
+  overflow-y: auto;
+  align-content: start;
+  padding-right: 0.25rem;
+}
 
 .punch-calendar-grid-wrap {
   display: grid;
@@ -418,6 +438,7 @@
 @media (max-width: 1200px) {
   .employee-overview-kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .employee-overview-grid { grid-template-columns: 1fr; }
+  .calendar-requests-layout { grid-template-columns: 1fr; }
   .week-compact-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   .punch-calendar-grid,
   .punch-calendar-weekdays { grid-template-columns: repeat(4, minmax(0, 1fr)); }
