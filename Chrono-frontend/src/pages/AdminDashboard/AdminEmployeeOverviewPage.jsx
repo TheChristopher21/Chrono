@@ -100,6 +100,7 @@ const AdminEmployeeOverviewPage = () => {
     const [problemCategoryCursor, setProblemCategoryCursor] = useState({});
     const [focusedProblemDate, setFocusedProblemDate] = useState('');
     const timeTrackingSectionRef = useRef(null);
+    const problemDateItemRefs = useRef(new Map());
 
     const fetchAllData = useCallback(async () => {
         setLoading(true);
@@ -365,15 +366,9 @@ const AdminEmployeeOverviewPage = () => {
         );
     }, [employee, employeeSummaries, employeeSickLeaves, employeeVacations]);
 
-    const visibleRangeProblems = useMemo(() => {
-        const datesInRange = new Set(visibleDates);
-        return (problemIndicators.problematicDays || []).filter((problem) => datesInRange.has(problem.dateIso));
-    }, [problemIndicators, visibleDates]);
-
     const prioritizedProblems = useMemo(() => {
-        if (visibleRangeProblems.length > 0) return visibleRangeProblems;
         return problemIndicators.problematicDays || [];
-    }, [problemIndicators.problematicDays, visibleRangeProblems]);
+    }, [problemIndicators.problematicDays]);
 
     const problemGroups = useMemo(() => ({
         missing: prioritizedProblems.filter((problem) => problem.type === 'missing'),
@@ -762,11 +757,17 @@ const AdminEmployeeOverviewPage = () => {
         setTimeRangeMode('week');
         setSelectedMonday(getMondayOfWeek(new Date(`${targetDateString}T00:00:00`)));
         setFocusedProblemDate(targetDateString);
+    }, []);
+
+    useEffect(() => {
+        if (!focusedProblemDate || !visibleDates.includes(focusedProblemDate)) return;
+        const targetNode = problemDateItemRefs.current.get(focusedProblemDate);
+        if (!targetNode) return;
 
         requestAnimationFrame(() => {
-            timeTrackingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            targetNode.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
         });
-    }, []);
+    }, [focusedProblemDate, visibleDates]);
 
     const handleCycleProblem = () => {
         if (prioritizedProblems.length === 0) return;
@@ -918,6 +919,13 @@ const AdminEmployeeOverviewPage = () => {
                                                         <div
                                                             className={`punch-overview-item${focusedProblemDate === dateString ? ' punch-overview-item--focused' : ''}`}
                                                             key={`punch-${dateString}`}
+                                                            ref={(node) => {
+                                                                if (node) {
+                                                                    problemDateItemRefs.current.set(dateString, node);
+                                                                } else {
+                                                                    problemDateItemRefs.current.delete(dateString);
+                                                                }
+                                                            }}
                                                         >
                                                             <div className="punch-overview-header">
                                                                 <strong>{formatDateWithWeekday(new Date(`${dateString}T00:00:00`))}</strong>
