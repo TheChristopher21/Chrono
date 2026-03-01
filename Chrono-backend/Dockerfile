@@ -8,7 +8,7 @@ RUN mvn dependency:go-offline
 
 # Jetzt Quellcode kopieren und JAR bauen
 COPY src ./src
-RUN mvn clean package -DskipTests
+RUN mvn -B -Dmaven.test.skip=true clean package
 
 # ---- Runtime Stage (kleiner & sicherer) ----
 FROM gcr.io/distroless/java21-debian12:nonroot
