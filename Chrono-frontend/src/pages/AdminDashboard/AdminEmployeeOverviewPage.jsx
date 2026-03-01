@@ -214,6 +214,36 @@ const AdminEmployeeOverviewPage = () => {
         [corrections, username],
     );
 
+    const groupedEmployeeCorrections = useMemo(() => {
+        const groups = new Map();
+
+        employeeCorrections.forEach((correction) => {
+            const key = `${correction.requestDate || ''}|${correction.reason || ''}|${correction.approved}|${correction.denied}`;
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    ...correction,
+                    requestIds: [correction.id],
+                    groupedEntries: [correction],
+                });
+                return;
+            }
+
+            const existing = groups.get(key);
+            existing.requestIds.push(correction.id);
+            existing.groupedEntries.push(correction);
+        });
+
+        groups.forEach((group) => {
+            group.groupedEntries.sort((a, b) => new Date(a.desiredTimestamp || 0) - new Date(b.desiredTimestamp || 0));
+        });
+
+        return Array.from(groups.values()).sort((a, b) => {
+            const dateDiff = new Date(b.requestDate || 0) - new Date(a.requestDate || 0);
+            if (dateDiff !== 0) return dateDiff;
+            return (b.id || 0) - (a.id || 0);
+        });
+    }, [employeeCorrections]);
+
     const employeeSickLeaves = useMemo(
         () => sickLeaves
             .filter((entry) => entry?.username === username)
@@ -364,15 +394,21 @@ const AdminEmployeeOverviewPage = () => {
         return t(`punchTypes.${punchType}`, punchType);
     }, [t]);
 
-    const renderCorrectionChange = useCallback((correction) => {
-        if (!correction) return null;
+    const renderCorrectionChange = useCallback((correctionGroup) => {
+        if (!correctionGroup) return null;
 
         const originalLabel = t('adminDashboard.originalTimeLabel', 'Gestempelt');
         const requestedLabel = t('adminDashboard.requestedTimeLabel', 'Beantragt');
         const missingLabel = t('adminDashboard.noOriginalTimeLabel', 'Kein ursprünglicher Stempel');
 
-        const correctionDate = correction.requestDate
-            ? formatLocalDateYMD(new Date(`${correction.requestDate}T00:00:00`))
+        const correctionsToRender = Array.isArray(correctionGroup.groupedEntries) && correctionGroup.groupedEntries.length > 0
+            ? correctionGroup.groupedEntries
+            : [correctionGroup];
+
+        const firstCorrection = correctionsToRender[0];
+
+        const correctionDate = firstCorrection?.requestDate
+            ? formatLocalDateYMD(new Date(`${firstCorrection.requestDate}T00:00:00`))
             : null;
 
         const dayEntries = correctionDate
@@ -389,53 +425,56 @@ const AdminEmployeeOverviewPage = () => {
             .sort((a, b) => new Date(a.entryTimestamp || 0) - new Date(b.entryTimestamp || 0));
 
         const requestedEntries = normalizedDayEntries.map((entry) => ({ ...entry }));
-        let changedEntryId = null;
+        const changedEntryIds = new Set();
 
-        const requestTargetId = correction.targetEntryId;
-        const requestOriginalTs = correction.originalTimestamp;
-        const requestOriginalType = correction.originalPunchType;
+        correctionsToRender.forEach((correction) => {
+            const requestTargetId = correction.targetEntryId;
+            const requestOriginalTs = correction.originalTimestamp;
+            const requestOriginalType = correction.originalPunchType;
 
-        const targetIndex = requestedEntries.findIndex((entry) => {
-            if (requestTargetId != null && entry.id === requestTargetId) return true;
-            if (!requestOriginalTs) return false;
-            const sameTs = entry.entryTimestamp === requestOriginalTs;
-            const sameType = !requestOriginalType || entry.punchType === requestOriginalType;
-            return sameTs && sameType;
-        });
+            const targetIndex = requestedEntries.findIndex((entry) => {
+                if (requestTargetId != null && entry.id === requestTargetId) return true;
+                if (!requestOriginalTs) return false;
+                const sameTs = entry.entryTimestamp === requestOriginalTs;
+                const sameType = !requestOriginalType || entry.punchType === requestOriginalType;
+                return sameTs && sameType;
+            });
 
-        if (targetIndex >= 0) {
-            requestedEntries[targetIndex] = {
-                ...requestedEntries[targetIndex],
-                entryTimestamp: correction.desiredTimestamp,
-                punchType: correction.desiredPunchType,
-            };
-            changedEntryId = requestedEntries[targetIndex].id;
-        } else {
+            if (targetIndex >= 0) {
+                requestedEntries[targetIndex] = {
+                    ...requestedEntries[targetIndex],
+                    entryTimestamp: correction.desiredTimestamp,
+                    punchType: correction.desiredPunchType,
+                };
+                changedEntryIds.add(requestedEntries[targetIndex].id);
+                return;
+            }
+
             const syntheticId = `requested-${correction.id || correction.desiredTimestamp || Date.now()}`;
             requestedEntries.push({
                 id: syntheticId,
                 entryTimestamp: correction.desiredTimestamp,
                 punchType: correction.desiredPunchType,
             });
-            changedEntryId = syntheticId;
-        }
+            changedEntryIds.add(syntheticId);
+        });
 
         requestedEntries.sort((a, b) => new Date(a.entryTimestamp || 0) - new Date(b.entryTimestamp || 0));
 
-        const toSlots = (entries, changedId = null) => (
+        const toSlots = (entries, changedIds = null) => (
             Array.from({ length: MAX_CORRECTION_PREVIEW_PUNCHES }, (_, index) => {
                 const entry = entries[index] || null;
                 return {
-                    key: `${changedId || 'slot'}-${index}`,
+                    key: `${index}`,
                     time: entry?.entryTimestamp ? formatTime(entry.entryTimestamp) : null,
                     type: entry?.punchType ? formatPunchTypeLabel(entry.punchType, t) : null,
-                    changed: Boolean(entry && changedId != null && entry.id === changedId),
+                    changed: Boolean(entry && changedIds?.has(entry.id)),
                 };
             })
         );
 
         const originalSlots = toSlots(normalizedDayEntries);
-        const requestedSlots = toSlots(requestedEntries, changedEntryId);
+        const requestedSlots = toSlots(requestedEntries, changedEntryIds);
 
         const renderSlots = (slots, variant) => (
             <div className="entry-slot-list">
@@ -591,8 +630,15 @@ const AdminEmployeeOverviewPage = () => {
         }
 
         if (tab === 'correction') {
-            if (decision === 'approve') await handleApproveCorrection(item.id, note);
-            if (decision === 'deny') await handleDenyCorrection(item.id, note);
+            const requestIds = Array.isArray(item.requestIds) && item.requestIds.length > 0
+                ? item.requestIds
+                : [item.id];
+            if (decision === 'approve') {
+                await Promise.all(requestIds.map((id) => handleApproveCorrection(id, note)));
+            }
+            if (decision === 'deny') {
+                await Promise.all(requestIds.map((id) => handleDenyCorrection(id, note)));
+            }
         }
 
         setDecisionNotes((prev) => {
@@ -888,7 +934,7 @@ const AdminEmployeeOverviewPage = () => {
                                     <div className="card-heading-row">
                                         <h2>{t('adminDashboard.correctionRequestsTitle', 'Korrekturanträge')}</h2>
                                     </div>
-                                    {renderRequestList('correction', employeeCorrections)}
+                                    {renderRequestList('correction', groupedEmployeeCorrections)}
                                 </article>
 
                             </div>
