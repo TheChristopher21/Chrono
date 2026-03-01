@@ -467,10 +467,13 @@ export function getDetailedGlobalProblemIndicators(
         let expectedHoursToday = getExpectedHoursForDay(currentDateIter, userConfig, defaultExpectedHours, holidaysForUserCanton, userApprovedVacations, userSickLeaves, holidayOptionForDay);
         let isPotentiallyWorkDay = expectedHoursToday > 0;
 
-        if (userConfig.isPercentage === true && isHoliday) {
-            const handling = holidayOptionForDay?.holidayHandlingOption || 'PENDING_DECISION';
-            if (handling === 'DEDUCT_FROM_WEEKLY_TARGET') isPotentiallyWorkDay = false;
-            else isPotentiallyWorkDay = (currentDateIter.getDay() >= 1 && currentDateIter.getDay() <= (userConfig.expectedWorkDays || 5));
+        if (userConfig.isPercentage === true && isHoliday && holidayOptionForDay) {
+            const handling = holidayOptionForDay.holidayHandlingOption || 'PENDING_DECISION';
+            if (handling === 'DEDUCT_FROM_WEEKLY_TARGET') {
+                isPotentiallyWorkDay = false;
+            } else {
+                isPotentiallyWorkDay = (currentDateIter.getDay() >= 1 && currentDateIter.getDay() <= (userConfig.expectedWorkDays || 5));
+            }
 
             if (handling === 'PENDING_DECISION') {
                 indicators.holidayPendingCount++;
