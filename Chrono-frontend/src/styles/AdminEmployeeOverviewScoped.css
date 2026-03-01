@@ -101,12 +101,35 @@
 
 .week-day-tile span { font-size: 0.75rem; color: #cbd5e1; }
 
+.week-navigation-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.week-navigation-row strong {
+  margin-right: auto;
+}
+
 .mini-stats-row {
   margin-top: 0.75rem;
   display: flex;
   flex-wrap: wrap;
   gap: 0.8rem;
   font-size: 0.85rem;
+}
+
+.problem-case-card {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.problem-case-card h3 {
+  margin: 0;
+  font-size: 0.98rem;
 }
 
 .request-tabs { display: flex; gap: 0.4rem; }

@@ -14,6 +14,7 @@ import {
     getMondayOfWeek,
     addDays,
     minutesToHHMM,
+    getDetailedGlobalProblemIndicators,
 } from './adminDashboardUtils';
 import '../../styles/AdminEmployeeOverviewScoped.css';
 
@@ -82,6 +83,8 @@ const AdminEmployeeOverviewPage = () => {
     const [editModalVisible, setEditModalVisible] = useState(false);
     const [editDate, setEditDate] = useState(null);
     const [editDayEntries, setEditDayEntries] = useState([]);
+    const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
+    const [problemCursor, setProblemCursor] = useState(-1);
 
     const fetchAllData = useCallback(async () => {
         setLoading(true);
@@ -125,10 +128,9 @@ const AdminEmployeeOverviewPage = () => {
         [dailySummaries, username],
     );
 
-    const currentMonday = useMemo(() => getMondayOfWeek(new Date()), []);
     const weekDates = useMemo(
-        () => Array.from({ length: 7 }, (_, index) => formatLocalDateYMD(addDays(currentMonday, index))),
-        [currentMonday],
+        () => Array.from({ length: 7 }, (_, index) => formatLocalDateYMD(addDays(selectedMonday, index))),
+        [selectedMonday],
     );
 
     const weeklySummaries = useMemo(
@@ -250,6 +252,33 @@ const AdminEmployeeOverviewPage = () => {
         return coveredDays.size;
     }, [employeeSickLeaves, employeeVacations, weekDates]);
 
+    const problemIndicators = useMemo(() => {
+        const approvedVacations = employeeVacations.filter((vacation) => vacation?.approved);
+        return getDetailedGlobalProblemIndicators(
+            employeeSummaries,
+            approvedVacations,
+            employee,
+            8.5,
+            employeeSickLeaves,
+            null,
+            null,
+        );
+    }, [employee, employeeSummaries, employeeSickLeaves, employeeVacations]);
+
+    const weeklyProblems = useMemo(() => {
+        const datesInWeek = new Set(weekDates);
+        return (problemIndicators.problematicDays || []).filter((problem) => datesInWeek.has(problem.dateIso));
+    }, [problemIndicators, weekDates]);
+
+    const problemLabelByType = useMemo(() => ({
+        missing: t('adminDashboard.issueRibbon.missing', 'Fehlende Zeiten'),
+        incomplete_work_end_missing: t('adminDashboard.issueRibbon.incomplete', 'Unvollständig'),
+        incomplete_duplicate_punch_times: t('adminDashboard.issueRibbon.incomplete', 'Unvollständig'),
+        auto_completed_uncorrected: t('adminDashboard.issueRibbon.autoCompleted', 'Auto beendet'),
+        auto_completed_incomplete_uncorrected: t('adminDashboard.issueRibbon.autoCompleted', 'Auto beendet'),
+        holiday_pending_decision: t('adminDashboard.issueRibbon.holidayPending', 'Feiertag offen'),
+    }), [t]);
+
     const requestList = activeRequestTab === 'vacation' ? employeeVacations : employeeCorrections;
 
     const handleApproveVacation = async (id) => {
@@ -355,6 +384,28 @@ const AdminEmployeeOverviewPage = () => {
         }
     };
 
+    const goToPreviousWeek = () => {
+        setSelectedMonday((prev) => addDays(prev, -7));
+        setProblemCursor(-1);
+    };
+
+    const goToNextWeek = () => {
+        setSelectedMonday((prev) => addDays(prev, 7));
+        setProblemCursor(-1);
+    };
+
+    const goToCurrentWeek = () => {
+        setSelectedMonday(getMondayOfWeek(new Date()));
+        setProblemCursor(-1);
+    };
+
+    const handleCycleProblem = () => {
+        if (weeklyProblems.length === 0) return;
+        const nextIndex = (problemCursor + 1) % weeklyProblems.length;
+        setProblemCursor(nextIndex);
+        openEditModal(weeklyProblems[nextIndex].dateIso);
+    };
+
     return (
         <div className="employee-overview-page">
             <Navbar />
@@ -419,6 +470,14 @@ const AdminEmployeeOverviewPage = () => {
                                         <h2>Zeiterfassung – diese Woche</h2>
                                         <button className="text-link-btn" onClick={() => openEditModal(todayYmd)}>{t('adminDashboard.details', 'Details anzeigen')}</button>
                                     </div>
+                                    <div className="week-navigation-row">
+                                        <button type="button" className="text-link-btn" onClick={goToPreviousWeek}>←</button>
+                                        <strong>
+                                            {formatDate(new Date(`${weekDates[0]}T00:00:00`))} – {formatDate(new Date(`${weekDates[6]}T00:00:00`))}
+                                        </strong>
+                                        <button type="button" className="text-link-btn" onClick={goToNextWeek}>→</button>
+                                        <button type="button" className="text-link-btn" onClick={goToCurrentWeek}>Diese Woche</button>
+                                    </div>
                                     <div className="week-compact-grid">
                                         {weekDates.map((dateString) => {
                                             const dayEntry = weeklySummaries.find((entry) => entry.date === dateString);
@@ -435,6 +494,30 @@ const AdminEmployeeOverviewPage = () => {
                                         <span>Überstunden/Minus: <strong>{minutesToHHMM(weeklyDeltaMinutes)}</strong></span>
                                         <span>Fehlzeiten: <strong>{weeklyAbsenceDays} Tage</strong></span>
                                     </div>
+                                    <div className="problem-case-card">
+                                        <div className="card-heading-row">
+                                            <h3>Problemfälle</h3>
+                                            <button type="button" className="text-link-btn" onClick={handleCycleProblem} disabled={weeklyProblems.length === 0}>
+                                                {weeklyProblems.length > 0
+                                                    ? `Zum Problem (${((problemCursor + 1) % weeklyProblems.length) + 1}/${weeklyProblems.length})`
+                                                    : 'Keine Problemfälle'}
+                                            </button>
+                                        </div>
+                                        <div className="compact-list">
+                                            {weeklyProblems.map((problem) => (
+                                                <button
+                                                    key={`${problem.dateIso}-${problem.type}`}
+                                                    type="button"
+                                                    className="compact-list-item"
+                                                    onClick={() => openEditModal(problem.dateIso)}
+                                                >
+                                                    <span>{formatDateWithWeekday(new Date(`${problem.dateIso}T00:00:00`))}</span>
+                                                    <span className="status-pill pending">{problemLabelByType[problem.type] || problem.type}</span>
+                                                </button>
+                                            ))}
+                                            {weeklyProblems.length === 0 && <p className="empty-state">Keine Problemfälle in dieser Woche.</p>}
+                                        </div>
+                                    </div>
                                 </article>
 
                                 <article className="card-style employee-overview-card">
@@ -446,7 +529,7 @@ const AdminEmployeeOverviewPage = () => {
                                         </div>
                                     </div>
                                     <div className="compact-list">
-                                        {requestList.slice(0, 5).map((item) => (
+                                        {requestList.map((item) => (
                                             <button
                                                 className="compact-list-item"
                                                 key={`${activeRequestTab}-${item.id}`}
@@ -462,7 +545,6 @@ const AdminEmployeeOverviewPage = () => {
                                         ))}
                                         {requestList.length === 0 && <p className="empty-state">{t('adminCorrections.noRequestsFound', 'Keine Anträge vorhanden.')}</p>}
                                     </div>
-                                    {requestList.length > 5 && <button className="text-link-btn">Alle anzeigen</button>}
                                 </article>
                             </div>
 
