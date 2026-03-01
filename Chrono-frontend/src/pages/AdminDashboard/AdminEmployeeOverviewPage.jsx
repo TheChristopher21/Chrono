@@ -43,6 +43,7 @@ const getRequestStatusClass = (request) => {
 
 const getMonthStart = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
 const getMonthEnd = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
+const weekDayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
 
 const formatPunchTypeLabel = (type, t) => {
     if (!type) return '';
@@ -175,6 +176,23 @@ const AdminEmployeeOverviewPage = () => {
         }),
         [visibleDates, periodSummaries],
     );
+
+    const punchCalendarCells = useMemo(() => {
+        const baseCells = periodEntriesOverview.map((entry) => ({ ...entry, isPlaceholder: false }));
+        if (timeRangeMode !== 'month') return baseCells;
+
+        const firstDayOfMonth = getMonthStart(selectedMonth);
+        const dayIndex = firstDayOfMonth.getDay();
+        const mondayBasedOffset = dayIndex === 0 ? 6 : dayIndex - 1;
+        const placeholderCells = Array.from({ length: mondayBasedOffset }, (_, index) => ({
+            dateString: `placeholder-${index}`,
+            summary: null,
+            entries: [],
+            isPlaceholder: true,
+        }));
+
+        return [...placeholderCells, ...baseCells];
+    }, [periodEntriesOverview, selectedMonth, timeRangeMode]);
 
     const employeeBalance = useMemo(
         () => trackingBalances.find((entry) => entry?.username === username) || null,
@@ -604,36 +622,49 @@ const AdminEmployeeOverviewPage = () => {
                                         <div className="card-heading-row">
                                             <h3>Gestempelte Zeiten</h3>
                                         </div>
-                                        <div className="compact-list">
-                                            {periodEntriesOverview.map(({ dateString, summary, entries }) => (
-                                                <div className="punch-overview-item" key={`punch-${dateString}`}>
-                                                    <div className="punch-overview-header">
-                                                        <strong>{formatDateWithWeekday(new Date(`${dateString}T00:00:00`))}</strong>
-                                                        <button
-                                                            type="button"
-                                                            className="text-link-btn"
-                                                            onClick={() => openEditModal(dateString)}
-                                                        >
-                                                            Korrigieren
-                                                        </button>
-                                                    </div>
-                                                    {entries.length > 0 ? (
-                                                        <div className="punch-chip-row">
-                                                            {entries.map((entry, index) => (
-                                                                <span className="punch-chip" key={`${entry.id || entry.entryTimestamp || dateString}-${index}`}>
-                                                                    {getPunchTypeLabel(entry?.punchType)} · {formatTime(new Date(entry.entryTimestamp))}
-                                                                </span>
-                                                            ))}
+                                        <div className="punch-calendar-grid-wrap">
+                                            <div className="punch-calendar-weekdays">
+                                                {weekDayLabels.map((label) => (
+                                                    <span key={label}>{label}</span>
+                                                ))}
+                                            </div>
+                                            <div className={`punch-calendar-grid punch-calendar-grid--${timeRangeMode}`}>
+                                                {punchCalendarCells.map(({ dateString, summary, entries, isPlaceholder }) => {
+                                                    if (isPlaceholder) {
+                                                        return <div key={dateString} className="punch-overview-item punch-overview-item--placeholder" aria-hidden="true" />;
+                                                    }
+
+                                                    return (
+                                                        <div className="punch-overview-item" key={`punch-${dateString}`}>
+                                                            <div className="punch-overview-header">
+                                                                <strong>{formatDateWithWeekday(new Date(`${dateString}T00:00:00`))}</strong>
+                                                                <button
+                                                                    type="button"
+                                                                    className="text-link-btn"
+                                                                    onClick={() => openEditModal(dateString)}
+                                                                >
+                                                                    Korrigieren
+                                                                </button>
+                                                            </div>
+                                                            {entries.length > 0 ? (
+                                                                <div className="punch-chip-row">
+                                                                    {entries.map((entry, index) => (
+                                                                        <span className="punch-chip" key={`${entry.id || entry.entryTimestamp || dateString}-${index}`}>
+                                                                            {getPunchTypeLabel(entry?.punchType)} · {formatTime(new Date(entry.entryTimestamp))}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <p className="empty-state">
+                                                                    {summary
+                                                                        ? t('adminEmployeeOverview.noPunchesForDay', 'Keine einzelnen Stempelungen vorhanden.')
+                                                                        : t('adminDashboard.noDataShort', 'Keine Daten')}
+                                                                </p>
+                                                            )}
                                                         </div>
-                                                    ) : (
-                                                        <p className="empty-state">
-                                                            {summary
-                                                                ? t('adminEmployeeOverview.noPunchesForDay', 'Keine einzelnen Stempelungen vorhanden.')
-                                                                : t('adminDashboard.noDataShort', 'Keine Daten')}
-                                                        </p>
-                                                    )}
-                                                </div>
-                                            ))}
+                                                    );
+                                                })}
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="problem-case-card">
