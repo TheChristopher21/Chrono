@@ -70,6 +70,8 @@ const HourlyWeekOverview = ({
     const weeklyEarnings = userProfile?.hourlyRate
         ? (weeklyTotalMins / 60) * userProfile.hourlyRate
         : null;
+    const weeklyDeltaMins = dailySummaries.reduce((acc, curr) => acc + (curr?.overtimeMinutes || 0), 0);
+    const overallBalanceMins = userProfile?.trackingBalanceInMinutes || currentUser?.trackingBalanceInMinutes || 0;
 
     function handlePrevWeek() {
         setSelectedMonday(prev => addDays(prev, -7));
@@ -163,6 +165,23 @@ const HourlyWeekOverview = ({
                 />
                 <button onClick={handleNextWeek} className="button-secondary">{t("nextWeek", "Nächste Woche")} →</button>
                 <button onClick={handleCurrentWeek} className="button-secondary">{t('currentWeek', 'Aktuelle Woche')}</button>
+            </div>
+            <div className="tracking-overview-strip">
+                <strong>{t('overallBalance', 'Gesamtsaldo')}: {minutesToHHMM(overallBalanceMins)}</strong>
+                <span>|</span>
+                <strong>{t('weekBalance', 'Saldo (akt. Woche)')}: {minutesToHHMM(weeklyDeltaMins)}</strong>
+            </div>
+            <div className="week-compact-grid">
+                {weekDates.map((dayObj) => {
+                    const isoDate = formatLocalDate(dayObj);
+                    const summary = dailySummaries.find(s => s.date === isoDate);
+                    return (
+                        <div key={`compact-${isoDate}`} className="week-day-tile">
+                            <span>{dayObj.toLocaleDateString('de-DE', { weekday: 'short' }).toUpperCase()}, {formatDate(dayObj)}</span>
+                            <strong>{summary ? minutesToHHMM(summary.workedMinutes || 0) : '--:--'}</strong>
+                        </div>
+                    );
+                })}
             </div>
             <div className="weekly-monthly-totals">
                 <div className="summary-item">

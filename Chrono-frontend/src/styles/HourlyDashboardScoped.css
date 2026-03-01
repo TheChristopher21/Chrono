@@ -232,6 +232,39 @@
 .hourly-dashboard.scoped-dashboard .week-navigation > :nth-child(4) { grid-area: current; justify-self: center; margin-top: .1rem; }
 .hourly-dashboard.scoped-dashboard .week-navigation input[type="date"] { width: auto; min-width: 200px; text-align: center; background: var(--ud-c-card); }
 
+.hourly-dashboard.scoped-dashboard .tracking-overview-strip {
+    margin-top: .75rem;
+    display: flex;
+    align-items: center;
+    gap: .6rem;
+    flex-wrap: wrap;
+    font-size: var(--ud-fz-sm);
+    color: var(--ud-c-text-secondary);
+}
+
+.hourly-dashboard.scoped-dashboard .week-compact-grid {
+    margin-top: .55rem;
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.45rem;
+}
+
+.hourly-dashboard.scoped-dashboard .week-day-tile {
+    display: grid;
+    gap: 0.3rem;
+    text-align: left;
+    border: 1px solid rgba(148, 163, 184, 0.24);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 0.5rem;
+    padding: 0.45rem;
+    color: inherit;
+}
+
+.hourly-dashboard.scoped-dashboard .week-day-tile span {
+    font-size: 0.75rem;
+    color: #cbd5e1;
+}
+
 /* ---------- Weekly Totals (KPI) ---------- */
 .hourly-dashboard.scoped-dashboard .weekly-monthly-totals {
     display:grid; gap: 1rem; grid-template-columns: repeat(auto-fit, minmax(170px,1fr));
@@ -385,7 +418,9 @@
 
 /* ---------- Responsive ---------- */
 @media (max-width: 980px) { .hourly-dashboard.scoped-dashboard { padding: clamp(.8rem, 2vw, 1.2rem); } .hourly-dashboard.scoped-dashboard .dashboard-header { grid-template-columns: 1fr; } }
+@media (max-width: 980px) { .hourly-dashboard.scoped-dashboard .week-compact-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
 @media (max-width: 640px) { .hourly-dashboard.scoped-dashboard { font-size: .96rem; } .hourly-dashboard.scoped-dashboard .week-navigation { flex-direction: column; align-items: stretch; } .hourly-dashboard.scoped-dashboard .week-navigation > * { width: 100%; } }
+@media (max-width: 640px) { .hourly-dashboard.scoped-dashboard .week-compact-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 
 
 /* === CorrectionModal: universelles Styling für Entfernen-Button (passt für CorrectionModal ohne data-context) === */
