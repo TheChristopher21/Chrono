@@ -83,7 +83,6 @@ const AdminEmployeeOverviewPage = () => {
     const [trackingBalances, setTrackingBalances] = useState([]);
     const [sickLeaves, setSickLeaves] = useState([]);
 
-    const [activeRequestTab, setActiveRequestTab] = useState('vacation');
     const [decisionNotes, setDecisionNotes] = useState({});
 
     const [quickAction, setQuickAction] = useState(null);
@@ -359,8 +358,6 @@ const AdminEmployeeOverviewPage = () => {
         holiday_pending_decision: t('adminDashboard.issueRibbon.holidayPending', 'Feiertag offen'),
     }), [t]);
 
-    const requestList = activeRequestTab === 'vacation' ? employeeVacations : employeeCorrections;
-
     const getPunchTypeLabel = useCallback((punchType) => {
         if (!punchType) return t('adminDashboard.unknownType', 'Unbekannt');
         return t(`punchTypes.${punchType}`, punchType);
@@ -537,6 +534,64 @@ const AdminEmployeeOverviewPage = () => {
             return next;
         });
     }, [decisionNotes, getDecisionNoteKey, handleApproveCorrection, handleApproveVacation, handleDenyCorrection, handleDenyVacation]);
+
+    const renderRequestList = useCallback((tab, items) => (
+        <div className="compact-list vacation-requests-scroll">
+            {items.map((item) => {
+                const noteKey = getDecisionNoteKey(tab, item.id);
+                const requestDateLabel = tab === 'vacation'
+                    ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
+                    : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-');
+                const isPending = !item.approved && !item.denied;
+
+                return (
+                    <article className="compact-list-item request-list-card" key={`${tab}-${item.id}`}>
+                        <button
+                            type="button"
+                            className="request-jump-btn"
+                            onClick={() => handleOpenRequestDate(tab, item)}
+                        >
+                            <div className="request-item-content">
+                                <span className="request-item-main">{requestDateLabel}</span>
+                                {tab === 'correction' && (
+                                    <div className="request-correction-preview">
+                                        {renderCorrectionChange(item)}
+                                    </div>
+                                )}
+                            </div>
+                            <span className={`status-pill ${getRequestStatusClass(item)}`}>{getRequestStatusLabel(item, t)}</span>
+                        </button>
+
+                        {isPending && (
+                            <div className="request-inline-actions">
+                                <input
+                                    type="text"
+                                    value={decisionNotes[noteKey] || ''}
+                                    onChange={(event) => handleRequestNoteChange(tab, item.id, event.target.value)}
+                                    placeholder="Notiz (optional)"
+                                />
+                                <button
+                                    type="button"
+                                    className="inline-approve"
+                                    onClick={() => handleRequestDecision(tab, item, 'approve')}
+                                >
+                                    {t('approve', 'Genehmigen')}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="inline-deny"
+                                    onClick={() => handleRequestDecision(tab, item, 'deny')}
+                                >
+                                    {t('deny', 'Ablehnen')}
+                                </button>
+                            </div>
+                        )}
+                    </article>
+                );
+            })}
+            {items.length === 0 && <p className="empty-state">{t('adminCorrections.noRequestsFound', 'Keine Anträge vorhanden.')}</p>}
+        </div>
+    ), [decisionNotes, getDecisionNoteKey, handleOpenRequestDate, handleRequestDecision, handleRequestNoteChange, renderCorrectionChange, t]);
 
     const handleEditSubmit = async (updatedEntriesForDay) => {
         if (!editDate || !username) return;
@@ -762,6 +817,13 @@ const AdminEmployeeOverviewPage = () => {
                                     </div>
                                 </article>
 
+                                <article className="card-style employee-overview-card vacation-requests-card">
+                                    <div className="card-heading-row">
+                                        <h2>{t('adminDashboard.correctionRequestsTitle', 'Korrekturanträge')}</h2>
+                                    </div>
+                                    {renderRequestList('correction', employeeCorrections)}
+                                </article>
+
                             </div>
 
                             <div className="right-column">
@@ -790,68 +852,9 @@ const AdminEmployeeOverviewPage = () => {
 
                                     <article className="card-style employee-overview-card vacation-requests-card">
                                         <div className="card-heading-row">
-                                            <h2>{t('correctionRequests', 'Anträge')}</h2>
-                                            <div className="request-tabs">
-                                                <button className={activeRequestTab === 'vacation' ? 'active' : ''} onClick={() => setActiveRequestTab('vacation')}>Urlaub</button>
-                                                <button className={activeRequestTab === 'correction' ? 'active' : ''} onClick={() => setActiveRequestTab('correction')}>Korrektur</button>
-                                            </div>
+                                            <h2>{t('adminDashboard.vacationRequestsTitle', 'Urlaubsanträge')}</h2>
                                         </div>
-                                        <div className="compact-list vacation-requests-scroll">
-                                            {requestList.map((item) => {
-                                                const tab = activeRequestTab;
-                                                const noteKey = getDecisionNoteKey(tab, item.id);
-                                                const requestDateLabel = tab === 'vacation'
-                                                    ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
-                                                    : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-');
-                                                const isPending = !item.approved && !item.denied;
-
-                                                return (
-                                                    <article className="compact-list-item request-list-card" key={`${tab}-${item.id}`}>
-                                                        <button
-                                                            type="button"
-                                                            className="request-jump-btn"
-                                                            onClick={() => handleOpenRequestDate(tab, item)}
-                                                        >
-                                                            <div className="request-item-content">
-                                                                <span className="request-item-main">{requestDateLabel}</span>
-                                                                {tab === 'correction' && (
-                                                                    <div className="request-correction-preview">
-                                                                        {renderCorrectionChange(item)}
-                                                                    </div>
-                                                                )}
-                                                            </div>
-                                                            <span className={`status-pill ${getRequestStatusClass(item)}`}>{getRequestStatusLabel(item, t)}</span>
-                                                        </button>
-
-                                                        {isPending && (
-                                                            <div className="request-inline-actions">
-                                                                <input
-                                                                    type="text"
-                                                                    value={decisionNotes[noteKey] || ''}
-                                                                    onChange={(event) => handleRequestNoteChange(tab, item.id, event.target.value)}
-                                                                    placeholder="Notiz (optional)"
-                                                                />
-                                                                <button
-                                                                    type="button"
-                                                                    className="inline-approve"
-                                                                    onClick={() => handleRequestDecision(tab, item, 'approve')}
-                                                                >
-                                                                    {t('approve', 'Genehmigen')}
-                                                                </button>
-                                                                <button
-                                                                    type="button"
-                                                                    className="inline-deny"
-                                                                    onClick={() => handleRequestDecision(tab, item, 'deny')}
-                                                                >
-                                                                    {t('deny', 'Ablehnen')}
-                                                                </button>
-                                                            </div>
-                                                        )}
-                                                    </article>
-                                                );
-                                            })}
-                                            {requestList.length === 0 && <p className="empty-state">{t('adminCorrections.noRequestsFound', 'Keine Anträge vorhanden.')}</p>}
-                                        </div>
+                                        {renderRequestList('vacation', employeeVacations)}
                                     </article>
                                 </section>
                             </div>
