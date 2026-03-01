@@ -15,6 +15,7 @@ import {
     getMondayOfWeek,
     addDays,
     minutesToHHMM,
+    getExpectedHoursForDay,
     getDetailedGlobalProblemIndicators,
 } from './adminDashboardUtils';
 import '../../styles/AdminEmployeeOverviewScoped.css';
@@ -284,14 +285,21 @@ const AdminEmployeeOverviewPage = () => {
         [periodSummaries],
     );
 
-    const periodTargetMinutes = useMemo(() => {
-        const workDays = visibleDates.filter((dateString) => {
-            const dateObj = new Date(`${dateString}T00:00:00`);
-            return isWorkDay(dateObj);
-        }).length;
-        const perDay = Number(employee?.weeklyHours) > 0 ? (Number(employee.weeklyHours) * 60) / 5 : 0;
-        return Math.round(perDay * workDays);
-    }, [employee, visibleDates]);
+    const periodTargetMinutes = useMemo(
+        () => visibleDates.reduce((sum, dateString) => {
+            const expectedHours = getExpectedHoursForDay(
+                new Date(`${dateString}T00:00:00`),
+                employee,
+                Number(employee?.dailyWorkHours) || 0,
+                null,
+                employeeVacations,
+                employeeSickLeaves,
+                null,
+            );
+            return sum + Math.round(expectedHours * 60);
+        }, 0),
+        [employee, employeeSickLeaves, employeeVacations, visibleDates],
+    );
 
     const periodDeltaMinutes = totalWorkedWeekMinutes - periodTargetMinutes;
 
