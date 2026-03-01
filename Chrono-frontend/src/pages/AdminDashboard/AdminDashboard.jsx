@@ -178,6 +178,11 @@ const AdminDashboard = () => {
         correctionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, []);
 
+    const handleOpenUserOverview = useCallback((username) => {
+        if (!username) return;
+        navigate(`/admin/dashboard/mitarbeiter/${encodeURIComponent(username)}`);
+    }, [navigate]);
+
     const filteredWeeklyBalances = useMemo(() => {
         if (!Array.isArray(weeklyBalances) || weeklyBalances.length === 0) {
             return [];
@@ -1489,6 +1494,7 @@ const AdminDashboard = () => {
                         onDataReloadNeeded={handleDataReloadNeeded}
                         onIssueSummaryChange={handleIssueSummaryUpdate}
                         showSmartOverview={false}
+                        onOpenUserOverview={handleOpenUserOverview}
                     />
                 </section>
 

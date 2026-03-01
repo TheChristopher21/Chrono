@@ -350,6 +350,7 @@ const AdminWeekSection = forwardRef(({
                                          onDataReloadNeeded,
                                          onIssueSummaryChange,
                                          showSmartOverview = true,
+                                         onOpenUserOverview,
                                      }, ref) => {
     const { notify } = useNotification();
     const { currentUser } = useAuth();
@@ -1788,6 +1789,9 @@ const AdminWeekSection = forwardRef(({
                                                 <button onClick={() => toggleDetails(userData.username)} className="action-button details-toggle-button" title={detailedUser === userData.username ? t('hideDetails', 'Details Ausblenden') : t('showDetails', 'Details Anzeigen')} aria-expanded={detailedUser === userData.username}>
                                                     {detailedUser === userData.username ? '📂' : '📄'}
                                                 </button>
+                                                <button onClick={() => onOpenUserOverview?.(userData.username)} className="action-button overview-user-button" title={t('adminDashboard.openOverview', 'Mitarbeiter-Übersicht öffnen')}>
+                                                    Übersicht
+                                                </button>
                                                 <button onClick={() => openPrintUserModal(userData.username)} className="action-button print-user-button" title={t('printButtonUser', 'Zeiten dieses Benutzers drucken')}>
                                                     🖨️
                                                 </button>
@@ -2042,6 +2046,9 @@ const AdminWeekSection = forwardRef(({
                                             {renderProblemIndicatorsCell(userData)}
                                         </td>
                                         <td data-label={t('actions', 'Aktionen')} className="actions-cell">
+                                            <button onClick={() => onOpenUserOverview?.(userData.username)} className="action-button overview-user-button" title={t('adminDashboard.openOverview', 'Mitarbeiter-Übersicht öffnen')}>
+                                                Übersicht
+                                            </button>
                                             <button onClick={() => openPrintUserModal(userData.username)} className="action-button print-user-button" title={t('printButtonUser', 'Zeiten dieses Benutzers drucken')}>
                                                 🖨️
                                             </button>
@@ -2171,6 +2178,7 @@ AdminWeekSection.propTypes = {
     onDataReloadNeeded: PropTypes.func.isRequired,
     onIssueSummaryChange: PropTypes.func,
     showSmartOverview: PropTypes.bool,
+    onOpenUserOverview: PropTypes.func,
 };
 
 AdminWeekSection.displayName = 'AdminWeekSection';
