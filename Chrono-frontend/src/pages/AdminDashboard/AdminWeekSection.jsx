@@ -1872,7 +1872,7 @@ const AdminWeekSection = forwardRef(({
                                         {t('balanceWeek', 'Saldo (Wo)')} {getSortIndicator('currentWeekOvertimeMinutes')}
                                     </th>
                                     <th onClick={() => requestSort('cumulativeBalanceMinutes')} className="sortable-header th-numeric">
-                                        {t('balanceTotal', 'Gesamtsaldo')} {getSortIndicator('cumulativeBalanceMinutes')}
+                                        {t('balanceTotal', 'Gesamtüberstunden')} {getSortIndicator('cumulativeBalanceMinutes')}
                                     </th>
                                     <th onClick={() => requestSort('problemIndicators')} className="sortable-header th-center">
                                         {t('issues', 'Probleme')} {getSortIndicator('problemIndicators')}
@@ -1888,7 +1888,7 @@ const AdminWeekSection = forwardRef(({
                                             <td data-label={t('actualHours', 'Ist (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyActualMinutes)}</td>
                                             <td data-label={t('expectedHours', 'Soll (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyExpectedMinutes)}</td>
                                             <td data-label={t('balanceWeek', 'Saldo (Wo)')} className={`td-numeric ${userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.currentWeekOvertimeMinutes)}</td>
-                                            <td data-label={t('balanceTotal', 'Gesamtsaldo')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
+                                            <td data-label={t('balanceTotal', 'Gesamtüberstunden')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
                                             <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell td-center">
                                                 {renderProblemIndicatorsCell(userData)}
                                             </td>
@@ -1912,7 +1912,7 @@ const AdminWeekSection = forwardRef(({
                                                 <td colSpan="7" ref={detailSectionRef}>
                                                     <div className="admin-week-display-detail p-2 bg-slate-50 rounded-b-md shadow-inner">
                                                         <div className="user-weekly-balance-detail text-xs mb-2 font-medium">
-                                                            <span>{t('balanceTotal', 'Gesamtsaldo')}: {minutesToHHMM(userData.cumulativeBalanceMinutes)}</span>
+                                                            <span>{t('balanceTotal', 'Gesamtüberstunden')}: {minutesToHHMM(userData.cumulativeBalanceMinutes)}</span>
                                                             <span className="mx-2">|</span>
                                                             <span>{t('balanceWeek', 'Saldo (akt. Woche)')}: {minutesToHHMM(userData.currentWeekOvertimeMinutes)}</span>
                                                         </div>
@@ -2143,7 +2143,7 @@ const AdminWeekSection = forwardRef(({
                                         {t('adminDashboard.monthView.balanceRange', 'Saldo (Zeitraum)')} {getMonthSortIndicator('monthlyOvertimeMinutes')}
                                     </th>
                                     <th onClick={() => requestMonthSort('cumulativeBalanceMinutes')} className="sortable-header th-numeric">
-                                        {t('balanceTotal', 'Gesamtsaldo')} {getMonthSortIndicator('cumulativeBalanceMinutes')}
+                                        {t('balanceTotal', 'Gesamtüberstunden')} {getMonthSortIndicator('cumulativeBalanceMinutes')}
                                     </th>
                                     <th onClick={() => requestMonthSort('problemIndicators')} className="sortable-header th-center">
                                         {t('issues', 'Probleme')} {getMonthSortIndicator('problemIndicators')}
@@ -2158,7 +2158,7 @@ const AdminWeekSection = forwardRef(({
                                         <td data-label={t('adminDashboard.monthView.actualHours', 'Ist (Zeitraum)')} className="td-numeric">{minutesToHHMM(userData.monthlyActualMinutes)}</td>
                                         <td data-label={t('adminDashboard.monthView.expectedHours', 'Soll (Zeitraum)')} className="td-numeric">{minutesToHHMM(userData.monthlyExpectedMinutes)}</td>
                                         <td data-label={t('adminDashboard.monthView.balanceRange', 'Saldo (Zeitraum)')} className={`td-numeric ${userData.monthlyOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.monthlyOvertimeMinutes)}</td>
-                                        <td data-label={t('balanceTotal', 'Gesamtsaldo')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
+                                        <td data-label={t('balanceTotal', 'Gesamtüberstunden')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
                                         <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell td-center">
                                             {renderProblemIndicatorsCell(userData)}
                                         </td>

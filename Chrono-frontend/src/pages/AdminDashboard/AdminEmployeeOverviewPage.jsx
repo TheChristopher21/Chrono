@@ -861,7 +861,7 @@ const AdminEmployeeOverviewPage = () => {
                             <article className="card-style kpi-card">
                                 <h3>{t('adminEmployeeOverview.pending', 'Offen')}</h3>
                                 <p><strong>{openItemsCount}</strong> {t('adminDashboard.openRequests', 'Anträge')}</p>
-                                <p>{t('balanceTotal', 'Gesamtsaldo')}: {minutesToHHMM(employeeBalance?.trackingBalance || 0)}</p>
+                                <p>{t('balanceTotal', 'Gesamtüberstunden')}: {minutesToHHMM(employeeBalance?.trackingBalance || 0)}</p>
                             </article>
                         </section>
 
