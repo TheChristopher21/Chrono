@@ -288,6 +288,11 @@
   min-height: 120px;
 }
 
+.punch-overview-item--focused {
+  border-color: rgba(99, 102, 241, 0.95);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+}
+
 .punch-overview-item--placeholder {
   background: transparent;
   border-style: dashed;
