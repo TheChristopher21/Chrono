@@ -10,6 +10,7 @@ import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 import {
     formatDate,
     formatDateWithWeekday,
+    formatTime,
     formatLocalDateYMD,
     getMondayOfWeek,
     addDays,
@@ -136,6 +137,21 @@ const AdminEmployeeOverviewPage = () => {
     const weeklySummaries = useMemo(
         () => employeeSummaries.filter((entry) => weekDates.includes(entry?.date)),
         [employeeSummaries, weekDates],
+    );
+
+    const weeklyEntriesOverview = useMemo(
+        () => weekDates.map((dateString) => {
+            const summary = weeklySummaries.find((entry) => entry?.date === dateString);
+            const entries = Array.isArray(summary?.entries)
+                ? [...summary.entries].sort((a, b) => new Date(a?.entryTimestamp || 0) - new Date(b?.entryTimestamp || 0))
+                : [];
+            return {
+                dateString,
+                summary,
+                entries,
+            };
+        }),
+        [weekDates, weeklySummaries],
     );
 
     const employeeBalance = useMemo(
@@ -280,6 +296,11 @@ const AdminEmployeeOverviewPage = () => {
     }), [t]);
 
     const requestList = activeRequestTab === 'vacation' ? employeeVacations : employeeCorrections;
+
+    const getPunchTypeLabel = useCallback((punchType) => {
+        if (!punchType) return t('adminDashboard.unknownType', 'Unbekannt');
+        return t(`punchTypes.${punchType}`, punchType);
+    }, [t]);
 
     const handleApproveVacation = async (id) => {
         try {
@@ -493,6 +514,42 @@ const AdminEmployeeOverviewPage = () => {
                                         <span>Gesamtstunden: <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></span>
                                         <span>Überstunden/Minus: <strong>{minutesToHHMM(weeklyDeltaMinutes)}</strong></span>
                                         <span>Fehlzeiten: <strong>{weeklyAbsenceDays} Tage</strong></span>
+                                    </div>
+                                    <div className="punch-overview-list">
+                                        <div className="card-heading-row">
+                                            <h3>Gestempelte Zeiten</h3>
+                                        </div>
+                                        <div className="compact-list">
+                                            {weeklyEntriesOverview.map(({ dateString, summary, entries }) => (
+                                                <div className="punch-overview-item" key={`punch-${dateString}`}>
+                                                    <div className="punch-overview-header">
+                                                        <strong>{formatDateWithWeekday(new Date(`${dateString}T00:00:00`))}</strong>
+                                                        <button
+                                                            type="button"
+                                                            className="text-link-btn"
+                                                            onClick={() => openEditModal(dateString)}
+                                                        >
+                                                            Korrigieren
+                                                        </button>
+                                                    </div>
+                                                    {entries.length > 0 ? (
+                                                        <div className="punch-chip-row">
+                                                            {entries.map((entry, index) => (
+                                                                <span className="punch-chip" key={`${entry.id || entry.entryTimestamp || dateString}-${index}`}>
+                                                                    {getPunchTypeLabel(entry?.punchType)} · {formatTime(new Date(entry.entryTimestamp))}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    ) : (
+                                                        <p className="empty-state">
+                                                            {summary
+                                                                ? t('adminEmployeeOverview.noPunchesForDay', 'Keine einzelnen Stempelungen vorhanden.')
+                                                                : t('adminDashboard.noDataShort', 'Keine Daten')}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="problem-case-card">
                                         <div className="card-heading-row">
