@@ -1,0 +1,32 @@
+:root {
+    /* Mobile spacing + radius tokens shared across views */
+    --space-mobile: 1rem;
+    --space-mobile-lg: 1.6rem;
+    --radius-mobile: 20px;
+    --radius-mobile-lg: 28px;
+    --tabbar-height: 72px;
+}
+
+@media (max-width: 480px) {
+    :root {
+        --space-mobile: 1.1rem;
+        --space-mobile-lg: 1.8rem;
+        --radius-mobile: 22px;
+        --radius-mobile-lg: 32px;
+    }
+}
+
+@media (max-width: 360px) {
+    :root {
+        --space-mobile: 0.9rem;
+        --space-mobile-lg: 1.4rem;
+        --radius-mobile: 18px;
+        --radius-mobile-lg: 26px;
+    }
+}
+
+@supports (padding: max(0px)) {
+    :root {
+        --tabbar-safe-area: calc(var(--tabbar-height) + env(safe-area-inset-bottom, 0px));
+    }
+}

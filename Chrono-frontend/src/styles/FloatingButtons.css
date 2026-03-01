@@ -1,0 +1,24 @@
+/* src/styles/FloatingButtons.css */
+
+/* Scope: .scoped-floating-buttons */
+.scoped-floating-buttons.floating-buttons-container {
+    /* DIES ist jetzt der EINZIGE Ort für die Positionierung */
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000; /* Stellt sicher, dass es über dem Seiteninhalt liegt */
+
+    /* Die Buttons (Help & Chat) liegen nebeneinander */
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px; /* Abstand zwischen den Buttons */
+
+    /* Verhindert, dass der Container selbst Klicks blockiert */
+    pointer-events: none;
+}
+
+/* Der eigentliche Inhalt darf weiterhin auf Eingaben reagieren */
+.scoped-floating-buttons .chat-widget {
+    pointer-events: auto;
+}

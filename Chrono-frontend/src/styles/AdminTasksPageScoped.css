@@ -1,0 +1,216 @@
+/* =========================================================================
+   AdminScheduleRulesPageScoped.css — scoped & isoliert
+   Fixes:
+   - Endzeit/Time-Inputs schneiden keine Ziffern mehr ab
+   - Grid-Spalten per Klassen statt :nth-child (stabil)
+   - Volle Seitenbreite + korrektes Page-Background (Light/Dark)
+   ========================================================================= */
+
+/* Seite / Tokens */
+.schedule-rules-page.scoped-dashboard {
+    /* Seitenhintergrund + Breite */
+    --c-page-bg: #f7f8fb;              /* Light default */
+    width: 100%;
+    max-width: none;
+    min-height: 100vh;
+    background: var(--c-page-bg);
+
+    /* Abstände */
+    padding: var(--gap-lg, 1.25rem);
+
+    /* Theme-Tokens (Light) */
+    --c-card: #ffffff;
+    --c-surface: #eef1f6;
+    --c-border: #e3e7ee;
+    --c-text: #111827;
+    --c-text-muted: #6b7280;
+    --c-primary: #2563eb;
+    --c-primary-200t: rgba(37,99,235,.14);
+
+    --radius-xl: 18px;
+    --radius-md: 10px;
+    --gap-xl: 2rem;
+    --gap-lg: 1.25rem;
+    --gap-md: .9rem;
+    --gap-sm: .5rem;
+}
+
+/* Dark Mode Tokens */
+[data-theme="dark"] .schedule-rules-page.scoped-dashboard {
+    --c-page-bg: #0e1017;
+    --c-card: #141826;
+    --c-surface: #1b2134;
+    --c-border: #2a3147;
+    --c-text: #e6eaf2;
+    --c-text-muted: #aab2c5;
+    --c-primary: #5aa3ff;
+    --c-primary-200t: rgba(90,163,255,.16);
+}
+
+/* Header */
+.schedule-rules-page .dashboard-header { margin: 0 0 var(--gap-lg); }
+.schedule-rules-page .dashboard-header h1 {
+    margin: 0 0 .25rem; font-weight: 800; color: var(--c-text);
+}
+.schedule-rules-page .dashboard-header p {
+    margin: 0; color: var(--c-text-muted);
+}
+
+/* Karten */
+.schedule-rules-page .rules-list { display: flex; flex-direction: column; gap: var(--gap-lg); }
+.schedule-rules-page .rule-card {
+    background: var(--c-card);
+    border: 1px solid var(--c-border);
+    border-radius: var(--radius-xl);
+    box-shadow: 0 12px 36px rgba(0,0,0,.10);
+    padding: var(--gap-lg);
+    transition: box-shadow .2s ease, transform .08s ease, border-color .2s ease;
+}
+[data-theme="dark"] .schedule-rules-page .rule-card { box-shadow: 0 12px 36px rgba(0,0,0,.28); }
+.schedule-rules-page .rule-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--c-primary);
+    box-shadow: 0 12px 34px rgba(37,99,235,.14);
+}
+[data-theme="dark"] .schedule-rules-page .rule-card:hover { box-shadow: 0 12px 34px rgba(90,163,255,.22); }
+
+/* Grid – stabile Spalten (Desktop) */
+.schedule-rules-page .form-grid {
+    display: grid;
+    grid-template-columns: 2fr 1.2fr 0.9fr 0.9fr auto 1.2fr; /* label | key | start | end | active | save */
+    gap: var(--gap-md);
+    align-items: end;
+}
+.schedule-rules-page .form-group { display: flex; flex-direction: column; }
+
+/* Zuweisung via Klassen (kein nth-child) */
+.schedule-rules-page .fg-label  { grid-column: 1; }
+.schedule-rules-page .fg-key    { grid-column: 2; }
+.schedule-rules-page .fg-start  { grid-column: 3; }
+.schedule-rules-page .fg-end    { grid-column: 4; }
+.schedule-rules-page .fg-active { grid-column: 5; display: flex; align-items: center; gap: .75rem; }
+.schedule-rules-page .fg-save   { grid-column: 6; }
+
+/* Responsive Umschaltung */
+@media (max-width: 980px) {
+    .schedule-rules-page .form-grid {
+        grid-template-columns: 1fr 1fr;
+        grid-template-areas:
+      "label key"
+      "start end"
+      "active save";
+    }
+    .schedule-rules-page .fg-label  { grid-area: label; }
+    .schedule-rules-page .fg-key    { grid-area: key; }
+    .schedule-rules-page .fg-start  { grid-area: start; }
+    .schedule-rules-page .fg-end    { grid-area: end; }
+    .schedule-rules-page .fg-active { grid-area: active; }
+    .schedule-rules-page .fg-save   { grid-area: save; }
+}
+@media (max-width: 560px) {
+    .schedule-rules-page .form-grid {
+        grid-template-columns: 1fr;
+        grid-template-areas: "label" "key" "start" "end" "active" "save";
+    }
+}
+
+/* Labels */
+.schedule-rules-page .form-group label {
+    color: var(--c-text-muted);
+    font-size: .9rem;
+    margin: 0 0 .35rem;
+    font-weight: 600;
+}
+
+/* Inputs – Text/Time */
+.schedule-rules-page input[type="text"],
+.schedule-rules-page input[type="time"] {
+    height: 44px;
+    width: 100%;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--c-border);
+    background: var(--c-surface);
+    color: var(--c-text);
+    padding: 0 .95rem;
+    transition: border-color .15s ease, box-shadow .2s ease, background .2s ease, transform .05s ease;
+    box-sizing: border-box;
+}
+
+/* Fix fürs Abschneiden bei Time-Inputs */
+.schedule-rules-page input[type="time"] {
+    letter-spacing: normal;
+    font-variant-numeric: tabular-nums;
+    padding-right: 2.6rem;   /* Platz fürs Icon */
+    min-width: 9.5ch;        /* HH:MM */
+    overflow: visible;
+    color-scheme: dark light;
+}
+.schedule-rules-page input[type="time"]::-webkit-calendar-picker-indicator { opacity: .9; cursor: pointer; margin-right: .35rem; }
+.schedule-rules-page input[type="time"]::-webkit-datetime-edit { padding: 0; }
+.schedule-rules-page input[type="time"]::-webkit-datetime-edit-text { padding: 0 .1em; }
+
+/* Hover/Focus */
+.schedule-rules-page input:hover { transform: translateY(-1px); }
+.schedule-rules-page input:focus {
+    outline: none;
+    border-color: var(--c-primary);
+    box-shadow: 0 0 0 4px var(--c-primary-200t);
+}
+
+/* Toggle (scoped) */
+.schedule-rules-page .fg-active input[type="checkbox"]{
+    appearance: none; -webkit-appearance: none;
+    width: 40px; height: 22px; border-radius: 11px; position: relative;
+    background: var(--c-border); cursor: pointer; transition: background .2s ease;
+    border: none;
+}
+.schedule-rules-page .fg-active input[type="checkbox"]::before{
+    content:''; position:absolute; top:2px; left:2px; width:18px; height:18px;
+    background:#fff; border-radius:50%; transition: transform .2s ease;
+}
+.schedule-rules-page .fg-active input[type="checkbox"]:checked{ background: #16a34a; }
+.schedule-rules-page .fg-active input[type="checkbox"]:checked::before{ transform: translateX(18px); }
+
+/* Actions */
+.schedule-rules-page .fg-save button {
+    width: 100%;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: var(--c-primary);
+    color: #fff; font-weight: 700; border: none;
+    box-shadow: 0 6px 18px rgba(37,99,235,.18);
+    transition: transform .05s ease, box-shadow .2s ease, filter .2s ease;
+}
+.schedule-rules-page .fg-save button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 10px 24px rgba(37,99,235,.24);
+    filter: brightness(.98);
+}
+
+/* Add-Button */
+.schedule-rules-page .add-new-button {
+    width: 100%;
+    padding: .9rem;
+    font-size: 1.05rem; font-weight: 700;
+    border: 2px dashed var(--c-primary);
+    background: transparent; color: var(--c-primary);
+    border-radius: var(--radius-xl);
+    cursor: pointer; transition: all .2s ease;
+}
+.schedule-rules-page .add-new-button:hover {
+    background: rgba(37,99,235,.08);
+    border-style: solid;
+}
+
+/* Skeleton */
+.schedule-rules-page .skeleton {
+    height: 44px;
+    border-radius: 10px;
+    background: linear-gradient(90deg, rgba(0,0,0,.04), rgba(0,0,0,.08), rgba(0,0,0,.04));
+    border: 1px solid var(--c-border);
+    animation: skel 1.2s infinite;
+}
+[data-theme="dark"] .schedule-rules-page .skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,.13), rgba(255,255,255,.06));
+}
+@keyframes skel { 0%{background-position:-200px 0} 100%{background-position:200px 0} }

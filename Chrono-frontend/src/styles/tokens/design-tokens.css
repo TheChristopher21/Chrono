@@ -1,0 +1,103 @@
+/* src/styles/tokens/design-tokens.css (Optimierte Version) */
+:root {
+  /* ─ Farbpalette (Basis) ──────────────────────── */
+  --brand-blue: #007bff;
+  --brand-green: #28a745;
+  --brand-red: #dc3545;
+  --brand-yellow: #ffc107;
+  --brand-gray-100: #f8f9fa;
+  --brand-gray-200: #e9ecef;
+  --brand-gray-300: #dee2e6;
+  --brand-gray-400: #ced4da;
+  --brand-gray-500: #adb5bd;
+  --brand-gray-600: #6c757d;
+  --brand-gray-700: #495057;
+  --brand-gray-800: #343a40;
+  --brand-gray-900: #212529;
+
+  /* ─ Semantische Farben (Anwendungszweck) ─────── */
+  --c-primary: var(--brand-blue);
+  --c-secondary: var(--brand-gray-600);
+  --c-success: var(--brand-green);
+  --c-danger: var(--brand-red);
+  --c-warning: var(--brand-yellow);
+
+  /* Textfarben */
+  --c-text: var(--brand-gray-800);
+  --c-text-muted: var(--brand-gray-600);
+  --c-text-on-primary: #fff;
+
+  /* Hintergrundfarben */
+  --c-bg: #fff;
+  --c-bg-surface: var(--brand-gray-100); /* Für Elemente auf dem BG */
+  --c-bg-muted: var(--brand-gray-200);
+  --c-card: var(--c-bg-surface);
+  --modal-backdrop-color: rgba(0, 0, 0, 0.6);
+
+  /* Rahmenfarben */
+  --c-border: var(--brand-gray-300);
+  --c-border-focus: var(--brand-blue);
+
+  /* ─ Typografie ───────────────────────────── */
+  --font-family-base: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-size-sm: 0.875rem; /* 14px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-md: 1.125rem; /* 18px */
+  --font-size-lg: 1.25rem;  /* 20px */
+  --font-weight-light: 300;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
+
+  /* ─ Abstände & Größen ──────────────────────── */
+  --spacing-xs: 0.25rem;  /* 4px */
+  --spacing-sm: 0.5rem;   /* 8px */
+  --spacing-md: 1rem;     /* 16px */
+  --spacing-lg: 1.5rem;   /* 24px */
+  --spacing-xl: 2rem;     /* 32px */
+  --container-width: 1280px;
+
+  /* ─ Radien & Schatten ─────────────────────── */
+  --radius-sm: 0.25rem;
+  --radius-md: 0.5rem;
+  --radius-lg: 1rem;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
+  /* ─ Übergänge ─────────────────────────────── */
+  --transition-fast: 150ms ease-in-out;
+  --transition-base: 250ms ease-in-out;
+}
+/* src/styles/tokens/design-tokens.css (am Ende hinzufügen) */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* ─ Semantische Farben (Dark Mode) ─────────── */
+    --c-primary: #58a6ff; /* Helleres Blau für besseren Kontrast */
+    --c-secondary: var(--brand-gray-400);
+    --c-danger: #f87171; /* Helleres Rot */
+
+    /* Textfarben */
+    --c-text: var(--brand-gray-200);
+    --c-text-muted: var(--brand-gray-400);
+    --c-text-on-primary: #fff;
+
+    /* Hintergrundfarben */
+    --c-bg: #0d1117; /* Dunkler Hintergrund für die Seite */
+    --c-bg-surface: #161b22; /* Etwas hellerer Hintergrund für Karten */
+    --c-bg-muted: #21262d;
+    --c-card: var(--c-bg-surface);
+    --modal-backdrop-color: rgba(0, 0, 0, 0.6);
+
+    /* Rahmenfarben */
+    --c-border: #30363d;
+    --c-border-focus: var(--c-primary);
+
+    /* Schatten */
+    --shadow-color: rgb(0 0 0 / 0.4);
+    --shadow-sm: 0 1px 2px 0 var(--shadow-color);
+    --shadow-md: 0 4px 6px -1px var(--shadow-color), 0 2px 4px -2px var(--shadow-color);
+    --shadow-lg: 0 10px 15px -3px var(--shadow-color), 0 4px 6px -4px var(--shadow-color);
+  }
+}

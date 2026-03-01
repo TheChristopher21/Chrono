@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "nfc-pcsc": "^0.8.1",
+    "node-cron": "^3.0.3"
+  }
+}

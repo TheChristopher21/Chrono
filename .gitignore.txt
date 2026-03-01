@@ -1,0 +1,16 @@
+# Node.js / React
+Chrono-frontend/node_modules/
+Chrono-frontend/dist/
+Chrono-frontend/.env
+
+# Maven / Java / Spring Boot
+Chrono-backend/target/
+Chrono-backend/.mvn/
+Chrono-backend/*.log
+Chrono-backend/.idea/
+
+# Allgemein
+.DS_Store
+Thumbs.db
+*.iml
+*.log

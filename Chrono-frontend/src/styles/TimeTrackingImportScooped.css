@@ -1,0 +1,247 @@
+/* =========================================================================
+   TimeTrackingImportScoped.css - Finale Version
+   ========================================================================= */
+
+/* --- Definition der lokalen Theme-Variablen --- */
+.time-import-page.scoped-import {
+    --ti-c-bg: #f4f6ff;
+    --ti-c-surface: #ffffff;
+    --ti-c-text: #1e1f22;
+    --ti-c-text-strong: #000000;
+    --ti-c-text-secondary: #60646c;
+    --ti-c-border: #d5d8e5;
+    --ti-c-border-interactive: #b5b9c9;
+    --ti-c-input-bg: #fdfdff;
+    --ti-c-primary: #475bff;
+    --ti-c-primary-strong: #3a4ee5;
+    --ti-c-primary-bg: rgba(71, 91, 255, 0.1);
+    --ti-c-success: #28a745;
+    --ti-c-error: #dc3545;
+    --ti-c-error-bg: rgba(220, 53, 69, 0.1);
+    --ti-c-error-text: #a21b27;
+    --ti-c-disabled: #adb5bd;
+}
+
+[data-theme="dark"] .time-import-page.scoped-import {
+    --ti-c-bg: #16171b;
+    --ti-c-surface: #202227;
+    --ti-c-text: #d4d7e1;
+    --ti-c-text-strong: #ffffff;
+    --ti-c-text-secondary: #9095a3;
+    --ti-c-border: #353842;
+    --ti-c-border-interactive: #515666;
+    --ti-c-input-bg: #16171b;
+    --ti-c-primary-bg: rgba(71, 91, 255, 0.15);
+    --ti-c-error-bg: rgba(220, 53, 69, 0.15);
+    --ti-c-error-text: #f07f89;
+    --ti-c-disabled: #495057;
+}
+
+/* --- Grundlayout der Seite --- */
+.time-import-page.scoped-import {
+    background-color: var(--ti-c-bg);
+    color: var(--ti-c-text);
+    min-height: calc(100vh - 60px); /* Füllt den gesamten Bildschirm unter der Navbar */
+    padding: 2rem;
+}
+
+/* --- Neuer Wrapper für den zentrierten Inhalt --- */
+.time-import-page.scoped-import .page-content-wrapper {
+    width: 100%;
+    max-width: 900px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+/* --- Alle weiteren Stile bleiben gleich, aber bezogen auf den Scope --- */
+.time-import-page.scoped-import .header {
+    text-align: center;
+    margin-bottom: 1rem;
+}
+.time-import-page.scoped-import .header h1 {
+    color: var(--ti-c-text-strong);
+    font-size: 2rem;
+}
+.time-import-page.scoped-import .header p {
+    color: var(--ti-c-text-secondary);
+    font-size: 1.1rem;
+    max-width: 600px;
+    margin: 0.5rem auto 0;
+}
+
+.time-import-page.scoped-import .card {
+    background-color: var(--ti-c-surface);
+    border: 1px solid var(--ti-c-border);
+    border-radius: 12px;
+    padding: 2rem;
+}
+.time-import-page.scoped-import .card h2 {
+    color: var(--ti-c-text-strong);
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
+}
+
+.time-import-page.scoped-import .upload-area {
+    border: 2px dashed var(--ti-c-border-interactive);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    background-color: var(--ti-c-bg);
+    color: var(--ti-c-text-secondary);
+    transition: all 0.2s ease-in-out;
+}
+.time-import-page.scoped-import .upload-area:hover {
+    border-color: var(--ti-c-primary);
+}
+.time-import-page.scoped-import .upload-area.active {
+    border-color: var(--ti-c-primary-strong);
+    background-color: var(--ti-c-primary-bg);
+}
+.time-import-page.scoped-import .upload-hint {
+    font-size: 0.85rem;
+    margin-top: 0.5rem;
+}
+
+.time-import-page.scoped-import .action-button {
+    display: block;
+    width: 100%;
+    padding: 0.8rem 1.5rem;
+    margin-top: 1.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+    background-color: var(--ti-c-primary);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+.time-import-page.scoped-import .action-button:hover:not(:disabled) {
+    background-color: var(--ti-c-primary-strong);
+}
+.time-import-page.scoped-import .action-button:disabled {
+    background-color: var(--ti-c-disabled);
+    cursor: not-allowed;
+}
+.time-import-page.scoped-import .action-button.reimport {
+    background-color: var(--ti-c-success);
+}
+.time-import-page.scoped-import .progress-bar {
+    width: 100%;
+    height: 8px;
+    background-color: var(--ti-c-border);
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 1rem;
+}
+.time-import-page.scoped-import .progress-bar-inner {
+    height: 100%;
+    background-color: var(--ti-c-primary);
+    transition: width 0.4s ease-in-out;
+}
+
+.time-import-page.scoped-import .feedback-summary {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background-color: var(--ti-c-bg);
+    border-radius: 8px;
+}
+.time-import-page.scoped-import .summary-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-grow: 1;
+}
+.time-import-page.scoped-import .summary-item .count {
+    font-size: 2rem;
+    font-weight: 700;
+}
+.time-import-page.scoped-import .summary-item .label {
+    font-size: 0.9rem;
+    color: var(--ti-c-text-secondary);
+}
+.time-import-page.scoped-import .summary-item.success .count { color: var(--ti-c-success); }
+.time-import-page.scoped-import .summary-item.error .count { color: var(--ti-c-error); }
+
+.time-import-page.scoped-import .error-message {
+    padding: 1rem;
+    background-color: var(--ti-c-error-bg);
+    border: 1px solid var(--ti-c-error);
+    color: var(--ti-c-error-text);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.time-import-page.scoped-import .correction-section h4 {
+    font-size: 1.2rem;
+    color: var(--ti-c-text-strong);
+    margin-top: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.time-import-page.scoped-import .table-container {
+    overflow-x: auto;
+    border: 1px solid var(--ti-c-border);
+    border-radius: 8px;
+    margin: 1.5rem 0;
+}
+.time-import-page.scoped-import .correction-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.time-import-page.scoped-import .correction-table th,
+.time-import-page.scoped-import .correction-table td {
+    padding: 0.8rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid var(--ti-c-border);
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+.time-import-page.scoped-import .correction-table th {
+    background-color: var(--ti-c-bg);
+    color: var(--ti-c-text-strong);
+    font-weight: 600;
+}
+.time-import-page.scoped-import .correction-table tbody tr:last-child td {
+    border-bottom: none;
+}
+.time-import-page.scoped-import .correction-table input {
+    width: 100%;
+    min-width: 120px;
+    padding: 0.5rem;
+    background-color: var(--ti-c-input-bg);
+    color: var(--ti-c-text);
+    border: 1px solid var(--ti-c-border-interactive);
+    border-radius: 6px;
+}
+.time-import-page.scoped-import .correction-table td[data-label="error"] span {
+    color: var(--ti-c-error-text);
+    font-weight: 500;
+}
+
+.time-import-page.scoped-import .instructions-list {
+    list-style-type: none;
+    padding-left: 0;
+    margin-top: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.time-import-page.scoped-import .instructions-list li {
+    padding-left: 1.5rem;
+    position: relative;
+    color: var(--ti-c-text-secondary);
+}
+.time-import-page.scoped-import .instructions-list li::before {
+    content: '✓';
+    position: absolute;
+    left: 0;
+    color: var(--ti-c-success);
+    font-weight: 600;
+}
