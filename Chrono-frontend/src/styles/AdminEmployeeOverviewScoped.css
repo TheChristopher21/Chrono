@@ -366,6 +366,34 @@
   color: #e2e8f0;
 }
 
+.entry-slot-list {
+  display: grid;
+  gap: 0.22rem;
+}
+
+.entry-slot {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.3rem;
+  color: #e2e8f0;
+  min-height: 1.05rem;
+}
+
+.entry-slot-index {
+  font-size: 0.62rem;
+  color: #94a3b8;
+  min-width: 1.25rem;
+}
+
+.entry-slot--changed {
+  color: #86efac;
+}
+
+.entry-slot--changed .entry-time,
+.entry-slot--changed .entry-type {
+  color: #86efac;
+}
+
 .entry-time {
   font-weight: 600;
 }

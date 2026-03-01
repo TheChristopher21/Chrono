@@ -44,6 +44,7 @@ const getRequestStatusClass = (request) => {
 const getMonthStart = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
 const getMonthEnd = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
 const weekDayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const MAX_CORRECTION_PREVIEW_PUNCHES = 4;
 
 const formatPunchTypeLabel = (type, t) => {
     if (!type) return '';
@@ -366,42 +367,108 @@ const AdminEmployeeOverviewPage = () => {
     const renderCorrectionChange = useCallback((correction) => {
         if (!correction) return null;
 
-        const hasOriginal = Boolean(correction.originalTimestamp);
         const originalLabel = t('adminDashboard.originalTimeLabel', 'Gestempelt');
         const requestedLabel = t('adminDashboard.requestedTimeLabel', 'Beantragt');
         const missingLabel = t('adminDashboard.noOriginalTimeLabel', 'Kein ursprünglicher Stempel');
 
-        const originalTime = hasOriginal ? formatTime(correction.originalTimestamp) : null;
-        const desiredTime = formatTime(correction.desiredTimestamp);
-        const originalPunchLabel = hasOriginal ? formatPunchTypeLabel(correction.originalPunchType, t) : null;
-        const desiredPunchLabel = formatPunchTypeLabel(correction.desiredPunchType, t);
+        const correctionDate = correction.requestDate
+            ? formatLocalDateYMD(new Date(`${correction.requestDate}T00:00:00`))
+            : null;
 
-        return (
-            <span className="entry-comparison">
-                <span className={`entry-block entry-original${hasOriginal ? '' : ' entry-original--missing'}`}>
-                    <span className="entry-label">{originalLabel}</span>
-                    <span className="entry-value">
-                        {hasOriginal ? (
+        const dayEntries = correctionDate
+            ? (employeeSummaries.find((summary) => summary?.date === correctionDate)?.entries || [])
+            : [];
+
+        const normalizedDayEntries = dayEntries
+            .filter((entry) => entry?.entryTimestamp)
+            .map((entry, index) => ({
+                id: entry?.id ?? `entry-${index}`,
+                entryTimestamp: entry.entryTimestamp,
+                punchType: entry?.punchType,
+            }))
+            .sort((a, b) => new Date(a.entryTimestamp || 0) - new Date(b.entryTimestamp || 0));
+
+        const requestedEntries = normalizedDayEntries.map((entry) => ({ ...entry }));
+        let changedEntryId = null;
+
+        const requestTargetId = correction.targetEntryId;
+        const requestOriginalTs = correction.originalTimestamp;
+        const requestOriginalType = correction.originalPunchType;
+
+        const targetIndex = requestedEntries.findIndex((entry) => {
+            if (requestTargetId != null && entry.id === requestTargetId) return true;
+            if (!requestOriginalTs) return false;
+            const sameTs = entry.entryTimestamp === requestOriginalTs;
+            const sameType = !requestOriginalType || entry.punchType === requestOriginalType;
+            return sameTs && sameType;
+        });
+
+        if (targetIndex >= 0) {
+            requestedEntries[targetIndex] = {
+                ...requestedEntries[targetIndex],
+                entryTimestamp: correction.desiredTimestamp,
+                punchType: correction.desiredPunchType,
+            };
+            changedEntryId = requestedEntries[targetIndex].id;
+        } else {
+            const syntheticId = `requested-${correction.id || correction.desiredTimestamp || Date.now()}`;
+            requestedEntries.push({
+                id: syntheticId,
+                entryTimestamp: correction.desiredTimestamp,
+                punchType: correction.desiredPunchType,
+            });
+            changedEntryId = syntheticId;
+        }
+
+        requestedEntries.sort((a, b) => new Date(a.entryTimestamp || 0) - new Date(b.entryTimestamp || 0));
+
+        const toSlots = (entries, changedId = null) => (
+            Array.from({ length: MAX_CORRECTION_PREVIEW_PUNCHES }, (_, index) => {
+                const entry = entries[index] || null;
+                return {
+                    key: `${changedId || 'slot'}-${index}`,
+                    time: entry?.entryTimestamp ? formatTime(entry.entryTimestamp) : null,
+                    type: entry?.punchType ? formatPunchTypeLabel(entry.punchType, t) : null,
+                    changed: Boolean(entry && changedId != null && entry.id === changedId),
+                };
+            })
+        );
+
+        const originalSlots = toSlots(normalizedDayEntries);
+        const requestedSlots = toSlots(requestedEntries, changedEntryId);
+
+        const renderSlots = (slots, variant) => (
+            <div className="entry-slot-list">
+                {slots.map((slot, index) => (
+                    <div key={`${variant}-${slot.key}`} className={`entry-slot${slot.changed ? ' entry-slot--changed' : ''}`}>
+                        <span className="entry-slot-index">#{index + 1}</span>
+                        {slot.time ? (
                             <>
-                                <span className="entry-time">{originalTime}</span>
-                                {originalPunchLabel && <span className="entry-type">{originalPunchLabel}</span>}
+                                <span className="entry-time">{slot.time}</span>
+                                {slot.type && <span className="entry-type">{slot.type}</span>}
                             </>
                         ) : (
                             <span className="entry-time entry-time--missing">{missingLabel}</span>
                         )}
-                    </span>
+                    </div>
+                ))}
+            </div>
+        );
+
+        return (
+            <span className="entry-comparison">
+                <span className={`entry-block entry-original${normalizedDayEntries.length > 0 ? '' : ' entry-original--missing'}`}>
+                    <span className="entry-label">{originalLabel}</span>
+                    {renderSlots(originalSlots, 'original')}
                 </span>
                 <span className="entry-arrow">→</span>
                 <span className="entry-block entry-requested">
                     <span className="entry-label">{requestedLabel}</span>
-                    <span className="entry-value">
-                        <span className="entry-time">{desiredTime}</span>
-                        {desiredPunchLabel && <span className="entry-type">{desiredPunchLabel}</span>}
-                    </span>
+                    {renderSlots(requestedSlots, 'requested')}
                 </span>
             </span>
         );
-    }, [t]);
+    }, [employeeSummaries, t]);
 
     const handleApproveVacation = async (id) => {
         try {
