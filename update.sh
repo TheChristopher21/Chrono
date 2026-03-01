@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -e
-SCRIPT_DIR="$(dirname "$(readlink -f "$0")")"
-cd "$SCRIPT_DIR"
+cd "$(dirname "$(readlink -f "$0")")"
 
 echo "📥 Git pull..."
 git pull --ff-only
