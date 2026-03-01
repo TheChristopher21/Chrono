@@ -1,0 +1,179 @@
+services:
+  # MySQL Database Service
+  mysql:
+    image: mysql:8.0
+    restart: always
+    env_file: .env # <-- ANGEPASST: Sucht jetzt im Backend-Ordner
+    environment:
+      MYSQL_DATABASE: "chrono_db"
+    ports:
+      - "3307:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - chrono
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Ollama KI Service
+  llm:
+    image: ollama/ollama:latest
+    restart: always
+    volumes:
+      - ollama_data:/root/.ollama
+    ports:
+      - "11434:11434"
+    networks:
+      - chrono
+    environment:
+      OLLAMA_KEEP_ALIVE: "-1"
+    healthcheck:
+      test: ["CMD", "ollama", "ps"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+
+  # One-time service to download the KI model
+  model-puller:
+    image: ollama/ollama:latest
+    restart: "no"
+    depends_on:
+      llm:
+        condition: service_healthy
+    networks:
+      - chrono
+    environment:
+      OLLAMA_HOST: "http://llm:11434"
+    entrypoint: ""
+    command:
+      - "/bin/sh"
+      - "-c"
+      - |
+        echo "Warte auf den Ollama Server..."
+        until ollama list > /dev/null 2>&1; do sleep 2; done
+        echo "Ollama Server ist bereit. Lade Modell llama3:8b herunter..."
+        ollama pull llama3:8b
+        echo "Modell erfolgreich heruntergeladen."
+  # Your Open WebUI Service
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: always
+    depends_on:
+      llm:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./open-webui_data:/app/backend/data
+      - ./knowledge_base:/app/backend/knowledge_base
+    environment:
+      OLLAMA_BASE_URL: 'http://llm:11434'
+    networks: [chrono]
+
+  # Your Backend Service
+  backend:
+    image: chrisubuntu1/chrono-backend:latest
+    restart: always
+    env_file: .env # <-- ANGEPASST: Sucht jetzt im Backend-Ordner
+    depends_on:
+      mysql:
+        condition: service_healthy
+      model-puller:
+        condition: service_completed_successfully
+    networks: [chrono]
+    environment:
+      SERVER_PORT: "8081" # <-- NEUE, ENTSCHEIDENDE ZEILE
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/chrono_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: "root"
+      # SPRING_DATASOURCE_PASSWORD is now loaded from the .env file
+      SPRING_MAIL_HOST: smtp.gmail.com
+      SPRING_MAIL_PORT: "587"
+      SPRING_MAIL_USERNAME: siefertchristopher@chrono-logisch.ch
+      # SPRING_MAIL_PASSWORD should also be in your .env file
+      SPRING_MAIL_SMTP_AUTH: "true"
+      SPRING_MAIL_SMTP_STARTTLS_ENABLE: "true"
+      LLM_BASE_URL: "http://llm:11434/api/generate"
+    volumes:
+      - ./data/backups:/backups
+      - ./knowledge_base:/app/knowledge_base
+    healthcheck:  # <-- DIESEN BLOCK HINZUFÜGEN
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s # Gibt dem Backend 60s Zeit zum Starten
+
+  # Your Frontend Service
+  frontend:
+    image: chrisubuntu1/chrono-frontend:latest
+    restart: always
+    depends_on: [backend]
+    networks: [chrono]
+
+  # Your Nginx Service
+  nginx:
+    image: jc21/nginx-proxy-manager:latest
+    restart: unless-stopped
+    ports:
+      - "81:81"
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+    networks: [chrono]
+    depends_on:
+      - frontend
+
+  prometheus:
+    image: prom/prometheus:latest
+    restart: always
+    networks:
+      - chrono
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+    depends_on: # Wartet darauf, dass das Backend gestartet ist
+      - backend
+
+  grafana:
+    image: grafana/grafana:latest
+    restart: always
+    networks:
+      - chrono
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana_data:/var/lib/grafana
+      - ./grafana_data/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
+      - ./grafana_data/dashboards:/var/lib/grafana/dashboards:ro
+      - ./grafana_data/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
+
+  nginx-exporter:  # Achte auf die korrekte Einrückung hier
+    image: nginx/nginx-prometheus-exporter:1.4.2 # Oder eine neuere Version
+    restart: always
+    networks:
+      - chrono
+    command: [ "-nginx.scrape-uri", "http://nginx:81/stub_status" ]
+    depends_on:
+      - nginx
+
+# Defines the network for all services
+networks:
+  chrono:
+    driver: bridge
+
+# Defines the permanent storage volumes
+volumes:
+  db_data:
+  ollama_data:
+  open-webui_data:
+  data:
+  letsencrypt:
+  grafana_data:

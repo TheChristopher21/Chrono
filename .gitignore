@@ -1,0 +1,16 @@
+.env
+.env.*
+!.env.example
+
+*.log
+*.sql
+compose-log.txt
+
+data/
+data-backup/
+db_data/
+grafana_data/
+letsencrypt/
+ollama_data/
+open-webui_data/
+knowledge_base/
