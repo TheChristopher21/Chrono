@@ -629,11 +629,6 @@ const AdminEmployeeOverviewPage = () => {
                                 <p>{t('overtime', 'Überstunden')}: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></p>
                             </article>
                             <article className="card-style kpi-card">
-                                <h3>{t('vacationTitle', 'Urlaub')}</h3>
-                                <p>{t('remainingVacation', 'Verfügbar')}: <strong>{vacationStats.availableDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
-                                <p>{t('adminEmployeeOverview.plannedVacation', 'Geplant')}: {vacationStats.plannedDays.toFixed(1)} · {t('myVacations', 'Genommen')}: {vacationStats.takenDays.toFixed(1)}</p>
-                            </article>
-                            <article className="card-style kpi-card">
                                 <h3>{t('adminEmployeeOverview.pending', 'Offen')}</h3>
                                 <p><strong>{openItemsCount}</strong> {t('adminDashboard.openRequests', 'Anträge')}</p>
                                 <p>{t('balanceTotal', 'Gesamtsaldo')}: {minutesToHHMM(employeeBalance?.trackingBalance || 0)}</p>
@@ -761,6 +756,15 @@ const AdminEmployeeOverviewPage = () => {
                             </div>
 
                             <div className="right-column">
+                                <article className="card-style employee-overview-card absence-summary-card">
+                                    <h2>Abwesenheits-Zusammenfassung</h2>
+                                    <p>{t('remainingVacation', 'Verfügbar')}: <strong>{vacationStats.availableDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
+                                    <p>{t('adminEmployeeOverview.plannedVacation', 'Geplant')}: <strong>{vacationStats.plannedDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
+                                    <p>Nächste Abwesenheit: <strong>{nextAbsence ? `${nextAbsence.type} · ${formatDate(new Date(`${nextAbsence.startDate}T00:00:00`))}` : 'Keine geplant'}</strong></p>
+                                    <p>Aktueller Status: <strong>{currentStatus.label}</strong></p>
+                                    <p>Diese Woche: <strong>{weeklyAbsenceDays} Tage abwesend</strong></p>
+                                    <p>{t('breakTime', 'Pause')} (Woche): <strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
+                                </article>
                                 <article className="card-style employee-overview-card calendar-card">
                                     <h2>{t('adminEmployeeOverview.calendarTitle', 'Kalender')}</h2>
                                     <p className="card-subtitle">{t('adminEmployeeOverview.calendarSubtitle', 'Urlaub/Krank direkt für diesen Mitarbeiter erfassen.')}</p>
@@ -770,13 +774,6 @@ const AdminEmployeeOverviewPage = () => {
                                         companyUsers={users}
                                         focusUsername={username}
                                     />
-                                </article>
-                                <article className="card-style employee-overview-card absence-summary-card">
-                                    <h2>Abwesenheits-Zusammenfassung</h2>
-                                    <p>Nächste Abwesenheit: <strong>{nextAbsence ? `${nextAbsence.type} · ${formatDate(new Date(`${nextAbsence.startDate}T00:00:00`))}` : 'Keine geplant'}</strong></p>
-                                    <p>Aktueller Status: <strong>{currentStatus.label}</strong></p>
-                                    <p>Diese Woche: <strong>{weeklyAbsenceDays} Tage abwesend</strong></p>
-                                    <p>{t('breakTime', 'Pause')} (Woche): <strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
                                 </article>
                             </div>
                         </section>
