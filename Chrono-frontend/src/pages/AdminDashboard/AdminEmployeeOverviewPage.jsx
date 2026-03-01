@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import ModalOverlay from '../../components/ModalOverlay';
@@ -98,6 +98,8 @@ const AdminEmployeeOverviewPage = () => {
     const [timeRangeMode, setTimeRangeMode] = useState('week');
     const [problemCursor, setProblemCursor] = useState(-1);
     const [problemCategoryCursor, setProblemCategoryCursor] = useState({});
+    const [focusedProblemDate, setFocusedProblemDate] = useState('');
+    const timeTrackingSectionRef = useRef(null);
 
     const fetchAllData = useCallback(async () => {
         setLoading(true);
@@ -723,37 +725,54 @@ const AdminEmployeeOverviewPage = () => {
         setSelectedMonday((prev) => addDays(prev, -7));
         setProblemCursor(-1);
         setProblemCategoryCursor({});
+        setFocusedProblemDate('');
     };
 
     const goToNextWeek = () => {
         setSelectedMonday((prev) => addDays(prev, 7));
         setProblemCursor(-1);
         setProblemCategoryCursor({});
+        setFocusedProblemDate('');
     };
 
     const goToCurrentWeek = () => {
         setSelectedMonday(getMondayOfWeek(new Date()));
         setProblemCursor(-1);
         setProblemCategoryCursor({});
+        setFocusedProblemDate('');
     };
 
     const goToPreviousMonth = () => {
         setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+        setFocusedProblemDate('');
     };
 
     const goToNextMonth = () => {
         setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+        setFocusedProblemDate('');
     };
 
     const goToCurrentMonth = () => {
         setSelectedMonth(getMonthStart(new Date()));
+        setFocusedProblemDate('');
     };
+
+    const jumpToProblemDate = useCallback((targetDateString) => {
+        if (!targetDateString) return;
+        setTimeRangeMode('week');
+        setSelectedMonday(getMondayOfWeek(new Date(`${targetDateString}T00:00:00`)));
+        setFocusedProblemDate(targetDateString);
+
+        requestAnimationFrame(() => {
+            timeTrackingSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    }, []);
 
     const handleCycleProblem = () => {
         if (prioritizedProblems.length === 0) return;
         const nextIndex = (problemCursor + 1) % prioritizedProblems.length;
         setProblemCursor(nextIndex);
-        openEditModal(prioritizedProblems[nextIndex].dateIso);
+        jumpToProblemDate(prioritizedProblems[nextIndex].dateIso);
     };
 
     const handleProblemCategoryClick = (categoryKey) => {
@@ -763,7 +782,7 @@ const AdminEmployeeOverviewPage = () => {
         setProblemCategoryCursor((prev) => {
             const currentIndex = Number.isInteger(prev[categoryKey]) ? prev[categoryKey] : -1;
             const nextIndex = (currentIndex + 1) % categoryProblems.length;
-            openEditModal(categoryProblems[nextIndex].dateIso);
+            jumpToProblemDate(categoryProblems[nextIndex].dateIso);
             return {
                 ...prev,
                 [categoryKey]: nextIndex,
@@ -847,7 +866,7 @@ const AdminEmployeeOverviewPage = () => {
 
                         <section className="employee-overview-grid">
                             <div className="left-column">
-                                <article className="card-style employee-overview-card">
+                                <article className="card-style employee-overview-card" ref={timeTrackingSectionRef}>
                                     <div className="card-heading-row">
                                         <h2>Zeiterfassung</h2>
                                         <div className="request-tabs">
@@ -896,7 +915,10 @@ const AdminEmployeeOverviewPage = () => {
                                                     }
 
                                                     return (
-                                                        <div className="punch-overview-item" key={`punch-${dateString}`}>
+                                                        <div
+                                                            className={`punch-overview-item${focusedProblemDate === dateString ? ' punch-overview-item--focused' : ''}`}
+                                                            key={`punch-${dateString}`}
+                                                        >
                                                             <div className="punch-overview-header">
                                                                 <strong>{formatDateWithWeekday(new Date(`${dateString}T00:00:00`))}</strong>
                                                                 <button
