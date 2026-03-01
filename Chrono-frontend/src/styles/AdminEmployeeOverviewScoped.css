@@ -180,6 +180,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
+  align-items: flex-start;
 }
 
 .punch-chip {
@@ -278,6 +279,7 @@
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 0.55rem;
+  align-items: start;
 }
 
 .punch-calendar-grid--week .punch-overview-item {
@@ -286,6 +288,7 @@
 
 .punch-overview-item {
   min-height: 120px;
+  align-content: start;
 }
 
 .punch-overview-item--focused {
