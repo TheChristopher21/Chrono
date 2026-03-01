@@ -36,6 +36,8 @@ import { sortEntries } from '../../utils/timeUtils';
 const HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY = 'adminDashboard_holidayOptions_v1';
 const HIDDEN_USERS_LOCAL_STORAGE_PREFIX = 'adminDashboard_hiddenUsers_v3';
 const MONTH_RANGE_SETTINGS_LOCAL_STORAGE_PREFIX = 'adminDashboard_monthRangeSettings_v1';
+const WEEKLY_DELTA_ACKNOWLEDGED_LOCAL_STORAGE_KEY = 'adminDashboard_weeklyDeltaAcknowledged_v1';
+const UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES = 240;
 
 const DEFAULT_MONTH_RANGE_SETTINGS = {
     mode: 'calendar',
@@ -131,6 +133,31 @@ const parseHolidayOptionsFromStorage = (rawValue) => {
     }
 };
 
+
+
+const parseWeeklyDeltaAcknowledgedFromStorage = (rawValue) => {
+    if (!rawValue) return {};
+    try {
+        const parsed = JSON.parse(rawValue);
+        if (!parsed || typeof parsed !== 'object') return {};
+        return Object.entries(parsed).reduce((acc, [username, weekMap]) => {
+            if (!username || !weekMap || typeof weekMap !== 'object') return acc;
+            const normalizedWeekMap = Object.entries(weekMap).reduce((userAcc, [weekIso, isAcknowledged]) => {
+                if (typeof weekIso === 'string' && weekIso && isAcknowledged === true) {
+                    userAcc[weekIso] = true;
+                }
+                return userAcc;
+            }, {});
+            if (Object.keys(normalizedWeekMap).length > 0) {
+                acc[username] = normalizedWeekMap;
+            }
+            return acc;
+        }, {});
+    } catch (error) {
+        console.error('Error parsing weekly delta acknowledgements from localStorage:', error);
+        return {};
+    }
+};
 
 const clampMonthStartDay = (value) => {
     if (value === null || value === undefined) return 1;
@@ -255,6 +282,7 @@ const EMPTY_PROBLEM_INDICATORS = {
     incompleteDaysCount: 0,
     autoCompletedUncorrectedCount: 0,
     holidayPendingCount: 0,
+    unusualWeeklyDeltaCount: 0,
     problematicDays: [],
 };
 
@@ -272,6 +300,10 @@ const doesProblemMatchType = (problem, problemType) => {
 
     if (problemType === 'any_problem') {
         return !['holiday_pending_decision'].includes(problem.type);
+    }
+
+    if (problemType === 'weekly_delta') {
+        return problem.type === 'weekly_delta_unusual';
     }
 
     return problem.type === problemType;
@@ -292,11 +324,13 @@ const sortUserCollection = (collection, sortConfig) => {
             const totalA = (a.problemIndicators?.missingEntriesCount || 0)
                 + (a.problemIndicators?.incompleteDaysCount || 0)
                 + (a.problemIndicators?.autoCompletedUncorrectedCount || 0)
-                + (a.problemIndicators?.holidayPendingCount || 0);
+                + (a.problemIndicators?.holidayPendingCount || 0)
+                + (a.problemIndicators?.unusualWeeklyDeltaCount || 0);
             const totalB = (b.problemIndicators?.missingEntriesCount || 0)
                 + (b.problemIndicators?.incompleteDaysCount || 0)
                 + (b.problemIndicators?.autoCompletedUncorrectedCount || 0)
-                + (b.problemIndicators?.holidayPendingCount || 0);
+                + (b.problemIndicators?.holidayPendingCount || 0)
+                + (b.problemIndicators?.unusualWeeklyDeltaCount || 0);
             valA = totalA;
             valB = totalB;
         } else if (typeof valA === 'string' && typeof valB === 'string') {
@@ -318,6 +352,7 @@ const ISSUE_FILTER_KEYS = {
     incomplete: 'incompleteDaysCount',
     autoCompleted: 'autoCompletedUncorrectedCount',
     holidayPending: 'holidayPendingCount',
+    weeklyDelta: 'unusualWeeklyDeltaCount',
 };
 
 const DEFAULT_ISSUE_FILTER_STATE = {
@@ -325,6 +360,7 @@ const DEFAULT_ISSUE_FILTER_STATE = {
     incomplete: true,
     autoCompleted: true,
     holidayPending: true,
+    weeklyDelta: true,
 };
 
 
@@ -380,6 +416,19 @@ const AdminWeekSection = forwardRef(({
 
     const [hiddenUsers, setHiddenUsers] = useState(() => readHiddenUsersFromStorage());
     const [showHiddenUsersManager, setShowHiddenUsersManager] = useState(false);
+    const [weeklyDeltaAcknowledged, setWeeklyDeltaAcknowledged] = useState(() => {
+        if (!isBrowserEnvironment()) return {};
+        return parseWeeklyDeltaAcknowledgedFromStorage(window.localStorage.getItem(WEEKLY_DELTA_ACKNOWLEDGED_LOCAL_STORAGE_KEY));
+    });
+
+    useEffect(() => {
+        if (!isBrowserEnvironment()) return;
+        try {
+            window.localStorage.setItem(WEEKLY_DELTA_ACKNOWLEDGED_LOCAL_STORAGE_KEY, JSON.stringify(weeklyDeltaAcknowledged));
+        } catch (error) {
+            console.error('Error persisting weekly delta acknowledgements:', error);
+        }
+    }, [weeklyDeltaAcknowledged]);
     const detailSectionRef = useRef(null); // For scrolling to problem
     const sectionRef = useRef(null);
 
@@ -658,6 +707,7 @@ const AdminWeekSection = forwardRef(({
     const userAnalytics = useMemo(() => {
         const currentWeekIsoDates = weekDates.map(date => formatLocalDateYMD(date));
         const currentWeekIsoSet = new Set(currentWeekIsoDates);
+        const selectedWeekIso = formatLocalDateYMD(selectedMonday);
 
         // dailySummariesForWeekSection is now a list of DailyTimeSummaryDTO
         return trackableUsers
@@ -712,6 +762,18 @@ const AdminWeekSection = forwardRef(({
                     allHolidayOptionsForUser // Pass relevant holiday options collected so far
                 );
 
+                const unusualWeeklyDelta = Math.abs(currentWeekOvertimeMinutes) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES;
+                const weeklyDeltaAlreadyAcknowledged = !!weeklyDeltaAcknowledged?.[user.username]?.[selectedWeekIso];
+                const adjustedProblemIndicators = {
+                    ...problemIndicators,
+                    unusualWeeklyDeltaCount: 0,
+                    problematicDays: Array.isArray(problemIndicators.problematicDays) ? [...problemIndicators.problematicDays] : [],
+                };
+                if (unusualWeeklyDelta && !weeklyDeltaAlreadyAcknowledged) {
+                    adjustedProblemIndicators.unusualWeeklyDeltaCount = 1;
+                    adjustedProblemIndicators.problematicDays.push({ dateIso: selectedWeekIso, type: 'weekly_delta_unusual' });
+                }
+
                 return {
                     username: user.username,
                     userColor: /^#[0-9A-F]{6}$/i.test(userConfig.color || "") ? userConfig.color : "#007BFF", // Default color
@@ -719,7 +781,7 @@ const AdminWeekSection = forwardRef(({
                     weeklyExpectedMinutes,
                     currentWeekOvertimeMinutes,
                     cumulativeBalanceMinutes,
-                    problemIndicators,
+                    problemIndicators: adjustedProblemIndicators,
                     userConfig, // Pass the full UserDTO
                     userDayMap: userDayMapCurrentWeek, // Summaries for the currently displayed week
                     userApprovedVacations,
@@ -804,6 +866,7 @@ const AdminWeekSection = forwardRef(({
             incomplete: 0,
             autoCompleted: 0,
             holidayPending: 0,
+            weeklyDelta: 0,
             totalWithIssue: 0,
         };
 
@@ -826,6 +889,10 @@ const AdminWeekSection = forwardRef(({
                 summary.holidayPending += 1;
                 hasAny = true;
             }
+            if ((indicators.unusualWeeklyDeltaCount || 0) > 0) {
+                summary.weeklyDelta += 1;
+                hasAny = true;
+            }
             if (hasAny) {
                 summary.totalWithIssue += 1;
             }
@@ -838,7 +905,7 @@ const AdminWeekSection = forwardRef(({
 
     useEffect(() => {
         const previousSummary = lastIssueSummaryRef.current;
-        const summaryKeys = ['missing', 'incomplete', 'autoCompleted', 'holidayPending', 'totalWithIssue'];
+        const summaryKeys = ['missing', 'incomplete', 'autoCompleted', 'holidayPending', 'weeklyDelta', 'totalWithIssue'];
         const hasMeaningfulChanges = !previousSummary || summaryKeys.some((key) => {
             const previousValue = previousSummary?.[key] ?? 0;
             const nextValue = issueSummary?.[key] ?? 0;
@@ -991,7 +1058,8 @@ const AdminWeekSection = forwardRef(({
         const hasProblems = (indicators.missingEntriesCount || 0) > 0
             || (indicators.incompleteDaysCount || 0) > 0
             || (indicators.autoCompletedUncorrectedCount || 0) > 0
-            || (indicators.holidayPendingCount || 0) > 0;
+            || (indicators.holidayPendingCount || 0) > 0
+            || (indicators.unusualWeeklyDeltaCount || 0) > 0;
 
         if (!hasProblems) {
             return <span role="img" aria-label={t('adminDashboard.noIssues', 'Keine Probleme')} className="text-green-500">✅</span>;
@@ -1047,6 +1115,18 @@ const AdminWeekSection = forwardRef(({
                         🎉❓
                     </span>
                 )}
+                {indicators.unusualWeeklyDeltaCount > 0 && (
+                    <span
+                        title={t('adminDashboard.problemTooltips.unusualWeeklyDelta', 'Unübliche Abweichung vom Wochensoll')}
+                        onClick={() => handleProblemIndicatorClick(userData.username, 'weekly_delta', formatLocalDateYMD(selectedMonday))}
+                        className="problem-icon cursor-pointer"
+                        role="button"
+                        tabIndex={0}
+                        onKeyPress={(e) => e.key === 'Enter' && handleProblemIndicatorClick(userData.username, 'weekly_delta', formatLocalDateYMD(selectedMonday))}
+                    >
+                        ↕️
+                    </span>
+                )}
             </div>
         );
     };
@@ -1093,7 +1173,34 @@ const AdminWeekSection = forwardRef(({
             count: issueSummary.holidayPending,
             icon: '🎉',
         },
+        {
+            key: 'weeklyDelta',
+            label: t('adminDashboard.issueFilters.weeklyDelta', 'Unübliche Plus/Minusstunden zum Wochensoll'),
+            count: issueSummary.weeklyDelta,
+            icon: '↕️',
+        },
     ]), [issueSummary, t]);
+
+    const handleWeeklyDeltaAcknowledgementChange = useCallback((username, weekIso, isChecked) => {
+        if (!username || !weekIso) return;
+        setWeeklyDeltaAcknowledged(prev => {
+            const next = { ...prev };
+            const userMap = { ...(next[username] || {}) };
+            if (isChecked) {
+                userMap[weekIso] = true;
+                next[username] = userMap;
+                return next;
+            }
+
+            delete userMap[weekIso];
+            if (Object.keys(userMap).length > 0) {
+                next[username] = userMap;
+            } else {
+                delete next[username];
+            }
+            return next;
+        });
+    }, []);
 
     const activeIssueFilterCount = Object.values(issueTypeFilters).filter(Boolean).length;
 
@@ -1809,6 +1916,16 @@ const AdminWeekSection = forwardRef(({
                                                             <span className="mx-2">|</span>
                                                             <span>{t('balanceWeek', 'Saldo (akt. Woche)')}: {minutesToHHMM(userData.currentWeekOvertimeMinutes)}</span>
                                                         </div>
+                                                        {Math.abs(userData.currentWeekOvertimeMinutes || 0) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES && (
+                                                            <label className="text-xs flex items-center gap-2 mb-2">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={!!weeklyDeltaAcknowledged?.[userData.username]?.[formatLocalDateYMD(selectedMonday)]}
+                                                                    onChange={(event) => handleWeeklyDeltaAcknowledgementChange(userData.username, formatLocalDateYMD(selectedMonday), event.target.checked)}
+                                                                />
+                                                                <span>{t('adminDashboard.weeklyDeltaAcknowledgeLabel', 'Unübliche Plus/Minusstunden für diese Woche sind geprüft und in Ordnung.')}</span>
+                                                            </label>
+                                                        )}
                                                         <div className="admin-days-grid">
                                                             {weekDates.map((d) => {
                                                                 const isoDate = formatLocalDateYMD(d);
