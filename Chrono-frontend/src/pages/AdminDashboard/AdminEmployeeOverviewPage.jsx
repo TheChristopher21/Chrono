@@ -489,9 +489,6 @@ const AdminEmployeeOverviewPage = () => {
                     </div>
                     <div className="header-right-actions">
                         <span className={`status-pill ${currentStatus.key}`}>{currentStatus.label}</span>
-                        <button className="quick-action-btn" onClick={() => setQuickAction('vacation')}>+ Urlaub eintragen</button>
-                        <button className="quick-action-btn" onClick={() => setQuickAction('sick')}>+ Krank eintragen</button>
-                        <button className="quick-action-btn" onClick={() => openEditModal(todayYmd)}>+ Korrektur erfassen</button>
                         <Link className="back-to-dashboard-button" to="/admin/dashboard">{t('adminEmployeeOverview.backToDashboard', 'Zurück zum Dashboard')}</Link>
                     </div>
                 </section>
@@ -534,7 +531,6 @@ const AdminEmployeeOverviewPage = () => {
                                 <article className="card-style employee-overview-card">
                                     <div className="card-heading-row">
                                         <h2>Zeiterfassung – diese Woche</h2>
-                                        <button className="text-link-btn" onClick={() => openEditModal(todayYmd)}>Zeiten korrigieren</button>
                                     </div>
                                     <div className="week-navigation-row">
                                         <button type="button" className="text-link-btn" onClick={goToPreviousWeek}>←</button>
