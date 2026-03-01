@@ -898,6 +898,7 @@ const AdminEmployeeOverviewPage = () => {
                                         <span>Gesamtstunden: <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></span>
                                         <span>Überstunden/Minus: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></span>
                                         <span>Fehlzeiten: <strong>{periodAbsenceDays} Tage</strong></span>
+                                        <span>{t('balanceTotal', 'Gesamtüberstunden')}: <strong>{minutesToHHMM(employeeBalance?.trackingBalance || 0)}</strong></span>
                                     </div>
                                     <div className="punch-overview-list">
                                         <div className="card-heading-row">
