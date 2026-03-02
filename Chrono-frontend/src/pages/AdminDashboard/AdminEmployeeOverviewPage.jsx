@@ -64,6 +64,16 @@ const parseWorkPercentageValue = (workPercentageRaw) => {
     return 100;
 };
 
+const parseBooleanFlag = (value) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        return ['true', '1', 'yes', 'ja'].includes(normalized);
+    }
+    return false;
+};
+
 const getRoleDisplayLabel = (employee, t) => {
     if (!employee) return t('role', 'Rolle');
     if (employee.role) return employee.role;
@@ -164,13 +174,23 @@ const AdminEmployeeOverviewPage = () => {
     const normalizedEmployeeConfig = useMemo(() => {
         if (!employee) return null;
 
-        const normalizedIsPercentage = employee.isPercentage === true || employee.isPercentage === 'true';
+        const normalizedIsPercentage = parseBooleanFlag(employee.isPercentage);
+        const normalizedIsHourly = parseBooleanFlag(employee.isHourly);
         const parsedWorkPercentage = parseWorkPercentageValue(employee.workPercentage);
+        const parsedExpectedWorkDays = Number(employee.expectedWorkDays);
+        const parsedDailyWorkHours = Number(employee.dailyWorkHours);
 
         return {
             ...employee,
+            isHourly: normalizedIsHourly,
             isPercentage: normalizedIsPercentage,
             workPercentage: parsedWorkPercentage,
+            expectedWorkDays: Number.isFinite(parsedExpectedWorkDays) && parsedExpectedWorkDays > 0
+                ? parsedExpectedWorkDays
+                : employee.expectedWorkDays,
+            dailyWorkHours: Number.isFinite(parsedDailyWorkHours) && parsedDailyWorkHours > 0
+                ? parsedDailyWorkHours
+                : employee.dailyWorkHours,
         };
     }, [employee]);
 
