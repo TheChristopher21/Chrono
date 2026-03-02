@@ -26,6 +26,7 @@ const AdminVacationRequests = ({
     // State für das Lösch-Modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [vacationToDelete, setVacationToDelete] = useState(null);
+    const [decisionNotes, setDecisionNotes] = useState({});
 
     function toggleExpansion() {
         setIsExpanded(!isExpanded);
@@ -74,6 +75,16 @@ const AdminVacationRequests = ({
             notify(t('adminVacation.delete.error', 'Fehler beim Löschen des Urlaubsantrags:') + ` ${errorMsg}`, 'error');
         }
     };
+
+    const getDecisionNoteKey = useCallback((id) => `vacation-${id}`, []);
+
+    const handleDecisionNoteChange = useCallback((id, value) => {
+        const key = getDecisionNoteKey(id);
+        setDecisionNotes((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+    }, [getDecisionNoteKey]);
 
     const filteredVacations = allVacations.filter((v) =>
         (v.username || t('adminVacation.unknownUser', 'Unbekannt')).toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -140,20 +151,48 @@ const AdminVacationRequests = ({
                                                 <span className={`status-badge ${statusClass}`}>{status}</span>
                                                 {v.halfDay && <span className="info-badge">{t('adminDashboard.halfDayShort', '½ Tag')}</span>}
                                                 {v.usesOvertime && <span className="info-badge overtime-badge">🌙 {t('adminDashboard.overtimeVacationShort', 'ÜS')}</span>}
+                                                {v.adminNote && (
+                                                    <span>
+                                                        <strong>{t('userDashboard.adminNote', 'Admin-Notiz')}:</strong> {v.adminNote}
+                                                    </span>
+                                                )}
                                             </div>
                                             <div className="item-actions">
                                                 {!v.approved && !v.denied && (
                                                     <>
+                                                        <input
+                                                            type="text"
+                                                            value={decisionNotes[getDecisionNoteKey(v.id)] || ''}
+                                                            onChange={(event) => handleDecisionNoteChange(v.id, event.target.value)}
+                                                            placeholder={t('userDashboard.adminNote', 'Admin-Notiz')}
+                                                            className="vacation-admin-note-input"
+                                                        />
                                                         <button
                                                             className="button-confirm-small"
-                                                            onClick={() => handleApproveVacation(v.id)}
+                                                            onClick={() => {
+                                                                const note = (decisionNotes[getDecisionNoteKey(v.id)] || '').trim();
+                                                                handleApproveVacation(v.id, note);
+                                                                setDecisionNotes((prev) => {
+                                                                    const next = { ...prev };
+                                                                    delete next[getDecisionNoteKey(v.id)];
+                                                                    return next;
+                                                                });
+                                                            }}
                                                             title={t('adminDashboard.approveButtonTitle', 'Urlaubsantrag genehmigen')}
                                                         >
                                                             {t('adminDashboard.approveButton', 'Genehmigen')}
                                                         </button>
                                                         <button
                                                             className="button-deny-small"
-                                                            onClick={() => handleDenyVacation(v.id)}
+                                                            onClick={() => {
+                                                                const note = (decisionNotes[getDecisionNoteKey(v.id)] || '').trim();
+                                                                handleDenyVacation(v.id, note);
+                                                                setDecisionNotes((prev) => {
+                                                                    const next = { ...prev };
+                                                                    delete next[getDecisionNoteKey(v.id)];
+                                                                    return next;
+                                                                });
+                                                            }}
                                                             title={t('adminDashboard.rejectButtonTitle', 'Urlaubsantrag ablehnen')}
                                                         >
                                                             {t('adminDashboard.rejectButton', 'Ablehnen')}

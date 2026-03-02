@@ -567,9 +567,9 @@ const AdminEmployeeOverviewPage = () => {
         );
     }, [employeeSummaries, t]);
 
-    const handleApproveVacation = async (id) => {
+    const handleApproveVacation = async (id, adminNote = "") => {
         try {
-            await api.post(`/api/vacation/approve/${id}`);
+            await api.put(`/api/vacation/${id}`, { approved: true, denied: false, adminNote });
             notify(t('adminDashboard.vacationApprovedMsg', 'Urlaub genehmigt.'), 'success');
             fetchAllData();
         } catch (err) {
@@ -577,9 +577,9 @@ const AdminEmployeeOverviewPage = () => {
         }
     };
 
-    const handleDenyVacation = async (id) => {
+    const handleDenyVacation = async (id, adminNote = "") => {
         try {
-            await api.post(`/api/vacation/deny/${id}`);
+            await api.put(`/api/vacation/${id}`, { approved: false, denied: true, adminNote });
             notify(t('adminDashboard.vacationDeniedMsg', 'Urlaub abgelehnt.'), 'success');
             fetchAllData();
         } catch (err) {
@@ -683,8 +683,8 @@ const AdminEmployeeOverviewPage = () => {
         const note = (decisionNotes[key] || '').trim();
 
         if (tab === 'vacation') {
-            if (decision === 'approve') await handleApproveVacation(item.id);
-            if (decision === 'deny') await handleDenyVacation(item.id);
+            if (decision === 'approve') await handleApproveVacation(item.id, note);
+            if (decision === 'deny') await handleDenyVacation(item.id, note);
         }
 
         if (tab === 'correction') {
@@ -727,6 +727,11 @@ const AdminEmployeeOverviewPage = () => {
                                 {tab === 'correction' && (
                                     <div className="request-correction-preview">
                                         {renderCorrectionChange(item)}
+                                    </div>
+                                )}
+                                {tab === 'vacation' && item.adminNote && (
+                                    <div className="request-correction-preview">
+                                        <strong>{t('userDashboard.adminNote', 'Admin-Notiz')}:</strong> {item.adminNote}
                                     </div>
                                 )}
                             </div>
