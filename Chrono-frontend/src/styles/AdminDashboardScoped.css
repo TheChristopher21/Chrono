@@ -3921,3 +3921,13 @@
   border: 1px solid var(--border-color, #d0d7de);
   border-radius: 8px;
 }
+
+[data-theme="dark"] .vacation-admin-note-input {
+  background-color: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text);
+}
+
+[data-theme="dark"] .vacation-admin-note-input::placeholder {
+  color: var(--c-muted);
+}
