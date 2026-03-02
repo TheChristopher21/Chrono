@@ -101,13 +101,15 @@ class VacationServiceTest {
                 true,
                 360,
                 true,
-                null
+                null,
+                "Admin Hinweis"
         );
 
         assertEquals(LocalDate.of(2024, 2, 5), updated.getStartDate());
         assertEquals(LocalDate.of(2024, 2, 6), updated.getEndDate());
         assertThat(updated.isUsesOvertime()).isTrue();
         assertThat(updated.getOvertimeDeductionMinutes()).isEqualTo(360);
+        assertThat(updated.getAdminNote()).isEqualTo("Admin Hinweis");
         assertThat(employee.getTrackingBalanceInMinutes()).isEqualTo(720);
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
@@ -152,6 +154,7 @@ class VacationServiceTest {
                 "admin",
                 existingRequest.getStartDate(),
                 existingRequest.getEndDate(),
+                null,
                 null,
                 null,
                 null,

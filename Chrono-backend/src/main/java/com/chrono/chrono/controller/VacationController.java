@@ -222,7 +222,8 @@ public class VacationController {
                     body.getUsesOvertime(),
                     body.getOvertimeDeductionMinutes(),
                     body.getApproved(),
-                    body.getDenied());
+                    body.getDenied(),
+                    body.getAdminNote());
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
             logger.warn("IllegalArgumentException in updateVacation for id {}: {}", id, e.getMessage());
@@ -245,6 +246,7 @@ public class VacationController {
         private Integer overtimeDeductionMinutes;
         private Boolean approved;
         private Boolean denied;
+        private String adminNote;
 
         public String getStartDate() {
             return startDate;
@@ -300,6 +302,14 @@ public class VacationController {
 
         public void setDenied(Boolean denied) {
             this.denied = denied;
+        }
+
+        public String getAdminNote() {
+            return adminNote;
+        }
+
+        public void setAdminNote(String adminNote) {
+            this.adminNote = adminNote;
         }
     }
 

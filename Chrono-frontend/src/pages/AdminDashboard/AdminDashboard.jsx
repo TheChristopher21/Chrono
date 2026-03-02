@@ -1181,9 +1181,13 @@ const AdminDashboard = () => {
         setSelectedMonday(getMondayOfWeek(new Date()));
     }
 
-    async function handleApproveVacation(id) {
+    async function handleApproveVacation(id, adminNote = '') {
         try {
-            await api.post(`/api/vacation/approve/${id}`);
+            await api.put(`/api/vacation/${id}`, {
+                approved: true,
+                denied: false,
+                adminNote,
+            });
             notify(t('adminDashboard.vacationApprovedMsg', 'Urlaub genehmigt.'), 'success');
             handleDataReloadNeeded();
         } catch (err) {
@@ -1191,9 +1195,13 @@ const AdminDashboard = () => {
             notify(t('adminDashboard.vacationApproveErrorMsg', 'Fehler beim Genehmigen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
         }
     }
-    async function handleDenyVacation(id) {
+    async function handleDenyVacation(id, adminNote = '') {
         try {
-            await api.post(`/api/vacation/deny/${id}`);
+            await api.put(`/api/vacation/${id}`, {
+                approved: false,
+                denied: true,
+                adminNote,
+            });
             notify(t('adminDashboard.vacationDeniedMsg', 'Urlaub abgelehnt.'), 'success');
             fetchAllVacations();
         } catch (err) {

@@ -3914,3 +3914,10 @@
 .admin-dashboard.scoped-dashboard .kpi-value{
     font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight:700; color:var(--c-text);
 }
+
+.vacation-admin-note-input {
+  min-width: 180px;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--border-color, #d0d7de);
+  border-radius: 8px;
+}

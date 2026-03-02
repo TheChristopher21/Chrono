@@ -433,7 +433,8 @@ public class VacationService {
                                                Boolean usesOvertimeParam,
                                                Integer overtimeDeductionMinutesParam,
                                                Boolean approvedParam,
-                                               Boolean deniedParam) {
+                                               Boolean deniedParam,
+                                               String adminNoteParam) {
         VacationRequest vr = vacationRepo.findById(vacationId)
                 .orElseThrow(() -> new RuntimeException("Vacation request " + vacationId + " not found"));
         User admin = userRepo.findByUsername(adminUsername)
@@ -494,6 +495,10 @@ public class VacationService {
         vr.setUsesOvertime(newUsesOvertime);
         vr.setApproved(newApproved);
         vr.setDenied(newDenied);
+        if (adminNoteParam != null) {
+            String normalizedAdminNote = adminNoteParam.trim();
+            vr.setAdminNote(normalizedAdminNote.isEmpty() ? null : normalizedAdminNote);
+        }
 
         if (!newUsesOvertime) {
             vr.setOvertimeDeductionMinutes(null);
