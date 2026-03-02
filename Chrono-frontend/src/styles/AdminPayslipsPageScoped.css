@@ -237,6 +237,7 @@
     width: 100%;
     border-collapse: collapse;
     font-size: 0.875rem;
+    background: var(--ud-c-card);
 }
 .admin-payslips-page .payslip-table th,
 .admin-payslips-page .payslip-table td {
@@ -253,6 +254,16 @@
     font-weight: 600;
     font-size: 0.75rem;
     color: var(--ud-c-text-muted);
+}
+.admin-payslips-page .payslip-table tbody tr {
+    background: var(--ud-c-card);
+    color: var(--ud-c-text);
+}
+.admin-payslips-page .payslip-table tbody tr:nth-child(odd) {
+    background: color-mix(in srgb, var(--ud-c-card) 92%, var(--ud-c-line) 8%);
+}
+.admin-payslips-page .payslip-table tbody tr.employer-details {
+    background: color-mix(in srgb, var(--ud-c-card) 88%, var(--ud-c-line) 12%);
 }
 .admin-payslips-page .payslip-table tr:hover {
     background: var(--ud-c-hover); /* statt hartem #3a3a4c */
