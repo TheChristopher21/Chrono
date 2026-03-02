@@ -138,6 +138,19 @@ const AdminEmployeeOverviewPage = () => {
         [users, username],
     );
 
+    const normalizedEmployeeConfig = useMemo(() => {
+        if (!employee) return null;
+
+        const normalizedIsPercentage = employee.isPercentage === true || employee.isPercentage === 'true';
+        const parsedWorkPercentage = Number(employee.workPercentage);
+
+        return {
+            ...employee,
+            isPercentage: normalizedIsPercentage,
+            workPercentage: Number.isFinite(parsedWorkPercentage) ? parsedWorkPercentage : 100,
+        };
+    }, [employee]);
+
     const employeeSummaries = useMemo(
         () => dailySummaries
             .filter((entry) => entry?.username === username)
@@ -289,7 +302,7 @@ const AdminEmployeeOverviewPage = () => {
         () => visibleDates.reduce((sum, dateString) => {
             const expectedHours = getExpectedHoursForDay(
                 new Date(`${dateString}T00:00:00`),
-                employee,
+                normalizedEmployeeConfig,
                 employee?.dailyWorkHours ?? 8.5,
                 null,
                 employeeVacations,
@@ -298,7 +311,7 @@ const AdminEmployeeOverviewPage = () => {
             );
             return sum + Math.round(expectedHours * 60);
         }, 0),
-        [employee, employeeSickLeaves, employeeVacations, visibleDates],
+        [employee?.dailyWorkHours, employeeSickLeaves, employeeVacations, normalizedEmployeeConfig, visibleDates],
     );
 
     const periodDeltaMinutes = totalWorkedWeekMinutes - periodTargetMinutes;
