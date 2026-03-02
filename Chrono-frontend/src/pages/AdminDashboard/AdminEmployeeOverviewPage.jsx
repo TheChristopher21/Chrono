@@ -52,6 +52,28 @@ const formatPunchTypeLabel = (type, t) => {
     return t(`punchTypes.${type}`, type);
 };
 
+const parseWorkPercentageValue = (workPercentageRaw) => {
+    if (typeof workPercentageRaw === 'number' && Number.isFinite(workPercentageRaw)) {
+        return workPercentageRaw;
+    }
+    if (typeof workPercentageRaw === 'string') {
+        const normalized = workPercentageRaw.replace(',', '.').replace('%', '').trim();
+        const parsed = Number.parseFloat(normalized);
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return 100;
+};
+
+const getRoleDisplayLabel = (employee, t) => {
+    if (!employee) return t('role', 'Rolle');
+    if (employee.role) return employee.role;
+    if (employee.isSuperAdmin) return t('roles.superAdmin', 'Super Admin');
+    if (employee.isAdmin) return t('roles.admin', 'Admin');
+    if (employee.isHourly) return t('roles.hourly', 'Stundenlohn');
+    if (employee.isPercentage) return t('roles.percentage', 'Prozentual');
+    return t('role', 'Rolle');
+};
+
 const countVacationDays = (vacations) => {
     if (!Array.isArray(vacations) || vacations.length === 0) return 0;
     return vacations.reduce((sum, vacation) => {
@@ -143,14 +165,19 @@ const AdminEmployeeOverviewPage = () => {
         if (!employee) return null;
 
         const normalizedIsPercentage = employee.isPercentage === true || employee.isPercentage === 'true';
-        const parsedWorkPercentage = Number(employee.workPercentage);
+        const parsedWorkPercentage = parseWorkPercentageValue(employee.workPercentage);
 
         return {
             ...employee,
             isPercentage: normalizedIsPercentage,
-            workPercentage: Number.isFinite(parsedWorkPercentage) ? parsedWorkPercentage : 100,
+            workPercentage: parsedWorkPercentage,
         };
     }, [employee]);
+
+    const roleDisplayLabel = useMemo(
+        () => getRoleDisplayLabel(normalizedEmployeeConfig || employee, t),
+        [employee, normalizedEmployeeConfig, t],
+    );
 
     const employeeSummaries = useMemo(
         () => dailySummaries
@@ -867,7 +894,7 @@ const AdminEmployeeOverviewPage = () => {
                         <p>
                             <strong>{employee?.firstName || ''} {employee?.lastName || ''} ({username})</strong>
                             {' · '}
-                            {employee?.role || t('role', 'Rolle')}
+                            {t('role', 'Rolle')}: {roleDisplayLabel}
                             {employee?.department ? ` · ${employee.department}` : ''}
                             {employee?.team ? ` · ${employee.team}` : ''}
                         </p>
