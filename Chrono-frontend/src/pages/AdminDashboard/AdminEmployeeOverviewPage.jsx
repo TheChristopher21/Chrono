@@ -84,6 +84,7 @@ const AdminEmployeeOverviewPage = () => {
     const [corrections, setCorrections] = useState([]);
     const [trackingBalances, setTrackingBalances] = useState([]);
     const [sickLeaves, setSickLeaves] = useState([]);
+    const [holidaysForEmployee, setHolidaysForEmployee] = useState({});
 
     const [decisionNotes, setDecisionNotes] = useState({});
 
@@ -174,6 +175,45 @@ const AdminEmployeeOverviewPage = () => {
     }, [selectedMonth]);
 
     const visibleDates = timeRangeMode === 'month' ? monthDates : weekDates;
+
+    useEffect(() => {
+        const fetchHolidayDetails = async () => {
+            if (!employee) {
+                setHolidaysForEmployee({});
+                return;
+            }
+
+            const visibleDateObjects = visibleDates
+                .map((date) => new Date(`${date}T00:00:00`))
+                .filter((date) => !Number.isNaN(date.getTime()));
+
+            const years = visibleDateObjects.map((date) => date.getFullYear());
+            if (years.length === 0) {
+                setHolidaysForEmployee({});
+                return;
+            }
+
+            const minYear = Math.min(...years);
+            const maxYear = Math.max(...years);
+
+            try {
+                const response = await api.get('/api/holidays/details', {
+                    params: {
+                        year: minYear,
+                        cantonAbbreviation: employee.companyCantonAbbreviation || '',
+                        startDate: `${minYear}-01-01`,
+                        endDate: `${maxYear}-12-31`,
+                    },
+                });
+                setHolidaysForEmployee(response?.data && typeof response.data === 'object' ? response.data : {});
+            } catch (error) {
+                console.error('Fehler beim Laden der Feiertage für die Mitarbeiter-Übersicht:', error);
+                setHolidaysForEmployee({});
+            }
+        };
+
+        fetchHolidayDetails();
+    }, [employee, visibleDates]);
 
     const periodSummaries = useMemo(
         () => employeeSummaries.filter((entry) => visibleDates.includes(entry?.date)),
@@ -304,14 +344,14 @@ const AdminEmployeeOverviewPage = () => {
                 new Date(`${dateString}T00:00:00`),
                 normalizedEmployeeConfig,
                 employee?.dailyWorkHours ?? 8.5,
-                null,
+                holidaysForEmployee,
                 employeeVacations,
                 employeeSickLeaves,
                 null,
             );
             return sum + Math.round(expectedHours * 60);
         }, 0),
-        [employee?.dailyWorkHours, employeeSickLeaves, employeeVacations, normalizedEmployeeConfig, visibleDates],
+        [employee?.dailyWorkHours, employeeSickLeaves, employeeVacations, holidaysForEmployee, normalizedEmployeeConfig, visibleDates],
     );
 
     const periodDeltaMinutes = totalWorkedWeekMinutes - periodTargetMinutes;
@@ -382,10 +422,10 @@ const AdminEmployeeOverviewPage = () => {
             employee,
             8.5,
             employeeSickLeaves,
-            null,
+            holidaysForEmployee,
             null,
         );
-    }, [employee, employeeSummaries, employeeSickLeaves, employeeVacations]);
+    }, [employee, employeeSummaries, employeeSickLeaves, employeeVacations, holidaysForEmployee]);
 
     const prioritizedProblems = useMemo(() => {
         return problemIndicators.problematicDays || [];
@@ -937,6 +977,10 @@ const AdminEmployeeOverviewPage = () => {
                                                         return <div key={dateString} className="punch-overview-item punch-overview-item--placeholder" aria-hidden="true" />;
                                                     }
 
+                                                    const holidayNameOnThisDay = holidaysForEmployee?.[dateString];
+                                                    const vacationOnThisDay = employeeVacations.find((vacation) => !vacation.denied && isDateInRange(dateString, vacation.startDate, vacation.endDate));
+                                                    const sickOnThisDay = employeeSickLeaves.find((sickLeave) => isDateInRange(dateString, sickLeave.startDate, sickLeave.endDate));
+
                                                     return (
                                                         <div
                                                             className={`punch-overview-item${focusedProblemDate === dateString ? ' punch-overview-item--focused' : ''}`}
@@ -959,6 +1003,26 @@ const AdminEmployeeOverviewPage = () => {
                                                                     Korrigieren
                                                                 </button>
                                                             </div>
+                                                            {(holidayNameOnThisDay || vacationOnThisDay || sickOnThisDay) && (
+                                                                <div className="day-indicator-list">
+                                                                    {holidayNameOnThisDay && (
+                                                                        <p className="day-indicator day-indicator--holiday">🎉 {t('holiday', 'Feiertag')}: {holidayNameOnThisDay}</p>
+                                                                    )}
+                                                                    {vacationOnThisDay && (
+                                                                        <p className="day-indicator day-indicator--vacation">
+                                                                            🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}
+                                                                            {vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}
+                                                                            {vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}
+                                                                        </p>
+                                                                    )}
+                                                                    {sickOnThisDay && (
+                                                                        <p className="day-indicator day-indicator--sick">
+                                                                            🤒 {t('adminDashboard.onSickLeave', 'Krank gemeldet')}
+                                                                            {sickOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            )}
                                                             {entries.length > 0 ? (
                                                                 <div className="punch-chip-row">
                                                                     {entries.map((entry, index) => (

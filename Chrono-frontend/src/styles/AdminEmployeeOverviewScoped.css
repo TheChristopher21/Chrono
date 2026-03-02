@@ -321,6 +321,29 @@
   padding: 0.2rem 0.5rem;
 }
 
+.day-indicator-list {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.day-indicator {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.25;
+}
+
+.day-indicator--holiday {
+  color: #fcd34d;
+}
+
+.day-indicator--vacation {
+  color: #93c5fd;
+}
+
+.day-indicator--sick {
+  color: #fca5a5;
+}
+
 .request-item-content {
   display: grid;
   gap: 0.35rem;
