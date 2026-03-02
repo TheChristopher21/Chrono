@@ -2,6 +2,7 @@
 import  { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
 import VacationCalendar from '../../components/VacationCalendar';
+import UserVacationRequestsList from '../../components/UserVacationRequestsList';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -706,6 +707,7 @@ function UserDashboard() {
                         userProfile={userProfile}
                         onRefreshVacations={fetchDataForUser}
                     />
+                    <UserVacationRequestsList vacationRequests={vacationRequests} t={t} />
                 </section>
 
                 <UserCorrectionsPanel
