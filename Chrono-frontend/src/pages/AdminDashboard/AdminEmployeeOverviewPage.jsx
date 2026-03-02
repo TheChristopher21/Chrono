@@ -290,7 +290,7 @@ const AdminEmployeeOverviewPage = () => {
             const expectedHours = getExpectedHoursForDay(
                 new Date(`${dateString}T00:00:00`),
                 employee,
-                Number(employee?.dailyWorkHours) || 0,
+                employee?.dailyWorkHours ?? 8.5,
                 null,
                 employeeVacations,
                 employeeSickLeaves,
