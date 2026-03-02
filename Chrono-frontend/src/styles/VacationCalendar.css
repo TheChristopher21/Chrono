@@ -107,11 +107,29 @@
 .scoped-vacation .react-calendar__month-view__days__day--weekend { background: color-mix(in srgb, var(--c-surface) 80%, transparent); }
 
 /* ---------- Markers (Vacation / Sick / Holiday) ---------- */
-.scoped-vacation .day-markers-container { margin-top: .2rem; display: flex; flex-wrap: wrap; align-items: center; gap: .3rem .35rem; min-height: 1rem; }
+.scoped-vacation .day-markers-container { margin-top: .2rem; display: flex; flex-direction: column; align-items: flex-start; gap: .24rem; min-height: 1rem; }
 .scoped-vacation .holiday-marker { font-size: .9em; line-height: 1; filter: saturate(.9); }
-.scoped-vacation .holiday-dot, .scoped-vacation .sick-leave-dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 1px 0 rgba(0,0,0,.15), 0 0 0 1px rgba(255,255,255,.28) inset; }
-.scoped-vacation .holiday-dot { background: var(--c-primary); }
-.scoped-vacation .sick-leave-dot { background: var(--c-error); }
+.scoped-vacation .calendar-entry-badge {
+    --entry-color: var(--c-primary);
+    max-width: 100%;
+    padding: .1rem .38rem;
+    border-radius: 999px;
+    font-size: .64rem;
+    line-height: 1.2;
+    font-weight: 700;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    border: 1px solid color-mix(in srgb, var(--entry-color) 45%, transparent);
+    background: color-mix(in srgb, var(--entry-color) 16%, transparent);
+    color: color-mix(in srgb, var(--entry-color) 60%, white);
+}
+.scoped-vacation .vacation-entry-badge {
+    --entry-color: var(--c-success);
+}
+.scoped-vacation .sick-entry-badge {
+    --entry-color: var(--c-error);
+}
 
 /* ---------- Action buttons ---------- */
 .scoped-vacation .calendar-action-buttons { display: flex; align-items: center; justify-content: space-between; gap: .9rem; margin-top: 1rem; }
