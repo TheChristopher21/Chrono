@@ -9,6 +9,7 @@
   --aeo-chip-bg: rgba(79, 70, 229, 0.09);
   --aeo-chip-border: rgba(99, 102, 241, 0.22);
   --aeo-chip-text: #3730a3;
+  --aeo-success-text: #166534;
 }
 
 [data-theme="dark"] .employee-overview-page {
@@ -22,6 +23,7 @@
   --aeo-chip-bg: rgba(79, 70, 229, 0.2);
   --aeo-chip-border: rgba(129, 140, 248, 0.4);
   --aeo-chip-text: #c7d2fe;
+  --aeo-success-text: #86efac;
 }
 
 .employee-overview-page {
@@ -501,12 +503,12 @@
 }
 
 .entry-slot--changed {
-  color: #86efac;
+  color: var(--aeo-success-text);
 }
 
 .entry-slot--changed .entry-time,
 .entry-slot--changed .entry-type {
-  color: #86efac;
+  color: var(--aeo-success-text);
 }
 
 .entry-time {
