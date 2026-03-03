@@ -46,6 +46,10 @@
   gap: 1rem;
 }
 
+.employee-overview-page .card-style {
+  border-radius: 0.8rem;
+}
+
 .employee-overview-header {
   position: sticky;
   top: 0.75rem;
