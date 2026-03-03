@@ -74,6 +74,40 @@ const parseBooleanFlag = (value) => {
     return false;
 };
 
+const normalizeRoleValues = (roles) => {
+    if (!Array.isArray(roles)) return [];
+    return roles
+        .map((role) => (typeof role === 'string' ? role.trim().toUpperCase() : ''))
+        .filter(Boolean);
+};
+
+const hasRoleFragment = (roles, fragment) => {
+    const upperFragment = fragment.toUpperCase();
+    return roles.some((role) => role.includes(upperFragment));
+};
+
+const inferIsPercentageUser = (employee, parsedWorkPercentage) => {
+    const normalizedRoles = normalizeRoleValues(employee?.roles);
+    const roleLabel = typeof employee?.role === 'string' ? employee.role.toUpperCase() : '';
+
+    if (parseBooleanFlag(employee?.isPercentage)) return true;
+    if (hasRoleFragment(normalizedRoles, 'PERCENTAGE')) return true;
+    if (roleLabel.includes('PERCENTAGE') || roleLabel.includes('PROZENT')) return true;
+
+    return Number.isFinite(parsedWorkPercentage)
+        && parsedWorkPercentage > 0
+        && parsedWorkPercentage < 100;
+};
+
+const inferIsHourlyUser = (employee) => {
+    const normalizedRoles = normalizeRoleValues(employee?.roles);
+    const roleLabel = typeof employee?.role === 'string' ? employee.role.toUpperCase() : '';
+
+    if (parseBooleanFlag(employee?.isHourly)) return true;
+    if (hasRoleFragment(normalizedRoles, 'HOURLY')) return true;
+    return roleLabel.includes('HOURLY') || roleLabel.includes('STUNDEN');
+};
+
 const getRoleDisplayLabel = (employee, t) => {
     if (!employee) return t('role', 'Rolle');
     if (employee.role) return employee.role;
@@ -174,9 +208,9 @@ const AdminEmployeeOverviewPage = () => {
     const normalizedEmployeeConfig = useMemo(() => {
         if (!employee) return null;
 
-        const normalizedIsPercentage = parseBooleanFlag(employee.isPercentage);
-        const normalizedIsHourly = parseBooleanFlag(employee.isHourly);
         const parsedWorkPercentage = parseWorkPercentageValue(employee.workPercentage);
+        const normalizedIsPercentage = inferIsPercentageUser(employee, parsedWorkPercentage);
+        const normalizedIsHourly = inferIsHourlyUser(employee);
         const parsedExpectedWorkDays = Number(employee.expectedWorkDays);
         const parsedDailyWorkHours = Number(employee.dailyWorkHours);
 
