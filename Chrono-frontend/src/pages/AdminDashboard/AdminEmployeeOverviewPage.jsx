@@ -986,15 +986,16 @@ const AdminEmployeeOverviewPage = () => {
             <Navbar />
             <main className="employee-overview-main">
                 <section className="employee-overview-header card-style">
-                    <div>
+                    <div className="employee-overview-header-main">
                         <h1>{t('adminEmployeeOverview.title', 'Mitarbeiter-Übersicht')}</h1>
-                        <p>
+                        <p className="employee-overview-userline">
                             <strong>{employee?.firstName || ''} {employee?.lastName || ''} ({username})</strong>
-                            {' · '}
-                            {t('role', 'Rolle')}: {roleDisplayLabel}
-                            {employee?.department ? ` · ${employee.department}` : ''}
-                            {employee?.team ? ` · ${employee.team}` : ''}
                         </p>
+                        <div className="employee-meta-chips" aria-label={t('adminEmployeeOverview.employeeMeta', 'Mitarbeiterdetails')}>
+                            <span className="employee-meta-chip">{t('role', 'Rolle')}: {roleDisplayLabel}</span>
+                            {employee?.department ? <span className="employee-meta-chip">{employee.department}</span> : null}
+                            {employee?.team ? <span className="employee-meta-chip">{employee.team}</span> : null}
+                        </div>
                     </div>
                     <div className="header-right-actions">
                         <span className={`status-pill ${currentStatus.key}`}>{currentStatus.label}</span>
