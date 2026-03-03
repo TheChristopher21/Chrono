@@ -410,6 +410,9 @@
 
 .punch-calendar-grid .punch-chip-row {
   gap: 0.3rem;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  align-items: flex-start;
 }
 
 .punch-calendar-grid .punch-chip {
