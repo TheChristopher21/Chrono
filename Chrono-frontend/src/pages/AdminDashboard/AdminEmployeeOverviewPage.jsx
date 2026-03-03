@@ -16,6 +16,7 @@ import {
     addDays,
     minutesToHHMM,
     getExpectedHoursForDay,
+    calculateWeeklyExpectedMinutes,
     getDetailedGlobalProblemIndicators,
 } from './adminDashboardUtils';
 import '../../styles/AdminEmployeeOverviewScoped.css';
@@ -419,20 +420,62 @@ const AdminEmployeeOverviewPage = () => {
         [periodSummaries],
     );
 
+    const effectiveConfigForTarget = useMemo(() => {
+        if (!normalizedEmployeeConfig) return normalizedEmployeeConfig;
+        if (normalizedEmployeeConfig.isHourly) return normalizedEmployeeConfig;
+
+        const shouldForcePercentageMode = Number.isFinite(normalizedEmployeeConfig.workPercentage)
+            && normalizedEmployeeConfig.workPercentage > 0
+            && normalizedEmployeeConfig.workPercentage < 100;
+
+        if (!shouldForcePercentageMode || normalizedEmployeeConfig.isPercentage) {
+            return normalizedEmployeeConfig;
+        }
+
+        return {
+            ...normalizedEmployeeConfig,
+            isPercentage: true,
+        };
+    }, [normalizedEmployeeConfig]);
+
     const periodTargetMinutes = useMemo(
-        () => visibleDates.reduce((sum, dateString) => {
-            const expectedHours = getExpectedHoursForDay(
-                new Date(`${dateString}T00:00:00`),
-                normalizedEmployeeConfig,
-                employee?.dailyWorkHours ?? 8.5,
-                holidaysForEmployee,
-                employeeVacations,
-                employeeSickLeaves,
-                null,
-            );
-            return sum + Math.round(expectedHours * 60);
-        }, 0),
-        [employee?.dailyWorkHours, employeeSickLeaves, employeeVacations, holidaysForEmployee, normalizedEmployeeConfig, visibleDates],
+        () => {
+            if (timeRangeMode === 'week') {
+                const weekDateObjects = weekDates.map((dateString) => new Date(`${dateString}T00:00:00`));
+                return calculateWeeklyExpectedMinutes(
+                    effectiveConfigForTarget,
+                    weekDateObjects,
+                    employee?.dailyWorkHours ?? 8.5,
+                    employeeVacations,
+                    employeeSickLeaves,
+                    holidaysForEmployee,
+                    null,
+                );
+            }
+
+            return visibleDates.reduce((sum, dateString) => {
+                const expectedHours = getExpectedHoursForDay(
+                    new Date(`${dateString}T00:00:00`),
+                    effectiveConfigForTarget,
+                    employee?.dailyWorkHours ?? 8.5,
+                    holidaysForEmployee,
+                    employeeVacations,
+                    employeeSickLeaves,
+                    null,
+                );
+                return sum + Math.round(expectedHours * 60);
+            }, 0);
+        },
+        [
+            effectiveConfigForTarget,
+            employee?.dailyWorkHours,
+            employeeSickLeaves,
+            employeeVacations,
+            holidaysForEmployee,
+            timeRangeMode,
+            visibleDates,
+            weekDates,
+        ],
     );
 
     const periodDeltaMinutes = totalWorkedWeekMinutes - periodTargetMinutes;
