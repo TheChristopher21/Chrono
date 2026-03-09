@@ -699,6 +699,17 @@ const AdminWeekSection = forwardRef(({
     }, [monthRangeStart, monthRangeEnd]);
 
     const monthRangeIsValid = monthRangeDates.length > 0;
+    const shouldShowWeeklyDeltaIssues = useMemo(() => {
+        if (!(selectedMonday instanceof Date) || Number.isNaN(selectedMonday.getTime())) return false;
+        const weekEndDate = addDays(selectedMonday, 6);
+        weekEndDate.setHours(0, 0, 0, 0);
+
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        return today.getTime() >= weekEndDate.getTime();
+    }, [selectedMonday]);
+
     const monthRangeLabel = useMemo(() => {
         if (!monthRangeStart || !monthRangeEnd) return '';
         return `${formatDate(monthRangeStart)} – ${formatDate(monthRangeEnd)}`;
@@ -762,7 +773,8 @@ const AdminWeekSection = forwardRef(({
                     allHolidayOptionsForUser // Pass relevant holiday options collected so far
                 );
 
-                const unusualWeeklyDelta = Math.abs(currentWeekOvertimeMinutes) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES;
+                const unusualWeeklyDelta = shouldShowWeeklyDeltaIssues
+                    && Math.abs(currentWeekOvertimeMinutes) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES;
                 const weeklyDeltaAlreadyAcknowledged = !!weeklyDeltaAcknowledged?.[user.username]?.[selectedWeekIso];
                 const adjustedProblemIndicators = {
                     ...problemIndicators,
@@ -789,7 +801,7 @@ const AdminWeekSection = forwardRef(({
                     holidayOptions: allHolidayOptionsForUser,
                 };
             });
-    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser, selectedMonday, weeklyDeltaAcknowledged]);
+    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser, selectedMonday, weeklyDeltaAcknowledged, shouldShowWeeklyDeltaIssues]);
 
     const userAnalyticsMap = useMemo(() => {
         const map = new Map();
@@ -1173,13 +1185,13 @@ const AdminWeekSection = forwardRef(({
             count: issueSummary.holidayPending,
             icon: '🎉',
         },
-        {
+        ...(shouldShowWeeklyDeltaIssues ? [{
             key: 'weeklyDelta',
             label: t('adminDashboard.issueFilters.weeklyDelta', 'Unübliche Plus/Minusstunden zum Wochensoll'),
             count: issueSummary.weeklyDelta,
             icon: '↕️',
-        },
-    ]), [issueSummary, t]);
+        }] : []),
+    ]), [issueSummary, shouldShowWeeklyDeltaIssues, t]);
 
     const handleWeeklyDeltaAcknowledgementChange = useCallback((username, weekIso, isChecked) => {
         if (!username || !weekIso) return;
@@ -1916,7 +1928,7 @@ const AdminWeekSection = forwardRef(({
                                                             <span className="mx-2">|</span>
                                                             <span>{t('balanceWeek', 'Saldo (akt. Woche)')}: {minutesToHHMM(userData.currentWeekOvertimeMinutes)}</span>
                                                         </div>
-                                                        {Math.abs(userData.currentWeekOvertimeMinutes || 0) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES && (
+                                                        {shouldShowWeeklyDeltaIssues && Math.abs(userData.currentWeekOvertimeMinutes || 0) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES && (
                                                             <label className="text-xs flex items-center gap-2 mb-2">
                                                                 <input
                                                                     type="checkbox"
