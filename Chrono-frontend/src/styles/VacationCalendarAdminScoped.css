@@ -265,6 +265,11 @@
   white-space: nowrap;
   font-weight: 600;
 }
+.vacation-calendar-admin.scoped-vacation .vacation-marker.pending {
+  background-color: #767676 !important;
+  color: #f3f4f6 !important;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
 .vacation-calendar-admin.scoped-vacation .holiday-marker-admin {
   font-size: 0.9em; /* Etwas größer als im User-Kalender für bessere Sichtbarkeit */
   padding: 1px 4px;

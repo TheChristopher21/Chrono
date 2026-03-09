@@ -535,7 +535,8 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             const vacsToday = scopedVacationRequests.filter((vac) => itemInRange(vac, date, date));
             if (vacsToday.length > 0) {
                 vacsToday.forEach((vac, index) => {
-                    const bgColor = vac.color || '#767676';
+                    const isPendingVacation = !vac?.approved && !vac?.denied;
+                    const bgColor = isPendingVacation ? '#767676' : (vac.color || '#767676');
                     const textColor = getContrastYIQ(bgColor);
                     let displayName = vac.username || t('adminVacation.unknownUser', 'Unbekannt');
                     if (vac.halfDay) displayName += ` (${t('adminVacation.halfDayShort', '½')})`;
@@ -555,7 +556,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                     dayMarkers.push(
                         <div
                             key={vac.id || `vac-${dateString}-${index}`}
-                            className={`vacation-marker${vac ? ' editable' : ''}`}
+                            className={`vacation-marker${vac ? ' editable' : ''}${isPendingVacation ? ' pending' : ''}`}
                             style={{ backgroundColor: bgColor, color: textColor }}
                             title={`${vac.username || ''}${vac.halfDay ? ` (${t('adminVacation.halfDayShort', '½')})` : ""}${vac.usesOvertime ? ` (${t('adminVacation.overtimeVacationShort', 'ÜS')})` : ""}`}
                             {...accessibilityProps}
