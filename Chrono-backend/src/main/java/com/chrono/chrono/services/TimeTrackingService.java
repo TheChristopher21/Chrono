@@ -325,6 +325,7 @@ public class TimeTrackingService {
             }
 
             int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
+                     .filter(Payslip::isApproved)
                     .filter(Payslip::isPayoutOvertime)
                     .map(Payslip::getOvertimeHours)
                     .filter(Objects::nonNull)
@@ -404,6 +405,7 @@ public class TimeTrackingService {
                 }
             }
             int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
+                     .filter(Payslip::isApproved)
                     .filter(Payslip::isPayoutOvertime)
                     .map(Payslip::getOvertimeHours)
                     .filter(Objects::nonNull)
