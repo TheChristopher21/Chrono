@@ -1512,7 +1512,6 @@ const AdminDashboard = () => {
                         onApprove={handleApproveCorrection}
                         onDeny={handleDenyCorrection}
                         openSignal={correctionOpenSignal}
-                        onFocusCorrectionWeek={focusWeekForProblem}
                     />
                 </div>
             </section>
