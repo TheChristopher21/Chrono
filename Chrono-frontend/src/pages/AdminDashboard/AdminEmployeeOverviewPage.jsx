@@ -840,6 +840,11 @@ const AdminEmployeeOverviewPage = () => {
                     ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
                     : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-');
                 const isPending = !item.approved && !item.denied;
+                const vacationTypeLabel = tab === 'vacation'
+                    ? (item.usesOvertime
+                        ? t('overtimeVacation', 'Überstundenfrei')
+                        : t('normalVacation', 'Normaler Urlaub'))
+                    : '';
 
                 return (
                     <article className="compact-list-item request-list-card" key={`${tab}-${item.id}`}>
@@ -850,6 +855,9 @@ const AdminEmployeeOverviewPage = () => {
                         >
                             <div className="request-item-content">
                                 <span className="request-item-main">{requestDateLabel}</span>
+                                {tab === 'vacation' && (
+                                    <span className="request-vacation-type">{t('vacationType', 'Urlaubsart')}: {vacationTypeLabel}</span>
+                                )}
                                 {tab === 'correction' && (
                                     <div className="request-correction-preview">
                                         {renderCorrectionChange(item)}
