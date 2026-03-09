@@ -196,7 +196,7 @@
 
 .calendar-requests-layout {
   display: grid;
-  grid-template-columns: minmax(0, 4fr) minmax(260px, 1fr);
+  grid-template-columns: minmax(0, 3fr) minmax(360px, 1.25fr);
   gap: 1rem;
   align-items: stretch;
 }
@@ -580,6 +580,11 @@
 
 .request-item-main {
   font-weight: 600;
+}
+
+.request-vacation-type {
+  font-size: 0.8rem;
+  color: var(--aeo-muted);
 }
 
 .request-inline-actions {
