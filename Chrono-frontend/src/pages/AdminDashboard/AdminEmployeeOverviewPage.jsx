@@ -798,7 +798,9 @@ const AdminEmployeeOverviewPage = () => {
         if (!targetDate) return;
         setTimeRangeMode('week');
         setSelectedMonday(getMondayOfWeek(new Date(`${targetDate}T00:00:00`)));
-        openEditModal(targetDate);
+        if (tab !== 'correction') {
+            openEditModal(targetDate);
+        }
     }, [getRequestAnchorDate, openEditModal]);
 
     const handleRequestDecision = useCallback(async (tab, item, decision) => {
