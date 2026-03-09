@@ -278,7 +278,7 @@ const AdminUserForm = ({
                     {renderLabel("entryDate", "userManagement.entryDate", "Eintrittsdatum", {
                         hint: t(
                             "userManagement.entryDateHint",
-                            "Startdatum im Format JJJJ-MM-TT (optional, z. B. 2024-01-01)"
+                            "Wichtig: Ab diesem Datum werden die Stunden gezählt (Format JJJJ-MM-TT, optional, z. B. 2024-01-01)"
                         ),
                     })}
                     <input
