@@ -841,9 +841,11 @@ const AdminEmployeeOverviewPage = () => {
                     : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-');
                 const isPending = !item.approved && !item.denied;
                 const vacationTypeLabel = tab === 'vacation'
-                    ? (item.usesOvertime
-                        ? t('overtimeVacation', 'Überstundenfrei')
-                        : t('normalVacation', 'Normaler Urlaub'))
+                    ? (item.companyVacation
+                        ? t('adminVacation.companyVacationLabel', 'Betriebsurlaub')
+                        : item.usesOvertime
+                            ? t('overtimeVacation', 'Überstundenfrei')
+                            : t('normalVacation', 'Normaler Urlaub'))
                     : '';
 
                 return (

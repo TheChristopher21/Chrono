@@ -237,6 +237,7 @@ const AdminDashboard = () => {
                 flags: {
                     halfDay: !!vac.halfDay,
                     usesOvertime: !!vac.usesOvertime,
+                    companyVacation: !!vac.companyVacation,
                 },
                 isLowRisk: false,
                 raw: vac,
