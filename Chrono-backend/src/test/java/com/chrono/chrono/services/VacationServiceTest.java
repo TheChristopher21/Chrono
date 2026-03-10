@@ -120,6 +120,36 @@ class VacationServiceTest {
         assertThat(userCaptor.getAllValues().get(1).getTrackingBalanceInMinutes()).isEqualTo(720);
     }
 
+    @Test
+    void adminUpdateVacation_keepsExistingOvertimeMinutesForPercentageUserWhenNotProvided() {
+        existingRequest.setApproved(false);
+        existingRequest.setDenied(false);
+        existingRequest.setOvertimeDeductionMinutes(420);
+        employee.setTrackingBalanceInMinutes(600);
+
+        when(vacationRequestRepository.findById(10L)).thenReturn(Optional.of(existingRequest));
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        when(vacationRequestRepository.save(any(VacationRequest.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(workScheduleService.isDayOff(eq(employee), any(LocalDate.class))).thenReturn(false);
+
+        VacationRequest updated = vacationService.adminUpdateVacation(
+                10L,
+                "admin",
+                null,
+                null,
+                null,
+                true,
+                null,
+                true,
+                null,
+                null
+        );
+
+        assertThat(updated.getOvertimeDeductionMinutes()).isEqualTo(420);
+        assertThat(employee.getTrackingBalanceInMinutes()).isEqualTo(180);
+    }
+
 
     @Test
     void calculateRemainingVacationDays_ignoresPublicHolidayDays() {

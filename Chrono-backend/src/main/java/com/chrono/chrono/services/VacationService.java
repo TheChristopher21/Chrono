@@ -500,13 +500,17 @@ public class VacationService {
             vr.setAdminNote(normalizedAdminNote.isEmpty() ? null : normalizedAdminNote);
         }
 
+        Integer effectiveOvertimeDeductionMinutes = overtimeDeductionMinutesParam != null
+                ? overtimeDeductionMinutesParam
+                : vr.getOvertimeDeductionMinutes();
+
         if (!newUsesOvertime) {
             vr.setOvertimeDeductionMinutes(null);
         } else if (Boolean.TRUE.equals(targetUser.getIsPercentage())) {
-            if (overtimeDeductionMinutesParam == null || overtimeDeductionMinutesParam <= 0) {
+            if (effectiveOvertimeDeductionMinutes == null || effectiveOvertimeDeductionMinutes <= 0) {
                 throw new IllegalArgumentException("Für prozentuale Mitarbeitende müssen abzuziehende Überstunden-Minuten angegeben werden.");
             }
-            vr.setOvertimeDeductionMinutes(overtimeDeductionMinutesParam);
+            vr.setOvertimeDeductionMinutes(effectiveOvertimeDeductionMinutes);
         } else {
             vr.setOvertimeDeductionMinutes(null);
         }
