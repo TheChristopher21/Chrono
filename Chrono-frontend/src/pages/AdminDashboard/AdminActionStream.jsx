@@ -39,6 +39,7 @@ const deriveItemsFromLegacyProps = (allVacations, allCorrections) => {
             flags: {
                 halfDay: !!vac.halfDay,
                 usesOvertime: !!vac.usesOvertime,
+                companyVacation: !!vac.companyVacation,
             },
             raw: vac,
         };
@@ -224,6 +225,9 @@ const AdminActionStream = ({
                         )}
                         {item.type === 'vacation' && flags.usesOvertime && (
                             <span className="stream-flag overtime">{t('adminDashboard.overtimeVacationShort', 'ÜS')}</span>
+                        )}
+                        {item.type === 'vacation' && flags.companyVacation && (
+                            <span className="stream-flag">{t('adminVacation.companyVacationLabel', 'Betriebsurlaub')}</span>
                         )}
                         {item.type === 'correction' && item.isLowRisk && (
                             <span className="stream-flag low-risk">
