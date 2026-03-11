@@ -134,6 +134,7 @@ public class TimeTrackingService {
         }
 
         TimeTrackingEntry savedEntry = timeTrackingEntryRepository.save(newEntry);
+        clearVacationOnPunchDay(user, today);
         if (savedEntry.getCustomer() != null) {
             user.setLastCustomer(savedEntry.getCustomer());
             userRepository.save(user);
@@ -141,6 +142,57 @@ public class TimeTrackingService {
         logger.info("User '{}' punched {}. Timestamp: {}, Source: {}", username, nextPunchType, now, source);
         rebuildUserBalance(user); // Saldo nach jedem Stempel neu berechnen
         return TimeTrackingEntryDTO.fromEntity(savedEntry);
+    }
+
+    private void clearVacationOnPunchDay(User user, LocalDate punchDay) {
+        List<VacationRequest> vacationRequests = vacationRequestRepository.findByUserAndApprovedTrue(user);
+        List<VacationRequest> affectedVacations = vacationRequests.stream()
+                .filter(vr -> !punchDay.isBefore(vr.getStartDate()) && !punchDay.isAfter(vr.getEndDate()))
+                .toList();
+
+        for (VacationRequest vacation : affectedVacations) {
+            LocalDate originalStart = vacation.getStartDate();
+            LocalDate originalEnd = vacation.getEndDate();
+
+            if (originalStart.equals(punchDay) && originalEnd.equals(punchDay)) {
+                vacationRequestRepository.delete(vacation);
+                logger.info("Urlaubseintrag {} für User '{}' wurde wegen Stempel am {} gelöscht.", vacation.getId(), user.getUsername(), punchDay);
+                continue;
+            }
+
+            if (originalStart.equals(punchDay)) {
+                vacation.setStartDate(originalStart.plusDays(1));
+                vacationRequestRepository.save(vacation);
+                logger.info("Urlaubseintrag {} für User '{}' angepasst: neuer Start {} nach Stempel am {}.", vacation.getId(), user.getUsername(), vacation.getStartDate(), punchDay);
+                continue;
+            }
+
+            if (originalEnd.equals(punchDay)) {
+                vacation.setEndDate(originalEnd.minusDays(1));
+                vacationRequestRepository.save(vacation);
+                logger.info("Urlaubseintrag {} für User '{}' angepasst: neues Ende {} nach Stempel am {}.", vacation.getId(), user.getUsername(), vacation.getEndDate(), punchDay);
+                continue;
+            }
+
+            vacation.setEndDate(punchDay.minusDays(1));
+            vacationRequestRepository.save(vacation);
+
+            VacationRequest splitVacation = new VacationRequest();
+            splitVacation.setUser(vacation.getUser());
+            splitVacation.setStartDate(punchDay.plusDays(1));
+            splitVacation.setEndDate(originalEnd);
+            splitVacation.setApproved(vacation.isApproved());
+            splitVacation.setDenied(vacation.isDenied());
+            splitVacation.setHalfDay(vacation.isHalfDay());
+            splitVacation.setUsesOvertime(vacation.isUsesOvertime());
+            splitVacation.setCompanyVacation(vacation.isCompanyVacation());
+            splitVacation.setOvertimeDeductionMinutes(vacation.getOvertimeDeductionMinutes());
+            splitVacation.setAdminNote(vacation.getAdminNote());
+            vacationRequestRepository.save(splitVacation);
+
+            logger.info("Urlaubseintrag {} für User '{}' wurde wegen Stempel am {} aufgeteilt ({} bis {} und {} bis {}).",
+                    vacation.getId(), user.getUsername(), punchDay, originalStart, vacation.getEndDate(), splitVacation.getStartDate(), splitVacation.getEndDate());
+        }
     }
 
     @Transactional

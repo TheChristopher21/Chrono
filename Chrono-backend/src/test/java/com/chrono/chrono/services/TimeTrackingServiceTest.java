@@ -34,6 +34,8 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -190,6 +192,82 @@ class TimeTrackingServiceTest {
         DailyTimeSummaryDTO summary = timeTrackingService.getDailySummary("alice", date);
 
         assertTrue(summary.isNeedsCorrection());
+    }
+
+
+    @Test
+    void handlePunch_removesSingleDayVacationOnPunchDay() {
+        VacationRequest vacation = new VacationRequest();
+        vacation.setId(10L);
+        vacation.setUser(user);
+        vacation.setApproved(true);
+        vacation.setStartDate(LocalDate.now(java.time.ZoneId.of("Europe/Berlin")));
+        vacation.setEndDate(LocalDate.now(java.time.ZoneId.of("Europe/Berlin")));
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findLastEntryByUserAndDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+        when(timeTrackingEntryRepository.save(any(TimeTrackingEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(vacation));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+
+        timeTrackingService.handlePunch("alice", TimeTrackingEntry.PunchSource.MANUAL_PUNCH, null, null, null, null, null);
+
+        verify(vacationRequestRepository).delete(vacation);
+    }
+
+
+    @Test
+    void handlePunch_removesCompanyVacationOnPunchDay() {
+        VacationRequest vacation = new VacationRequest();
+        vacation.setId(11L);
+        vacation.setUser(user);
+        vacation.setApproved(true);
+        vacation.setCompanyVacation(true);
+        vacation.setStartDate(LocalDate.now(java.time.ZoneId.of("Europe/Berlin")));
+        vacation.setEndDate(LocalDate.now(java.time.ZoneId.of("Europe/Berlin")));
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findLastEntryByUserAndDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+        when(timeTrackingEntryRepository.save(any(TimeTrackingEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(vacation));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+
+        timeTrackingService.handlePunch("alice", TimeTrackingEntry.PunchSource.MANUAL_PUNCH, null, null, null, null, null);
+
+        verify(vacationRequestRepository).delete(vacation);
+    }
+
+    @Test
+    void handlePunch_splitsVacationRangeWhenPunchInTheMiddle() {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Europe/Berlin"));
+        VacationRequest vacation = new VacationRequest();
+        vacation.setId(20L);
+        vacation.setUser(user);
+        vacation.setApproved(true);
+        vacation.setStartDate(today.minusDays(1));
+        vacation.setEndDate(today.plusDays(1));
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findLastEntryByUserAndDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+        when(timeTrackingEntryRepository.save(any(TimeTrackingEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(vacation));
+        when(vacationRequestRepository.save(any(VacationRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+
+        timeTrackingService.handlePunch("alice", TimeTrackingEntry.PunchSource.MANUAL_PUNCH, null, null, null, null, null);
+
+        assertEquals(today.minusDays(1), vacation.getStartDate());
+        assertEquals(today.minusDays(1), vacation.getEndDate());
+        verify(vacationRequestRepository, times(2)).save(any(VacationRequest.class));
     }
 
     private TimeTrackingEntry entry(User user, LocalDateTime timestamp, TimeTrackingEntry.PunchType type) {
