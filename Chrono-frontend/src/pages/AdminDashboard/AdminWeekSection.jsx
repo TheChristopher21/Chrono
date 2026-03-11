@@ -1984,7 +1984,7 @@ const AdminWeekSection = forwardRef(({
                                                                     );
                                                                 } else if (vacationOnThisDay) {
                                                                     cardClass += ' admin-day-card-vacation';
-                                                                    if (vacationOnThisDay.companyVacation && dailySummary && dailySummary.entries && dailySummary.entries.length > 0) {
+                                                                    if (dailySummary && dailySummary.entries && dailySummary.entries.length > 0) {
                                                                         dayCardContent = (
                                                                             <>
                                                                                 <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>
