@@ -541,7 +541,7 @@ public class VacationService {
         List<VacationRequest> vacations = vacationRepo.findByUserAndApprovedTrue(user); //
         double usedDays = 0.0; //
         for (VacationRequest vr : vacations) { //
-            if (!vr.isUsesOvertime() && !vr.isCompanyVacation()) { //
+            if (!vr.isUsesOvertime()) { //
                 LocalDate startDate = vr.getStartDate(); //
                 LocalDate endDate = vr.getEndDate(); //
 
@@ -554,7 +554,7 @@ public class VacationService {
                 }
             }
         }
-        logger.info("VacationService: Benutzer '{}' hat {} reguläre Urlaubstage von {} im Jahr {} genutzt.",
+        logger.info("VacationService: Benutzer '{}' hat {} Urlaubstage von {} im Jahr {} genutzt.",
                 username, usedDays, annualVacationDays, year); //
         return annualVacationDays - usedDays; //
     }
