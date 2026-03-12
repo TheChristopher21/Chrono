@@ -464,6 +464,16 @@ public class TimeTrackingService {
                     .mapToInt(h -> (int) Math.round(h * 60))
                     .sum();
             totalMinutesBalance -= paidOvertimeMinutes;
+
+            int overtimeVacationDeductionMinutes = approvedVacations.stream()
+                    .filter(VacationRequest::isUsesOvertime)
+                    .map(VacationRequest::getOvertimeDeductionMinutes)
+                    .filter(Objects::nonNull)
+                    .filter(minutes -> minutes > 0)
+                    .mapToInt(Integer::intValue)
+                    .sum();
+            totalMinutesBalance -= overtimeVacationDeductionMinutes;
+
             if (freshUser.getTrackingBalanceInMinutes() != totalMinutesBalance) {
                 logger.info("Saldo für {} aktualisiert von {} auf {} Minuten.", freshUser.getUsername(), freshUser.getTrackingBalanceInMinutes(), totalMinutesBalance);
                 freshUser.setTrackingBalanceInMinutes(totalMinutesBalance);
