@@ -2,6 +2,7 @@ package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.entities.DailyNote;
+import com.chrono.chrono.entities.Payslip;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.VacationRequest;
@@ -269,6 +270,70 @@ class TimeTrackingServiceTest {
         assertEquals(today.minusDays(1), vacation.getEndDate());
         verify(vacationRequestRepository, times(2)).save(any(VacationRequest.class));
     }
+
+    @Test
+    void rebuildUserBalance_subtractsOvertimeVacationDeductions() {
+        user.setTrackingBalanceInMinutes(0);
+
+        TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, date.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE);
+        start.setEntryDate(date);
+        end.setEntryDate(date);
+
+        VacationRequest overtimeVacation = new VacationRequest();
+        overtimeVacation.setApproved(true);
+        overtimeVacation.setUsesOvertime(true);
+        overtimeVacation.setStartDate(date);
+        overtimeVacation.setEndDate(date);
+        overtimeVacation.setOvertimeDeductionMinutes(120);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(List.of(end, start));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(overtimeVacation));
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(date), any())).thenReturn(480);
+        when(payslipRepository.findByUser(user)).thenReturn(Collections.emptyList());
+
+        timeTrackingService.rebuildUserBalance(user);
+
+        assertEquals(-120, user.getTrackingBalanceInMinutes());
+        verify(userRepository).save(user);
+    }
+
+    @Test
+    void rebuildUserBalance_subtractsApprovedOvertimePayoutsAndOvertimeVacationDeductions() {
+        user.setTrackingBalanceInMinutes(0);
+
+        TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, date.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE);
+        start.setEntryDate(date);
+        end.setEntryDate(date);
+
+        VacationRequest overtimeVacation = new VacationRequest();
+        overtimeVacation.setApproved(true);
+        overtimeVacation.setUsesOvertime(true);
+        overtimeVacation.setStartDate(date);
+        overtimeVacation.setEndDate(date);
+        overtimeVacation.setOvertimeDeductionMinutes(60);
+
+        Payslip approvedPayout = new Payslip();
+        approvedPayout.setApproved(true);
+        approvedPayout.setPayoutOvertime(true);
+        approvedPayout.setOvertimeHours(1.0);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(List.of(end, start));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(overtimeVacation));
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(date), any())).thenReturn(480);
+        when(payslipRepository.findByUser(user)).thenReturn(List.of(approvedPayout));
+
+        timeTrackingService.rebuildUserBalance(user);
+
+        assertEquals(-120, user.getTrackingBalanceInMinutes());
+        verify(userRepository).save(user);
+    }
+
 
     private TimeTrackingEntry entry(User user, LocalDateTime timestamp, TimeTrackingEntry.PunchType type) {
         TimeTrackingEntry entry = new TimeTrackingEntry();
