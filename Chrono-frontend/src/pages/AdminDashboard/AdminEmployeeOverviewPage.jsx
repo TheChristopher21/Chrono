@@ -119,18 +119,30 @@ const getRoleDisplayLabel = (employee, t) => {
     return t('role', 'Rolle');
 };
 
-const countVacationDays = (vacations, year) => {
+const countVacationDays = (vacations, year, options = {}) => {
     if (!Array.isArray(vacations) || vacations.length === 0) return 0;
+
+    const {
+        minDate = null,
+        includeDenied = false,
+    } = options;
+
     return vacations.reduce((sum, vacation) => {
         if (!vacation || vacation.usesOvertime) return sum;
+        if (!includeDenied && vacation.denied) return sum;
+
         const start = new Date(`${vacation.startDate}T00:00:00`);
         const end = new Date(`${vacation.endDate}T00:00:00`);
         if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return sum;
 
         let days = 0;
         for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
-            if (cursor.getFullYear() === year && isWorkDay(cursor)) {
-                days += vacation.halfDay ? 0.5 : 1;
+            const currentDate = new Date(cursor);
+            const currentDateYmd = formatLocalDateYMD(currentDate);
+            if (currentDate.getFullYear() === year && isWorkDay(currentDate)) {
+                if (!minDate || currentDateYmd >= minDate) {
+                    days += vacation.halfDay ? 0.5 : 1;
+                }
             }
         }
         return sum + days;
@@ -138,9 +150,9 @@ const countVacationDays = (vacations, year) => {
 };
 
 const calculateAnnualVacationEntitlement = (employee, year) => {
-    const configuredAnnualVacationDays = Number(employee?.annualVacationDays) || 0;
+    const configuredAnnualVacationDays = Number(employee?.annualVacationDays) || 25;
     const workPercentage = parseWorkPercentageValue(employee?.workPercentage);
-    const workloadFactor = parseBooleanFlag(employee?.isPercentage)
+    const workloadFactor = inferIsPercentageUser(employee, workPercentage)
         ? Math.max(workPercentage, 0) / 100
         : 1;
     const fullYearEntitlement = configuredAnnualVacationDays * workloadFactor;
@@ -423,19 +435,21 @@ const AdminEmployeeOverviewPage = () => {
     const vacationStats = useMemo(() => {
         const vacationYear = new Date().getFullYear();
         const approved = employeeVacations.filter((vacation) => vacation?.approved);
-        const planned = employeeVacations.filter((vacation) => !vacation?.approved && !vacation?.denied);
+        const pending = employeeVacations.filter((vacation) => !vacation?.approved && !vacation?.denied);
         const annual = calculateAnnualVacationEntitlement(employee, vacationYear);
         const takenDays = countVacationDays(approved, vacationYear);
-        const plannedDays = countVacationDays(planned, vacationYear);
+        const plannedApprovedDays = countVacationDays(approved, vacationYear, { minDate: todayYmd });
+        const plannedPendingDays = countVacationDays(pending, vacationYear, { minDate: todayYmd });
+        const plannedDays = plannedApprovedDays + plannedPendingDays;
 
         return {
             year: vacationYear,
             annual,
             takenDays,
             plannedDays,
-            availableDays: Math.max(annual - takenDays - plannedDays, 0),
+            availableDays: Math.max(annual - takenDays - plannedPendingDays, 0),
         };
-    }, [employee, employeeVacations]);
+    }, [employee, employeeVacations, todayYmd]);
 
     const totalWorkedWeekMinutes = useMemo(
         () => periodSummaries.reduce((sum, entry) => sum + (entry?.workedMinutes || 0), 0),
@@ -1230,6 +1244,7 @@ const AdminEmployeeOverviewPage = () => {
                                     <div className="absence-summary-list">
                                         <p><span>{t('remainingVacation', 'Verfügbar')}</span><strong>{vacationStats.availableDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
                                         <p><span>{t('adminEmployeeOverview.plannedVacation', 'Geplant')}</span><strong>{vacationStats.plannedDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
+                                        <p><span>{t('adminEmployeeOverview.annualVacationEntitlement', 'Urlaubstage dieses Jahr')}</span><strong>{vacationStats.annual.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
                                         <p><span>Nächste Abwesenheit</span><strong>{nextAbsence ? `${nextAbsence.type} · ${formatDate(new Date(`${nextAbsence.startDate}T00:00:00`))}` : 'Keine geplant'}</strong></p>
                                         <p><span>Aktueller Status</span><strong>{currentStatus.label}</strong></p>
                                         <p><span>Diese Woche</span><strong>{weeklyAbsenceDays} Tage abwesend</strong></p>
