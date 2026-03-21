@@ -8,6 +8,7 @@ import { useTranslation } from "../context/LanguageContext";
 import { BASE_FEATURE, FEATURE_CATALOG } from "../constants/registrationFeatures";
 
 const COUNTRY_CODES = ["ch", "de", "other"];
+const BILLING_PERIODS = ["monthly", "yearly"];
 
 const INITIAL_CONFIGURATION = {
     country: COUNTRY_CODES[0],
@@ -32,6 +33,7 @@ const Registration = () => {
     const [configuration, setConfiguration] = useState(INITIAL_CONFIGURATION);
     const [form, setForm] = useState(INITIAL_FORM);
     const [selectedFeatures, setSelectedFeatures] = useState([BASE_FEATURE.key]);
+    const [billingPeriod, setBillingPeriod] = useState("monthly");
     const [consents, setConsents] = useState({ terms: false, contact: false });
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,6 +57,20 @@ const Registration = () => {
         }
         return null;
     }, [configuration.country]);
+
+    const billingPeriodMultiplier = billingPeriod === "yearly" ? 11 : 1;
+
+    const billingPeriodOptions = useMemo(
+        () =>
+            BILLING_PERIODS.map((value) => ({
+                value,
+                label: t(
+                    `registration.pricing.${value}`,
+                    value === "yearly" ? "Jährlich" : "Monatlich"
+                ),
+            })),
+        [t]
+    );
 
     const formatCurrency = (value) => {
         if (!pricingConfig) {
@@ -112,8 +128,8 @@ const Registration = () => {
         const breakdown = selectedModuleOptions.map((option) => {
             const total =
                 option.priceType === "perEmployee"
-                    ? option.price * configuration.employeeCount
-                    : option.price;
+                    ? option.price * configuration.employeeCount * billingPeriodMultiplier
+                    : option.price * billingPeriodMultiplier;
 
             return {
                 key: option.key,
@@ -130,7 +146,7 @@ const Registration = () => {
             breakdown,
             total,
         };
-    }, [configuration.employeeCount, pricingConfig, selectedModuleOptions]);
+    }, [billingPeriodMultiplier, configuration.employeeCount, pricingConfig, selectedModuleOptions]);
 
     const employeeSliderStyle = {
         "--progress": `${((configuration.employeeCount - 1) / 199) * 100}%`,
@@ -201,6 +217,8 @@ const Registration = () => {
                         unitPrice: item.unitPrice,
                         total: item.total,
                     })),
+                    billingPeriod,
+                    billableMonths: billingPeriodMultiplier,
                     total: priceSummary.total,
                 }
                 : null;
@@ -214,7 +232,7 @@ const Registration = () => {
                 employeeCount: configuration.employeeCount,
                 configuration,
                 consents,
-                billingPeriod: null,
+                billingPeriod,
                 includeOptionalTraining: false,
                 priceBreakdown,
                 calculatedPrice,
@@ -404,6 +422,43 @@ const Registration = () => {
                             <div className="form-group">
                                 <h3>{t("registration.modules.title", "Module wählen")}</h3>
                                 <p className="group-subline">{t("registration.modules.subtitle")}</p>
+                                <div className='form-control'>
+                                    <span className='label'>
+                                        {t('registration.pricing.billingPeriodLabel', 'Abrechnung')}
+                                    </span>
+                                    <div
+                                        className='segmented-control'
+                                        role='radiogroup'
+                                        aria-label={t(
+                                            'registration.pricing.billingPeriodAria',
+                                            'Abrechnungszeitraum auswählen'
+                                        )}
+                                    >
+                                        {billingPeriodOptions.map((option) => (
+                                            <label
+                                                key={option.value}
+                                                className={`segment ${billingPeriod === option.value ? 'is-active' : ''}`}
+                                            >
+                                                <input
+                                                    type='radio'
+                                                    name='billingPeriod'
+                                                    value={option.value}
+                                                    checked={billingPeriod === option.value}
+                                                    onChange={(event) => setBillingPeriod(event.target.value)}
+                                                />
+                                                <span>{option.label}</span>
+                                            </label>
+                                        ))}
+                                    </div>
+                                    {billingPeriod === 'yearly' && (
+                                        <p className='billing-note'>
+                                            {t(
+                                                'registration.pricing.yearlyPromo',
+                                                'Bei jährlicher Zahlung ist der erste Monat gratis.'
+                                            )}
+                                        </p>
+                                    )}
+                                </div>
                                 <div className="module-grid">
                                     {moduleOptions.map((option) => {
                                         const isChecked = selectedFeatures.includes(option.key);
@@ -426,20 +481,40 @@ const Registration = () => {
                                                     onChange={() => toggleFeature(option.key)}
                                                 />
                                                 <span className="module-label">{option.label}</span>
-                                                <span className="module-price">
+                                                <span className='module-price'>
                                                     {pricingConfig
-                                                        ? option.priceType === "perEmployee"
-                                                            ? t(
-                                                                "registration.pricing.perEmployeeShort",
-                                                                "{{price}} / MA",
-                                                                { price: formatCurrency(option.price) }
-                                                            )
-                                                            : t(
-                                                                "registration.pricing.flatShort",
-                                                                "{{price}} / Monat",
-                                                                { price: formatCurrency(option.price) }
-                                                            )
-                                                        : t("registration.pricing.onRequest", "Preis auf Anfrage")}
+                                                        ? billingPeriod === 'yearly'
+                                                            ? option.priceType === 'perEmployee'
+                                                                ? t(
+                                                                    'registration.pricing.perEmployeeShortYearly',
+                                                                    '{{price}} / MA / Jahr',
+                                                                    {
+                                                                        price: formatCurrency(
+                                                                            option.price * billingPeriodMultiplier
+                                                                        ),
+                                                                    }
+                                                                )
+                                                                : t(
+                                                                    'registration.pricing.flatShortYearly',
+                                                                    '{{price}} / Jahr',
+                                                                    {
+                                                                        price: formatCurrency(
+                                                                            option.price * billingPeriodMultiplier
+                                                                        ),
+                                                                    }
+                                                                )
+                                                            : option.priceType === 'perEmployee'
+                                                                ? t(
+                                                                    'registration.pricing.perEmployeeShortMonthly',
+                                                                    '{{price}} / MA / Monat',
+                                                                    { price: formatCurrency(option.price) }
+                                                                )
+                                                                : t(
+                                                                    'registration.pricing.flatShortMonthly',
+                                                                    '{{price}} / Monat',
+                                                                    { price: formatCurrency(option.price) }
+                                                                )
+                                                        : t('registration.pricing.onRequest', 'Preis auf Anfrage')}
                                                 </span>
                                                 <span className="module-description">{option.description}</span>
                                             </label>
@@ -467,21 +542,40 @@ const Registration = () => {
                                                     <li key={item.key} className="pricing-row">
                                                         <div className="pricing-row-info">
                                                             <span className="pricing-row-label">{item.label}</span>
-                                                            <span className="pricing-row-detail">
-                                                                {item.priceType === "perEmployee"
-                                                                    ? t(
-                                                                        "registration.pricing.perEmployeeDetail",
-                                                                        "{{price}} × {{count}} MA",
-                                                                        {
-                                                                            price: formatCurrency(item.unitPrice),
-                                                                            count: configuration.employeeCount,
-                                                                        }
-                                                                    )
-                                                                    : t(
-                                                                        "registration.pricing.flatDetail",
-                                                                        "{{price}} / Monat",
-                                                                        { price: formatCurrency(item.unitPrice) }
-                                                                    )}
+                                                            <span className='pricing-row-detail'>
+                                                                {billingPeriod === 'yearly'
+                                                                    ? item.priceType === 'perEmployee'
+                                                                        ? t(
+                                                                            'registration.pricing.perEmployeeDetailYearly',
+                                                                            '{{price}} × {{count}} MA × {{months}} Monate',
+                                                                            {
+                                                                                price: formatCurrency(item.unitPrice),
+                                                                                count: configuration.employeeCount,
+                                                                                months: billingPeriodMultiplier,
+                                                                            }
+                                                                        )
+                                                                        : t(
+                                                                            'registration.pricing.flatDetailYearly',
+                                                                            '{{price}} × {{months}} Monate',
+                                                                            {
+                                                                                price: formatCurrency(item.unitPrice),
+                                                                                months: billingPeriodMultiplier,
+                                                                            }
+                                                                        )
+                                                                    : item.priceType === 'perEmployee'
+                                                                        ? t(
+                                                                            'registration.pricing.perEmployeeDetailMonthly',
+                                                                            '{{price}} × {{count}} MA',
+                                                                            {
+                                                                                price: formatCurrency(item.unitPrice),
+                                                                                count: configuration.employeeCount,
+                                                                            }
+                                                                        )
+                                                                        : t(
+                                                                            'registration.pricing.flatDetailMonthly',
+                                                                            '{{price}} / Monat',
+                                                                            { price: formatCurrency(item.unitPrice) }
+                                                                        )}
                                                             </span>
                                                         </div>
                                                         <span className="pricing-row-value">
@@ -490,12 +584,24 @@ const Registration = () => {
                                                     </li>
                                                 ))}
                                             </ul>
-                                            <div className="pricing-total">
-                                                <span>{t("registration.pricing.total", "Gesamt pro Monat")}</span>
+                                            <div className='pricing-total'>
+                                                <span>
+                                                    {billingPeriod === 'yearly'
+                                                        ? t('registration.pricing.totalYearly', 'Gesamt pro Jahr')
+                                                        : t('registration.pricing.totalMonthly', 'Gesamt pro Monat')}
+                                                </span>
                                                 <span>{formatCurrency(priceSummary.total)}</span>
                                             </div>
-                                            <p className="pricing-disclaimer">
-                                                {t("registration.pricing.disclaimer", "Alle Preise exkl. MwSt.")}
+                                            {billingPeriod === 'yearly' && (
+                                                <p className='pricing-promo'>
+                                                    {t(
+                                                        'registration.pricing.yearlyPromo',
+                                                        'Bei jährlicher Zahlung ist der erste Monat gratis.'
+                                                    )}
+                                                </p>
+                                            )}
+                                            <p className='pricing-disclaimer'>
+                                                {t('registration.pricing.disclaimer', 'Alle Preise exkl. MwSt.')}
                                             </p>
                                         </>
                                     ) : (
