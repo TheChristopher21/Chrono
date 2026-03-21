@@ -97,6 +97,11 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         return vacationRequests.filter((vacation) => vacation?.username === focusUsername);
     }, [focusUsername, vacationRequests]);
 
+    const calendarVacationRequests = useMemo(
+        () => scopedVacationRequests.filter((vacation) => !vacation?.denied),
+        [scopedVacationRequests],
+    );
+
     const scopedSickLeaves = useMemo(() => {
         if (!focusUsername) return allSickLeaves;
         return allSickLeaves.filter((sickLeave) => sickLeave?.username === focusUsername);
@@ -532,7 +537,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
             // Urlaubs-Marker
             // Die 'itemInRange'-Funktion sollte ebenfalls mit dem lokalen 'date'-Objekt und den YYYY-MM-DD Strings aus 'vac' arbeiten.
-            const vacsToday = scopedVacationRequests.filter((vac) => itemInRange(vac, date, date));
+            const vacsToday = calendarVacationRequests.filter((vac) => itemInRange(vac, date, date));
             if (vacsToday.length > 0) {
                 vacsToday.forEach((vac, index) => {
                     const isPendingVacation = !vac?.approved && !vac?.denied;
