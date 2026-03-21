@@ -151,9 +151,14 @@ public class TimeTrackingService {
                 .toList();
 
         for (VacationRequest vacation : affectedVacations) {
+            if (!isChargeableVacationDay(user, punchDay)) {
+                logger.info("Urlaubseintrag {} für User '{}' bleibt unverändert, da {} kein anrechenbarer Urlaubstag ist.",
+                        vacation.getId(), user.getUsername(), punchDay);
+                continue;
+            }
+
             LocalDate originalStart = vacation.getStartDate();
             LocalDate originalEnd = vacation.getEndDate();
-            long originalSpanDays = ChronoUnit.DAYS.between(originalStart, originalEnd) + 1;
             Integer originalOvertimeDeductionMinutes = vacation.getOvertimeDeductionMinutes();
 
             if (originalStart.equals(punchDay) && originalEnd.equals(punchDay)) {
@@ -164,7 +169,11 @@ public class TimeTrackingService {
 
             if (originalStart.equals(punchDay)) {
                 vacation.setStartDate(originalStart.plusDays(1));
-                vacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, originalSpanDays - 1, 0));
+                vacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(
+                        originalOvertimeDeductionMinutes,
+                        countChargeableVacationDays(user, vacation.getStartDate(), originalEnd),
+                        0
+                ));
                 vacationRequestRepository.save(vacation);
                 logger.info("Urlaubseintrag {} für User '{}' angepasst: neuer Start {} nach Stempel am {}.", vacation.getId(), user.getUsername(), vacation.getStartDate(), punchDay);
                 continue;
@@ -172,29 +181,36 @@ public class TimeTrackingService {
 
             if (originalEnd.equals(punchDay)) {
                 vacation.setEndDate(originalEnd.minusDays(1));
-                vacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, originalSpanDays - 1, 0));
+                vacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(
+                        originalOvertimeDeductionMinutes,
+                        countChargeableVacationDays(user, originalStart, vacation.getEndDate()),
+                        0
+                ));
                 vacationRequestRepository.save(vacation);
                 logger.info("Urlaubseintrag {} für User '{}' angepasst: neues Ende {} nach Stempel am {}.", vacation.getId(), user.getUsername(), vacation.getEndDate(), punchDay);
                 continue;
             }
 
-            long leftSpanDays = ChronoUnit.DAYS.between(originalStart, punchDay.minusDays(1)) + 1;
-            long rightSpanDays = ChronoUnit.DAYS.between(punchDay.plusDays(1), originalEnd) + 1;
+            LocalDate leftEnd = punchDay.minusDays(1);
+            LocalDate rightStart = punchDay.plusDays(1);
+            long leftChargeableDays = countChargeableVacationDays(user, originalStart, leftEnd);
+            long rightChargeableDays = countChargeableVacationDays(user, rightStart, originalEnd);
 
-            vacation.setEndDate(punchDay.minusDays(1));
-            vacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, leftSpanDays, rightSpanDays));
+            vacation.setEndDate(leftEnd);
+            Integer leftDeductionMinutes = recalculateOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, leftChargeableDays, rightChargeableDays);
+            vacation.setOvertimeDeductionMinutes(leftDeductionMinutes);
             vacationRequestRepository.save(vacation);
 
             VacationRequest splitVacation = new VacationRequest();
             splitVacation.setUser(vacation.getUser());
-            splitVacation.setStartDate(punchDay.plusDays(1));
+            splitVacation.setStartDate(rightStart);
             splitVacation.setEndDate(originalEnd);
             splitVacation.setApproved(vacation.isApproved());
             splitVacation.setDenied(vacation.isDenied());
             splitVacation.setHalfDay(vacation.isHalfDay());
             splitVacation.setUsesOvertime(vacation.isUsesOvertime());
             splitVacation.setCompanyVacation(vacation.isCompanyVacation());
-            splitVacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, rightSpanDays, leftSpanDays));
+            splitVacation.setOvertimeDeductionMinutes(calculateRemainingOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, leftDeductionMinutes));
             splitVacation.setAdminNote(vacation.getAdminNote());
             vacationRequestRepository.save(splitVacation);
 
@@ -203,15 +219,41 @@ public class TimeTrackingService {
         }
     }
 
-    private Integer recalculateOvertimeDeductionMinutes(Integer originalMinutes, long keptSpanDays, long otherSpanDays) {
+    private long countChargeableVacationDays(User user, LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null || endDate.isBefore(startDate)) {
+            return 0;
+        }
+
+        long chargeableDays = 0;
+        for (LocalDate current = startDate; !current.isAfter(endDate); current = current.plusDays(1)) {
+            if (isChargeableVacationDay(user, current)) {
+                chargeableDays++;
+            }
+        }
+        return chargeableDays;
+    }
+
+    private boolean isChargeableVacationDay(User user, LocalDate date) {
+        return workScheduleService.computeExpectedWorkMinutes(user, date, Collections.emptyList()) > 0;
+    }
+
+    private Integer recalculateOvertimeDeductionMinutes(Integer originalMinutes, long keptChargeableDays, long otherChargeableDays) {
         if (originalMinutes == null || originalMinutes <= 0) {
             return originalMinutes;
         }
-        long totalDays = keptSpanDays + otherSpanDays;
-        if (totalDays <= 0) {
+        long totalChargeableDays = keptChargeableDays + otherChargeableDays;
+        if (totalChargeableDays <= 0) {
             return 0;
         }
-        return Math.max((int) Math.round((double) originalMinutes * keptSpanDays / totalDays), 0);
+        return Math.max((int) Math.round((double) originalMinutes * keptChargeableDays / totalChargeableDays), 0);
+    }
+
+    private Integer calculateRemainingOvertimeDeductionMinutes(Integer originalMinutes, Integer allocatedMinutes) {
+        if (originalMinutes == null || originalMinutes <= 0) {
+            return originalMinutes;
+        }
+        int safeAllocatedMinutes = allocatedMinutes != null ? allocatedMinutes : 0;
+        return Math.max(originalMinutes - safeAllocatedMinutes, 0);
     }
 
     @Transactional
