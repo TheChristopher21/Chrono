@@ -153,7 +153,7 @@ class VacationServiceTest {
 
     @Test
     void calculateRemainingVacationDays_ignoresPublicHolidayDays() {
-        employee.setAnnualVacationDays(25.0);
+        employee.setAnnualVacationDays(25);
 
         VacationRequest holidayOverlapVacation = new VacationRequest();
         holidayOverlapVacation.setUser(employee);
@@ -174,6 +174,39 @@ class VacationServiceTest {
 
         assertThat(remaining).isEqualTo(24.0);
     }
+
+    @Test
+    void calculateRemainingVacationDays_proratesForEntryDateAndPercentageUsers() {
+        employee.setAnnualVacationDays(25);
+        employee.setIsPercentage(true);
+        employee.setWorkPercentage(60);
+        employee.setEntryDate(LocalDate.of(2024, 4, 1));
+
+        when(userRepository.findByUsername("worker")).thenReturn(Optional.of(employee));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(employee)).thenReturn(java.util.List.of());
+
+        double remaining2024 = vacationService.calculateRemainingVacationDays("worker", 2024);
+        double remaining2025 = vacationService.calculateRemainingVacationDays("worker", 2025);
+
+        assertThat(remaining2024).isCloseTo(11.2623, org.assertj.core.data.Offset.offset(0.0001));
+        assertThat(remaining2025).isEqualTo(15.0);
+    }
+
+    @Test
+    void calculateRemainingVacationDays_returnsZeroBeforeEntryYearStarts() {
+        employee.setAnnualVacationDays(25);
+        employee.setIsPercentage(true);
+        employee.setWorkPercentage(60);
+        employee.setEntryDate(LocalDate.of(2025, 4, 1));
+
+        when(userRepository.findByUsername("worker")).thenReturn(Optional.of(employee));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(employee)).thenReturn(java.util.List.of());
+
+        double remaining = vacationService.calculateRemainingVacationDays("worker", 2024);
+
+        assertThat(remaining).isZero();
+    }
+
     @Test
     void adminUpdateVacation_throwsWhenAdminMissing() {
         when(vacationRequestRepository.findById(10L)).thenReturn(Optional.of(existingRequest));

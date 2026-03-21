@@ -535,9 +535,7 @@ public class VacationService {
     public double calculateRemainingVacationDays(String username, int year) {
         User user = userRepo.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username)); //
-        double annualVacationDays = (user.getAnnualVacationDays() != null)
-                ? user.getAnnualVacationDays()
-                : 25.0; //
+        double annualVacationDays = calculateAnnualVacationEntitlement(user, year);
         List<VacationRequest> vacations = vacationRepo.findByUserAndApprovedTrue(user); //
         double usedDays = 0.0; //
         for (VacationRequest vr : vacations) { //
@@ -556,7 +554,40 @@ public class VacationService {
         }
         logger.info("VacationService: Benutzer '{}' hat {} Urlaubstage von {} im Jahr {} genutzt.",
                 username, usedDays, annualVacationDays, year); //
-        return annualVacationDays - usedDays; //
+        return Math.max(annualVacationDays - usedDays, 0.0); //
+    }
+
+    double calculateAnnualVacationEntitlement(User user, int year) {
+        double configuredAnnualVacationDays = (user.getAnnualVacationDays() != null)
+                ? user.getAnnualVacationDays()
+                : 25.0;
+
+        double workloadFactor = Boolean.TRUE.equals(user.getIsPercentage())
+                ? Math.max(user.getWorkPercentage(), 0) / 100.0
+                : 1.0;
+
+        double fullYearEntitlement = configuredAnnualVacationDays * workloadFactor;
+        LocalDate entryDate = user.getEntryDate();
+        if (entryDate == null) {
+            return fullYearEntitlement;
+        }
+
+        LocalDate yearStart = LocalDate.of(year, 1, 1);
+        LocalDate yearEnd = LocalDate.of(year, 12, 31);
+        if (entryDate.isAfter(yearEnd)) {
+            return 0.0;
+        }
+        if (entryDate.isBefore(yearStart) || entryDate.isEqual(yearStart)) {
+            return fullYearEntitlement;
+        }
+
+        long daysInYear = java.time.temporal.ChronoUnit.DAYS.between(yearStart, yearEnd.plusDays(1));
+        long activeDays = java.time.temporal.ChronoUnit.DAYS.between(entryDate, yearEnd.plusDays(1));
+        if (daysInYear <= 0 || activeDays <= 0) {
+            return 0.0;
+        }
+
+        return fullYearEntitlement * ((double) activeDays / (double) daysInYear);
     }
 
     @Transactional
