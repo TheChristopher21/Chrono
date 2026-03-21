@@ -354,7 +354,8 @@ export function calculateWeeklyActualMinutes(userSummariesForWeek) {
 export function calculateWeeklyExpectedMinutes(
     userConfig, weekDates, defaultExpectedHours,
     userApprovedVacations, userSickLeaves, holidaysForUserCanton,
-    userHolidayOptionsForWeek
+    userHolidayOptionsForWeek,
+    workedDateSet = new Set()
 ) {
     if (!userConfig || userConfig.isHourly === true) return 0;
 
@@ -378,7 +379,10 @@ export function calculateWeeklyExpectedMinutes(
             if (!isPotentialWorkDayForUser) continue;
 
             const isHoliday = holidaysForUserCanton && holidaysForUserCanton[isoDate];
-            const vacationToday = userApprovedVacations?.find(v => isoDate >= v.startDate && isoDate <= v.endDate && v.approved);
+            const hasTrackedEntriesToday = workedDateSet?.has?.(isoDate) === true;
+            const vacationToday = hasTrackedEntriesToday
+                ? null
+                : userApprovedVacations?.find(v => isoDate >= v.startDate && isoDate <= v.endDate && v.approved);
             const sickToday = userSickLeaves?.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
 
             if (isHoliday) {

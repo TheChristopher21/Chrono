@@ -753,10 +753,18 @@ const AdminWeekSection = forwardRef(({
                     .sort((a, b) => a.holidayDate.localeCompare(b.holidayDate));
 
 
+                const workedDateSetForCurrentWeek = new Set(
+                    Object.values(userDayMapCurrentWeek)
+                        .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
+                        .map(summary => summary.date)
+                        .filter(Boolean)
+                );
+
                 const weeklyExpectedMinutes = calculateWeeklyExpectedMinutes(
                     userConfig, weekDates, defaultExpectedHours,
                     userApprovedVacations, userCurrentSickLeaves, holidaysForThisUserYear,
-                    holidayOptionsForThisUserInThisWeek // Pass options here
+                    holidayOptionsForThisUserInThisWeek,
+                    workedDateSetForCurrentWeek
                 );
 
                 const currentWeekOvertimeMinutes = weeklyActualMinutes - weeklyExpectedMinutes;
@@ -1947,8 +1955,11 @@ const AdminWeekSection = forwardRef(({
                                                                 const holidayNameOnThisDay = holidaysDataForDay[isoDate];
                                                                 const holidayOptionForThisDay = currentUserHolidayOptions.find(opt => opt.holidayDate === isoDate);
 
-                                                                const expectedMinsToday = Math.round(getExpectedHoursForDay(d, userData.userConfig, defaultExpectedHours, holidaysDataForDay, userData.userApprovedVacations, userData.userCurrentSickLeaves, holidayOptionForThisDay) * 60);
                                                                 const actualMinsToday = dailySummary?.workedMinutes || 0;
+                                                                const effectiveVacationsForDay = ((dailySummary?.entries?.length || 0) > 0 || actualMinsToday > 0)
+                                                                    ? userData.userApprovedVacations.filter(vac => isoDate < vac.startDate || isoDate > vac.endDate)
+                                                                    : userData.userApprovedVacations;
+                                                                const expectedMinsToday = Math.round(getExpectedHoursForDay(d, userData.userConfig, defaultExpectedHours, holidaysDataForDay, effectiveVacationsForDay, userData.userCurrentSickLeaves, holidayOptionForThisDay) * 60);
                                                                 const diffMinsToday = actualMinsToday - expectedMinsToday;
 
                                                                 const isFocused = focusedProblem.username === userData.username && focusedProblem.dateIso === isoDate;
