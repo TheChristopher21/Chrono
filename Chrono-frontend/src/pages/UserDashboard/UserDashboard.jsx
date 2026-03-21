@@ -558,9 +558,7 @@ function UserDashboard() {
 
                             const rawVacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
                             const hasWorkedEntries = Boolean(summary?.entries?.length);
-                            const vacationToday = hasWorkedEntries && rawVacationToday && !rawVacationToday.companyVacation
-                                ? null
-                                : rawVacationToday;
+                            const vacationToday = hasWorkedEntries ? null : rawVacationToday;
                             const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
                             const holidayName = holidaysForUserCanton.data?.[isoDate];
 

@@ -33,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
@@ -160,6 +161,27 @@ class TimeTrackingServiceTest {
     }
 
     @Test
+    void computeDailyWorkDifference_regularVacationWithPunchesCountsAgainstNormalExpectedTime() {
+        TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, date.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE);
+
+        VacationRequest regularVacation = new VacationRequest();
+        regularVacation.setApproved(true);
+        regularVacation.setStartDate(date);
+        regularVacation.setEndDate(date);
+
+        when(dailyNoteRepository.findByUserAndNoteDate(user, date)).thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(date), any())).thenAnswer(invocation -> {
+            List<VacationRequest> vacations = invocation.getArgument(2);
+            return vacations.isEmpty() ? 480 : 0;
+        });
+
+        int diff = timeTrackingService.computeDailyWorkDifference(user, date, List.of(regularVacation), List.of(start, end));
+
+        assertEquals(0, diff);
+    }
+
+    @Test
     void getDailySummary_marksOpenDayWhenLastEntryIsStart() {
         TimeTrackingEntry startMorning = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
         TimeTrackingEntry endMorning = entry(user, date.atTime(12, 0), TimeTrackingEntry.PunchType.ENDE);
@@ -269,6 +291,68 @@ class TimeTrackingServiceTest {
         assertEquals(today.minusDays(1), vacation.getStartDate());
         assertEquals(today.minusDays(1), vacation.getEndDate());
         verify(vacationRequestRepository, times(2)).save(any(VacationRequest.class));
+    }
+
+    @Test
+    void handlePunch_splitsOvertimeVacationDeductionAcrossRemainingRanges() {
+        LocalDate today = LocalDate.now(java.time.ZoneId.of("Europe/Berlin"));
+        VacationRequest vacation = new VacationRequest();
+        vacation.setId(21L);
+        vacation.setUser(user);
+        vacation.setApproved(true);
+        vacation.setUsesOvertime(true);
+        vacation.setOvertimeDeductionMinutes(180);
+        vacation.setStartDate(today.minusDays(1));
+        vacation.setEndDate(today.plusDays(1));
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findLastEntryByUserAndDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+        when(timeTrackingEntryRepository.save(any(TimeTrackingEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(vacation));
+        when(vacationRequestRepository.save(any(VacationRequest.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+
+        timeTrackingService.handlePunch("alice", TimeTrackingEntry.PunchSource.MANUAL_PUNCH, null, null, null, null, null);
+
+        assertEquals(90, vacation.getOvertimeDeductionMinutes());
+        verify(vacationRequestRepository).save(argThat(saved ->
+                saved != vacation
+                        && saved.getStartDate().equals(today.plusDays(1))
+                        && saved.getEndDate().equals(today.plusDays(1))
+                        && Integer.valueOf(90).equals(saved.getOvertimeDeductionMinutes())
+        ));
+    }
+
+    @Test
+    void getWeeklyBalance_percentageUserIgnoresVacationOnWorkedDays() {
+        user.setIsPercentage(true);
+        user.setWorkPercentage(100);
+        user.setExpectedWorkDays(5);
+
+        LocalDate monday = LocalDate.of(2024, 1, 1);
+        TimeTrackingEntry start = entry(user, monday.atTime(8, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, monday.atTime(16, 0), TimeTrackingEntry.PunchType.ENDE);
+        start.setEntryDate(monday);
+        end.setEntryDate(monday);
+
+        VacationRequest vacation = new VacationRequest();
+        vacation.setApproved(true);
+        vacation.setStartDate(monday);
+        vacation.setEndDate(monday);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(vacation));
+        when(timeTrackingEntryRepository.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(eq(user), any(), any()))
+                .thenReturn(List.of(start, end));
+        when(workScheduleService.getExpectedWeeklyMinutesForPercentageUser(eq(user), eq(monday), argThat(List::isEmpty))).thenReturn(2550);
+        when(dailyNoteRepository.findByUserAndNoteDate(eq(user), eq(monday))).thenReturn(Optional.empty());
+
+        int diff = timeTrackingService.getWeeklyBalance(user, monday);
+
+        assertEquals(-2070, diff);
     }
 
     @Test
