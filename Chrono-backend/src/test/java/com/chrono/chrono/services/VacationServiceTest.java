@@ -176,7 +176,7 @@ class VacationServiceTest {
     }
 
     @Test
-    void calculateRemainingVacationDays_proratesForEntryDateAndPercentageUsers() {
+    void calculateRemainingVacationDays_proratesForEntryDateWithoutReducingConfiguredPartTimeEntitlement() {
         employee.setAnnualVacationDays(25);
         employee.setIsPercentage(true);
         employee.setWorkPercentage(60);
@@ -188,8 +188,8 @@ class VacationServiceTest {
         double remaining2024 = vacationService.calculateRemainingVacationDays("worker", 2024);
         double remaining2025 = vacationService.calculateRemainingVacationDays("worker", 2025);
 
-        assertThat(remaining2024).isCloseTo(11.2623, org.assertj.core.data.Offset.offset(0.0001));
-        assertThat(remaining2025).isEqualTo(15.0);
+        assertThat(remaining2024).isCloseTo(18.7705, org.assertj.core.data.Offset.offset(0.0001));
+        assertThat(remaining2025).isEqualTo(25.0);
     }
 
     @Test
