@@ -119,7 +119,7 @@ const getRoleDisplayLabel = (employee, t) => {
     return t('role', 'Rolle');
 };
 
-const countVacationDays = (vacations) => {
+const countVacationDays = (vacations, year) => {
     if (!Array.isArray(vacations) || vacations.length === 0) return 0;
     return vacations.reduce((sum, vacation) => {
         if (!vacation || vacation.usesOvertime) return sum;
@@ -129,12 +129,37 @@ const countVacationDays = (vacations) => {
 
         let days = 0;
         for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
-            if (isWorkDay(cursor)) {
+            if (cursor.getFullYear() === year && isWorkDay(cursor)) {
                 days += vacation.halfDay ? 0.5 : 1;
             }
         }
         return sum + days;
     }, 0);
+};
+
+const calculateAnnualVacationEntitlement = (employee, year) => {
+    const configuredAnnualVacationDays = Number(employee?.annualVacationDays) || 0;
+    const workPercentage = parseWorkPercentageValue(employee?.workPercentage);
+    const workloadFactor = parseBooleanFlag(employee?.isPercentage)
+        ? Math.max(workPercentage, 0) / 100
+        : 1;
+    const fullYearEntitlement = configuredAnnualVacationDays * workloadFactor;
+
+    if (!employee?.entryDate) return fullYearEntitlement;
+
+    const entryDate = new Date(`${employee.entryDate}T00:00:00`);
+    if (Number.isNaN(entryDate.getTime())) return fullYearEntitlement;
+
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31);
+    if (entryDate > yearEnd) return 0;
+    if (entryDate <= yearStart) return fullYearEntitlement;
+
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const daysInYear = Math.round((yearEnd - yearStart) / msPerDay) + 1;
+    const activeDays = Math.round((yearEnd - entryDate) / msPerDay) + 1;
+
+    return fullYearEntitlement * (activeDays / daysInYear);
 };
 
 const AdminEmployeeOverviewPage = () => {
@@ -396,13 +421,15 @@ const AdminEmployeeOverviewPage = () => {
     );
 
     const vacationStats = useMemo(() => {
+        const vacationYear = new Date().getFullYear();
         const approved = employeeVacations.filter((vacation) => vacation?.approved);
         const planned = employeeVacations.filter((vacation) => !vacation?.approved && !vacation?.denied);
-        const annual = Number(employee?.annualVacationDays) || 0;
-        const takenDays = countVacationDays(approved);
-        const plannedDays = countVacationDays(planned);
+        const annual = calculateAnnualVacationEntitlement(employee, vacationYear);
+        const takenDays = countVacationDays(approved, vacationYear);
+        const plannedDays = countVacationDays(planned, vacationYear);
 
         return {
+            year: vacationYear,
             annual,
             takenDays,
             plannedDays,
