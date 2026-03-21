@@ -24,6 +24,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.lang.reflect.Method;
 import java.time.LocalTime;
 import java.util.Collections;
 import java.util.List;
@@ -326,6 +327,70 @@ class TimeTrackingServiceTest {
         ));
     }
 
+
+    @Test
+    void clearVacationOnPunchDay_ignoresNonChargeableDaysWithinVacationRange() throws Exception {
+        VacationRequest vacation = new VacationRequest();
+        vacation.setId(99L);
+        vacation.setUser(user);
+        vacation.setApproved(true);
+        vacation.setUsesOvertime(true);
+        vacation.setStartDate(LocalDate.of(2024, 1, 5));
+        vacation.setEndDate(LocalDate.of(2024, 1, 8));
+        vacation.setOvertimeDeductionMinutes(960);
+
+        LocalDate saturday = LocalDate.of(2024, 1, 6);
+
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(vacation));
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(saturday), any())).thenReturn(0);
+
+        invokeClearVacationOnPunchDay(user, saturday);
+
+        assertEquals(LocalDate.of(2024, 1, 5), vacation.getStartDate());
+        assertEquals(LocalDate.of(2024, 1, 8), vacation.getEndDate());
+        assertEquals(960, vacation.getOvertimeDeductionMinutes());
+        verify(vacationRequestRepository, times(0)).save(any(VacationRequest.class));
+        verify(vacationRequestRepository, times(0)).delete(any(VacationRequest.class));
+    }
+
+    @Test
+    void clearVacationOnPunchDay_splitsOvertimeDeductionByChargeableDaysNotCalendarDays() throws Exception {
+        VacationRequest vacation = new VacationRequest();
+        vacation.setId(100L);
+        vacation.setUser(user);
+        vacation.setApproved(true);
+        vacation.setUsesOvertime(true);
+        vacation.setStartDate(LocalDate.of(2024, 1, 4));
+        vacation.setEndDate(LocalDate.of(2024, 1, 8));
+        vacation.setOvertimeDeductionMinutes(1440);
+
+        LocalDate punchDay = LocalDate.of(2024, 1, 5);
+        LocalDate thursday = LocalDate.of(2024, 1, 4);
+        LocalDate saturday = LocalDate.of(2024, 1, 6);
+        LocalDate sunday = LocalDate.of(2024, 1, 7);
+        LocalDate monday = LocalDate.of(2024, 1, 8);
+
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(vacation));
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(punchDay), any())).thenReturn(480);
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(thursday), any())).thenReturn(480);
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(saturday), any())).thenReturn(0);
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(sunday), any())).thenReturn(0);
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(monday), any())).thenReturn(480);
+
+        invokeClearVacationOnPunchDay(user, punchDay);
+
+        assertEquals(LocalDate.of(2024, 1, 4), vacation.getStartDate());
+        assertEquals(LocalDate.of(2024, 1, 4), vacation.getEndDate());
+        assertEquals(720, vacation.getOvertimeDeductionMinutes());
+
+        verify(vacationRequestRepository).save(argThat(saved ->
+                saved != vacation
+                        && saved.getStartDate().equals(LocalDate.of(2024, 1, 6))
+                        && saved.getEndDate().equals(LocalDate.of(2024, 1, 8))
+                        && Integer.valueOf(720).equals(saved.getOvertimeDeductionMinutes())
+        ));
+    }
+
     @Test
     void getWeeklyBalance_percentageUserIgnoresVacationOnWorkedDays() {
         user.setIsPercentage(true);
@@ -418,6 +483,13 @@ class TimeTrackingServiceTest {
         verify(userRepository).save(user);
     }
 
+
+
+    private void invokeClearVacationOnPunchDay(User user, LocalDate punchDay) throws Exception {
+        Method method = TimeTrackingService.class.getDeclaredMethod("clearVacationOnPunchDay", User.class, LocalDate.class);
+        method.setAccessible(true);
+        method.invoke(timeTrackingService, user, punchDay);
+    }
 
     private TimeTrackingEntry entry(User user, LocalDateTime timestamp, TimeTrackingEntry.PunchType type) {
         TimeTrackingEntry entry = new TimeTrackingEntry();
