@@ -153,6 +153,8 @@ public class TimeTrackingService {
         for (VacationRequest vacation : affectedVacations) {
             LocalDate originalStart = vacation.getStartDate();
             LocalDate originalEnd = vacation.getEndDate();
+            long originalSpanDays = ChronoUnit.DAYS.between(originalStart, originalEnd) + 1;
+            Integer originalOvertimeDeductionMinutes = vacation.getOvertimeDeductionMinutes();
 
             if (originalStart.equals(punchDay) && originalEnd.equals(punchDay)) {
                 vacationRequestRepository.delete(vacation);
@@ -162,6 +164,7 @@ public class TimeTrackingService {
 
             if (originalStart.equals(punchDay)) {
                 vacation.setStartDate(originalStart.plusDays(1));
+                vacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, originalSpanDays - 1, 0));
                 vacationRequestRepository.save(vacation);
                 logger.info("Urlaubseintrag {} für User '{}' angepasst: neuer Start {} nach Stempel am {}.", vacation.getId(), user.getUsername(), vacation.getStartDate(), punchDay);
                 continue;
@@ -169,12 +172,17 @@ public class TimeTrackingService {
 
             if (originalEnd.equals(punchDay)) {
                 vacation.setEndDate(originalEnd.minusDays(1));
+                vacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, originalSpanDays - 1, 0));
                 vacationRequestRepository.save(vacation);
                 logger.info("Urlaubseintrag {} für User '{}' angepasst: neues Ende {} nach Stempel am {}.", vacation.getId(), user.getUsername(), vacation.getEndDate(), punchDay);
                 continue;
             }
 
+            long leftSpanDays = ChronoUnit.DAYS.between(originalStart, punchDay.minusDays(1)) + 1;
+            long rightSpanDays = ChronoUnit.DAYS.between(punchDay.plusDays(1), originalEnd) + 1;
+
             vacation.setEndDate(punchDay.minusDays(1));
+            vacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, leftSpanDays, rightSpanDays));
             vacationRequestRepository.save(vacation);
 
             VacationRequest splitVacation = new VacationRequest();
@@ -186,13 +194,24 @@ public class TimeTrackingService {
             splitVacation.setHalfDay(vacation.isHalfDay());
             splitVacation.setUsesOvertime(vacation.isUsesOvertime());
             splitVacation.setCompanyVacation(vacation.isCompanyVacation());
-            splitVacation.setOvertimeDeductionMinutes(vacation.getOvertimeDeductionMinutes());
+            splitVacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, rightSpanDays, leftSpanDays));
             splitVacation.setAdminNote(vacation.getAdminNote());
             vacationRequestRepository.save(splitVacation);
 
             logger.info("Urlaubseintrag {} für User '{}' wurde wegen Stempel am {} aufgeteilt ({} bis {} und {} bis {}).",
                     vacation.getId(), user.getUsername(), punchDay, originalStart, vacation.getEndDate(), splitVacation.getStartDate(), splitVacation.getEndDate());
         }
+    }
+
+    private Integer recalculateOvertimeDeductionMinutes(Integer originalMinutes, long keptSpanDays, long otherSpanDays) {
+        if (originalMinutes == null || originalMinutes <= 0) {
+            return originalMinutes;
+        }
+        long totalDays = keptSpanDays + otherSpanDays;
+        if (totalDays <= 0) {
+            return 0;
+        }
+        return Math.max((int) Math.round((double) originalMinutes * keptSpanDays / totalDays), 0);
     }
 
     @Transactional
@@ -498,9 +517,14 @@ public class TimeTrackingService {
         for (LocalDate d = weekStart; !d.isAfter(endOfWeek) && !d.isAfter(lastDayOverall); d = d.plusDays(1)) {
             totalWorkedMinutesInWeek += getWorkedMinutesForDate(user, d, allUserEntriesGroupedByDate);
         }
-        List<VacationRequest> approvedVacationsInThisWeek = allApprovedVacationsForUser.stream()
-                .filter(vr -> vr.isApproved() && !vr.getEndDate().isBefore(weekStart) && !vr.getStartDate().isAfter(endOfWeek))
-                .collect(Collectors.toList());
+        List<VacationRequest> approvedVacationsInThisWeek = filterVacationsForWorkedDays(
+                allApprovedVacationsForUser.stream()
+                        .filter(vr -> vr.isApproved() && !vr.getEndDate().isBefore(weekStart) && !vr.getStartDate().isAfter(endOfWeek))
+                        .collect(Collectors.toList()),
+                weekStart,
+                endOfWeek,
+                allUserEntriesGroupedByDate
+        );
         int expectedWeeklyMinutesAdjusted = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, weekStart, approvedVacationsInThisWeek);
 
         int weeklyDifference = totalWorkedMinutesInWeek - expectedWeeklyMinutesAdjusted;
@@ -512,18 +536,34 @@ public class TimeTrackingService {
     public int computeDailyWorkDifference(User user, LocalDate date, List<VacationRequest> approvedVacations, List<TimeTrackingEntry> entriesForDay) {
         DailyTimeSummaryDTO summary = calculateDailySummaryFromEntries(entriesForDay, user, date);
         int workedMinutes = summary.getWorkedMinutes();
-        // Bei Betriebsurlaub gilt: nur dann als Urlaub behandeln, wenn nicht gestempelt wurde.
         List<VacationRequest> vacationsForExpectedMinutes = approvedVacations;
-        boolean hasPunchesOnCompanyVacationDay = !entriesForDay.isEmpty() && approvedVacations.stream()
-                .anyMatch(vr -> vr.isCompanyVacation() && !date.isBefore(vr.getStartDate()) && !date.isAfter(vr.getEndDate()));
-        if (hasPunchesOnCompanyVacationDay) {
+        boolean hasWorkedEntries = workedMinutes > 0 || !entriesForDay.isEmpty();
+        if (hasWorkedEntries) {
             vacationsForExpectedMinutes = approvedVacations.stream()
-                    .filter(vr -> !vr.isCompanyVacation() || date.isBefore(vr.getStartDate()) || date.isAfter(vr.getEndDate()))
+                    .filter(vr -> date.isBefore(vr.getStartDate()) || date.isAfter(vr.getEndDate()))
                     .collect(Collectors.toList());
         }
 
         int adjustedExpectedMinutes = workScheduleService.computeExpectedWorkMinutes(user, date, vacationsForExpectedMinutes);
         return workedMinutes - adjustedExpectedMinutes;
+    }
+
+    private List<VacationRequest> filterVacationsForWorkedDays(List<VacationRequest> vacations,
+                                                               LocalDate rangeStart,
+                                                               LocalDate rangeEnd,
+                                                               Map<LocalDate, List<TimeTrackingEntry>> entriesGroupedByDate) {
+        return vacations.stream()
+                .filter(vacation -> {
+                    LocalDate overlapStart = vacation.getStartDate().isAfter(rangeStart) ? vacation.getStartDate() : rangeStart;
+                    LocalDate overlapEnd = vacation.getEndDate().isBefore(rangeEnd) ? vacation.getEndDate() : rangeEnd;
+                    for (LocalDate current = overlapStart; !current.isAfter(overlapEnd); current = current.plusDays(1)) {
+                        if (!entriesGroupedByDate.getOrDefault(current, Collections.emptyList()).isEmpty()) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .collect(Collectors.toList());
     }
 
     @Transactional
