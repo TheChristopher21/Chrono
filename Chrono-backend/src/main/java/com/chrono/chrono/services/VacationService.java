@@ -562,11 +562,7 @@ public class VacationService {
                 ? user.getAnnualVacationDays()
                 : 25.0;
 
-        double workloadFactor = Boolean.TRUE.equals(user.getIsPercentage())
-                ? Math.max(user.getWorkPercentage(), 0) / 100.0
-                : 1.0;
-
-        double fullYearEntitlement = configuredAnnualVacationDays * workloadFactor;
+        double fullYearEntitlement = configuredAnnualVacationDays;
         LocalDate entryDate = user.getEntryDate();
         if (entryDate == null) {
             return fullYearEntitlement;

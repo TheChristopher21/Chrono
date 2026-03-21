@@ -151,11 +151,7 @@ const countVacationDays = (vacations, year, options = {}) => {
 
 const calculateAnnualVacationEntitlement = (employee, year) => {
     const configuredAnnualVacationDays = Number(employee?.annualVacationDays) || 25;
-    const workPercentage = parseWorkPercentageValue(employee?.workPercentage);
-    const workloadFactor = inferIsPercentageUser(employee, workPercentage)
-        ? Math.max(workPercentage, 0) / 100
-        : 1;
-    const fullYearEntitlement = configuredAnnualVacationDays * workloadFactor;
+    const fullYearEntitlement = configuredAnnualVacationDays;
 
     if (!employee?.entryDate) return fullYearEntitlement;
 
