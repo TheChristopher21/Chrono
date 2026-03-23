@@ -279,4 +279,69 @@ class VacationServiceTest {
         assertThat(created.getOvertimeDeductionMinutes()).isEqualTo(480);
         assertThat(employee.getTrackingBalanceInMinutes()).isEqualTo(600);
     }
+    @Test
+    void adminCreateVacation_doesNotDeductFutureOvertimeVacationBeforeStartDate_forRegularUser() {
+        LocalDate today = LocalDate.of(2026, 3, 23);
+        employee.setIsPercentage(false);
+        employee.setTrackingBalanceInMinutes(600);
+
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        when(userRepository.findByUsername("worker")).thenReturn(Optional.of(employee));
+        when(vacationRequestRepository.save(any(VacationRequest.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(workScheduleService.isDayOff(eq(employee), any(LocalDate.class))).thenReturn(false);
+
+        VacationService spyService = spy(vacationService);
+        doReturn(today).when(spyService).getCurrentBerlinDate();
+
+        VacationRequest created = spyService.adminCreateVacation(
+                "admin",
+                "worker",
+                today.plusDays(7),
+                today.plusDays(7),
+                false,
+                true,
+                null
+        );
+
+        assertThat(created.isApproved()).isTrue();
+        assertThat(created.getOvertimeDeductionMinutes()).isNull();
+        assertThat(employee.getTrackingBalanceInMinutes()).isEqualTo(600);
+    }
+
+    @Test
+    void adminUpdateVacation_doesNotRestoreFutureOvertimeVacationThatWasNeverDeducted() {
+        LocalDate today = LocalDate.of(2026, 3, 23);
+        existingRequest.setStartDate(today.plusDays(5));
+        existingRequest.setEndDate(today.plusDays(5));
+        existingRequest.setApproved(true);
+        existingRequest.setDenied(false);
+        existingRequest.setOvertimeDeductionMinutes(480);
+        employee.setTrackingBalanceInMinutes(600);
+
+        when(vacationRequestRepository.findById(10L)).thenReturn(Optional.of(existingRequest));
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        when(vacationRequestRepository.save(any(VacationRequest.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        VacationService spyService = spy(vacationService);
+        doReturn(today).when(spyService).getCurrentBerlinDate();
+
+        VacationRequest updated = spyService.adminUpdateVacation(
+                10L,
+                "admin",
+                today.plusDays(10),
+                today.plusDays(10),
+                null,
+                true,
+                480,
+                true,
+                null,
+                null
+        );
+
+        assertThat(updated.isApproved()).isTrue();
+        assertThat(employee.getTrackingBalanceInMinutes()).isEqualTo(600);
+    }
+
 }
