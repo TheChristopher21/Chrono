@@ -88,7 +88,7 @@ public class TimeTrackingService {
             task = taskRepository.findById(taskId).orElse(null);
         }
         // Default to CET/Berlin timezone for all automatic timestamps
-        LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        LocalDate today = getCurrentBerlinDate();
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Europe/Berlin")).truncatedTo(ChronoUnit.MINUTES);
 
         Optional<TimeTrackingEntry> lastEntryOpt = timeTrackingEntryRepository.findLastEntryByUserAndDate(user, today);
@@ -475,7 +475,7 @@ public class TimeTrackingService {
             return;
         }
 
-        LocalDate firstDayToConsider = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        LocalDate firstDayToConsider = getCurrentBerlinDate();
 
         Optional<LocalDate> firstTrackingDayOpt = allEntriesForUser.stream().map(TimeTrackingEntry::getEntryDate).filter(Objects::nonNull).min(LocalDate::compareTo);
         Optional<LocalDate> firstVacationDayOpt = approvedVacations.stream().map(VacationRequest::getStartDate).min(LocalDate::compareTo);
@@ -484,7 +484,8 @@ public class TimeTrackingService {
         firstDayToConsider = Stream.of(firstTrackingDayOpt, firstVacationDayOpt, firstSickLeaveDayOpt)
                 .filter(Optional::isPresent).map(Optional::get).min(LocalDate::compareTo).orElse(firstDayToConsider);
 
-        LocalDate lastDay = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        LocalDate today = getCurrentBerlinDate();
+        LocalDate lastDay = today;
         Optional<LocalDate> lastTrackingDayOpt = allEntriesForUser.stream().map(TimeTrackingEntry::getEntryDate).filter(Objects::nonNull).max(LocalDate::compareTo);
         if(lastTrackingDayOpt.isPresent() && lastTrackingDayOpt.get().isAfter(lastDay)){
             lastDay = lastTrackingDayOpt.get();
@@ -500,7 +501,10 @@ public class TimeTrackingService {
             if (Boolean.TRUE.equals(freshUser.getIsPercentage())) {
                 LocalDate currentWeekStart = firstDayToConsider.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
                 while (!currentWeekStart.isAfter(lastDay)) {
-                    totalMinutesBalance += computeWeeklyWorkDifferenceForPercentageUser(freshUser, currentWeekStart, lastDay, approvedVacations, entriesGroupedByDate);
+                    LocalDate weekEvaluationEnd = currentWeekStart.plusDays(6).isAfter(lastDay)
+                            ? lastDay
+                            : currentWeekStart.plusDays(6);
+                    totalMinutesBalance += computeWeeklyWorkDifferenceForPercentageUser(freshUser, currentWeekStart, weekEvaluationEnd, approvedVacations, entriesGroupedByDate);
                     currentWeekStart = currentWeekStart.plusWeeks(1);
                 }
             } else { // Dieser Block ist für Standard-Mitarbeiter
@@ -528,10 +532,7 @@ public class TimeTrackingService {
 
             int overtimeVacationDeductionMinutes = approvedVacations.stream()
                     .filter(VacationRequest::isUsesOvertime)
-                    .map(VacationRequest::getOvertimeDeductionMinutes)
-                    .filter(Objects::nonNull)
-                    .filter(minutes -> minutes > 0)
-                    .mapToInt(Integer::intValue)
+                    .mapToInt(vacation -> calculateAppliedOvertimeVacationMinutesUpTo(freshUser, vacation, lastDay))
                     .sum();
             totalMinutesBalance -= overtimeVacationDeductionMinutes;
 
@@ -553,21 +554,22 @@ public class TimeTrackingService {
         return entriesForDay.isEmpty() ? 0 : calculateDailySummaryFromEntries(entriesForDay, user, date).getWorkedMinutes();
     }
 
-    private int computeWeeklyWorkDifferenceForPercentageUser(User user, LocalDate weekStart, LocalDate lastDayOverall, List<VacationRequest> allApprovedVacationsForUser, Map<LocalDate, List<TimeTrackingEntry>> allUserEntriesGroupedByDate) {
+    private int computeWeeklyWorkDifferenceForPercentageUser(User user, LocalDate weekStart, LocalDate weekEvaluationEnd, List<VacationRequest> allApprovedVacationsForUser, Map<LocalDate, List<TimeTrackingEntry>> allUserEntriesGroupedByDate) {
         int totalWorkedMinutesInWeek = 0;
         LocalDate endOfWeek = weekStart.plusDays(6);
-        for (LocalDate d = weekStart; !d.isAfter(endOfWeek) && !d.isAfter(lastDayOverall); d = d.plusDays(1)) {
+        LocalDate effectiveWeekEnd = weekEvaluationEnd.isBefore(endOfWeek) ? weekEvaluationEnd : endOfWeek;
+        for (LocalDate d = weekStart; !d.isAfter(endOfWeek) && !d.isAfter(effectiveWeekEnd); d = d.plusDays(1)) {
             totalWorkedMinutesInWeek += getWorkedMinutesForDate(user, d, allUserEntriesGroupedByDate);
         }
-        List<VacationRequest> approvedVacationsInThisWeek = filterVacationsForWorkedDays(
+        List<VacationRequest> approvedVacationsInThisWeek = expandVacationsExcludingWorkedDays(
                 allApprovedVacationsForUser.stream()
-                        .filter(vr -> vr.isApproved() && !vr.getEndDate().isBefore(weekStart) && !vr.getStartDate().isAfter(endOfWeek))
+                        .filter(vr -> vr.isApproved() && !vr.getEndDate().isBefore(weekStart) && !vr.getStartDate().isAfter(effectiveWeekEnd))
                         .collect(Collectors.toList()),
                 weekStart,
-                endOfWeek,
+                effectiveWeekEnd,
                 allUserEntriesGroupedByDate
         );
-        int expectedWeeklyMinutesAdjusted = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, weekStart, approvedVacationsInThisWeek);
+        int expectedWeeklyMinutesAdjusted = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, weekStart, effectiveWeekEnd, approvedVacationsInThisWeek);
 
         int weeklyDifference = totalWorkedMinutesInWeek - expectedWeeklyMinutesAdjusted;
         logger.debug("User: {}, Woche ab: {}, Gearbeitet: {}min, Erwartet (bereinigt): {}min, Differenz diese Woche: {}min",
@@ -590,22 +592,75 @@ public class TimeTrackingService {
         return workedMinutes - adjustedExpectedMinutes;
     }
 
-    private List<VacationRequest> filterVacationsForWorkedDays(List<VacationRequest> vacations,
-                                                               LocalDate rangeStart,
-                                                               LocalDate rangeEnd,
-                                                               Map<LocalDate, List<TimeTrackingEntry>> entriesGroupedByDate) {
-        return vacations.stream()
-                .filter(vacation -> {
-                    LocalDate overlapStart = vacation.getStartDate().isAfter(rangeStart) ? vacation.getStartDate() : rangeStart;
-                    LocalDate overlapEnd = vacation.getEndDate().isBefore(rangeEnd) ? vacation.getEndDate() : rangeEnd;
-                    for (LocalDate current = overlapStart; !current.isAfter(overlapEnd); current = current.plusDays(1)) {
-                        if (!entriesGroupedByDate.getOrDefault(current, Collections.emptyList()).isEmpty()) {
-                            return false;
-                        }
+    private List<VacationRequest> expandVacationsExcludingWorkedDays(List<VacationRequest> vacations,
+                                                                   LocalDate rangeStart,
+                                                                   LocalDate rangeEnd,
+                                                                   Map<LocalDate, List<TimeTrackingEntry>> entriesGroupedByDate) {
+        List<VacationRequest> result = new ArrayList<>();
+        for (VacationRequest vacation : vacations) {
+            LocalDate overlapStart = vacation.getStartDate().isAfter(rangeStart) ? vacation.getStartDate() : rangeStart;
+            LocalDate overlapEnd = vacation.getEndDate().isBefore(rangeEnd) ? vacation.getEndDate() : rangeEnd;
+            LocalDate segmentStart = null;
+            for (LocalDate current = overlapStart; !current.isAfter(overlapEnd); current = current.plusDays(1)) {
+                boolean hasWorkedEntries = !entriesGroupedByDate.getOrDefault(current, Collections.emptyList()).isEmpty();
+                if (hasWorkedEntries) {
+                    if (segmentStart != null) {
+                        result.add(copyVacationSegment(vacation, segmentStart, current.minusDays(1)));
+                        segmentStart = null;
                     }
-                    return true;
-                })
-                .collect(Collectors.toList());
+                    continue;
+                }
+                if (segmentStart == null) {
+                    segmentStart = current;
+                }
+            }
+            if (segmentStart != null) {
+                result.add(copyVacationSegment(vacation, segmentStart, overlapEnd));
+            }
+        }
+        return result;
+    }
+
+    private VacationRequest copyVacationSegment(VacationRequest source, LocalDate startDate, LocalDate endDate) {
+        VacationRequest segment = new VacationRequest();
+        segment.setUser(source.getUser());
+        segment.setApproved(source.isApproved());
+        segment.setDenied(source.isDenied());
+        segment.setHalfDay(source.isHalfDay() && startDate.equals(endDate));
+        segment.setUsesOvertime(source.isUsesOvertime());
+        segment.setCompanyVacation(source.isCompanyVacation());
+        segment.setAdminNote(source.getAdminNote());
+        segment.setStartDate(startDate);
+        segment.setEndDate(endDate);
+        segment.setOvertimeDeductionMinutes(source.getOvertimeDeductionMinutes());
+        return segment;
+    }
+
+    private int calculateAppliedOvertimeVacationMinutesUpTo(User user, VacationRequest vacation, LocalDate balanceCutoff) {
+        Integer originalMinutes = vacation.getOvertimeDeductionMinutes();
+        if (originalMinutes == null || originalMinutes <= 0 || vacation.getStartDate() == null || vacation.getEndDate() == null) {
+            return 0;
+        }
+        if (vacation.getStartDate().isAfter(balanceCutoff)) {
+            return 0;
+        }
+        if (!vacation.getEndDate().isAfter(balanceCutoff)) {
+            return originalMinutes;
+        }
+
+        long totalChargeableDays = countChargeableVacationDays(user, vacation.getStartDate(), vacation.getEndDate());
+        if (totalChargeableDays <= 0) {
+            return 0;
+        }
+        long elapsedChargeableDays = countChargeableVacationDays(user, vacation.getStartDate(), balanceCutoff);
+        if (elapsedChargeableDays <= 0) {
+            return 0;
+        }
+        return Math.max((int) Math.round((double) originalMinutes * elapsedChargeableDays / totalChargeableDays), 0);
+    }
+
+    LocalDate getCurrentBerlinDate() {
+        return LocalDate.now(ZoneId.of("Europe/Berlin"));
     }
 
     @Transactional
