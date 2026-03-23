@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -224,5 +226,57 @@ class VacationServiceTest {
                 null,
                 null
         ));
+    }
+
+    @Test
+    void approveVacation_doesNotDeductFutureOvertimeVacationBeforeStartDate() {
+        LocalDate today = LocalDate.of(2026, 3, 23);
+        existingRequest.setStartDate(today.plusDays(5));
+        existingRequest.setEndDate(today.plusDays(5));
+        existingRequest.setApproved(false);
+        existingRequest.setDenied(false);
+        existingRequest.setOvertimeDeductionMinutes(480);
+        employee.setTrackingBalanceInMinutes(600);
+
+        when(vacationRequestRepository.findById(10L)).thenReturn(Optional.of(existingRequest));
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        when(vacationRequestRepository.save(any(VacationRequest.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        VacationService spyService = spy(vacationService);
+        doReturn(today).when(spyService).getCurrentBerlinDate();
+
+        VacationRequest approved = spyService.approveVacation(10L, "admin");
+
+        assertThat(approved.isApproved()).isTrue();
+        assertThat(employee.getTrackingBalanceInMinutes()).isEqualTo(600);
+    }
+
+    @Test
+    void adminCreateVacation_doesNotDeductFutureOvertimeVacationBeforeStartDate() {
+        LocalDate today = LocalDate.of(2026, 3, 23);
+        employee.setTrackingBalanceInMinutes(600);
+
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+        when(userRepository.findByUsername("worker")).thenReturn(Optional.of(employee));
+        when(vacationRequestRepository.save(any(VacationRequest.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        VacationService spyService = spy(vacationService);
+        doReturn(today).when(spyService).getCurrentBerlinDate();
+
+        VacationRequest created = spyService.adminCreateVacation(
+                "admin",
+                "worker",
+                today.plusDays(7),
+                today.plusDays(7),
+                false,
+                true,
+                480
+        );
+
+        assertThat(created.isApproved()).isTrue();
+        assertThat(created.getOvertimeDeductionMinutes()).isEqualTo(480);
+        assertThat(employee.getTrackingBalanceInMinutes()).isEqualTo(600);
     }
 }
