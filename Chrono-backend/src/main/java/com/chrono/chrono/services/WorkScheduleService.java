@@ -133,37 +133,15 @@ public class WorkScheduleService {
         List<SickLeave> sickLeavesForUser = sickLeaveRepository.findByUser(user);
         List<UserHolidayOption> holidayOptionsInWeek = userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, startOfWeek, effectiveEnd);
 
-        Integer expectedWorkDays = user.getExpectedWorkDays();
-        double dailyValueHours;
-
-        if (expectedWorkDays != null && expectedWorkDays >= 1 && expectedWorkDays <= 7) {
-            dailyValueHours = percentageWeeklyHours / expectedWorkDays;
-        } else {
-            dailyValueHours = percentageWeeklyHours / 5.0; // Fallback auf 5-Tage-Woche
-            logger.warn("User {} (Percentage: {}%) has invalid or no expectedWorkDays ({}). Using 5-day week for absence calculation within week {}.",
-                    user.getUsername(), user.getWorkPercentage(), expectedWorkDays, startOfWeek);
-        }
-        int dailyValueMinutes = (int) Math.round(dailyValueHours * 60);
+        int modeledWorkDays = getModeledWorkDaysForPercentageUser(user, startOfWeek);
+        int dailyValueMinutes = (int) Math.round((percentageWeeklyHours / modeledWorkDays) * 60);
 
         for (LocalDate d = startOfWeek; !d.isAfter(effectiveEnd); d = d.plusDays(1)) {
             final LocalDate currentDate = d;
-            DayOfWeek day = d.getDayOfWeek();
 
-            // Wochenenden grundsätzlich ignorieren, es sei denn, der User hat explizit Arbeitstage am Wochenende
-            // in seinem `expectedWorkDays` Modell (was hier vereinfacht als Mo-Fr oder Mo-So angenommen wird).
-            // Eine präzisere Logik bräuchte die exakten Arbeitstage des Users.
-            // Für diese Implementierung: Wenn `expectedWorkDays` > 5, werden Sa/So potenziell als Arbeitstage gewertet.
-            boolean isPotentialWorkDayBasedOnModel = true;
-            if (expectedWorkDays <= 5 && (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY)) {
-                isPotentialWorkDayBasedOnModel = false;
+            if (!isModeledPercentageWorkDay(d, modeledWorkDays)) {
+                continue;
             }
-            if (expectedWorkDays == 6 && day == DayOfWeek.SUNDAY) { // Bei 6-Tage-Modell ist Sonntag frei
-                isPotentialWorkDayBasedOnModel = false;
-            }
-            // Bei 7-Tage-Modell sind alle Tage potenzielle Arbeitstage
-
-            if (!isPotentialWorkDayBasedOnModel) continue;
-
 
             String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
             boolean isActualHoliday = holidayService.isHoliday(d, cantonAbbreviation);
@@ -235,6 +213,23 @@ public class WorkScheduleService {
         return total;
     }
 
+    private int getModeledWorkDaysForPercentageUser(User user, LocalDate referenceDate) {
+        Integer expectedWorkDays = user.getExpectedWorkDays();
+        if (expectedWorkDays != null && expectedWorkDays >= 1 && expectedWorkDays <= 7) {
+            return expectedWorkDays;
+        }
+
+        LocalDate startOfWeek = referenceDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        logger.warn("User {} (Percentage: {}%) has invalid or no expectedWorkDays ({}). Using 5-day week for week {}.",
+                user.getUsername(), user.getWorkPercentage(), expectedWorkDays, startOfWeek);
+        return 5;
+    }
+
+    private boolean isModeledPercentageWorkDay(LocalDate date, int modeledWorkDays) {
+        int dayIndex = date.getDayOfWeek().getValue(); // Monday=1 ... Sunday=7
+        return dayIndex <= modeledWorkDays;
+    }
+
 
     public int computeExpectedWorkMinutes(User user, LocalDate date, List<VacationRequest> approvedVacationsForUser) {
         // Logik für prozentuale Mitarbeiter (Wochenbasis wird im TimeTrackingService gehandhabt)
@@ -265,9 +260,11 @@ public class WorkScheduleService {
             // Wenn kein voller freier Tag (Feiertag/Urlaub/Krankheit), berechne den anteiligen Tageswert
             double baseFullTimeWeeklyHours = BASE_FULL_TIME_WEEKLY_HOURS;
             double percentageWeeklyHours = baseFullTimeWeeklyHours * (user.getWorkPercentage() / 100.0);
-            Integer expectedWorkDays = user.getExpectedWorkDays() != null && user.getExpectedWorkDays() > 0 ? user.getExpectedWorkDays() : 5;
-            double dailyValueHours = percentageWeeklyHours / expectedWorkDays;
-            int dailyMinutes = (int) Math.round(dailyValueHours * 60);
+            int modeledWorkDays = getModeledWorkDaysForPercentageUser(user, date);
+            if (!isModeledPercentageWorkDay(date, modeledWorkDays)) {
+                return 0;
+            }
+            int dailyMinutes = (int) Math.round((percentageWeeklyHours / modeledWorkDays) * 60);
 
             // Halbtägige Abwesenheiten reduzieren dieses Tagessoll
             for (VacationRequest vr : approvedVacationsForUser) {
