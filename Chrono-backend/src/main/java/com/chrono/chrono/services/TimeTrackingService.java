@@ -464,7 +464,8 @@ public class TimeTrackingService {
             freshUser.setTrackingBalanceInMinutes(0);
         }
 
-        if (allEntriesForUser.isEmpty() && approvedVacations.isEmpty() && sickLeaveRepository.findByUser(freshUser).isEmpty()) {
+        boolean hasNoTrackedData = allEntriesForUser.isEmpty() && approvedVacations.isEmpty() && sickLeaveRepository.findByUser(freshUser).isEmpty();
+        if (hasNoTrackedData && !Boolean.TRUE.equals(freshUser.getIsPercentage())) {
             if (freshUser.getTrackingBalanceInMinutes() != 0) {
                 logger.info("Saldo für {} auf 0 gesetzt (keine Zeiteinträge oder relevante Abwesenheiten). Alter Saldo war: {}", freshUser.getUsername(), freshUser.getTrackingBalanceInMinutes());
                 freshUser.setTrackingBalanceInMinutes(0);
@@ -530,9 +531,10 @@ public class TimeTrackingService {
                     .sum();
             totalMinutesBalance -= paidOvertimeMinutes;
 
+            LocalDate balanceCutoff = lastDay;
             int overtimeVacationDeductionMinutes = approvedVacations.stream()
                     .filter(VacationRequest::isUsesOvertime)
-                    .mapToInt(vacation -> calculateAppliedOvertimeVacationMinutesUpTo(freshUser, vacation, lastDay))
+                    .mapToInt(vacation -> calculateAppliedOvertimeVacationMinutesUpTo(freshUser, vacation, balanceCutoff))
                     .sum();
             totalMinutesBalance -= overtimeVacationDeductionMinutes;
 
