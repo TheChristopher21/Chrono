@@ -268,23 +268,11 @@ public class VacationService {
             return; //
         }
 
-        int totalMinutesToDeduct; //
+        int totalMinutesToDeduct = calculateAppliedOvertimeDeductionMinutes(vr, user, getCurrentBerlinDate()); //
 
-        if (Boolean.TRUE.equals(user.getIsPercentage()) && vr.isUsesOvertime() && vr.getOvertimeDeductionMinutes() != null && vr.getOvertimeDeductionMinutes() > 0) { //
-            totalMinutesToDeduct = calculateAppliedOvertimeDeductionMinutes(vr, user, getCurrentBerlinDate()); //
+        if (Boolean.TRUE.equals(user.getIsPercentage()) && vr.getOvertimeDeductionMinutes() != null && vr.getOvertimeDeductionMinutes() > 0) { //
             logger.info("Verwende bis {} wirksame overtimeDeductionMinutes ({}) für prozentualen User {} (Antrag ID {}).",
                     getCurrentBerlinDate(), totalMinutesToDeduct, user.getUsername(), vr.getId()); //
-        } else {
-            int dailyMinutesValue = getDailyVacationMinutes(user); //
-
-            if (isHalfDay && actualWorkDaysInVacationPeriod == 1) { //
-                totalMinutesToDeduct = (int) Math.round(0.5 * dailyMinutesValue); //
-            } else {
-                totalMinutesToDeduct = (int) Math.round(actualWorkDaysInVacationPeriod * 1.0 * dailyMinutesValue); //
-            }
-            if (vr.isUsesOvertime() && vr.getOvertimeDeductionMinutes() == null) { //
-                vr.setOvertimeDeductionMinutes(totalMinutesToDeduct); //
-            }
         }
 
 
@@ -303,38 +291,65 @@ public class VacationService {
     }
 
     private int calculateAppliedOvertimeDeductionMinutes(VacationRequest vr, User user, LocalDate balanceCutoff) {
-        Integer originalMinutes = vr.getOvertimeDeductionMinutes();
-        if (originalMinutes == null || originalMinutes <= 0 || vr.getStartDate() == null || vr.getEndDate() == null) {
+        if (vr.getStartDate() == null || vr.getEndDate() == null || balanceCutoff == null) {
             return 0;
         }
         if (vr.getStartDate().isAfter(balanceCutoff)) {
+            return 0;
+        }
+
+        int originalMinutes = getPlannedOvertimeDeductionMinutes(vr, user);
+        if (originalMinutes <= 0) {
             return 0;
         }
         if (!vr.getEndDate().isAfter(balanceCutoff)) {
             return originalMinutes;
         }
 
-        long totalChargeableDays = 0;
-        for (LocalDate date = vr.getStartDate(); !date.isAfter(vr.getEndDate()); date = date.plusDays(1)) {
-            if (isChargeableVacationDay(user, date)) {
-                totalChargeableDays++;
-            }
-        }
+        long totalChargeableDays = countChargeableVacationDays(user, vr.getStartDate(), vr.getEndDate());
         if (totalChargeableDays <= 0) {
             return 0;
         }
 
-        long elapsedChargeableDays = 0;
-        for (LocalDate date = vr.getStartDate(); !date.isAfter(balanceCutoff); date = date.plusDays(1)) {
-            if (isChargeableVacationDay(user, date)) {
-                elapsedChargeableDays++;
-            }
-        }
+        long elapsedChargeableDays = countChargeableVacationDays(user, vr.getStartDate(), balanceCutoff);
         if (elapsedChargeableDays <= 0) {
             return 0;
         }
 
         return Math.max((int) Math.round((double) originalMinutes * elapsedChargeableDays / totalChargeableDays), 0);
+    }
+
+    private int getPlannedOvertimeDeductionMinutes(VacationRequest vr, User user) {
+        Integer originalMinutes = vr.getOvertimeDeductionMinutes();
+        if (originalMinutes != null && originalMinutes > 0) {
+            return originalMinutes;
+        }
+
+        long chargeableDays = countChargeableVacationDays(user, vr.getStartDate(), vr.getEndDate());
+        if (chargeableDays <= 0) {
+            return 0;
+        }
+
+        int dailyMinutesValue = getDailyVacationMinutes(user);
+        if (vr.isHalfDay() && chargeableDays == 1) {
+            return Math.max((int) Math.round(0.5 * dailyMinutesValue), 0);
+        }
+
+        return Math.max((int) Math.round(chargeableDays * 1.0 * dailyMinutesValue), 0);
+    }
+
+    private long countChargeableVacationDays(User user, LocalDate start, LocalDate end) {
+        if (start == null || end == null || start.isAfter(end)) {
+            return 0;
+        }
+
+        long chargeableDays = 0;
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            if (isChargeableVacationDay(user, date)) {
+                chargeableDays++;
+            }
+        }
+        return chargeableDays;
     }
 
     private int restoreOvertimeForVacation(VacationRequest vr, String logContext) {
@@ -348,28 +363,13 @@ public class VacationService {
             return 0;
         }
 
-        int minutesToRestore;
+        int minutesToRestore = calculateAppliedOvertimeDeductionMinutes(vr, user, getCurrentBerlinDate());
         if (vr.getOvertimeDeductionMinutes() != null && vr.getOvertimeDeductionMinutes() > 0) {
-            minutesToRestore = vr.getOvertimeDeductionMinutes();
-            logger.info("{}: Stelle {} Minuten aus gespeicherten overtimeDeductionMinutes für User '{}' wieder her (VacationRequest ID {}).",
-                    logContext, minutesToRestore, user.getUsername(), vr.getId());
+            logger.info("{}: Stelle {} bis {} wirksame Minuten aus overtimeDeductionMinutes für User '{}' wieder her (VacationRequest ID {}).",
+                    logContext, minutesToRestore, getCurrentBerlinDate(), user.getUsername(), vr.getId());
         } else {
-            long actualWorkDaysInVacationPeriod = 0;
-            for (LocalDate date = vr.getStartDate(); !date.isAfter(vr.getEndDate()); date = date.plusDays(1)) {
-                if (isChargeableVacationDay(user, date)) {
-                    actualWorkDaysInVacationPeriod++;
-                }
-            }
-            if (actualWorkDaysInVacationPeriod > 0) {
-                int dailyMinutesValue = getDailyVacationMinutes(user);
-                minutesToRestore = (int) Math.round(actualWorkDaysInVacationPeriod * (vr.isHalfDay() && actualWorkDaysInVacationPeriod == 1 ? 0.5 : 1.0) * dailyMinutesValue);
-                logger.info("{}: Stelle {} Minuten (berechnet) für User '{}' wieder her (VacationRequest ID {}, Arbeitstage: {}).",
-                        logContext, minutesToRestore, user.getUsername(), vr.getId(), actualWorkDaysInVacationPeriod);
-            } else {
-                minutesToRestore = 0;
-                logger.info("{}: Keine Arbeitstage im Zeitraum für VacationRequest ID {}. Keine Minuten für User '{}' wiederherzustellen.",
-                        logContext, vr.getId(), user.getUsername());
-            }
+            logger.info("{}: Stelle {} bis {} wirksame berechnete Minuten für User '{}' wieder her (VacationRequest ID {}).",
+                    logContext, minutesToRestore, getCurrentBerlinDate(), user.getUsername(), vr.getId());
         }
 
         if (minutesToRestore > 0) {
