@@ -238,6 +238,7 @@ class TimeTrackingServiceTest {
         when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
         when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
         when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), any(LocalDate.class), any())).thenReturn(480);
 
         timeTrackingService.handlePunch("alice", TimeTrackingEntry.PunchSource.MANUAL_PUNCH, null, null, null, null, null);
 
@@ -263,6 +264,7 @@ class TimeTrackingServiceTest {
         when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
         when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
         when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), any(LocalDate.class), any())).thenReturn(480);
 
         timeTrackingService.handlePunch("alice", TimeTrackingEntry.PunchSource.MANUAL_PUNCH, null, null, null, null, null);
 
@@ -288,6 +290,7 @@ class TimeTrackingServiceTest {
         when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
         when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
         when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), any(LocalDate.class), any())).thenReturn(480);
 
         timeTrackingService.handlePunch("alice", TimeTrackingEntry.PunchSource.MANUAL_PUNCH, null, null, null, null, null);
 
@@ -317,6 +320,7 @@ class TimeTrackingServiceTest {
         when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
         when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
         when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), any(LocalDate.class), any())).thenReturn(480);
 
         timeTrackingService.handlePunch("alice", TimeTrackingEntry.PunchSource.MANUAL_PUNCH, null, null, null, null, null);
 
@@ -402,8 +406,6 @@ class TimeTrackingServiceTest {
         LocalDate monday = LocalDate.of(2024, 1, 1);
         TimeTrackingEntry start = entry(user, monday.atTime(8, 0), TimeTrackingEntry.PunchType.START);
         TimeTrackingEntry end = entry(user, monday.atTime(16, 0), TimeTrackingEntry.PunchType.ENDE);
-        start.setEntryDate(monday);
-        end.setEntryDate(monday);
 
         VacationRequest vacation = new VacationRequest();
         vacation.setApproved(true);
@@ -428,8 +430,6 @@ class TimeTrackingServiceTest {
 
         TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
         TimeTrackingEntry end = entry(user, date.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE);
-        start.setEntryDate(date);
-        end.setEntryDate(date);
 
         VacationRequest overtimeVacation = new VacationRequest();
         overtimeVacation.setApproved(true);
@@ -457,8 +457,6 @@ class TimeTrackingServiceTest {
 
         TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
         TimeTrackingEntry end = entry(user, date.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE);
-        start.setEntryDate(date);
-        end.setEntryDate(date);
 
         VacationRequest overtimeVacation = new VacationRequest();
         overtimeVacation.setApproved(true);
@@ -526,7 +524,6 @@ class TimeTrackingServiceTest {
         when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
         when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(overtimeVacation));
         when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
-        when(payslipRepository.findByUser(user)).thenReturn(Collections.emptyList());
 
         TimeTrackingService spyService = spy(timeTrackingService);
         doReturn(today).when(spyService).getCurrentBerlinDate();
@@ -546,8 +543,6 @@ class TimeTrackingServiceTest {
         LocalDate tuesday = monday.plusDays(1);
         TimeTrackingEntry start = entry(user, tuesday.atTime(8, 0), TimeTrackingEntry.PunchType.START);
         TimeTrackingEntry end = entry(user, tuesday.atTime(16, 0), TimeTrackingEntry.PunchType.ENDE);
-        start.setEntryDate(tuesday);
-        end.setEntryDate(tuesday);
 
         VacationRequest vacation = new VacationRequest();
         vacation.setApproved(true);
