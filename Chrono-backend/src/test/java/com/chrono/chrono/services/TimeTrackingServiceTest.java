@@ -37,6 +37,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -412,7 +414,7 @@ class TimeTrackingServiceTest {
         when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(vacation));
         when(timeTrackingEntryRepository.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(eq(user), any(), any()))
                 .thenReturn(List.of(start, end));
-        when(workScheduleService.getExpectedWeeklyMinutesForPercentageUser(eq(user), eq(monday), argThat(List::isEmpty))).thenReturn(2550);
+        when(workScheduleService.getExpectedWeeklyMinutesForPercentageUser(eq(user), eq(monday), eq(monday.plusDays(6)), argThat(List::isEmpty))).thenReturn(2550);
         when(dailyNoteRepository.findByUserAndNoteDate(eq(user), eq(monday))).thenReturn(Optional.empty());
 
         int diff = timeTrackingService.getWeeklyBalance(user, monday);
@@ -484,6 +486,88 @@ class TimeTrackingServiceTest {
     }
 
 
+    @Test
+    void rebuildUserBalance_percentageUserUsesOnlyElapsedDaysOfCurrentWeek() {
+        user.setIsPercentage(true);
+        user.setWorkPercentage(60);
+        user.setExpectedWorkDays(5);
+        user.setTrackingBalanceInMinutes(0);
+
+        LocalDate monday = LocalDate.of(2026, 3, 23);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(Collections.emptyList());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(payslipRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(workScheduleService.getExpectedWeeklyMinutesForPercentageUser(eq(user), eq(monday), eq(monday), any())).thenReturn(306);
+
+        TimeTrackingService spyService = spy(timeTrackingService);
+        doReturn(monday).when(spyService).getCurrentBerlinDate();
+
+        spyService.rebuildUserBalance(user);
+
+        assertEquals(-306, user.getTrackingBalanceInMinutes());
+    }
+
+    @Test
+    void rebuildUserBalance_ignoresFutureOvertimeVacationDeductionUntilVacationStarts() {
+        user.setTrackingBalanceInMinutes(0);
+
+        LocalDate today = LocalDate.of(2026, 3, 23);
+        VacationRequest overtimeVacation = new VacationRequest();
+        overtimeVacation.setApproved(true);
+        overtimeVacation.setUsesOvertime(true);
+        overtimeVacation.setStartDate(today.plusDays(10));
+        overtimeVacation.setEndDate(today.plusDays(10));
+        overtimeVacation.setOvertimeDeductionMinutes(510);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(overtimeVacation));
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(payslipRepository.findByUser(user)).thenReturn(Collections.emptyList());
+
+        TimeTrackingService spyService = spy(timeTrackingService);
+        doReturn(today).when(spyService).getCurrentBerlinDate();
+
+        spyService.rebuildUserBalance(user);
+
+        assertEquals(0, user.getTrackingBalanceInMinutes());
+    }
+
+    @Test
+    void getWeeklyBalance_percentageUserKeepsVacationOnOtherDaysWhenOneVacationDayHasPunches() {
+        user.setIsPercentage(true);
+        user.setWorkPercentage(100);
+        user.setExpectedWorkDays(5);
+
+        LocalDate monday = LocalDate.of(2024, 1, 1);
+        LocalDate tuesday = monday.plusDays(1);
+        TimeTrackingEntry start = entry(user, tuesday.atTime(8, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, tuesday.atTime(16, 0), TimeTrackingEntry.PunchType.ENDE);
+        start.setEntryDate(tuesday);
+        end.setEntryDate(tuesday);
+
+        VacationRequest vacation = new VacationRequest();
+        vacation.setApproved(true);
+        vacation.setStartDate(monday);
+        vacation.setEndDate(tuesday);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(List.of(vacation));
+        when(timeTrackingEntryRepository.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(eq(user), any(), any()))
+                .thenReturn(List.of(start, end));
+        when(workScheduleService.getExpectedWeeklyMinutesForPercentageUser(eq(user), eq(monday), eq(monday.plusDays(6)), argThat(vacations ->
+                vacations.size() == 1
+                        && vacations.get(0).getStartDate().equals(monday)
+                        && vacations.get(0).getEndDate().equals(monday)))).thenReturn(1920);
+        when(dailyNoteRepository.findByUserAndNoteDate(eq(user), eq(tuesday))).thenReturn(Optional.empty());
+
+        int diff = timeTrackingService.getWeeklyBalance(user, monday);
+
+        assertEquals(-1440, diff);
+    }
 
     private void invokeClearVacationOnPunchDay(User user, LocalDate punchDay) throws Exception {
         Method method = TimeTrackingService.class.getDeclaredMethod("clearVacationOnPunchDay", User.class, LocalDate.class);
