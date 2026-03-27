@@ -10,6 +10,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/chat")
@@ -27,7 +28,9 @@ public class ChatController {
         if (principal != null) {
             user = userService.getUserByUsername(principal.getName());
         }
-        String answer = chatService.ask(req.getMessage(), user);
+        String message = req != null ? req.getMessage() : null;
+        List<ChatRequest.ChatMessage> history = req != null ? req.getHistory() : List.of();
+        String answer = chatService.ask(message, history, user);
         return ResponseEntity.ok(new ChatResponse(answer));
     }
 }

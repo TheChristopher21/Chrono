@@ -1,21 +1,30 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.dto.ChatRequest;
 import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.entities.CompanyKnowledge;
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpEntity;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -47,6 +56,8 @@ class ChatServiceTest {
                 vacationService,
                 userRepository
         );
+        ReflectionTestUtils.setField(chatService, "llmBaseUrl", "http://llm.test/api/generate");
+        ReflectionTestUtils.setField(chatService, "modelName", "llama3:8b");
 
         Company company = new Company();
         company.setId(1L);
@@ -60,6 +71,7 @@ class ChatServiceTest {
         employee = new User();
         employee.setUsername("max");
         employee.setCompany(company);
+        employee.setRoles(Set.of(new Role("ROLE_USER")));
         employee.setAnnualVacationDays(30);
         employee.setTrackingBalanceInMinutes(125);
     }
@@ -74,7 +86,7 @@ class ChatServiceTest {
         assertThat(answer).contains("max");
         assertThat(answer).contains("Resturlaub");
         assertThat(answer).contains("18,5");
-        verify(restTemplate, never()).postForObject(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(String.class));
+        verify(restTemplate, never()).postForObject(anyString(), any(), eq(String.class));
     }
 
     @Test
@@ -100,9 +112,68 @@ class ChatServiceTest {
         normalUser.setUsername("anna");
         normalUser.setTrackingBalanceInMinutes(90);
 
-        String answer = chatService.ask("Wie viele Überstunden habe ich?", normalUser);
+        String answer = chatService.ask("Wie viele Ueberstunden habe ich?", normalUser);
 
         assertThat(answer).contains("1:30");
-        verify(restTemplate, never()).postForObject(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq(String.class));
+        verify(restTemplate, never()).postForObject(anyString(), any(), eq(String.class));
+    }
+
+    @Test
+    void ask_includesHistoryAndGeneralKnowledgeInstruction_whenLlmIsUsed() {
+        when(companyKnowledgeService.findByCompany(admin.getCompany())).thenReturn(List.of());
+        when(restTemplate.postForObject(anyString(), any(), eq(String.class)))
+                .thenReturn("{\"response\":\"Paris ist die Hauptstadt von Frankreich.\"}");
+
+        List<ChatRequest.ChatMessage> history = List.of(
+                new ChatRequest.ChatMessage("user", "Wir sprechen ueber Europa."),
+                new ChatRequest.ChatMessage("bot", "Klar, frag mich etwas dazu.")
+        );
+
+        String answer = chatService.ask("Was ist die Hauptstadt von Frankreich?", history, admin);
+
+        assertThat(answer).contains("Paris");
+
+        ArgumentCaptor<HttpEntity> requestCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).postForObject(anyString(), requestCaptor.capture(), eq(String.class));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = (Map<String, Object>) requestCaptor.getValue().getBody();
+        String prompt = (String) body.get("prompt");
+
+        assertThat(prompt).contains("allgemeine Wissensfragen ausserhalb von Chrono");
+        assertThat(prompt).contains("Wir sprechen ueber Europa.");
+        assertThat(prompt).contains("Was ist die Hauptstadt von Frankreich?");
+    }
+
+    @Test
+    void ask_keepsAdminOnlyKnowledgeOutOfPrompt_forRegularUsers() {
+        CompanyKnowledge publicDoc = new CompanyKnowledge(
+                employee.getCompany(),
+                "Urlaubsprozess",
+                "Alle Mitarbeitenden beantragen Urlaub im Portal.",
+                CompanyKnowledge.AccessLevel.ALL
+        );
+        CompanyKnowledge adminDoc = new CompanyKnowledge(
+                employee.getCompany(),
+                "Budgetfreigaben",
+                "Nur Admins sehen interne Budgetgrenzen.",
+                CompanyKnowledge.AccessLevel.ADMIN_ONLY
+        );
+
+        when(companyKnowledgeService.findByCompany(employee.getCompany())).thenReturn(List.of(publicDoc, adminDoc));
+        when(restTemplate.postForObject(anyString(), any(), eq(String.class)))
+                .thenReturn("{\"response\":\"Nutze das Portal.\"}");
+
+        chatService.ask("Wie funktioniert unser Urlaubsprozess?", List.of(), employee);
+
+        ArgumentCaptor<HttpEntity> requestCaptor = ArgumentCaptor.forClass(HttpEntity.class);
+        verify(restTemplate).postForObject(anyString(), requestCaptor.capture(), eq(String.class));
+
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = (Map<String, Object>) requestCaptor.getValue().getBody();
+        String prompt = (String) body.get("prompt");
+
+        assertThat(prompt).contains("Alle Mitarbeitenden beantragen Urlaub im Portal.");
+        assertThat(prompt).doesNotContain("Nur Admins sehen interne Budgetgrenzen.");
     }
 }
