@@ -1,0 +1,543 @@
+diff --git a/Chrono-frontend/src/components/CustomerTimeAssignModal.jsx b/Chrono-frontend/src/components/CustomerTimeAssignModal.jsx
+index 83e187c7..5e3b8bf3 100644
+--- a/Chrono-frontend/src/components/CustomerTimeAssignModal.jsx
++++ b/Chrono-frontend/src/components/CustomerTimeAssignModal.jsx
+@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
+ import { useNotification } from '../context/NotificationContext';
+ import { formatTime, minutesToHHMM } from '../utils/timeUtils';
+ import { formatDate, formatLocalDate } from '../utils/dateUtils';
++import { filterProjectsByCustomer, projectMatchesCustomer } from '../utils/projectSelection';
+ 
+ 
+ const createTimeBlocks = (entries) => {
+@@ -41,7 +42,17 @@ const CustomerTimeAssignModal = ({ t, day, summary, customers, projects, onClose
+   const handleBlockChange = (index, field, value) => {
+     setTimeBlocks(prev => {
+       const blocks = [...prev];
+-      blocks[index] = { ...blocks[index], [field]: value };
++      const nextBlock = { ...blocks[index], [field]: value };
++
++      if (field === 'customerId' && nextBlock.projectId) {
++        const selectedProject = projects.find((project) => String(project.id) === String(nextBlock.projectId));
++
++        if (selectedProject && !projectMatchesCustomer(selectedProject, value)) {
++          nextBlock.projectId = '';
++        }
++      }
++
++      blocks[index] = nextBlock;
+       return blocks;
+     });
+   };
+@@ -90,7 +101,10 @@ const CustomerTimeAssignModal = ({ t, day, summary, customers, projects, onClose
+           {timeBlocks.length === 0 ? (
+             <p className="no-blocks-message">{t('assignCustomer.noBlocks', 'Keine vollständigen Zeitblöcke zum Bearbeiten gefunden.')}</p>
+           ) : (
+-            timeBlocks.map((block, index) => (
++            timeBlocks.map((block, index) => {
++              const availableProjects = filterProjectsByCustomer(projects, block.customerId);
++
++              return (
+               <div key={index} className="time-block-card">
+                 <div className="time-block-header">
+                   <span className="time-range">
+@@ -109,12 +123,13 @@ const CustomerTimeAssignModal = ({ t, day, summary, customers, projects, onClose
+                     <label htmlFor={`project-${index}`}>{t('projectLabel', 'Projekt')}</label>
+                     <select id={`project-${index}`} value={block.projectId} onChange={e => handleBlockChange(index, 'projectId', e.target.value)}>
+                       <option value="">{t('noProject', 'Kein Projekt')}</option>
+-                      {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
++                      {availableProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                     </select>
+                   </div>
+                 </div>
+               </div>
+-            ))
++              );
++            })
+           )}
+         </div>
+         <footer className="modal-footer">
+diff --git a/Chrono-frontend/src/context/NotificationContext.jsx b/Chrono-frontend/src/context/NotificationContext.jsx
+index 9613eeab..7573392e 100644
+--- a/Chrono-frontend/src/context/NotificationContext.jsx
++++ b/Chrono-frontend/src/context/NotificationContext.jsx
+@@ -7,6 +7,20 @@ export const NotificationContext = createContext({
+     notify: () => {},
+ });
+ 
++function normalizeNotificationType(type) {
++    const normalized = String(type || "info").toLowerCase();
++
++    if (normalized === "warning") {
++        return "warn";
++    }
++
++    if (["success", "info", "warn", "error"].includes(normalized)) {
++        return normalized;
++    }
++
++    return "info";
++}
++
+ export function NotificationProvider({ children }) {
+     const { t } = useTranslation();
+     const [toast, setToast] = useState({ message: "", type: "info" });
+@@ -21,19 +35,20 @@ export function NotificationProvider({ children }) {
+ 
+     /**
+      * notify("Text")
+-     * notify({ message: "Text", type: "success" | "info" | "warn" | "error", duration: 3500 })
++     * notify("Text", "error", 5000)
++     * notify({ message: "Text", type: "success" | "info" | "warn" | "warning" | "error", duration: 3500 })
+      */
+-    function notify(input) {
++    function notify(input, legacyType, legacyDuration) {
+         let message = "";
+-        let type = "info";
+-        let duration = 3500;
++        let type = normalizeNotificationType(legacyType);
++        let duration = Number(legacyDuration) || 3500;
+ 
+         if (typeof input === "string") {
+             message = input;
+         } else if (input && typeof input === "object") {
+             message = input.message ?? "";
+-            type = input.type ?? "info";
+-            duration = Number(input.duration) || 3500;
++            type = normalizeNotificationType(input.type ?? legacyType);
++            duration = Number(input.duration ?? legacyDuration) || 3500;
+         }
+ 
+         if (!message) return;
+diff --git a/Chrono-frontend/src/pages/HourlyDashboard/HourlyDashboard.jsx b/Chrono-frontend/src/pages/HourlyDashboard/HourlyDashboard.jsx
+index aa24d954..b36c1f48 100644
+--- a/Chrono-frontend/src/pages/HourlyDashboard/HourlyDashboard.jsx
++++ b/Chrono-frontend/src/pages/HourlyDashboard/HourlyDashboard.jsx
+@@ -10,6 +10,7 @@ import { useTranslation } from '../../context/LanguageContext';
+ import { useAuth } from "../../context/AuthContext.jsx";
+ import { useUserData } from '../../hooks/useUserData';
+ import { useCustomers } from '../../context/CustomerContext';
++import { filterProjectsByCustomer, projectMatchesCustomer } from '../../utils/projectSelection';
+ import jsPDF from 'jspdf';
+ import autoTable from "jspdf-autotable";
+ 
+@@ -83,7 +84,8 @@ const HourlyDashboard = () => {
+             fetchDataForUser();
+         } catch (error) {
+             console.error('Punch Error:', error);
+-            notify(error.message || t('punchError', 'Fehler beim Stempeln'), 'error');
++            const errorMessage = error.response?.data?.message || t('punchError', 'Fehler beim Stempeln');
++            notify(errorMessage, 'error');
+         }
+     };
+ 
+@@ -203,6 +205,31 @@ const assignCustomerForDay = async (isoDate, customerId) => {
+         }
+     }, [selectedProjectId]);
+ 
++    useEffect(() => {
++        if (!selectedProjectId) {
++            return;
++        }
++
++        const selectedProject = projects.find((project) => String(project.id) === String(selectedProjectId));
++
++        if (!selectedProject) {
++            setSelectedProjectId('');
++            setSelectedTaskId('');
++            return;
++        }
++
++        if (!projectMatchesCustomer(selectedProject, selectedCustomerId)) {
++            setSelectedProjectId('');
++            setSelectedTaskId('');
++        }
++    }, [projects, selectedCustomerId, selectedProjectId]);
++
++    useEffect(() => {
++        if (selectedTaskId && !tasks.some((task) => String(task.id) === String(selectedTaskId))) {
++            setSelectedTaskId('');
++        }
++    }, [tasks, selectedTaskId]);
++
+     useEffect(() => {
+         if (currentUser) {
+             fetchDataForUser();
+@@ -306,6 +333,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
+     };
+ 
+     const weeklyTotalMins = dailySummaries.reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
++    const availableProjects = filterProjectsByCustomer(projects, selectedCustomerId);
+ 
+     if (!currentUser || !userProfile) {
+         return <div>Wird geladen...</div>;
+@@ -336,6 +364,7 @@ const assignCustomerForDay = async (isoDate, customerId) => {
+                 customers={customers}
+                 recentCustomers={recentCustomers}
+                 projects={projects}
++                availableProjects={availableProjects}
+                 tasks={tasks}
+                 selectedCustomerId={selectedCustomerId}
+                 setSelectedCustomerId={setSelectedCustomerId}
+diff --git a/Chrono-frontend/src/pages/HourlyDashboard/HourlyWeekOverview.jsx b/Chrono-frontend/src/pages/HourlyDashboard/HourlyWeekOverview.jsx
+index 71133cd8..ddd525f0 100644
+--- a/Chrono-frontend/src/pages/HourlyDashboard/HourlyWeekOverview.jsx
++++ b/Chrono-frontend/src/pages/HourlyDashboard/HourlyWeekOverview.jsx
+@@ -31,6 +31,7 @@ const HourlyWeekOverview = ({
+                                 customers,
+                                 recentCustomers,
+                                 projects,
++                                availableProjects,
+                                 tasks,
+                                 selectedCustomerId,
+                                 setSelectedCustomerId,
+@@ -138,7 +139,7 @@ const HourlyWeekOverview = ({
+                         </select>
+                         <select value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}>
+                             <option value="">{t('noProject','Kein Projekt')}</option>
+-                            {projects.map(p => (
++                            {availableProjects.map(p => (
+                                 <option key={p.id} value={p.id}>{p.name}</option>
+                             ))}
+                         </select>
+@@ -369,6 +370,7 @@ HourlyWeekOverview.propTypes = {
+     customers: PropTypes.array,
+     recentCustomers: PropTypes.array,
+     projects: PropTypes.array,
++    availableProjects: PropTypes.array,
+     tasks: PropTypes.array,
+     selectedCustomerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+     setSelectedCustomerId: PropTypes.func,
+diff --git a/Chrono-frontend/src/pages/PercentageDashboard/PercentageDashboard.jsx b/Chrono-frontend/src/pages/PercentageDashboard/PercentageDashboard.jsx
+index 0b1d06a1..10584dc0 100644
+--- a/Chrono-frontend/src/pages/PercentageDashboard/PercentageDashboard.jsx
++++ b/Chrono-frontend/src/pages/PercentageDashboard/PercentageDashboard.jsx
+@@ -7,6 +7,7 @@ import { useNotification } from '../../context/NotificationContext';
+ import { useTranslation } from '../../context/LanguageContext';
+ import { useAuth } from "../../context/AuthContext.jsx";
+ import { useCustomers } from '../../context/CustomerContext';
++import { filterProjectsByCustomer, projectMatchesCustomer } from '../../utils/projectSelection';
+ import jsPDF from 'jspdf';
+ import { parseISO } from 'date-fns';
+ import { useUserData } from '../../hooks/useUserData';
+@@ -135,6 +136,31 @@ const PercentageDashboard = () => {
+         }
+     }, [selectedProjectId]);
+ 
++    useEffect(() => {
++        if (!selectedProjectId) {
++            return;
++        }
++
++        const selectedProject = projects.find((project) => String(project.id) === String(selectedProjectId));
++
++        if (!selectedProject) {
++            setSelectedProjectId('');
++            setSelectedTaskId('');
++            return;
++        }
++
++        if (!projectMatchesCustomer(selectedProject, selectedCustomerId)) {
++            setSelectedProjectId('');
++            setSelectedTaskId('');
++        }
++    }, [projects, selectedCustomerId, selectedProjectId]);
++
++    useEffect(() => {
++        if (selectedTaskId && !tasks.some((task) => String(task.id) === String(selectedTaskId))) {
++            setSelectedTaskId('');
++        }
++    }, [tasks, selectedTaskId]);
++
+     const fetchDataForUser = useCallback(async () => {
+         if (!userProfile?.username) return;
+         try {
+@@ -221,7 +247,8 @@ const PercentageDashboard = () => {
+             fetchDataForUser();
+         } catch (error) {
+             console.error('Punch Error:', error);
+-            notify(error.message || t('punchError', 'Fehler beim Stempeln'), 'error');
++            const errorMessage = error.response?.data?.message || t('punchError', 'Fehler beim Stempeln');
++            notify(errorMessage, 'error');
+         }
+     };
+ 
+@@ -346,12 +373,13 @@ const PercentageDashboard = () => {
+     }, 0);
+     const weeklyDiff = weeklyWorked - weeklyExpected;
+     const overtimeBalanceStr = minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0);
++    const availableProjects = filterProjectsByCustomer(projects, selectedCustomerId);
+ 
+     if (!userProfile) {
+         return ( <div className="percentage-dashboard scoped-dashboard"><Navbar /><div className="skeleton-card"></div></div> );
+     }
+     if (!userProfile.isPercentage) {
+-        navigate("/user", { replace: true });
++        navigate("/dashboard", { replace: true });
+         return null;
+     }
+ 
+@@ -395,10 +423,12 @@ const PercentageDashboard = () => {
+                     customers={customers}
+                     recentCustomers={recentCustomers}
+                     projects={projects}
++                    availableProjects={availableProjects}
+                     tasks={tasks}
+                     selectedCustomerId={selectedCustomerId}
+                     setSelectedCustomerId={setSelectedCustomerId}
+                     selectedProjectId={selectedProjectId}
++                    setSelectedProjectId={setSelectedProjectId}
+                     selectedTaskId={selectedTaskId}
+                     setSelectedTaskId={setSelectedTaskId}
+                     vacationRequests={vacationRequests}
+@@ -458,4 +488,4 @@ const PercentageDashboard = () => {
+     );
+ };
+ 
+-export default PercentageDashboard;
+\ No newline at end of file
++export default PercentageDashboard;
+diff --git a/Chrono-frontend/src/pages/PercentageDashboard/PercentageWeekOverview.jsx b/Chrono-frontend/src/pages/PercentageDashboard/PercentageWeekOverview.jsx
+index e6c4b4aa..70b411a5 100644
+--- a/Chrono-frontend/src/pages/PercentageDashboard/PercentageWeekOverview.jsx
++++ b/Chrono-frontend/src/pages/PercentageDashboard/PercentageWeekOverview.jsx
+@@ -30,6 +30,7 @@ const PercentageWeekOverview = ({
+                                     customers,
+                                     recentCustomers,
+                                     projects,
++                                    availableProjects,
+                                     tasks,
+                                     selectedCustomerId,
+                                     setSelectedCustomerId,
+@@ -82,7 +83,7 @@ const PercentageWeekOverview = ({
+                         </select>
+                         <select value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}>
+                             <option value="">{t('noProject','Kein Projekt')}</option>
+-                            {projects.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
++                            {availableProjects.map(p => (<option key={p.id} value={p.id}>{p.name}</option>))}
+                         </select>
+                         <select value={selectedTaskId} onChange={e => setSelectedTaskId(e.target.value)}>
+                             <option value="">{t('noTask','Keine Aufgabe')}</option>
+@@ -278,6 +279,7 @@ PercentageWeekOverview.propTypes = {
+     customers: PropTypes.array,
+     recentCustomers: PropTypes.array,
+     projects: PropTypes.array,
++    availableProjects: PropTypes.array,
+     tasks: PropTypes.array,
+     selectedCustomerId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+     setSelectedCustomerId: PropTypes.func,
+diff --git a/Chrono-frontend/src/pages/UserDashboard/UserDashboard.jsx b/Chrono-frontend/src/pages/UserDashboard/UserDashboard.jsx
+index 6212672c..7e157c6e 100644
+--- a/Chrono-frontend/src/pages/UserDashboard/UserDashboard.jsx
++++ b/Chrono-frontend/src/pages/UserDashboard/UserDashboard.jsx
+@@ -18,6 +18,7 @@ import jsPDF from "jspdf";
+ import autoTable from "jspdf-autotable";
+ 
+ import { useCustomers } from '../../context/CustomerContext';
++import { filterProjectsByCustomer, projectMatchesCustomer } from '../../utils/projectSelection';
+ 
+ import {
+     getMondayOfWeek,
+@@ -190,6 +191,31 @@ function UserDashboard() {
+         }
+     }, [selectedProjectId]);
+ 
++    useEffect(() => {
++        if (!selectedProjectId) {
++            return;
++        }
++
++        const selectedProject = projects.find((project) => String(project.id) === String(selectedProjectId));
++
++        if (!selectedProject) {
++            setSelectedProjectId('');
++            setSelectedTaskId('');
++            return;
++        }
++
++        if (!projectMatchesCustomer(selectedProject, selectedCustomerId)) {
++            setSelectedProjectId('');
++            setSelectedTaskId('');
++        }
++    }, [projects, selectedCustomerId, selectedProjectId]);
++
++    useEffect(() => {
++        if (selectedTaskId && !tasks.some((task) => String(task.id) === String(selectedTaskId))) {
++            setSelectedTaskId('');
++        }
++    }, [tasks, selectedTaskId]);
++
+     const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
+         const cantonKey = cantonAbbreviation || 'GENERAL';
+         if (holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
+@@ -265,7 +291,8 @@ function UserDashboard() {
+             loadProfileAndInitialData();
+         } catch (err) {
+             console.error('Punch-Fehler:', err);
+-            notify(t("manualPunchError", "Fehler beim manuellen Stempeln."), 'error');
++            const errorMessage = err.response?.data?.message || t("manualPunchError", "Fehler beim manuellen Stempeln.");
++            notify(errorMessage, 'error');
+         }
+     }
+ 
+@@ -315,6 +342,7 @@ function UserDashboard() {
+         const reqDate = parseISO(req.requestDate);
+         return reqDate >= selectedMonday && reqDate < addDays(selectedMonday, 7);
+     })).slice().sort((a, b) => (parseISO(b.requestDate) || 0) - (parseISO(a.requestDate) || 0));
++    const filteredProjects = filterProjectsByCustomer(projects, selectedCustomerId);
+ 
+     function openCorrectionModalForDay(dateObj) {
+         const isoDate = formatLocalDate(dateObj);
+@@ -497,7 +525,7 @@ function UserDashboard() {
+                                 </select>
+                                 <select value={selectedProjectId} onChange={e => setSelectedProjectId(e.target.value)}>
+                                     <option value="">{t('noProject','Kein Projekt')}</option>
+-                                    {projects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
++                                    {filteredProjects.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                 </select>
+                                 <select value={selectedTaskId} onChange={e => setSelectedTaskId(e.target.value)}>
+                                     <option value="">{t('noTask','Keine Aufgabe')}</option>
+diff --git a/Chrono-frontend/src/test/NotificationContext.test.jsx b/Chrono-frontend/src/test/NotificationContext.test.jsx
+new file mode 100644
+index 0000000..7efc9d0
+--- /dev/null
++++ b/Chrono-frontend/src/test/NotificationContext.test.jsx
+@@ -0,0 +1,60 @@
++import React from 'react';
++import { fireEvent, render, screen } from '@testing-library/react';
++import { describe, expect, it } from 'vitest';
++
++import { NotificationProvider, useNotification } from '../context/NotificationContext.jsx';
++import { LanguageProvider } from '../context/LanguageContext.jsx';
++
++function NotificationHarness({ mode }) {
++    const { notify } = useNotification();
++
++    return (
++        <button
++            type="button"
++            onClick={() => {
++                if (mode === 'legacy-warning') {
++                    notify('Bitte pruefen', 'warning');
++                    return;
++                }
++
++                notify({ message: 'Fehler beim Speichern', type: 'error' });
++            }}
++        >
++            Toast ausloesen
++        </button>
++    );
++}
++
++describe('NotificationContext', () => {
++    it('supports the legacy notify(message, type) signature', async () => {
++        render(
++            <LanguageProvider>
++                <NotificationProvider>
++                    <NotificationHarness mode="legacy-warning" />
++                </NotificationProvider>
++            </LanguageProvider>
++        );
++
++        fireEvent.click(screen.getByRole('button', { name: 'Toast ausloesen' }));
++
++        const toast = await screen.findByText('Bitte pruefen');
++        expect(toast).toBeInTheDocument();
++        expect(toast.closest('.notification-toast')).toHaveClass('warn');
++    });
++
++    it('keeps object-based notifications working', async () => {
++        render(
++            <LanguageProvider>
++                <NotificationProvider>
++                    <NotificationHarness mode="object-error" />
++                </NotificationProvider>
++            </LanguageProvider>
++        );
++
++        fireEvent.click(screen.getByRole('button', { name: 'Toast ausloesen' }));
++
++        const toast = await screen.findByText('Fehler beim Speichern');
++        expect(toast).toBeInTheDocument();
++        expect(toast.closest('.notification-toast')).toHaveClass('error');
++    });
++});
+diff --git a/Chrono-frontend/src/test/projectSelection.test.js b/Chrono-frontend/src/test/projectSelection.test.js
+new file mode 100644
+index 0000000..eb46bf2
+--- /dev/null
++++ b/Chrono-frontend/src/test/projectSelection.test.js
+@@ -0,0 +1,33 @@
++import { describe, expect, it } from 'vitest';
++
++import {
++    filterProjectsByCustomer,
++    getProjectCustomerId,
++    projectMatchesCustomer,
++} from '../utils/projectSelection.js';
++
++const projects = [
++    { id: 1, name: 'Alpha', customerId: 10 },
++    { id: 2, name: 'Beta', customer: { id: 20 } },
++    { id: 3, name: 'Gamma' },
++];
++
++describe('projectSelection helpers', () => {
++    it('reads customer ids from flat and nested project shapes', () => {
++        expect(getProjectCustomerId(projects[0])).toBe('10');
++        expect(getProjectCustomerId(projects[1])).toBe('20');
++        expect(getProjectCustomerId(projects[2])).toBe('');
++    });
++
++    it('filters projects only when a customer is selected', () => {
++        expect(filterProjectsByCustomer(projects, '')).toHaveLength(3);
++        expect(filterProjectsByCustomer(projects, 10)).toEqual([projects[0]]);
++        expect(filterProjectsByCustomer(projects, '20')).toEqual([projects[1]]);
++    });
++
++    it('treats an empty customer selection as compatible', () => {
++        expect(projectMatchesCustomer(projects[0], '')).toBe(true);
++        expect(projectMatchesCustomer(projects[0], 10)).toBe(true);
++        expect(projectMatchesCustomer(projects[0], 20)).toBe(false);
++    });
++});
+diff --git a/Chrono-frontend/src/utils/projectSelection.js b/Chrono-frontend/src/utils/projectSelection.js
+new file mode 100644
+index 0000000..c8a7b01
+--- /dev/null
++++ b/Chrono-frontend/src/utils/projectSelection.js
+@@ -0,0 +1,33 @@
++export const normalizeSelectionId = (value) => {
++    if (value === null || value === undefined || value === '') {
++        return '';
++    }
++
++    return String(value);
++};
++
++export const getProjectCustomerId = (project) =>
++    normalizeSelectionId(project?.customer?.id ?? project?.customerId ?? '');
++
++export const filterProjectsByCustomer = (projects = [], customerId) => {
++    const normalizedCustomerId = normalizeSelectionId(customerId);
++    const safeProjects = Array.isArray(projects) ? projects : [];
++
++    if (!normalizedCustomerId) {
++        return safeProjects;
++    }
++
++    return safeProjects.filter(
++        (project) => getProjectCustomerId(project) === normalizedCustomerId
++    );
++};
++
++export const projectMatchesCustomer = (project, customerId) => {
++    const normalizedCustomerId = normalizeSelectionId(customerId);
++
++    if (!normalizedCustomerId) {
++        return true;
++    }
++
++    return getProjectCustomerId(project) === normalizedCustomerId;
++};
