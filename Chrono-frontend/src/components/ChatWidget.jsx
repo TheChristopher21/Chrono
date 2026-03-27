@@ -77,13 +77,20 @@ export default function ChatWidget() {
         // -----------------------
 
         const userMsg = { sender: 'user', text: input };
+        const history = messages
+            .filter(message => message?.text)
+            .slice(-8)
+            .map(message => ({
+                sender: message.sender,
+                text: message.text,
+            }));
         setMessages(m => [...m, userMsg]);
         setInput('');
         setLoading(true);
 
         try {
             // --- ÄNDERUNG HIER: Füge das Signal und einen längeren Timeout hinzu ---
-            const resp = await api.post('/api/chat', { message: userMsg.text }, {
+            const resp = await api.post('/api/chat', { message: userMsg.text, history }, {
                 signal, // Signal zum Abbrechen der Anfrage
                 timeout: 3 * 60 * 1000 // 3 Minuten Timeout in Millisekunden
             });
