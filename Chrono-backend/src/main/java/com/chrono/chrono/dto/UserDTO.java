@@ -65,6 +65,7 @@ public class UserDTO {
     private Long lastCustomerId;
     private String lastCustomerName;
     private Set<String> companyFeatureKeys;
+    private LocalDate employmentModelEffectiveFrom;
 
     public UserDTO() {
         this.roles = new ArrayList<>();
@@ -250,6 +251,7 @@ public class UserDTO {
     public String getLastCustomerName() { return lastCustomerName; }
     public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; } // Kept
     public Set<String> getCompanyFeatureKeys() { return companyFeatureKeys; }
+    public LocalDate getEmploymentModelEffectiveFrom() { return employmentModelEffectiveFrom; }
 
     // ----- Setters -----
     public void setId(Long id) { this.id = id; }
@@ -302,6 +304,7 @@ public class UserDTO {
     public void setLastCustomerId(Long lastCustomerId) { this.lastCustomerId = lastCustomerId; }
     public void setLastCustomerName(String lastCustomerName) { this.lastCustomerName = lastCustomerName; }
     public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; } // Kept
+    public void setEmploymentModelEffectiveFrom(LocalDate employmentModelEffectiveFrom) { this.employmentModelEffectiveFrom = employmentModelEffectiveFrom; }
     public void setCompanyFeatureKeys(Set<String> companyFeatureKeys) {
         this.companyFeatureKeys = companyFeatureKeys != null
                 ? new LinkedHashSet<>(companyFeatureKeys)
