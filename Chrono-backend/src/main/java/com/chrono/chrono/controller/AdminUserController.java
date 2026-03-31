@@ -2,9 +2,11 @@ package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.UserDTO;
 import com.chrono.chrono.entities.Company; // Import wieder hinzugefügt
+import com.chrono.chrono.entities.EmploymentModelType;
 import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.*;
+import com.chrono.chrono.services.EmploymentModelHistoryService;
 import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.services.VacationService;
 import org.slf4j.Logger;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map; // Fehlender Import für Map
 import java.util.Optional; // Import für Optional
@@ -55,6 +58,9 @@ public class AdminUserController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmploymentModelHistoryService employmentModelHistoryService;
 
     @GetMapping
     public ResponseEntity<List<UserDTO>> getAllUsers(Principal principal) {
@@ -247,6 +253,11 @@ public class AdminUserController {
         }
 
         User savedUser = userRepository.save(newUser);
+        employmentModelHistoryService.ensureBaselineEntry(
+                savedUser,
+                employmentModelHistoryService.deriveCurrentModel(savedUser),
+                savedUser.getEntryDate() != null ? savedUser.getEntryDate() : employmentModelHistoryService.currentBerlinDate()
+        );
         logger.info("Admin {} created new user: {}", principal.getName(), savedUser.getUsername());
         return ResponseEntity.ok(new UserDTO(savedUser));
     }
@@ -393,6 +404,13 @@ public class AdminUserController {
         }
 
 
+        LocalDate requestedEffectiveFrom = userDTO.getEmploymentModelEffectiveFrom();
+        LocalDate effectiveSwitchDate = requestedEffectiveFrom != null
+                ? requestedEffectiveFrom
+                : employmentModelHistoryService.currentBerlinDate();
+        User previousStateForHistory = resolvePreviousStateForHistory(existingUser, effectiveSwitchDate.minusDays(1));
+        EmploymentModelType previousModel = employmentModelHistoryService.deriveCurrentModel(previousStateForHistory);
+
         Boolean dtoIsHourly = userDTO.getIsHourly();
         Boolean dtoIsPercentage = userDTO.getIsPercentage();
 
@@ -467,6 +485,27 @@ public class AdminUserController {
         }
 
         User updatedUser = userRepository.save(existingUser);
+        EmploymentModelType updatedModel = employmentModelHistoryService.deriveCurrentModel(updatedUser);
+        if (updatedModel != previousModel) {
+            LocalDate baselineDate = calculateBaselineDate(updatedUser, effectiveSwitchDate);
+            employmentModelHistoryService.ensureBaselineEntry(updatedUser, previousModel, baselineDate, previousStateForHistory);
+            employmentModelHistoryService.recordModelChange(updatedUser, updatedModel, requestedEffectiveFrom);
+            logger.info("Employment model switch for user {}: {} -> {} (effective from {}).",
+                    updatedUser.getUsername(),
+                    previousModel,
+                    updatedModel,
+                    effectiveSwitchDate);
+        } else {
+            if (hasSnapshotRelevantChanges(previousStateForHistory, updatedUser)) {
+                LocalDate baselineDate = calculateBaselineDate(updatedUser, effectiveSwitchDate);
+                if (employmentModelHistoryService.needsBaselineBefore(updatedUser, baselineDate)) {
+                    employmentModelHistoryService.ensureBaselineEntry(updatedUser, previousModel, baselineDate, previousStateForHistory);
+                }
+                employmentModelHistoryService.recordSnapshotChange(updatedUser, requestedEffectiveFrom);
+            } else {
+                employmentModelHistoryService.initializeIfMissing(updatedUser);
+            }
+        }
 
         try {
             timeTrackingService.rebuildUserBalance(updatedUser);
@@ -512,4 +551,70 @@ public class AdminUserController {
         logger.info("Admin {} marked user {} as deleted", adminUser.getUsername(), userToDelete.getUsername());
         return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
     }
+
+    private User copyUserForHistory(User source) {
+        User copy = new User();
+        if (source == null) {
+            copy.setWeeklySchedule(new ArrayList<>());
+            return copy;
+        }
+        copy.setId(source.getId());
+        copy.setUsername(source.getUsername());
+        copy.setCompany(source.getCompany());
+        copy.setEntryDate(source.getEntryDate());
+        copy.setIsHourly(source.getIsHourly());
+        copy.setIsPercentage(source.getIsPercentage());
+        copy.setWorkPercentage(source.getWorkPercentage());
+        copy.setExpectedWorkDays(source.getExpectedWorkDays());
+        copy.setDailyWorkHours(source.getDailyWorkHours());
+        copy.setScheduleCycle(source.getScheduleCycle());
+        copy.setScheduleEffectiveDate(source.getScheduleEffectiveDate());
+        if (source.getWeeklySchedule() != null) {
+            List<Map<String, Double>> weeklyCopy = new ArrayList<>();
+            for (Map<String, Double> week : source.getWeeklySchedule()) {
+                weeklyCopy.add(week != null ? new HashMap<>(week) : new HashMap<>());
+            }
+            copy.setWeeklySchedule(weeklyCopy);
+        } else {
+            copy.setWeeklySchedule(new ArrayList<>());
+        }
+        return copy;
+    }
+
+    private User resolvePreviousStateForHistory(User source, LocalDate referenceDate) {
+        if (source == null || source.getId() == null) {
+            return copyUserForHistory(source);
+        }
+        if (referenceDate == null) {
+            return copyUserForHistory(source);
+        }
+        User historicalSnapshot = employmentModelHistoryService.resolveUserSnapshotForDate(source, referenceDate);
+        return copyUserForHistory(historicalSnapshot != null ? historicalSnapshot : source);
+    }
+
+    private LocalDate calculateBaselineDate(User user, LocalDate effectiveDate) {
+        if (effectiveDate == null) {
+            return null;
+        }
+        LocalDate baselineDate = user != null && user.getEntryDate() != null
+                ? user.getEntryDate()
+                : effectiveDate.minusDays(1);
+        if (!baselineDate.isBefore(effectiveDate)) {
+            baselineDate = effectiveDate.minusDays(1);
+        }
+        return baselineDate;
+    }
+
+    private boolean hasSnapshotRelevantChanges(User before, User after) {
+        if (before == null || after == null) {
+            return false;
+        }
+        if (!java.util.Objects.equals(before.getDailyWorkHours(), after.getDailyWorkHours())) return true;
+        if (!java.util.Objects.equals(before.getExpectedWorkDays(), after.getExpectedWorkDays())) return true;
+        if (!java.util.Objects.equals(before.getWorkPercentage(), after.getWorkPercentage())) return true;
+        if (!java.util.Objects.equals(before.getScheduleCycle(), after.getScheduleCycle())) return true;
+        if (!java.util.Objects.equals(before.getScheduleEffectiveDate(), after.getScheduleEffectiveDate())) return true;
+        return !java.util.Objects.equals(before.getWeeklySchedule(), after.getWeeklySchedule());
+    }
+
 }
