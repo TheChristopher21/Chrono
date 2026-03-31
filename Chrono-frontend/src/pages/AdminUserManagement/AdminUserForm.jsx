@@ -298,6 +298,20 @@ const AdminUserForm = ({
                         onChange={(e) => handleChange("department", e.target.value)}
                     />
                 </div>
+                {isEditing && (
+                    <div className="form-group">
+                        {renderLabel("employmentModelEffectiveFrom", "userManagement.employmentModelEffectiveFrom", "Änderung gültig ab", {
+                            hint: t("userManagement.employmentModelEffectiveFromHint", "relevant bei Wechsel von Modell, Pensum, Sollstunden oder Arbeitsplan"),
+                        })}
+                        <input
+                            id="employmentModelEffectiveFrom"
+                            type="date"
+                            pattern="\\d{4}-\\d{2}-\\d{2}"
+                            value={userData.employmentModelEffectiveFrom || ""}
+                            onChange={(e) => handleChange("employmentModelEffectiveFrom", e.target.value)}
+                        />
+                    </div>
+                )}
                 <div className="form-group">
                     {renderLabel("country", "userManagement.country", "Land", {
                         required: true,
