@@ -69,6 +69,7 @@ const AdminUserManagementPage = () => {
         scheduleEffectiveDate: getTodayISOString(),
         isHourly: false,
         isPercentage: false,
+        employmentModelEffectiveFrom: getTodayISOString(),
         workPercentage: 100, // Default, falls isPercentage true wird
         trackingBalanceInMinutes: 0,
         includeInTimeTracking: true,
@@ -102,6 +103,7 @@ const AdminUserManagementPage = () => {
                 landlinePhone: user.landlinePhone || '',
                 isHourly: user.isHourly || false,
                 isPercentage: user.isPercentage || false,
+                employmentModelEffectiveFrom: getTodayISOString(),
                 workPercentage: user.workPercentage !== null && user.workPercentage !== undefined ? user.workPercentage : (user.isPercentage ? 100 : null),
                 expectedWorkDays: user.expectedWorkDays !== null && user.expectedWorkDays !== undefined ? user.expectedWorkDays : (user.isHourly ? null : 5.0), // Default 5.0 if not hourly and not set
                 trackingBalanceInMinutes: user.trackingBalanceInMinutes !== null && user.trackingBalanceInMinutes !== undefined ? user.trackingBalanceInMinutes : 0,
@@ -303,6 +305,19 @@ const AdminUserManagementPage = () => {
         } else if (editingUser) {
             try {
                 const payloadForUpdate = { ...dataToSend, id: editingUser.id };
+                const modelChanged = Boolean(editingUser.isHourly) !== Boolean(dataToSend.isHourly)
+                    || Boolean(editingUser.isPercentage) !== Boolean(dataToSend.isPercentage);
+                const snapshotChanged = editingUser.dailyWorkHours !== dataToSend.dailyWorkHours
+                    || editingUser.expectedWorkDays !== dataToSend.expectedWorkDays
+                    || editingUser.workPercentage !== dataToSend.workPercentage
+                    || editingUser.scheduleCycle !== dataToSend.scheduleCycle
+                    || editingUser.scheduleEffectiveDate !== dataToSend.scheduleEffectiveDate
+                    || JSON.stringify(editingUser.weeklySchedule || []) !== JSON.stringify(dataToSend.weeklySchedule || []);
+                if (!modelChanged && !snapshotChanged) {
+                    delete payloadForUpdate.employmentModelEffectiveFrom;
+                } else if (!payloadForUpdate.employmentModelEffectiveFrom) {
+                    payloadForUpdate.employmentModelEffectiveFrom = getTodayISOString();
+                }
                 // Passwort wird nur gesendet, wenn es geändert werden soll (über separates Feld/Request im Backend)
                 // Im AdminUserController wird 'newPassword' als RequestParam erwartet, nicht im Body des DTOs für Update.
                 // Das DTO 'password' Feld ist hier also nicht direkt für Update gedacht.
@@ -344,9 +359,10 @@ const AdminUserManagementPage = () => {
             mobilePhone: userToEdit.mobilePhone || '',
             landlinePhone: userToEdit.landlinePhone || '',
             workPercentage: userToEdit.workPercentage !== null && userToEdit.workPercentage !== undefined ? userToEdit.workPercentage : (userToEdit.isPercentage ? 100 : null),
-            expectedWorkDays: userToEdit.expectedWorkDays !== null && userToEdit.expectedWorkDays !== undefined ? userToEdit.expectedWorkDays : (userToEdit.isHourly ? null : 5.0) // Wichtig für Edit
-            ,hourlyWage: userToEdit.hourlyRate ?? null
-            ,monthlySalary: userToEdit.monthlySalary ?? null
+            expectedWorkDays: userToEdit.expectedWorkDays !== null && userToEdit.expectedWorkDays !== undefined ? userToEdit.expectedWorkDays : (userToEdit.isHourly ? null : 5.0),
+            employmentModelEffectiveFrom: getTodayISOString(),
+            hourlyWage: userToEdit.hourlyRate ?? null,
+            monthlySalary: userToEdit.monthlySalary ?? null
         });
         setIsCreatingNewUser(false);
     };
