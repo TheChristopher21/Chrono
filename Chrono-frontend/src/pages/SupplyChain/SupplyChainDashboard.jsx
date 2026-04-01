@@ -519,10 +519,27 @@ const SupplyChainDashboard = () => {
     const handleProductSubmit = async (event) => {
         event.preventDefault();
         try {
+            const sku = productForm.sku.trim();
+            const name = productForm.name.trim();
+            const description = productForm.description.trim();
+
+            if (!sku || !name) {
+                notify(t("supplyChain.productValidationError", "Artikelnummer und Name sind erforderlich."), "error");
+                return;
+            }
+
+            const duplicateSku = products.some(
+                (product) => (product?.sku ?? "").trim().toLowerCase() === sku.toLowerCase()
+            );
+            if (duplicateSku) {
+                notify(t("supplyChain.productDuplicateSku", "Diese Artikelnummer existiert bereits."), "error");
+                return;
+            }
+
             const payload = {
-                sku: productForm.sku || undefined,
-                name: productForm.name,
-                description: productForm.description,
+                sku,
+                name,
+                description: description || undefined,
                 unitCost: productForm.unitCost ? Number(productForm.unitCost) : undefined,
                 unitPrice: productForm.unitPrice ? Number(productForm.unitPrice) : undefined,
             };
@@ -565,12 +582,25 @@ const SupplyChainDashboard = () => {
     const handleAdjustmentSubmit = async (event) => {
         event.preventDefault();
         try {
+            const productId = Number(adjustForm.productId);
+            const warehouseId = Number(adjustForm.warehouseId);
+            const quantityChange = Number(adjustForm.quantity);
+
+            if (!Number.isFinite(productId) || !Number.isFinite(warehouseId)) {
+                notify(t("supplyChain.adjustmentSelectionError", "Bitte Produkt und Lager auswählen."), "error");
+                return;
+            }
+            if (!Number.isFinite(quantityChange) || quantityChange === 0) {
+                notify(t("supplyChain.adjustmentQuantityError", "Bitte eine gültige Menge ungleich 0 eingeben."), "error");
+                return;
+            }
+
             const payload = {
-                productId: Number(adjustForm.productId),
-                warehouseId: Number(adjustForm.warehouseId),
-                quantityChange: Number(adjustForm.quantity),
-                type: adjustForm.type,
-                reference: adjustForm.reference || undefined,
+                productId,
+                warehouseId,
+                quantityChange,
+                type: adjustForm.type || "ADJUSTMENT",
+                reference: adjustForm.reference?.trim() || undefined,
             };
             if (adjustForm.lotNumber) {
                 payload.lotNumber = adjustForm.lotNumber;
