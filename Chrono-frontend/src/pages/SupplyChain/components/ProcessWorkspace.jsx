@@ -134,8 +134,7 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text, 
         }
     };
 
-    const submitCreateProduct = async (event) => {
-        event.preventDefault();
+    const submitCreateProduct = async () => {
         if (!quickEntry?.createProduct?.onSubmit || createProductSubmitting) return;
         setCreateProductSubmitting(true);
         try {
@@ -152,8 +151,7 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text, 
         }
     };
 
-    const submitCreateWarehouse = async (event) => {
-        event.preventDefault();
+    const submitCreateWarehouse = async () => {
         if (!quickEntry?.createWarehouse?.onSubmit || createWarehouseSubmitting) return;
         setCreateWarehouseSubmitting(true);
         try {
@@ -262,7 +260,7 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text, 
                     {quickEntry.createProduct?.enabled && createProductOpen && (
                         <div className="sc-inline-form">
                             <h4>{quickEntry.createProduct.title}</h4>
-                            <form className="sc-quick-entry-grid" onSubmit={submitCreateProduct}>
+                            <div className="sc-quick-entry-grid">
                                 <label>
                                     {quickEntry.createProduct.labels.sku}
                                     <input
@@ -284,17 +282,17 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text, 
                                     />
                                 </label>
                                 <div className="panel-actions sc-quick-entry-span">
-                                    <button type="submit" disabled={createProductSubmitting}>
+                                    <button type="button" onClick={submitCreateProduct} disabled={createProductSubmitting}>
                                         {createProductSubmitting ? quickEntry.createProduct.submittingLabel : quickEntry.createProduct.submitLabel}
                                     </button>
                                 </div>
-                            </form>
+                            </div>
                         </div>
                     )}
                     {quickEntry.createWarehouse?.enabled && createWarehouseOpen && (
                         <div className="sc-inline-form">
                             <h4>{quickEntry.createWarehouse.title}</h4>
-                            <form className="sc-quick-entry-grid" onSubmit={submitCreateWarehouse}>
+                            <div className="sc-quick-entry-grid">
                                 <label>
                                     {quickEntry.createWarehouse.labels.code}
                                     <input
@@ -325,11 +323,11 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text, 
                                     />
                                 </label>
                                 <div className="panel-actions sc-quick-entry-span">
-                                    <button type="submit" disabled={createWarehouseSubmitting}>
+                                    <button type="button" onClick={submitCreateWarehouse} disabled={createWarehouseSubmitting}>
                                         {createWarehouseSubmitting ? quickEntry.createWarehouse.submittingLabel : quickEntry.createWarehouse.submitLabel}
                                     </button>
                                 </div>
-                            </form>
+                            </div>
                         </div>
                     )}
                     <div className="panel-actions">
