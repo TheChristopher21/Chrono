@@ -14,6 +14,8 @@ const sortRows = (rows, sortBy, sortDirection) => [...rows].sort((a, b) => {
 const initialFilter = { search: "", warehouse: "", site: "", status: "", partner: "", date: "", sku: "", batch: "", owner: "", priority: "" };
 
 const initialQuickEntryForm = { productId: "", warehouseId: "", quantityChange: "1", type: "RECEIPT", reference: "" };
+const initialCreateProductForm = { sku: "", name: "" };
+const initialCreateWarehouseForm = { code: "", name: "", location: "" };
 
 const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text, quickEntry }) => {
     const [filters, setFilters] = useState(initialFilter);
@@ -27,6 +29,12 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text, 
     const [quickEntryOpen, setQuickEntryOpen] = useState(false);
     const [quickEntrySubmitting, setQuickEntrySubmitting] = useState(false);
     const [quickEntryForm, setQuickEntryForm] = useState(initialQuickEntryForm);
+    const [createProductOpen, setCreateProductOpen] = useState(false);
+    const [createWarehouseOpen, setCreateWarehouseOpen] = useState(false);
+    const [createProductSubmitting, setCreateProductSubmitting] = useState(false);
+    const [createWarehouseSubmitting, setCreateWarehouseSubmitting] = useState(false);
+    const [createProductForm, setCreateProductForm] = useState(initialCreateProductForm);
+    const [createWarehouseForm, setCreateWarehouseForm] = useState(initialCreateWarehouseForm);
     const storageKey = `chrono.supply.savedView.${id}`;
 
     const filteredRows = useMemo(() => rows.filter((row) => {
@@ -126,6 +134,43 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text, 
         }
     };
 
+    const submitCreateProduct = async (event) => {
+        event.preventDefault();
+        if (!quickEntry?.createProduct?.onSubmit || createProductSubmitting) return;
+        setCreateProductSubmitting(true);
+        try {
+            const ok = await quickEntry.createProduct.onSubmit({
+                sku: createProductForm.sku.trim(),
+                name: createProductForm.name.trim(),
+            });
+            if (ok !== false) {
+                setCreateProductForm(initialCreateProductForm);
+                setCreateProductOpen(false);
+            }
+        } finally {
+            setCreateProductSubmitting(false);
+        }
+    };
+
+    const submitCreateWarehouse = async (event) => {
+        event.preventDefault();
+        if (!quickEntry?.createWarehouse?.onSubmit || createWarehouseSubmitting) return;
+        setCreateWarehouseSubmitting(true);
+        try {
+            const ok = await quickEntry.createWarehouse.onSubmit({
+                code: createWarehouseForm.code.trim(),
+                name: createWarehouseForm.name.trim(),
+                location: createWarehouseForm.location.trim(),
+            });
+            if (ok !== false) {
+                setCreateWarehouseForm(initialCreateWarehouseForm);
+                setCreateWarehouseOpen(false);
+            }
+        } finally {
+            setCreateWarehouseSubmitting(false);
+        }
+    };
+
     return (
         <section className="sc-workspace card">
             <header className="sc-workspace-head">
@@ -202,6 +247,91 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text, 
                             />
                         </label>
                     </div>
+                    <div className="sc-quick-entry-inline-actions">
+                        {quickEntry.createProduct?.enabled && (
+                            <button type="button" className="secondary" onClick={() => setCreateProductOpen((prev) => !prev)}>
+                                {createProductOpen ? quickEntry.createProduct.closeLabel : quickEntry.createProduct.openLabel}
+                            </button>
+                        )}
+                        {quickEntry.createWarehouse?.enabled && (
+                            <button type="button" className="secondary" onClick={() => setCreateWarehouseOpen((prev) => !prev)}>
+                                {createWarehouseOpen ? quickEntry.createWarehouse.closeLabel : quickEntry.createWarehouse.openLabel}
+                            </button>
+                        )}
+                    </div>
+                    {quickEntry.createProduct?.enabled && createProductOpen && (
+                        <div className="sc-inline-form">
+                            <h4>{quickEntry.createProduct.title}</h4>
+                            <form className="sc-quick-entry-grid" onSubmit={submitCreateProduct}>
+                                <label>
+                                    {quickEntry.createProduct.labels.sku}
+                                    <input
+                                        type="text"
+                                        value={createProductForm.sku}
+                                        onChange={(event) => setCreateProductForm((prev) => ({ ...prev, sku: event.target.value }))}
+                                        placeholder={quickEntry.createProduct.placeholders.sku}
+                                        required
+                                    />
+                                </label>
+                                <label>
+                                    {quickEntry.createProduct.labels.name}
+                                    <input
+                                        type="text"
+                                        value={createProductForm.name}
+                                        onChange={(event) => setCreateProductForm((prev) => ({ ...prev, name: event.target.value }))}
+                                        placeholder={quickEntry.createProduct.placeholders.name}
+                                        required
+                                    />
+                                </label>
+                                <div className="panel-actions sc-quick-entry-span">
+                                    <button type="submit" disabled={createProductSubmitting}>
+                                        {createProductSubmitting ? quickEntry.createProduct.submittingLabel : quickEntry.createProduct.submitLabel}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
+                    {quickEntry.createWarehouse?.enabled && createWarehouseOpen && (
+                        <div className="sc-inline-form">
+                            <h4>{quickEntry.createWarehouse.title}</h4>
+                            <form className="sc-quick-entry-grid" onSubmit={submitCreateWarehouse}>
+                                <label>
+                                    {quickEntry.createWarehouse.labels.code}
+                                    <input
+                                        type="text"
+                                        value={createWarehouseForm.code}
+                                        onChange={(event) => setCreateWarehouseForm((prev) => ({ ...prev, code: event.target.value }))}
+                                        placeholder={quickEntry.createWarehouse.placeholders.code}
+                                        required
+                                    />
+                                </label>
+                                <label>
+                                    {quickEntry.createWarehouse.labels.name}
+                                    <input
+                                        type="text"
+                                        value={createWarehouseForm.name}
+                                        onChange={(event) => setCreateWarehouseForm((prev) => ({ ...prev, name: event.target.value }))}
+                                        placeholder={quickEntry.createWarehouse.placeholders.name}
+                                        required
+                                    />
+                                </label>
+                                <label className="sc-quick-entry-span">
+                                    {quickEntry.createWarehouse.labels.location}
+                                    <input
+                                        type="text"
+                                        value={createWarehouseForm.location}
+                                        onChange={(event) => setCreateWarehouseForm((prev) => ({ ...prev, location: event.target.value }))}
+                                        placeholder={quickEntry.createWarehouse.placeholders.location}
+                                    />
+                                </label>
+                                <div className="panel-actions sc-quick-entry-span">
+                                    <button type="submit" disabled={createWarehouseSubmitting}>
+                                        {createWarehouseSubmitting ? quickEntry.createWarehouse.submittingLabel : quickEntry.createWarehouse.submitLabel}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    )}
                     <div className="panel-actions">
                         <button type="submit" disabled={quickEntrySubmitting}>
                             {quickEntrySubmitting ? quickEntry.submittingLabel : quickEntry.submitLabel}
