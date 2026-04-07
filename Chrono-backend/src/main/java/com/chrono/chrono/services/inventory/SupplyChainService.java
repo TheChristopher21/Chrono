@@ -278,6 +278,17 @@ public class SupplyChainService {
         return stockLevelRepository.findAll(pageable);
     }
 
+
+    @Transactional(readOnly = true)
+    public Page<PurchaseOrder> listPurchaseOrders(Pageable pageable) {
+        return purchaseOrderRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SalesOrder> listSalesOrders(Pageable pageable) {
+        return salesOrderRepository.findAll(pageable);
+    }
+
     @Transactional(readOnly = true)
     public Page<ProductionOrder> listProductionOrders(Pageable pageable) {
         return productionOrderRepository.findAll(pageable);
