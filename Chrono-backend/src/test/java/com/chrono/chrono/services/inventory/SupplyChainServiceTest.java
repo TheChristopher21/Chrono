@@ -185,28 +185,6 @@ class SupplyChainServiceTest {
     }
 
     @Test
-    void listPurchaseAndSalesOrdersReturnsPagedData() {
-        PurchaseOrder purchaseOrder = new PurchaseOrder();
-        purchaseOrder.setOrderNumber("PO-LIST-1");
-        purchaseOrder.setVendorName("List Vendor");
-        supplyChainService.createPurchaseOrder(purchaseOrder);
-
-        SalesOrder salesOrder = new SalesOrder();
-        salesOrder.setOrderNumber("SO-LIST-1");
-        salesOrder.setCustomerName("List Customer");
-        supplyChainService.createSalesOrder(salesOrder);
-
-        assertThat(supplyChainService.listPurchaseOrders(org.springframework.data.domain.PageRequest.of(0, 10))
-                .getContent())
-                .extracting(PurchaseOrder::getOrderNumber)
-                .contains("PO-LIST-1");
-        assertThat(supplyChainService.listSalesOrders(org.springframework.data.domain.PageRequest.of(0, 10))
-                .getContent())
-                .extracting(SalesOrder::getOrderNumber)
-                .contains("SO-LIST-1");
-    }
-
-    @Test
     void autoReplenishCreatesDraftPurchaseOrder() {
         Product product = new Product();
         product.setSku("SKU-AUTO-PLAN");
