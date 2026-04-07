@@ -75,16 +75,11 @@ export function getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours
         return defaultExpectedHours;
     }
     if (userProfile.isHourly) return 0;
-    if (userProfile.isPercentage) {
-        const workDays = userProfile.expectedWorkDays || 5;
-        const percentageFactor = (userProfile.workPercentage || 100) / 100;
-        if (workDays === 0) return 0;
-        return (defaultExpectedHours / 5) * workDays * percentageFactor / workDays;
-    }
 
     const dayOfWeekJs = dayObj.getDay();
     const dayOfWeekName = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][dayOfWeekJs];
 
+    let scheduleHours = null;
     if (userProfile.weeklySchedule && Array.isArray(userProfile.weeklySchedule) && userProfile.weeklySchedule.length > 0 && userProfile.scheduleCycle > 0) {
         try {
             const epochMonday = getMondayOfWeek(new Date("2020-01-06T00:00:00Z"));
@@ -95,11 +90,31 @@ export function getExpectedHoursForDay(dayObj, userProfile, defaultExpectedHours
             if (cycleIndex < 0) cycleIndex += userProfile.scheduleCycle;
 
             if (userProfile.weeklySchedule[cycleIndex] && typeof userProfile.weeklySchedule[cycleIndex][dayOfWeekName] === 'number') {
-                return userProfile.weeklySchedule[cycleIndex][dayOfWeekName];
+                scheduleHours = userProfile.weeklySchedule[cycleIndex][dayOfWeekName];
             }
         } catch (e) {
             console.error("Error in getExpectedHoursForDay from schedule:", e);
         }
     }
+
+    if (userProfile.isPercentage) {
+        if (typeof scheduleHours === 'number' && Number.isFinite(scheduleHours)) {
+            return scheduleHours;
+        }
+
+        const workDays = userProfile.expectedWorkDays || 5;
+        const percentageFactor = (userProfile.workPercentage || 100) / 100;
+        if (workDays <= 0) return 0;
+
+        const fullTimeWeeklyHours = defaultExpectedHours * 5;
+        const userWeeklyHours = fullTimeWeeklyHours * percentageFactor;
+        if ((dayOfWeekJs === 0 || dayOfWeekJs === 6) && workDays <= 5) return 0;
+        return userWeeklyHours / workDays;
+    }
+
+    if (typeof scheduleHours === 'number' && Number.isFinite(scheduleHours)) {
+        return scheduleHours;
+    }
+
     return (dayOfWeekJs === 0 || dayOfWeekJs === 6) ? 0 : defaultExpectedHours;
 }
