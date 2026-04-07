@@ -32,6 +32,7 @@ const SupplyChainDashboard = () => {
     const [products, setProducts] = useState([]);
     const [warehouses, setWarehouses] = useState([]);
     const [stock, setStock] = useState([]);
+    const [stockMovements, setStockMovements] = useState([]);
     const [inboundOrders, setInboundOrders] = useState([]);
     const [outboundOrders, setOutboundOrders] = useState([]);
     const [productionOrders, setProductionOrders] = useState([]);
@@ -39,10 +40,11 @@ const SupplyChainDashboard = () => {
 
     const loadData = useCallback(async () => {
         try {
-            const [productRes, warehouseRes, stockRes, inboundRes, outboundRes, productionRes, serviceRes] = await Promise.all([
+            const [productRes, warehouseRes, stockRes, movementRes, inboundRes, outboundRes, productionRes, serviceRes] = await Promise.all([
                 api.get("/api/supply-chain/products"),
                 api.get("/api/supply-chain/warehouses"),
                 api.get("/api/supply-chain/stock"),
+                api.get("/api/supply-chain/stock-movements?size=200"),
                 api.get("/api/supply-chain/purchase-orders"),
                 api.get("/api/supply-chain/sales-orders"),
                 api.get("/api/supply-chain/production-orders"),
@@ -52,6 +54,7 @@ const SupplyChainDashboard = () => {
             setProducts(list(productRes?.data).map(normalizeProduct));
             setWarehouses(list(warehouseRes?.data).map(normalizeWarehouse));
             setStock(list(stockRes?.data).map(normalizeStock));
+            setStockMovements(list(movementRes?.data));
             setInboundOrders(list(inboundRes?.data).map(normalizeDelivery));
             setOutboundOrders(list(outboundRes?.data).map(normalizeOrder));
             setProductionOrders(list(productionRes?.data).map(normalizeOrder));
@@ -115,7 +118,8 @@ const SupplyChainDashboard = () => {
         };
     }), [products, stock, warehouses]);
 
-    const inboundRows = useMemo(() => inboundOrders.map((entry) => ({
+    const inboundRows = useMemo(() => {
+        const orderRows = inboundOrders.map((entry) => ({
         id: entry.id,
         order: entry.orderNumber,
         asn: entry.asn,
@@ -128,7 +132,32 @@ const SupplyChainDashboard = () => {
         eta: entry.eta ?? "-",
         partner: entry.supplier,
         approvalProgress: entry.status === "COMPLETED" ? 100 : 64,
-    })), [inboundOrders, warehouses]);
+        }));
+
+        const manualRows = stockMovements
+            .filter((movement) => movement?.type === "RECEIPT")
+            .map((movement) => {
+                const warehouse = warehouses.find((item) => item.id === movement.warehouseId);
+                const product = products.find((item) => item.id === movement.productId);
+                const reference = String(movement.reference ?? "").trim();
+                return {
+                    id: `movement-${movement.id}`,
+                    order: `MVT-${movement.id}`,
+                    asn: reference || "-",
+                    dock: l("Manuell", "Manual"),
+                    supplier: product?.name ?? "-",
+                    warehouse: warehouse?.name ?? "-",
+                    site: warehouse?.siteName ?? "-",
+                    status: "COMPLETED",
+                    statusLabel: l("Gebucht", "Posted"),
+                    eta: movement.movementDate ?? "-",
+                    partner: product?.name ?? "-",
+                    approvalProgress: 100,
+                };
+            });
+
+        return [...manualRows, ...orderRows];
+    }, [inboundOrders, l, products, stockMovements, warehouses]);
 
     const outboundRows = useMemo(() => outboundOrders.map((entry) => ({
         id: entry.id,
