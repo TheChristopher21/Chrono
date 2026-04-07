@@ -136,6 +136,11 @@ public class SupplyChainService {
         return savedMovement;
     }
 
+    @Transactional(readOnly = true)
+    public Page<StockMovement> listStockMovements(Pageable pageable) {
+        return stockMovementRepository.findAll(pageable);
+    }
+
     @Transactional
     public PurchaseOrder createPurchaseOrder(PurchaseOrder purchaseOrder) {
         BigDecimal total = BigDecimal.ZERO;

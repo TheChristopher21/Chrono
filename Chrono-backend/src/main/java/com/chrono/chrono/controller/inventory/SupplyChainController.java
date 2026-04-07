@@ -94,6 +94,15 @@ public class SupplyChainController {
                 .body(StockMovementDTO.from(movement));
     }
 
+    @GetMapping("/stock-movements")
+    public ResponseEntity<Page<StockMovementDTO>> listStockMovements(@RequestParam(defaultValue = "0") int page,
+                                                                      @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 200));
+        Page<StockMovementDTO> movements = supplyChainService.listStockMovements(pageable)
+                .map(StockMovementDTO::from);
+        return ResponseEntity.ok(movements);
+    }
+
 
     @GetMapping("/purchase-orders")
     public ResponseEntity<Page<PurchaseOrderDTO>> listPurchaseOrders(@RequestParam(defaultValue = "0") int page,
