@@ -255,20 +255,6 @@ export function minutesToHHMM(totalMinutes) {
     return `${sign}${h}h ${String(m).padStart(2, '0')}m`;
 }
 
-
-function normalizeScheduledHoursValue(rawValue) {
-    if (typeof rawValue === 'number' && Number.isFinite(rawValue)) {
-        return rawValue;
-    }
-    if (typeof rawValue === 'string') {
-        const parsed = Number.parseFloat(rawValue.replace(',', '.').trim());
-        if (Number.isFinite(parsed)) {
-            return parsed;
-        }
-    }
-    return null;
-}
-
 export function getExpectedHoursForDay(
     dayObj,
     userConfig,
@@ -289,21 +275,14 @@ export function getExpectedHoursForDay(
     const isHoliday = holidaysForUserCanton && holidaysForUserCanton[isoDate];
     const vacationToday = userApprovedVacations?.find(v => isoDate >= v.startDate && isoDate <= v.endDate && v.approved);
     const sickToday = userSickLeaves?.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
-    const baseHoursFromSchedule = getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHours);
 
     if (userConfig?.isPercentage === true) {
-        let dailySollPercentage = baseHoursFromSchedule;
-        const hasWeeklySchedule = Array.isArray(userConfig?.weeklySchedule) && userConfig.weeklySchedule.length > 0;
-
-        if (!hasWeeklySchedule) {
-            const workDaysInModel = userConfig.expectedWorkDays || 5;
-            const baseWeekHoursFullTime = defaultExpectedHours * 5;
-            const userWeeklyHours = baseWeekHoursFullTime * ((userConfig.workPercentage || 100) / 100.0);
-            dailySollPercentage = workDaysInModel > 0 ? (userWeeklyHours / workDaysInModel) : 0;
-
-            if ((dayOfWeekJs === 0 || dayOfWeekJs === 6) && workDaysInModel <= 5) {
-                dailySollPercentage = 0;
-            }
+        let dailySollPercentage = 0;
+        const workDaysInModel = userConfig.expectedWorkDays || 5;
+        const baseWeekHoursFullTime = defaultExpectedHours * 5;
+        const userWeeklyHours = baseWeekHoursFullTime * ((userConfig.workPercentage || 100) / 100.0);
+        if (workDaysInModel > 0) {
+            dailySollPercentage = userWeeklyHours / workDaysInModel;
         }
 
         if (isHoliday) {
@@ -313,17 +292,22 @@ export function getExpectedHoursForDay(
         if (vacationToday) return vacationToday.halfDay ? dailySollPercentage / 2 : 0;
         if (sickToday) return sickToday.halfDay ? dailySollPercentage / 2 : 0;
 
+        if (dayOfWeekJs === 0 || dayOfWeekJs === 6) {
+            if (workDaysInModel <= 5) return 0;
+        }
         return dailySollPercentage;
     }
 
     if (isHoliday) return 0;
     if (vacationToday) {
-        return vacationToday.halfDay ? baseHoursFromSchedule / 2 : 0;
+        const baseHours = getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHours);
+        return vacationToday.halfDay ? baseHours / 2 : 0;
     }
     if (sickToday) {
-        return sickToday.halfDay ? baseHoursFromSchedule / 2 : 0;
+        const baseHours = getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHours);
+        return sickToday.halfDay ? baseHours / 2 : 0;
     }
-    return baseHoursFromSchedule;
+    return getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHours);
 }
 
 function getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHours) {
@@ -341,11 +325,8 @@ function getBaseExpectedHoursFromSchedule(dayObj, userConfig, defaultExpectedHou
             let cycleIndex = weeksSinceEpoch % userConfig.scheduleCycle;
             if (cycleIndex < 0) cycleIndex += userConfig.scheduleCycle;
 
-            if (userConfig.weeklySchedule[cycleIndex]) {
-                const normalizedValue = normalizeScheduledHoursValue(userConfig.weeklySchedule[cycleIndex][dayOfWeekName]);
-                if (normalizedValue !== null) {
-                    return normalizedValue;
-                }
+            if (userConfig.weeklySchedule[cycleIndex] && typeof userConfig.weeklySchedule[cycleIndex][dayOfWeekName] === 'number') {
+                return userConfig.weeklySchedule[cycleIndex][dayOfWeekName];
             }
         } catch (e) {
             console.error("Error in getBaseExpectedHoursFromSchedule:", e);
