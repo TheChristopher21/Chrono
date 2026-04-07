@@ -288,6 +288,16 @@ public class SupplyChainService {
         return serviceRequestRepository.findAll(pageable);
     }
 
+    @Transactional(readOnly = true)
+    public Page<PurchaseOrder> listPurchaseOrders(Pageable pageable) {
+        return purchaseOrderRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<SalesOrder> listSalesOrders(Pageable pageable) {
+        return salesOrderRepository.findAll(pageable);
+    }
+
     @Transactional
     public AutoReplenishResponse autoReplenish(AutoReplenishRequest request) {
         ReplenishmentComputation computation = computeReplenishmentPlans(request);

@@ -110,6 +110,15 @@ public class SupplyChainController {
                 .body(PurchaseOrderDTO.from(saved));
     }
 
+    @GetMapping("/purchase-orders")
+    public ResponseEntity<Page<PurchaseOrderDTO>> listPurchaseOrders(@RequestParam(defaultValue = "0") int page,
+                                                                     @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Page<PurchaseOrderDTO> orders = supplyChainService.listPurchaseOrders(pageable)
+                .map(PurchaseOrderDTO::from);
+        return ResponseEntity.ok(orders);
+    }
+
     @PostMapping("/purchase-orders/{id}/receive")
     public ResponseEntity<PurchaseOrderDTO> receivePurchaseOrder(@PathVariable Long id,
                                                                  @RequestBody WarehouseReferenceRequest ref) {
@@ -143,6 +152,15 @@ public class SupplyChainController {
         SalesOrder saved = supplyChainService.createSalesOrder(order);
         return ResponseEntity.created(URI.create("/api/supply-chain/sales-orders/" + saved.getId()))
                 .body(SalesOrderDTO.from(saved));
+    }
+
+    @GetMapping("/sales-orders")
+    public ResponseEntity<Page<SalesOrderDTO>> listSalesOrders(@RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Page<SalesOrderDTO> orders = supplyChainService.listSalesOrders(pageable)
+                .map(SalesOrderDTO::from);
+        return ResponseEntity.ok(orders);
     }
 
     @PostMapping("/sales-orders/{id}/fulfill")
