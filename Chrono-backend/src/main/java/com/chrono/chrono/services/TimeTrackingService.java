@@ -66,6 +66,8 @@ public class TimeTrackingService {
     private TaskRepository taskRepository;
     @Autowired
     private PayslipRepository payslipRepository;
+    @Autowired
+    private EmploymentModelHistoryService employmentModelHistoryService;
 
     private User loadUserByUsername(String username) {
         return userRepository.findByUsername(username)
@@ -438,7 +440,7 @@ public class TimeTrackingService {
             }
 
             int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
-                     .filter(Payslip::isApproved)
+                    .filter(Payslip::isApproved)
                     .filter(Payslip::isPayoutOvertime)
                     .map(Payslip::getOvertimeHours)
                     .filter(Objects::nonNull)
@@ -492,6 +494,15 @@ public class TimeTrackingService {
             lastDay = lastTrackingDayOpt.get();
         }
 
+        LocalDate balancePeriodStart = employmentModelHistoryService != null
+                ? employmentModelHistoryService.resolveCurrentOvertimeStreakStart(freshUser)
+                : null;
+        if (balancePeriodStart != null && balancePeriodStart.isAfter(firstDayToConsider)) {
+            logger.info("Saldo-Neuberechnung für {} beginnt erst ab {}. Frühere Stundenlohn-Zeiträume werden nicht als Überstundenkonto weitergeführt.",
+                    freshUser.getUsername(), balancePeriodStart);
+            firstDayToConsider = balancePeriodStart;
+        }
+
         int totalMinutesBalance = 0;
         if (!firstDayToConsider.isAfter(lastDay)) {
             logger.info("Saldo-Neuberechnung für {}: Zeitraum {} bis {}", freshUser.getUsername(), firstDayToConsider, lastDay);
@@ -523,8 +534,12 @@ public class TimeTrackingService {
                 }
             }
             int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
-                     .filter(Payslip::isApproved)
+                    .filter(Payslip::isApproved)
                     .filter(Payslip::isPayoutOvertime)
+                    .filter(payslip -> {
+                        LocalDate deductionDate = payslip.getPayoutDate() != null ? payslip.getPayoutDate() : payslip.getPeriodEnd();
+                        return deductionDate == null || balancePeriodStart == null || !deductionDate.isBefore(balancePeriodStart);
+                    })
                     .map(Payslip::getOvertimeHours)
                     .filter(Objects::nonNull)
                     .mapToInt(h -> (int) Math.round(h * 60))
@@ -534,7 +549,7 @@ public class TimeTrackingService {
             LocalDate balanceCutoff = lastDay;
             int overtimeVacationDeductionMinutes = approvedVacations.stream()
                     .filter(VacationRequest::isUsesOvertime)
-                    .mapToInt(vacation -> calculateAppliedOvertimeVacationMinutesUpTo(freshUser, vacation, balanceCutoff))
+                    .mapToInt(vacation -> calculateAppliedOvertimeVacationMinutesInRange(freshUser, vacation, balancePeriodStart, balanceCutoff))
                     .sum();
             totalMinutesBalance -= overtimeVacationDeductionMinutes;
 
@@ -639,26 +654,50 @@ public class TimeTrackingService {
     }
 
     private int calculateAppliedOvertimeVacationMinutesUpTo(User user, VacationRequest vacation, LocalDate balanceCutoff) {
+        return calculateAppliedOvertimeVacationMinutesInRange(user, vacation, null, balanceCutoff);
+    }
+
+    private int calculateAppliedOvertimeVacationMinutesInRange(User user,
+                                                               VacationRequest vacation,
+                                                               LocalDate balanceStart,
+                                                               LocalDate balanceCutoff) {
         Integer originalMinutes = vacation.getOvertimeDeductionMinutes();
         if (originalMinutes == null || originalMinutes <= 0 || vacation.getStartDate() == null || vacation.getEndDate() == null) {
             return 0;
         }
-        if (vacation.getStartDate().isAfter(balanceCutoff)) {
+        LocalDate effectiveStart = vacation.getStartDate();
+        LocalDate effectiveEnd = vacation.getEndDate();
+
+        if (balanceStart != null && effectiveEnd.isBefore(balanceStart)) {
             return 0;
         }
-        if (!vacation.getEndDate().isAfter(balanceCutoff)) {
-            return originalMinutes;
+        if (balanceCutoff != null && effectiveStart.isAfter(balanceCutoff)) {
+            return 0;
+        }
+
+        if (balanceStart != null && effectiveStart.isBefore(balanceStart)) {
+            effectiveStart = balanceStart;
+        }
+        if (balanceCutoff != null && effectiveEnd.isAfter(balanceCutoff)) {
+            effectiveEnd = balanceCutoff;
+        }
+        if (effectiveEnd.isBefore(effectiveStart)) {
+            return 0;
         }
 
         long totalChargeableDays = countChargeableVacationDays(user, vacation.getStartDate(), vacation.getEndDate());
         if (totalChargeableDays <= 0) {
             return 0;
         }
-        long elapsedChargeableDays = countChargeableVacationDays(user, vacation.getStartDate(), balanceCutoff);
-        if (elapsedChargeableDays <= 0) {
+        long applicableChargeableDays = countChargeableVacationDays(user, effectiveStart, effectiveEnd);
+        if (applicableChargeableDays <= 0) {
             return 0;
         }
-        return Math.max((int) Math.round((double) originalMinutes * elapsedChargeableDays / totalChargeableDays), 0);
+
+        if (applicableChargeableDays >= totalChargeableDays) {
+            return originalMinutes;
+        }
+        return Math.max((int) Math.round((double) originalMinutes * applicableChargeableDays / totalChargeableDays), 0);
     }
 
     LocalDate getCurrentBerlinDate() {

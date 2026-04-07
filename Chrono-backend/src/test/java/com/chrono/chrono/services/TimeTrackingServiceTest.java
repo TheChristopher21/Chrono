@@ -66,6 +66,8 @@ class TimeTrackingServiceTest {
     private TaskRepository taskRepository;
     @Mock
     private PayslipRepository payslipRepository;
+    @Mock
+    private EmploymentModelHistoryService employmentModelHistoryService;
 
     @InjectMocks
     private TimeTrackingService timeTrackingService;
@@ -531,6 +533,33 @@ class TimeTrackingServiceTest {
         spyService.rebuildUserBalance(user);
 
         assertEquals(0, user.getTrackingBalanceInMinutes());
+    }
+
+    @Test
+    void rebuildUserBalance_ignoresHourlyPeriodBeforeSwitchToStandardUser() {
+        user.setIsHourly(false);
+        user.setTrackingBalanceInMinutes(0);
+
+        LocalDate hourlyDay = LocalDate.of(2026, 4, 6);
+        LocalDate standardDay = LocalDate.of(2026, 4, 8);
+
+        TimeTrackingEntry danglingStartFromHourlyPeriod = entry(user, hourlyDay.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry startStandardDay = entry(user, standardDay.atTime(8, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry endStandardDay = entry(user, standardDay.atTime(12, 0), TimeTrackingEntry.PunchType.ENDE);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user))
+                .thenReturn(List.of(endStandardDay, startStandardDay, danglingStartFromHourlyPeriod));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(Collections.emptyList());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(payslipRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(employmentModelHistoryService.resolveCurrentOvertimeStreakStart(user)).thenReturn(LocalDate.of(2026, 4, 8));
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(standardDay), any())).thenReturn(240);
+
+        timeTrackingService.rebuildUserBalance(user);
+
+        assertEquals(0, user.getTrackingBalanceInMinutes());
+        verify(workScheduleService, times(0)).computeExpectedWorkMinutes(eq(user), eq(hourlyDay), any());
     }
 
     @Test
