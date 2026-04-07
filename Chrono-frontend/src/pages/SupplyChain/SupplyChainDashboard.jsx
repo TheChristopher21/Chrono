@@ -310,6 +310,49 @@ const SupplyChainDashboard = () => {
         }
     };
 
+    const submitCreateProduct = async (payload) => {
+        if (!payload.sku || !payload.name) {
+            notify(l("Bitte SKU und Produktname ausfüllen.", "Please fill SKU and product name."), "warning");
+            return false;
+        }
+        try {
+            await api.post("/api/supply-chain/products", {
+                sku: payload.sku,
+                name: payload.name,
+                unitOfMeasure: "pcs",
+                active: true,
+            });
+            notify(l("Produkt erfolgreich angelegt.", "Product created successfully."), "success");
+            await loadData();
+            return true;
+        } catch (error) {
+            console.error(error);
+            notify(l("Produkt konnte nicht angelegt werden.", "Could not create product."), "error");
+            return false;
+        }
+    };
+
+    const submitCreateWarehouse = async (payload) => {
+        if (!payload.code || !payload.name) {
+            notify(l("Bitte Lagercode und Lagername ausfüllen.", "Please fill warehouse code and name."), "warning");
+            return false;
+        }
+        try {
+            await api.post("/api/supply-chain/warehouses", {
+                code: payload.code,
+                name: payload.name,
+                location: payload.location || payload.name,
+            });
+            notify(l("Lager erfolgreich angelegt.", "Warehouse created successfully."), "success");
+            await loadData();
+            return true;
+        } catch (error) {
+            console.error(error);
+            notify(l("Lager konnte nicht angelegt werden.", "Could not create warehouse."), "error");
+            return false;
+        }
+    };
+
     return (
         <div className="admin-page supply-chain-page">
             <Navbar />
@@ -382,6 +425,42 @@ const SupplyChainDashboard = () => {
                                 { value: "RELEASE", label: l("Freigabe", "Release") },
                                 { value: "TRANSFER", label: l("Umlagerung", "Transfer") },
                             ],
+                            createProduct: {
+                                enabled: true,
+                                openLabel: l("+ Produkt anlegen", "+ Add product"),
+                                closeLabel: l("Produkt-Form schließen", "Close product form"),
+                                title: l("Neues Produkt", "New product"),
+                                submitLabel: l("Produkt speichern", "Save product"),
+                                submittingLabel: l("Speichert…", "Saving…"),
+                                labels: {
+                                    sku: "SKU",
+                                    name: l("Produktname", "Product name"),
+                                },
+                                placeholders: {
+                                    sku: l("z. B. SCHRAUBE-M8", "e.g. SCREW-M8"),
+                                    name: l("z. B. Schraube M8 x 20", "e.g. Screw M8 x 20"),
+                                },
+                                onSubmit: submitCreateProduct,
+                            },
+                            createWarehouse: {
+                                enabled: true,
+                                openLabel: l("+ Lager anlegen", "+ Add warehouse"),
+                                closeLabel: l("Lager-Form schließen", "Close warehouse form"),
+                                title: l("Neues Lager", "New warehouse"),
+                                submitLabel: l("Lager speichern", "Save warehouse"),
+                                submittingLabel: l("Speichert…", "Saving…"),
+                                labels: {
+                                    code: l("Lagercode", "Warehouse code"),
+                                    name: l("Lagername", "Warehouse name"),
+                                    location: l("Ort", "Location"),
+                                },
+                                placeholders: {
+                                    code: l("z. B. BER-01", "e.g. BER-01"),
+                                    name: l("z. B. Hauptlager Berlin", "e.g. Berlin main warehouse"),
+                                    location: l("z. B. Berlin", "e.g. Berlin"),
+                                },
+                                onSubmit: submitCreateWarehouse,
+                            },
                             onSubmit: submitQuickEntry,
                         }}
                     />
