@@ -37,42 +37,46 @@ const SupplyChainDashboard = () => {
     const [productionOrders, setProductionOrders] = useState([]);
     const [serviceCases, setServiceCases] = useState([]);
 
+    const loadData = useCallback(async () => {
+        try {
+            const [productRes, warehouseRes, stockRes, inboundRes, outboundRes, productionRes, serviceRes] = await Promise.all([
+                api.get("/api/supply-chain/products"),
+                api.get("/api/supply-chain/warehouses"),
+                api.get("/api/supply-chain/stock"),
+                api.get("/api/supply-chain/purchase-orders"),
+                api.get("/api/supply-chain/sales-orders"),
+                api.get("/api/supply-chain/production-orders"),
+                api.get("/api/supply-chain/service-requests"),
+            ]);
+            const list = (payload) => (Array.isArray(payload) ? payload : payload?.content ?? []);
+            setProducts(list(productRes?.data).map(normalizeProduct));
+            setWarehouses(list(warehouseRes?.data).map(normalizeWarehouse));
+            setStock(list(stockRes?.data).map(normalizeStock));
+            setInboundOrders(list(inboundRes?.data).map(normalizeDelivery));
+            setOutboundOrders(list(outboundRes?.data).map(normalizeOrder));
+            setProductionOrders(list(productionRes?.data).map(normalizeOrder));
+            setServiceCases(list(serviceRes?.data).map(normalizeServiceCase));
+            return true;
+        } catch (error) {
+            console.error(error);
+            notify(l("Supply-Chain-Daten konnten nicht vollständig geladen werden.", "Could not load all supply-chain data."), "error");
+            return false;
+        }
+    }, [l, notify]);
+
     useEffect(() => {
         let mounted = true;
         const load = async () => {
             setLoading(true);
-            try {
-                const [productRes, warehouseRes, stockRes, inboundRes, outboundRes, productionRes, serviceRes] = await Promise.all([
-                    api.get("/api/supply-chain/products"),
-                    api.get("/api/supply-chain/warehouses"),
-                    api.get("/api/supply-chain/stock"),
-                    api.get("/api/supply-chain/purchase-orders"),
-                    api.get("/api/supply-chain/sales-orders"),
-                    api.get("/api/supply-chain/production-orders"),
-                    api.get("/api/supply-chain/service-requests"),
-                ]);
-                if (!mounted) return;
-                const list = (payload) => (Array.isArray(payload) ? payload : payload?.content ?? []);
-                setProducts(list(productRes?.data).map(normalizeProduct));
-                setWarehouses(list(warehouseRes?.data).map(normalizeWarehouse));
-                setStock(list(stockRes?.data).map(normalizeStock));
-                setInboundOrders(list(inboundRes?.data).map(normalizeDelivery));
-                setOutboundOrders(list(outboundRes?.data).map(normalizeOrder));
-                setProductionOrders(list(productionRes?.data).map(normalizeOrder));
-                setServiceCases(list(serviceRes?.data).map(normalizeServiceCase));
-            } catch (error) {
-                console.error(error);
-                notify(l("Supply-Chain-Daten konnten nicht vollständig geladen werden.", "Could not load all supply-chain data."), "error");
-            } finally {
-                if (mounted) setLoading(false);
-            }
+            await loadData();
+            if (mounted) setLoading(false);
         };
 
         load();
         return () => {
             mounted = false;
         };
-    }, [l, notify]);
+    }, [loadData]);
 
     useEffect(() => {
         const defaultView = {
@@ -287,6 +291,24 @@ const SupplyChainDashboard = () => {
     ];
 
     const activeDefinition = workspaceDefinitions.find((item) => item.id === activeWorkspace) ?? workspaceDefinitions[0];
+    const quickEntryEnabled = ["inbound", "inventory", "buckets"].includes(activeDefinition.id);
+
+    const submitQuickEntry = async (payload) => {
+        if (!payload.productId || !payload.warehouseId || !payload.quantityChange) {
+            notify(l("Bitte Produkt, Lager und Menge ausfüllen.", "Please fill product, warehouse and quantity."), "warning");
+            return false;
+        }
+        try {
+            await api.post("/api/supply-chain/stock/adjust", payload);
+            notify(l("Wareneingang erfolgreich erfasst.", "Stock entry saved successfully."), "success");
+            await loadData();
+            return true;
+        } catch (error) {
+            console.error(error);
+            notify(l("Wareneingang konnte nicht gespeichert werden.", "Could not save stock entry."), "error");
+            return false;
+        }
+    };
 
     return (
         <div className="admin-page supply-chain-page">
@@ -330,6 +352,38 @@ const SupplyChainDashboard = () => {
                         columns={activeDefinition.columns}
                         timeline={movementTimeline}
                         text={text}
+                        quickEntry={{
+                            enabled: quickEntryEnabled,
+                            openLabel: l("+ Wareneingang erfassen", "+ Add stock entry"),
+                            closeLabel: l("Schließen", "Close"),
+                            title: l("Schnellerfassung Wareneingang", "Quick stock entry"),
+                            subtitle: l("Für kleine Teams: Produkt, Lager und Menge direkt buchen.", "For small teams: book product, warehouse and quantity directly."),
+                            submitLabel: l("Buchen", "Post entry"),
+                            submittingLabel: l("Wird gebucht…", "Posting…"),
+                            products,
+                            warehouses,
+                            labels: {
+                                product: l("Produkt", "Product"),
+                                warehouse: l("Lager", "Warehouse"),
+                                quantity: l("Menge", "Quantity"),
+                                type: l("Buchungstyp", "Entry type"),
+                                reference: l("Referenz", "Reference"),
+                            },
+                            placeholders: {
+                                product: l("Bitte Produkt wählen", "Select product"),
+                                warehouse: l("Bitte Lager wählen", "Select warehouse"),
+                                reference: l("z. B. Lieferschein 2026-04-07", "e.g. Delivery note 2026-04-07"),
+                            },
+                            types: [
+                                { value: "RECEIPT", label: l("Wareneingang", "Goods receipt") },
+                                { value: "ADJUSTMENT", label: l("Korrektur", "Adjustment") },
+                                { value: "RESERVATION", label: l("Reservierung", "Reservation") },
+                                { value: "QC_HOLD", label: l("QC-Sperre", "QC hold") },
+                                { value: "RELEASE", label: l("Freigabe", "Release") },
+                                { value: "TRANSFER", label: l("Umlagerung", "Transfer") },
+                            ],
+                            onSubmit: submitQuickEntry,
+                        }}
                     />
                 )}
             </main>

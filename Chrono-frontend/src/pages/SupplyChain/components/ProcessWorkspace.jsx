@@ -13,7 +13,9 @@ const sortRows = (rows, sortBy, sortDirection) => [...rows].sort((a, b) => {
 
 const initialFilter = { search: "", warehouse: "", site: "", status: "", partner: "", date: "", sku: "", batch: "", owner: "", priority: "" };
 
-const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text }) => {
+const initialQuickEntryForm = { productId: "", warehouseId: "", quantityChange: "1", type: "RECEIPT", reference: "" };
+
+const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text, quickEntry }) => {
     const [filters, setFilters] = useState(initialFilter);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [drawerRecord, setDrawerRecord] = useState(null);
@@ -22,6 +24,9 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text }
     const [sortDirection, setSortDirection] = useState("asc");
     const [visibleColumnKeys, setVisibleColumnKeys] = useState(columns.map((column) => column.key));
     const [massAction, setMassAction] = useState("assign");
+    const [quickEntryOpen, setQuickEntryOpen] = useState(false);
+    const [quickEntrySubmitting, setQuickEntrySubmitting] = useState(false);
+    const [quickEntryForm, setQuickEntryForm] = useState(initialQuickEntryForm);
     const storageKey = `chrono.supply.savedView.${id}`;
 
     const filteredRows = useMemo(() => rows.filter((row) => {
@@ -95,6 +100,32 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text }
         setSelectedIds(new Set());
     };
 
+    const handleQuickEntryChange = (key, value) => {
+        setQuickEntryForm((prev) => ({ ...prev, [key]: value }));
+    };
+
+    const submitQuickEntry = async (event) => {
+        event.preventDefault();
+        if (!quickEntry?.onSubmit || quickEntrySubmitting) return;
+        const payload = {
+            productId: Number(quickEntryForm.productId),
+            warehouseId: Number(quickEntryForm.warehouseId),
+            quantityChange: Number(quickEntryForm.quantityChange),
+            type: quickEntryForm.type,
+            reference: quickEntryForm.reference,
+        };
+        setQuickEntrySubmitting(true);
+        try {
+            const ok = await quickEntry.onSubmit(payload);
+            if (ok !== false) {
+                setQuickEntryForm(initialQuickEntryForm);
+                setQuickEntryOpen(false);
+            }
+        } finally {
+            setQuickEntrySubmitting(false);
+        }
+    };
+
     return (
         <section className="sc-workspace card">
             <header className="sc-workspace-head">
@@ -103,11 +134,84 @@ const ProcessWorkspace = ({ id, title, subtitle, rows, columns, timeline, text }
                     <p className="muted">{subtitle}</p>
                 </div>
                 <div className="panel-actions">
+                    {quickEntry?.enabled && (
+                        <button type="button" onClick={() => setQuickEntryOpen((prev) => !prev)}>
+                            {quickEntryOpen ? quickEntry.closeLabel : quickEntry.openLabel}
+                        </button>
+                    )}
                     <button type="button" className="secondary" onClick={saveView}>{text.saveView}</button>
                     <button type="button" className="secondary" onClick={loadView}>{text.loadView}</button>
                     <button type="button" className="secondary" onClick={exportCsv}>{text.export}</button>
                 </div>
             </header>
+
+            {quickEntry?.enabled && quickEntryOpen && (
+                <form className="sc-quick-entry card" onSubmit={submitQuickEntry}>
+                    <div className="sc-quick-entry-head">
+                        <h3>{quickEntry.title}</h3>
+                        <p className="muted">{quickEntry.subtitle}</p>
+                    </div>
+                    <div className="sc-quick-entry-grid">
+                        <label>
+                            {quickEntry.labels.product}
+                            <select value={quickEntryForm.productId} onChange={(event) => handleQuickEntryChange("productId", event.target.value)} required>
+                                <option value="">{quickEntry.placeholders.product}</option>
+                                {quickEntry.products.map((product) => (
+                                    <option key={product.id} value={product.id}>
+                                        {product.sku} · {product.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label>
+                            {quickEntry.labels.warehouse}
+                            <select value={quickEntryForm.warehouseId} onChange={(event) => handleQuickEntryChange("warehouseId", event.target.value)} required>
+                                <option value="">{quickEntry.placeholders.warehouse}</option>
+                                {quickEntry.warehouses.map((warehouse) => (
+                                    <option key={warehouse.id} value={warehouse.id}>
+                                        {warehouse.siteName} · {warehouse.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </label>
+                        <label>
+                            {quickEntry.labels.quantity}
+                            <input
+                                type="number"
+                                step="0.01"
+                                value={quickEntryForm.quantityChange}
+                                onChange={(event) => handleQuickEntryChange("quantityChange", event.target.value)}
+                                required
+                            />
+                        </label>
+                        <label>
+                            {quickEntry.labels.type}
+                            <select value={quickEntryForm.type} onChange={(event) => handleQuickEntryChange("type", event.target.value)}>
+                                {quickEntry.types.map((option) => (
+                                    <option key={option.value} value={option.value}>{option.label}</option>
+                                ))}
+                            </select>
+                        </label>
+                        <label className="sc-quick-entry-span">
+                            {quickEntry.labels.reference}
+                            <input
+                                type="text"
+                                value={quickEntryForm.reference}
+                                onChange={(event) => handleQuickEntryChange("reference", event.target.value)}
+                                placeholder={quickEntry.placeholders.reference}
+                            />
+                        </label>
+                    </div>
+                    <div className="panel-actions">
+                        <button type="submit" disabled={quickEntrySubmitting}>
+                            {quickEntrySubmitting ? quickEntry.submittingLabel : quickEntry.submitLabel}
+                        </button>
+                        <button type="button" className="secondary" onClick={() => setQuickEntryOpen(false)}>
+                            {quickEntry.closeLabel}
+                        </button>
+                    </div>
+                </form>
+            )}
 
             <FilterBar
                 filters={filters}
