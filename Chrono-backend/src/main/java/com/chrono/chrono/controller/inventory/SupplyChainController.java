@@ -94,6 +94,16 @@ public class SupplyChainController {
                 .body(StockMovementDTO.from(movement));
     }
 
+
+    @GetMapping("/purchase-orders")
+    public ResponseEntity<Page<PurchaseOrderDTO>> listPurchaseOrders(@RequestParam(defaultValue = "0") int page,
+                                                                     @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Page<PurchaseOrderDTO> orders = supplyChainService.listPurchaseOrders(pageable)
+                .map(PurchaseOrderDTO::from);
+        return ResponseEntity.ok(orders);
+    }
+
     @PostMapping("/purchase-orders")
     public ResponseEntity<PurchaseOrderDTO> createPurchaseOrder(@RequestBody CreatePurchaseOrderRequest request) {
         List<PurchaseOrderLine> lines = request.getLines() == null ? List.of() : request.getLines().stream()
@@ -127,6 +137,16 @@ public class SupplyChainController {
     public ResponseEntity<ReplenishmentPreviewResponse> previewReplenishment(@RequestBody AutoReplenishRequest request) {
         ReplenishmentPreviewResponse response = supplyChainService.previewReplenishment(request);
         return ResponseEntity.ok(response);
+    }
+
+
+    @GetMapping("/sales-orders")
+    public ResponseEntity<Page<SalesOrderDTO>> listSalesOrders(@RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 100));
+        Page<SalesOrderDTO> orders = supplyChainService.listSalesOrders(pageable)
+                .map(SalesOrderDTO::from);
+        return ResponseEntity.ok(orders);
     }
 
     @PostMapping("/sales-orders")
