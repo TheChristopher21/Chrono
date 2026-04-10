@@ -616,5 +616,4 @@ public class AdminUserController {
         if (!java.util.Objects.equals(before.getScheduleEffectiveDate(), after.getScheduleEffectiveDate())) return true;
         return !java.util.Objects.equals(before.getWeeklySchedule(), after.getWeeklySchedule());
     }
-
 }
