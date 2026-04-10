@@ -1,5 +1,7 @@
 package com.chrono.chrono.controller.inventory;
 
+import com.itextpdf.text.pdf.PdfReader;
+import com.itextpdf.text.pdf.parser.PdfTextExtractor;
 import com.chrono.chrono.dto.inventory.*;
 import com.chrono.chrono.entities.inventory.Product;
 import com.chrono.chrono.entities.inventory.ProductionOrder;
@@ -16,6 +18,7 @@ import com.chrono.chrono.services.inventory.SupplyChainService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,8 +27,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -101,6 +106,25 @@ public class SupplyChainController {
         Page<StockMovementDTO> movements = supplyChainService.listStockMovements(pageable)
                 .map(StockMovementDTO::from);
         return ResponseEntity.ok(movements);
+    }
+
+    @PostMapping("/receiving/preview")
+    public ResponseEntity<ReceivingPreviewResponse> previewReceiving(@RequestBody ReceivingPreviewRequest request) {
+        return ResponseEntity.ok(supplyChainService.previewReceiving(request));
+    }
+
+    @PostMapping(value = "/receiving/document-preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ReceivingPreviewResponse> previewReceivingDocument(@RequestParam("file") MultipartFile file) {
+        ReceivingPreviewRequest request = new ReceivingPreviewRequest();
+        request.setFileName(file.getOriginalFilename());
+        request.setDocumentText(extractDocumentText(file));
+        return ResponseEntity.ok(supplyChainService.previewReceiving(request));
+    }
+
+    @PostMapping("/receiving/apply")
+    public ResponseEntity<ReceivingApplyResponse> applyReceiving(@RequestBody ReceivingApplyRequest request) {
+        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId()).orElseThrow();
+        return ResponseEntity.ok(supplyChainService.applyReceiving(request, warehouse));
     }
 
 
@@ -232,5 +256,29 @@ public class SupplyChainController {
                                                                         @RequestBody UpdateServiceRequestStatusRequest request) {
         ServiceRequest updated = supplyChainService.updateServiceRequestStatus(id, request.getStatus(), request.getClosedDate());
         return ResponseEntity.ok(ServiceRequestDTO.from(updated));
+    }
+
+    private String extractDocumentText(MultipartFile file) {
+        try {
+            String fileName = file.getOriginalFilename() == null ? "" : file.getOriginalFilename().toLowerCase();
+            String contentType = file.getContentType() == null ? "" : file.getContentType().toLowerCase();
+
+            if (contentType.contains("pdf") || fileName.endsWith(".pdf")) {
+                PdfReader reader = new PdfReader(file.getBytes());
+                try {
+                    StringBuilder builder = new StringBuilder();
+                    for (int page = 1; page <= reader.getNumberOfPages(); page++) {
+                        builder.append(PdfTextExtractor.getTextFromPage(reader, page)).append('\n');
+                    }
+                    return builder.toString();
+                } finally {
+                    reader.close();
+                }
+            }
+
+            return new String(file.getBytes(), StandardCharsets.UTF_8);
+        } catch (Exception ex) {
+            throw new IllegalArgumentException("Document could not be read for receiving preview", ex);
+        }
     }
 }

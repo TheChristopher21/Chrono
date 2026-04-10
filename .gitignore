@@ -4,6 +4,7 @@
 
 *.log
 *.sql
+!Chrono-backend/src/main/resources/db/migration/*.sql
 compose-log.txt
 
 data/

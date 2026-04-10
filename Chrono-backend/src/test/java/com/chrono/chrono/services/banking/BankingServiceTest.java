@@ -85,31 +85,38 @@ class BankingServiceTest {
         batch.setInstructions(Collections.emptyList());
 
         when(paymentBatchRepository.findById(7L)).thenReturn(Optional.of(batch));
+        when(paymentBatchRepository.findByIdAndCompany(7L, company)).thenReturn(Optional.of(batch));
         when(paymentBatchRepository.save(any(PaymentBatch.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(paymentGatewayClient.transmit(any(PaymentBatch.class), any(String.class), any(String.class)))
-                .thenReturn(new PaymentGatewayClient.PaymentSubmissionResult("REF-123", "SENT", "ok"));
+                .thenReturn(new PaymentGatewayClient.PaymentSubmissionResult("REF-123", "SENT", "ok", "API", null, null));
 
-        PaymentBatch updated = bankingService.markBatchTransmitted(7L, "IDEMPOTENT-REF");
+        PaymentBatch updated = bankingService.markBatchTransmitted(company, 7L, "IDEMPOTENT-REF");
 
         assertThat(updated.getStatus()).isEqualTo(PaymentStatus.SENT);
         assertThat(updated.getTransmissionReference()).isEqualTo("REF-123");
         assertThat(updated.getProviderStatus()).isEqualTo("SENT");
+        assertThat(updated.getDeliveryChannel()).isEqualTo("API");
         verify(paymentGatewayClient).transmit(any(PaymentBatch.class), any(String.class), any(String.class));
     }
 
     @Test
     void requestSignaturePersistsProviderFields() {
+        Company company = new Company();
+        company.setId(5L);
+        company.setName("Chrono AG");
+
         when(digitalSignatureProviderClient.createSignatureRequest("PAYROLL", "/tmp/doc.pdf", "user@example.com"))
                 .thenReturn(new DigitalSignatureProviderClient.SignatureCreationResult(SignatureStatus.IN_PROGRESS,
                         "SIG-42", "https://sign.example.com/42", "created"));
         when(digitalSignatureRequestRepository.save(any(DigitalSignatureRequest.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        DigitalSignatureRequest request = bankingService.requestSignature("PAYROLL", "/tmp/doc.pdf", "user@example.com");
+        DigitalSignatureRequest request = bankingService.requestSignature(company, "PAYROLL", "/tmp/doc.pdf", "user@example.com");
 
         assertThat(request.getProviderReference()).isEqualTo("SIG-42");
         assertThat(request.getSigningUrl()).isEqualTo("https://sign.example.com/42");
         assertThat(request.getStatus()).isEqualTo(SignatureStatus.IN_PROGRESS);
+        assertThat(request.getCompany()).isEqualTo(company);
     }
 
     @Test

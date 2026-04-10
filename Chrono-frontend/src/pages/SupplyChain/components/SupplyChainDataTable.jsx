@@ -1,5 +1,6 @@
 import React from "react";
 import StatusChip from "./StatusChip.jsx";
+import HelpLabel from "./HelpLabel.jsx";
 
 const SupplyChainDataTable = ({ columns, rows, selectedIds, onToggleRow, onSort, sortBy, sortDirection, onOpen, text }) => (
     <div className="sc-table-wrap">
@@ -10,8 +11,8 @@ const SupplyChainDataTable = ({ columns, rows, selectedIds, onToggleRow, onSort,
                     {columns.map((column) => (
                         <th key={column.key}>
                             <button type="button" className="table-sort" onClick={() => onSort(column.key)}>
-                                {column.label}
-                                {sortBy === column.key ? (sortDirection === "asc" ? " ↑" : " ↓") : ""}
+                                <HelpLabel label={column.label} help={column.help} className="table-sort-label" />
+                                <span className="table-sort-indicator" aria-hidden="true">{sortBy === column.key ? (sortDirection === "asc" ? "↑" : "↓") : ""}</span>
                             </button>
                         </th>
                     ))}
@@ -24,7 +25,7 @@ const SupplyChainDataTable = ({ columns, rows, selectedIds, onToggleRow, onSort,
                         <td colSpan={columns.length + 2} className="table-empty">{text.empty}</td>
                     </tr>
                 ) : rows.map((row) => (
-                    <tr key={row.id}>
+                    <tr key={row.id} className={selectedIds.has(row.id) ? "is-selected" : ""}>
                         <td>
                             <input type="checkbox" checked={selectedIds.has(row.id)} onChange={() => onToggleRow(row.id)} />
                         </td>

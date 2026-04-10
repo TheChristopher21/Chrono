@@ -111,6 +111,10 @@ export const normalizeDelivery = (delivery = {}) => ({
     supplier: delivery.supplier ?? delivery.vendorName ?? "-",
     asn: delivery.asn ?? `ASN-${delivery.id ?? "NEW"}`,
     dock: delivery.dock ?? "D-01",
+    lines: Array.isArray(delivery.lines) ? delivery.lines : [],
+    quantity: Array.isArray(delivery.lines)
+        ? delivery.lines.reduce((sum, line) => sum + toNumber(line?.quantity), 0)
+        : toNumber(delivery.quantity),
 });
 
 export const normalizeServiceCase = (serviceCase = {}) => ({

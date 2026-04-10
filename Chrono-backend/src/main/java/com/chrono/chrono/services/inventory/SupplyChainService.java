@@ -4,10 +4,14 @@ import com.chrono.chrono.dto.inventory.AutoReplenishItemDTO;
 import com.chrono.chrono.dto.inventory.AutoReplenishPlanDTO;
 import com.chrono.chrono.dto.inventory.AutoReplenishRequest;
 import com.chrono.chrono.dto.inventory.AutoReplenishResponse;
-import com.chrono.chrono.dto.inventory.ReplenishmentPreviewResponse;
 import com.chrono.chrono.dto.inventory.AutoReplenishSupplierDTO;
-import com.chrono.chrono.dto.inventory.PurchaseOrderDTO;
 import com.chrono.chrono.dto.inventory.PlanWavePickRequest;
+import com.chrono.chrono.dto.inventory.PurchaseOrderDTO;
+import com.chrono.chrono.dto.inventory.ReceivingApplyRequest;
+import com.chrono.chrono.dto.inventory.ReceivingApplyResponse;
+import com.chrono.chrono.dto.inventory.ReceivingPreviewRequest;
+import com.chrono.chrono.dto.inventory.ReceivingPreviewResponse;
+import com.chrono.chrono.dto.inventory.ReplenishmentPreviewResponse;
 import com.chrono.chrono.dto.inventory.WavePickOrderSummaryDTO;
 import com.chrono.chrono.dto.inventory.WavePickResponse;
 import com.chrono.chrono.dto.inventory.WavePickStopDTO;
@@ -38,19 +42,30 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
 public class SupplyChainService {
+    private static final Pattern LABELED_REFERENCE_PATTERN = Pattern.compile(
+            "(?i)(?:BESTELL(?:NUMMER|NR)|ORDER(?:\\s+NUMBER|\\s+NO\\.?|\\s+NR)?|PURCHASE\\s+ORDER|ASN|LIEFERSCHEIN(?:NUMMER|NR)?|DELIVERY\\s+NOTE|REFERENCE|REFERENZ)\\s*[:#-]?\\s*([A-Z0-9][A-Z0-9\\-/]{2,})"
+    );
+    private static final Pattern GENERIC_REFERENCE_PATTERN = Pattern.compile("\\b[A-Z]{1,6}-\\d{2,}(?:-\\d+)?\\b");
+    private static final Pattern LABELED_VENDOR_PATTERN = Pattern.compile("(?i)(?:LIEFERANT|VENDOR|SUPPLIER)\\s*[:#-]?\\s*([^\\r\\n]+)");
+    private static final Pattern LABELED_QUANTITY_PATTERN = Pattern.compile("(?i)(?:MENGE|QTY|QUANTITY|ANZAHL)\\s*[:x-]?\\s*(\\d+(?:[.,]\\d+)?)");
+    private static final Pattern GENERIC_NUMBER_PATTERN = Pattern.compile("(?<![A-Z0-9])(\\d{1,5}(?:[.,]\\d{1,3})?)(?![A-Z0-9])");
+    private static final Pattern DATE_PATTERN = Pattern.compile("(\\b\\d{4}-\\d{2}-\\d{2}\\b|\\b\\d{2}[./-]\\d{2}[./-]\\d{4}\\b)");
 
     private final ProductRepository productRepository;
     private final WarehouseRepository warehouseRepository;
@@ -139,6 +154,139 @@ public class SupplyChainService {
     @Transactional(readOnly = true)
     public Page<StockMovement> listStockMovements(Pageable pageable) {
         return stockMovementRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public ReceivingPreviewResponse previewReceiving(ReceivingPreviewRequest request) {
+        String documentText = safeText(request.getDocumentText());
+        List<PurchaseOrder> openOrders = purchaseOrderRepository.findAll().stream()
+                .filter(this::isOpenPurchaseOrder)
+                .toList();
+        LinkedHashSet<String> detectedCodes = collectDetectedCodes(request);
+        PurchaseOrder matchedOrder = findMatchingPurchaseOrder(detectedCodes, documentText, openOrders);
+
+        String reference = matchedOrder != null
+                ? matchedOrder.getOrderNumber()
+                : detectedCodes.stream().findFirst().orElseGet(() -> fallbackReferenceFromFile(request.getFileName()));
+        String vendorName = matchedOrder != null
+                ? matchedOrder.getVendorName()
+                : extractVendorName(documentText, openOrders);
+        String documentDate = extractDate(documentText);
+
+        List<String> warnings = new ArrayList<>();
+        List<ReceivingPreviewResponse.ReceivingPreviewItem> items = matchedOrder != null
+                ? buildPreviewItemsForOrder(matchedOrder)
+                : detectPreviewItems(documentText, detectedCodes);
+
+        boolean ready = matchedOrder != null || !items.isEmpty();
+        String mode = matchedOrder != null ? "PURCHASE_ORDER" : (!items.isEmpty() ? "DIRECT_RECEIPT" : "NONE");
+        String matchType = matchedOrder != null ? "PURCHASE_ORDER_MATCH" : (!items.isEmpty() ? "SKU_MATCH" : "NO_MATCH");
+        String message;
+
+        if (matchedOrder != null) {
+            message = "Open purchase order matched and ready for receiving review.";
+        } else if (!items.isEmpty()) {
+            message = "Products detected from scan or document. Review quantities before posting.";
+            warnings.add("This booking is posted as direct goods receipt and does not close a purchase order automatically.");
+        } else {
+            message = "No reliable match found yet. Scan an order number, ASN, or upload a clearer delivery note.";
+            warnings.add("No purchase order or SKU could be matched from the current scan/document.");
+        }
+
+        if ((!safeText(request.getFileName()).isBlank() || !safeText(request.getDocumentText()).isBlank()) && documentText.isBlank()) {
+            warnings.add("No readable document text was available. Matching is based on detected codes and file name only.");
+        }
+
+        return new ReceivingPreviewResponse(
+                ready,
+                mode,
+                matchType,
+                message,
+                reference,
+                vendorName,
+                documentDate,
+                matchedOrder != null ? matchedOrder.getId() : null,
+                matchedOrder != null ? matchedOrder.getOrderNumber() : null,
+                matchedOrder != null ? matchedOrder.getStatus().name() : null,
+                matchedOrder != null,
+                new ArrayList<>(detectedCodes),
+                warnings,
+                abbreviate(documentText, 560),
+                items
+        );
+    }
+
+    @Transactional
+    public ReceivingApplyResponse applyReceiving(ReceivingApplyRequest request, Warehouse warehouse) {
+        if (request.getWarehouseId() == null) {
+            throw new IllegalArgumentException("Warehouse is required");
+        }
+
+        PurchaseOrder order = request.getPurchaseOrderId() == null
+                ? null
+                : purchaseOrderRepository.findById(request.getPurchaseOrderId()).orElseThrow();
+
+        String reference = safeText(request.getReference());
+        if (reference.isBlank() && order != null) {
+            reference = order.getOrderNumber();
+        }
+        if (reference.isBlank()) {
+            reference = "SCAN-RECEIPT";
+        }
+
+        if (order != null && request.isCompletePurchaseOrder() && matchesOrderExactly(order, request.getItems())) {
+            PurchaseOrder received = receivePurchaseOrder(order.getId(), warehouse);
+            BigDecimal totalQuantity = received.getLines() == null ? BigDecimal.ZERO : received.getLines().stream()
+                    .map(PurchaseOrderLine::getQuantity)
+                    .filter(java.util.Objects::nonNull)
+                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+            int bookedItemCount = received.getLines() == null ? 0 : received.getLines().size();
+            return new ReceivingApplyResponse(
+                    "PURCHASE_ORDER",
+                    "Purchase order fully received and stock posted.",
+                    received.getOrderNumber(),
+                    received.getOrderNumber(),
+                    true,
+                    bookedItemCount,
+                    totalQuantity
+            );
+        }
+
+        if (request.getItems() == null || request.getItems().isEmpty()) {
+            throw new IllegalArgumentException("At least one receiving item is required");
+        }
+
+        BigDecimal totalQuantity = BigDecimal.ZERO;
+        int bookedItemCount = 0;
+
+        for (ReceivingApplyRequest.ReceivingApplyItem item : request.getItems()) {
+            if (item == null || item.getProductId() == null || item.getQuantity() == null) {
+                continue;
+            }
+            if (item.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            Product product = productRepository.findById(item.getProductId()).orElseThrow();
+            adjustStock(product, warehouse, item.getQuantity(), StockMovementType.RECEIPT, reference, null, null, null);
+            totalQuantity = totalQuantity.add(item.getQuantity());
+            bookedItemCount++;
+        }
+
+        if (bookedItemCount == 0) {
+            throw new IllegalArgumentException("No positive quantities were provided for receiving");
+        }
+
+        return new ReceivingApplyResponse(
+                order != null ? "PURCHASE_ORDER_PARTIAL" : "DIRECT_RECEIPT",
+                order != null
+                        ? "Goods receipt posted. Purchase order remains open until it is fully confirmed."
+                        : "Goods receipt posted from scan/document analysis.",
+                reference,
+                order != null ? order.getOrderNumber() : null,
+                false,
+                bookedItemCount,
+                totalQuantity
+        );
     }
 
     @Transactional
@@ -605,6 +753,291 @@ public class SupplyChainService {
             return product.getUnitPrice();
         }
         return BigDecimal.TEN;
+    }
+
+    private boolean isOpenPurchaseOrder(PurchaseOrder order) {
+        return order.getStatus() != PurchaseOrderStatus.RECEIVED && order.getStatus() != PurchaseOrderStatus.CANCELLED;
+    }
+
+    private LinkedHashSet<String> collectDetectedCodes(ReceivingPreviewRequest request) {
+        LinkedHashSet<String> codes = new LinkedHashSet<>();
+        addCandidate(codes, request.getScanValue());
+        if (request.getDetectedCodes() != null) {
+            request.getDetectedCodes().forEach(code -> addCandidate(codes, code));
+        }
+        extractReferenceCandidates(request.getDocumentText()).forEach(code -> addCandidate(codes, code));
+        addCandidate(codes, fallbackReferenceFromFile(request.getFileName()));
+        return codes;
+    }
+
+    private void addCandidate(Set<String> target, String value) {
+        String trimmed = safeText(value).trim();
+        if (!trimmed.isBlank()) {
+            target.add(trimmed);
+        }
+    }
+
+    private PurchaseOrder findMatchingPurchaseOrder(Set<String> detectedCodes,
+                                                    String documentText,
+                                                    List<PurchaseOrder> openOrders) {
+        for (String code : detectedCodes) {
+            Optional<PurchaseOrder> exact = purchaseOrderRepository.findByOrderNumberIgnoreCase(code)
+                    .filter(this::isOpenPurchaseOrder);
+            if (exact.isPresent()) {
+                return exact.get();
+            }
+        }
+
+        String normalizedText = normalizeLookup(documentText);
+        PurchaseOrder bestMatch = null;
+        int bestScore = 0;
+
+        for (PurchaseOrder order : openOrders) {
+            int score = 0;
+            String orderNumber = normalizeLookup(order.getOrderNumber());
+            String vendorName = normalizeLookup(order.getVendorName());
+
+            if (!orderNumber.isBlank() && normalizedText.contains(orderNumber)) {
+                score += 90;
+            }
+            if (!vendorName.isBlank() && normalizedText.contains(vendorName)) {
+                score += 20;
+            }
+            if (order.getLines() != null) {
+                for (PurchaseOrderLine line : order.getLines()) {
+                    if (line.getProduct() == null || line.getProduct().getSku() == null) {
+                        continue;
+                    }
+                    if (normalizedText.contains(normalizeLookup(line.getProduct().getSku()))) {
+                        score += 18;
+                    }
+                }
+            }
+
+            if (score > bestScore) {
+                bestScore = score;
+                bestMatch = order;
+            }
+        }
+
+        return bestScore >= 60 ? bestMatch : null;
+    }
+
+    private List<ReceivingPreviewResponse.ReceivingPreviewItem> buildPreviewItemsForOrder(PurchaseOrder order) {
+        if (order.getLines() == null) {
+            return List.of();
+        }
+        return order.getLines().stream()
+                .filter(line -> line.getProduct() != null)
+                .map(line -> new ReceivingPreviewResponse.ReceivingPreviewItem(
+                        line.getProduct().getId(),
+                        line.getProduct().getSku(),
+                        line.getProduct().getName(),
+                        Optional.ofNullable(line.getQuantity()).orElse(BigDecimal.ZERO),
+                        line.getProduct().getUnitOfMeasure(),
+                        "PURCHASE_ORDER"))
+                .toList();
+    }
+
+    private List<ReceivingPreviewResponse.ReceivingPreviewItem> detectPreviewItems(String documentText,
+                                                                                   Set<String> detectedCodes) {
+        List<Product> products = productRepository.findAll().stream()
+                .filter(product -> product.getSku() != null && !product.getSku().isBlank())
+                .sorted(Comparator.comparingInt((Product product) -> product.getSku().length()).reversed())
+                .toList();
+        if (products.isEmpty()) {
+            return List.of();
+        }
+
+        Map<Long, Product> productsById = products.stream().collect(Collectors.toMap(Product::getId, product -> product));
+        Map<Long, BigDecimal> quantitiesByProduct = new LinkedHashMap<>();
+        Map<Long, String> sourceByProduct = new LinkedHashMap<>();
+
+        for (String line : safeText(documentText).split("\\R+")) {
+            String normalizedLine = normalizeLookup(line);
+            if (normalizedLine.isBlank()) {
+                continue;
+            }
+            for (Product product : products) {
+                String sku = normalizeLookup(product.getSku());
+                if (sku.isBlank() || !normalizedLine.contains(sku)) {
+                    continue;
+                }
+                BigDecimal quantity = extractQuantityFromLine(line, product.getSku());
+                quantitiesByProduct.merge(product.getId(), quantity != null ? quantity : BigDecimal.ONE, BigDecimal::add);
+                sourceByProduct.putIfAbsent(product.getId(), "DOCUMENT_TEXT");
+            }
+        }
+
+        for (String code : detectedCodes) {
+            productRepository.findBySkuIgnoreCase(code).ifPresent(product -> {
+                quantitiesByProduct.putIfAbsent(product.getId(), BigDecimal.ONE);
+                sourceByProduct.putIfAbsent(product.getId(), "BARCODE");
+            });
+        }
+
+        return quantitiesByProduct.entrySet().stream()
+                .map(entry -> {
+                    Product product = productsById.get(entry.getKey());
+                    return product == null ? null : new ReceivingPreviewResponse.ReceivingPreviewItem(
+                            product.getId(),
+                            product.getSku(),
+                            product.getName(),
+                            entry.getValue(),
+                            product.getUnitOfMeasure(),
+                            sourceByProduct.getOrDefault(product.getId(), "DOCUMENT_TEXT"));
+                })
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    private BigDecimal extractQuantityFromLine(String line, String sku) {
+        Matcher labeled = LABELED_QUANTITY_PATTERN.matcher(line);
+        if (labeled.find()) {
+            return parseDecimal(labeled.group(1));
+        }
+
+        String upperLine = line.toUpperCase(Locale.ROOT);
+        int skuIndex = upperLine.indexOf(sku.toUpperCase(Locale.ROOT));
+        String quantityRegion = skuIndex >= 0 && skuIndex + sku.length() < line.length()
+                ? line.substring(skuIndex + sku.length())
+                : line;
+        Matcher generic = GENERIC_NUMBER_PATTERN.matcher(quantityRegion);
+        while (generic.find()) {
+            BigDecimal parsed = parseDecimal(generic.group(1));
+            if (parsed != null && parsed.compareTo(BigDecimal.ZERO) > 0) {
+                return parsed;
+            }
+        }
+        return null;
+    }
+
+    private BigDecimal parseDecimal(String value) {
+        String normalized = safeText(value).replace(",", ".").trim();
+        if (normalized.isBlank()) {
+            return null;
+        }
+        try {
+            return new BigDecimal(normalized);
+        } catch (NumberFormatException ex) {
+            return null;
+        }
+    }
+
+    private boolean matchesOrderExactly(PurchaseOrder order, List<ReceivingApplyRequest.ReceivingApplyItem> items) {
+        if (order.getLines() == null || items == null) {
+            return false;
+        }
+        Map<Long, BigDecimal> expected = new LinkedHashMap<>();
+        for (PurchaseOrderLine line : order.getLines()) {
+            if (line.getProduct() == null || line.getProduct().getId() == null || line.getQuantity() == null) {
+                continue;
+            }
+            expected.merge(line.getProduct().getId(), line.getQuantity(), BigDecimal::add);
+        }
+
+        Map<Long, BigDecimal> actual = new LinkedHashMap<>();
+        for (ReceivingApplyRequest.ReceivingApplyItem item : items) {
+            if (item == null || item.getProductId() == null || item.getQuantity() == null) {
+                continue;
+            }
+            if (item.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            actual.merge(item.getProductId(), item.getQuantity(), BigDecimal::add);
+        }
+
+        if (expected.size() != actual.size()) {
+            return false;
+        }
+
+        for (Map.Entry<Long, BigDecimal> entry : expected.entrySet()) {
+            BigDecimal actualQuantity = actual.get(entry.getKey());
+            if (actualQuantity == null || actualQuantity.compareTo(entry.getValue()) != 0) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private String extractVendorName(String documentText, List<PurchaseOrder> openOrders) {
+        String safeDocumentText = safeText(documentText);
+        Matcher labeled = LABELED_VENDOR_PATTERN.matcher(safeDocumentText);
+        if (labeled.find()) {
+            return labeled.group(1).trim();
+        }
+
+        String normalizedText = normalizeLookup(safeDocumentText);
+        return openOrders.stream()
+                .map(PurchaseOrder::getVendorName)
+                .filter(name -> !normalizeLookup(name).isBlank() && normalizedText.contains(normalizeLookup(name)))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private String extractDate(String documentText) {
+        Matcher matcher = DATE_PATTERN.matcher(safeText(documentText));
+        if (!matcher.find()) {
+            return null;
+        }
+        String raw = matcher.group(1);
+        for (DateTimeFormatter formatter : List.of(
+                DateTimeFormatter.ISO_LOCAL_DATE,
+                DateTimeFormatter.ofPattern("dd.MM.yyyy"),
+                DateTimeFormatter.ofPattern("dd/MM/yyyy"),
+                DateTimeFormatter.ofPattern("dd-MM-yyyy"))) {
+            try {
+                return LocalDate.parse(raw, formatter).toString();
+            } catch (Exception ignored) {
+                // Try the next known format.
+            }
+        }
+        return raw;
+    }
+
+    private List<String> extractReferenceCandidates(String documentText) {
+        String safeDocumentText = safeText(documentText);
+        LinkedHashSet<String> references = new LinkedHashSet<>();
+
+        Matcher labeled = LABELED_REFERENCE_PATTERN.matcher(safeDocumentText);
+        while (labeled.find()) {
+            addCandidate(references, labeled.group(1));
+        }
+
+        Matcher generic = GENERIC_REFERENCE_PATTERN.matcher(safeDocumentText.toUpperCase(Locale.ROOT));
+        while (generic.find()) {
+            addCandidate(references, generic.group());
+        }
+
+        return new ArrayList<>(references);
+    }
+
+    private String fallbackReferenceFromFile(String fileName) {
+        String safeFileName = safeText(fileName).trim();
+        if (safeFileName.isBlank()) {
+            return null;
+        }
+        int extensionIndex = safeFileName.lastIndexOf('.');
+        String baseName = extensionIndex > 0 ? safeFileName.substring(0, extensionIndex) : safeFileName;
+        return baseName.replace('_', '-').trim();
+    }
+
+    private String abbreviate(String value, int maxLength) {
+        String safeValue = safeText(value).trim();
+        if (safeValue.length() <= maxLength) {
+            return safeValue;
+        }
+        return safeValue.substring(0, Math.max(0, maxLength - 1)).trim() + "…";
+    }
+
+    private String normalizeLookup(String value) {
+        return safeText(value)
+                .toUpperCase(Locale.ROOT)
+                .replaceAll("[^A-Z0-9]", "");
+    }
+
+    private String safeText(String value) {
+        return value == null ? "" : value;
     }
 
     private static final class ReplenishmentNeed {
