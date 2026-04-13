@@ -149,6 +149,7 @@ const getWorkspaceTone = (rows = []) => {
 const SupplyChainDashboard = () => {
     const { language } = useContext(LanguageContext);
     const { notify } = useNotification();
+    const workspaceSectionRef = React.useRef(null);
     const l = useCallback((de, en) => (language === "de" ? de : en), [language]);
     const locale = language === "de" ? "de" : "en";
     const helpContent = useMemo(() => ({
@@ -500,17 +501,6 @@ const SupplyChainDashboard = () => {
         };
     }, [loadData]);
 
-    useEffect(() => {
-        const defaultView = {
-            warehouse: "inbound",
-            planner: "production",
-            quality: "exceptions",
-            service: "service",
-            admin: "governance",
-        };
-        setActiveWorkspace(defaultView[role]);
-    }, [role]);
-
     const movementTimeline = useMemo(
         () => createMovementHistory({ stock, productionOrders, serviceRequests: serviceCases, inboundOrders, outboundOrders }),
         [stock, productionOrders, serviceCases, inboundOrders, outboundOrders]
@@ -737,6 +727,34 @@ const SupplyChainDashboard = () => {
         { id: "service", label: l("Service", "Service"), description: l("Steuert Reaktionszeiten (SLA) und Kundenfälle.", "Steers response times (SLA) and customer cases."), defaultWorkspace: "service" },
         { id: "admin", label: l("Admin", "Admin"), description: l("Überblick über Regeln, Freigaben und Prüfhistorie.", "Overview of rules, approvals, and audit history."), defaultWorkspace: "governance" },
     ]), [l]);
+
+    const scrollToWorkspaceSection = useCallback(() => {
+        if (typeof window === "undefined") return;
+        window.requestAnimationFrame(() => {
+            workspaceSectionRef.current?.scrollIntoView({
+                behavior: "smooth",
+                block: "start",
+            });
+        });
+    }, []);
+
+    const activateWorkspace = useCallback((workspaceId, options = {}) => {
+        const { scroll = false } = options;
+        setActiveWorkspace(workspaceId);
+        if (scroll) {
+            scrollToWorkspaceSection();
+        }
+    }, [scrollToWorkspaceSection]);
+
+    const activateRole = useCallback((roleId, options = {}) => {
+        const { scroll = false } = options;
+        const nextRole = roleDefinitions.find((item) => item.id === roleId) ?? roleDefinitions[0];
+        setRole(nextRole.id);
+        setActiveWorkspace(nextRole.defaultWorkspace);
+        if (scroll) {
+            scrollToWorkspaceSection();
+        }
+    }, [roleDefinitions, scrollToWorkspaceSection]);
 
     const text = {
         saveView: l("Ansicht speichern", "Save view"),
@@ -966,36 +984,11 @@ const SupplyChainDashboard = () => {
     const activeRole = roleDefinitions.find((item) => item.id === role) ?? roleDefinitions[0];
     const quickEntryEnabled = ["inbound", "inventory", "cycle-count"].includes(activeDefinition.id);
     const receivingAssistantEnabled = activeDefinition.id === "inbound";
-    const operationalLoad = useMemo(() => inboundRows.length + outboundRows.length + productionRows.length, [inboundRows.length, outboundRows.length, productionRows.length]);
     const totalAttention = useMemo(() => workspaceCards.reduce((sum, workspace) => sum + workspace.attention, 0), [workspaceCards]);
     const criticalWorkspaceCount = useMemo(() => workspaceCards.filter((workspace) => workspace.tone === "danger").length, [workspaceCards]);
+    const activeWorkspaceCount = useMemo(() => workspaceCards.filter((workspace) => workspace.total > 0).length, [workspaceCards]);
 
-    const heroSignalCards = useMemo(() => ([
-        {
-            key: "attention",
-            label: l("Offene Punkte", "Open points"),
-            value: totalAttention,
-            note: totalAttention
-                ? l(`${criticalWorkspaceCount} Bereiche sind kritisch oder unter Beobachtung.`, `${criticalWorkspaceCount} areas are critical or need watching.`)
-                : l("Keine akuten Blocker im Moment.", "No urgent blockers right now."),
-            tone: totalAttention ? (criticalWorkspaceCount > 0 ? "danger" : "warn") : "safe",
-        },
-        {
-            key: "load",
-            label: l("Laufende Arbeit", "Live load"),
-            value: operationalLoad,
-            note: l("Wareneingang, Ausgang und Produktion gleichzeitig im Blick.", "Inbound, outbound, and production in view at once."),
-            tone: operationalLoad > 0 ? "info" : "neutral",
-        },
-        {
-            key: "workspace",
-            label: l("Aktiver Bereich", "Active workspace"),
-            value: activeDefinition.title,
-            note: activeDefinition.attention
-                ? l(`${activeDefinition.attention} Vorgänge zuerst prüfen.`, `${activeDefinition.attention} records to review first.`)
-                : l(`${activeDefinition.total} Datensätze bereit.`, `${activeDefinition.total} records ready.`),
-            tone: activeDefinition.attention ? activeDefinition.tone : (activeDefinition.total > 0 ? "info" : "neutral"),
-        },
+    const heroSummaryCards = useMemo(() => ([
         {
             key: "role",
             label: l("Arbeitsmodus", "Work mode"),
@@ -1003,7 +996,25 @@ const SupplyChainDashboard = () => {
             note: activeRole.description,
             tone: "info",
         },
-    ]), [activeDefinition.attention, activeDefinition.title, activeDefinition.total, activeRole.description, activeRole.label, criticalWorkspaceCount, l, operationalLoad, totalAttention]);
+        {
+            key: "workspace",
+            label: l("Aktiver Bereich", "Active area"),
+            value: activeDefinition.title,
+            note: activeDefinition.total
+                ? l("Arbeitsliste, Filter und Aktionen liegen direkt darunter bereit.", "Work list, filters, and actions are directly available below.")
+                : l("Diese Liste ist aktuell leer und kann bei Bedarf gewechselt werden.", "This list is currently empty and can be switched if needed."),
+            tone: activeDefinition.attention ? activeDefinition.tone : (activeDefinition.total > 0 ? "info" : "neutral"),
+        },
+        {
+            key: "attention",
+            label: l("Offen jetzt", "Open now"),
+            value: totalAttention || l("Keine", "None"),
+            note: totalAttention
+                ? l(`${criticalWorkspaceCount} Bereiche brauchen gerade Aufmerksamkeit.`, `${criticalWorkspaceCount} areas need attention right now.`)
+                : l("Keine akuten Blocker im Moment.", "No urgent blockers right now."),
+            tone: totalAttention ? (criticalWorkspaceCount > 0 ? "danger" : "warn") : "safe",
+        },
+    ]), [activeDefinition.attention, activeDefinition.title, activeDefinition.total, activeDefinition.tone, activeRole.description, activeRole.label, criticalWorkspaceCount, l, totalAttention]);
 
     const priorityWorkspaces = useMemo(() => {
         const toneRank = { danger: 3, warn: 2, safe: 1, neutral: 0 };
@@ -1019,19 +1030,40 @@ const SupplyChainDashboard = () => {
         return targets.map((workspace, index) => ({
             ...workspace,
             actionLabel: index === 0
-                ? l("Jetzt prüfen", "Review now")
+                ? l("Als Fokus wählen", "Set as focus")
                 : workspace.attention
-                    ? l("Danach", "Then")
+                    ? l("Als Nächstes", "Next up")
                     : l("Bereit", "Ready"),
             actionText: workspace.attention
-                ? l(`${workspace.attention} offene Punkte zuerst bearbeiten.`, `${workspace.attention} open items to handle first.`)
+                ? l(`${workspace.attention} offene Punkte warten dort auf dich.`, `${workspace.attention} open items are waiting there.`)
                 : workspace.total
-                    ? l(`${workspace.total} Einträge stehen bereit.`, `${workspace.total} records are ready.`)
+                    ? l(`${workspace.total} Einträge sind dort bereit.`, `${workspace.total} records are ready there.`)
                     : l("Der Bereich ist aktuell leer.", "This area is currently empty."),
         }));
     }, [l, workspaceCards]);
 
-    const nextWorkspace = priorityWorkspaces[0] ?? activeDefinition;
+    const nextWorkspace = useMemo(() => {
+        const urgentWorkspace = priorityWorkspaces.find((workspace) => workspace.attention > 0);
+        if (urgentWorkspace) return urgentWorkspace;
+
+        const roleDefaultWorkspace = workspaceCards.find((workspace) => workspace.id === activeRole.defaultWorkspace);
+        if (roleDefaultWorkspace?.total) return roleDefaultWorkspace;
+
+        return priorityWorkspaces[0] ?? activeDefinition;
+    }, [activeDefinition, activeRole.defaultWorkspace, priorityWorkspaces, workspaceCards]);
+
+    const heroHeadline = totalAttention
+        ? l(`${nextWorkspace.title} zuerst prüfen.`, `Review ${nextWorkspace.title} first.`)
+        : l(`${activeRole.label}: ${activeDefinition.title} ist jetzt dein Fokus.`, `${activeRole.label}: ${activeDefinition.title} is your current focus.`);
+    const heroIntro = totalAttention
+        ? l(
+            "Arbeite die offenen Themen direkt unten ab. Der Bereich-Wechsler bleibt sichtbar, damit du ohne Zurückscrollen weitermachen kannst.",
+            "Work through the open topics directly below. The area switcher stays visible so you can continue without scrolling back up."
+        )
+        : l(
+            "Arbeitsliste, Kennzahlen und Bereich-Wechsler liegen direkt darunter griffbereit.",
+            "Work list, metrics, and the area switcher are directly available below."
+        );
 
     const workspaceGroupDefinitions = useMemo(() => ([
         { id: "inbound-group", label: l("Inbound & Versand", "Inbound & outbound"), description: l("Anlieferung und Versand schnell öffnen.", "Open receiving and shipping quickly."), ids: ["inbound", "outbound"] },
@@ -1265,38 +1297,43 @@ const SupplyChainDashboard = () => {
                 <header className="card sc-hero">
                     <div className="sc-hero-main">
                         <div className="sc-hero-copy">
-                            <span className="sc-eyebrow">{l("Supply Chain Leitstand", "Supply Chain control tower")}</span>
-                            <h1>{l("Offene Punkte zuerst, Arbeitsliste direkt darunter.", "Open issues first, work list directly below.")}</h1>
-                            <div className="sc-hero-tags">
-                                <span className="sc-hero-tag">{l("Rolle", "Role")}: {activeRole.label}</span>
-                                <span className="sc-hero-tag">{l("Bereich", "Workspace")}: {activeDefinition.title}</span>
-                                <span className="sc-hero-tag">{l("Einträge", "Records")}: {activeDefinition.total}</span>
+                            <div className="sc-hero-copy-head">
+                                <span className="sc-eyebrow">{l("Supply Chain Leitstand", "Supply Chain control tower")}</span>
+                                <h1>{heroHeadline}</h1>
+                                <p className="sc-hero-intro">{heroIntro}</p>
                             </div>
-                        </div>
-
-                        <div className="sc-hero-side">
-                            <article className={`sc-priority-spotlight tone-${nextWorkspace.tone}`}>
-                                <span className="sc-panel-kicker">{l("Nächste Aktion", "Next action")}</span>
-                                <h2>{nextWorkspace.title}</h2>
-                                <p>{nextWorkspace.actionText}</p>
-                                <div className="sc-priority-spotlight-meta">
-                                    <span className="sc-hero-tag">{nextWorkspace.total} {l("Einträge", "records")}</span>
-                                    <span className={`sc-status-chip ${nextWorkspace.tone === "danger" ? "danger" : nextWorkspace.tone === "warn" ? "info" : nextWorkspace.tone === "safe" ? "success" : "neutral"}`}>{nextWorkspace.toneLabel}</span>
-                                </div>
-                                <button type="button" className="sc-priority-open" onClick={() => setActiveWorkspace(nextWorkspace.id)}>
-                                    {l("Bereich öffnen", "Open workspace")}
-                                </button>
-                            </article>
-
-                            <div className="sc-hero-signal-grid">
-                                {heroSignalCards.map((card) => (
-                                    <article key={card.key} className={`sc-signal-card tone-${card.tone}`}>
+                            <div className="sc-hero-tags">
+                                <span className="sc-hero-tag">{l("Aktive Rolle", "Active role")}: {activeRole.label}</span>
+                                <span className="sc-hero-tag">{l("Geöffnete Liste", "Open list")}: {activeDefinition.title}</span>
+                                <span className="sc-hero-tag">{l("Bereiche mit Inhalt", "Areas with work")}: {activeWorkspaceCount}</span>
+                            </div>
+                            <div className="sc-hero-summary-grid">
+                                {heroSummaryCards.map((card) => (
+                                    <article key={card.key} className={`sc-signal-card sc-hero-summary-card tone-${card.tone}`}>
                                         <span>{card.label}</span>
                                         <strong>{card.value}</strong>
                                         <p>{card.note}</p>
                                     </article>
                                 ))}
                             </div>
+                        </div>
+
+                        <div className="sc-hero-side">
+                            <article className={`sc-priority-spotlight tone-${nextWorkspace.tone}`}>
+                                <span className="sc-panel-kicker">{l("Jetzt starten", "Start now")}</span>
+                                <h2>{nextWorkspace.title}</h2>
+                                <p>{nextWorkspace.actionText}</p>
+                                <div className="sc-priority-spotlight-meta">
+                                    <span className="sc-hero-tag">{nextWorkspace.total} {l("Einträge", "records")}</span>
+                                    <span className={`sc-status-chip ${nextWorkspace.tone === "danger" ? "danger" : nextWorkspace.tone === "warn" ? "info" : nextWorkspace.tone === "safe" ? "success" : "neutral"}`}>{nextWorkspace.toneLabel}</span>
+                                </div>
+                                <button type="button" className="sc-priority-open" onClick={() => activateWorkspace(nextWorkspace.id, { scroll: true })}>
+                                    {l("Arbeitsliste öffnen", "Open work list")}
+                                </button>
+                                <span className="sc-priority-spotlight-footnote">
+                                    {l("Der Bereich-Wechsler bleibt direkt darunter sichtbar.", "The area switcher stays visible directly below.")}
+                                </span>
+                            </article>
                         </div>
                     </div>
 
@@ -1309,7 +1346,7 @@ const SupplyChainDashboard = () => {
 
                     <div className="sc-priority-list">
                         {priorityWorkspaces.map((workspace) => (
-                            <button key={workspace.id} type="button" className={`sc-priority-item tone-${workspace.tone} ${workspace.id === activeWorkspace ? "active" : ""}`} onClick={() => setActiveWorkspace(workspace.id)}>
+                            <button key={workspace.id} type="button" className={`sc-priority-item tone-${workspace.tone} ${workspace.id === activeWorkspace ? "active" : ""}`} onClick={() => activateWorkspace(workspace.id)}>
                                 <span className="sc-priority-item-label">{workspace.actionLabel}</span>
                                 <strong>{workspace.title}</strong>
                                 <p>{workspace.actionText}</p>
@@ -1323,7 +1360,7 @@ const SupplyChainDashboard = () => {
                         <div className="sc-command-block-head">
                             <div>
                                 <p className="sc-panel-kicker">{l("Arbeitsmodus", "Work mode")}</p>
-                                <h3>{l("Rolle wählen und mit dem passenden Bereich starten.", "Choose a role and start with the matching area.")}</h3>
+                                <h3>{l("Rolle wählen und den passenden Bereich setzen. Die Bereiche darunter springen direkt zur Liste.", "Choose a role to set the matching area. The area cards below jump directly to the list.")}</h3>
                             </div>
                             <div className="sc-command-center-badges">
                                 <span className="sc-hero-tag">{l("Aktive Rolle", "Active role")}: {activeRole.label}</span>
@@ -1334,7 +1371,7 @@ const SupplyChainDashboard = () => {
                             {roleDefinitions.map((roleOption) => {
                                 const workspaceTitle = workspaceCards.find((item) => item.id === roleOption.defaultWorkspace)?.title ?? roleOption.defaultWorkspace;
                                 return (
-                                    <button key={roleOption.id} type="button" className={`sc-role-chip ${roleOption.id === role ? "active" : ""}`} onClick={() => setRole(roleOption.id)}>
+                                    <button key={roleOption.id} type="button" className={`sc-role-chip ${roleOption.id === role ? "active" : ""}`} onClick={() => activateRole(roleOption.id)}>
                                         <div className="sc-role-chip-top">
                                             <strong>{roleOption.label}</strong>
                                             <span className={`sc-health-dot ${roleOption.id === role ? "safe" : "neutral"}`} />
@@ -1359,6 +1396,11 @@ const SupplyChainDashboard = () => {
                                     <span className={`sc-status-chip ${group.tone === "danger" ? "danger" : group.tone === "warn" ? "info" : group.tone === "safe" ? "success" : "neutral"}`}>
                                         {group.attention ? `${group.attention} ${l("offen", "open")}` : l("ruhig", "quiet")}
                                     </span>
+                                    {group.items[0] ? (
+                                        <button type="button" className="sc-priority-open sc-group-open" onClick={() => activateWorkspace(group.items[0].id, { scroll: true })}>
+                                            {l("Direkt zu", "Jump to")} {group.items[0].title}
+                                        </button>
+                                    ) : null}
                                 </div>
                             </div>
                             <div className="sc-workspace-dense-grid sc-workspace-group-grid">
@@ -1367,7 +1409,7 @@ const SupplyChainDashboard = () => {
                                         key={workspace.id}
                                         type="button"
                                         className={`sc-workspace-tile tone-${workspace.tone} ${workspace.id === activeWorkspace ? "active" : ""} ${workspace.attention > 0 ? "has-attention" : ""} ${workspace.total === 0 && workspace.attention === 0 ? "is-empty" : ""}`}
-                                        onClick={() => setActiveWorkspace(workspace.id)}
+                                        onClick={() => activateWorkspace(workspace.id, { scroll: true })}
                                     >
                                         <div className="sc-workspace-tile-top">
                                             <span className="sc-workspace-icon">{workspace.icon}</span>
@@ -1389,184 +1431,191 @@ const SupplyChainDashboard = () => {
                 </section>
 
                 <section className="card sc-controlbar">
-                    <div className="sc-role-switch">
-                        <label htmlFor="sc-role">{l("Startseite nach Rolle", "Homepage by role")}</label>
-                        <select id="sc-role" value={role} onChange={(event) => setRole(event.target.value)}>
-                            {roles.map((roleOption) => (
-                                <option key={roleOption} value={roleOption}>
-                                    {roleOption === "warehouse" && l("Lager", "warehouse")}
-                                    {roleOption === "planner" && l("Planung", "planner")}
-                                    {roleOption === "quality" && l("Qualität", "quality")}
-                                    {roleOption === "service" && l("Service", "service")}
-                                    {roleOption === "admin" && l("Admin", "admin")}
-                                </option>
-                            ))}
-                        </select>
+                    <div className="sc-controlbar-head">
+                        <div className="sc-controlbar-copy">
+                            <span className="sc-panel-kicker">{l("Bereich wechseln", "Switch area")}</span>
+                            <p>{l("Bleibt beim Arbeiten sichtbar, damit du nicht wieder nach oben musst.", "Stays visible while you work so you do not have to go back to the top.")}</p>
+                        </div>
+                        <div className="sc-role-switch">
+                            <label htmlFor="sc-role">{l("Rolle", "Role")}</label>
+                            <select id="sc-role" value={role} onChange={(event) => activateRole(event.target.value)}>
+                                {roles.map((roleOption) => (
+                                    <option key={roleOption} value={roleOption}>
+                                        {roleOption === "warehouse" && l("Lager", "warehouse")}
+                                        {roleOption === "planner" && l("Planung", "planner")}
+                                        {roleOption === "quality" && l("Qualität", "quality")}
+                                        {roleOption === "service" && l("Service", "service")}
+                                        {roleOption === "admin" && l("Admin", "admin")}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
                     </div>
                     <div className="sc-workspace-nav">
                         {workspaceDefinitionsWithHelp.map((workspace) => (
-                            <button key={workspace.id} type="button" className={`sc-pill ${workspace.id === activeWorkspace ? "active" : ""}`} onClick={() => setActiveWorkspace(workspace.id)}>
+                            <button key={workspace.id} type="button" className={`sc-pill ${workspace.id === activeWorkspace ? "active" : ""}`} onClick={() => activateWorkspace(workspace.id)}>
                                 {workspace.title}
                             </button>
                         ))}
                     </div>
                 </section>
 
-                {loading ? <p className="card">{l("Lädt…", "Loading…")}</p> : (
-                    <ProcessWorkspace
-                        key={activeDefinition.id}
-                        id={activeDefinition.id}
-                        title={activeDefinition.title}
-                        titleHelp={activeDefinition.titleHelp}
-                        subtitle={activeDefinition.subtitle}
-                        subtitleParts={activeDefinition.subtitleParts}
-                        rows={activeDefinition.rows}
-                        columns={activeDefinition.columns}
-                        timeline={localizedMovementTimeline}
-                        text={text}
-                        workspaceMeta={{
-                            total: activeDefinition.total,
-                            attention: activeDefinition.attention,
-                            tone: activeDefinition.tone,
-                            nextAction: activeDefinition.attention
-                                ? l("Offene Vorgänge zuerst prüfen und priorisieren.", "Review and prioritize open records first.")
-                                : l("Bereich ist bereit für neue Buchung, Prüfung oder Suche.", "Area is ready for new posting, review, or search."),
-                        }}
-                        quickEntry={{
-                            enabled: quickEntryEnabled,
-                            kind: activeDefinition.id === "cycle-count" ? "cycle-count" : "stock-entry",
-                            openLabel: activeDefinition.id === "cycle-count"
-                                ? l("+ Zählplan anlegen", "+ Create count plan")
-                                : l("+ Bestand buchen", "+ Post stock entry"),
-                            closeLabel: l("Schließen", "Close"),
-                            title: activeDefinition.id === "cycle-count"
-                                ? l("Zählplan anlegen", "Create count plan")
-                                : l("Schnellbuchung Bestand", "Quick stock entry"),
-                            subtitle: activeDefinition.id === "cycle-count"
-                                ? l("Produkt und Lager auswählen, damit ein echter Zählauftrag entsteht.", "Choose a product and warehouse to create a real count task.")
-                                : l("Für kleine Teams: Produkt, Lager und Buchung direkt erfassen.", "For small teams: post product, warehouse, and movement directly."),
-                            submitLabel: activeDefinition.id === "cycle-count" ? l("Zählplan speichern", "Save count plan") : l("Buchen", "Post entry"),
-                            submittingLabel: activeDefinition.id === "cycle-count" ? l("Wird angelegt…", "Creating…") : l("Wird gebucht…", "Posting…"),
-                            products,
-                            warehouses,
-                            labels: {
-                                product: l("Produkt", "Product"),
-                                warehouse: l("Lager", "Warehouse"),
-                                quantity: l("Menge", "Quantity"),
-                                type: l("Buchungstyp", "Entry type"),
-                                reference: l("Referenz", "Reference"),
-                            },
-                            help: {
-                                type: helpContent.entryType,
-                                reference: helpContent.reference,
-                            },
-                            placeholders: {
-                                product: l("Bitte Produkt wählen", "Select product"),
-                                warehouse: l("Bitte Lager wählen", "Select warehouse"),
-                                reference: l("z. B. Buchungsgrund oder Beleg", "e.g. booking reason or reference"),
-                            },
-                            types: [
-                                { value: "RECEIPT", label: l("Wareneingang", "Goods receipt") },
-                                { value: "ISSUE", label: l("Entnahme", "Issue") },
-                                { value: "WRITE_OFF", label: l("Abschreibung", "Write-off") },
-                                { value: "GAIN", label: l("Bestandsgewinn", "Stock gain") },
-                            ],
-                            createProduct: {
-                                enabled: activeDefinition.id !== "cycle-count",
-                                openLabel: l("+ Produkt anlegen", "+ Add product"),
-                                closeLabel: l("Produkt-Form schließen", "Close product form"),
-                                title: l("Neues Produkt", "New product"),
-                                titleHelp: helpContent.sku,
-                                submitLabel: l("Produkt speichern", "Save product"),
-                                submittingLabel: l("Speichert…", "Saving…"),
+                <div ref={workspaceSectionRef} className="sc-workspace-anchor">
+                    {loading ? <p className="card">{l("Lädt…", "Loading…")}</p> : (
+                        <ProcessWorkspace
+                            key={activeDefinition.id}
+                            id={activeDefinition.id}
+                            title={activeDefinition.title}
+                            titleHelp={activeDefinition.titleHelp}
+                            subtitle={activeDefinition.subtitle}
+                            subtitleParts={activeDefinition.subtitleParts}
+                            rows={activeDefinition.rows}
+                            columns={activeDefinition.columns}
+                            timeline={localizedMovementTimeline}
+                            text={text}
+                            workspaceMeta={{
+                                total: activeDefinition.total,
+                                attention: activeDefinition.attention,
+                                tone: activeDefinition.tone,
+                                nextAction: activeDefinition.attention
+                                    ? l("Offene Vorgänge zuerst prüfen und priorisieren.", "Review and prioritize open records first.")
+                                    : l("Bereich ist bereit für neue Buchung, Prüfung oder Suche.", "Area is ready for new posting, review, or search."),
+                            }}
+                            quickEntry={{
+                                enabled: quickEntryEnabled,
+                                kind: activeDefinition.id === "cycle-count" ? "cycle-count" : "stock-entry",
+                                openLabel: activeDefinition.id === "cycle-count"
+                                    ? l("+ Zählplan anlegen", "+ Create count plan")
+                                    : l("+ Bestand buchen", "+ Post stock entry"),
+                                closeLabel: l("Schließen", "Close"),
+                                title: activeDefinition.id === "cycle-count"
+                                    ? l("Zählplan anlegen", "Create count plan")
+                                    : l("Schnellbuchung Bestand", "Quick stock entry"),
+                                subtitle: activeDefinition.id === "cycle-count"
+                                    ? l("Produkt und Lager auswählen, damit ein echter Zählauftrag entsteht.", "Choose a product and warehouse to create a real count task.")
+                                    : l("Für kleine Teams: Produkt, Lager und Buchung direkt erfassen.", "For small teams: post product, warehouse, and movement directly."),
+                                submitLabel: activeDefinition.id === "cycle-count" ? l("Zählplan speichern", "Save count plan") : l("Buchen", "Post entry"),
+                                submittingLabel: activeDefinition.id === "cycle-count" ? l("Wird angelegt…", "Creating…") : l("Wird gebucht…", "Posting…"),
+                                products,
+                                warehouses,
                                 labels: {
-                                    sku: "SKU",
-                                    name: l("Produktname", "Product name"),
-                                },
-                                help: {
-                                    sku: helpContent.sku,
-                                },
-                                placeholders: {
-                                    sku: l("z. B. SCHRAUBE-M8", "e.g. SCREW-M8"),
-                                    name: l("z. B. Schraube M8 x 20", "e.g. Screw M8 x 20"),
-                                },
-                                onSubmit: submitCreateProduct,
-                            },
-                            createWarehouse: {
-                                enabled: activeDefinition.id !== "cycle-count",
-                                openLabel: l("+ Lager anlegen", "+ Add warehouse"),
-                                closeLabel: l("Lager-Form schließen", "Close warehouse form"),
-                                title: l("Neues Lager", "New warehouse"),
-                                titleHelp: helpContent.warehouseCode,
-                                submitLabel: l("Lager speichern", "Save warehouse"),
-                                submittingLabel: l("Speichert…", "Saving…"),
-                                labels: {
-                                    code: l("Lagercode", "Warehouse code"),
-                                    name: l("Lagername", "Warehouse name"),
-                                    location: l("Ort", "Location"),
-                                },
-                                help: {
-                                    code: helpContent.warehouseCode,
-                                },
-                                placeholders: {
-                                    code: l("z. B. BER-01", "e.g. BER-01"),
-                                    name: l("z. B. Hauptlager Berlin", "e.g. Berlin main warehouse"),
-                                    location: l("z. B. Berlin", "e.g. Berlin"),
-                                },
-                                onSubmit: submitCreateWarehouse,
-                            },
-                            onSubmit: activeDefinition.id === "cycle-count" ? submitCreateCycleCountPlan : submitQuickEntry,
-                        }}
-                        renderDrawerActions={renderDrawerActions}
-                        receivingAssistant={{
-                            enabled: receivingAssistantEnabled,
-                            openLabel: l("+ Lieferschein scannen", "+ Scan delivery note"),
-                            closeLabel: l("Scan schließen", "Close scan"),
-                            warehouses,
-                            onPreview: submitReceivingPreview,
-                            onPreviewDocument: submitReceivingDocumentPreview,
-                            onApply: submitReceivingApply,
-                            text: {
-                                title: l("Wareneingang per Scan oder Dokument", "Receive by scan or document"),
-                                subtitle: l(
-                                    "Scanner-Gerät, Kamera oder Lieferscheinbild nutzen und danach sicher prüfen, bevor gebucht wird.",
-                                    "Use a scanner device, camera, or delivery-note document and review the result before posting."
-                                ),
-                                labels: {
-                                    warehouse: l("Ziellager", "Target warehouse"),
+                                    product: l("Produkt", "Product"),
+                                    warehouse: l("Lager", "Warehouse"),
+                                    quantity: l("Menge", "Quantity"),
+                                    type: l("Buchungstyp", "Entry type"),
                                     reference: l("Referenz", "Reference"),
-                                    mode: l("Erkannt", "Detected"),
-                                    purchaseOrder: l("Bestellung", "Purchase order"),
-                                    vendor: l("Lieferant", "Vendor"),
-                                    documentDate: l("Dokumentdatum", "Document date"),
-                                    codes: l("Codes", "Codes"),
+                                },
+                                help: {
+                                    type: helpContent.entryType,
+                                    reference: helpContent.reference,
                                 },
                                 placeholders: {
+                                    product: l("Bitte Produkt wählen", "Select product"),
                                     warehouse: l("Bitte Lager wählen", "Select warehouse"),
-                                    reference: l("z. B. Lieferschein, ASN oder Bestellnummer", "e.g. delivery note, ASN, or purchase order"),
+                                    reference: l("z. B. Buchungsgrund oder Beleg", "e.g. booking reason or reference"),
                                 },
-                                actions: {
-                                    scan: l("Scan auswerten", "Analyze scan"),
-                                    startCamera: l("Kamera starten", "Start camera"),
-                                    stopCamera: l("Kamera stoppen", "Stop camera"),
-                                    apply: l("Wareneingang übernehmen", "Post goods receipt"),
-                                    reset: l("Zurücksetzen", "Reset"),
-                                    working: l("Wird verarbeitet…", "Working…"),
+                                types: [
+                                    { value: "RECEIPT", label: l("Wareneingang", "Goods receipt") },
+                                    { value: "ISSUE", label: l("Entnahme", "Issue") },
+                                    { value: "WRITE_OFF", label: l("Abschreibung", "Write-off") },
+                                    { value: "GAIN", label: l("Bestandsgewinn", "Stock gain") },
+                                ],
+                                createProduct: {
+                                    enabled: activeDefinition.id !== "cycle-count",
+                                    openLabel: l("+ Produkt anlegen", "+ Add product"),
+                                    closeLabel: l("Produkt-Form schließen", "Close product form"),
+                                    title: l("Neues Produkt", "New product"),
+                                    titleHelp: helpContent.sku,
+                                    submitLabel: l("Produkt speichern", "Save product"),
+                                    submittingLabel: l("Speichert…", "Saving…"),
+                                    labels: {
+                                        sku: "SKU",
+                                        name: l("Produktname", "Product name"),
+                                    },
+                                    help: {
+                                        sku: helpContent.sku,
+                                    },
+                                    placeholders: {
+                                        sku: l("z. B. SCHRAUBE-M8", "e.g. SCREW-M8"),
+                                        name: l("z. B. Schraube M8 x 20", "e.g. Screw M8 x 20"),
+                                    },
+                                    onSubmit: submitCreateProduct,
                                 },
-                                device: {
-                                    title: l("Scanner / Barcode", "Scanner / barcode"),
+                                createWarehouse: {
+                                    enabled: activeDefinition.id !== "cycle-count",
+                                    openLabel: l("+ Lager anlegen", "+ Add warehouse"),
+                                    closeLabel: l("Lager-Form schließen", "Close warehouse form"),
+                                    title: l("Neues Lager", "New warehouse"),
+                                    titleHelp: helpContent.warehouseCode,
+                                    submitLabel: l("Lager speichern", "Save warehouse"),
+                                    submittingLabel: l("Speichert…", "Saving…"),
+                                    labels: {
+                                        code: l("Lagercode", "Warehouse code"),
+                                        name: l("Lagername", "Warehouse name"),
+                                        location: l("Ort", "Location"),
+                                    },
+                                    help: {
+                                        code: helpContent.warehouseCode,
+                                    },
+                                    placeholders: {
+                                        code: l("z. B. BER-01", "e.g. BER-01"),
+                                        name: l("z. B. Hauptlager Berlin", "e.g. Berlin main warehouse"),
+                                        location: l("z. B. Berlin", "e.g. Berlin"),
+                                    },
+                                    onSubmit: submitCreateWarehouse,
+                                },
+                                onSubmit: activeDefinition.id === "cycle-count" ? submitCreateCycleCountPlan : submitQuickEntry,
+                            }}
+                            renderDrawerActions={renderDrawerActions}
+                            receivingAssistant={{
+                                enabled: receivingAssistantEnabled,
+                                openLabel: l("+ Lieferschein scannen", "+ Scan delivery note"),
+                                closeLabel: l("Scan schließen", "Close scan"),
+                                warehouses,
+                                onPreview: submitReceivingPreview,
+                                onPreviewDocument: submitReceivingDocumentPreview,
+                                onApply: submitReceivingApply,
+                                text: {
+                                    title: l("Wareneingang per Scan oder Dokument", "Receive by scan or document"),
                                     subtitle: l(
-                                        "USB-Handscanner, Funkscanner oder Kamera können Bestellnummer, ASN oder Lieferschein-Code lesen.",
-                                        "USB scanner, wireless scanner, or camera can read a purchase order number, ASN, or delivery-note code."
+                                        "Scanner-Gerät, Kamera oder Lieferscheinbild nutzen und danach sicher prüfen, bevor gebucht wird.",
+                                        "Use a scanner device, camera, or delivery-note document and review the result before posting."
                                     ),
-                                    inputLabel: l("Scanwert", "Scan value"),
-                                    placeholder: l("Code scannen oder hier einfügen", "Scan or paste a code here"),
-                                    barcodeReady: l("Barcode bereit", "Barcode ready"),
-                                    barcodeMissing: l("Kein Barcode-Scan", "No barcode scan"),
-                                    cameraHint: l("Kamera sucht laufend nach Barcode oder QR-Code.", "Camera continuously looks for a barcode or QR code."),
-                                    cameraUnsupported: l("Kamera-Scan ist auf diesem Gerät oder Browser nicht verfügbar.", "Camera scanning is not available on this device or browser."),
-                                    cameraError: l("Kamera konnte nicht gestartet oder gelesen werden.", "Camera could not be started or read."),
-                                },
+                                    labels: {
+                                        warehouse: l("Ziellager", "Target warehouse"),
+                                        reference: l("Referenz", "Reference"),
+                                        mode: l("Erkannt", "Detected"),
+                                        purchaseOrder: l("Bestellung", "Purchase order"),
+                                        vendor: l("Lieferant", "Vendor"),
+                                        documentDate: l("Dokumentdatum", "Document date"),
+                                        codes: l("Codes", "Codes"),
+                                    },
+                                    placeholders: {
+                                        warehouse: l("Bitte Lager wählen", "Select warehouse"),
+                                        reference: l("z. B. Lieferschein, ASN oder Bestellnummer", "e.g. delivery note, ASN, or purchase order"),
+                                    },
+                                    actions: {
+                                        scan: l("Scan auswerten", "Analyze scan"),
+                                        startCamera: l("Kamera starten", "Start camera"),
+                                        stopCamera: l("Kamera stoppen", "Stop camera"),
+                                        apply: l("Wareneingang übernehmen", "Post goods receipt"),
+                                        reset: l("Zurücksetzen", "Reset"),
+                                        working: l("Wird verarbeitet…", "Working…"),
+                                    },
+                                    device: {
+                                        title: l("Scanner / Barcode", "Scanner / barcode"),
+                                        subtitle: l(
+                                            "USB-Handscanner, Funkscanner oder Kamera können Bestellnummer, ASN oder Lieferschein-Code lesen.",
+                                            "USB scanner, wireless scanner, or camera can read a purchase order number, ASN, or delivery-note code."
+                                        ),
+                                        inputLabel: l("Scanwert", "Scan value"),
+                                        placeholder: l("Code scannen oder hier einfügen", "Scan or paste a code here"),
+                                        barcodeReady: l("Barcode bereit", "Barcode ready"),
+                                        barcodeMissing: l("Kein Barcode-Scan", "No barcode scan"),
+                                        cameraHint: l("Kamera sucht laufend nach Barcode oder QR-Code.", "Camera continuously looks for a barcode or QR code."),
+                                        cameraUnsupported: l("Kamera-Scan ist auf diesem Gerät oder Browser nicht verfügbar.", "Camera scanning is not available on this device or browser."),
+                                        cameraError: l("Kamera konnte nicht gestartet oder gelesen werden.", "Camera could not be started or read."),
+                                    },
                                 document: {
                                     title: l("Dokument hochladen", "Upload document"),
                                     subtitle: l(
@@ -1654,6 +1703,7 @@ const SupplyChainDashboard = () => {
                         }}
                     />
                 )}
+                </div>
             </main>
         </div>
     );

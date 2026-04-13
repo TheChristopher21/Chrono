@@ -174,6 +174,12 @@ const Navbar = () => {
         navigate(target);
     };
 
+    const handleLogout = () => {
+        closeMobileNav();
+        logout();
+        navigate('/login', { replace: true });
+    };
+
     const companyFeatureKeys = useMemo(() => {
         const keys = currentUser?.companyFeatureKeys;
         if (!keys) return new Set();
@@ -431,7 +437,7 @@ const Navbar = () => {
                                     >
                                         {t('admin.changePasswordTitle','Passwort ändern')}
                                     </Link>
-                                    <button className={styles['navbar-logout']} onClick={() => { setOpenUser(false); logout(); }}>
+                                    <button className={styles['navbar-logout']} onClick={handleLogout}>
                                         {t('navbar.logout','Logout')}
                                     </button>
                                 </div>

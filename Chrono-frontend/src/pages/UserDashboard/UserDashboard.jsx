@@ -85,11 +85,16 @@ function UserDashboard() {
     const [noteContent, setNoteContent] = useState('');
     const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
     const isCustomerTrackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
+    const delegatedDashboard = currentUser?.isHourly ? 'hourly' : currentUser?.isPercentage ? 'percentage' : null;
 
 
     const defaultExpectedHours = userProfile?.dailyWorkHours ?? 8.5;
 
     const loadProfileAndInitialData = useCallback(async () => {
+        if (delegatedDashboard) {
+            return;
+        }
+
         try {
             const profile = await fetchCurrentUser();
             if (profile && Object.keys(profile).length > 0) {
@@ -101,8 +106,8 @@ function UserDashboard() {
                     profile.scheduleCycle = 1;
                 }
                 setUserProfile(profile);
-                if (profile.lastCustomerId && !selectedCustomerId) {
-                    setSelectedCustomerId(String(profile.lastCustomerId));
+                if (profile.lastCustomerId) {
+                    setSelectedCustomerId((prevSelectedCustomerId) => prevSelectedCustomerId || String(profile.lastCustomerId));
                 }
             } else {
                 throw new Error("User profile could not be loaded.");
@@ -111,7 +116,7 @@ function UserDashboard() {
             console.error(t('personalData.errorLoading'), err);
             notify(t('errors.fetchProfileError', 'Fehler beim Laden des Profils.'), 'error');
         }
-    }, [fetchCurrentUser, t, notify, selectedCustomerId]);
+    }, [delegatedDashboard, fetchCurrentUser, t, notify]);
 
     const fetchDataForUser = useCallback(async () => {
         if (!userProfile?.username) return;
@@ -161,10 +166,20 @@ function UserDashboard() {
 
 
     useEffect(() => {
+        if (delegatedDashboard) {
+            return;
+        }
+
         loadProfileAndInitialData();
-    }, [loadProfileAndInitialData]);
+    }, [delegatedDashboard, loadProfileAndInitialData]);
 
     useEffect(() => {
+        if (delegatedDashboard) {
+            setRecentCustomers([]);
+            setProjects([]);
+            return;
+        }
+
         if (isCustomerTrackingEnabled) {
             fetchCustomers();
             api.get('/api/customers/recent')
@@ -177,7 +192,7 @@ function UserDashboard() {
             setRecentCustomers([]);
             setProjects([]);
         }
-    }, [userProfile, currentUser, fetchCustomers, isCustomerTrackingEnabled]);
+    }, [delegatedDashboard, fetchCustomers, isCustomerTrackingEnabled]);
 
     useEffect(() => {
         if (selectedProjectId) {
@@ -207,6 +222,10 @@ function UserDashboard() {
 
 
     useEffect(() => {
+        if (delegatedDashboard) {
+            return;
+        }
+
         if (userProfile) {
             fetchDataForUser();
             const cantonAbbr = userProfile.company?.cantonAbbreviation || userProfile.companyCantonAbbreviation;
@@ -216,14 +235,18 @@ function UserDashboard() {
                 fetchHolidaysForUser(selectedMonday.getFullYear(), '');
             }
         }
-    }, [userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
+    }, [delegatedDashboard, userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
 
 
     // Logik für NFC-Check und manuelles Stempeln
     useEffect(() => {
+        if (delegatedDashboard) {
+            return undefined;
+        }
+
         const interval = setInterval(doNfcCheck, 2000);
         return () => clearInterval(interval);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [delegatedDashboard]); // eslint-disable-line react-hooks/exhaustive-deps
 
     async function doNfcCheck() {
         try {
@@ -444,6 +467,14 @@ function UserDashboard() {
     }
 
     // Lade- und Routing-Logik
+    if (delegatedDashboard === 'hourly') {
+        return <HourlyDashboard />;
+    }
+
+    if (delegatedDashboard === 'percentage') {
+        return <PercentageDashboard />;
+    }
+
     if (!userProfile) {
         return (
             <div className="user-dashboard scoped-dashboard">
@@ -451,10 +482,6 @@ function UserDashboard() {
                 <div className="skeleton-card"></div>
             </div>
         );
-    }
-    if (userProfile?.username && currentUser?.username && userProfile.username === currentUser.username) {
-        if (userProfile.isHourly) return <HourlyDashboard />;
-        if (userProfile.isPercentage) return <PercentageDashboard />;
     }
 
     return (

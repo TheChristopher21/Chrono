@@ -12,8 +12,12 @@ const PrivateRoute = ({ children, requiredRole, requiredFeature, redirectTo = '/
     const { authToken, currentUser, isAuthLoading } = useAuth();
     const location = useLocation();
 
-    if (authToken && isAuthLoading) {
-        return <div data-testid="route-auth-loading" aria-live="polite" />;
+    if (authToken && isAuthLoading && !currentUser) {
+        return (
+            <div className="route-auth-loading" data-testid="route-auth-loading" aria-live="polite">
+                <div className="route-auth-loading__card">Dashboard wird geladen...</div>
+            </div>
+        );
     }
 
     if (!authToken) {

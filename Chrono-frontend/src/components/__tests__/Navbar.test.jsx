@@ -4,6 +4,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 
+const mockNavigate = vi.fn();
+
+vi.mock('react-router-dom', async () => {
+    const actual = await vi.importActual('react-router-dom');
+    return { ...actual, useNavigate: () => mockNavigate };
+});
+
 vi.mock('../../utils/api', () => ({ default: { get: vi.fn().mockResolvedValue({ data: null }) } }));
 vi.mock('../ChangelogModal.jsx', () => ({ default: () => null }));
 
@@ -26,6 +33,7 @@ const renderNavbar = (authValue, initialRoute = '/') => {
 
 describe('Navbar', () => {
     it('shows login and register links when unauthenticated', () => {
+        mockNavigate.mockReset();
         renderNavbar({ authToken: null, currentUser: null, logout: vi.fn() }, '/login');
         expect(screen.getByText(/Login/i)).toBeInTheDocument();
         expect(screen.getByText(/Registrieren/i)).toBeInTheDocument();
@@ -33,6 +41,7 @@ describe('Navbar', () => {
     });
 
     it('displays username and triggers logout when authenticated', async () => {
+        mockNavigate.mockReset();
         const logoutMock = vi.fn();
         renderNavbar(
             { authToken: 'token', currentUser: { username: 'Alice', roles: [] }, logout: logoutMock },
@@ -51,9 +60,11 @@ describe('Navbar', () => {
         await userEvent.click(logoutButton);
 
         expect(logoutMock).toHaveBeenCalled();
+        expect(mockNavigate).toHaveBeenCalledWith('/login', { replace: true });
     });
 
     it('shows user navigation for admin on user dashboard', () => {
+        mockNavigate.mockReset();
         renderNavbar(
             { authToken: 'token', currentUser: { username: 'Admin', roles: ['ROLE_ADMIN'] }, logout: vi.fn() },
             '/dashboard'
@@ -65,6 +76,7 @@ describe('Navbar', () => {
     });
 
     it('shows admin navigation for admin on admin dashboard', () => {
+        mockNavigate.mockReset();
         renderNavbar(
             { authToken: 'token', currentUser: { username: 'Admin', roles: ['ROLE_ADMIN'], customerTrackingEnabled: true }, logout: vi.fn() },
             '/admin/dashboard'

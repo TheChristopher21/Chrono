@@ -37,7 +37,7 @@ const HourlyDashboard = () => {
     const { t } = useTranslation();
     const { notify } = useNotification();
     // KORREKTUR: Wir benötigen die 'punch'-Funktion aus dem AuthContext nicht.
-    const { currentUser, fetchCurrentUser } = useAuth();
+    const { currentUser } = useAuth();
     const { refreshData } = useUserData();
 
     const [userProfile, setUserProfile] = useState(null);
@@ -171,10 +171,6 @@ const assignCustomerForDay = async (isoDate, customerId) => {
             notify(t('userManagement.errorLoadingCorrections'), 'error');
         }
     }, [currentUser, notify]);
-
-    useEffect(() => {
-        fetchCurrentUser();
-    }, [fetchCurrentUser]);
 
     useEffect(() => {
         const trackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;

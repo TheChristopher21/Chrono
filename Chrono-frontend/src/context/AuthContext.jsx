@@ -15,6 +15,7 @@ export const AuthContext = createContext();
 
 const INACTIVITY_DURATION = 10 * 60 * 1000; // 10 minutes
 const USER_STATUS_CHECK_INTERVAL = 15 * 60 * 1000; // 15 minutes
+const areUsersEqual = (prevUser, nextUser) => JSON.stringify(prevUser) === JSON.stringify(nextUser);
 
 export const AuthProvider = ({ children }) => {
     const { notify } = useNotification();
@@ -22,6 +23,11 @@ export const AuthProvider = ({ children }) => {
     const [authToken, setAuthToken] = useState(() => localStorage.getItem('token'));
     const [currentUser, setCurrentUser] = useState(null);
     const [isAuthLoading, setIsAuthLoading] = useState(() => Boolean(localStorage.getItem('token')));
+    const currentUserRef = useRef(null);
+
+    useEffect(() => {
+        currentUserRef.current = currentUser;
+    }, [currentUser]);
 
     // Logout clears all auth-related client state.
     const logout = useCallback(() => {
@@ -34,29 +40,27 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     // Fetch the current user for the stored token.
-    const fetchCurrentUser = useCallback(async (currentToken) => {
+    const fetchCurrentUser = useCallback(async (currentToken, options = {}) => {
+        const shouldShowLoader = options.showLoader ?? !currentUserRef.current;
         const tokenToUse = currentToken || localStorage.getItem('token');
         if (!tokenToUse) {
-            if (currentUser) {
+            if (currentUserRef.current) {
                 logout();
             }
             setIsAuthLoading(false);
             return null;
         }
 
-        setIsAuthLoading(true);
+        if (shouldShowLoader) {
+            setIsAuthLoading(true);
+        }
         api.defaults.headers.common.Authorization = `Bearer ${tokenToUse}`;
 
         try {
             const res = await api.get('/api/auth/me');
             const newUser = res.data;
 
-            setCurrentUser((prevUser) => {
-                if (JSON.stringify(prevUser) !== JSON.stringify(newUser)) {
-                    return newUser;
-                }
-                return prevUser;
-            });
+            setCurrentUser((prevUser) => (areUsersEqual(prevUser, newUser) ? prevUser : newUser));
 
             return newUser;
         } catch (err) {
@@ -64,9 +68,11 @@ export const AuthProvider = ({ children }) => {
             logout();
             return null;
         } finally {
-            setIsAuthLoading(false);
+            if (shouldShowLoader) {
+                setIsAuthLoading(false);
+            }
         }
-    }, [logout, currentUser]);
+    }, [logout]);
 
     // Initial load and periodic user refresh.
     useEffect(() => {

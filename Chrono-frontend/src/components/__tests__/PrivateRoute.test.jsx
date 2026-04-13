@@ -50,4 +50,15 @@ describe('PrivateRoute', () => {
 
         expect(screen.getByText('Admin dashboard')).toBeInTheDocument();
     });
+
+    it('keeps the protected page visible during background auth refreshes', () => {
+        renderProtectedRoute({
+            authToken: 'token',
+            currentUser: { roles: ['ROLE_ADMIN'], companyFeatureKeys: [] },
+            isAuthLoading: true,
+        });
+
+        expect(screen.getByText('Admin dashboard')).toBeInTheDocument();
+        expect(screen.queryByTestId('route-auth-loading')).not.toBeInTheDocument();
+    });
 });

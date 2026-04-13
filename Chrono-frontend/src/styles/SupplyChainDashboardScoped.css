@@ -1064,12 +1064,40 @@
 .sc-controlbar {
     display: grid;
     gap: 0.85rem;
+    position: sticky;
+    top: 5.2rem;
+    z-index: 18;
+    padding: 0.95rem 1rem;
+    background: color-mix(in srgb, var(--sc-surface) 88%, white 12%);
+    backdrop-filter: blur(18px) saturate(145%);
+    -webkit-backdrop-filter: blur(18px) saturate(145%);
+}
+
+.sc-controlbar-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.9rem;
+    flex-wrap: wrap;
+}
+
+.sc-controlbar-copy {
+    display: grid;
+    gap: 0.25rem;
+}
+
+.sc-controlbar-copy p {
+    margin: 0;
+    color: var(--sc-text-soft);
+    line-height: 1.45;
+    max-width: 38rem;
 }
 
 .sc-role-switch {
     display: flex;
     align-items: center;
     gap: 0.75rem;
+    flex-wrap: wrap;
 }
 
 .sc-role-switch select,
@@ -1212,7 +1240,7 @@
 }
 
 .admin-page.supply-chain-page .card.sc-controlbar {
-    display: none;
+    display: grid;
 }
 
 .sc-hero {
@@ -1529,30 +1557,92 @@
 
 .sc-hero {
     padding: 1rem 1.1rem 1.1rem;
+    position: relative;
+}
+
+.sc-hero::before {
+    content: "";
+    position: absolute;
+    right: -8rem;
+    top: -10rem;
+    width: 26rem;
+    height: 26rem;
+    border-radius: 999px;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.16), rgba(59, 130, 246, 0.08) 45%, transparent 72%);
+    pointer-events: none;
+    opacity: 0.9;
+}
+
+.sc-hero > * {
+    position: relative;
+    z-index: 1;
 }
 
 .sc-hero-main {
     display: grid;
-    grid-template-columns: minmax(0, 1.14fr) minmax(360px, 0.96fr);
-    gap: 0.8rem;
+    grid-template-columns: minmax(0, 1fr) minmax(360px, 430px);
+    gap: 1.1rem;
     align-items: start;
+    justify-items: start;
 }
 
 .sc-hero-copy {
     display: grid;
     align-content: start;
-    gap: 0.5rem;
+    gap: 0.9rem;
+    justify-self: start;
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    text-align: left;
+}
+
+.sc-hero-copy-head {
+    display: grid;
+    gap: 0.65rem;
 }
 
 .sc-hero h1 {
-    font-size: clamp(1.32rem, 1.8vw, 1.78rem);
+    font-size: clamp(1.55rem, 2vw, 2.15rem);
+    line-height: 1.04;
     max-width: 18ch;
 }
 
+.sc-hero-intro {
+    margin: 0;
+    max-width: 42rem;
+    line-height: 1.6;
+    color: color-mix(in srgb, var(--sc-text-soft) 72%, var(--sc-text-strong) 28%);
+}
+
 .sc-hero-side {
-    grid-template-columns: minmax(250px, 1.02fr) minmax(0, 0.98fr);
+    display: grid;
+    width: 100%;
     align-items: stretch;
     gap: 0.7rem;
+}
+
+.sc-hero-summary-grid {
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+}
+
+.sc-hero-summary-card {
+    min-height: 132px;
+    padding: 0.9rem 0.95rem 0.95rem 1rem;
+}
+
+.sc-hero-summary-card strong {
+    font-size: clamp(1.08rem, 1.6vw, 1.35rem);
+}
+
+.sc-hero-summary-card p {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    overflow: hidden;
 }
 
 .sc-hero-tag {
@@ -1593,9 +1683,10 @@
 }
 
 .sc-priority-spotlight {
-    padding: 0.92rem 1rem 0.96rem 1.08rem;
+    padding: 1rem 1.05rem 1rem 1.12rem;
     display: grid;
-    gap: 0.5rem;
+    align-content: start;
+    gap: 0.7rem;
     box-shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
 }
 
@@ -1615,7 +1706,7 @@
 .sc-priority-spotlight h2 {
     margin: 0;
     color: var(--sc-text-strong);
-    font-size: 1.2rem;
+    font-size: clamp(1.3rem, 1.85vw, 1.62rem);
 }
 
 .sc-priority-spotlight p {
@@ -1639,6 +1730,20 @@
     border: 1px solid rgba(33, 93, 246, 0.18);
     color: var(--sc-accent);
     font-weight: 800;
+}
+
+.sc-priority-spotlight-footnote {
+    font-size: 0.82rem;
+    line-height: 1.4;
+    color: color-mix(in srgb, var(--sc-text-soft) 74%, var(--sc-text-strong) 26%);
+}
+
+.sc-group-open {
+    margin-left: auto;
+}
+
+.sc-workspace-anchor {
+    scroll-margin-top: 8.5rem;
 }
 
 .sc-priority-spotlight.tone-info,
@@ -1742,12 +1847,6 @@
 .sc-group-block.tone-neutral::before,
 .sc-workspace-tile.tone-neutral::before {
     background: rgba(100, 116, 139, 0.56);
-}
-
-.sc-hero-signal-grid {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 0.7rem;
 }
 
 .sc-signal-card {
@@ -2494,7 +2593,7 @@
     }
 
     .sc-hero-copy {
-        justify-self: end;
+        justify-self: start;
         width: min(100%, 32rem);
     }
 
@@ -2503,6 +2602,7 @@
     }
 
     .kpi-strip,
+    .sc-hero-summary-grid,
     .sc-priority-list,
     .sc-summary-inline,
     .sc-role-strip,
@@ -2514,6 +2614,10 @@
 
     .sc-workspace-badge.action {
         grid-column: span 1;
+    }
+
+    .sc-controlbar {
+        top: 4.8rem;
     }
 }
 
@@ -2530,6 +2634,7 @@
     }
 
     .kpi-strip,
+    .sc-hero-summary-grid,
     .sc-priority-list,
     .sc-summary-inline,
     .sc-role-strip,
@@ -2542,6 +2647,16 @@
     .sc-command-center-head,
     .sc-command-block-head {
         justify-content: flex-start;
+    }
+
+    .sc-controlbar {
+        top: 4.4rem;
+        padding: 0.85rem 0.9rem;
+    }
+
+    .sc-controlbar-head,
+    .sc-role-switch {
+        align-items: flex-start;
     }
 
     .sc-filter-primary,
