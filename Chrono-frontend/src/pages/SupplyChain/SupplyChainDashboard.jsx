@@ -566,6 +566,27 @@ const SupplyChainDashboard = () => {
         };
     }), [deriveInventoryStatus, products, stock, translateCode, translateContext, warehouses]);
 
+    const summarizeInboundProducts = useCallback((lines = []) => {
+        if (!Array.isArray(lines) || lines.length === 0) {
+            return "-";
+        }
+
+        const labels = [...new Set(lines.map((line) => {
+            const product = products.find((item) => item.id === line?.productId);
+            return product?.name ?? product?.sku ?? null;
+        }).filter(Boolean))];
+
+        if (labels.length === 0) {
+            return "-";
+        }
+
+        if (labels.length <= 2) {
+            return labels.join(", ");
+        }
+
+        return `${labels.slice(0, 2).join(", ")} +${labels.length - 2}`;
+    }, [products]);
+
     const inboundRows = useMemo(() => {
         const orderRows = inboundOrders.map((entry) => ({
         id: entry.id,
@@ -573,6 +594,7 @@ const SupplyChainDashboard = () => {
         asn: entry.asn,
         dock: entry.dock,
         supplier: entry.supplier,
+        product: summarizeInboundProducts(entry.lines),
         quantity: entry.quantity ?? 0,
         warehouse: warehouses.find((item) => item.id === entry.warehouseId)?.name ?? "-",
         site: translateContext(warehouses.find((item) => item.id === entry.warehouseId)?.siteName ?? "-"),
@@ -594,20 +616,21 @@ const SupplyChainDashboard = () => {
                     order: `${l("Buchung", "Entry")}-${movement.id}`,
                     asn: reference || "-",
                     dock: l("Manuell", "Manual"),
-                    supplier: product?.name ?? "-",
+                    supplier: l("Nicht hinterlegt", "Not recorded"),
+                    product: product?.name ?? "-",
                     quantity: Math.abs(Number(movement.quantityChange ?? 0)),
                     warehouse: warehouse?.name ?? "-",
                     site: translateContext(warehouse?.siteName ?? "-"),
                     status: "COMPLETED",
                     statusLabel: l("Gebucht", "Posted"),
                     eta: movement.movementDate ?? "-",
-                    partner: product?.name ?? "-",
+                    partner: "-",
                     approvalProgress: 100,
                 };
             });
 
         return [...manualRows, ...orderRows];
-    }, [inboundOrders, l, products, stockMovements, translateCode, translateContext, warehouses]);
+    }, [inboundOrders, l, products, stockMovements, summarizeInboundProducts, translateCode, translateContext, warehouses]);
 
     const outboundRows = useMemo(() => outboundOrders.map((entry) => ({
         id: entry.id,
@@ -824,7 +847,7 @@ const SupplyChainDashboard = () => {
     };
 
     const workspaceDefinitions = [
-        { id: "inbound", title: l("Wareneingänge", "Inbound"), subtitle: l("ASN, Tor, QS, Einlagerung", "ASN, dock, QC, putaway"), rows: inboundRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "asn", label: "ASN" }, { key: "dock", label: l("Tor", "Dock") }, { key: "supplier", label: l("Lieferant", "Supplier") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "status", label: l("Status", "Status") }] },
+        { id: "inbound", title: l("Wareneingänge", "Inbound"), subtitle: l("ASN, Tor, QS, Einlagerung", "ASN, dock, QC, putaway"), rows: inboundRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "asn", label: "ASN" }, { key: "dock", label: l("Tor", "Dock") }, { key: "supplier", label: l("Lieferant", "Supplier") }, { key: "product", label: l("Produkt", "Product") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "status", label: l("Status", "Status") }] },
         { id: "outbound", title: l("Warenausgänge", "Outbound"), subtitle: l("Welle, Kommissionierung, Packen, Versand", "Wave, pick, pack, ship"), rows: outboundRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "customer", label: l("Kunde", "Customer") }, { key: "priority", label: l("Priorität", "Priority") }, { key: "dueDate", label: l("Datum", "Date") }, { key: "status", label: l("Status", "Status") }] },
         { id: "production", title: l("Produktionsaufträge", "Production orders"), subtitle: l("Planung bis Abschluss", "Planning to completion"), rows: productionRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "product", label: l("Produkt", "Product") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "priority", label: l("Priorität", "Priority") }, { key: "status", label: l("Status", "Status") }] },
         { id: "service", title: l("Serviceeinsätze", "Service cases"), subtitle: l("SLA- und Eskalationsfokus", "SLA and escalation focused"), rows: serviceRows, columns: [{ key: "case", label: l("Fall", "Case") }, { key: "customer", label: l("Kunde", "Customer") }, { key: "owner", label: l("Verantwortlich", "Owner") }, { key: "sla", label: "SLA" }, { key: "status", label: l("Status", "Status") }] },
