@@ -5,10 +5,10 @@ import { LanguageContext } from "../../context/LanguageContext.jsx";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import "../../styles/SupplyChainDashboardScoped.css";
 import ProcessWorkspace from "./components/ProcessWorkspace.jsx";
+import CycleCountDrawerActions from "./components/CycleCountDrawerActions.jsx";
 import HelpLabel from "./components/HelpLabel.jsx";
 import HelpTextList from "./components/HelpTextList.jsx";
 import {
-    auditFromMovement,
     buildExceptionRows,
     buildInventoryBucketRows,
     createMovementHistory,
@@ -21,8 +21,19 @@ import {
 } from "./models/supplyChainDomain.js";
 
 const roles = ["warehouse", "planner", "quality", "service", "admin"];
+const negativeStockMovementTypes = new Set(["ISSUE", "WRITE_OFF"]);
 const doneStatuses = new Set(["COMPLETED", "CLOSED", "RESOLVED"]);
-const attentionStatuses = new Set(["OPEN", "BLOCKED"]);
+const attentionStatuses = new Set(["OPEN", "BLOCKED", "APPROVAL_REQUIRED"]);
+const inventoryStatusProgressMap = {
+    AVAILABLE: 100,
+    RESERVED: 88,
+    IN_TRANSIT: 64,
+    IN_QC: 48,
+    RETURNED: 72,
+    DAMAGED: 18,
+    BLOCKED: 15,
+    COMPLETED: 100,
+};
 
 const workspaceIconMap = {
     inbound: "IN",
@@ -79,6 +90,9 @@ const CODE_LABELS = {
     PROCESS_UPDATE: { de: "Prozessaktualisierung", en: "Process update" },
     STOCK_UPDATED: { de: "Bestand aktualisiert", en: "Stock updated" },
     STOCK_HISTORY_ENTRY: { de: "Bestandshistorie", en: "Stock history" },
+    INFO: { de: "Info", en: "Info" },
+    WARNING: { de: "Warnung", en: "Warning" },
+    CRITICAL: { de: "Kritisch", en: "Critical" },
 };
 
 const ENTITY_LABELS = {
@@ -86,6 +100,8 @@ const ENTITY_LABELS = {
     ORDER: { de: "Auftrag", en: "Order" },
     PRODUCTION_ORDER: { de: "Produktionsauftrag", en: "Production order" },
     SERVICE_CASE: { de: "Servicefall", en: "Service case" },
+    COMPANY: { de: "Gesellschaft", en: "Company" },
+    USER: { de: "Benutzer", en: "User" },
 };
 
 const ACTOR_LABELS = {
@@ -116,20 +132,10 @@ const CONTEXT_LABELS = {
     "US-SalesTax": { de: "US-Umsatzsteuer", en: "US sales tax" },
 };
 
-const RETURN_REASON_LABELS = {
-    "Damaged": { de: "Beschädigt", en: "Damaged" },
-    "Wrong item": { de: "Falscher Artikel", en: "Wrong item" },
-};
-
-const RETURN_DECISION_LABELS = {
-    "Quarantine": { de: "Quarantäne", en: "Quarantine" },
-    "Restock": { de: "Wiedereinlagern", en: "Restock" },
-};
-
 const countAttentionItems = (rows = []) => rows.filter((row) => (
     attentionStatuses.has(String(row.status))
     || String(row.sla ?? "").toUpperCase() === "BREACHED"
-    || Number(row.variance ?? 0) > 0
+    || (Number(row.variance ?? 0) > 0 && !doneStatuses.has(String(row.status)))
 )).length;
 
 const getWorkspaceTone = (rows = []) => {
@@ -317,8 +323,8 @@ const SupplyChainDashboard = () => {
         entryType: {
             title: l("Buchungstyp", "Entry type"),
             description: l(
-                "Legt fest, ob Wareneingang, Korrektur, Reservierung, QS-Sperre, Freigabe oder Umlagerung gebucht wird.",
-                "Defines whether you post a receipt, adjustment, reservation, QC hold, release, or transfer."
+                "Legt fest, ob Bestand zu- oder abgebucht wird, zum Beispiel Wareneingang, Entnahme oder Abschreibung.",
+                "Defines whether stock is increased or decreased, for example receipt, issue, or write-off."
             ),
         },
         reference: {
@@ -352,16 +358,6 @@ const SupplyChainDashboard = () => {
         return CONTEXT_LABELS[key]?.[locale] ?? String(value ?? "-");
     }, [locale]);
 
-    const translateReturnReason = useCallback((value) => {
-        const key = String(value ?? "").trim();
-        return RETURN_REASON_LABELS[key]?.[locale] ?? String(value ?? "-");
-    }, [locale]);
-
-    const translateReturnDecision = useCallback((value) => {
-        const key = String(value ?? "").trim();
-        return RETURN_DECISION_LABELS[key]?.[locale] ?? String(value ?? "-");
-    }, [locale]);
-
     const translateEntity = useCallback((entityType, entityId) => {
         const label = ENTITY_LABELS[String(entityType ?? "").trim()]?.[locale] ?? String(entityType ?? "-");
         return `${label} #${entityId ?? "-"}`;
@@ -389,6 +385,35 @@ const SupplyChainDashboard = () => {
         return String(value ?? "-");
     }, [l, locale, translateCode]);
 
+    const deriveInventoryStatus = useCallback((entry) => {
+        const explicitStatus = String(entry?.status ?? "").trim().toUpperCase();
+        const availableQty = Number(entry?.buckets?.AVAILABLE ?? entry?.quantity ?? 0);
+        const reservedQty = Number(entry?.buckets?.RESERVED ?? 0);
+        const blockedQty = Number(entry?.buckets?.BLOCKED ?? 0);
+        const qcQty = Number(entry?.buckets?.IN_QC ?? 0);
+        const transitQty = Number(entry?.buckets?.IN_TRANSIT ?? 0);
+        const damagedQty = Number(entry?.buckets?.DAMAGED ?? 0);
+        const returnedQty = Number(entry?.buckets?.RETURNED ?? 0);
+
+        let code = explicitStatus && explicitStatus !== "OPEN" ? explicitStatus : "";
+
+        if (!code) {
+            if (blockedQty > 0) code = "BLOCKED";
+            else if (qcQty > 0) code = "IN_QC";
+            else if (transitQty > 0) code = "IN_TRANSIT";
+            else if (damagedQty > 0) code = "DAMAGED";
+            else if (returnedQty > 0) code = "RETURNED";
+            else if (reservedQty > 0 && availableQty <= 0) code = "RESERVED";
+            else if (availableQty > 0) code = "AVAILABLE";
+            else code = "COMPLETED";
+        }
+
+        return {
+            code,
+            approvalProgress: inventoryStatusProgressMap[code] ?? 100,
+        };
+    }, []);
+
     const [loading, setLoading] = useState(true);
     const [role, setRole] = useState("warehouse");
     const [activeWorkspace, setActiveWorkspace] = useState("inbound");
@@ -400,34 +425,65 @@ const SupplyChainDashboard = () => {
     const [outboundOrders, setOutboundOrders] = useState([]);
     const [productionOrders, setProductionOrders] = useState([]);
     const [serviceCases, setServiceCases] = useState([]);
+    const [cycleCounts, setCycleCounts] = useState([]);
+    const [auditLogs, setAuditLogs] = useState([]);
 
     const loadData = useCallback(async () => {
-        try {
-            const [productRes, warehouseRes, stockRes, movementRes, inboundRes, outboundRes, productionRes, serviceRes] = await Promise.all([
-                api.get("/api/supply-chain/products"),
-                api.get("/api/supply-chain/warehouses"),
-                api.get("/api/supply-chain/stock"),
-                api.get("/api/supply-chain/stock-movements?size=200"),
-                api.get("/api/supply-chain/purchase-orders"),
-                api.get("/api/supply-chain/sales-orders"),
-                api.get("/api/supply-chain/production-orders"),
-                api.get("/api/supply-chain/service-requests"),
-            ]);
-            const list = (payload) => (Array.isArray(payload) ? payload : payload?.content ?? []);
-            setProducts(list(productRes?.data).map(normalizeProduct));
-            setWarehouses(list(warehouseRes?.data).map(normalizeWarehouse));
-            setStock(list(stockRes?.data).map(normalizeStock));
-            setStockMovements(list(movementRes?.data));
-            setInboundOrders(list(inboundRes?.data).map(normalizeDelivery));
-            setOutboundOrders(list(outboundRes?.data).map(normalizeOrder));
-            setProductionOrders(list(productionRes?.data).map(normalizeOrder));
-            setServiceCases(list(serviceRes?.data).map(normalizeServiceCase));
-            return true;
-        } catch (error) {
-            console.error(error);
-            notify(l("Supply-Chain-Daten konnten nicht vollständig geladen werden.", "Could not load all supply-chain data."), "error");
-            return false;
+        const list = (payload) => (Array.isArray(payload) ? payload : payload?.content ?? []);
+        const [
+            productRes,
+            warehouseRes,
+            stockRes,
+            movementRes,
+            inboundRes,
+            outboundRes,
+            productionRes,
+            serviceRes,
+            cycleCountRes,
+            auditRes,
+        ] = await Promise.allSettled([
+            api.get("/api/supply-chain/products"),
+            api.get("/api/supply-chain/warehouses"),
+            api.get("/api/supply-chain/stock"),
+            api.get("/api/supply-chain/stock-movements?size=200"),
+            api.get("/api/supply-chain/purchase-orders"),
+            api.get("/api/supply-chain/sales-orders"),
+            api.get("/api/supply-chain/production-orders"),
+            api.get("/api/supply-chain/service-requests"),
+            api.get("/api/supply-chain/cycle-counts?size=200"),
+            api.get("/api/audit?limit=25"),
+        ]);
+
+        const pickList = (result) => (result.status === "fulfilled" ? list(result.value?.data) : []);
+
+        setProducts(pickList(productRes).map(normalizeProduct));
+        setWarehouses(pickList(warehouseRes).map(normalizeWarehouse));
+        setStock(pickList(stockRes).map(normalizeStock));
+        setStockMovements(pickList(movementRes));
+        setInboundOrders(pickList(inboundRes).map(normalizeDelivery));
+        setOutboundOrders(pickList(outboundRes).map(normalizeOrder));
+        setProductionOrders(pickList(productionRes).map(normalizeOrder));
+        setServiceCases(pickList(serviceRes).map(normalizeServiceCase));
+        setCycleCounts(pickList(cycleCountRes));
+        setAuditLogs(auditRes.status === "fulfilled" && Array.isArray(auditRes.value?.data) ? auditRes.value.data : []);
+
+        const requiredFailures = [
+            productRes,
+            warehouseRes,
+            stockRes,
+            movementRes,
+            inboundRes,
+            outboundRes,
+            productionRes,
+            serviceRes,
+            cycleCountRes,
+        ].some((result) => result.status === "rejected");
+
+        if (requiredFailures) {
+            notify(l("Supply-Chain-Daten konnten nur teilweise geladen werden.", "Supply-chain data could only be loaded partially."), "warning");
         }
+
+        return !requiredFailures;
     }, [l, notify]);
 
     useEffect(() => {
@@ -464,11 +520,35 @@ const SupplyChainDashboard = () => {
         action: translateAction(entry.action),
         user: translateActor(entry.user),
     })), [movementTimeline, translateAction, translateActor]);
-    const auditTrail = useMemo(() => movementTimeline.map((movement) => auditFromMovement(movement)).slice(0, 20), [movementTimeline]);
+    const mapCycleCountToRow = useCallback((entry) => {
+        const status = String(entry?.status ?? "PLANNED").toUpperCase();
+        return {
+            id: entry.id,
+            plan: entry.planNumber ?? "-",
+            sku: entry.productSku ?? "-",
+            product: entry.productName ?? "-",
+            warehouse: entry.warehouseName ?? "-",
+            site: "-",
+            expectedQuantity: Number(entry.expectedQuantity ?? 0),
+            countedQuantity: entry.countedQuantity == null ? null : Number(entry.countedQuantity),
+            variance: Number(entry.variance ?? 0),
+            status,
+            statusLabel: translateCode(status),
+            partner: entry.countedBy ?? entry.requestedBy ?? "-",
+            requestedBy: entry.requestedBy ?? "-",
+            countedBy: entry.countedBy ?? "-",
+            approvedBy: entry.approvedBy ?? "-",
+            createdAt: entry.createdAt ?? "-",
+            countedAt: entry.countedAt ?? "-",
+            approvedAt: entry.approvedAt ?? "-",
+            approvalProgress: status === "PLANNED" ? 18 : status === "APPROVAL_REQUIRED" ? 58 : 100,
+        };
+    }, [translateCode]);
 
     const inventoryRows = useMemo(() => stock.map((entry) => {
         const product = products.find((item) => item.id === entry.productId);
         const warehouse = warehouses.find((item) => item.id === entry.warehouseId);
+        const inventoryStatus = deriveInventoryStatus(entry);
         return {
             id: entry.id,
             sku: product?.sku ?? "-",
@@ -477,14 +557,14 @@ const SupplyChainDashboard = () => {
             site: translateContext(warehouse?.siteName ?? "-"),
             zone: translateContext(warehouse?.zone ?? "-"),
             bin: warehouse?.bin ?? "-",
-            status: entry.status,
-            statusLabel: translateCode(entry.status),
+            status: inventoryStatus.code,
+            statusLabel: translateCode(inventoryStatus.code),
             quantity: entry.quantity,
             lot: entry.lotNumber,
             partner: "-",
-            approvalProgress: entry.status === "BLOCKED" ? 15 : 92,
+            approvalProgress: inventoryStatus.approvalProgress,
         };
-    }), [products, stock, translateCode, translateContext, warehouses]);
+    }), [deriveInventoryStatus, products, stock, translateCode, translateContext, warehouses]);
 
     const inboundRows = useMemo(() => {
         const orderRows = inboundOrders.map((entry) => ({
@@ -571,20 +651,6 @@ const SupplyChainDashboard = () => {
         approvalProgress: entry.status === "CLOSED" ? 100 : 36,
     })), [serviceCases, translateActor, translateCode, translateContext]);
 
-    const returnsRows = useMemo(() => outboundRows.filter((row) => ["BLOCKED", "OPEN"].includes(row.status)).map((row) => ({
-        id: `RMA-${row.id}`,
-        rma: `RMA-${row.order}`,
-        customer: row.customer,
-        reason: translateReturnReason(row.status === "BLOCKED" ? "Damaged" : "Wrong item"),
-        decision: translateReturnDecision(row.status === "BLOCKED" ? "Quarantine" : "Restock"),
-        status: row.status,
-        statusLabel: translateCode(row.status),
-        warehouse: row.warehouse,
-        site: row.site,
-        partner: row.customer,
-        approvalProgress: 42,
-    })), [outboundRows, translateCode, translateReturnDecision, translateReturnReason]);
-
     const exceptionRows = useMemo(() => buildExceptionRows({ inboundOrders, stock, serviceCases }).map((row) => ({
         id: row.id,
         type: translateCode(row.type),
@@ -599,18 +665,7 @@ const SupplyChainDashboard = () => {
         approvalProgress: row.severity === "HIGH" ? 20 : 55,
     })), [inboundOrders, serviceCases, stock, translateActor, translateCode]);
 
-    const cycleCountRows = useMemo(() => inventoryRows.slice(0, 20).map((row, index) => ({
-        id: `CC-${row.id}`,
-        plan: `CC-${String(index + 1).padStart(4, "0")}`,
-        sku: row.sku,
-        warehouse: row.warehouse,
-        site: row.site,
-        variance: index % 4 === 0 ? 3 : 0,
-        status: index % 4 === 0 ? "BLOCKED" : "COMPLETED",
-        statusLabel: translateCode(index % 4 === 0 ? "APPROVAL_REQUIRED" : "OK"),
-        partner: translateActor("count-team"),
-        approvalProgress: index % 4 === 0 ? 35 : 100,
-    })), [inventoryRows, translateActor, translateCode]);
+    const cycleCountRows = useMemo(() => cycleCounts.map(mapCycleCountToRow), [cycleCounts, mapCycleCountToRow]);
 
     const bucketRows = useMemo(() => buildInventoryBucketRows(stock).map((row) => ({
         id: row.id,
@@ -624,62 +679,40 @@ const SupplyChainDashboard = () => {
         approvalProgress: row.quantity > 0 ? 65 : 100,
     })), [stock, translateCode, translateContext]);
 
-    const governanceRows = useMemo(() => auditTrail.map((entry) => ({
-        id: entry.id,
-        entity: translateEntity(entry.entityType, entry.entityId),
-        action: translateAction(entry.action),
-        changedBy: translateActor(entry.changedBy),
-        reason: translateCode(entry.reason),
-        status: "COMPLETED",
-        statusLabel: translateCode("AUDITED"),
-        warehouse: "-",
-        site: "-",
-        partner: translateActor(entry.approvedBy),
-        approvalProgress: 100,
-    })), [auditTrail, translateAction, translateActor, translateCode, translateEntity]);
-
-    const companyRows = useMemo(() => ([
-        {
-            id: "C1",
-            company: "Chrono DE",
-            currency: "EUR",
-            language: translateContext("de"),
-            tax: translateContext("DE-VAT"),
-            status: "COMPLETED",
-            statusLabel: translateCode("LIVE"),
-            warehouse: translateContext("Shared EU"),
-            site: "Berlin",
-            partner: translateContext("Intercompany"),
-            approvalProgress: 100,
-        },
-        {
-            id: "C2",
-            company: "Chrono US",
-            currency: "USD",
-            language: translateContext("en"),
-            tax: translateContext("US-SalesTax"),
-            status: "IN_PROGRESS",
-            statusLabel: translateCode("ROLLING"),
-            warehouse: translateContext("Shared US"),
-            site: "Austin",
-            partner: translateContext("Intercompany"),
-            approvalProgress: 62,
-        },
-    ]), [translateCode, translateContext]);
+    const governanceRows = useMemo(() => auditLogs.map((entry) => {
+        const severity = String(entry?.severity ?? "INFO").toUpperCase();
+        const status = severity === "CRITICAL" ? "BLOCKED" : severity === "WARNING" ? "IN_PROGRESS" : "COMPLETED";
+        return {
+            id: entry.id,
+            entity: translateEntity(entry.targetType, entry.targetId),
+            action: translateAction(entry.action),
+            changedBy: entry.username ?? "-",
+            changedAt: entry.createdAt ?? "-",
+            reason: entry.details ?? "-",
+            status,
+            statusLabel: translateCode(severity),
+            warehouse: "-",
+            site: "-",
+            partner: "-",
+            approvalProgress: severity === "CRITICAL" ? 28 : severity === "WARNING" ? 72 : 100,
+        };
+    }), [auditLogs, translateAction, translateCode, translateEntity]);
 
     const kpi = useMemo(() => ({
         otif: outboundRows.length ? Math.round((outboundRows.filter((row) => row.status === "COMPLETED").length / outboundRows.length) * 100) : 0,
         pickPerformance: `${Math.max(80, 100 - exceptionRows.length)}%`,
-        inventoryAccuracy: `${Math.max(92, 100 - cycleCountRows.filter((row) => row.variance > 0).length)}%`,
-        returnRate: `${outboundRows.length ? Math.round((returnsRows.length / outboundRows.length) * 100) : 0}%`,
-    }), [cycleCountRows, exceptionRows.length, outboundRows, returnsRows.length]);
+        inventoryAccuracy: cycleCountRows.length
+            ? `${Math.max(0, Math.round(((cycleCountRows.length - cycleCountRows.filter((row) => row.status === "APPROVAL_REQUIRED").length) / cycleCountRows.length) * 100))}%`
+            : l("Keine Zählung", "No counts"),
+        exceptionBacklog: exceptionRows.length,
+    }), [cycleCountRows, exceptionRows.length, l, outboundRows]);
 
     const roleDefinitions = useMemo(() => ([
         { id: "warehouse", label: l("Lager", "Warehouse"), description: l("Fokus auf Wareneingang, Bestand und schnelle Buchungen.", "Focus on inbound, inventory and fast postings."), defaultWorkspace: "inbound" },
         { id: "planner", label: l("Planung", "Planner"), description: l("Plant Produktionsaufträge, Materialfluss und Termine.", "Plans production orders, material flow and due dates."), defaultWorkspace: "production" },
         { id: "quality", label: l("Qualität", "Quality"), description: l("Sieht Blocker, Abweichungen und Freigaben auf einen Blick.", "Sees blockers, deviations and approvals at a glance."), defaultWorkspace: "exceptions" },
-        { id: "service", label: l("Service", "Service"), description: l("Steuert Reaktionszeiten (SLA), Rücknahmen und Kundenfälle.", "Steers response times (SLA), returns and customer cases."), defaultWorkspace: "service" },
-        { id: "admin", label: l("Admin", "Admin"), description: l("Überblick über Regeln, Standards und Gesellschaften.", "Overview of rules, standards and companies."), defaultWorkspace: "governance" },
+        { id: "service", label: l("Service", "Service"), description: l("Steuert Reaktionszeiten (SLA) und Kundenfälle.", "Steers response times (SLA) and customer cases."), defaultWorkspace: "service" },
+        { id: "admin", label: l("Admin", "Admin"), description: l("Überblick über Regeln, Freigaben und Prüfhistorie.", "Overview of rules, approvals, and audit history."), defaultWorkspace: "governance" },
     ]), [l]);
 
     const text = {
@@ -732,14 +765,18 @@ const SupplyChainDashboard = () => {
             ref: l("Referenz", "Reference"),
             plan: l("Plan", "Plan"),
             variance: l("Differenz", "Variance"),
+            expectedQuantity: l("Systembestand", "System stock"),
+            countedQuantity: l("Gezählt", "Counted"),
             bucket: l("Bestandsart", "Bucket"),
             entity: l("Entität", "Entity"),
             action: l("Aktion", "Action"),
             changedBy: l("Benutzer", "User"),
-            company: l("Gesellschaft", "Company"),
-            currency: l("Währung", "Currency"),
-            language: l("Sprache", "Language"),
-            tax: l("Steuer", "Tax"),
+            changedAt: l("Zeitpunkt", "Timestamp"),
+            requestedBy: l("Angelegt von", "Requested by"),
+            approvedBy: l("Freigegeben von", "Approved by"),
+            createdAt: l("Angelegt am", "Created at"),
+            countedAt: l("Gezählt am", "Counted at"),
+            approvedAt: l("Freigegeben am", "Approved at"),
             approvalProgress: l("Freigabefortschritt", "Approval progress"),
         },
         fieldHelp: {
@@ -791,13 +828,11 @@ const SupplyChainDashboard = () => {
         { id: "outbound", title: l("Warenausgänge", "Outbound"), subtitle: l("Welle, Kommissionierung, Packen, Versand", "Wave, pick, pack, ship"), rows: outboundRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "customer", label: l("Kunde", "Customer") }, { key: "priority", label: l("Priorität", "Priority") }, { key: "dueDate", label: l("Datum", "Date") }, { key: "status", label: l("Status", "Status") }] },
         { id: "production", title: l("Produktionsaufträge", "Production orders"), subtitle: l("Planung bis Abschluss", "Planning to completion"), rows: productionRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "product", label: l("Produkt", "Product") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "priority", label: l("Priorität", "Priority") }, { key: "status", label: l("Status", "Status") }] },
         { id: "service", title: l("Serviceeinsätze", "Service cases"), subtitle: l("SLA- und Eskalationsfokus", "SLA and escalation focused"), rows: serviceRows, columns: [{ key: "case", label: l("Fall", "Case") }, { key: "customer", label: l("Kunde", "Customer") }, { key: "owner", label: l("Verantwortlich", "Owner") }, { key: "sla", label: "SLA" }, { key: "status", label: l("Status", "Status") }] },
-        { id: "returns", title: l("Retouren (RMA)", "Returns (RMA)"), subtitle: l("Prüfen, entscheiden, buchen", "Inspect, decide, post"), rows: returnsRows, columns: [{ key: "rma", label: "RMA" }, { key: "customer", label: l("Kunde", "Customer") }, { key: "reason", label: l("Grund", "Reason") }, { key: "decision", label: l("Entscheidung", "Decision") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "inventory", title: l("Mehrstufiges Lager", "Multi-level warehouse"), subtitle: l("Standort/Lager/Zone/Gang/Regal/Fach", "Site/warehouse/zone/aisle/rack/bin"), rows: inventoryRows, columns: [{ key: "sku", label: "SKU" }, { key: "product", label: l("Produkt", "Product") }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "zone", label: l("Zone", "Zone") }, { key: "bin", label: l("Fach", "Bin") }, { key: "status", label: l("Status", "Status") }] },
+        { id: "inventory", title: l("Mehrstufiges Lager", "Multi-level warehouse"), subtitle: l("Standort/Lager/Zone/Gang/Regal/Fach", "Site/warehouse/zone/aisle/rack/bin"), rows: inventoryRows, columns: [{ key: "sku", label: "SKU" }, { key: "product", label: l("Produkt", "Product") }, { key: "quantity", label: l("Bestand", "Stock") }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "zone", label: l("Zone", "Zone") }, { key: "bin", label: l("Fach", "Bin") }, { key: "status", label: l("Status", "Status") }] },
         { id: "buckets", title: l("Bestandsarten", "Inventory buckets"), subtitle: l("Verfügbar, reserviert, gesperrt, Transit, QC", "Available, reserved, blocked, transit, QC"), rows: bucketRows, columns: [{ key: "bucket", label: l("Art", "Type") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "status", label: l("Status", "Status") }] },
         { id: "exceptions", title: l("Ausnahmezentrum", "Exception center"), subtitle: l("Verspätung, QS-Blocker, SLA-Verletzung", "Delays, QC blockers, SLA breaches"), rows: exceptionRows, columns: [{ key: "type", label: l("Typ", "Type") }, { key: "severity", label: l("Schwere", "Severity") }, { key: "ref", label: l("Referenz", "Reference") }, { key: "owner", label: l("Verantwortlich", "Owner") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "cycle-count", title: l("Zykluszählung", "Cycle counting"), subtitle: l("Regelzählung, Stichprobenzählung, 4-Augen-Freigabe", "Planned counts, spot count, 4-eyes approval"), rows: cycleCountRows, columns: [{ key: "plan", label: l("Plan", "Plan") }, { key: "sku", label: "SKU" }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "variance", label: l("Differenz", "Variance") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "governance", title: l("Prüfung & Freigaben", "Audit & approvals"), subtitle: l("Wer/Wann/Was/Warum mit Historie", "Who/when/what/why with history"), rows: governanceRows, columns: [{ key: "entity", label: l("Entität", "Entity") }, { key: "action", label: l("Aktion", "Action") }, { key: "changedBy", label: l("Benutzer", "User") }, { key: "reason", label: l("Grund", "Reason") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "company", title: l("Mehrere Gesellschaften & Standards", "Multi-company & standards"), subtitle: l("Währung, Sprache, Steuer, Intercompany, gemeinsames Lager", "Currency, language, tax, intercompany, shared WH"), rows: companyRows, columns: [{ key: "company", label: l("Gesellschaft", "Company") }, { key: "currency", label: l("Währung", "Currency") }, { key: "language", label: l("Sprache", "Language") }, { key: "tax", label: l("Steuer", "Tax") }, { key: "status", label: l("Status", "Status") }] },
+        { id: "cycle-count", title: l("Zykluszählung", "Cycle counting"), subtitle: l("Zählplan, Zählwert, Freigabe", "Plan, count result, approval"), rows: cycleCountRows, columns: [{ key: "plan", label: l("Plan", "Plan") }, { key: "sku", label: "SKU" }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "variance", label: l("Differenz", "Variance") }, { key: "status", label: l("Status", "Status") }] },
+        { id: "governance", title: l("Prüfung & Freigaben", "Audit & approvals"), subtitle: l("Reale Prüfhistorie und Nachvollziehbarkeit", "Real audit trail and traceability"), rows: governanceRows, columns: [{ key: "entity", label: l("Entität", "Entity") }, { key: "action", label: l("Aktion", "Action") }, { key: "changedBy", label: l("Benutzer", "User") }, { key: "reason", label: l("Grund", "Reason") }, { key: "status", label: l("Status", "Status") }] },
     ];
 
     const workspaceHelpConfig = useMemo(() => ({
@@ -827,12 +862,6 @@ const SupplyChainDashboard = () => {
             ],
             columnHelp: {
                 sla: helpContent.sla,
-            },
-        },
-        returns: {
-            titleHelp: helpContent.rma,
-            columnHelp: {
-                rma: helpContent.rma,
             },
         },
         inventory: {
@@ -877,15 +906,6 @@ const SupplyChainDashboard = () => {
         governance: {
             titleHelp: helpContent.governance,
         },
-        company: {
-            subtitleParts: [
-                { label: l("Währung", "Currency") },
-                { label: l("Sprache", "Language") },
-                { label: l("Steuer", "Tax") },
-                { label: "Intercompany", help: helpContent.intercompany },
-                { label: l("gemeinsames Lager", "shared warehouse") },
-            ],
-        },
     }), [helpContent, l]);
 
     const workspaceDefinitionsWithHelp = useMemo(() => workspaceDefinitions.map((workspace) => {
@@ -921,7 +941,7 @@ const SupplyChainDashboard = () => {
 
     const activeDefinition = workspaceCards.find((item) => item.id === activeWorkspace) ?? workspaceCards[0];
     const activeRole = roleDefinitions.find((item) => item.id === role) ?? roleDefinitions[0];
-    const quickEntryEnabled = ["inbound", "inventory", "buckets"].includes(activeDefinition.id);
+    const quickEntryEnabled = ["inbound", "inventory", "cycle-count"].includes(activeDefinition.id);
     const receivingAssistantEnabled = activeDefinition.id === "inbound";
     const operationalLoad = useMemo(() => inboundRows.length + outboundRows.length + productionRows.length, [inboundRows.length, outboundRows.length, productionRows.length]);
     const totalAttention = useMemo(() => workspaceCards.reduce((sum, workspace) => sum + workspace.attention, 0), [workspaceCards]);
@@ -995,8 +1015,8 @@ const SupplyChainDashboard = () => {
         { id: "inventory-group", label: l("Bestand", "Inventory"), description: l("Lager, Bestandsarten und Zählungen.", "Warehouse, buckets, and counting."), ids: ["inventory", "buckets", "cycle-count"] },
         { id: "production-group", label: l("Produktion", "Production"), description: l("Planung und laufende Fertigung.", "Planning and live production."), ids: ["production"] },
         { id: "quality-group", label: l("Qualität", "Quality"), description: l("Ausnahmen, Blocker und QS-Themen.", "Exceptions, blockers, and QC topics."), ids: ["exceptions"] },
-        { id: "service-group", label: l("Service", "Service"), description: l("Servicefälle und Rücknahmen bündeln.", "Group service cases and returns."), ids: ["service", "returns"] },
-        { id: "governance-group", label: l("Freigaben & Standards", "Approvals & standards"), description: l("Freigaben, Historie und Gesellschaften.", "Approvals, history, and company setup."), ids: ["governance", "company"] },
+        { id: "service-group", label: l("Service", "Service"), description: l("Servicefälle und Eskalationen bündeln.", "Group service cases and escalations."), ids: ["service"] },
+        { id: "governance-group", label: l("Freigaben & Standards", "Approvals & standards"), description: l("Freigaben und reale Prüfhistorie.", "Approvals and real audit history."), ids: ["governance"] },
     ]), [l]);
 
     const workspaceGroups = useMemo(() => workspaceGroupDefinitions.map((group) => {
@@ -1025,21 +1045,113 @@ const SupplyChainDashboard = () => {
     }), [workspaceCards, workspaceGroupDefinitions]);
 
     const submitQuickEntry = async (payload) => {
-        if (!payload.productId || !payload.warehouseId || !payload.quantityChange) {
+        const rawQuantity = Number(payload.quantityChange);
+        if (!payload.productId || !payload.warehouseId || !Number.isFinite(rawQuantity) || rawQuantity === 0) {
             notify(l("Bitte Produkt, Lager und Menge ausfüllen.", "Please fill product, warehouse and quantity."), "warning");
             return false;
         }
         try {
-            await api.post("/api/supply-chain/stock/adjust", payload);
-            notify(l("Wareneingang erfolgreich erfasst.", "Stock entry saved successfully."), "success");
+            const type = String(payload.type ?? "RECEIPT").toUpperCase();
+            const quantityChange = Math.abs(rawQuantity) * (negativeStockMovementTypes.has(type) ? -1 : 1);
+            await api.post("/api/supply-chain/stock/adjust", {
+                ...payload,
+                type,
+                quantityChange,
+            });
+            notify(l("Bestandsbuchung erfolgreich erfasst.", "Stock entry saved successfully."), "success");
             await loadData();
             return true;
         } catch (error) {
             console.error(error);
-            notify(l("Wareneingang konnte nicht gespeichert werden.", "Could not save stock entry."), "error");
+            notify(l("Bestandsbuchung konnte nicht gespeichert werden.", "Could not save stock entry."), "error");
             return false;
         }
     };
+
+    const submitCreateCycleCountPlan = async (payload) => {
+        if (!payload.productId || !payload.warehouseId) {
+            notify(l("Bitte Produkt und Lager für die Zählung wählen.", "Please choose a product and warehouse for the count."), "warning");
+            return false;
+        }
+        try {
+            await api.post("/api/supply-chain/cycle-counts", payload);
+            notify(l("Zählplan erfolgreich angelegt.", "Cycle count plan created successfully."), "success");
+            await loadData();
+            return true;
+        } catch (error) {
+            console.error(error);
+            notify(l("Zählplan konnte nicht angelegt werden.", "Could not create cycle count plan."), "error");
+            return false;
+        }
+    };
+
+    const submitCycleCountResult = useCallback(async (cycleCountId, countedQuantity) => {
+        const quantity = Number(countedQuantity);
+        if (!Number.isFinite(quantity) || quantity < 0) {
+            notify(l("Bitte eine gültige gezählte Menge eingeben.", "Please enter a valid counted quantity."), "warning");
+            return null;
+        }
+        try {
+            const response = await api.post(`/api/supply-chain/cycle-counts/${cycleCountId}/submit`, {
+                countedQuantity: quantity,
+            });
+            await loadData();
+            notify(l("Zählergebnis gespeichert.", "Count result saved."), "success");
+            return mapCycleCountToRow(response.data);
+        } catch (error) {
+            console.error(error);
+            notify(l("Zählergebnis konnte nicht gespeichert werden.", "Could not save count result."), "error");
+            return null;
+        }
+    }, [l, loadData, mapCycleCountToRow, notify]);
+
+    const approveCycleCountResult = useCallback(async (cycleCountId) => {
+        try {
+            const response = await api.post(`/api/supply-chain/cycle-counts/${cycleCountId}/approve`);
+            await loadData();
+            notify(l("Zykluszählung freigegeben und Bestand angepasst.", "Cycle count approved and stock adjusted."), "success");
+            return mapCycleCountToRow(response.data);
+        } catch (error) {
+            console.error(error);
+            notify(l("Zykluszählung konnte nicht freigegeben werden.", "Could not approve cycle count."), "error");
+            return null;
+        }
+    }, [l, loadData, mapCycleCountToRow, notify]);
+
+    const renderDrawerActions = useCallback(({ record, setRecord }) => {
+        if (activeDefinition?.id !== "cycle-count" || !record) {
+            return null;
+        }
+
+        return (
+            <CycleCountDrawerActions
+                record={record}
+                text={{
+                    countTitle: l("Zählergebnis erfassen", "Submit count result"),
+                    countText: l("Gezählten Bestand erfassen und bei Differenzen zur Freigabe weitergeben.", "Enter the counted stock and route differences to approval."),
+                    countedLabel: l("Gezählte Menge", "Counted quantity"),
+                    submitLabel: l("Ergebnis speichern", "Save result"),
+                    submittingLabel: l("Speichert…", "Saving…"),
+                    approvalTitle: l("Freigabe ausstehend", "Approval pending"),
+                    approvalText: l("Die Differenz ist erkannt. Nach der Freigabe wird der Systembestand angepasst.", "The variance was detected. After approval, the system stock will be adjusted."),
+                    expectedLabel: l("Systembestand", "System stock"),
+                    varianceLabel: l("Differenz", "Variance"),
+                    approveLabel: l("Freigeben", "Approve"),
+                    approvingLabel: l("Gibt frei…", "Approving…"),
+                    completedTitle: l("Zählung abgeschlossen", "Count completed"),
+                    completedText: l("Für diesen Datensatz ist keine weitere Aktion nötig.", "No further action is needed for this record."),
+                }}
+                onSubmitCount={async (countedQuantity) => {
+                    const updated = await submitCycleCountResult(record.id, countedQuantity);
+                    if (updated) setRecord(updated);
+                }}
+                onApprove={async () => {
+                    const updated = await approveCycleCountResult(record.id);
+                    if (updated) setRecord(updated);
+                }}
+            />
+        );
+    }, [activeDefinition?.id, approveCycleCountResult, l, submitCycleCountResult]);
 
     const submitCreateProduct = async (payload) => {
         if (!payload.sku || !payload.name) {
@@ -1169,7 +1281,7 @@ const SupplyChainDashboard = () => {
                         <article><span><HelpLabel label="OTIF" help={helpContent.otif} /></span><strong>{kpi.otif}%</strong></article>
                         <article><span><HelpLabel label={l("Pick-Leistung", "Pick performance")} help={helpContent.pickPerformance} /></span><strong>{kpi.pickPerformance}</strong></article>
                         <article><span><HelpLabel label={l("Inventurgenauigkeit", "Inventory accuracy")} help={helpContent.inventoryAccuracy} /></span><strong>{kpi.inventoryAccuracy}</strong></article>
-                        <article><span><HelpLabel label={l("Retourenquote", "Return rate")} help={helpContent.returnRate} /></span><strong>{kpi.returnRate}</strong></article>
+                        <article><span><HelpLabel label={l("Offene Eskalationen", "Open escalations")} help={helpContent.exceptionCenter} /></span><strong>{kpi.exceptionBacklog}</strong></article>
                     </div>
 
                     <div className="sc-priority-list">
@@ -1299,12 +1411,19 @@ const SupplyChainDashboard = () => {
                         }}
                         quickEntry={{
                             enabled: quickEntryEnabled,
-                            openLabel: l("+ Wareneingang erfassen", "+ Add stock entry"),
+                            kind: activeDefinition.id === "cycle-count" ? "cycle-count" : "stock-entry",
+                            openLabel: activeDefinition.id === "cycle-count"
+                                ? l("+ Zählplan anlegen", "+ Create count plan")
+                                : l("+ Bestand buchen", "+ Post stock entry"),
                             closeLabel: l("Schließen", "Close"),
-                            title: l("Schnellerfassung Wareneingang", "Quick stock entry"),
-                            subtitle: l("Für kleine Teams: Produkt, Lager und Menge direkt buchen.", "For small teams: book product, warehouse and quantity directly."),
-                            submitLabel: l("Buchen", "Post entry"),
-                            submittingLabel: l("Wird gebucht…", "Posting…"),
+                            title: activeDefinition.id === "cycle-count"
+                                ? l("Zählplan anlegen", "Create count plan")
+                                : l("Schnellbuchung Bestand", "Quick stock entry"),
+                            subtitle: activeDefinition.id === "cycle-count"
+                                ? l("Produkt und Lager auswählen, damit ein echter Zählauftrag entsteht.", "Choose a product and warehouse to create a real count task.")
+                                : l("Für kleine Teams: Produkt, Lager und Buchung direkt erfassen.", "For small teams: post product, warehouse, and movement directly."),
+                            submitLabel: activeDefinition.id === "cycle-count" ? l("Zählplan speichern", "Save count plan") : l("Buchen", "Post entry"),
+                            submittingLabel: activeDefinition.id === "cycle-count" ? l("Wird angelegt…", "Creating…") : l("Wird gebucht…", "Posting…"),
                             products,
                             warehouses,
                             labels: {
@@ -1321,18 +1440,16 @@ const SupplyChainDashboard = () => {
                             placeholders: {
                                 product: l("Bitte Produkt wählen", "Select product"),
                                 warehouse: l("Bitte Lager wählen", "Select warehouse"),
-                                reference: l("z. B. Lieferschein 2026-04-07", "e.g. Delivery note 2026-04-07"),
+                                reference: l("z. B. Buchungsgrund oder Beleg", "e.g. booking reason or reference"),
                             },
                             types: [
                                 { value: "RECEIPT", label: l("Wareneingang", "Goods receipt") },
-                                { value: "ADJUSTMENT", label: l("Korrektur", "Adjustment") },
-                                { value: "RESERVATION", label: l("Reservierung", "Reservation") },
-                                { value: "QC_HOLD", label: l("QC-Sperre", "QC hold") },
-                                { value: "RELEASE", label: l("Freigabe", "Release") },
-                                { value: "TRANSFER", label: l("Umlagerung", "Transfer") },
+                                { value: "ISSUE", label: l("Entnahme", "Issue") },
+                                { value: "WRITE_OFF", label: l("Abschreibung", "Write-off") },
+                                { value: "GAIN", label: l("Bestandsgewinn", "Stock gain") },
                             ],
                             createProduct: {
-                                enabled: true,
+                                enabled: activeDefinition.id !== "cycle-count",
                                 openLabel: l("+ Produkt anlegen", "+ Add product"),
                                 closeLabel: l("Produkt-Form schließen", "Close product form"),
                                 title: l("Neues Produkt", "New product"),
@@ -1353,7 +1470,7 @@ const SupplyChainDashboard = () => {
                                 onSubmit: submitCreateProduct,
                             },
                             createWarehouse: {
-                                enabled: true,
+                                enabled: activeDefinition.id !== "cycle-count",
                                 openLabel: l("+ Lager anlegen", "+ Add warehouse"),
                                 closeLabel: l("Lager-Form schließen", "Close warehouse form"),
                                 title: l("Neues Lager", "New warehouse"),
@@ -1375,8 +1492,9 @@ const SupplyChainDashboard = () => {
                                 },
                                 onSubmit: submitCreateWarehouse,
                             },
-                            onSubmit: submitQuickEntry,
+                            onSubmit: activeDefinition.id === "cycle-count" ? submitCreateCycleCountPlan : submitQuickEntry,
                         }}
+                        renderDrawerActions={renderDrawerActions}
                         receivingAssistant={{
                             enabled: receivingAssistantEnabled,
                             openLabel: l("+ Lieferschein scannen", "+ Scan delivery note"),

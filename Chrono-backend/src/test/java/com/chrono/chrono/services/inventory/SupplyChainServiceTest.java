@@ -256,4 +256,35 @@ class SupplyChainServiceTest {
         assertThat(firstWave.getStops()).isNotEmpty();
         assertThat(firstWave.getStops().get(0).getQuantity()).isPositive();
     }
+
+    @Test
+    void cycleCountPersistsAndAdjustsStockAfterApproval() {
+        Product product = new Product();
+        product.setSku("SKU-COUNT");
+        product.setName("Counted Item");
+        product = supplyChainService.saveProduct(product);
+
+        Warehouse warehouse = new Warehouse();
+        warehouse.setCode("COUNT");
+        warehouse.setName("Count Warehouse");
+        warehouse = supplyChainService.saveWarehouse(warehouse);
+
+        supplyChainService.adjustStock(product, warehouse, new BigDecimal("10"), StockMovementType.RECEIPT, "Initial", null, null, null);
+
+        CycleCount cycleCount = supplyChainService.createCycleCount(product, warehouse, "auditor");
+        assertThat(cycleCount.getExpectedQuantity()).isEqualByComparingTo(new BigDecimal("10"));
+        assertThat(cycleCount.getStatus()).isEqualTo(CycleCountStatus.PLANNED);
+
+        CycleCount submitted = supplyChainService.submitCycleCount(cycleCount.getId(), new BigDecimal("8"), "counter");
+        assertThat(submitted.getStatus()).isEqualTo(CycleCountStatus.APPROVAL_REQUIRED);
+        assertThat(submitted.getVariance()).isEqualByComparingTo(new BigDecimal("-2"));
+
+        CycleCount approved = supplyChainService.approveCycleCount(submitted.getId(), "supervisor");
+        assertThat(approved.getStatus()).isEqualTo(CycleCountStatus.COMPLETED);
+        assertThat(approved.getApprovedBy()).isEqualTo("supervisor");
+        assertThat(approved.getExpectedQuantity()).isEqualByComparingTo(new BigDecimal("8"));
+
+        StockLevel updated = stockLevelRepository.findByProductAndWarehouse(product, warehouse).orElseThrow();
+        assertThat(updated.getQuantity()).isEqualByComparingTo(new BigDecimal("8"));
+    }
 }

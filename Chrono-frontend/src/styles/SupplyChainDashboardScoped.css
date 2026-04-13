@@ -1012,6 +1012,34 @@
 .sc-drawer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .4rem .7rem; }
 .sc-drawer-grid dt { font-weight: 700; }
 .sc-drawer-grid dd { margin: 0; color: #334155; }
+.sc-drawer-action-panel {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.28);
+    display: grid;
+    gap: 0.75rem;
+}
+.sc-drawer-action-panel h4,
+.sc-drawer-action-panel p { margin: 0; }
+.sc-drawer-action-field {
+    display: grid;
+    gap: 0.35rem;
+    font-weight: 600;
+}
+.sc-drawer-action-field input {
+    width: 100%;
+    border-radius: 10px;
+    border: 1px solid rgba(37, 99, 235, 0.25);
+    padding: 0.5rem 0.6rem;
+    background: rgba(255, 255, 255, 0.9);
+    color: inherit;
+}
+.sc-drawer-action-metrics {
+    display: flex;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    font-size: 0.9rem;
+}
 
 .sc-approval-head { display:flex; justify-content:space-between; }
 .sc-approval-track { width: 100%; height: 8px; background: rgba(148,163,184,.25); border-radius: 999px; overflow:hidden; }
@@ -1975,19 +2003,20 @@
 
 .sc-filter-primary {
     display: grid;
-    grid-template-columns: minmax(320px, 1.55fr) auto;
+    grid-template-columns: minmax(0, 1.55fr) auto;
     gap: 0.75rem;
     align-items: end;
 }
 
 .sc-filter-groups {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
     gap: 0.75rem;
 }
 
 .sc-filter-group {
     padding: 0.8rem 0.85rem;
+    min-width: 0;
 }
 
 .sc-filter-group p {
@@ -2001,19 +2030,22 @@
 
 .sc-filter-group-grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
     gap: 0.65rem;
+    min-width: 0;
 }
 
 .sc-filter-field {
     display: grid;
     gap: 0.32rem;
+    min-width: 0;
 }
 
 .sc-filter-field span {
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--sc-text-soft);
+    min-width: 0;
 }
 
 .sc-filter-search input {
@@ -2021,6 +2053,9 @@
 }
 
 .sc-filter-bar input {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
     border-radius: 12px;
     padding: 0.62rem 0.72rem;
     border-color: rgba(120, 146, 195, 0.28);
@@ -2456,6 +2491,11 @@
     .sc-filter-groups,
     .sc-filter-group-grid {
         grid-template-columns: 1fr;
+    }
+
+    .sc-hero-copy {
+        justify-self: end;
+        width: min(100%, 32rem);
     }
 
     .sc-receiving-grid {

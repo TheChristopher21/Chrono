@@ -10,6 +10,7 @@ import com.chrono.chrono.entities.inventory.PurchaseOrderLine;
 import com.chrono.chrono.entities.inventory.SalesOrder;
 import com.chrono.chrono.entities.inventory.SalesOrderLine;
 import com.chrono.chrono.entities.inventory.ServiceRequest;
+import com.chrono.chrono.entities.inventory.CycleCount;
 import com.chrono.chrono.entities.inventory.StockMovement;
 import com.chrono.chrono.entities.inventory.Warehouse;
 import com.chrono.chrono.repositories.inventory.ProductRepository;
@@ -31,6 +32,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.security.Principal;
 import java.util.List;
 
 @RestController
@@ -106,6 +108,38 @@ public class SupplyChainController {
         Page<StockMovementDTO> movements = supplyChainService.listStockMovements(pageable)
                 .map(StockMovementDTO::from);
         return ResponseEntity.ok(movements);
+    }
+
+    @GetMapping("/cycle-counts")
+    public ResponseEntity<Page<CycleCountDTO>> listCycleCounts(@RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "50") int size) {
+        Pageable pageable = PageRequest.of(page, Math.min(size, 200));
+        Page<CycleCountDTO> counts = supplyChainService.listCycleCounts(pageable).map(CycleCountDTO::from);
+        return ResponseEntity.ok(counts);
+    }
+
+    @PostMapping("/cycle-counts")
+    public ResponseEntity<CycleCountDTO> createCycleCount(@RequestBody CreateCycleCountRequest request, Principal principal) {
+        Product product = productRepository.findById(request.getProductId()).orElseThrow();
+        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId()).orElseThrow();
+        CycleCount saved = supplyChainService.createCycleCount(product, warehouse, principal != null ? principal.getName() : "system");
+        return ResponseEntity.created(URI.create("/api/supply-chain/cycle-counts/" + saved.getId()))
+                .body(CycleCountDTO.from(saved));
+    }
+
+    @PostMapping("/cycle-counts/{id}/submit")
+    public ResponseEntity<CycleCountDTO> submitCycleCount(@PathVariable Long id,
+                                                          @RequestBody SubmitCycleCountRequest request,
+                                                          Principal principal) {
+        CycleCount updated = supplyChainService.submitCycleCount(id, request.getCountedQuantity(),
+                principal != null ? principal.getName() : "system");
+        return ResponseEntity.ok(CycleCountDTO.from(updated));
+    }
+
+    @PostMapping("/cycle-counts/{id}/approve")
+    public ResponseEntity<CycleCountDTO> approveCycleCount(@PathVariable Long id, Principal principal) {
+        CycleCount updated = supplyChainService.approveCycleCount(id, principal != null ? principal.getName() : "system");
+        return ResponseEntity.ok(CycleCountDTO.from(updated));
     }
 
     @PostMapping("/receiving/preview")

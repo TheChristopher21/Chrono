@@ -20,7 +20,7 @@ const initialQuickEntryForm = { productId: "", warehouseId: "", quantityChange: 
 const initialCreateProductForm = { sku: "", name: "" };
 const initialCreateWarehouseForm = { code: "", name: "", location: "" };
 
-const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows, columns, timeline, text, quickEntry, receivingAssistant, workspaceMeta }) => {
+const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows, columns, timeline, text, quickEntry, receivingAssistant, workspaceMeta, renderDrawerActions }) => {
     const [filters, setFilters] = useState(initialFilter);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [drawerRecord, setDrawerRecord] = useState(null);
@@ -120,13 +120,18 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
     const submitQuickEntry = async (event) => {
         event.preventDefault();
         if (!quickEntry?.onSubmit || quickEntrySubmitting) return;
-        const payload = {
-            productId: Number(quickEntryForm.productId),
-            warehouseId: Number(quickEntryForm.warehouseId),
-            quantityChange: Number(quickEntryForm.quantityChange),
-            type: quickEntryForm.type,
-            reference: quickEntryForm.reference,
-        };
+        const payload = quickEntry.kind === "cycle-count"
+            ? {
+                productId: Number(quickEntryForm.productId),
+                warehouseId: Number(quickEntryForm.warehouseId),
+            }
+            : {
+                productId: Number(quickEntryForm.productId),
+                warehouseId: Number(quickEntryForm.warehouseId),
+                quantityChange: Number(quickEntryForm.quantityChange),
+                type: quickEntryForm.type,
+                reference: quickEntryForm.reference,
+            };
         setQuickEntrySubmitting(true);
         try {
             const ok = await quickEntry.onSubmit(payload);
@@ -173,6 +178,14 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
             setCreateWarehouseSubmitting(false);
         }
     };
+
+    const drawerActionContent = renderDrawerActions
+        ? renderDrawerActions({
+            record: drawerRecord,
+            setRecord: setDrawerRecord,
+            closeDrawer: () => setDrawerRecord(null),
+        })
+        : null;
 
     return (
         <section className="sc-workspace card">
@@ -265,39 +278,43 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
                                 ))}
                             </select>
                         </label>
-                        <label>
-                            <span className="sc-form-label-row">
-                                <HelpLabel label={quickEntry.labels.quantity} help={quickEntry.help?.quantity} />
-                            </span>
-                            <input
-                                type="number"
-                                step="0.01"
-                                value={quickEntryForm.quantityChange}
-                                onChange={(event) => handleQuickEntryChange("quantityChange", event.target.value)}
-                                required
-                            />
-                        </label>
-                        <label>
-                            <span className="sc-form-label-row">
-                                <HelpLabel label={quickEntry.labels.type} help={quickEntry.help?.type} />
-                            </span>
-                            <select value={quickEntryForm.type} onChange={(event) => handleQuickEntryChange("type", event.target.value)}>
-                                {quickEntry.types.map((option) => (
-                                    <option key={option.value} value={option.value}>{option.label}</option>
-                                ))}
-                            </select>
-                        </label>
-                        <label className="sc-quick-entry-span">
-                            <span className="sc-form-label-row">
-                                <HelpLabel label={quickEntry.labels.reference} help={quickEntry.help?.reference} />
-                            </span>
-                            <input
-                                type="text"
-                                value={quickEntryForm.reference}
-                                onChange={(event) => handleQuickEntryChange("reference", event.target.value)}
-                                placeholder={quickEntry.placeholders.reference}
-                            />
-                        </label>
+                        {quickEntry.kind !== "cycle-count" && (
+                            <>
+                                <label>
+                                    <span className="sc-form-label-row">
+                                        <HelpLabel label={quickEntry.labels.quantity} help={quickEntry.help?.quantity} />
+                                    </span>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={quickEntryForm.quantityChange}
+                                        onChange={(event) => handleQuickEntryChange("quantityChange", event.target.value)}
+                                        required
+                                    />
+                                </label>
+                                <label>
+                                    <span className="sc-form-label-row">
+                                        <HelpLabel label={quickEntry.labels.type} help={quickEntry.help?.type} />
+                                    </span>
+                                    <select value={quickEntryForm.type} onChange={(event) => handleQuickEntryChange("type", event.target.value)}>
+                                        {quickEntry.types.map((option) => (
+                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <label className="sc-quick-entry-span">
+                                    <span className="sc-form-label-row">
+                                        <HelpLabel label={quickEntry.labels.reference} help={quickEntry.help?.reference} />
+                                    </span>
+                                    <input
+                                        type="text"
+                                        value={quickEntryForm.reference}
+                                        onChange={(event) => handleQuickEntryChange("reference", event.target.value)}
+                                        placeholder={quickEntry.placeholders.reference}
+                                    />
+                                </label>
+                            </>
+                        )}
                     </div>
                     <div className="panel-actions">
                         <button type="submit" disabled={quickEntrySubmitting}>
@@ -519,6 +536,7 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
                 timelineItems={timeline.filter((item) => String(item.sourceId) === String(drawerRecord?.id))}
                 approvalLabel={text.approvalLabel}
                 locale={text.locale}
+                actionContent={drawerActionContent}
                 onClose={() => setDrawerRecord(null)}
             />
         </section>

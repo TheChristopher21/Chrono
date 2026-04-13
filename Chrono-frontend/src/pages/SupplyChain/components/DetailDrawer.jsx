@@ -26,7 +26,7 @@ const formatValue = (key, value, record, locale) => {
     return String(value ?? "-");
 };
 
-const DetailDrawer = ({ open, title, record, fieldLabels, fieldHelp, timelineTitle, timelineItems, approvalLabel, locale, onClose }) => {
+const DetailDrawer = ({ open, title, record, fieldLabels, fieldHelp, timelineTitle, timelineItems, approvalLabel, locale, actionContent, onClose }) => {
     if (!open || !record) {
         return null;
     }
@@ -49,6 +49,7 @@ const DetailDrawer = ({ open, title, record, fieldLabels, fieldHelp, timelineTit
                     </React.Fragment>
                     ))}
             </dl>
+            {actionContent}
             <ApprovalBar label={approvalLabel} progress={record.approvalProgress ?? 0} />
             <ActivityTimeline title={timelineTitle} items={timelineItems} locale={locale} />
         </aside>

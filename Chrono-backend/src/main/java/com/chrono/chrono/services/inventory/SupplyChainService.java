@@ -38,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,6 +72,7 @@ public class SupplyChainService {
     private final WarehouseRepository warehouseRepository;
     private final StockLevelRepository stockLevelRepository;
     private final StockMovementRepository stockMovementRepository;
+    private final CycleCountRepository cycleCountRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final SalesOrderRepository salesOrderRepository;
     private final ProductionOrderRepository productionOrderRepository;
@@ -82,6 +84,7 @@ public class SupplyChainService {
                               WarehouseRepository warehouseRepository,
                               StockLevelRepository stockLevelRepository,
                               StockMovementRepository stockMovementRepository,
+                              CycleCountRepository cycleCountRepository,
                               PurchaseOrderRepository purchaseOrderRepository,
                               SalesOrderRepository salesOrderRepository,
                               ProductionOrderRepository productionOrderRepository,
@@ -92,6 +95,7 @@ public class SupplyChainService {
         this.warehouseRepository = warehouseRepository;
         this.stockLevelRepository = stockLevelRepository;
         this.stockMovementRepository = stockMovementRepository;
+        this.cycleCountRepository = cycleCountRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.salesOrderRepository = salesOrderRepository;
         this.productionOrderRepository = productionOrderRepository;
@@ -452,6 +456,80 @@ public class SupplyChainService {
         return serviceRequestRepository.findAll(pageable);
     }
 
+    @Transactional(readOnly = true)
+    public Page<CycleCount> listCycleCounts(Pageable pageable) {
+        return cycleCountRepository.findAll(pageable);
+    }
+
+    @Transactional
+    public CycleCount createCycleCount(Product product, Warehouse warehouse, String requestedBy) {
+        Optional<CycleCount> existing = cycleCountRepository.findFirstByProductAndWarehouseAndStatusInOrderByCreatedAtDesc(
+                product,
+                warehouse,
+                List.of(CycleCountStatus.PLANNED, CycleCountStatus.APPROVAL_REQUIRED));
+        if (existing.isPresent()) {
+            return existing.get();
+        }
+
+        BigDecimal expectedQuantity = stockLevelRepository.findByProductAndWarehouse(product, warehouse)
+                .map(StockLevel::getQuantity)
+                .orElse(BigDecimal.ZERO);
+
+        CycleCount cycleCount = new CycleCount();
+        cycleCount.setPlanNumber(nextCycleCountPlanNumber());
+        cycleCount.setProduct(product);
+        cycleCount.setWarehouse(warehouse);
+        cycleCount.setExpectedQuantity(expectedQuantity);
+        cycleCount.setVariance(BigDecimal.ZERO);
+        cycleCount.setStatus(CycleCountStatus.PLANNED);
+        cycleCount.setRequestedBy(requestedBy);
+        return cycleCountRepository.save(cycleCount);
+    }
+
+    @Transactional
+    public CycleCount submitCycleCount(Long cycleCountId, BigDecimal countedQuantity, String countedBy) {
+        if (countedQuantity == null) {
+            throw new IllegalArgumentException("Counted quantity is required");
+        }
+        if (countedQuantity.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Counted quantity cannot be negative");
+        }
+
+        CycleCount cycleCount = cycleCountRepository.findById(cycleCountId).orElseThrow();
+        BigDecimal variance = countedQuantity.subtract(Optional.ofNullable(cycleCount.getExpectedQuantity()).orElse(BigDecimal.ZERO));
+
+        cycleCount.setCountedQuantity(countedQuantity);
+        cycleCount.setVariance(variance);
+        cycleCount.setCountedBy(countedBy);
+        cycleCount.setCountedAt(LocalDateTime.now());
+        cycleCount.setStatus(variance.compareTo(BigDecimal.ZERO) == 0
+                ? CycleCountStatus.COMPLETED
+                : CycleCountStatus.APPROVAL_REQUIRED);
+        return cycleCountRepository.save(cycleCount);
+    }
+
+    @Transactional
+    public CycleCount approveCycleCount(Long cycleCountId, String approvedBy) {
+        CycleCount cycleCount = cycleCountRepository.findById(cycleCountId).orElseThrow();
+        if (cycleCount.getStatus() != CycleCountStatus.APPROVAL_REQUIRED) {
+            return cycleCount;
+        }
+        BigDecimal expectedQuantity = Optional.ofNullable(cycleCount.getExpectedQuantity()).orElse(BigDecimal.ZERO);
+        BigDecimal countedQuantity = Optional.ofNullable(cycleCount.getCountedQuantity()).orElse(expectedQuantity);
+        BigDecimal delta = countedQuantity.subtract(expectedQuantity);
+
+        if (delta.compareTo(BigDecimal.ZERO) != 0) {
+            adjustStock(cycleCount.getProduct(), cycleCount.getWarehouse(), delta, StockMovementType.ADJUSTMENT,
+                    "Cycle count " + cycleCount.getPlanNumber(), null, null, null);
+        }
+
+        cycleCount.setApprovedBy(approvedBy);
+        cycleCount.setApprovedAt(LocalDateTime.now());
+        cycleCount.setStatus(CycleCountStatus.COMPLETED);
+        cycleCount.setExpectedQuantity(countedQuantity);
+        return cycleCountRepository.save(cycleCount);
+    }
+
     @Transactional
     public AutoReplenishResponse autoReplenish(AutoReplenishRequest request) {
         ReplenishmentComputation computation = computeReplenishmentPlans(request);
@@ -753,6 +831,11 @@ public class SupplyChainService {
             return product.getUnitPrice();
         }
         return BigDecimal.TEN;
+    }
+
+    private String nextCycleCountPlanNumber() {
+        long sequence = cycleCountRepository.count() + 1;
+        return String.format(Locale.ROOT, "CC-%s-%04d", LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE), sequence);
     }
 
     private boolean isOpenPurchaseOrder(PurchaseOrder order) {
