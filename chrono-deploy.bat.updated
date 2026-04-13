@@ -1,0 +1,140 @@
+@echo off
+setlocal enabledelayedexpansion
+title Chrono Deploy (Git + Docker Build/Push + Server Update)
+
+REM ====== KONFIG ======
+set "ROOT=C:\Users\siefe\WebstormProjects\Chrono"
+set "FRONTEND=%ROOT%\Chrono-frontend"
+set "BACKEND=%ROOT%\Chrono-backend"
+
+set "FE_IMAGE=chrisubuntu1/chrono-frontend:latest"
+set "BE_IMAGE=chrisubuntu1/chrono-backend:latest"
+
+REM SSH Ziel (IP)
+set "SSH_TARGET=root@91.99.51.211"
+set "REMOTE_CLEANUP_CMD=cd ~/chrono && echo '[INFO] Sichere Docker-Bereinigung startet (ohne Volumes / ohne MySQL-Daten)...' && docker builder prune -a -f && docker image prune -a -f && docker container prune -f && docker system df"
+set "REMOTE_UPDATE_CMD=cd ~/chrono && ./update.sh"
+
+REM Docker CLI helper (Switch Linux Engine)
+set "DOCKERCLI=C:\Program Files\Docker\Docker\DockerCli.exe"
+
+echo ==========================================
+echo   Chrono Deploy startet...
+echo   Repo:   %ROOT%
+echo   Server: %SSH_TARGET%
+echo ==========================================
+echo.
+
+REM ====== 0) Docker Check ======
+echo [0/6] Docker: check daemon
+docker info >nul 2>&1
+if errorlevel 1 (
+  echo [INFO] Docker Daemon nicht erreichbar. Versuche auf Linux Engine zu schalten...
+  if exist "%DOCKERCLI%" (
+    "%DOCKERCLI%" -SwitchLinuxEngine >nul 2>&1
+  )
+  echo [INFO] Starte/oeffne Docker Desktop und warte bis er laeuft...
+  echo [INFO] Danach Script erneut starten, falls es nicht automatisch klappt.
+  docker info >nul 2>&1
+  if errorlevel 1 (
+    echo [FAIL] Docker laeuft noch nicht. Bitte Docker Desktop starten und auf Linux Containers stellen.
+    goto :end_pause
+  )
+)
+echo [OK]  Docker laeuft
+echo.
+
+REM ====== 1) Git: Clean Check ======
+cd /d "%ROOT%" || goto :error_root
+
+for /f "delims=" %%A in ('git status --porcelain') do (
+  echo [FAIL] Repo ist NICHT clean. Bitte zuerst committen/pushen:
+  git status
+  echo.
+  echo Tipp:
+  echo   git add .
+  echo   git commit -m "..."
+  echo   git push
+  echo.
+  goto :end_pause
+)
+
+REM ====== 2) Git: main + pull + push ======
+echo [1/6] Git: switch main + pull + push
+git switch main || goto :error_git
+git pull --ff-only || goto :error_git
+git push || goto :error_git
+echo [OK]  Git OK
+echo.
+
+REM ====== 3) Docker Buildx bootstrap ======
+echo [2/6] Docker buildx bootstrap
+docker buildx inspect --bootstrap >nul 2>&1
+if errorlevel 1 (
+  echo [INFO] buildx nicht initialisiert. Lege Builder an...
+  docker buildx create --name chrono --use >nul 2>&1
+  docker buildx inspect --bootstrap || goto :error_docker
+)
+echo [OK]  buildx OK
+echo.
+
+REM ====== 4) Frontend build+push ======
+echo [3/6] Frontend: build+push %FE_IMAGE%
+cd /d "%FRONTEND%" || goto :error_fe
+docker buildx build --platform linux/amd64 -t %FE_IMAGE% --push . || goto :error_docker
+echo [OK]  Frontend Image OK
+echo.
+
+REM ====== 5) Backend build+push ======
+echo [4/6] Backend: build+push %BE_IMAGE%
+cd /d "%BACKEND%" || goto :error_be
+docker buildx build --platform linux/amd64 -t %BE_IMAGE% --push . || goto :error_docker
+echo [OK]  Backend Image OK
+echo.
+
+REM ====== 6) Remote Cleanup ======
+echo [5/6] Server: sichere Docker-Bereinigung ausfuehren
+ssh -t %SSH_TARGET% "%REMOTE_CLEANUP_CMD%"
+if errorlevel 1 goto :error_ssh
+echo [OK]  Server Cleanup OK
+echo.
+
+REM ====== 7) Remote Update ======
+echo [6/6] Server: update.sh ausfuehren
+ssh -t %SSH_TARGET% "%REMOTE_UPDATE_CMD%"
+if errorlevel 1 goto :error_ssh
+
+echo.
+echo ==========================================
+echo [OK] Deploy fertig! (Fenster bleibt offen)
+echo ==========================================
+goto :end_pause
+
+:error_root
+echo [FAIL] Repo-Root nicht gefunden: %ROOT%
+goto :end_pause
+
+:error_git
+echo [FAIL] Git Schritt fehlgeschlagen.
+goto :end_pause
+
+:error_fe
+echo [FAIL] Frontend Ordner nicht gefunden: %FRONTEND%
+goto :end_pause
+
+:error_be
+echo [FAIL] Backend Ordner nicht gefunden: %BACKEND%
+goto :end_pause
+
+:error_docker
+echo [FAIL] Docker Build/Push fehlgeschlagen.
+goto :end_pause
+
+:error_ssh
+echo [FAIL] SSH/Remote Update fehlgeschlagen.
+goto :end_pause
+
+:end_pause
+echo.
+pause
+endlocal
