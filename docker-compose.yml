@@ -109,12 +109,6 @@ services:
     volumes:
       - ./data/backups:/backups
       - ./knowledge_base:/app/knowledge_base
-    healthcheck:  # <-- DIESEN BLOCK HINZUFÜGEN
-      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 60s # Gibt dem Backend 60s Zeit zum Starten
 
   # Your Frontend Service
   frontend:
