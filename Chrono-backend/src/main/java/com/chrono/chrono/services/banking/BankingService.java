@@ -105,8 +105,18 @@ public class BankingService {
     }
 
     @Transactional(readOnly = true)
+    public VendorInvoice getVendorInvoice(Company company, Long id) {
+        return vendorInvoiceRepository.findByIdAndCompany(id, company).orElseThrow();
+    }
+
+    @Transactional(readOnly = true)
     public CustomerInvoice getCustomerInvoice(Long id) {
         return customerInvoiceRepository.findById(id).orElseThrow();
+    }
+
+    @Transactional(readOnly = true)
+    public CustomerInvoice getCustomerInvoice(Company company, Long id) {
+        return customerInvoiceRepository.findByIdAndCompany(id, company).orElseThrow();
     }
 
     @Transactional
@@ -119,6 +129,7 @@ public class BankingService {
         PaymentBatch saved = paymentBatchRepository.save(batch);
         List<PaymentInstruction> persistedInstructions = new ArrayList<>();
         for (PaymentInstruction instruction : instructions) {
+            validateLinkedInvoices(company, instruction);
             enrichInstructionFromLinkedInvoices(instruction);
             normalizeAndValidateInstruction(instruction);
             instruction.setBatch(saved);
@@ -147,6 +158,11 @@ public class BankingService {
 
     @Transactional
     public PaymentBatch markBatchTransmitted(Company company, Long batchId, String transmissionReference) {
+        return markBatchTransmitted(company, batchId, transmissionReference, null);
+    }
+
+    @Transactional
+    public PaymentBatch markBatchTransmitted(Company company, Long batchId, String transmissionReference, String transmittedBy) {
         PaymentBatch batch = getBatch(company, batchId);
         if (batch.getStatus() == PaymentStatus.SENT) {
             if (Objects.equals(batch.getTransmissionReference(), transmissionReference)) {
@@ -156,6 +172,9 @@ public class BankingService {
         }
         if (batch.getStatus() != PaymentStatus.APPROVED) {
             throw new IllegalStateException("Only approved batches can be transmitted");
+        }
+        if (transmittedBy != null && transmittedBy.equals(batch.getApprovalBy())) {
+            throw new IllegalStateException("Payment batches must be transmitted by a different user than the approver");
         }
         String pain001Xml = generatePain001Xml(batch);
         PaymentGatewayClient.PaymentSubmissionResult submission =
@@ -172,6 +191,9 @@ public class BankingService {
         batch.getInstructions().forEach(instruction -> {
             if (instruction.getVendorInvoice() != null) {
                 VendorInvoice invoice = instruction.getVendorInvoice();
+                if (!sameCompany(invoice.getCompany(), company)) {
+                    throw new IllegalStateException("Vendor invoice belongs to another company");
+                }
                 if (invoice.getStatus() != InvoiceStatus.OPEN) {
                     throw new IllegalStateException("Vendor invoice not open: " + invoice.getInvoiceNumber());
                 }
@@ -180,6 +202,9 @@ public class BankingService {
             }
             if (instruction.getCustomerInvoice() != null) {
                 CustomerInvoice invoice = instruction.getCustomerInvoice();
+                if (!sameCompany(invoice.getCompany(), company)) {
+                    throw new IllegalStateException("Customer invoice belongs to another company");
+                }
                 if (invoice.getStatus() != InvoiceStatus.OPEN) {
                     throw new IllegalStateException("Customer invoice not open: " + invoice.getInvoiceNumber());
                 }
@@ -361,6 +386,21 @@ public class BankingService {
                 instruction.setReference(invoice.getInvoiceNumber());
             }
         }
+    }
+
+    private void validateLinkedInvoices(Company company, PaymentInstruction instruction) {
+        if (instruction.getVendorInvoice() != null
+                && !sameCompany(instruction.getVendorInvoice().getCompany(), company)) {
+            throw new IllegalArgumentException("Vendor invoice belongs to another company");
+        }
+        if (instruction.getCustomerInvoice() != null
+                && !sameCompany(instruction.getCustomerInvoice().getCompany(), company)) {
+            throw new IllegalArgumentException("Customer invoice belongs to another company");
+        }
+    }
+
+    private boolean sameCompany(Company left, Company right) {
+        return left != null && right != null && Objects.equals(left.getId(), right.getId());
     }
 
     private void normalizeAndValidateAccount(BankAccount account) {

@@ -9,6 +9,7 @@ import java.util.Optional;
 
 public interface ScheduleEntryRepository extends JpaRepository<ScheduleEntry, Long> {
     List<ScheduleEntry> findByDateBetween(LocalDate start, LocalDate end);
+    List<ScheduleEntry> findByUser_Company_IdAndDateBetween(Long companyId, LocalDate start, LocalDate end);
 
     // Verhindert doppelte Einträge pro Nutzer und Datum
     Optional<ScheduleEntry> findByUserAndDate(User user, LocalDate date);

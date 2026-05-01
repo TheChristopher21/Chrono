@@ -7,6 +7,7 @@ import com.chrono.chrono.dto.ScheduleEntryDTO;
 import com.chrono.chrono.entities.ScheduleEntry;
 import com.chrono.chrono.entities.ScheduleRule;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.services.AccessControlService;
 import com.chrono.chrono.services.WorkScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Duration;
+import java.security.Principal;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -36,6 +38,8 @@ public class AdminScheduleEntryController {
     private ScheduleRuleRepository ruleRepo;
     @Autowired
     private WorkScheduleService workScheduleService;
+    @Autowired
+    private AccessControlService accessControlService;
 
     private int getShiftDurationMinutes(String shiftKey) {
         return ruleRepo.findByShiftKey(shiftKey)
@@ -49,15 +53,21 @@ public class AdminScheduleEntryController {
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public List<ScheduleEntryDTO> getEntries(@RequestParam String start, @RequestParam String end) {
+    public List<ScheduleEntryDTO> getEntries(@RequestParam String start, @RequestParam String end, Principal principal) {
+        User admin = accessControlService.requireAuthenticatedUser(principal);
         LocalDate s = LocalDate.parse(start);
         LocalDate e = LocalDate.parse(end);
-        return entryRepo.findByDateBetween(s, e).stream().map(ScheduleEntryDTO::new).toList();
+        List<ScheduleEntry> entries = accessControlService.isSuperAdmin(admin)
+                ? entryRepo.findByDateBetween(s, e)
+                : entryRepo.findByUser_Company_IdAndDateBetween(
+                    accessControlService.requireCompanyIdForTenantAdmin(admin), s, e);
+        return entries.stream().map(ScheduleEntryDTO::new).toList();
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<?> saveEntry(@RequestBody ScheduleEntryDTO dto) {
+    public ResponseEntity<?> saveEntry(@RequestBody ScheduleEntryDTO dto, Principal principal) {
+        User admin = accessControlService.requireAuthenticatedUser(principal);
         if (dto.getUserId() == null || dto.getShift() == null || dto.getShift().isEmpty()) {
             return ResponseEntity.badRequest().body("User ID and Shift are required.");
         }
@@ -67,6 +77,7 @@ public class AdminScheduleEntryController {
             return ResponseEntity.badRequest().body("User not found");
         }
         User user = userOpt.get();
+        accessControlService.requireCanManageUser(admin, user);
 
         if (workScheduleService.isDayOff(user, dto.getDate())
                 || workScheduleService.getExpectedWorkHours(user, dto.getDate()) <= 0) {
@@ -80,6 +91,7 @@ public class AdminScheduleEntryController {
                 return ResponseEntity.badRequest().body("Entry not found");
             }
             ScheduleEntry entry = entryOpt.get();
+            accessControlService.requireCanManageUser(admin, entry.getUser());
 
             Optional<ScheduleEntry> conflict = entryRepo.findByUserAndDate(user, dto.getDate());
             if (conflict.isPresent() && !conflict.get().getId().equals(entry.getId())) {
@@ -133,11 +145,17 @@ public class AdminScheduleEntryController {
 
     @PostMapping("/autofill")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<?> autoFillSchedule(@RequestBody List<ScheduleEntryDTO> entries) {
+    public ResponseEntity<?> autoFillSchedule(@RequestBody List<ScheduleEntryDTO> entries, Principal principal) {
+        User admin = accessControlService.requireAuthenticatedUser(principal);
         Map<String, Integer> weeklyMinutes = new HashMap<>();
         List<ScheduleEntry> newEntries = entries.stream().map(dto -> {
             User user = userRepo.findById(dto.getUserId()).orElse(null);
             if (user == null) {
+                return null;
+            }
+            try {
+                accessControlService.requireCanManageUser(admin, user);
+            } catch (RuntimeException ex) {
                 return null;
             }
             if (workScheduleService.isDayOff(user, dto.getDate())
@@ -174,7 +192,8 @@ public class AdminScheduleEntryController {
 
     @PostMapping("/copy")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<?> copySchedule(@RequestBody List<ScheduleEntryDTO> entries) {
+    public ResponseEntity<?> copySchedule(@RequestBody List<ScheduleEntryDTO> entries, Principal principal) {
+        User admin = accessControlService.requireAuthenticatedUser(principal);
         if (entries == null || entries.isEmpty()) {
             return ResponseEntity.ok().build();
         }
@@ -183,7 +202,10 @@ public class AdminScheduleEntryController {
         LocalDate weekStart = firstDate.with(DayOfWeek.MONDAY);
         LocalDate weekEnd = weekStart.plusDays(6);
 
-        List<ScheduleEntry> existingEntries = entryRepo.findByDateBetween(weekStart, weekEnd);
+        List<ScheduleEntry> existingEntries = accessControlService.isSuperAdmin(admin)
+                ? entryRepo.findByDateBetween(weekStart, weekEnd)
+                : entryRepo.findByUser_Company_IdAndDateBetween(
+                    accessControlService.requireCompanyIdForTenantAdmin(admin), weekStart, weekEnd);
         if (!existingEntries.isEmpty()) {
             entryRepo.deleteAll(existingEntries);
         }
@@ -192,6 +214,11 @@ public class AdminScheduleEntryController {
                 .map(dto -> {
                     User user = userRepo.findById(dto.getUserId()).orElse(null);
                     if (user == null) {
+                        return null;
+                    }
+                    try {
+                        accessControlService.requireCanManageUser(admin, user);
+                    } catch (RuntimeException ex) {
                         return null;
                     }
                     ScheduleEntry newEntry = new ScheduleEntry();
@@ -211,10 +238,13 @@ public class AdminScheduleEntryController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<?> deleteEntry(@PathVariable Long id) {
-        if (!entryRepo.existsById(id)) {
+    public ResponseEntity<?> deleteEntry(@PathVariable Long id, Principal principal) {
+        User admin = accessControlService.requireAuthenticatedUser(principal);
+        Optional<ScheduleEntry> entry = entryRepo.findById(id);
+        if (entry.isEmpty()) {
             return ResponseEntity.badRequest().body("Entry not found");
         }
+        accessControlService.requireCanManageUser(admin, entry.get().getUser());
         entryRepo.deleteById(id);
         return ResponseEntity.ok("deleted");
     }

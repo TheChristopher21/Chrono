@@ -1,6 +1,8 @@
 package com.chrono.chrono.controller.accounting;
 
 import com.chrono.chrono.dto.accounting.*;
+import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.accounting.Account;
 import com.chrono.chrono.entities.accounting.Asset;
 import com.chrono.chrono.entities.accounting.JournalEntry;
@@ -11,6 +13,7 @@ import com.chrono.chrono.services.accounting.AccountingService;
 import com.chrono.chrono.services.accounting.AccountsPayableService;
 import com.chrono.chrono.services.accounting.AccountsReceivableService;
 import com.chrono.chrono.services.accounting.AssetManagementService;
+import com.chrono.chrono.services.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -26,6 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import jakarta.validation.Valid;
 
+import java.security.Principal;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.net.URI;
@@ -42,23 +46,51 @@ public class AccountingController {
     private final AssetManagementService assetManagementService;
     private final AccountRepository accountRepository;
     private final AssetRepository assetRepository;
+    private final UserService userService;
 
     public AccountingController(AccountingService accountingService,
                                 AccountsReceivableService accountsReceivableService,
-                                AccountsPayableService accountsPayableService,
-                                AssetManagementService assetManagementService,
-                                AccountRepository accountRepository,
-                                AssetRepository assetRepository) {
+                                 AccountsPayableService accountsPayableService,
+                                 AssetManagementService assetManagementService,
+                                 AccountRepository accountRepository,
+                                 AssetRepository assetRepository,
+                                 UserService userService) {
         this.accountingService = accountingService;
         this.accountsReceivableService = accountsReceivableService;
         this.accountsPayableService = accountsPayableService;
         this.assetManagementService = assetManagementService;
         this.accountRepository = accountRepository;
         this.assetRepository = assetRepository;
+        this.userService = userService;
+    }
+
+    private User requireUser(Principal principal) {
+        if (principal == null) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
+        }
+        return userService.getUserByUsername(principal.getName());
+    }
+
+    private Company requireCompany(Principal principal) {
+        User user = requireUser(principal);
+        if (user.getCompany() == null) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Company scoped user required");
+        }
+        return user.getCompany();
+    }
+
+    private void requireSuperAdmin(Principal principal) {
+        User user = requireUser(principal);
+        boolean superAdmin = user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
+        if (!superAdmin) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accounting setup is limited to superadmins until tenant migration is complete");
+        }
     }
 
     @GetMapping("/accounts")
-    public ResponseEntity<List<AccountDTO>> listAccounts() {
+    public ResponseEntity<List<AccountDTO>> listAccounts(Principal principal) {
+        requireSuperAdmin(principal);
         List<AccountDTO> accounts = accountingService.listAccounts().stream()
                 .map(AccountDTO::from)
                 .toList();
@@ -66,7 +98,8 @@ public class AccountingController {
     }
 
     @PostMapping("/accounts")
-    public ResponseEntity<AccountDTO> createAccount(@RequestBody CreateAccountRequest request) {
+    public ResponseEntity<AccountDTO> createAccount(@RequestBody CreateAccountRequest request, Principal principal) {
+        requireSuperAdmin(principal);
         Account saved = accountingService.saveAccount(request.toEntity());
         return ResponseEntity.created(URI.create("/api/accounting/accounts/" + saved.getId()))
                 .body(AccountDTO.from(saved));
@@ -74,7 +107,9 @@ public class AccountingController {
 
     @GetMapping("/journal")
     public ResponseEntity<Page<JournalEntryDTO>> listJournal(@RequestParam(defaultValue = "0") int page,
-                                                             @RequestParam(defaultValue = "20") int size) {
+                                                             @RequestParam(defaultValue = "20") int size,
+                                                             Principal principal) {
+        requireSuperAdmin(principal);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
         Page<JournalEntryDTO> entries = accountingService.listEntries(pageable)
                 .map(JournalEntryDTO::from);
@@ -82,7 +117,8 @@ public class AccountingController {
     }
 
     @GetMapping("/assets")
-    public ResponseEntity<List<AssetDTO>> listAssets() {
+    public ResponseEntity<List<AssetDTO>> listAssets(Principal principal) {
+        requireSuperAdmin(principal);
         List<AssetDTO> assets = assetManagementService.listAssets().stream()
                 .map(AssetDTO::from)
                 .toList();
@@ -90,7 +126,9 @@ public class AccountingController {
     }
 
     @PostMapping("/journal")
-    public ResponseEntity<JournalEntryDTO> createJournalEntry(@Valid @RequestBody CreateJournalEntryRequest request) {
+    public ResponseEntity<JournalEntryDTO> createJournalEntry(@Valid @RequestBody CreateJournalEntryRequest request,
+                                                              Principal principal) {
+        requireSuperAdmin(principal);
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(request.getEntryDate() != null ? request.getEntryDate() : LocalDate.now());
         entry.setDescription(request.getDescription());
@@ -126,31 +164,37 @@ public class AccountingController {
 
     @GetMapping("/receivables/open")
     public ResponseEntity<Page<CustomerInvoiceDTO>> openReceivables(@RequestParam(defaultValue = "0") int page,
-                                                                    @RequestParam(defaultValue = "20") int size) {
+                                                                    @RequestParam(defaultValue = "20") int size,
+                                                                    Principal principal) {
+        Company company = requireCompany(principal);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        Page<CustomerInvoiceDTO> invoices = accountsReceivableService.findOpenInvoices(pageable)
+        Page<CustomerInvoiceDTO> invoices = accountsReceivableService.findOpenInvoices(company, pageable)
                 .map(CustomerInvoiceDTO::from);
         return ResponseEntity.ok(invoices);
     }
 
     @GetMapping("/payables/open")
     public ResponseEntity<Page<VendorInvoiceDTO>> openPayables(@RequestParam(defaultValue = "0") int page,
-                                                               @RequestParam(defaultValue = "20") int size) {
+                                                               @RequestParam(defaultValue = "20") int size,
+                                                               Principal principal) {
+        Company company = requireCompany(principal);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        Page<VendorInvoiceDTO> invoices = accountsPayableService.findPendingInvoices(pageable)
+        Page<VendorInvoiceDTO> invoices = accountsPayableService.findPendingInvoices(company, pageable)
                 .map(VendorInvoiceDTO::from);
         return ResponseEntity.ok(invoices);
     }
 
     @PostMapping("/assets")
-    public ResponseEntity<AssetDTO> registerAsset(@RequestBody CreateAssetRequest request) {
+    public ResponseEntity<AssetDTO> registerAsset(@RequestBody CreateAssetRequest request, Principal principal) {
+        requireSuperAdmin(principal);
         Asset saved = assetManagementService.registerAsset(request.toEntity());
         return ResponseEntity.created(URI.create("/api/accounting/assets/" + saved.getId()))
                 .body(AssetDTO.from(saved));
     }
 
     @PostMapping("/assets/{id}/depreciate")
-    public ResponseEntity<AssetDTO> depreciate(@PathVariable Long id) {
+    public ResponseEntity<AssetDTO> depreciate(@PathVariable Long id, Principal principal) {
+        requireSuperAdmin(principal);
         return assetRepository.findById(id)
                 .map(assetManagementService::runMonthlyDepreciation)
                 .map(AssetDTO::from)
@@ -160,16 +204,20 @@ public class AccountingController {
 
     @PostMapping("/receivables/{id}/payments")
     public ResponseEntity<CustomerInvoiceDTO> applyReceivablePayment(@PathVariable Long id,
-                                                                     @RequestBody RecordPaymentRequest request) {
-        var updated = accountsReceivableService.applyPayment(id, request.getAmount(),
+                                                                     @RequestBody RecordPaymentRequest request,
+                                                                     Principal principal) {
+        Company company = requireCompany(principal);
+        var updated = accountsReceivableService.applyPayment(company, id, request.getAmount(),
                 request.getPaymentDate(), request.getMemo());
         return ResponseEntity.ok(CustomerInvoiceDTO.from(updated));
     }
 
     @PostMapping("/payables/{id}/payments")
     public ResponseEntity<VendorInvoiceDTO> applyPayablePayment(@PathVariable Long id,
-                                                                @RequestBody RecordPaymentRequest request) {
-        var updated = accountsPayableService.applyPayment(id, request.getAmount(),
+                                                                @RequestBody RecordPaymentRequest request,
+                                                                Principal principal) {
+        Company company = requireCompany(principal);
+        var updated = accountsPayableService.applyPayment(company, id, request.getAmount(),
                 request.getPaymentDate(), request.getMemo());
         return ResponseEntity.ok(VendorInvoiceDTO.from(updated));
     }

@@ -27,6 +27,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -135,11 +136,11 @@ public class BankingController {
                 instruction.setCurrency(payload.getCurrency());
                 instruction.setReference(payload.getReference());
                 if (payload.getVendorInvoiceId() != null) {
-                    VendorInvoice invoice = bankingService.getVendorInvoice(payload.getVendorInvoiceId());
+                    VendorInvoice invoice = bankingService.getVendorInvoice(company, payload.getVendorInvoiceId());
                     instruction.setVendorInvoice(invoice);
                 }
                 if (payload.getCustomerInvoiceId() != null) {
-                    CustomerInvoice invoice = bankingService.getCustomerInvoice(payload.getCustomerInvoiceId());
+                    CustomerInvoice invoice = bankingService.getCustomerInvoice(company, payload.getCustomerInvoiceId());
                     instruction.setCustomerInvoice(invoice);
                 }
                 instructions.add(instruction);
@@ -176,6 +177,7 @@ public class BankingController {
     }
 
     @PostMapping("/batches/{id}/approve")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<PaymentBatchDTO> approveBatch(@PathVariable Long id, Principal principal) {
         Company company = getCompany(principal);
         if (company == null) {
@@ -186,6 +188,7 @@ public class BankingController {
     }
 
     @PostMapping("/batches/{id}/transmit")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<PaymentBatchDTO> transmitBatch(@PathVariable Long id,
                                                          @RequestBody TransmitBatchRequest request,
                                                          @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
@@ -201,7 +204,7 @@ public class BankingController {
             return ResponseEntity.badRequest().build();
         }
         return handleBankingRequest(() ->
-                ResponseEntity.ok(PaymentBatchDTO.from(bankingService.markBatchTransmitted(company, id, reference))));
+                ResponseEntity.ok(PaymentBatchDTO.from(bankingService.markBatchTransmitted(company, id, reference, principal.getName()))));
     }
 
     @GetMapping("/batches/open")

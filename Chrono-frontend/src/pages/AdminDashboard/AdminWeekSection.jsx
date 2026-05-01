@@ -399,7 +399,7 @@ const AdminWeekSection = forwardRef(({
 
     const [searchTerm, setSearchTerm] = useState("");
     const [detailedUser, setDetailedUser] = useState(null); // Username of the user whose details are expanded
-    const [sortConfig, setSortConfig] = useState({ key: 'username', direction: 'ascending' });
+    const [sortConfig, setSortConfig] = useState({ key: 'problemIndicators', direction: 'descending' });
     const [focusedProblem, setFocusedProblem] = useState({ username: null, dateIso: null, type: null });
     const [showOnlyIssues, setShowOnlyIssues] = useState(false);
     const [issueTypeFilters, setIssueTypeFilters] = useState(() => ({ ...DEFAULT_ISSUE_FILTER_STATE }));
@@ -446,7 +446,7 @@ const AdminWeekSection = forwardRef(({
     const [customMonthStartDay, setCustomMonthStartDay] = useState(DEFAULT_MONTH_RANGE_SETTINGS.customStartDay);
     const [manualMonthRangeStart, setManualMonthRangeStart] = useState(DEFAULT_MONTH_RANGE_SETTINGS.manualStart);
     const [manualMonthRangeEnd, setManualMonthRangeEnd] = useState(DEFAULT_MONTH_RANGE_SETTINGS.manualEnd);
-    const [monthSortConfig, setMonthSortConfig] = useState({ key: 'username', direction: 'ascending' });
+    const [monthSortConfig, setMonthSortConfig] = useState({ key: 'problemIndicators', direction: 'descending' });
 
     const {
         trackableUsers,
@@ -1561,7 +1561,10 @@ const AdminWeekSection = forwardRef(({
             setSortConfig({ key: 'cumulativeBalanceMinutes', direction: 'descending' });
             scrollSectionIntoView();
         },
-    }), [scrollSectionIntoView, setFiltersExclusive]);
+        printOverview() {
+            handlePrintOverview();
+        },
+    }), [handlePrintOverview, scrollSectionIntoView, setFiltersExclusive]);
 
     const commitWeekJumpInput = useCallback((rawValue) => {
         if (!rawValue) {

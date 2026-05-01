@@ -36,6 +36,8 @@ function parseDateString(dateString) {
     return new Date(year, month - 1, day);
 }
 
+const MAX_VISIBLE_DAY_MARKERS = 5;
+
 const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUsers: initialCompanyUsers, focusUsername = null }) => {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
@@ -83,6 +85,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const loadedHolidayKeysRef = useRef(new Set());
     const [activeStartDate, setActiveStartDate] = useState(new Date());
     const [currentCantonForHolidays, setCurrentCantonForHolidays] = useState(null);
+    const [selectedDayDetails, setSelectedDayDetails] = useState(null);
     // const [selectedUserForSickLeaveDetails, setSelectedUserForSickLeaveDetails] = useState(null); // Entfernt, da currentCantonForHolidays ausreicht
 
     const selectedUserDetailsForVacation = users.find(u => u.username === newVacationUser);
@@ -513,115 +516,226 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         setShowSickLeaveModal(true);
     };
 
+    const formatUserShortName = (username) => {
+        const user = users.find(u => u.username === username);
+        return user?.firstName || username || t('adminVacation.unknownUser', 'Unbekannt');
+    };
+
+    const formatUserLongName = (username) => {
+        const user = users.find(u => u.username === username);
+        const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
+        if (fullName && username && fullName !== username) return `${fullName} · ${username}`;
+        return fullName || username || t('adminVacation.unknownUser', 'Unbekannt');
+    };
+
+    const formatDateRange = (entry) => {
+        if (!entry?.startDate || !entry?.endDate) return '';
+        if (entry.startDate === entry.endDate) return entry.startDate;
+        return `${entry.startDate} - ${entry.endDate}`;
+    };
+
+    const getDayDetails = (date) => {
+        const dateString = formatLocalDateYMD(date);
+        const vacationsToday = calendarVacationRequests.filter((vac) => itemInRange(vac, date, date));
+        const sickToday = scopedSickLeaves.filter((sickLeave) => itemInRange(sickLeave, date, date));
+        const vacationToday = vacationsToday.filter((vacation) => !vacation?.usesOvertime);
+        const overtimeToday = vacationsToday.filter((vacation) => vacation?.usesOvertime);
+
+        return {
+            date,
+            dateString,
+            holidayName: holidays[dateString],
+            vacationToday,
+            sickToday,
+            overtimeToday,
+            totalAbsences: vacationsToday.length + sickToday.length,
+        };
+    };
+
+    const openDayDetails = (date) => {
+        setSelectedDayDetails(getDayDetails(date));
+    };
+
+    const openVacationFromDetails = (vacation) => {
+        setSelectedDayDetails(null);
+        openVacationEditModal(vacation);
+    };
+
+    const openSickLeaveFromDetails = (sickLeave) => {
+        setSelectedDayDetails(null);
+        openSickLeaveEditModal(sickLeave);
+    };
+
+    const renderDayDetailGroup = (title, items, type, emptyText) => (
+        <section className={`calendar-day-detail-group ${type}`}>
+            <div className="calendar-day-detail-group-title">
+                <span>{title}</span>
+                <strong>{items.length}</strong>
+            </div>
+            {items.length > 0 ? (
+                <div className="calendar-day-detail-list">
+                    {items.map((item, index) => {
+                        const key = `${type}-${item.id || item.username || index}`;
+                        const isSick = type === 'sick';
+                        return (
+                            <button
+                                type="button"
+                                key={key}
+                                className="calendar-day-detail-item"
+                                onClick={() => isSick ? openSickLeaveFromDetails(item) : openVacationFromDetails(item)}
+                            >
+                                <span className="calendar-day-detail-person">{formatUserLongName(item.username)}</span>
+                                <span className="calendar-day-detail-meta">
+                                    {formatDateRange(item)}
+                                    {item.halfDay ? ` · ${t('adminVacation.halfDayShort', '½ Tag')}` : ''}
+                                    {item.companyVacation ? ` · ${t('adminVacation.companyVacationLabel', 'Betriebsurlaub')}` : ''}
+                                    {isSick && item.comment ? ` · ${item.comment}` : ''}
+                                </span>
+                            </button>
+                        );
+                    })}
+                </div>
+            ) : (
+                <p className="calendar-day-detail-empty">{emptyText}</p>
+            )}
+        </section>
+    );
+
     function tileContent({ date, view }) {
         if (view === 'month') {
-            // 'date' ist das Date-Objekt, das vom Kalender für die Kachel bereitgestellt wird.
-            // Es repräsentiert den lokalen Tag.
-            // Wandle es in den String-Format "YYYY-MM-DD" um, den du für den Abgleich mit 'holidays' verwendest.
-            const dateString = formatLocalDateYMD(date); // KORREKTE VERWENDUNG
+            const dayDetails = getDayDetails(date);
+            const dayEntries = [];
 
-            let dayMarkers = [];
-
-            // Feiertags-Marker
-            if (holidays[dateString]) { // Abgleich mit dem lokalen Datums-String
-                dayMarkers.push(
-                    <div
-                        key={`holiday-${dateString}`}
-                        className="holiday-marker-admin"
-                        title={`${t('holiday', 'Feiertag')}: ${holidays[dateString]}`}
-                    >
-                        <span role="img" aria-label="holiday">🎉</span>
-                    </div>
-                );
-            }
-
-            // Urlaubs-Marker
-            // Die 'itemInRange'-Funktion sollte ebenfalls mit dem lokalen 'date'-Objekt und den YYYY-MM-DD Strings aus 'vac' arbeiten.
-            const vacsToday = calendarVacationRequests.filter((vac) => itemInRange(vac, date, date));
-            if (vacsToday.length > 0) {
-                vacsToday.forEach((vac, index) => {
-                    const isPendingVacation = !vac?.approved && !vac?.denied;
-                    const bgColor = isPendingVacation ? '#767676' : (vac.color || '#767676');
-                    const textColor = getContrastYIQ(bgColor);
-                    let displayName = vac.username || t('adminVacation.unknownUser', 'Unbekannt');
-                    if (vac.halfDay) displayName += ` (${t('adminVacation.halfDayShort', '½')})`;
-                    if (vac.usesOvertime) displayName += " 🌙";
-                    const isStartOfVacation = formatLocalDateYMD(date) === vac.startDate;
-                    const accessibilityProps = isStartOfVacation
-                        ? {
-                            role: 'button',
-                            tabIndex: 0,
-                            'aria-label': displayName,
-                        }
-                        : {
-                            tabIndex: -1,
-                            'aria-hidden': true,
-                        };
-
-                    dayMarkers.push(
-                        <div
-                            key={vac.id || `vac-${dateString}-${index}`}
-                            className={`vacation-marker${vac ? ' editable' : ''}${isPendingVacation ? ' pending' : ''}`}
-                            style={{ backgroundColor: bgColor, color: textColor }}
-                            title={`${vac.username || ''}${vac.halfDay ? ` (${t('adminVacation.halfDayShort', '½')})` : ""}${vac.usesOvertime ? ` (${t('adminVacation.overtimeVacationShort', 'ÜS')})` : ""}`}
-                            {...accessibilityProps}
-                            onClick={(event) => { event.stopPropagation(); openVacationEditModal(vac); }}
-                            onKeyDown={(event) => {
-                                if (!isStartOfVacation) return;
-                                if (event.key === 'Enter' || event.key === ' ') {
-                                    event.preventDefault();
-                                    openVacationEditModal(vac);
-                                }
-                            }}
-                        >
-                            <span aria-hidden="true">{displayName}</span>
-                        </div>
-                    );
+            if (dayDetails.holidayName) {
+                dayEntries.push({
+                    key: `holiday-${dayDetails.dateString}`,
+                    type: 'holiday',
+                    label: dayDetails.holidayName,
+                    title: `${t('holiday', 'Feiertag')}: ${dayDetails.holidayName}`,
                 });
             }
 
-            // Krankheitsmarker
-            const sickTodayList = scopedSickLeaves.filter(sl => itemInRange(sl, date, date));
-            sickTodayList.forEach((sick, index) => {
-                const sickColor = sick.color || '#FF6347';
-                const sickTextColor = getContrastYIQ(sickColor);
-                let sickDisplayName = sick.username || t('adminSickLeave.unknownUser', 'Unbekannt');
-                if (sick.halfDay) sickDisplayName += ` (${t('adminSickLeave.halfDayShort', '½')} ${t('sickLeave.sickShort', 'K')})`;
-                else sickDisplayName += ` (${t('sickLeave.sickShort', 'K')})`;
-                const isStartOfSickLeave = formatLocalDateYMD(date) === sick.startDate;
-                const sickAccessibilityProps = isStartOfSickLeave
-                    ? {
-                        role: 'button',
-                        tabIndex: 0,
-                        'aria-label': sickDisplayName,
-                    }
-                    : {
-                        tabIndex: -1,
-                        'aria-hidden': true,
-                    };
-
-                dayMarkers.push(
-                    <div
-                        key={`sick-${sick.id || `sick-${dateString}-${index}`}`}
-                        className={`sick-leave-marker-admin${sick ? ' editable' : ''}`}
-                        style={{ backgroundColor: sickColor, color: sickTextColor}}
-                        title={`${sick.username}: ${sick.halfDay ? t('sickLeave.halfDay', 'Halbtags krank') : t('sickLeave.fullDay', 'Ganztags krank')}${sick.comment ? ` (${sick.comment})` : ''}`}
-                        {...sickAccessibilityProps}
-                        onClick={(event) => { event.stopPropagation(); openSickLeaveEditModal(sick); }}
-                        onKeyDown={(event) => {
-                            if (!isStartOfSickLeave) return;
-                            if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault();
-                                openSickLeaveEditModal(sick);
-                            }
-                        }}
-                    >
-                        <span aria-hidden="true">{sickDisplayName}</span>
-                    </div>
-                );
+            dayDetails.vacationToday.forEach((vac, index) => {
+                const isPendingVacation = !vac?.approved && !vac?.denied;
+                const bgColor = isPendingVacation ? '#767676' : (vac.color || '#22c55e');
+                const shortName = formatUserShortName(vac.username);
+                dayEntries.push({
+                    key: `vac-${vac.id || `${dayDetails.dateString}-${index}`}`,
+                    type: 'vacation',
+                    item: vac,
+                    bgColor,
+                    textColor: getContrastYIQ(bgColor),
+                    className: `vacation-marker editable${isPendingVacation ? ' pending' : ''}`,
+                    label: `${shortName}${vac.halfDay ? ` · ${t('adminVacation.halfDayShort', '½')}` : ''}`,
+                    title: `${formatUserLongName(vac.username)} · ${t('vacation.normalVacation', 'Urlaub')}`,
+                    isStart: dayDetails.dateString === vac.startDate,
+                });
             });
 
-            return dayMarkers.length > 0 ? <div className="vacation-markers">{dayMarkers}</div> : null;
+            dayDetails.overtimeToday.forEach((vac, index) => {
+                const shortName = formatUserShortName(vac.username);
+                dayEntries.push({
+                    key: `overtime-${vac.id || `${dayDetails.dateString}-${index}`}`,
+                    type: 'overtime',
+                    item: vac,
+                    bgColor: '#2563eb',
+                    textColor: '#ffffff',
+                    className: 'vacation-marker overtime-marker editable',
+                    label: `${shortName} · ${t('overtimeVacation', 'Überstundenfrei')}`,
+                    title: `${formatUserLongName(vac.username)} · ${t('overtimeVacation', 'Überstundenfrei')}`,
+                    isStart: dayDetails.dateString === vac.startDate,
+                });
+            });
+
+            dayDetails.sickToday.forEach((sick, index) => {
+                const sickColor = sick.color || '#ef4444';
+                const shortName = formatUserShortName(sick.username);
+                dayEntries.push({
+                    key: `sick-${sick.id || `${dayDetails.dateString}-${index}`}`,
+                    type: 'sick',
+                    item: sick,
+                    bgColor: sickColor,
+                    textColor: getContrastYIQ(sickColor),
+                    className: 'sick-leave-marker-admin editable',
+                    label: `${shortName} · ${t('sickLeave.sickShort', 'Krank')}`,
+                    title: `${formatUserLongName(sick.username)}: ${sick.halfDay ? t('sickLeave.halfDay', 'Halbtags krank') : t('sickLeave.fullDay', 'Ganztags krank')}${sick.comment ? ` (${sick.comment})` : ''}`,
+                    isStart: dayDetails.dateString === sick.startDate,
+                });
+            });
+
+            if (dayEntries.length === 0) return null;
+
+            const visibleEntries = dayEntries.slice(0, MAX_VISIBLE_DAY_MARKERS);
+            const hiddenCount = dayEntries.length - visibleEntries.length;
+
+            return (
+                <div className="vacation-markers">
+                    {visibleEntries.map((entry) => {
+                        if (entry.type === 'holiday') {
+                            return (
+                                <div
+                                    key={entry.key}
+                                    className="holiday-marker-admin"
+                                    title={entry.title}
+                                    onClick={(event) => { event.stopPropagation(); openDayDetails(date); }}
+                                >
+                                    <span aria-hidden="true">Feiertag</span>
+                                    <strong>{entry.label}</strong>
+                                </div>
+                            );
+                        }
+
+                        const markerAccessibilityProps = entry.isStart
+                            ? {
+                                role: 'button',
+                                tabIndex: 0,
+                                'aria-label': `${entry.title} ${formatDateRange(entry.item)}`,
+                            }
+                            : {
+                                tabIndex: -1,
+                                'aria-hidden': true,
+                            };
+                        const handleEntryOpen = entry.type === 'sick' ? openSickLeaveEditModal : openVacationEditModal;
+
+                        return (
+                            <div
+                                key={entry.key}
+                                className={entry.className}
+                                style={{ backgroundColor: entry.bgColor, color: entry.textColor }}
+                                title={entry.title}
+                                {...markerAccessibilityProps}
+                                onClick={(event) => { event.stopPropagation(); handleEntryOpen(entry.item); }}
+                                onKeyDown={(event) => {
+                                    if (!entry.isStart) return;
+                                    if (event.key === 'Enter' || event.key === ' ') {
+                                        event.preventDefault();
+                                        handleEntryOpen(entry.item);
+                                    }
+                                }}
+                            >
+                                <span aria-hidden="true">{entry.label}</span>
+                            </div>
+                        );
+                    })}
+                    {hiddenCount > 0 && (
+                        <div
+                            className="calendar-more-marker"
+                            role="button"
+                            tabIndex={0}
+                            title={t('adminCalendar.moreEntriesTitle', 'Alle Einträge dieses Tages anzeigen')}
+                            onClick={(event) => { event.stopPropagation(); openDayDetails(date); }}
+                            onKeyDown={(event) => {
+                                if (event.key === 'Enter' || event.key === ' ') {
+                                    event.preventDefault();
+                                    openDayDetails(date);
+                                }
+                            }}
+                        >
+                            +{hiddenCount} {t('adminCalendar.moreEntries', 'weitere')}
+                        </div>
+                    )}
+                </div>
+            );
         }
         return null;
     }
@@ -677,6 +791,15 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
             setSickLeaveEndDate(dateStr);
         }
         setShowSickLeaveModal(true);
+    };
+
+    const handleCalendarDayClick = (value) => {
+        const dayDetails = getDayDetails(value);
+        if (dayDetails.totalAbsences > 0 || dayDetails.holidayName) {
+            setSelectedDayDetails(dayDetails);
+            return;
+        }
+        openVacationModalAndReset(value);
     };
 
 
@@ -738,7 +861,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                 activeStartDate={activeStartDate}
                 tileContent={tileContent}
                 onActiveStartDateChange={onActiveStartDateChange}
-                onClickDay={(value) => { openVacationModalAndReset(value); }}
+                onClickDay={handleCalendarDayClick}
                 locale={t('calendarLocale', 'de-DE')}
                 showNavigation={false}
             />
@@ -750,6 +873,72 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                     {t('adminSickLeave.reportButton', 'Krankheit für User melden')}
                 </button>
             </div>
+
+            {selectedDayDetails && (
+                <ModalOverlay visible onClose={() => setSelectedDayDetails(null)}>
+                    <div className="modal-content calendar-day-details-modal">
+                        <div className="calendar-day-details-head">
+                            <span>{t('adminCalendar.dayDetailsLabel', 'Tagesübersicht')}</span>
+                            <h3>
+                                {selectedDayDetails.date.toLocaleDateString(t('calendarLocale', 'de-DE'), {
+                                    weekday: 'long',
+                                    day: '2-digit',
+                                    month: 'long',
+                                    year: 'numeric',
+                                })}
+                            </h3>
+                            {selectedDayDetails.holidayName && (
+                                <p>{t('holiday', 'Feiertag')}: {selectedDayDetails.holidayName}</p>
+                            )}
+                        </div>
+                        <div className="calendar-day-details-summary">
+                            <span>{selectedDayDetails.vacationToday.length} {t('vacation.normalVacation', 'Urlaub')}</span>
+                            <span>{selectedDayDetails.sickToday.length} {t('adminSickLeave.shortTitle', 'Krank')}</span>
+                            <span>{selectedDayDetails.overtimeToday.length} {t('overtimeVacation', 'Überstundenfrei')}</span>
+                        </div>
+                        <div className="calendar-day-details-grid">
+                            {renderDayDetailGroup(
+                                t('vacation.normalVacation', 'Urlaub'),
+                                selectedDayDetails.vacationToday,
+                                'vacation',
+                                t('adminCalendar.noVacationToday', 'Niemand ist an diesem Tag im Urlaub.'),
+                            )}
+                            {renderDayDetailGroup(
+                                t('adminSickLeave.shortTitle', 'Krank'),
+                                selectedDayDetails.sickToday,
+                                'sick',
+                                t('adminCalendar.noSickToday', 'Keine Krankmeldungen an diesem Tag.'),
+                            )}
+                            {renderDayDetailGroup(
+                                t('overtimeVacation', 'Überstundenfrei'),
+                                selectedDayDetails.overtimeToday,
+                                'overtime',
+                                t('adminCalendar.noOvertimeToday', 'Niemand hat an diesem Tag Überstunden frei.'),
+                            )}
+                        </div>
+                        <div className="modal-buttons">
+                            <button
+                                type="button"
+                                className="button-confirm"
+                                onClick={() => {
+                                    const detailDate = selectedDayDetails.date;
+                                    setSelectedDayDetails(null);
+                                    openVacationModalAndReset(detailDate);
+                                }}
+                            >
+                                {t('adminVacation.createVacationButton', 'Urlaub manuell erstellen')}
+                            </button>
+                            <button
+                                type="button"
+                                className="button-cancel"
+                                onClick={() => setSelectedDayDetails(null)}
+                            >
+                                {t('close', 'Schließen')}
+                            </button>
+                        </div>
+                    </div>
+                </ModalOverlay>
+            )}
 
             {showVacationModal && (
                 <ModalOverlay visible onClose={handleCloseVacationModal}>

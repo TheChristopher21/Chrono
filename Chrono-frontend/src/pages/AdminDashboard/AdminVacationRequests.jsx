@@ -9,6 +9,14 @@ import { useNotification } from '../../context/NotificationContext';
 // oder dass die Styles global oder von AdminDashboard.jsx geerbt werden.
 // import '../../styles/AdminDashboardScoped.css'; // Ist typischerweise in AdminDashboard.jsx
 
+const isPendingVacation = (vacation) => {
+    const status = String(vacation?.status || '').toLowerCase();
+    if (['pending', 'open', 'ausstehend', 'offen'].includes(status)) {
+        return true;
+    }
+    return !vacation?.approved && !vacation?.denied;
+};
+
 const AdminVacationRequests = ({
                                    t,
                                    allVacations,
@@ -16,6 +24,7 @@ const AdminVacationRequests = ({
                                    handleDenyVacation,
                                    onReloadVacations, // Callback zum Neuladen der Urlaubsdaten
                                    openSignal,
+                                   canManage,
                                }) => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -43,6 +52,10 @@ const AdminVacationRequests = ({
     }
 
     const openDeleteModal = (vacation) => {
+        if (!canManage) {
+            notify(t('adminDashboard.readOnlyPermissions', 'Nur Ansicht: Dieser Benutzer darf das Admin-Dashboard sehen, aber keine Freigaben oder Änderungen ausführen.'), 'warning');
+            return;
+        }
         setVacationToDelete(vacation);
         setShowDeleteModal(true);
     };
@@ -94,22 +107,37 @@ const AdminVacationRequests = ({
 
     const sortedVacations = [...filteredVacations].sort((a, b) => b.id - a.id);
 
-    const hasPending = allVacations.some(v => !v.approved && !v.denied);
+    const pendingCount = allVacations.filter(isPendingVacation).length;
+    const hasPending = pendingCount > 0;
     const isScrollable = sortedVacations.length >= 10;
 
     return (
         <> {/* Stellt sicher, dass CSS-Variablen verfügbar sind */}
-            <section className={`vacation-section content-section${(!isExpanded && hasPending) ? ' has-pending' : ''}`}> {/* Allgemeine Klasse für Sektionen */}
+            <section className={`vacation-section content-section${!isExpanded ? ' is-collapsed' : ''}${(!isExpanded && hasPending) ? ' has-pending' : ''}`}> {/* Allgemeine Klasse für Sektionen */}
                 <div
                     className="section-header"
                     onClick={toggleExpansion}
                     role="button"
+                    aria-expanded={isExpanded}
                     tabIndex={0}
-                    onKeyPress={(e) => e.key === 'Enter' && toggleExpansion()}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleExpansion();
+                        }
+                    }}
                 >
-                    <h3 className="section-title">
-                        {t('adminDashboard.vacationRequestsTitle', 'Urlaubsanträge')}
-                    </h3>
+                    <div className="section-header-main">
+                        <h3 className="section-title">
+                            {t('adminDashboard.vacationRequestsTitle', 'Urlaubsanträge')}
+                        </h3>
+                        {hasPending && (
+                            <span className="pending-indicator" aria-label={`${pendingCount} ${t('adminDashboard.pendingRequestsOpen', 'offen')}`}>
+                                <span className="pending-dot" aria-hidden="true" />
+                                {pendingCount} {t('adminDashboard.pendingRequestsOpen', 'offen')}
+                            </span>
+                        )}
+                    </div>
                     <span className="toggle-icon">
                         {isExpanded ? '▲' : '▼'}
                     </span>
@@ -130,6 +158,7 @@ const AdminVacationRequests = ({
                             <div className={`vacation-requests-container${isScrollable ? ' scroll-limited' : ''}`}>
                             <ul className="item-list vacation-request-list">
                                 {sortedVacations.map((v) => {
+                                    const isPending = isPendingVacation(v);
                                     const status = v.approved
                                         ? t('adminDashboard.statusApproved', 'Genehmigt')
                                         : v.denied
@@ -137,9 +166,9 @@ const AdminVacationRequests = ({
                                             : t('adminDashboard.statusPending', 'Ausstehend');
                                     const statusClass = v.approved
                                         ? 'status-approved'
-                                        : v.denied
-                                            ? 'status-denied'
-                                            : 'status-pending';
+                                            : v.denied
+                                                ? 'status-denied'
+                                                : 'status-pending';
 
                                     return (
                                         <li key={v.id} className={`list-item vacation-item ${statusClass}`}>
@@ -158,7 +187,7 @@ const AdminVacationRequests = ({
                                                 )}
                                             </div>
                                             <div className="item-actions">
-                                                {!v.approved && !v.denied && (
+                                                {canManage && isPending && (
                                                     <>
                                                         <input
                                                             type="text"
@@ -201,7 +230,8 @@ const AdminVacationRequests = ({
                                                 )}
                                                 <button
                                                     className="button-delete-small"
-                                                    onClick={() => openDeleteModal(v)}
+                                                    onClick={() => canManage ? openDeleteModal(v) : notify(t('adminDashboard.readOnlyPermissions', 'Nur Ansicht: Dieser Benutzer darf das Admin-Dashboard sehen, aber keine Freigaben oder Änderungen ausführen.'), 'warning')}
+                                                    disabled={!canManage}
                                                     title={t('adminVacation.delete.buttonTitle', 'Urlaubsantrag löschen')}
                                                 >
                                                     🗑️ <span className="button-text-mobile-hidden">{t('delete', 'Löschen')}</span>
@@ -273,10 +303,12 @@ AdminVacationRequests.propTypes = {
     handleDenyVacation: PropTypes.func.isRequired,
     onReloadVacations: PropTypes.func.isRequired, // Wichtig für die Aktualisierung der Liste
     openSignal: PropTypes.number,
+    canManage: PropTypes.bool,
 };
 
 AdminVacationRequests.defaultProps = {
     openSignal: 0,
+    canManage: true,
 };
 
 export default AdminVacationRequests;

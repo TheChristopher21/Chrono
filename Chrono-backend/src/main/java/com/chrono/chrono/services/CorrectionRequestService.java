@@ -38,6 +38,8 @@ public class CorrectionRequestService {
     private TimeTrackingEntryRepository timeTrackingEntryRepo;
     @Autowired
     private TimeTrackingService timeTrackingService;
+    @Autowired
+    private AccessControlService accessControlService;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -124,6 +126,15 @@ public class CorrectionRequestService {
         CorrectionRequest initialRequest = correctionRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found"));
 
+        User adminUser = userRepo.findByUsername(adminUsername)
+                .orElseThrow(() -> new SecurityException("Admin not found: " + adminUsername));
+        if (!accessControlService.isSuperAdmin(adminUser)) {
+            if (!accessControlService.isAdmin(adminUser)
+                    || !accessControlService.sameCompany(adminUser, initialRequest.getUser())) {
+                throw new SecurityException("Admin cannot approve correction requests from another company.");
+            }
+        }
+
         Long userId = initialRequest.getUser().getId();
 
         User targetUser = userRepo.findByIdForUpdate(userId)
@@ -202,8 +213,23 @@ public class CorrectionRequestService {
 
     @Transactional
     public CorrectionRequest denyRequest(Long requestId, String comment) {
+        return denyRequest(requestId, comment, null);
+    }
+
+    @Transactional
+    public CorrectionRequest denyRequest(Long requestId, String comment, String adminUsername) {
         CorrectionRequest req = correctionRepo.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Correction Request with ID " + requestId + " not found"));
+        if (adminUsername != null) {
+            User adminUser = userRepo.findByUsername(adminUsername)
+                    .orElseThrow(() -> new SecurityException("Admin not found: " + adminUsername));
+            if (!accessControlService.isSuperAdmin(adminUser)) {
+                if (!accessControlService.isAdmin(adminUser)
+                        || !accessControlService.sameCompany(adminUser, req.getUser())) {
+                    throw new SecurityException("Admin cannot deny correction requests from another company.");
+                }
+            }
+        }
         if (req.isApproved() || req.isDenied()) {
             throw new RuntimeException("Request with ID " + requestId + " has already been processed.");
         }

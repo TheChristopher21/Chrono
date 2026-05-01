@@ -1260,6 +1260,311 @@
     background: color-mix(in srgb, var(--c-surface) 85%, transparent);
 }
 
+/* =========================================================================
+   Admin dashboard calendar page: larger cells, readable names, day details
+   ========================================================================= */
+.vacation-calendar-admin.scoped-vacation {
+  background: transparent;
+  padding: 0;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-header {
+  margin-bottom: 1rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .react-calendar.calendar-lg {
+  margin-top: 0;
+  padding: clamp(0.9rem, 1.5vw, 1.25rem);
+  border-radius: 8px;
+}
+
+.vacation-calendar-admin.scoped-vacation
+  .react-calendar.calendar-lg
+  .react-calendar__month-view__weekdays {
+  margin-bottom: 0.7rem;
+  padding: 0 0.25rem 0.6rem;
+}
+
+.vacation-calendar-admin.scoped-vacation
+  .react-calendar.calendar-lg
+  .react-calendar__month-view__days {
+  display: grid !important;
+  grid-template-columns: repeat(7, minmax(0, 1fr)) !important;
+  gap: 0.65rem !important;
+}
+
+.vacation-calendar-admin.scoped-vacation
+  .react-calendar.calendar-lg
+  .react-calendar__month-view__days
+  > .react-calendar__tile {
+  flex-basis: auto !important;
+  max-width: none !important;
+}
+
+.vacation-calendar-admin.scoped-vacation
+  .react-calendar.calendar-lg
+  .react-calendar__tile {
+  min-height: clamp(140px, 14vh, 190px);
+  height: auto !important;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0.45rem;
+  padding: 0.72rem;
+  text-align: left;
+  border-radius: 8px;
+}
+
+.vacation-calendar-admin.scoped-vacation
+  .react-calendar.calendar-lg
+  .react-calendar__tile abbr {
+  align-self: flex-start;
+  font-size: 0.98rem;
+  font-weight: 750;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-markers {
+  align-items: stretch;
+  gap: 0.34rem;
+  margin-top: 0.2rem;
+  width: 100%;
+  font-size: 0.84rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-marker,
+.vacation-calendar-admin.scoped-vacation .sick-leave-marker-admin,
+.vacation-calendar-admin.scoped-vacation .holiday-marker-admin,
+.vacation-calendar-admin.scoped-vacation .calendar-more-marker {
+  width: 100%;
+  max-width: 100%;
+  min-height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  text-align: left;
+  border-radius: 7px;
+  padding: 0.26rem 0.5rem;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vacation-calendar-admin.scoped-vacation .vacation-marker span,
+.vacation-calendar-admin.scoped-vacation .sick-leave-marker-admin span,
+.vacation-calendar-admin.scoped-vacation .calendar-more-marker {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vacation-calendar-admin.scoped-vacation .overtime-marker {
+  border: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.vacation-calendar-admin.scoped-vacation .holiday-marker-admin {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.08rem;
+  background: color-mix(in srgb, #f59e0b 16%, var(--c-surface));
+  border: 1px solid color-mix(in srgb, #f59e0b 48%, var(--c-border));
+  color: color-mix(in srgb, #92400e 78%, var(--c-text));
+}
+
+.vacation-calendar-admin.scoped-vacation .holiday-marker-admin span {
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  opacity: 0.75;
+}
+
+.vacation-calendar-admin.scoped-vacation .holiday-marker-admin strong {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-more-marker {
+  color: var(--c-pri);
+  background: color-mix(in srgb, var(--c-pri) 10%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--c-pri) 42%, var(--c-border));
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-more-marker:hover,
+.vacation-calendar-admin.scoped-vacation .calendar-more-marker:focus {
+  background: color-mix(in srgb, var(--c-pri) 15%, transparent);
+  outline: none;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-details-modal {
+  width: min(920px, calc(100vw - 2rem));
+  max-width: min(920px, calc(100vw - 2rem));
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-details-head {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-details-head span {
+  color: var(--c-muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-details-head h3 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-details-head p {
+  margin: 0;
+  color: var(--c-muted);
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-details-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-details-summary span {
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  border-radius: 999px;
+  padding: 0.35rem 0.7rem;
+  color: var(--c-text);
+  font-weight: 700;
+  font-size: 0.86rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-details-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-group {
+  border: 1px solid var(--c-border);
+  background: var(--c-surface);
+  border-radius: 8px;
+  padding: 0.85rem;
+  min-width: 0;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-group-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.65rem;
+  font-weight: 800;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-group-title strong {
+  min-width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--c-card);
+  color: var(--c-text);
+  border: 1px solid var(--c-border);
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-item {
+  width: 100%;
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+  text-align: left;
+  border: 1px solid transparent;
+  background: var(--c-card);
+  color: var(--c-text);
+  border-radius: 7px;
+  padding: 0.65rem 0.75rem;
+  cursor: pointer;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-item:hover,
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-item:focus {
+  border-color: var(--c-pri);
+  outline: none;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-person,
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-meta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-person {
+  font-weight: 800;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-meta,
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-empty {
+  color: var(--c-muted);
+  font-size: 0.84rem;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-empty {
+  margin: 0;
+}
+
+@media (max-width: 1100px) {
+  .vacation-calendar-admin.scoped-vacation
+    .react-calendar.calendar-lg
+    .react-calendar__tile {
+    min-height: 124px;
+    padding: 0.58rem;
+  }
+
+  .vacation-calendar-admin.scoped-vacation .calendar-day-details-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .vacation-calendar-admin.scoped-vacation
+    .react-calendar.calendar-lg
+    .react-calendar__month-view__days {
+    gap: 0.4rem !important;
+  }
+
+  .vacation-calendar-admin.scoped-vacation
+    .react-calendar.calendar-lg
+    .react-calendar__tile {
+    min-height: 96px;
+    padding: 0.45rem;
+  }
+
+  .vacation-calendar-admin.scoped-vacation .vacation-markers {
+    gap: 0.22rem;
+    font-size: 0.72rem;
+  }
+
+  .vacation-calendar-admin.scoped-vacation .vacation-marker,
+  .vacation-calendar-admin.scoped-vacation .sick-leave-marker-admin,
+  .vacation-calendar-admin.scoped-vacation .holiday-marker-admin,
+  .vacation-calendar-admin.scoped-vacation .calendar-more-marker {
+    min-height: 22px;
+    padding: 0.2rem 0.35rem;
+  }
+}
+
 .vacation-calendar-admin.scoped-vacation .calendar-toolbar .btn-today {
     height: 48px;
     padding: 0 1rem;

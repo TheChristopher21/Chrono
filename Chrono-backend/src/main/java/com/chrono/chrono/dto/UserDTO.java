@@ -6,6 +6,7 @@ import com.chrono.chrono.utils.RegistrationFeatures;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -66,11 +67,13 @@ public class UserDTO {
     private String lastCustomerName;
     private Set<String> companyFeatureKeys;
     private LocalDate employmentModelEffectiveFrom;
+    private Map<String, String> pagePermissions;
 
     public UserDTO() {
         this.roles = new ArrayList<>();
         this.weeklySchedule = new ArrayList<>();
         this.companyFeatureKeys = new LinkedHashSet<>(RegistrationFeatures.ALWAYS_AVAILABLE_FEATURES);
+        this.pagePermissions = new LinkedHashMap<>();
     }
 
     // Constructor from User entity
@@ -130,6 +133,7 @@ public class UserDTO {
         if (user.getCompany() != null) {
             this.companyFeatureKeys.addAll(RegistrationFeatures.sanitizeOptionalFeatures(user.getCompany().getEnabledFeatures()));
         }
+        this.pagePermissions = user.getPagePermissions() != null ? new LinkedHashMap<>(user.getPagePermissions()) : new LinkedHashMap<>();
     }
 
     // All-Args-Constructor
@@ -197,6 +201,7 @@ public class UserDTO {
         this.deleted = deleted;
         this.optOut = optOut;
         this.includeInTimeTracking = includeInTimeTracking != null ? includeInTimeTracking : true;
+        this.pagePermissions = new LinkedHashMap<>();
     }
 
     // ----- Getters -----
@@ -252,6 +257,7 @@ public class UserDTO {
     public Boolean getCustomerTrackingEnabled() { return customerTrackingEnabled; } // Kept
     public Set<String> getCompanyFeatureKeys() { return companyFeatureKeys; }
     public LocalDate getEmploymentModelEffectiveFrom() { return employmentModelEffectiveFrom; }
+    public Map<String, String> getPagePermissions() { return pagePermissions; }
 
     // ----- Setters -----
     public void setId(Long id) { this.id = id; }
@@ -305,6 +311,9 @@ public class UserDTO {
     public void setLastCustomerName(String lastCustomerName) { this.lastCustomerName = lastCustomerName; }
     public void setCustomerTrackingEnabled(Boolean customerTrackingEnabled) { this.customerTrackingEnabled = customerTrackingEnabled; } // Kept
     public void setEmploymentModelEffectiveFrom(LocalDate employmentModelEffectiveFrom) { this.employmentModelEffectiveFrom = employmentModelEffectiveFrom; }
+    public void setPagePermissions(Map<String, String> pagePermissions) {
+        this.pagePermissions = pagePermissions != null ? new LinkedHashMap<>(pagePermissions) : new LinkedHashMap<>();
+    }
     public void setCompanyFeatureKeys(Set<String> companyFeatureKeys) {
         this.companyFeatureKeys = companyFeatureKeys != null
                 ? new LinkedHashSet<>(companyFeatureKeys)

@@ -6,6 +6,7 @@ import Navbar from '../components/Navbar';
 import '../styles/Login.css';
 import api from '../utils/api';
 import { useTranslation } from '../context/LanguageContext';
+import { getDefaultLandingPage } from '../utils/pageAccess.js';
 import { Howl } from 'howler';
 import stampMp3 from '/sounds/stamp.mp3';
 
@@ -43,7 +44,9 @@ const Login = () => {
 
     const checkNfc = async () => {
         try {
-            const res = await fetch(`${import.meta.env.VITE_APIURL}/api/nfc/read/1`);
+            const res = await fetch(`${import.meta.env.VITE_APIURL}/api/nfc/read/1`, {
+                headers: { 'X-NFC-Agent-Request': 'true' },
+            });
             if (!res.ok) return;
 
             const contentType = res.headers.get('content-type') || '';
@@ -64,7 +67,8 @@ const Login = () => {
             showPunch(`${t('login.stamped', 'Eingestempelt')}: ${cardUser}`);
 
             await api.post('/api/timetracking/punch', null, {
-                params: { username: cardUser },
+                params: { username: cardUser, source: 'NFC_SCAN' },
+                headers: { 'X-NFC-Agent-Request': 'true' },
             });
         } catch (e) {
             console.error('NFC error', e);
@@ -91,21 +95,13 @@ const Login = () => {
         }
 
         const user = res.user || {};
-        const roles = user.roles || [];
-        const isPercentageUser = user.isPercentage || false;
 
         const next = new URLSearchParams(location.search).get('next');
 
         if (next) {
             navigate(next, { replace: true });
-        } else if (roles.includes('ROLE_SUPERADMIN')) {
-            navigate('/admin/company', { replace: true });
-        } else if (roles.includes('ROLE_ADMIN')) {
-            navigate('/admin/dashboard', { replace: true });
-        } else if (isPercentageUser) {
-            navigate('/percentage-punch', { replace: true });
         } else {
-            navigate('/dashboard', { replace: true });
+            navigate(getDefaultLandingPage(user), { replace: true });
         }
     };
 

@@ -1,5 +1,6 @@
 package com.chrono.chrono.entities.inventory;
 
+import com.chrono.chrono.entities.Company;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 
@@ -9,14 +10,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "scm_purchase_orders")
+@Table(
+        name = "scm_purchase_orders",
+        uniqueConstraints = @UniqueConstraint(name = "uk_scm_purchase_orders_company_number", columnNames = {"company_id", "order_number"}),
+        indexes = @Index(name = "idx_scm_purchase_orders_company", columnList = "company_id")
+)
 public class PurchaseOrder {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(nullable = false)
     private String orderNumber;
 
     @Column(nullable = false)
@@ -32,6 +37,10 @@ public class PurchaseOrder {
 
     @Column(precision = 19, scale = 4)
     private BigDecimal totalAmount = BigDecimal.ZERO;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
 
     @OneToMany(mappedBy = "purchaseOrder", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
@@ -91,6 +100,14 @@ public class PurchaseOrder {
 
     public void setTotalAmount(BigDecimal totalAmount) {
         this.totalAmount = totalAmount;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 
     public List<PurchaseOrderLine> getLines() {

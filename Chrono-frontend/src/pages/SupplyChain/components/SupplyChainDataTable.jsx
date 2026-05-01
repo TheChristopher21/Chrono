@@ -22,7 +22,12 @@ const SupplyChainDataTable = ({ columns, rows, selectedIds, onToggleRow, onSort,
             <tbody>
                 {rows.length === 0 ? (
                     <tr>
-                        <td colSpan={columns.length + 2} className="table-empty">{text.empty}</td>
+                        <td colSpan={columns.length + 2} className="table-empty">
+                            <div className="table-empty-state">
+                                <strong>{text.empty}</strong>
+                                <span>{text.emptyHint}</span>
+                            </div>
+                        </td>
                     </tr>
                 ) : rows.map((row) => (
                     <tr key={row.id} className={selectedIds.has(row.id) ? "is-selected" : ""}>

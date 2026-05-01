@@ -113,6 +113,28 @@
     font-weight: 600;
 }
 
+.scoped-chat-widget .chat-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+}
+
+.scoped-chat-widget .chat-model-status {
+    color: var(--cw-c-muted);
+    font-size: 0.72rem;
+    line-height: 1.2;
+}
+
+.scoped-chat-widget .chat-model-status.ready {
+    color: var(--cw-c-pri-dim);
+}
+
+.scoped-chat-widget .chat-model-status.locked {
+    color: #b45309;
+}
+
 .scoped-chat-widget .close-btn {
     position: absolute;
     right: 8px;
@@ -155,6 +177,7 @@
     border-radius: 18px;
     line-height: 1.5;
     word-wrap: break-word;
+    max-width: 100%;
 }
 
 .scoped-chat-widget .msg-user .msg-bubble {
@@ -168,6 +191,60 @@
     color: var(--cw-c-text);
     border: 1px solid var(--cw-c-border);
     border-bottom-left-radius: 4px;
+}
+
+.scoped-chat-widget .msg-text {
+    white-space: pre-wrap;
+}
+
+.scoped-chat-widget .msg-meta {
+    margin-top: 6px;
+    color: var(--cw-c-muted);
+    font-size: 0.72rem;
+    line-height: 1.35;
+}
+
+.scoped-chat-widget .msg-sources {
+    margin-top: 8px;
+    border-top: 1px solid var(--cw-c-border);
+    padding-top: 7px;
+    color: var(--cw-c-muted);
+    font-size: 0.76rem;
+    line-height: 1.35;
+}
+
+.scoped-chat-widget .msg-sources span {
+    display: block;
+    color: var(--cw-c-text);
+    font-weight: 600;
+    margin-bottom: 3px;
+}
+
+.scoped-chat-widget .msg-sources ul {
+    margin: 0;
+    padding-left: 16px;
+}
+
+.scoped-chat-widget .msg-suggestions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.scoped-chat-widget .msg-suggestions a {
+    border: 1px solid color-mix(in srgb, var(--cw-c-pri) 35%, var(--cw-c-border));
+    border-radius: 999px;
+    color: var(--cw-c-pri-dim);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.2;
+    padding: 5px 9px;
+    text-decoration: none;
+}
+
+.scoped-chat-widget .msg-suggestions a:hover {
+    background: color-mix(in srgb, var(--cw-c-pri) 10%, transparent);
 }
 
 /* Eingabefeld */

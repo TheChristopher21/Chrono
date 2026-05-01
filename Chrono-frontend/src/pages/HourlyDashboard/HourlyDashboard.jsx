@@ -4,6 +4,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
+import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -317,6 +318,12 @@ const assignCustomerForDay = async (isoDate, customerId) => {
                 </button>
 
             </header>
+
+            <AccessiblePagesPanel
+                context="user"
+                title="Deine freigegebenen Seiten"
+                subtitle="Zusätzliche freigegebene Bereiche erscheinen direkt hier im Dashboard."
+            />
 
             <HourlyWeekOverview
                 t={t}

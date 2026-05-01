@@ -10,6 +10,7 @@ import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.EmploymentModelHistoryService;
 import com.chrono.chrono.services.TimeTrackingService;
+import com.chrono.chrono.services.UserPermissionService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -28,6 +29,7 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,6 +49,8 @@ class AdminUserControllerSnapshotHistoryTest {
     @Mock
     private EmploymentModelHistoryService employmentModelHistoryService;
     @Mock
+    private UserPermissionService userPermissionService;
+    @Mock
     private Principal principal;
 
     private AdminUserController controller;
@@ -60,6 +64,7 @@ class AdminUserControllerSnapshotHistoryTest {
         ReflectionTestUtils.setField(controller, "passwordEncoder", passwordEncoder);
         ReflectionTestUtils.setField(controller, "timeTrackingService", timeTrackingService);
         ReflectionTestUtils.setField(controller, "employmentModelHistoryService", employmentModelHistoryService);
+        ReflectionTestUtils.setField(controller, "userPermissionService", userPermissionService);
     }
 
     @Test
@@ -119,5 +124,21 @@ class AdminUserControllerSnapshotHistoryTest {
         assertEquals(200, response.getStatusCode().value());
         verify(employmentModelHistoryService).ensureBaselineEntry(any(User.class), eq(EmploymentModelType.STANDARD), any(LocalDate.class), any(User.class));
         verify(employmentModelHistoryService).recordSnapshotChange(any(User.class), eq(LocalDate.of(2026, 3, 1)));
+    }
+
+    @Test
+    void getAllUsers_withoutCompany_returnsForbiddenInsteadOfAllUsers() {
+        when(principal.getName()).thenReturn("admin");
+
+        User adminUser = new User();
+        adminUser.setUsername("admin");
+        adminUser.getRoles().add(new Role("ROLE_ADMIN"));
+
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+
+        ResponseEntity<?> response = controller.getAllUsers(principal);
+
+        assertEquals(403, response.getStatusCode().value());
+        verify(userRepository, never()).findByDeletedFalse();
     }
 }

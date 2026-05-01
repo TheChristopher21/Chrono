@@ -8,6 +8,7 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.*;
 import com.chrono.chrono.services.EmploymentModelHistoryService;
 import com.chrono.chrono.services.TimeTrackingService;
+import com.chrono.chrono.services.UserPermissionService;
 import com.chrono.chrono.services.VacationService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/users")
-@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN') or hasRole('PAYROLL_ADMIN')")
 public class AdminUserController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
@@ -62,10 +63,24 @@ public class AdminUserController {
     @Autowired
     private EmploymentModelHistoryService employmentModelHistoryService;
 
+    @Autowired
+    private UserPermissionService userPermissionService;
+
     @GetMapping
     public ResponseEntity<List<UserDTO>> getAllUsers(Principal principal) {
         User admin = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("Logged in admin not found: " + principal.getName()));
+        userPermissionService.assertAnyPageAccess(
+                admin,
+                UserPermissionService.ACCESS_VIEW,
+                "Keine Berechtigung fuer die Benutzerliste.",
+                UserPermissionService.PAGE_ADMIN_USERS,
+                UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                UserPermissionService.PAGE_ADMIN_ANALYTICS,
+                UserPermissionService.PAGE_ADMIN_PAYSLIPS,
+                UserPermissionService.PAGE_ADMIN_SCHEDULE,
+                UserPermissionService.PAGE_ADMIN_PRINT_SCHEDULE
+        );
 
         boolean isSuperAdmin = admin.getRoles().stream()
                 .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
@@ -77,12 +92,12 @@ public class AdminUserController {
             Long companyId = admin.getCompany().getId();
             users = userRepository.findByCompany_IdAndDeletedFalse(companyId);
         } else {
-            logger.warn("Admin {} has no company assigned. Falling back to all active users.", principal.getName());
-            users = userRepository.findByDeletedFalse();
+            logger.warn("Admin {} has no company assigned. Access to user listing is denied.", principal.getName());
+            return ResponseEntity.status(403).build();
         }
 
         List<UserDTO> dtos = users.stream()
-                .map(UserDTO::new)
+                .map(this::toUserDTO)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(dtos);
     }
@@ -92,6 +107,12 @@ public class AdminUserController {
     public ResponseEntity<?> addUser(@RequestBody UserDTO userDTO, Principal principal) {
         User admin = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("Logged-in admin not found: " + principal.getName()));
+        userPermissionService.assertPageAccess(
+                admin,
+                UserPermissionService.PAGE_ADMIN_USERS,
+                UserPermissionService.ACCESS_MANAGE,
+                "Keine Berechtigung zum Verwalten von Benutzern."
+        );
 
         Company targetCompany = null;
         // SUPERADMIN can assign a company if companyId is provided in DTO
@@ -178,17 +199,8 @@ public class AdminUserController {
         final String finalRoleName = roleNameInput;
 
         // Security check for role assignment by non-SUPERADMIN
-        if (!admin.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
-            if (finalRoleName.equals("ROLE_SUPERADMIN")) {
-                return ResponseEntity.status(403).body("Regular admin cannot assign SUPERADMIN role.");
-            }
-            // A regular admin cannot assign ROLE_ADMIN to a user of a different company (though targetCompany logic above should align them)
-            // or if the admin themselves is not a SUPERADMIN creating an admin in a company they don't belong to.
-            if (finalRoleName.equals("ROLE_ADMIN") && (targetCompany == null || !targetCompany.getId().equals(admin.getCompany().getId()))) {
-                if (admin.getCompany() == null || targetCompany == null || !targetCompany.getId().equals(admin.getCompany().getId())) {
-                    return ResponseEntity.status(403).body("Regular admin cannot make user an ADMIN of a different company.");
-                }
-            }
+        if (!hasAnyRole(admin, "ROLE_SUPERADMIN") && isPrivilegedRole(finalRoleName)) {
+            return ResponseEntity.status(403).body("Only SUPERADMIN can assign privileged roles.");
         }
 
 
@@ -199,6 +211,8 @@ public class AdminUserController {
         if (finalRoleName.equals("ROLE_ADMIN") || finalRoleName.equals("ROLE_SUPERADMIN")) {
             newUser.setAdminPassword(newUser.getPassword()); // Sets admin password same as user password
         }
+
+        newUser.setPagePermissions(userPermissionService.resolvePermissionsForPersistence(newUser, userDTO.getPagePermissions()));
 
         newUser.setTrackingBalanceInMinutes(userDTO.getTrackingBalanceInMinutes() != null ? userDTO.getTrackingBalanceInMinutes() : 0);
         newUser.setColor(userDTO.getColor() != null && !userDTO.getColor().isEmpty() ? userDTO.getColor() : "#CCCCCC");
@@ -259,7 +273,7 @@ public class AdminUserController {
                 savedUser.getEntryDate() != null ? savedUser.getEntryDate() : employmentModelHistoryService.currentBerlinDate()
         );
         logger.info("Admin {} created new user: {}", principal.getName(), savedUser.getUsername());
-        return ResponseEntity.ok(new UserDTO(savedUser));
+        return ResponseEntity.ok(toUserDTO(savedUser));
     }
 
 
@@ -276,18 +290,27 @@ public class AdminUserController {
 
         User adminUser = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("Admin not found: " + principal.getName()));
+        userPermissionService.assertPageAccess(
+                adminUser,
+                UserPermissionService.PAGE_ADMIN_USERS,
+                UserPermissionService.ACCESS_MANAGE,
+                "Keine Berechtigung zum Verwalten von Benutzern."
+        );
 
         User existingUser = userRepository.findById(userDTO.getId())
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + userDTO.getId()));
 
         // SUPERADMIN can edit any user. Regular admin can only edit users in their own company.
-        if (!adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+        if (!hasAnyRole(adminUser, "ROLE_SUPERADMIN")) {
             if (adminUser.getCompany() == null) {
                 return ResponseEntity.status(403).body("Admin has no company and cannot update users.");
             }
             if (existingUser.getCompany() == null || !adminUser.getCompany().getId().equals(existingUser.getCompany().getId())) {
                 logger.warn("Admin {} attempted to update user {} from a different company or user with no company.", adminUser.getUsername(), existingUser.getUsername());
                 return ResponseEntity.status(403).body("Admin cannot update user from a different company or a user not assigned to any company.");
+            }
+            if (isPrivilegedUser(existingUser)) {
+                return ResponseEntity.status(403).body("Only SUPERADMIN can update privileged users.");
             }
         }
         // SUPERADMIN specific logic for changing user's company
@@ -389,12 +412,8 @@ public class AdminUserController {
             }
             final String finalRoleName = roleNameInput;
 
-            if (!adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
-                if (finalRoleName.equals("ROLE_SUPERADMIN")) {
-                    return ResponseEntity.status(403).body("Regular admin cannot assign SUPERADMIN role.");
-                }
-                // Prevent regular admin from escalating other users in *their own company* to ROLE_ADMIN if they aren't one themselves (edge case, typically admin role is for management)
-                // Or changing a user in another company to ADMIN (already covered by company check)
+            if (!hasAnyRole(adminUser, "ROLE_SUPERADMIN") && isPrivilegedRole(finalRoleName)) {
+                return ResponseEntity.status(403).body("Only SUPERADMIN can assign privileged roles.");
             }
 
             Role dbRole = roleRepository.findByRoleName(finalRoleName)
@@ -402,6 +421,8 @@ public class AdminUserController {
             existingUser.getRoles().clear();
             existingUser.getRoles().add(dbRole);
         }
+
+        existingUser.setPagePermissions(userPermissionService.resolvePermissionsForPersistence(existingUser, userDTO.getPagePermissions()));
 
 
         LocalDate requestedEffectiveFrom = userDTO.getEmploymentModelEffectiveFrom();
@@ -517,7 +538,7 @@ public class AdminUserController {
         }
 
         logger.info("Admin {} updated user: {}", adminUser.getUsername(), updatedUser.getUsername());
-        return ResponseEntity.ok(new UserDTO(updatedUser));
+        return ResponseEntity.ok(toUserDTO(updatedUser));
     }
 
     @DeleteMapping("/{id}")
@@ -525,6 +546,12 @@ public class AdminUserController {
     public ResponseEntity<?> deleteUser(@PathVariable Long id, Principal principal) {
         User adminUser = userRepository.findByUsername(principal.getName())
                 .orElseThrow(() -> new RuntimeException("Admin not found: " + principal.getName()));
+        userPermissionService.assertPageAccess(
+                adminUser,
+                UserPermissionService.PAGE_ADMIN_USERS,
+                UserPermissionService.ACCESS_MANAGE,
+                "Keine Berechtigung zum Verwalten von Benutzern."
+        );
 
         User userToDelete = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
@@ -550,6 +577,30 @@ public class AdminUserController {
         userRepository.save(userToDelete);
         logger.info("Admin {} marked user {} as deleted", adminUser.getUsername(), userToDelete.getUsername());
         return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
+    }
+
+    private UserDTO toUserDTO(User user) {
+        UserDTO dto = new UserDTO(user);
+        dto.setPagePermissions(userPermissionService.resolvePagePermissions(user));
+        return dto;
+    }
+
+    private boolean hasAnyRole(User user, String... roleNames) {
+        if (user == null || user.getRoles() == null) {
+            return false;
+        }
+        List<String> allowed = List.of(roleNames);
+        return user.getRoles().stream().anyMatch(role -> allowed.contains(role.getRoleName()));
+    }
+
+    private boolean isPrivilegedRole(String roleName) {
+        return "ROLE_ADMIN".equals(roleName)
+                || "ROLE_SUPERADMIN".equals(roleName)
+                || "ROLE_PAYROLL_ADMIN".equals(roleName);
+    }
+
+    private boolean isPrivilegedUser(User user) {
+        return hasAnyRole(user, "ROLE_ADMIN", "ROLE_SUPERADMIN", "ROLE_PAYROLL_ADMIN");
     }
 
     private User copyUserForHistory(User source) {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { hasFeatureAccess, hasPageAccess } from '../utils/pageAccess.js';
 
 /**
  * PrivateRoute protects routes.
@@ -8,7 +9,14 @@ import { useAuth } from '../context/AuthContext';
  * - Missing auth redirects to /login?next=<uri>
  * - Missing permissions redirect to the configured fallback
  */
-const PrivateRoute = ({ children, requiredRole, requiredFeature, redirectTo = '/' }) => {
+const PrivateRoute = ({
+    children,
+    requiredRole,
+    requiredFeature,
+    requiredPagePermission,
+    requiredAccess = 'VIEW',
+    redirectTo = '/',
+}) => {
     const { authToken, currentUser, isAuthLoading } = useAuth();
     const location = useLocation();
 
@@ -50,24 +58,27 @@ const PrivateRoute = ({ children, requiredRole, requiredFeature, redirectTo = '/
     }
 
     if (requiredFeature) {
-        const isSuperAdmin = currentUser.roles?.includes('ROLE_SUPERADMIN');
-        if (!isSuperAdmin) {
-            const featureKeysRaw = currentUser.companyFeatureKeys;
-            const featureList = Array.isArray(featureKeysRaw)
-                ? featureKeysRaw
-                : featureKeysRaw
-                    ? Object.values(featureKeysRaw)
-                    : [];
+        const requiredFeatures = Array.isArray(requiredFeature)
+            ? requiredFeature
+            : [requiredFeature];
 
-            const requiredFeatures = Array.isArray(requiredFeature)
-                ? requiredFeature
-                : [requiredFeature];
+        const featureAllowed = requiredFeatures.some((featureKey) => hasFeatureAccess(currentUser, featureKey));
 
-            const hasFeature = requiredFeatures.some((featureKey) => featureList.includes(featureKey));
+        if (!featureAllowed) {
+            return <Navigate to={redirectTo} replace />;
+        }
+    }
 
-            if (!hasFeature) {
-                return <Navigate to={redirectTo} replace />;
-            }
+    if (requiredPagePermission) {
+        const requiredPermissions = Array.isArray(requiredPagePermission)
+            ? requiredPagePermission
+            : [requiredPagePermission];
+        const permissionAllowed = requiredPermissions.some((pageKey) =>
+            hasPageAccess(currentUser, pageKey, requiredAccess)
+        );
+
+        if (!permissionAllowed) {
+            return <Navigate to={redirectTo} replace />;
         }
     }
 

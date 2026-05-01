@@ -16,6 +16,7 @@ import com.chrono.chrono.dto.inventory.WavePickOrderSummaryDTO;
 import com.chrono.chrono.dto.inventory.WavePickResponse;
 import com.chrono.chrono.dto.inventory.WavePickStopDTO;
 import com.chrono.chrono.dto.inventory.WavePickWaveDTO;
+import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.inventory.*;
 import com.chrono.chrono.entities.accounting.InvoiceStatus;
 import com.chrono.chrono.entities.accounting.VendorInvoice;
@@ -106,16 +107,34 @@ public class SupplyChainService {
 
     @Transactional
     public Product saveProduct(Product product) {
+        ensureUniqueProductSku(product);
         Product saved = productRepository.save(product);
         warehouseIntelligenceService.registerProduct(saved);
         return saved;
     }
 
     @Transactional
+    public Product saveProduct(Product product, Company company) {
+        if (company != null) {
+            product.setCompany(company);
+        }
+        return saveProduct(product);
+    }
+
+    @Transactional
     public Warehouse saveWarehouse(Warehouse warehouse) {
+        ensureUniqueWarehouseCode(warehouse);
         Warehouse saved = warehouseRepository.save(warehouse);
         warehouseIntelligenceService.registerWarehouse(saved);
         return saved;
+    }
+
+    @Transactional
+    public Warehouse saveWarehouse(Warehouse warehouse, Company company) {
+        if (company != null) {
+            warehouse.setCompany(company);
+        }
+        return saveWarehouse(warehouse);
     }
 
     @Transactional
@@ -130,6 +149,9 @@ public class SupplyChainService {
         if (quantity == null) {
             throw new IllegalArgumentException("Quantity change is required");
         }
+        ensureSameCompany(product != null ? product.getCompany() : null,
+                warehouse != null ? warehouse.getCompany() : null,
+                "Product and warehouse must belong to the same company");
         StockLevel level = stockLevelRepository.findByProductAndWarehouse(product, warehouse)
                 .orElseGet(() -> {
                     StockLevel sl = new StockLevel();
@@ -161,13 +183,27 @@ public class SupplyChainService {
     }
 
     @Transactional(readOnly = true)
+    public Page<StockMovement> listStockMovements(Long companyId, Pageable pageable) {
+        return stockMovementRepository.findAllByProduct_Company_Id(companyId, pageable);
+    }
+
+    @Transactional(readOnly = true)
     public ReceivingPreviewResponse previewReceiving(ReceivingPreviewRequest request) {
+        return previewReceivingInternal(null, request);
+    }
+
+    @Transactional(readOnly = true)
+    public ReceivingPreviewResponse previewReceiving(Long companyId, ReceivingPreviewRequest request) {
+        return previewReceivingInternal(companyId, request);
+    }
+
+    private ReceivingPreviewResponse previewReceivingInternal(Long companyId, ReceivingPreviewRequest request) {
         String documentText = safeText(request.getDocumentText());
-        List<PurchaseOrder> openOrders = purchaseOrderRepository.findAll().stream()
+        List<PurchaseOrder> openOrders = loadPurchaseOrders(companyId).stream()
                 .filter(this::isOpenPurchaseOrder)
                 .toList();
         LinkedHashSet<String> detectedCodes = collectDetectedCodes(request);
-        PurchaseOrder matchedOrder = findMatchingPurchaseOrder(detectedCodes, documentText, openOrders);
+        PurchaseOrder matchedOrder = findMatchingPurchaseOrder(companyId, detectedCodes, documentText, openOrders);
 
         String reference = matchedOrder != null
                 ? matchedOrder.getOrderNumber()
@@ -180,7 +216,7 @@ public class SupplyChainService {
         List<String> warnings = new ArrayList<>();
         List<ReceivingPreviewResponse.ReceivingPreviewItem> items = matchedOrder != null
                 ? buildPreviewItemsForOrder(matchedOrder)
-                : detectPreviewItems(documentText, detectedCodes);
+                : detectPreviewItems(companyId, documentText, detectedCodes);
 
         boolean ready = matchedOrder != null || !items.isEmpty();
         String mode = matchedOrder != null ? "PURCHASE_ORDER" : (!items.isEmpty() ? "DIRECT_RECEIPT" : "NONE");
@@ -222,13 +258,27 @@ public class SupplyChainService {
 
     @Transactional
     public ReceivingApplyResponse applyReceiving(ReceivingApplyRequest request, Warehouse warehouse) {
+        return applyReceivingInternal(null, request, warehouse);
+    }
+
+    @Transactional
+    public ReceivingApplyResponse applyReceiving(Long companyId, ReceivingApplyRequest request, Warehouse warehouse) {
+        return applyReceivingInternal(companyId, request, warehouse);
+    }
+
+    private ReceivingApplyResponse applyReceivingInternal(Long companyId, ReceivingApplyRequest request, Warehouse warehouse) {
         if (request.getWarehouseId() == null) {
             throw new IllegalArgumentException("Warehouse is required");
         }
+        ensureCompanyMatches(companyId, warehouse != null ? warehouse.getCompany() : null, "Warehouse");
 
         PurchaseOrder order = request.getPurchaseOrderId() == null
                 ? null
-                : purchaseOrderRepository.findById(request.getPurchaseOrderId()).orElseThrow();
+                : requirePurchaseOrder(companyId, request.getPurchaseOrderId());
+        if (order != null) {
+            ensureSameCompany(order.getCompany(), warehouse != null ? warehouse.getCompany() : null,
+                    "Purchase order and warehouse must belong to the same company");
+        }
 
         String reference = safeText(request.getReference());
         if (reference.isBlank() && order != null) {
@@ -239,7 +289,7 @@ public class SupplyChainService {
         }
 
         if (order != null && request.isCompletePurchaseOrder() && matchesOrderExactly(order, request.getItems())) {
-            PurchaseOrder received = receivePurchaseOrder(order.getId(), warehouse);
+            PurchaseOrder received = receivePurchaseOrder(companyId, order.getId(), warehouse);
             BigDecimal totalQuantity = received.getLines() == null ? BigDecimal.ZERO : received.getLines().stream()
                     .map(PurchaseOrderLine::getQuantity)
                     .filter(java.util.Objects::nonNull)
@@ -270,7 +320,7 @@ public class SupplyChainService {
             if (item.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
-            Product product = productRepository.findById(item.getProductId()).orElseThrow();
+            Product product = requireProduct(companyId, item.getProductId());
             adjustStock(product, warehouse, item.getQuantity(), StockMovementType.RECEIPT, reference, null, null, null);
             totalQuantity = totalQuantity.add(item.getQuantity());
             bookedItemCount++;
@@ -295,9 +345,25 @@ public class SupplyChainService {
 
     @Transactional
     public PurchaseOrder createPurchaseOrder(PurchaseOrder purchaseOrder) {
+        return createPurchaseOrderInternal(purchaseOrder, null);
+    }
+
+    @Transactional
+    public PurchaseOrder createPurchaseOrder(PurchaseOrder purchaseOrder, Company company) {
+        return createPurchaseOrderInternal(purchaseOrder, company);
+    }
+
+    private PurchaseOrder createPurchaseOrderInternal(PurchaseOrder purchaseOrder, Company company) {
+        Company effectiveCompany = resolveScopedCompany(company, purchaseOrder.getCompany(), extractPurchaseOrderProducts(purchaseOrder));
+        purchaseOrder.setCompany(effectiveCompany);
+        ensureUniquePurchaseOrderNumber(purchaseOrder);
         BigDecimal total = BigDecimal.ZERO;
         if (purchaseOrder.getLines() != null) {
             for (PurchaseOrderLine line : purchaseOrder.getLines()) {
+                if (line.getProduct() == null) {
+                    throw new IllegalArgumentException("Purchase order lines require a product");
+                }
+                ensureCompanyOwned(line.getProduct().getCompany(), effectiveCompany, "Purchase order line product");
                 line.setPurchaseOrder(purchaseOrder);
                 BigDecimal lineTotal = line.getUnitCost().multiply(line.getQuantity());
                 total = total.add(lineTotal);
@@ -309,8 +375,20 @@ public class SupplyChainService {
 
     @Transactional
     public PurchaseOrder receivePurchaseOrder(Long purchaseOrderId, Warehouse warehouse) {
-        PurchaseOrder order = purchaseOrderRepository.findById(purchaseOrderId)
-                .orElseThrow();
+        return receivePurchaseOrderInternal(null, purchaseOrderId, warehouse);
+    }
+
+    @Transactional
+    public PurchaseOrder receivePurchaseOrder(Long companyId, Long purchaseOrderId, Warehouse warehouse) {
+        return receivePurchaseOrderInternal(companyId, purchaseOrderId, warehouse);
+    }
+
+    private PurchaseOrder receivePurchaseOrderInternal(Long companyId, Long purchaseOrderId, Warehouse warehouse) {
+        PurchaseOrder order = requirePurchaseOrder(companyId, purchaseOrderId);
+        ensureCompanyMatches(companyId, order.getCompany(), "Purchase order");
+        ensureCompanyMatches(companyId, warehouse != null ? warehouse.getCompany() : null, "Warehouse");
+        ensureSameCompany(order.getCompany(), warehouse != null ? warehouse.getCompany() : null,
+                "Purchase order and warehouse must belong to the same company");
         if (order.getStatus() == PurchaseOrderStatus.RECEIVED) {
             return order;
         }
@@ -339,9 +417,25 @@ public class SupplyChainService {
 
     @Transactional
     public SalesOrder createSalesOrder(SalesOrder salesOrder) {
+        return createSalesOrderInternal(salesOrder, null);
+    }
+
+    @Transactional
+    public SalesOrder createSalesOrder(SalesOrder salesOrder, Company company) {
+        return createSalesOrderInternal(salesOrder, company);
+    }
+
+    private SalesOrder createSalesOrderInternal(SalesOrder salesOrder, Company company) {
+        Company effectiveCompany = resolveScopedCompany(company, salesOrder.getCompany(), extractSalesOrderProducts(salesOrder));
+        salesOrder.setCompany(effectiveCompany);
+        ensureUniqueSalesOrderNumber(salesOrder);
         BigDecimal total = BigDecimal.ZERO;
         if (salesOrder.getLines() != null) {
             for (SalesOrderLine line : salesOrder.getLines()) {
+                if (line.getProduct() == null) {
+                    throw new IllegalArgumentException("Sales order lines require a product");
+                }
+                ensureCompanyOwned(line.getProduct().getCompany(), effectiveCompany, "Sales order line product");
                 line.setSalesOrder(salesOrder);
                 BigDecimal lineTotal = line.getUnitPrice().multiply(line.getQuantity());
                 total = total.add(lineTotal);
@@ -353,7 +447,20 @@ public class SupplyChainService {
 
     @Transactional
     public SalesOrder fulfillSalesOrder(Long salesOrderId, Warehouse warehouse) {
-        SalesOrder order = salesOrderRepository.findById(salesOrderId).orElseThrow();
+        return fulfillSalesOrderInternal(null, salesOrderId, warehouse);
+    }
+
+    @Transactional
+    public SalesOrder fulfillSalesOrder(Long companyId, Long salesOrderId, Warehouse warehouse) {
+        return fulfillSalesOrderInternal(companyId, salesOrderId, warehouse);
+    }
+
+    private SalesOrder fulfillSalesOrderInternal(Long companyId, Long salesOrderId, Warehouse warehouse) {
+        SalesOrder order = requireSalesOrder(companyId, salesOrderId);
+        ensureCompanyMatches(companyId, order.getCompany(), "Sales order");
+        ensureCompanyMatches(companyId, warehouse != null ? warehouse.getCompany() : null, "Warehouse");
+        ensureSameCompany(order.getCompany(), warehouse != null ? warehouse.getCompany() : null,
+                "Sales order and warehouse must belong to the same company");
         if (order.getStatus() == SalesOrderStatus.FULFILLED) {
             return order;
         }
@@ -373,6 +480,26 @@ public class SupplyChainService {
 
     @Transactional
     public ProductionOrder saveProductionOrder(ProductionOrder productionOrder) {
+        return saveProductionOrderInternal(productionOrder, null);
+    }
+
+    @Transactional
+    public ProductionOrder saveProductionOrder(ProductionOrder productionOrder, Company company) {
+        return saveProductionOrderInternal(productionOrder, company);
+    }
+
+    private ProductionOrder saveProductionOrderInternal(ProductionOrder productionOrder, Company company) {
+        Company effectiveCompany = resolveScopedCompany(
+                company,
+                productionOrder.getCompany(),
+                productionOrder.getProduct() != null ? productionOrder.getProduct().getCompany() : null
+        );
+        if (productionOrder.getProduct() == null) {
+            throw new IllegalArgumentException("Production order requires a product");
+        }
+        ensureCompanyOwned(productionOrder.getProduct().getCompany(), effectiveCompany, "Production order product");
+        productionOrder.setCompany(effectiveCompany);
+        ensureUniqueProductionOrderNumber(productionOrder);
         if (productionOrder.getStatus() == ProductionOrderStatus.IN_PROGRESS && productionOrder.getStartDate() == null) {
             productionOrder.setStartDate(LocalDate.now());
         }
@@ -387,7 +514,24 @@ public class SupplyChainService {
                                                        ProductionOrderStatus status,
                                                        LocalDate startDate,
                                                        LocalDate completionDate) {
-        ProductionOrder order = productionOrderRepository.findById(productionOrderId).orElseThrow();
+        return updateProductionOrderStatusInternal(null, productionOrderId, status, startDate, completionDate);
+    }
+
+    @Transactional
+    public ProductionOrder updateProductionOrderStatus(Long companyId,
+                                                       Long productionOrderId,
+                                                       ProductionOrderStatus status,
+                                                       LocalDate startDate,
+                                                       LocalDate completionDate) {
+        return updateProductionOrderStatusInternal(companyId, productionOrderId, status, startDate, completionDate);
+    }
+
+    private ProductionOrder updateProductionOrderStatusInternal(Long companyId,
+                                                                Long productionOrderId,
+                                                                ProductionOrderStatus status,
+                                                                LocalDate startDate,
+                                                                LocalDate completionDate) {
+        ProductionOrder order = requireProductionOrder(companyId, productionOrderId);
         order.setStatus(status);
         if (status == ProductionOrderStatus.IN_PROGRESS) {
             if (startDate != null) {
@@ -408,6 +552,18 @@ public class SupplyChainService {
 
     @Transactional
     public ServiceRequest logServiceRequest(ServiceRequest request) {
+        return logServiceRequestInternal(request, null);
+    }
+
+    @Transactional
+    public ServiceRequest logServiceRequest(ServiceRequest request, Company company) {
+        return logServiceRequestInternal(request, company);
+    }
+
+    private ServiceRequest logServiceRequestInternal(ServiceRequest request, Company company) {
+        if (company != null) {
+            request.setCompany(company);
+        }
         if (request.getOpenedDate() == null) {
             request.setOpenedDate(LocalDate.now());
         }
@@ -418,7 +574,22 @@ public class SupplyChainService {
     public ServiceRequest updateServiceRequestStatus(Long serviceRequestId,
                                                      ServiceRequestStatus status,
                                                      LocalDate closedDate) {
-        ServiceRequest request = serviceRequestRepository.findById(serviceRequestId).orElseThrow();
+        return updateServiceRequestStatusInternal(null, serviceRequestId, status, closedDate);
+    }
+
+    @Transactional
+    public ServiceRequest updateServiceRequestStatus(Long companyId,
+                                                     Long serviceRequestId,
+                                                     ServiceRequestStatus status,
+                                                     LocalDate closedDate) {
+        return updateServiceRequestStatusInternal(companyId, serviceRequestId, status, closedDate);
+    }
+
+    private ServiceRequest updateServiceRequestStatusInternal(Long companyId,
+                                                              Long serviceRequestId,
+                                                              ServiceRequestStatus status,
+                                                              LocalDate closedDate) {
+        ServiceRequest request = requireServiceRequest(companyId, serviceRequestId);
         request.setStatus(status);
         if (status == ServiceRequestStatus.OPEN) {
             request.setClosedDate(null);
@@ -435,10 +606,20 @@ public class SupplyChainService {
         return stockLevelRepository.findAll(pageable);
     }
 
+    @Transactional(readOnly = true)
+    public Page<StockLevel> listStockLevels(Long companyId, Pageable pageable) {
+        return stockLevelRepository.findAllByProduct_Company_Id(companyId, pageable);
+    }
+
 
     @Transactional(readOnly = true)
     public Page<PurchaseOrder> listPurchaseOrders(Pageable pageable) {
         return purchaseOrderRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<PurchaseOrder> listPurchaseOrders(Long companyId, Pageable pageable) {
+        return purchaseOrderRepository.findAllByCompany_Id(companyId, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -447,8 +628,18 @@ public class SupplyChainService {
     }
 
     @Transactional(readOnly = true)
+    public Page<SalesOrder> listSalesOrders(Long companyId, Pageable pageable) {
+        return salesOrderRepository.findAllByCompany_Id(companyId, pageable);
+    }
+
+    @Transactional(readOnly = true)
     public Page<ProductionOrder> listProductionOrders(Pageable pageable) {
         return productionOrderRepository.findAll(pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<ProductionOrder> listProductionOrders(Long companyId, Pageable pageable) {
+        return productionOrderRepository.findAllByCompany_Id(companyId, pageable);
     }
 
     @Transactional(readOnly = true)
@@ -457,12 +648,36 @@ public class SupplyChainService {
     }
 
     @Transactional(readOnly = true)
+    public Page<ServiceRequest> listServiceRequests(Long companyId, Pageable pageable) {
+        return serviceRequestRepository.findAllByCompany_Id(companyId, pageable);
+    }
+
+    @Transactional(readOnly = true)
     public Page<CycleCount> listCycleCounts(Pageable pageable) {
         return cycleCountRepository.findAll(pageable);
     }
 
+    @Transactional(readOnly = true)
+    public Page<CycleCount> listCycleCounts(Long companyId, Pageable pageable) {
+        return cycleCountRepository.findAllByCompany_Id(companyId, pageable);
+    }
+
     @Transactional
     public CycleCount createCycleCount(Product product, Warehouse warehouse, String requestedBy) {
+        return createCycleCountInternal(null, product, warehouse, requestedBy);
+    }
+
+    @Transactional
+    public CycleCount createCycleCount(Long companyId, Product product, Warehouse warehouse, String requestedBy) {
+        return createCycleCountInternal(companyId, product, warehouse, requestedBy);
+    }
+
+    private CycleCount createCycleCountInternal(Long companyId, Product product, Warehouse warehouse, String requestedBy) {
+        ensureCompanyMatches(companyId, product != null ? product.getCompany() : null, "Product");
+        ensureCompanyMatches(companyId, warehouse != null ? warehouse.getCompany() : null, "Warehouse");
+        ensureSameCompany(product != null ? product.getCompany() : null,
+                warehouse != null ? warehouse.getCompany() : null,
+                "Product and warehouse must belong to the same company");
         Optional<CycleCount> existing = cycleCountRepository.findFirstByProductAndWarehouseAndStatusInOrderByCreatedAtDesc(
                 product,
                 warehouse,
@@ -476,7 +691,10 @@ public class SupplyChainService {
                 .orElse(BigDecimal.ZERO);
 
         CycleCount cycleCount = new CycleCount();
-        cycleCount.setPlanNumber(nextCycleCountPlanNumber());
+        cycleCount.setPlanNumber(nextCycleCountPlanNumber(companyId));
+        cycleCount.setCompany(resolveScopedCompany(null,
+                product != null ? product.getCompany() : null,
+                warehouse != null ? warehouse.getCompany() : null));
         cycleCount.setProduct(product);
         cycleCount.setWarehouse(warehouse);
         cycleCount.setExpectedQuantity(expectedQuantity);
@@ -488,6 +706,15 @@ public class SupplyChainService {
 
     @Transactional
     public CycleCount submitCycleCount(Long cycleCountId, BigDecimal countedQuantity, String countedBy) {
+        return submitCycleCountInternal(null, cycleCountId, countedQuantity, countedBy);
+    }
+
+    @Transactional
+    public CycleCount submitCycleCount(Long companyId, Long cycleCountId, BigDecimal countedQuantity, String countedBy) {
+        return submitCycleCountInternal(companyId, cycleCountId, countedQuantity, countedBy);
+    }
+
+    private CycleCount submitCycleCountInternal(Long companyId, Long cycleCountId, BigDecimal countedQuantity, String countedBy) {
         if (countedQuantity == null) {
             throw new IllegalArgumentException("Counted quantity is required");
         }
@@ -495,7 +722,7 @@ public class SupplyChainService {
             throw new IllegalArgumentException("Counted quantity cannot be negative");
         }
 
-        CycleCount cycleCount = cycleCountRepository.findById(cycleCountId).orElseThrow();
+        CycleCount cycleCount = requireCycleCount(companyId, cycleCountId);
         BigDecimal variance = countedQuantity.subtract(Optional.ofNullable(cycleCount.getExpectedQuantity()).orElse(BigDecimal.ZERO));
 
         cycleCount.setCountedQuantity(countedQuantity);
@@ -510,7 +737,16 @@ public class SupplyChainService {
 
     @Transactional
     public CycleCount approveCycleCount(Long cycleCountId, String approvedBy) {
-        CycleCount cycleCount = cycleCountRepository.findById(cycleCountId).orElseThrow();
+        return approveCycleCountInternal(null, cycleCountId, approvedBy);
+    }
+
+    @Transactional
+    public CycleCount approveCycleCount(Long companyId, Long cycleCountId, String approvedBy) {
+        return approveCycleCountInternal(companyId, cycleCountId, approvedBy);
+    }
+
+    private CycleCount approveCycleCountInternal(Long companyId, Long cycleCountId, String approvedBy) {
+        CycleCount cycleCount = requireCycleCount(companyId, cycleCountId);
         if (cycleCount.getStatus() != CycleCountStatus.APPROVAL_REQUIRED) {
             return cycleCount;
         }
@@ -532,7 +768,16 @@ public class SupplyChainService {
 
     @Transactional
     public AutoReplenishResponse autoReplenish(AutoReplenishRequest request) {
-        ReplenishmentComputation computation = computeReplenishmentPlans(request);
+        return autoReplenishInternal(null, request);
+    }
+
+    @Transactional
+    public AutoReplenishResponse autoReplenish(Long companyId, AutoReplenishRequest request) {
+        return autoReplenishInternal(companyId, request);
+    }
+
+    private AutoReplenishResponse autoReplenishInternal(Long companyId, AutoReplenishRequest request) {
+        ReplenishmentComputation computation = computeReplenishmentPlans(companyId, request);
         if (computation.candidates().isEmpty()) {
             return new AutoReplenishResponse(List.of(), 0, 0, 0, BigDecimal.ZERO);
         }
@@ -559,7 +804,7 @@ public class SupplyChainService {
             order.setLines(plan.lines());
             plan.lines().forEach(line -> line.setPurchaseOrder(order));
 
-            PurchaseOrder saved = createPurchaseOrder(order);
+            PurchaseOrder saved = createPurchaseOrder(order, resolveCompany(companyId, computation.candidates()));
             totalBudget = totalBudget.add(Optional.ofNullable(saved.getTotalAmount()).orElse(BigDecimal.ZERO));
 
             planDTOs.add(new AutoReplenishPlanDTO(
@@ -580,7 +825,15 @@ public class SupplyChainService {
     }
 
     public ReplenishmentPreviewResponse previewReplenishment(AutoReplenishRequest request) {
-        ReplenishmentComputation computation = computeReplenishmentPlans(request);
+        return previewReplenishmentInternal(null, request);
+    }
+
+    public ReplenishmentPreviewResponse previewReplenishment(Long companyId, AutoReplenishRequest request) {
+        return previewReplenishmentInternal(companyId, request);
+    }
+
+    private ReplenishmentPreviewResponse previewReplenishmentInternal(Long companyId, AutoReplenishRequest request) {
+        ReplenishmentComputation computation = computeReplenishmentPlans(companyId, request);
         if (computation.candidates().isEmpty() || computation.plansBySupplier().isEmpty()) {
             return new ReplenishmentPreviewResponse(List.of(), computation.candidates().size(), 0);
         }
@@ -595,6 +848,15 @@ public class SupplyChainService {
 
     @Transactional(readOnly = true)
     public WavePickResponse planWavePicking(PlanWavePickRequest request) {
+        return planWavePickingInternal(null, request);
+    }
+
+    @Transactional(readOnly = true)
+    public WavePickResponse planWavePicking(Long companyId, PlanWavePickRequest request) {
+        return planWavePickingInternal(companyId, request);
+    }
+
+    private WavePickResponse planWavePickingInternal(Long companyId, PlanWavePickRequest request) {
         int maxPerWave = Optional.ofNullable(request.getMaxOrdersPerWave()).orElse(6);
         maxPerWave = Math.min(Math.max(maxPerWave, 2), 25);
         boolean includeDrafts = Optional.ofNullable(request.getIncludeDrafts()).orElse(Boolean.FALSE);
@@ -602,9 +864,13 @@ public class SupplyChainService {
         List<SalesOrder> candidateOrders;
         List<Long> ids = request.getSalesOrderIds();
         if (ids == null || ids.isEmpty()) {
-            candidateOrders = new ArrayList<>(salesOrderRepository.findByStatus(SalesOrderStatus.CONFIRMED));
+            candidateOrders = companyId == null
+                    ? new ArrayList<>(salesOrderRepository.findByStatus(SalesOrderStatus.CONFIRMED))
+                    : new ArrayList<>(salesOrderRepository.findByStatusAndCompany_Id(SalesOrderStatus.CONFIRMED, companyId));
         } else {
-            candidateOrders = salesOrderRepository.findAllById(ids);
+            candidateOrders = companyId == null
+                    ? salesOrderRepository.findAllById(ids)
+                    : salesOrderRepository.findAllByIdInAndCompany_Id(ids, companyId);
         }
 
         List<SalesOrder> eligibleOrders = candidateOrders.stream()
@@ -665,17 +931,26 @@ public class SupplyChainService {
                 Math.round(averageUnitsPerWave * 100.0) / 100.0);
     }
 
-    private List<Product> resolveProductsForReplenishment(AutoReplenishRequest request) {
+    private List<Product> resolveProductsForReplenishment(Long companyId, AutoReplenishRequest request) {
         List<Long> productIds = request.getProductIds();
         Collection<Product> pool;
         if (productIds == null || productIds.isEmpty()) {
-            pool = productRepository.findAll();
-        } else {
+            pool = companyId == null ? productRepository.findAll() : productRepository.findAllByCompany_Id(companyId);
+        } else if (companyId == null) {
             pool = productRepository.findAllById(productIds);
+        } else {
+            pool = productIds.stream()
+                    .map(productId -> productRepository.findByIdAndCompany_Id(productId, companyId).orElse(null))
+                    .filter(java.util.Objects::nonNull)
+                    .toList();
         }
         return pool.stream()
                 .sorted(Comparator.comparing(Product::getId, Comparator.nullsLast(Long::compareTo)))
                 .collect(Collectors.toList());
+    }
+
+    private List<Product> resolveProductsForReplenishment(AutoReplenishRequest request) {
+        return resolveProductsForReplenishment(null, request);
     }
 
     private ReplenishmentNeed evaluateReplenishmentNeed(Product product,
@@ -690,14 +965,14 @@ public class SupplyChainService {
 
         PredictiveInventoryResponse forecast;
         try {
-            forecast = warehouseIntelligenceService.forecastInventory(product.getSku());
+            forecast = warehouseIntelligenceService.forecastInventory(warehouseProductKey(product));
         } catch (RuntimeException ex) {
             forecast = null;
         }
 
         PredictiveReplenishmentResponse replenishmentAnalytics;
         try {
-            replenishmentAnalytics = warehouseIntelligenceService.analyseReplenishment(product.getSku(), serviceLevel);
+            replenishmentAnalytics = warehouseIntelligenceService.analyseReplenishment(warehouseProductKey(product), serviceLevel);
         } catch (RuntimeException ex) {
             replenishmentAnalytics = null;
         }
@@ -761,7 +1036,7 @@ public class SupplyChainService {
                                                            ReplenishmentNeed need,
                                                            List<AutoReplenishRequest.SupplierPreference> preferences) {
         SmartSourcingRequest sourcingRequest = new SmartSourcingRequest();
-        sourcingRequest.setProductId(product.getSku());
+        sourcingRequest.setProductId(warehouseProductKey(product));
         sourcingRequest.setQuantity(Math.max(need.recommendedQuantity(), 1));
         if (preferences != null && !preferences.isEmpty()) {
             sourcingRequest.setPreferences(preferences.stream()
@@ -838,6 +1113,14 @@ public class SupplyChainService {
         return String.format(Locale.ROOT, "CC-%s-%04d", LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE), sequence);
     }
 
+    private String nextCycleCountPlanNumber(Long companyId) {
+        if (companyId == null) {
+            return nextCycleCountPlanNumber();
+        }
+        long sequence = cycleCountRepository.countByCompany_Id(companyId) + 1;
+        return String.format(Locale.ROOT, "CC-%s-%04d", LocalDate.now().format(DateTimeFormatter.BASIC_ISO_DATE), sequence);
+    }
+
     private boolean isOpenPurchaseOrder(PurchaseOrder order) {
         return order.getStatus() != PurchaseOrderStatus.RECEIVED && order.getStatus() != PurchaseOrderStatus.CANCELLED;
     }
@@ -860,11 +1143,15 @@ public class SupplyChainService {
         }
     }
 
-    private PurchaseOrder findMatchingPurchaseOrder(Set<String> detectedCodes,
+    private PurchaseOrder findMatchingPurchaseOrder(Long companyId,
+                                                    Set<String> detectedCodes,
                                                     String documentText,
                                                     List<PurchaseOrder> openOrders) {
         for (String code : detectedCodes) {
-            Optional<PurchaseOrder> exact = purchaseOrderRepository.findByOrderNumberIgnoreCase(code)
+            Optional<PurchaseOrder> exact = companyId == null
+                    ? purchaseOrderRepository.findByOrderNumberIgnoreCase(code)
+                    : purchaseOrderRepository.findByOrderNumberIgnoreCaseAndCompany_Id(code, companyId);
+            exact = exact
                     .filter(this::isOpenPurchaseOrder);
             if (exact.isPresent()) {
                 return exact.get();
@@ -922,9 +1209,12 @@ public class SupplyChainService {
                 .toList();
     }
 
-    private List<ReceivingPreviewResponse.ReceivingPreviewItem> detectPreviewItems(String documentText,
+    private List<ReceivingPreviewResponse.ReceivingPreviewItem> detectPreviewItems(Long companyId,
+                                                                                   String documentText,
                                                                                    Set<String> detectedCodes) {
-        List<Product> products = productRepository.findAll().stream()
+        List<Product> products = (companyId == null
+                ? productRepository.findAll()
+                : productRepository.findAllByCompany_Id(companyId)).stream()
                 .filter(product -> product.getSku() != null && !product.getSku().isBlank())
                 .sorted(Comparator.comparingInt((Product product) -> product.getSku().length()).reversed())
                 .toList();
@@ -953,7 +1243,10 @@ public class SupplyChainService {
         }
 
         for (String code : detectedCodes) {
-            productRepository.findBySkuIgnoreCase(code).ifPresent(product -> {
+            Optional<Product> matchedProduct = companyId == null
+                    ? productRepository.findBySkuIgnoreCase(code)
+                    : productRepository.findBySkuIgnoreCaseAndCompany_Id(code, companyId);
+            matchedProduct.ifPresent(product -> {
                 quantitiesByProduct.putIfAbsent(product.getId(), BigDecimal.ONE);
                 sourceByProduct.putIfAbsent(product.getId(), "BARCODE");
             });
@@ -1123,6 +1416,266 @@ public class SupplyChainService {
         return value == null ? "" : value;
     }
 
+    private Product requireProduct(Long companyId, Long productId) {
+        return companyId == null
+                ? productRepository.findById(productId).orElseThrow()
+                : productRepository.findByIdAndCompany_Id(productId, companyId).orElseThrow();
+    }
+
+    private Warehouse requireWarehouse(Long companyId, Long warehouseId) {
+        return companyId == null
+                ? warehouseRepository.findById(warehouseId).orElseThrow()
+                : warehouseRepository.findByIdAndCompany_Id(warehouseId, companyId).orElseThrow();
+    }
+
+    private PurchaseOrder requirePurchaseOrder(Long companyId, Long purchaseOrderId) {
+        return companyId == null
+                ? purchaseOrderRepository.findById(purchaseOrderId).orElseThrow()
+                : purchaseOrderRepository.findByIdAndCompany_Id(purchaseOrderId, companyId).orElseThrow();
+    }
+
+    private SalesOrder requireSalesOrder(Long companyId, Long salesOrderId) {
+        return companyId == null
+                ? salesOrderRepository.findById(salesOrderId).orElseThrow()
+                : salesOrderRepository.findByIdAndCompany_Id(salesOrderId, companyId).orElseThrow();
+    }
+
+    private ProductionOrder requireProductionOrder(Long companyId, Long productionOrderId) {
+        return companyId == null
+                ? productionOrderRepository.findById(productionOrderId).orElseThrow()
+                : productionOrderRepository.findByIdAndCompany_Id(productionOrderId, companyId).orElseThrow();
+    }
+
+    private ServiceRequest requireServiceRequest(Long companyId, Long serviceRequestId) {
+        return companyId == null
+                ? serviceRequestRepository.findById(serviceRequestId).orElseThrow()
+                : serviceRequestRepository.findByIdAndCompany_Id(serviceRequestId, companyId).orElseThrow();
+    }
+
+    private CycleCount requireCycleCount(Long companyId, Long cycleCountId) {
+        return companyId == null
+                ? cycleCountRepository.findById(cycleCountId).orElseThrow()
+                : cycleCountRepository.findByIdAndCompany_Id(cycleCountId, companyId).orElseThrow();
+    }
+
+    private List<PurchaseOrder> loadPurchaseOrders(Long companyId) {
+        return companyId == null
+                ? purchaseOrderRepository.findAll()
+                : purchaseOrderRepository.findAllByCompany_Id(companyId);
+    }
+
+    private List<Product> extractPurchaseOrderProducts(PurchaseOrder purchaseOrder) {
+        if (purchaseOrder == null || purchaseOrder.getLines() == null) {
+            return List.of();
+        }
+        return purchaseOrder.getLines().stream()
+                .map(PurchaseOrderLine::getProduct)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    private List<Product> extractSalesOrderProducts(SalesOrder salesOrder) {
+        if (salesOrder == null || salesOrder.getLines() == null) {
+            return List.of();
+        }
+        return salesOrder.getLines().stream()
+                .map(SalesOrderLine::getProduct)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+    }
+
+    private Company resolveCompany(Long companyId, List<Product> candidates) {
+        if (companyId == null) {
+            return candidates.stream()
+                    .map(Product::getCompany)
+                    .filter(java.util.Objects::nonNull)
+                    .findFirst()
+                    .orElse(null);
+        }
+        return candidates.stream()
+                .map(Product::getCompany)
+                .filter(company -> company != null && companyId.equals(company.getId()))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private Company resolveScopedCompany(Company preferredCompany, Company... candidates) {
+        Company resolved = preferredCompany;
+        for (Company candidate : candidates) {
+            if (candidate == null) {
+                continue;
+            }
+            if (resolved == null) {
+                resolved = candidate;
+                continue;
+            }
+            ensureSameCompany(resolved, candidate, "Supply Chain payload mixes companies");
+        }
+        return resolved;
+    }
+
+    private Company resolveScopedCompany(Company preferredCompany,
+                                         Company existingCompany,
+                                         List<Product> candidateProducts) {
+        Company resolved = resolveScopedCompany(preferredCompany, existingCompany);
+        for (Product product : candidateProducts) {
+            if (product != null) {
+                resolved = resolveScopedCompany(resolved, product.getCompany());
+            }
+        }
+        return resolved;
+    }
+
+    private void ensureUniqueProductSku(Product product) {
+        if (product == null) {
+            throw new IllegalArgumentException("Product is required");
+        }
+        String sku = safeText(product.getSku()).trim();
+        if (sku.isBlank()) {
+            throw new IllegalArgumentException("Product SKU is required");
+        }
+        product.setSku(sku);
+        Long companyId = product.getCompany() != null ? product.getCompany().getId() : null;
+        Optional<Product> existing = companyId == null
+                ? productRepository.findBySkuIgnoreCase(sku)
+                : productRepository.findBySkuIgnoreCaseAndCompany_Id(sku, companyId);
+        if (existing.isPresent() && !existing.get().getId().equals(product.getId())) {
+            throw new IllegalArgumentException("Product SKU already exists for this company");
+        }
+    }
+
+    private void ensureUniqueWarehouseCode(Warehouse warehouse) {
+        if (warehouse == null) {
+            throw new IllegalArgumentException("Warehouse is required");
+        }
+        String code = safeText(warehouse.getCode()).trim();
+        if (code.isBlank()) {
+            throw new IllegalArgumentException("Warehouse code is required");
+        }
+        warehouse.setCode(code);
+        Long companyId = warehouse.getCompany() != null ? warehouse.getCompany().getId() : null;
+        Optional<Warehouse> existing = companyId == null
+                ? warehouseRepository.findByCode(code)
+                : warehouseRepository.findByCodeAndCompany_Id(code, companyId);
+        if (existing.isPresent() && !existing.get().getId().equals(warehouse.getId())) {
+            throw new IllegalArgumentException("Warehouse code already exists for this company");
+        }
+    }
+
+    private void ensureUniquePurchaseOrderNumber(PurchaseOrder purchaseOrder) {
+        if (purchaseOrder == null) {
+            throw new IllegalArgumentException("Purchase order is required");
+        }
+        String orderNumber = safeText(purchaseOrder.getOrderNumber()).trim();
+        if (orderNumber.isBlank()) {
+            throw new IllegalArgumentException("Purchase order number is required");
+        }
+        purchaseOrder.setOrderNumber(orderNumber);
+        Long companyId = purchaseOrder.getCompany() != null ? purchaseOrder.getCompany().getId() : null;
+        Optional<PurchaseOrder> existing = companyId == null
+                ? purchaseOrderRepository.findByOrderNumberIgnoreCase(orderNumber)
+                : purchaseOrderRepository.findByOrderNumberIgnoreCaseAndCompany_Id(orderNumber, companyId);
+        if (existing.isPresent() && !existing.get().getId().equals(purchaseOrder.getId())) {
+            throw new IllegalArgumentException("Purchase order number already exists for this company");
+        }
+    }
+
+    private void ensureUniqueSalesOrderNumber(SalesOrder salesOrder) {
+        if (salesOrder == null) {
+            throw new IllegalArgumentException("Sales order is required");
+        }
+        String orderNumber = safeText(salesOrder.getOrderNumber()).trim();
+        if (orderNumber.isBlank()) {
+            throw new IllegalArgumentException("Sales order number is required");
+        }
+        salesOrder.setOrderNumber(orderNumber);
+        Long companyId = salesOrder.getCompany() != null ? salesOrder.getCompany().getId() : null;
+        Optional<SalesOrder> existing = companyId == null
+                ? salesOrderRepository.findByOrderNumberIgnoreCase(orderNumber)
+                : salesOrderRepository.findByOrderNumberIgnoreCaseAndCompany_Id(orderNumber, companyId);
+        if (existing.isPresent() && !existing.get().getId().equals(salesOrder.getId())) {
+            throw new IllegalArgumentException("Sales order number already exists for this company");
+        }
+    }
+
+    private void ensureUniqueProductionOrderNumber(ProductionOrder productionOrder) {
+        if (productionOrder == null) {
+            throw new IllegalArgumentException("Production order is required");
+        }
+        String orderNumber = safeText(productionOrder.getOrderNumber()).trim();
+        if (orderNumber.isBlank()) {
+            throw new IllegalArgumentException("Production order number is required");
+        }
+        productionOrder.setOrderNumber(orderNumber);
+        Long companyId = productionOrder.getCompany() != null ? productionOrder.getCompany().getId() : null;
+        Optional<ProductionOrder> existing = companyId == null
+                ? productionOrderRepository.findByOrderNumberIgnoreCase(orderNumber)
+                : productionOrderRepository.findByOrderNumberIgnoreCaseAndCompany_Id(orderNumber, companyId);
+        if (existing.isPresent() && !existing.get().getId().equals(productionOrder.getId())) {
+            throw new IllegalArgumentException("Production order number already exists for this company");
+        }
+    }
+
+    private void ensureCompanyOwned(Company actualCompany, Company expectedCompany, String entityLabel) {
+        if (expectedCompany == null) {
+            return;
+        }
+        if (!sameCompany(actualCompany, expectedCompany)) {
+            throw new IllegalArgumentException(entityLabel + " does not belong to the active company");
+        }
+    }
+
+    private void ensureCompanyMatches(Long companyId, Company company, String entityLabel) {
+        if (companyId == null || company == null || company.getId() == null) {
+            return;
+        }
+        if (!companyId.equals(company.getId())) {
+            throw new IllegalArgumentException(entityLabel + " does not belong to the active company");
+        }
+    }
+
+    private void ensureSameCompany(Company leftCompany, Company rightCompany, String message) {
+        if (leftCompany == null || rightCompany == null) {
+            return;
+        }
+        if (!sameCompany(leftCompany, rightCompany)) {
+            throw new IllegalArgumentException(message);
+        }
+    }
+
+    private boolean sameCompany(Company leftCompany, Company rightCompany) {
+        if (leftCompany == null || rightCompany == null) {
+            return leftCompany == rightCompany;
+        }
+        Long leftId = leftCompany.getId();
+        Long rightId = rightCompany.getId();
+        if (leftId != null || rightId != null) {
+            return leftId != null && leftId.equals(rightId);
+        }
+        return leftCompany == rightCompany;
+    }
+
+    private String warehouseProductKey(Product product) {
+        if (product == null) {
+            return "";
+        }
+        String base = product.getSku() != null && !product.getSku().isBlank()
+                ? product.getSku().trim()
+                : "PRD-" + product.getId();
+        if (product.getCompany() != null && product.getCompany().getId() != null) {
+            return product.getCompany().getId() + "::" + base;
+        }
+        return base;
+    }
+
+    private String stripWarehouseKey(String value) {
+        if (value == null) {
+            return null;
+        }
+        int separator = value.indexOf("::");
+        return separator >= 0 ? value.substring(separator + 2) : value;
+    }
+
     private static final class ReplenishmentNeed {
         private final int currentOnHand;
         private final int projectedMinimum;
@@ -1221,8 +1774,8 @@ public class SupplyChainService {
         }
     }
 
-    private ReplenishmentComputation computeReplenishmentPlans(AutoReplenishRequest request) {
-        List<Product> candidates = resolveProductsForReplenishment(request);
+    private ReplenishmentComputation computeReplenishmentPlans(Long companyId, AutoReplenishRequest request) {
+        List<Product> candidates = resolveProductsForReplenishment(companyId, request);
         if (candidates.isEmpty()) {
             return new ReplenishmentComputation(List.of(), Map.of(), 0);
         }
@@ -1270,6 +1823,10 @@ public class SupplyChainService {
         }
 
         return new ReplenishmentComputation(candidates, plansBySupplier, replenishedSkus);
+    }
+
+    private ReplenishmentComputation computeReplenishmentPlans(AutoReplenishRequest request) {
+        return computeReplenishmentPlans(null, request);
     }
 
     private static final class PurchasePlan {
@@ -1343,15 +1900,15 @@ public class SupplyChainService {
     private String determinePrimaryZone(SalesOrder order, Map<String, String> productZones) {
         Map<String, Integer> zoneScore = new HashMap<>();
         for (SalesOrderLine line : order.getLines()) {
-            if (line.getProduct() == null || line.getProduct().getSku() == null) {
+            if (line.getProduct() == null) {
                 continue;
             }
             int units = toUnits(line.getQuantity());
             if (units <= 0) {
                 continue;
             }
-            String sku = line.getProduct().getSku();
-            String zone = productZones.getOrDefault(sku, "UNASSIGNED");
+            String productKey = warehouseProductKey(line.getProduct());
+            String zone = productZones.getOrDefault(productKey, "UNASSIGNED");
             zoneScore.merge(zone, units, Integer::sum);
         }
         return zoneScore.entrySet().stream()
@@ -1370,7 +1927,7 @@ public class SupplyChainService {
             int lineCount = 0;
             int orderUnits = 0;
             for (SalesOrderLine line : order.getLines()) {
-                if (line.getProduct() == null || line.getProduct().getSku() == null) {
+                if (line.getProduct() == null) {
                     continue;
                 }
                 int units = toUnits(line.getQuantity());
@@ -1379,9 +1936,9 @@ public class SupplyChainService {
                 }
                 lineCount++;
                 orderUnits += units;
-                String sku = line.getProduct().getSku();
-                skuDemand.merge(sku, units, Integer::sum);
-                skuOrders.computeIfAbsent(sku, key -> new HashSet<>()).add(order.getOrderNumber());
+                String productKey = warehouseProductKey(line.getProduct());
+                skuDemand.merge(productKey, units, Integer::sum);
+                skuOrders.computeIfAbsent(productKey, key -> new HashSet<>()).add(order.getOrderNumber());
             }
             if (lineCount > 0) {
                 totalUnits += orderUnits;
@@ -1407,7 +1964,7 @@ public class SupplyChainService {
 
         PickRouteResponse route = warehouseIntelligenceService.planPickRoute(pickRequest);
         List<WavePickStopDTO> stops = route.getWaypoints().stream()
-                .map(waypoint -> new WavePickStopDTO(waypoint.getLocationId(), waypoint.getProductId(),
+                .map(waypoint -> new WavePickStopDTO(stripWarehouseKey(waypoint.getLocationId()), stripWarehouseKey(waypoint.getProductId()),
                         waypoint.getQuantity(), waypoint.getEtaSeconds(),
                         skuOrders.containsKey(waypoint.getProductId())
                                 ? skuOrders.get(waypoint.getProductId()).stream().sorted().toList()

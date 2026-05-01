@@ -2,15 +2,21 @@ package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.ProjectHierarchyNodeDTO;
 import com.chrono.chrono.dto.ProjectReportDTO;
+import com.chrono.chrono.entities.Project;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.repositories.ProjectRepository;
+import com.chrono.chrono.services.AccessControlService;
 import com.chrono.chrono.services.ReportService;
 import com.chrono.chrono.services.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.security.Principal;
+import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
@@ -25,8 +31,38 @@ public class ReportController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private AccessControlService accessControlService;
+
+    @Autowired
+    private ProjectRepository projectRepository;
+
+    @Value("${report.ics-feed.token:}")
+    private String icsFeedToken;
+
+    @Value("${report.ics-feed.public-without-token:false}")
+    private boolean publicIcsFeedWithoutToken;
+
     private boolean featureEnabled(User user) {
         return user != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled());
+    }
+
+    private void requireTimesheetAccess(String username, Principal principal) {
+        User requester = accessControlService.requireAuthenticatedUser(principal);
+        User target = accessControlService.requireTargetUser(username);
+        accessControlService.requireCanAccessUser(requester, target);
+    }
+
+    private boolean validFeedToken(String token) {
+        if (publicIcsFeedWithoutToken) {
+            return true;
+        }
+        if (icsFeedToken == null || icsFeedToken.isBlank() || token == null || token.isBlank()) {
+            return false;
+        }
+        byte[] expected = icsFeedToken.trim().getBytes(StandardCharsets.UTF_8);
+        byte[] actual = token.trim().getBytes(StandardCharsets.UTF_8);
+        return expected.length == actual.length && MessageDigest.isEqual(expected, actual);
     }
 
     @GetMapping("/analytics/projects")
@@ -52,8 +88,15 @@ public class ReportController {
     public ResponseEntity<ProjectReportDTO> projectReport(
             @PathVariable Long projectId,
             @RequestParam String startDate,
-            @RequestParam String endDate
+            @RequestParam String endDate,
+            Principal principal
     ) {
+        User user = accessControlService.requireAuthenticatedUser(principal);
+        Project project = projectRepository.findById(projectId).orElse(null);
+        if (project == null || project.getCustomer() == null) {
+            return ResponseEntity.notFound().build();
+        }
+        accessControlService.requireCompanyScope(user, project.getCustomer().getCompany());
         ProjectReportDTO dto = reportService.generateProjectReport(
                 projectId,
                 LocalDate.parse(startDate),
@@ -66,8 +109,10 @@ public class ReportController {
     public ResponseEntity<byte[]> downloadPdf(
             @RequestParam String username,
             @RequestParam String startDate,
-            @RequestParam String endDate
+            @RequestParam String endDate,
+            Principal principal
     ) {
+        requireTimesheetAccess(username, principal);
         try {
             byte[] pdfBytes = reportService.generatePdf(
                     username,
@@ -88,8 +133,10 @@ public class ReportController {
     public ResponseEntity<byte[]> downloadCsv(
             @RequestParam String username,
             @RequestParam String startDate,
-            @RequestParam String endDate
+            @RequestParam String endDate,
+            Principal principal
     ) {
+        requireTimesheetAccess(username, principal);
         byte[] csv = reportService.generateCsv(
                 username,
                 LocalDate.parse(startDate),
@@ -107,8 +154,10 @@ public class ReportController {
             @RequestParam String username,
             @RequestParam String startDate,
             @RequestParam String endDate,
-            @RequestParam(required = false) String zone
+            @RequestParam(required = false) String zone,
+            Principal principal
     ) {
+        requireTimesheetAccess(username, principal);
         ZoneId zoneId = zone != null ? ZoneId.of(zone) : ZoneId.systemDefault();
         byte[] ics = reportService.generateIcs(
                 username,
@@ -126,8 +175,13 @@ public class ReportController {
     @GetMapping("/timesheet/ics-feed/{username}")
     public ResponseEntity<byte[]> icsFeed(
             @PathVariable String username,
-            @RequestParam(required = false) String zone
+            @RequestParam(required = false) String zone,
+            @RequestParam(required = false) String token,
+            Principal principal
     ) {
+        if (!validFeedToken(token)) {
+            requireTimesheetAccess(username, principal);
+        }
         ZoneId zoneId = zone != null ? ZoneId.of(zone) : ZoneId.systemDefault();
         byte[] ics = reportService.generateIcsFeed(username, zoneId);
         HttpHeaders headers = new HttpHeaders();

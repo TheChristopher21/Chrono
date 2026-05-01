@@ -285,8 +285,8 @@ const ChronoTwoDashboard = () => {
             <header className="chrono-two__header">
                 <div className="chrono-two__title">
                     <span className="chrono-two__pill">Release Candidate</span>
-                    <h1>Chrono 2.0 – Intelligente Lagersteuerung</h1>
-                    <p className="muted">KI, AR und Automatisierung nahtlos in einer Plattform.</p>
+                    <h1>Chrono 2.0 – Regelbasierte Lagersteuerung</h1>
+                    <p className="muted">Heuristische Analysen, AR und Automatisierung nahtlos in einer Plattform.</p>
                 </div>
                 <div className="kpi-strip">
                     {humanReadableKpis.map(([key, value]) => {
@@ -348,7 +348,7 @@ const ChronoTwoDashboard = () => {
                 </article>
 
                 <article className="card">
-                    <h2>Stammdaten & KI-Datenanreicherung</h2>
+                    <h2>Stammdaten & regelbasierte Datenanreicherung</h2>
                     <form className="form-grid" onSubmit={submitProduct}>
                         <label>
                             Produktname
@@ -721,13 +721,13 @@ const ChronoTwoDashboard = () => {
                 </article>
 
                 <article className="card">
-                    <h3>NLP Dashboard</h3>
+                    <h3>Analyse-Dashboard</h3>
                     <form className="form-inline" onSubmit={submitNlp}>
                         <input
                             type="text"
                             value={formState.nlp}
                             onChange={(e) => setFormState((prev) => ({ ...prev, nlp: e.target.value }))}
-                            placeholder="Frag die Chrono-KI …"
+                            placeholder="Frage die Lageranalyse …"
                         />
                         <button className="btn" type="submit">Analysieren</button>
                     </form>

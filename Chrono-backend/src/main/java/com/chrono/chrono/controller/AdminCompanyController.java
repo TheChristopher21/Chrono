@@ -23,7 +23,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/admin/company")
-@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN') or hasRole('PAYROLL_ADMIN')")
 public class AdminCompanyController {
 
     @Autowired

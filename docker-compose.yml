@@ -88,6 +88,14 @@ services:
     networks: [chrono]
     environment:
       SERVER_PORT: "8081" # <-- NEUE, ENTSCHEIDENDE ZEILE
+      SPRING_PROFILES_ACTIVE: "live"
+      APP_PRODUCTION: "true"
+      APP_DEMO_LOGIN_ENABLED: "false"
+      APP_INITIALIZE_ADMIN: "false"
+      JWT_SECRET: "${JWT_SECRET}"
+      NFC_AGENT_TOKEN: "${NFC_AGENT_TOKEN}"
+      REPORT_ICS_FEED_TOKEN: "${REPORT_ICS_FEED_TOKEN}"
+      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
       SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/chrono_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
       SPRING_DATASOURCE_USERNAME: "root"
       # SPRING_DATASOURCE_PASSWORD is now loaded from the .env file

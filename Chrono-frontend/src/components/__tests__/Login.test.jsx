@@ -28,7 +28,14 @@ afterEach(() => {
 
 describe('Login', () => {
     it('submits credentials and navigates after successful login', async () => {
-        const loginMock = vi.fn().mockResolvedValue({ success: true, user: {} });
+        const loginMock = vi.fn().mockResolvedValue({
+            success: true,
+            user: {
+                username: 'alice',
+                roles: ['ROLE_USER'],
+                pagePermissions: { dashboard: 'VIEW' },
+            },
+        });
         render(
             <MemoryRouter>
                 <LanguageProvider>

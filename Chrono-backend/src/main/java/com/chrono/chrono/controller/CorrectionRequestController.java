@@ -6,11 +6,13 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.RoleRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.CorrectionRequestService;
+import com.chrono.chrono.services.UserPermissionService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -37,6 +39,9 @@ public class CorrectionRequestController {
 
     @Autowired
     private CorrectionRequestService correctionRequestService;
+
+    @Autowired
+    private UserPermissionService userPermissionService;
 
     @PostMapping("/create")
     @PreAuthorize("isAuthenticated()")
@@ -111,6 +116,12 @@ public class CorrectionRequestController {
         try {
             User currentUser = userRepo.findByUsername(principalName)
                     .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
+            userPermissionService.assertPageAccess(
+                    currentUser,
+                    UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                    UserPermissionService.ACCESS_VIEW,
+                    "Keine Berechtigung für das Admin-Dashboard."
+            );
 
             List<AdminCorrectionRequestDTO> requests;
 
@@ -129,7 +140,7 @@ public class CorrectionRequestController {
 
             return ResponseEntity.ok(requests);
 
-        } catch (SecurityException ex) {
+        } catch (AccessDeniedException | SecurityException ex) {
             logger.warn("Sicherheitsverletzung beim Abrufen aller Korrekturanträge durch {}: {}", principalName, ex.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Collections.emptyList());
         } catch (Exception e) {
@@ -187,6 +198,14 @@ public class CorrectionRequestController {
             Principal principal
     ) {
         try {
+            User currentUser = userRepo.findByUsername(principal.getName())
+                    .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
+            userPermissionService.assertPageAccess(
+                    currentUser,
+                    UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                    UserPermissionService.ACCESS_MANAGE,
+                    "Keine Berechtigung für Änderungen im Admin-Dashboard."
+            );
             CorrectionRequest approvedRequest = correctionRequestService.approveRequest(id, comment, principal.getName());
             return ResponseEntity.ok(approvedRequest);
         } catch (SecurityException e) {
@@ -207,7 +226,15 @@ public class CorrectionRequestController {
             Principal principal
     ) {
          try {
-            CorrectionRequest deniedRequest = correctionRequestService.denyRequest(id, comment);
+            User currentUser = userRepo.findByUsername(principal.getName())
+                    .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
+            userPermissionService.assertPageAccess(
+                    currentUser,
+                    UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                    UserPermissionService.ACCESS_MANAGE,
+                    "Keine Berechtigung für Änderungen im Admin-Dashboard."
+            );
+            CorrectionRequest deniedRequest = correctionRequestService.denyRequest(id, comment, principal.getName());
             return ResponseEntity.ok(deniedRequest);
         } catch (SecurityException e) {
             logger.warn("Sicherheitsverletzung beim Ablehnen des Korrekturantrags ID {} durch {}: {}", id, principal.getName(), e.getMessage());

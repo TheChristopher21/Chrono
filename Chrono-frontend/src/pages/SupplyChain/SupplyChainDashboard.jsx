@@ -1,13 +1,13 @@
 ﻿import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import Navbar from "../../components/Navbar.jsx";
+import { useAuth } from "../../context/AuthContext.jsx";
 import api from "../../utils/api.js";
 import { LanguageContext } from "../../context/LanguageContext.jsx";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import "../../styles/SupplyChainDashboardScoped.css";
 import ProcessWorkspace from "./components/ProcessWorkspace.jsx";
 import CycleCountDrawerActions from "./components/CycleCountDrawerActions.jsx";
-import HelpLabel from "./components/HelpLabel.jsx";
-import HelpTextList from "./components/HelpTextList.jsx";
+import { ACCESS_MANAGE, hasPageAccess } from "../../utils/pageAccess.js";
 import {
     buildExceptionRows,
     buildInventoryBucketRows,
@@ -36,6 +36,7 @@ const inventoryStatusProgressMap = {
 };
 
 const workspaceIconMap = {
+    overview: "HQ",
     inbound: "IN",
     outbound: "OUT",
     production: "PRD",
@@ -147,11 +148,22 @@ const getWorkspaceTone = (rows = []) => {
 };
 
 const SupplyChainDashboard = () => {
+    const { currentUser } = useAuth();
     const { language } = useContext(LanguageContext);
     const { notify } = useNotification();
     const workspaceSectionRef = React.useRef(null);
     const l = useCallback((de, en) => (language === "de" ? de : en), [language]);
     const locale = language === "de" ? "de" : "en";
+    const canManageSupplyChain = hasPageAccess(currentUser, "supplyChain", ACCESS_MANAGE);
+    const notifyViewOnlySupplyChain = useCallback(() => {
+        notify(
+            l(
+                "Nur Ansicht: Dieser Benutzer darf Supply Chain sehen, aber keine Änderungen vornehmen.",
+                "View only: this user can see Supply Chain, but cannot change anything."
+            ),
+            "warning"
+        );
+    }, [l, notify]);
     const helpContent = useMemo(() => ({
         otif: {
             title: "OTIF",
@@ -417,7 +429,8 @@ const SupplyChainDashboard = () => {
 
     const [loading, setLoading] = useState(true);
     const [role, setRole] = useState("warehouse");
-    const [activeWorkspace, setActiveWorkspace] = useState("inbound");
+    const [activeWorkspace, setActiveWorkspace] = useState("overview");
+    const [globalSearch, setGlobalSearch] = useState("");
     const [products, setProducts] = useState([]);
     const [warehouses, setWarehouses] = useState([]);
     const [stock, setStock] = useState([]);
@@ -525,6 +538,7 @@ const SupplyChainDashboard = () => {
             status,
             statusLabel: translateCode(status),
             partner: entry.countedBy ?? entry.requestedBy ?? "-",
+            owner: entry.countedBy ?? entry.requestedBy ?? l("Zählteam", "Count team"),
             requestedBy: entry.requestedBy ?? "-",
             countedBy: entry.countedBy ?? "-",
             approvedBy: entry.approvedBy ?? "-",
@@ -533,7 +547,7 @@ const SupplyChainDashboard = () => {
             approvedAt: entry.approvedAt ?? "-",
             approvalProgress: status === "PLANNED" ? 18 : status === "APPROVAL_REQUIRED" ? 58 : 100,
         };
-    }, [translateCode]);
+    }, [l, translateCode]);
 
     const inventoryRows = useMemo(() => stock.map((entry) => {
         const product = products.find((item) => item.id === entry.productId);
@@ -552,9 +566,10 @@ const SupplyChainDashboard = () => {
             quantity: entry.quantity,
             lot: entry.lotNumber,
             partner: "-",
+            owner: l("Bestandsteam", "Inventory team"),
             approvalProgress: inventoryStatus.approvalProgress,
         };
-    }), [deriveInventoryStatus, products, stock, translateCode, translateContext, warehouses]);
+    }), [deriveInventoryStatus, l, products, stock, translateCode, translateContext, warehouses]);
 
     const summarizeInboundProducts = useCallback((lines = []) => {
         if (!Array.isArray(lines) || lines.length === 0) {
@@ -592,6 +607,7 @@ const SupplyChainDashboard = () => {
         statusLabel: translateCode(entry.status),
         eta: entry.eta ?? "-",
         partner: entry.supplier,
+        owner: entry.status === "COMPLETED" ? l("System", "System") : l("Lager Team", "Warehouse team"),
         approvalProgress: entry.status === "COMPLETED" ? 100 : 64,
         }));
 
@@ -615,6 +631,7 @@ const SupplyChainDashboard = () => {
                     statusLabel: l("Gebucht", "Posted"),
                     eta: movement.movementDate ?? "-",
                     partner: "-",
+                    owner: l("Lager Team", "Warehouse team"),
                     approvalProgress: 100,
                 };
             });
@@ -633,8 +650,9 @@ const SupplyChainDashboard = () => {
         statusLabel: translateCode(entry.status),
         dueDate: entry.dueDate ?? "-",
         partner: entry.customerName,
+        owner: l("Kommissionierung", "Picking team"),
         approvalProgress: entry.status === "COMPLETED" ? 100 : 58,
-    })), [outboundOrders, translateCode]);
+    })), [l, outboundOrders, translateCode]);
 
     const productionRows = useMemo(() => productionOrders.map((entry) => ({
         id: entry.id,
@@ -647,6 +665,7 @@ const SupplyChainDashboard = () => {
         warehouse: translateContext("Plant-1"),
         site: translateContext("Main"),
         partner: translateActor(entry.owner ?? "-"),
+        owner: translateActor(entry.owner ?? "production.planner"),
         approvalProgress: entry.status === "IN_PROGRESS" ? 47 : entry.status === "COMPLETED" ? 100 : 25,
     })), [productionOrders, translateActor, translateCode, translateContext]);
 
@@ -689,8 +708,9 @@ const SupplyChainDashboard = () => {
         warehouse: translateContext("Network"),
         site: translateContext("Global"),
         partner: "-",
+        owner: l("Stammdaten", "Master data"),
         approvalProgress: row.quantity > 0 ? 65 : 100,
-    })), [stock, translateCode, translateContext]);
+    })), [l, stock, translateCode, translateContext]);
 
     const governanceRows = useMemo(() => auditLogs.map((entry) => {
         const severity = String(entry?.severity ?? "INFO").toUpperCase();
@@ -707,21 +727,140 @@ const SupplyChainDashboard = () => {
             warehouse: "-",
             site: "-",
             partner: "-",
+            owner: entry.username ?? l("Audit", "Audit"),
             approvalProgress: severity === "CRITICAL" ? 28 : severity === "WARNING" ? 72 : 100,
         };
-    }), [auditLogs, translateAction, translateCode, translateEntity]);
+    }), [auditLogs, l, translateAction, translateCode, translateEntity]);
 
-    const kpi = useMemo(() => ({
-        otif: outboundRows.length ? Math.round((outboundRows.filter((row) => row.status === "COMPLETED").length / outboundRows.length) * 100) : 0,
-        pickPerformance: `${Math.max(80, 100 - exceptionRows.length)}%`,
-        inventoryAccuracy: cycleCountRows.length
-            ? `${Math.max(0, Math.round(((cycleCountRows.length - cycleCountRows.filter((row) => row.status === "APPROVAL_REQUIRED").length) / cycleCountRows.length) * 100))}%`
-            : l("Keine Zählung", "No counts"),
-        exceptionBacklog: exceptionRows.length,
-    }), [cycleCountRows, exceptionRows.length, l, outboundRows]);
+    const overviewRowsRaw = useMemo(() => {
+        const tasks = [];
+        const pushTask = (task) => tasks.push(task);
+
+        exceptionRows.forEach((row) => pushTask({
+            id: `overview-exception-${row.id}`,
+            type: l("Ausnahme", "Exception"),
+            ref: row.ref,
+            area: l("Ausnahmen", "Exceptions"),
+            status: row.status,
+            statusLabel: row.statusLabel,
+            priority: row.status === "BLOCKED" ? l("Kritisch", "Critical") : l("Hoch", "High"),
+            owner: row.owner,
+            dueDate: l("Sofort", "Now"),
+            warehouse: row.warehouse,
+            site: row.site,
+            partner: row.partner,
+            approvalProgress: row.approvalProgress,
+            sortWeight: row.status === "BLOCKED" ? 100 : 82,
+        }));
+
+        inboundRows
+            .filter((row) => !doneStatuses.has(String(row.status)))
+            .forEach((row) => pushTask({
+                id: `overview-inbound-${row.id}`,
+                type: l("Wareneingang", "Inbound"),
+                ref: row.asn && row.asn !== "-" ? row.asn : row.order,
+                area: l("Wareneingang", "Inbound"),
+                status: row.status,
+                statusLabel: row.statusLabel,
+                priority: attentionStatuses.has(String(row.status)) ? l("Hoch", "High") : l("Normal", "Normal"),
+                owner: row.owner,
+                dueDate: row.eta,
+                warehouse: row.warehouse,
+                site: row.site,
+                partner: row.partner,
+                approvalProgress: row.approvalProgress,
+                sortWeight: attentionStatuses.has(String(row.status)) ? 74 : 58,
+            }));
+
+        outboundRows
+            .filter((row) => !doneStatuses.has(String(row.status)))
+            .forEach((row) => pushTask({
+                id: `overview-outbound-${row.id}`,
+                type: l("Pickauftrag", "Pick order"),
+                ref: row.order,
+                area: l("Warenausgang", "Outbound"),
+                status: row.status,
+                statusLabel: row.statusLabel,
+                priority: row.priority ?? l("Normal", "Normal"),
+                owner: row.owner,
+                dueDate: row.dueDate,
+                warehouse: row.warehouse,
+                site: row.site,
+                partner: row.partner,
+                approvalProgress: row.approvalProgress,
+                sortWeight: attentionStatuses.has(String(row.status)) ? 70 : 52,
+            }));
+
+        cycleCountRows
+            .filter((row) => !doneStatuses.has(String(row.status)))
+            .forEach((row) => pushTask({
+                id: `overview-cycle-${row.id}`,
+                type: l("Zählung", "Count"),
+                ref: row.plan,
+                area: l("Inventur & Zählung", "Inventory counts"),
+                status: row.status,
+                statusLabel: row.statusLabel,
+                priority: row.status === "APPROVAL_REQUIRED" ? l("Hoch", "High") : l("Normal", "Normal"),
+                owner: row.owner,
+                dueDate: row.countedAt && row.countedAt !== "-" ? row.countedAt : row.createdAt,
+                warehouse: row.warehouse,
+                site: row.site,
+                partner: row.partner,
+                approvalProgress: row.approvalProgress,
+                sortWeight: row.status === "APPROVAL_REQUIRED" ? 76 : 44,
+            }));
+
+        inventoryRows
+            .filter((row) => ["BLOCKED", "IN_QC", "DAMAGED"].includes(String(row.status)) || Number(row.quantity ?? 0) <= 0)
+            .forEach((row) => pushTask({
+                id: `overview-inventory-${row.id}`,
+                type: l("Bestand", "Stock"),
+                ref: row.sku,
+                area: l("Bestand", "Inventory"),
+                status: row.status,
+                statusLabel: row.statusLabel,
+                priority: ["BLOCKED", "DAMAGED"].includes(String(row.status)) ? l("Hoch", "High") : l("Normal", "Normal"),
+                owner: row.owner,
+                dueDate: l("Heute", "Today"),
+                warehouse: row.warehouse,
+                site: row.site,
+                partner: row.product,
+                approvalProgress: row.approvalProgress,
+                sortWeight: ["BLOCKED", "DAMAGED"].includes(String(row.status)) ? 78 : 48,
+            }));
+
+        if (!tasks.length) {
+            pushTask({
+                id: "overview-next-setup",
+                type: l("Nächster Schritt", "Next step"),
+                ref: products.length && warehouses.length ? l("Ersten Vorgang starten", "Start first workflow") : l("Setup abschließen", "Finish setup"),
+                area: products.length && warehouses.length ? l("Wareneingang", "Inbound") : l("Stammdaten", "Master data"),
+                status: "OPEN",
+                statusLabel: l("Bereit", "Ready"),
+                priority: l("Normal", "Normal"),
+                owner: products.length && warehouses.length ? l("Lager Team", "Warehouse team") : l("Admin", "Admin"),
+                dueDate: l("Heute", "Today"),
+                warehouse: warehouses[0]?.name ?? l("Hauptlager", "Main warehouse"),
+                site: translateContext(warehouses[0]?.siteName ?? l("Alle Standorte", "All sites")),
+                partner: "-",
+                approvalProgress: 20,
+                sortWeight: 10,
+            });
+        }
+
+        return tasks
+            .sort((left, right) => right.sortWeight - left.sortWeight)
+            .map(({ sortWeight, ...task }) => task);
+    }, [cycleCountRows, exceptionRows, inboundRows, inventoryRows, l, outboundRows, products.length, translateContext, warehouses]);
+
+    const overviewRows = useMemo(() => {
+        const query = globalSearch.trim().toLowerCase();
+        if (!query) return overviewRowsRaw;
+        return overviewRowsRaw.filter((row) => JSON.stringify(row).toLowerCase().includes(query));
+    }, [globalSearch, overviewRowsRaw]);
 
     const roleDefinitions = useMemo(() => ([
-        { id: "warehouse", label: l("Lager", "Warehouse"), description: l("Fokus auf Wareneingang, Bestand und schnelle Buchungen.", "Focus on inbound, inventory and fast postings."), defaultWorkspace: "inbound" },
+        { id: "warehouse", label: l("Lager", "Warehouse"), description: l("Fokus auf offene Arbeit, Wareneingang und Bestand.", "Focus on open work, inbound and inventory."), defaultWorkspace: "overview" },
         { id: "planner", label: l("Planung", "Planner"), description: l("Plant Produktionsaufträge, Materialfluss und Termine.", "Plans production orders, material flow and due dates."), defaultWorkspace: "production" },
         { id: "quality", label: l("Qualität", "Quality"), description: l("Sieht Blocker, Abweichungen und Freigaben auf einen Blick.", "Sees blockers, deviations and approvals at a glance."), defaultWorkspace: "exceptions" },
         { id: "service", label: l("Service", "Service"), description: l("Steuert Reaktionszeiten (SLA) und Kundenfälle.", "Steers response times (SLA) and customer cases."), defaultWorkspace: "service" },
@@ -765,12 +904,14 @@ const SupplyChainDashboard = () => {
         massAssign: l("Verantwortung zuweisen", "Assign owner"),
         massPriority: l("Priorität setzen", "Set priority"),
         massClose: l("Abschließen", "Close"),
+        moreActions: l("Mehr", "More"),
         prev: l("Zurück", "Prev"),
         next: l("Weiter", "Next"),
         page: l("Seite", "Page"),
         rowAction: l("Aktion", "Action"),
         openRow: l("Öffnen", "Open"),
-        empty: l("Keine Datensätze gefunden", "No records found"),
+        empty: l("Keine offenen Vorgänge gefunden", "No open work items found"),
+        emptyHint: l("Es gibt aktuell keine Vorgänge für diese Filter. Filter zurücksetzen oder einen neuen Vorgang starten.", "There are no work items for these filters. Reset filters or start a new workflow."),
         drawerTitle: l("Details", "Details"),
         timelineTitle: l("Aktivitäts-Timeline", "Activity timeline"),
         approvalLabel: l("Freigabefortschritt", "Approval progress"),
@@ -836,6 +977,7 @@ const SupplyChainDashboard = () => {
             search: l("Suche", "Search"), warehouse: l("Lager", "Warehouse"), site: l("Werk", "Site"), status: l("Status", "Status"),
             partner: l("Kunde/Lieferant", "Customer/Supplier"), date: l("Datum", "Date"), sku: "SKU", batch: l("Charge", "Batch"),
             owner: l("Verantwortlich", "Owner"), priority: l("Priorität", "Priority"), reset: l("Reset", "Reset"),
+            more: l("Mehr Filter", "More filters"),
             groups: {
                 location: l("Ort & Zeit", "Location & time"),
                 status: l("Status & Verantwortung", "Status & ownership"),
@@ -851,29 +993,30 @@ const SupplyChainDashboard = () => {
         },
         filterPanel: {
             kicker: l("Filter", "Filters"),
-            title: l("Arbeitsliste schnell eingrenzen", "Narrow the work list quickly"),
-            hint: l("Erst breit suchen, dann nach Ort, Status oder Artikel eingrenzen.", "Start broad, then narrow by location, status, or item."),
+            title: l("Filter", "Filters"),
+            hint: l("Kompakt suchen, erweiterte Filter nur bei Bedarf öffnen.", "Search compactly and open advanced filters only when needed."),
             activeLabel: l("Filter aktiv", "filters active"),
         },
         tablePanel: {
             kicker: l("Arbeitsliste", "Work list"),
-            title: l("Hier wird gearbeitet", "This is where work happens"),
-            hint: l("Spalten anpassen, Fälle auswählen und direkt öffnen.", "Adjust columns, select cases, and open them directly."),
+            title: l("Offene Vorgänge", "Open work items"),
+            hint: l("Priorisierte Liste mit Status, Verantwortung und nächstem Schritt.", "Prioritized list with status, owner, and next step."),
             resultsLabel: l("Treffer", "results"),
             selectedLabel: l("ausgewählt", "selected"),
         },
     };
 
     const workspaceDefinitions = [
-        { id: "inbound", title: l("Wareneingänge", "Inbound"), subtitle: l("ASN, Tor, QS, Einlagerung", "ASN, dock, QC, putaway"), rows: inboundRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "asn", label: "ASN" }, { key: "dock", label: l("Tor", "Dock") }, { key: "supplier", label: l("Lieferant", "Supplier") }, { key: "product", label: l("Produkt", "Product") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "outbound", title: l("Warenausgänge", "Outbound"), subtitle: l("Welle, Kommissionierung, Packen, Versand", "Wave, pick, pack, ship"), rows: outboundRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "customer", label: l("Kunde", "Customer") }, { key: "priority", label: l("Priorität", "Priority") }, { key: "dueDate", label: l("Datum", "Date") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "production", title: l("Produktionsaufträge", "Production orders"), subtitle: l("Planung bis Abschluss", "Planning to completion"), rows: productionRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "product", label: l("Produkt", "Product") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "priority", label: l("Priorität", "Priority") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "service", title: l("Serviceeinsätze", "Service cases"), subtitle: l("SLA- und Eskalationsfokus", "SLA and escalation focused"), rows: serviceRows, columns: [{ key: "case", label: l("Fall", "Case") }, { key: "customer", label: l("Kunde", "Customer") }, { key: "owner", label: l("Verantwortlich", "Owner") }, { key: "sla", label: "SLA" }, { key: "status", label: l("Status", "Status") }] },
-        { id: "inventory", title: l("Mehrstufiges Lager", "Multi-level warehouse"), subtitle: l("Standort/Lager/Zone/Gang/Regal/Fach", "Site/warehouse/zone/aisle/rack/bin"), rows: inventoryRows, columns: [{ key: "sku", label: "SKU" }, { key: "product", label: l("Produkt", "Product") }, { key: "quantity", label: l("Bestand", "Stock") }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "zone", label: l("Zone", "Zone") }, { key: "bin", label: l("Fach", "Bin") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "buckets", title: l("Bestandsarten", "Inventory buckets"), subtitle: l("Verfügbar, reserviert, gesperrt, Transit, QC", "Available, reserved, blocked, transit, QC"), rows: bucketRows, columns: [{ key: "bucket", label: l("Art", "Type") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "exceptions", title: l("Ausnahmezentrum", "Exception center"), subtitle: l("Verspätung, QS-Blocker, SLA-Verletzung", "Delays, QC blockers, SLA breaches"), rows: exceptionRows, columns: [{ key: "type", label: l("Typ", "Type") }, { key: "severity", label: l("Schwere", "Severity") }, { key: "ref", label: l("Referenz", "Reference") }, { key: "owner", label: l("Verantwortlich", "Owner") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "cycle-count", title: l("Zykluszählung", "Cycle counting"), subtitle: l("Zählplan, Zählwert, Freigabe", "Plan, count result, approval"), rows: cycleCountRows, columns: [{ key: "plan", label: l("Plan", "Plan") }, { key: "sku", label: "SKU" }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "variance", label: l("Differenz", "Variance") }, { key: "status", label: l("Status", "Status") }] },
-        { id: "governance", title: l("Prüfung & Freigaben", "Audit & approvals"), subtitle: l("Reale Prüfhistorie und Nachvollziehbarkeit", "Real audit trail and traceability"), rows: governanceRows, columns: [{ key: "entity", label: l("Entität", "Entity") }, { key: "action", label: l("Aktion", "Action") }, { key: "changedBy", label: l("Benutzer", "User") }, { key: "reason", label: l("Grund", "Reason") }, { key: "status", label: l("Status", "Status") }] },
+        { id: "overview", title: l("Übersicht", "Overview"), subtitle: l("Heute, offene Arbeit und Blocker", "Today, open work, and blockers"), rows: overviewRows, columns: [{ key: "priority", label: l("Priorität", "Priority") }, { key: "type", label: l("Typ", "Type") }, { key: "ref", label: l("Referenz", "Reference") }, { key: "area", label: l("Bereich", "Area") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }, { key: "dueDate", label: l("Fälligkeit", "Due") }] },
+        { id: "inbound", title: l("Wareneingang", "Inbound"), subtitle: l("ASN, Ankunft, QS und Einlagerung", "ASN, arrival, QC, and putaway"), rows: inboundRows, columns: [{ key: "asn", label: "ASN" }, { key: "supplier", label: l("Lieferant", "Supplier") }, { key: "eta", label: "ETA" }, { key: "status", label: l("Status", "Status") }, { key: "product", label: l("Artikel", "Item") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
+        { id: "inventory", title: l("Bestand", "Inventory"), subtitle: l("Lagerbestand, Plätze, Status und Bestandsqualität", "Stock, locations, status, and quality"), rows: inventoryRows, columns: [{ key: "sku", label: "SKU" }, { key: "product", label: l("Artikel", "Item") }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "bin", label: l("Lagerplatz", "Bin") }, { key: "quantity", label: l("Bestand", "Stock") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
+        { id: "outbound", title: l("Warenausgang", "Outbound"), subtitle: l("Picklisten, Packen, Versand und Fälligkeit", "Pick lists, packing, shipping, and due dates"), rows: outboundRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "customer", label: l("Kunde", "Customer") }, { key: "priority", label: l("Priorität", "Priority") }, { key: "dueDate", label: l("Fällig am", "Due date") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
+        { id: "cycle-count", title: l("Zählungen", "Counts"), subtitle: l("Zykluszählungen, Differenzen und Freigabe", "Cycle counts, variances, and approval"), rows: cycleCountRows, columns: [{ key: "plan", label: l("Plan", "Plan") }, { key: "sku", label: "SKU" }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "variance", label: l("Differenz", "Variance") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
+        { id: "exceptions", title: l("Ausnahmen", "Exceptions"), subtitle: l("Blocker, QS-Fälle und Eskalationen", "Blockers, QC cases, and escalations"), rows: exceptionRows, columns: [{ key: "severity", label: l("Priorität", "Priority") }, { key: "type", label: l("Problem", "Problem") }, { key: "ref", label: l("Referenz", "Reference") }, { key: "owner", label: l("Verantwortlich", "Owner") }, { key: "status", label: l("Status", "Status") }] },
+        { id: "governance", title: l("Freigaben & Audit", "Approvals & audit"), subtitle: l("Prüfung, Historie und Nachvollziehbarkeit", "Review, history, and traceability"), rows: governanceRows, columns: [{ key: "entity", label: l("Entität", "Entity") }, { key: "action", label: l("Aktion", "Action") }, { key: "changedBy", label: l("Benutzer", "User") }, { key: "reason", label: l("Grund", "Reason") }, { key: "status", label: l("Status", "Status") }] },
+        { id: "buckets", title: l("Stammdaten", "Master data"), subtitle: l("Produkte, Lager, Zonen und Bestandsarten", "Products, warehouses, zones, and inventory buckets"), rows: bucketRows, columns: [{ key: "bucket", label: l("Bestandsart", "Bucket") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
+        { id: "production", title: l("Produktion", "Production"), subtitle: l("Produktionsaufträge und Materialfluss", "Production orders and material flow"), rows: productionRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "product", label: l("Produkt", "Product") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "priority", label: l("Priorität", "Priority") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
+        { id: "service", title: l("Service", "Service"), subtitle: l("Servicefälle und SLA-Eskalationen", "Service cases and SLA escalations"), rows: serviceRows, columns: [{ key: "case", label: l("Fall", "Case") }, { key: "customer", label: l("Kunde", "Customer") }, { key: "owner", label: l("Verantwortlich", "Owner") }, { key: "sla", label: "SLA" }, { key: "status", label: l("Status", "Status") }] },
     ];
 
     const workspaceHelpConfig = useMemo(() => ({
@@ -982,39 +1125,9 @@ const SupplyChainDashboard = () => {
 
     const activeDefinition = workspaceCards.find((item) => item.id === activeWorkspace) ?? workspaceCards[0];
     const activeRole = roleDefinitions.find((item) => item.id === role) ?? roleDefinitions[0];
-    const quickEntryEnabled = ["inbound", "inventory", "cycle-count"].includes(activeDefinition.id);
-    const receivingAssistantEnabled = activeDefinition.id === "inbound";
+    const quickEntryEnabled = canManageSupplyChain && ["inbound", "inventory", "cycle-count"].includes(activeDefinition.id);
+    const receivingAssistantEnabled = canManageSupplyChain && activeDefinition.id === "inbound";
     const totalAttention = useMemo(() => workspaceCards.reduce((sum, workspace) => sum + workspace.attention, 0), [workspaceCards]);
-    const criticalWorkspaceCount = useMemo(() => workspaceCards.filter((workspace) => workspace.tone === "danger").length, [workspaceCards]);
-    const activeWorkspaceCount = useMemo(() => workspaceCards.filter((workspace) => workspace.total > 0).length, [workspaceCards]);
-
-    const heroSummaryCards = useMemo(() => ([
-        {
-            key: "role",
-            label: l("Arbeitsmodus", "Work mode"),
-            value: activeRole.label,
-            note: activeRole.description,
-            tone: "info",
-        },
-        {
-            key: "workspace",
-            label: l("Aktiver Bereich", "Active area"),
-            value: activeDefinition.title,
-            note: activeDefinition.total
-                ? l("Arbeitsliste, Filter und Aktionen liegen direkt darunter bereit.", "Work list, filters, and actions are directly available below.")
-                : l("Diese Liste ist aktuell leer und kann bei Bedarf gewechselt werden.", "This list is currently empty and can be switched if needed."),
-            tone: activeDefinition.attention ? activeDefinition.tone : (activeDefinition.total > 0 ? "info" : "neutral"),
-        },
-        {
-            key: "attention",
-            label: l("Offen jetzt", "Open now"),
-            value: totalAttention || l("Keine", "None"),
-            note: totalAttention
-                ? l(`${criticalWorkspaceCount} Bereiche brauchen gerade Aufmerksamkeit.`, `${criticalWorkspaceCount} areas need attention right now.`)
-                : l("Keine akuten Blocker im Moment.", "No urgent blockers right now."),
-            tone: totalAttention ? (criticalWorkspaceCount > 0 ? "danger" : "warn") : "safe",
-        },
-    ]), [activeDefinition.attention, activeDefinition.title, activeDefinition.total, activeDefinition.tone, activeRole.description, activeRole.label, criticalWorkspaceCount, l, totalAttention]);
 
     const priorityWorkspaces = useMemo(() => {
         const toneRank = { danger: 3, warn: 2, safe: 1, neutral: 0 };
@@ -1052,54 +1165,131 @@ const SupplyChainDashboard = () => {
         return priorityWorkspaces[0] ?? activeDefinition;
     }, [activeDefinition, activeRole.defaultWorkspace, priorityWorkspaces, workspaceCards]);
 
-    const heroHeadline = totalAttention
-        ? l(`${nextWorkspace.title} zuerst prüfen.`, `Review ${nextWorkspace.title} first.`)
-        : l(`${activeRole.label}: ${activeDefinition.title} ist jetzt dein Fokus.`, `${activeRole.label}: ${activeDefinition.title} is your current focus.`);
-    const heroIntro = totalAttention
-        ? l(
-            "Arbeite die offenen Themen direkt unten ab. Der Bereich-Wechsler bleibt sichtbar, damit du ohne Zurückscrollen weitermachen kannst.",
-            "Work through the open topics directly below. The area switcher stays visible so you can continue without scrolling back up."
-        )
-        : l(
-            "Arbeitsliste, Kennzahlen und Bereich-Wechsler liegen direkt darunter griffbereit.",
-            "Work list, metrics, and the area switcher are directly available below."
-        );
-
-    const workspaceGroupDefinitions = useMemo(() => ([
-        { id: "inbound-group", label: l("Inbound & Versand", "Inbound & outbound"), description: l("Anlieferung und Versand schnell öffnen.", "Open receiving and shipping quickly."), ids: ["inbound", "outbound"] },
-        { id: "inventory-group", label: l("Bestand", "Inventory"), description: l("Lager, Bestandsarten und Zählungen.", "Warehouse, buckets, and counting."), ids: ["inventory", "buckets", "cycle-count"] },
-        { id: "production-group", label: l("Produktion", "Production"), description: l("Planung und laufende Fertigung.", "Planning and live production."), ids: ["production"] },
-        { id: "quality-group", label: l("Qualität", "Quality"), description: l("Ausnahmen, Blocker und QS-Themen.", "Exceptions, blockers, and QC topics."), ids: ["exceptions"] },
-        { id: "service-group", label: l("Service", "Service"), description: l("Servicefälle und Eskalationen bündeln.", "Group service cases and escalations."), ids: ["service"] },
-        { id: "governance-group", label: l("Freigaben & Standards", "Approvals & standards"), description: l("Freigaben und reale Prüfhistorie.", "Approvals and real audit history."), ids: ["governance"] },
-    ]), [l]);
-
-    const workspaceGroups = useMemo(() => workspaceGroupDefinitions.map((group) => {
-        const items = group.ids
-            .map((id) => workspaceCards.find((workspace) => workspace.id === id))
-            .filter(Boolean)
-            .sort((left, right) => (right.attention - left.attention) || (right.total - left.total));
-
-        const attention = items.reduce((sum, workspace) => sum + workspace.attention, 0);
-        const total = items.reduce((sum, workspace) => sum + workspace.total, 0);
-        const tone = items.some((workspace) => workspace.tone === "danger")
-            ? "danger"
-            : items.some((workspace) => workspace.tone === "warn")
-                ? "warn"
-                : items.some((workspace) => workspace.total > 0)
-                    ? "safe"
-                    : "neutral";
-
-        return {
-            ...group,
-            items,
-            attention,
-            total,
-            tone,
+    const workspaceById = useMemo(() => new Map(workspaceCards.map((workspace) => [workspace.id, workspace])), [workspaceCards]);
+    const sidebarGroups = useMemo(() => {
+        const item = (id, labelOverride, descriptionOverride) => {
+            const workspace = workspaceById.get(id);
+            if (!workspace) return null;
+            return {
+                ...workspace,
+                navLabel: labelOverride ?? workspace.title,
+                navDescription: descriptionOverride ?? workspace.subtitle,
+            };
         };
-    }), [workspaceCards, workspaceGroupDefinitions]);
+
+        return [
+            {
+                id: "daily",
+                label: l("Tagesgeschäft", "Daily work"),
+                items: [
+                    item("overview", l("Übersicht", "Overview"), l("Heute, Aufgaben, Blocker", "Today, tasks, blockers")),
+                    item("inbound"),
+                    item("inventory"),
+                    item("outbound"),
+                    item("cycle-count"),
+                    item("exceptions"),
+                ].filter(Boolean),
+            },
+            {
+                id: "control",
+                label: l("Kontrolle", "Control"),
+                items: [
+                    item("governance"),
+                    item("production"),
+                    item("service"),
+                ].filter(Boolean),
+            },
+            {
+                id: "setup",
+                label: l("Einrichtung", "Setup"),
+                items: [
+                    item("buckets", l("Stammdaten", "Master data"), l("Produkte, Lager, Zonen, Regeln", "Products, warehouses, zones, rules")),
+                ].filter(Boolean),
+            },
+        ];
+    }, [l, workspaceById]);
+
+    const dashboardKpis = useMemo(() => {
+        const openInbound = inboundRows.filter((row) => !doneStatuses.has(String(row.status))).length;
+        const openOutbound = outboundRows.filter((row) => !doneStatuses.has(String(row.status))).length;
+        const stockIssues = inventoryRows.filter((row) => ["BLOCKED", "IN_QC", "DAMAGED"].includes(String(row.status)) || Number(row.quantity ?? 0) <= 0).length;
+        const dueCounts = cycleCountRows.filter((row) => !doneStatuses.has(String(row.status))).length;
+
+        return [
+            {
+                key: "tasks",
+                label: l("Offene Aufgaben", "Open tasks"),
+                value: overviewRowsRaw.length,
+                note: l("Priorisierte Vorgänge über alle Bereiche", "Prioritized work across all areas"),
+                tone: totalAttention ? "warn" : "safe",
+                target: "overview",
+            },
+            {
+                key: "inbound",
+                label: l("Wareneingänge", "Inbound"),
+                value: openInbound,
+                note: l("Erwartet, angekommen oder in Prüfung", "Expected, arrived, or in review"),
+                tone: openInbound ? "info" : "neutral",
+                target: "inbound",
+            },
+            {
+                key: "exceptions",
+                label: l("Ausnahmen", "Exceptions"),
+                value: exceptionRows.length,
+                note: l("Blocker und QS-Themen zuerst", "Blockers and QC topics first"),
+                tone: exceptionRows.length ? "danger" : "safe",
+                target: "exceptions",
+            },
+            {
+                key: "stock",
+                label: l("Bestand", "Inventory"),
+                value: stockIssues,
+                note: l("Gesperrt, QS oder ohne Bestand", "Blocked, QC, or no stock"),
+                tone: stockIssues ? "warn" : "safe",
+                target: "inventory",
+            },
+            {
+                key: "counts",
+                label: l("Zählungen fällig", "Counts due"),
+                value: dueCounts,
+                note: l("Inventur und Differenzen", "Inventory counts and variances"),
+                tone: dueCounts ? "info" : "neutral",
+                target: "cycle-count",
+            },
+        ];
+    }, [cycleCountRows, exceptionRows.length, inboundRows, inventoryRows, l, outboundRows, overviewRowsRaw.length, totalAttention]);
+
+    const todaySignals = useMemo(() => {
+        const openInbound = inboundRows.filter((row) => !doneStatuses.has(String(row.status))).length;
+        const openOutbound = outboundRows.filter((row) => !doneStatuses.has(String(row.status))).length;
+        const dueCounts = cycleCountRows.filter((row) => !doneStatuses.has(String(row.status))).length;
+        const stockIssues = inventoryRows.filter((row) => ["BLOCKED", "IN_QC", "DAMAGED"].includes(String(row.status)) || Number(row.quantity ?? 0) <= 0).length;
+
+        return [
+            l(`${openInbound} Wareneingänge erwartet oder offen`, `${openInbound} inbound items expected or open`),
+            l(`${openOutbound} Warenausgänge zu bearbeiten`, `${openOutbound} outbound items to process`),
+            l(`${exceptionRows.length} Ausnahmen offen`, `${exceptionRows.length} exceptions open`),
+            l(`${stockIssues} Bestände brauchen Prüfung`, `${stockIssues} stock positions need review`),
+            l(`${dueCounts} Zählungen fällig`, `${dueCounts} counts due`),
+        ];
+    }, [cycleCountRows, exceptionRows.length, inboundRows, inventoryRows, l, outboundRows]);
+
+    const topQueueRows = useMemo(() => overviewRowsRaw.slice(0, 4), [overviewRowsRaw]);
+    const companyLabel = currentUser?.companyName ?? currentUser?.company?.name ?? l("Chrono Demo AG", "Chrono Demo Ltd.");
+    const selectedWarehouse = warehouses[0];
+    const currentSiteLabel = selectedWarehouse?.siteName ? translateContext(selectedWarehouse.siteName) : l("Alle Standorte", "All sites");
+    const currentWarehouseLabel = selectedWarehouse?.name ?? l("Hauptlager", "Main warehouse");
+    const nextStepText = totalAttention
+        ? l(`${nextWorkspace.title}: ${nextWorkspace.attention || nextWorkspace.total} offene Punkte zuerst bearbeiten.`, `${nextWorkspace.title}: handle ${nextWorkspace.attention || nextWorkspace.total} open items first.`)
+        : products.length && warehouses.length
+            ? l("Setup ist bereit. Starte den ersten Wareneingang oder prüfe Lagerplätze.", "Setup is ready. Start the first inbound workflow or review bins.")
+            : l("Lege zuerst Produkte, Lager und Lagerplätze an.", "Create products, warehouses, and bins first.");
 
     const submitQuickEntry = async (payload) => {
+        if (!canManageSupplyChain) {
+            notifyViewOnlySupplyChain();
+            return false;
+        }
         const rawQuantity = Number(payload.quantityChange);
         if (!payload.productId || !payload.warehouseId || !Number.isFinite(rawQuantity) || rawQuantity === 0) {
             notify(l("Bitte Produkt, Lager und Menge ausfüllen.", "Please fill product, warehouse and quantity."), "warning");
@@ -1124,6 +1314,10 @@ const SupplyChainDashboard = () => {
     };
 
     const submitCreateCycleCountPlan = async (payload) => {
+        if (!canManageSupplyChain) {
+            notifyViewOnlySupplyChain();
+            return false;
+        }
         if (!payload.productId || !payload.warehouseId) {
             notify(l("Bitte Produkt und Lager für die Zählung wählen.", "Please choose a product and warehouse for the count."), "warning");
             return false;
@@ -1141,6 +1335,10 @@ const SupplyChainDashboard = () => {
     };
 
     const submitCycleCountResult = useCallback(async (cycleCountId, countedQuantity) => {
+        if (!canManageSupplyChain) {
+            notifyViewOnlySupplyChain();
+            return null;
+        }
         const quantity = Number(countedQuantity);
         if (!Number.isFinite(quantity) || quantity < 0) {
             notify(l("Bitte eine gültige gezählte Menge eingeben.", "Please enter a valid counted quantity."), "warning");
@@ -1158,9 +1356,13 @@ const SupplyChainDashboard = () => {
             notify(l("Zählergebnis konnte nicht gespeichert werden.", "Could not save count result."), "error");
             return null;
         }
-    }, [l, loadData, mapCycleCountToRow, notify]);
+    }, [canManageSupplyChain, l, loadData, mapCycleCountToRow, notify, notifyViewOnlySupplyChain]);
 
     const approveCycleCountResult = useCallback(async (cycleCountId) => {
+        if (!canManageSupplyChain) {
+            notifyViewOnlySupplyChain();
+            return null;
+        }
         try {
             const response = await api.post(`/api/supply-chain/cycle-counts/${cycleCountId}/approve`);
             await loadData();
@@ -1171,10 +1373,10 @@ const SupplyChainDashboard = () => {
             notify(l("Zykluszählung konnte nicht freigegeben werden.", "Could not approve cycle count."), "error");
             return null;
         }
-    }, [l, loadData, mapCycleCountToRow, notify]);
+    }, [canManageSupplyChain, l, loadData, mapCycleCountToRow, notify, notifyViewOnlySupplyChain]);
 
     const renderDrawerActions = useCallback(({ record, setRecord }) => {
-        if (activeDefinition?.id !== "cycle-count" || !record) {
+        if (!canManageSupplyChain || activeDefinition?.id !== "cycle-count" || !record) {
             return null;
         }
 
@@ -1206,9 +1408,13 @@ const SupplyChainDashboard = () => {
                 }}
             />
         );
-    }, [activeDefinition?.id, approveCycleCountResult, l, submitCycleCountResult]);
+    }, [activeDefinition?.id, approveCycleCountResult, canManageSupplyChain, l, submitCycleCountResult]);
 
     const submitCreateProduct = async (payload) => {
+        if (!canManageSupplyChain) {
+            notifyViewOnlySupplyChain();
+            return false;
+        }
         if (!payload.sku || !payload.name) {
             notify(l("Bitte SKU und Produktname ausfüllen.", "Please fill SKU and product name."), "warning");
             return false;
@@ -1231,6 +1437,10 @@ const SupplyChainDashboard = () => {
     };
 
     const submitCreateWarehouse = async (payload) => {
+        if (!canManageSupplyChain) {
+            notifyViewOnlySupplyChain();
+            return false;
+        }
         if (!payload.code || !payload.name) {
             notify(l("Bitte Lagercode und Lagername ausfüllen.", "Please fill warehouse code and name."), "warning");
             return false;
@@ -1278,6 +1488,10 @@ const SupplyChainDashboard = () => {
     };
 
     const submitReceivingApply = async (payload) => {
+        if (!canManageSupplyChain) {
+            notifyViewOnlySupplyChain();
+            throw new Error("supply_chain_view_only");
+        }
         try {
             const response = await api.post("/api/supply-chain/receiving/apply", payload);
             notify(l("Wareneingang erfolgreich übernommen.", "Goods receipt posted successfully."), "success");
@@ -1294,147 +1508,62 @@ const SupplyChainDashboard = () => {
         <div className="admin-page supply-chain-page">
             <Navbar />
             <main className="admin-content">
-                <header className="card sc-hero">
-                    <div className="sc-hero-main">
-                        <div className="sc-hero-copy">
-                            <div className="sc-hero-copy-head">
-                                <span className="sc-eyebrow">{l("Supply Chain Leitstand", "Supply Chain control tower")}</span>
-                                <h1>{heroHeadline}</h1>
-                                <p className="sc-hero-intro">{heroIntro}</p>
-                            </div>
-                            <div className="sc-hero-tags">
-                                <span className="sc-hero-tag">{l("Aktive Rolle", "Active role")}: {activeRole.label}</span>
-                                <span className="sc-hero-tag">{l("Geöffnete Liste", "Open list")}: {activeDefinition.title}</span>
-                                <span className="sc-hero-tag">{l("Bereiche mit Inhalt", "Areas with work")}: {activeWorkspaceCount}</span>
-                            </div>
-                            <div className="sc-hero-summary-grid">
-                                {heroSummaryCards.map((card) => (
-                                    <article key={card.key} className={`sc-signal-card sc-hero-summary-card tone-${card.tone}`}>
-                                        <span>{card.label}</span>
-                                        <strong>{card.value}</strong>
-                                        <p>{card.note}</p>
-                                    </article>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="sc-hero-side">
-                            <article className={`sc-priority-spotlight tone-${nextWorkspace.tone}`}>
-                                <span className="sc-panel-kicker">{l("Jetzt starten", "Start now")}</span>
-                                <h2>{nextWorkspace.title}</h2>
-                                <p>{nextWorkspace.actionText}</p>
-                                <div className="sc-priority-spotlight-meta">
-                                    <span className="sc-hero-tag">{nextWorkspace.total} {l("Einträge", "records")}</span>
-                                    <span className={`sc-status-chip ${nextWorkspace.tone === "danger" ? "danger" : nextWorkspace.tone === "warn" ? "info" : nextWorkspace.tone === "safe" ? "success" : "neutral"}`}>{nextWorkspace.toneLabel}</span>
-                                </div>
-                                <button type="button" className="sc-priority-open" onClick={() => activateWorkspace(nextWorkspace.id, { scroll: true })}>
-                                    {l("Arbeitsliste öffnen", "Open work list")}
-                                </button>
-                                <span className="sc-priority-spotlight-footnote">
-                                    {l("Der Bereich-Wechsler bleibt direkt darunter sichtbar.", "The area switcher stays visible directly below.")}
-                                </span>
-                            </article>
+                <header className="card sc-control-header">
+                    <div className="sc-control-header-title">
+                        <span className="sc-eyebrow">{l("Warehouse Control Center", "Warehouse Control Center")}</span>
+                        <h1>{l("Lager & Supply Chain", "Warehouse & Supply Chain")}</h1>
+                        <div className="sc-context-line">
+                            <span>{l("Firma", "Company")}: {companyLabel}</span>
+                            <span>{l("Standort", "Site")}: {currentSiteLabel}</span>
+                            <span>{l("Lager", "Warehouse")}: {currentWarehouseLabel}</span>
+                            <span>{l("Rolle", "Role")}: {activeRole.label}</span>
+                            <span>{l("Aktiver Bereich", "Active area")}: {activeDefinition.title}</span>
                         </div>
                     </div>
-
-                    <div className="kpi-strip">
-                        <article><span><HelpLabel label="OTIF" help={helpContent.otif} /></span><strong>{kpi.otif}%</strong></article>
-                        <article><span><HelpLabel label={l("Pick-Leistung", "Pick performance")} help={helpContent.pickPerformance} /></span><strong>{kpi.pickPerformance}</strong></article>
-                        <article><span><HelpLabel label={l("Inventurgenauigkeit", "Inventory accuracy")} help={helpContent.inventoryAccuracy} /></span><strong>{kpi.inventoryAccuracy}</strong></article>
-                        <article><span><HelpLabel label={l("Offene Eskalationen", "Open escalations")} help={helpContent.exceptionCenter} /></span><strong>{kpi.exceptionBacklog}</strong></article>
-                    </div>
-
-                    <div className="sc-priority-list">
-                        {priorityWorkspaces.map((workspace) => (
-                            <button key={workspace.id} type="button" className={`sc-priority-item tone-${workspace.tone} ${workspace.id === activeWorkspace ? "active" : ""}`} onClick={() => activateWorkspace(workspace.id)}>
-                                <span className="sc-priority-item-label">{workspace.actionLabel}</span>
-                                <strong>{workspace.title}</strong>
-                                <p>{workspace.actionText}</p>
+                    <div className="sc-header-tools">
+                        <label className="sc-global-search">
+                            <span>{l("Globale Suche", "Global search")}</span>
+                            <input
+                                type="search"
+                                value={globalSearch}
+                                onFocus={() => activateWorkspace("overview")}
+                                onChange={(event) => {
+                                    setGlobalSearch(event.target.value);
+                                    setActiveWorkspace("overview");
+                                }}
+                                placeholder={l("ASN, Artikel, Charge, Lagerplatz, Lieferant...", "ASN, item, lot, bin, supplier...")}
+                            />
+                        </label>
+                        <div className="sc-header-actions">
+                            <button type="button" className="sc-primary-action" onClick={() => activateWorkspace("inbound", { scroll: true })}>
+                                {l("+ Neue Buchung", "+ New entry")}
                             </button>
-                        ))}
+                            <button type="button" onClick={() => activateWorkspace("inbound", { scroll: true })}>
+                                {l("Scannen", "Scan")}
+                            </button>
+                            <button type="button" className="secondary" onClick={() => activateWorkspace("buckets", { scroll: true })}>
+                                {l("Mehr", "More")}
+                            </button>
+                        </div>
                     </div>
+                    {!canManageSupplyChain && (
+                        <p className="sc-readonly-banner">
+                            {l(
+                                "Nur Ansicht: Dieser Zugang darf Supply Chain sehen, aber keine Buchungen, Freigaben oder Stammdatenänderungen ausführen.",
+                                "View only: this account can see Supply Chain, but cannot post entries, approve counts, or change master data."
+                            )}
+                        </p>
+                    )}
                 </header>
 
-                <section className="card sc-command-center">
-                    <div className="sc-command-block">
-                        <div className="sc-command-block-head">
+                <section className="sc-enterprise-shell">
+                    <aside className="card sc-enterprise-nav" aria-label={l("Supply Chain Navigation", "Supply Chain navigation")}>
+                        <div className="sc-nav-context">
+                            <span className={`sc-health-dot ${totalAttention ? "warn" : "safe"}`} />
                             <div>
-                                <p className="sc-panel-kicker">{l("Arbeitsmodus", "Work mode")}</p>
-                                <h3>{l("Rolle wählen und den passenden Bereich setzen. Die Bereiche darunter springen direkt zur Liste.", "Choose a role to set the matching area. The area cards below jump directly to the list.")}</h3>
+                                <strong>{totalAttention ? l("Handlungsbedarf", "Attention needed") : l("Stabil", "Stable")}</strong>
+                                <span>{totalAttention ? `${totalAttention} ${l("offene Punkte", "open items")}` : l("Keine akuten Blocker", "No urgent blockers")}</span>
                             </div>
-                            <div className="sc-command-center-badges">
-                                <span className="sc-hero-tag">{l("Aktive Rolle", "Active role")}: {activeRole.label}</span>
-                                <span className="sc-hero-tag">{l("Offene Punkte", "Open points")}: {totalAttention}</span>
-                            </div>
-                        </div>
-                        <div className="sc-role-strip">
-                            {roleDefinitions.map((roleOption) => {
-                                const workspaceTitle = workspaceCards.find((item) => item.id === roleOption.defaultWorkspace)?.title ?? roleOption.defaultWorkspace;
-                                return (
-                                    <button key={roleOption.id} type="button" className={`sc-role-chip ${roleOption.id === role ? "active" : ""}`} onClick={() => activateRole(roleOption.id)}>
-                                        <div className="sc-role-chip-top">
-                                            <strong>{roleOption.label}</strong>
-                                            <span className={`sc-health-dot ${roleOption.id === role ? "safe" : "neutral"}`} />
-                                        </div>
-                                        <span className="sc-role-chip-text">{roleOption.description}</span>
-                                        <span className="sc-role-chip-link">{l("Start mit", "Starts in")} {workspaceTitle}</span>
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                    {workspaceGroups.map((group) => (
-                        <div key={group.id} className={`sc-command-block sc-group-block tone-${group.tone}`}>
-                            <div className="sc-command-block-head">
-                                <div>
-                                    <p className="sc-panel-kicker">{group.label}</p>
-                                    <h3>{group.description}</h3>
-                                </div>
-                                <div className="sc-command-center-badges">
-                                    <span className="sc-hero-tag">{group.items.length} {l("Bereiche", "areas")}</span>
-                                    <span className="sc-hero-tag">{group.total} {l("Einträge", "records")}</span>
-                                    <span className={`sc-status-chip ${group.tone === "danger" ? "danger" : group.tone === "warn" ? "info" : group.tone === "safe" ? "success" : "neutral"}`}>
-                                        {group.attention ? `${group.attention} ${l("offen", "open")}` : l("ruhig", "quiet")}
-                                    </span>
-                                    {group.items[0] ? (
-                                        <button type="button" className="sc-priority-open sc-group-open" onClick={() => activateWorkspace(group.items[0].id, { scroll: true })}>
-                                            {l("Direkt zu", "Jump to")} {group.items[0].title}
-                                        </button>
-                                    ) : null}
-                                </div>
-                            </div>
-                            <div className="sc-workspace-dense-grid sc-workspace-group-grid">
-                                {group.items.map((workspace) => (
-                                    <button
-                                        key={workspace.id}
-                                        type="button"
-                                        className={`sc-workspace-tile tone-${workspace.tone} ${workspace.id === activeWorkspace ? "active" : ""} ${workspace.attention > 0 ? "has-attention" : ""} ${workspace.total === 0 && workspace.attention === 0 ? "is-empty" : ""}`}
-                                        onClick={() => activateWorkspace(workspace.id, { scroll: true })}
-                                    >
-                                        <div className="sc-workspace-tile-top">
-                                            <span className="sc-workspace-icon">{workspace.icon}</span>
-                                            <span className={`sc-status-chip ${workspace.tone === "danger" ? "danger" : workspace.tone === "warn" ? "info" : workspace.tone === "safe" ? "success" : "neutral"}`}>{workspace.toneLabel}</span>
-                                        </div>
-                                        <strong>
-                                            <HelpLabel label={workspace.title} help={workspace.titleHelp} />
-                                        </strong>
-                                        <p>{workspace.subtitleParts?.length ? <HelpTextList items={workspace.subtitleParts} /> : workspace.subtitle}</p>
-                                        <div className="sc-workspace-tile-meta">
-                                            <span>{workspace.attention ? `${workspace.attention} ${l("offen", "open")}` : workspace.total ? l("bereit", "ready") : l("leer", "empty")}</span>
-                                            <span>{workspace.total} {l("Einträge", "records")}</span>
-                                        </div>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    ))}
-                </section>
-
-                <section className="card sc-controlbar">
-                    <div className="sc-controlbar-head">
-                        <div className="sc-controlbar-copy">
-                            <span className="sc-panel-kicker">{l("Bereich wechseln", "Switch area")}</span>
-                            <p>{l("Bleibt beim Arbeiten sichtbar, damit du nicht wieder nach oben musst.", "Stays visible while you work so you do not have to go back to the top.")}</p>
                         </div>
                         <div className="sc-role-switch">
                             <label htmlFor="sc-role">{l("Rolle", "Role")}</label>
@@ -1450,17 +1579,97 @@ const SupplyChainDashboard = () => {
                                 ))}
                             </select>
                         </div>
-                    </div>
-                    <div className="sc-workspace-nav">
-                        {workspaceDefinitionsWithHelp.map((workspace) => (
-                            <button key={workspace.id} type="button" className={`sc-pill ${workspace.id === activeWorkspace ? "active" : ""}`} onClick={() => activateWorkspace(workspace.id)}>
-                                {workspace.title}
-                            </button>
+                        {sidebarGroups.map((group) => (
+                            <nav key={group.id} className="sc-nav-group" aria-label={group.label}>
+                                <p>{group.label}</p>
+                                {group.items.map((workspace) => (
+                                    <button
+                                        key={workspace.id}
+                                        type="button"
+                                        className={`sc-nav-item tone-${workspace.tone} ${workspace.id === activeWorkspace ? "active" : ""}`}
+                                        onClick={() => activateWorkspace(workspace.id, { scroll: true })}
+                                    >
+                                        <span className="sc-nav-item-main">
+                                            <strong>{workspace.navLabel}</strong>
+                                            <span>{workspace.navDescription}</span>
+                                        </span>
+                                        <span className="sc-nav-count">
+                                            {workspace.attention || workspace.total || 0}
+                                        </span>
+                                    </button>
+                                ))}
+                            </nav>
                         ))}
-                    </div>
-                </section>
+                    </aside>
 
-                <div ref={workspaceSectionRef} className="sc-workspace-anchor">
+                    <div ref={workspaceSectionRef} className="sc-enterprise-main sc-workspace-anchor">
+                        {activeDefinition.id === "overview" && !loading && (
+                            <section className="sc-overview-board" aria-label={l("Supply Chain Übersicht", "Supply Chain overview")}>
+                                <div className="sc-overview-kpis">
+                                    {dashboardKpis.map((card) => (
+                                        <button
+                                            key={card.key}
+                                            type="button"
+                                            className={`sc-overview-card tone-${card.tone}`}
+                                            onClick={() => activateWorkspace(card.target, { scroll: true })}
+                                        >
+                                            <span>{card.label}</span>
+                                            <strong>{card.value}</strong>
+                                            <p>{card.note}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                                <div className="sc-overview-lower">
+                                    <section className="sc-next-step-panel">
+                                        <p className="sc-panel-kicker">{l("Nächster Schritt", "Next step")}</p>
+                                        <h2>{nextStepText}</h2>
+                                        <div className="sc-next-step-actions">
+                                            <button type="button" className="sc-primary-action" onClick={() => activateWorkspace(nextWorkspace.id, { scroll: true })}>
+                                                {l("Arbeitsliste öffnen", "Open work list")}
+                                            </button>
+                                            <button type="button" className="secondary" onClick={() => activateWorkspace("exceptions", { scroll: true })}>
+                                                {l("Blocker prüfen", "Review blockers")}
+                                            </button>
+                                        </div>
+                                    </section>
+                                    <section className="sc-today-panel">
+                                        <p className="sc-panel-kicker">{l("Heute im Lager", "Today in warehouse")}</p>
+                                        <ul>
+                                            {todaySignals.map((signal) => (
+                                                <li key={signal}>{signal}</li>
+                                            ))}
+                                        </ul>
+                                    </section>
+                                    <section className="sc-queue-panel">
+                                        <p className="sc-panel-kicker">{l("Top-Prioritäten", "Top priorities")}</p>
+                                        <div className="sc-mini-queue">
+                                            {topQueueRows.map((row) => (
+                                                <button key={row.id} type="button" onClick={() => activateWorkspace("overview", { scroll: true })}>
+                                                    <strong>{row.priority}</strong>
+                                                    <span>{row.type} · {row.ref}</span>
+                                                    <em>{row.owner}</em>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </section>
+                                </div>
+                            </section>
+                        )}
+
+                        {activeDefinition.id !== "overview" && !loading && (
+                            <section className="sc-process-context">
+                                <div>
+                                    <p className="sc-panel-kicker">{l("Arbeitsbereich", "Workspace")}</p>
+                                    <h2>{activeDefinition.title}</h2>
+                                    <p>{activeDefinition.subtitle}</p>
+                                </div>
+                                <div className="sc-process-context-stats">
+                                    <span>{activeDefinition.total} {l("Vorgänge", "records")}</span>
+                                    <span>{activeDefinition.attention ? `${activeDefinition.attention} ${l("offen", "open")}` : l("Keine offenen Blocker", "No open blockers")}</span>
+                                </div>
+                            </section>
+                        )}
+
                     {loading ? <p className="card">{l("Lädt…", "Loading…")}</p> : (
                         <ProcessWorkspace
                             key={activeDefinition.id}
@@ -1486,14 +1695,20 @@ const SupplyChainDashboard = () => {
                                 kind: activeDefinition.id === "cycle-count" ? "cycle-count" : "stock-entry",
                                 openLabel: activeDefinition.id === "cycle-count"
                                     ? l("+ Zählplan anlegen", "+ Create count plan")
-                                    : l("+ Bestand buchen", "+ Post stock entry"),
+                                    : activeDefinition.id === "inbound"
+                                        ? l("+ Wareneingang", "+ Inbound receipt")
+                                        : l("+ Bestand buchen", "+ Post stock entry"),
                                 closeLabel: l("Schließen", "Close"),
                                 title: activeDefinition.id === "cycle-count"
                                     ? l("Zählplan anlegen", "Create count plan")
-                                    : l("Schnellbuchung Bestand", "Quick stock entry"),
+                                    : activeDefinition.id === "inbound"
+                                        ? l("Wareneingang buchen", "Post inbound receipt")
+                                        : l("Schnellbuchung Bestand", "Quick stock entry"),
                                 subtitle: activeDefinition.id === "cycle-count"
                                     ? l("Produkt und Lager auswählen, damit ein echter Zählauftrag entsteht.", "Choose a product and warehouse to create a real count task.")
-                                    : l("Für kleine Teams: Produkt, Lager und Buchung direkt erfassen.", "For small teams: post product, warehouse, and movement directly."),
+                                    : activeDefinition.id === "inbound"
+                                        ? l("Produkt, Ziellager und Beleg erfassen, danach wird der Bestand gebucht.", "Enter product, target warehouse, and reference, then post stock.")
+                                        : l("Für kleine Teams: Produkt, Lager und Buchung direkt erfassen.", "For small teams: post product, warehouse, and movement directly."),
                                 submitLabel: activeDefinition.id === "cycle-count" ? l("Zählplan speichern", "Save count plan") : l("Buchen", "Post entry"),
                                 submittingLabel: activeDefinition.id === "cycle-count" ? l("Wird angelegt…", "Creating…") : l("Wird gebucht…", "Posting…"),
                                 products,
@@ -1569,7 +1784,7 @@ const SupplyChainDashboard = () => {
                             renderDrawerActions={renderDrawerActions}
                             receivingAssistant={{
                                 enabled: receivingAssistantEnabled,
-                                openLabel: l("+ Lieferschein scannen", "+ Scan delivery note"),
+                                openLabel: l("Scannen", "Scan"),
                                 closeLabel: l("Scan schließen", "Close scan"),
                                 warehouses,
                                 onPreview: submitReceivingPreview,
@@ -1703,7 +1918,8 @@ const SupplyChainDashboard = () => {
                         }}
                     />
                 )}
-                </div>
+                    </div>
+                </section>
             </main>
         </div>
     );

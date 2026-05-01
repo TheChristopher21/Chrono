@@ -34,7 +34,7 @@ const sortEntriesChronologically = (a, b) => {
 };
 
 /* ⇢ Main component --------------------------------------------------------- */
-function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal }) {
+function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal, canManage }) {
     /* ──────────────────────────────────── state */
     const [isExpanded, setIsExpanded] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -138,21 +138,36 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
 
     /* ──────────────────────────────────── render */
     const requiresScroll = sortedRows.length >= 10;
-    const hasPending = allCorrections.some(c => !c.approved && !c.denied);
+    const pendingCount = allCorrections.filter(c => !c.approved && !c.denied).length;
+    const hasPending = pendingCount > 0;
 
     return (
-        <section className={`correction-section content-section${(!isExpanded && hasPending) ? ' has-pending' : ''}`}>
+        <section className={`correction-section content-section${!isExpanded ? ' is-collapsed' : ''}${(!isExpanded && hasPending) ? ' has-pending' : ''}`}>
             {/* Header ----------------------------------------------------------------*/}
             <div
                 className="section-header"
                 role="button"
+                aria-expanded={isExpanded}
                 tabIndex={0}
                 onClick={() => setIsExpanded(!isExpanded)}
-                onKeyDown={(e) => e.key === "Enter" && setIsExpanded(!isExpanded)}
+                onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        setIsExpanded(!isExpanded);
+                    }
+                }}
             >
-                <h3 className="section-title">
-                    {t("adminDashboard.correctionRequestsTitle", "Korrekturanträge")}
-                </h3>
+                <div className="section-header-main">
+                    <h3 className="section-title">
+                        {t("adminDashboard.correctionRequestsTitle", "Korrekturanträge")}
+                    </h3>
+                    {hasPending && (
+                        <span className="pending-indicator" aria-label={`${pendingCount} ${t("adminDashboard.pendingRequestsOpen", "offen")}`}>
+                            <span className="pending-dot" aria-hidden="true" />
+                            {pendingCount} {t("adminDashboard.pendingRequestsOpen", "offen")}
+                        </span>
+                    )}
+                </div>
                 <span className="toggle-icon">{isExpanded ? "▲" : "▼"}</span>
             </div>
 
@@ -225,7 +240,7 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
                             </span>
                                                 </td>
                                                 <td className="actions-cell">
-                                                    {g.status === "PENDING" && (
+                                                    {canManage && g.status === "PENDING" && (
                                                         <>
                                                             <button className="button-confirm-small" title={t("approve", "Genehmigen")} onClick={() => openDecisionModal(ids, "approve")}>✓</button>
                                                             <button className="button-deny-small" title={t("deny", "Ablehnen")} onClick={() => openDecisionModal(ids, "deny")}>✕</button>
@@ -331,10 +346,12 @@ AdminCorrectionsList.propTypes = {
     onApprove: PropTypes.func.isRequired,
     onDeny: PropTypes.func.isRequired,
     openSignal: PropTypes.number,
+    canManage: PropTypes.bool,
 };
 
 AdminCorrectionsList.defaultProps = {
     openSignal: 0,
+    canManage: true,
 };
 
 export default AdminCorrectionsList;

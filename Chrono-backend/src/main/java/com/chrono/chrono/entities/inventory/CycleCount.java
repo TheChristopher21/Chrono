@@ -1,20 +1,29 @@
 package com.chrono.chrono.entities.inventory;
 
+import com.chrono.chrono.entities.Company;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "inv_cycle_counts")
+@Table(
+        name = "inv_cycle_counts",
+        uniqueConstraints = @UniqueConstraint(name = "uk_inv_cycle_counts_company_plan", columnNames = {"company_id", "plan_number"}),
+        indexes = @Index(name = "idx_inv_cycle_counts_company", columnList = "company_id")
+)
 public class CycleCount {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 40)
+    @Column(nullable = false, length = 40)
     private String planNumber;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "company_id")
+    private Company company;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "product_id", nullable = false)
@@ -67,6 +76,14 @@ public class CycleCount {
 
     public void setPlanNumber(String planNumber) {
         this.planNumber = planNumber;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 
     public Product getProduct() {

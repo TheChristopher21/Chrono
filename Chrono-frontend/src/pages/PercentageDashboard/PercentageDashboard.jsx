@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from '../../components/Navbar';
+import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -184,7 +185,9 @@ const PercentageDashboard = () => {
 
     async function doNfcCheck() {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`);
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`, {
+                headers: { 'X-NFC-Agent-Request': 'true' },
+            });
             if (!response.ok) return;
             const json = await response.json();
             if (json.status !== 'success' || !json.data) return;
@@ -378,6 +381,12 @@ const PercentageDashboard = () => {
                         </Link>
                     </div>
                 </header>
+
+                <AccessiblePagesPanel
+                    context="user"
+                    title="Deine freigegebenen Seiten"
+                    subtitle="Hier findest du alle zusätzlichen Bereiche, die für diesen Benutzer sichtbar sein sollen."
+                />
 
                 {punchMessage && <div className="punch-message">{punchMessage}</div>}
 

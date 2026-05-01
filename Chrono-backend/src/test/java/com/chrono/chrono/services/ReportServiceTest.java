@@ -146,4 +146,50 @@ class ReportServiceTest {
         assertEquals(60L, childNode.getBillableMinutes());
         assertEquals(0.75, childNode.getUtilization(), 0.0001);
     }
+
+    @Test
+    void getProjectAnalytics_assignsCustomerOnlyPunchesToSingleCustomerProject() {
+        Long companyId = 7L;
+
+        Company company = new Company();
+        company.setId(companyId);
+
+        Customer customer = new Customer();
+        customer.setId(11L);
+        customer.setCompany(company);
+
+        Project project = new Project();
+        project.setId(21L);
+        project.setName("Only Project");
+        project.setCustomer(customer);
+        project.setBudgetMinutes(600);
+
+        when(projectRepository.findByCustomerCompanyIdOrderByNameAsc(companyId))
+                .thenReturn(List.of(project));
+
+        User user = new User();
+        user.setId(42L);
+
+        LocalDateTime base = LocalDateTime.of(2024, 1, 8, 8, 0);
+        TimeTrackingEntry startEntry = new TimeTrackingEntry(user, customer, null, base,
+                TimeTrackingEntry.PunchType.START, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        TimeTrackingEntry endEntry = new TimeTrackingEntry(user, customer, null, base.plusMinutes(180),
+                TimeTrackingEntry.PunchType.ENDE, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        endEntry.setDurationMinutes(180);
+
+        when(timeTrackingEntryRepository.findByCompanyIdAndEntryTimestampBetween(eq(companyId), any(), any()))
+                .thenReturn(List.of(startEntry, endEntry));
+
+        List<ProjectHierarchyNodeDTO> analytics = reportService.getProjectAnalytics(
+                companyId,
+                LocalDate.of(2024, 1, 1),
+                LocalDate.of(2024, 1, 31)
+        );
+
+        assertEquals(1, analytics.size());
+        ProjectHierarchyNodeDTO node = analytics.get(0);
+        assertEquals(project.getId(), node.getId());
+        assertEquals(180L, node.getTotalMinutes());
+        assertEquals(0.30, node.getUtilization(), 0.0001);
+    }
 }

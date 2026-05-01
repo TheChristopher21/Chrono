@@ -44,7 +44,15 @@ describe('Navbar', () => {
         mockNavigate.mockReset();
         const logoutMock = vi.fn();
         renderNavbar(
-            { authToken: 'token', currentUser: { username: 'Alice', roles: [] }, logout: logoutMock },
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'Alice',
+                    roles: [],
+                    pagePermissions: { dashboard: 'VIEW', personalData: 'VIEW' },
+                },
+                logout: logoutMock,
+            },
             '/dashboard'
         );
 
@@ -63,25 +71,45 @@ describe('Navbar', () => {
         expect(mockNavigate).toHaveBeenCalledWith('/login', { replace: true });
     });
 
-    it('shows user navigation for admin on user dashboard', () => {
+    it('shows platform navigation for admin on user dashboard', async () => {
         mockNavigate.mockReset();
         renderNavbar(
-            { authToken: 'token', currentUser: { username: 'Admin', roles: ['ROLE_ADMIN'] }, logout: vi.fn() },
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'Admin',
+                    roles: ['ROLE_ADMIN'],
+                    pagePermissions: { adminDashboard: 'VIEW' },
+                },
+                logout: vi.fn(),
+            },
             '/dashboard'
         );
-        const dashboardLink = screen.getByRole('link', { name: /Mein Dashboard/i });
+        const platformTrigger = screen.getByRole('button', { name: /Plattform/i });
+        await userEvent.click(platformTrigger);
+
+        const dashboardLink = screen.getByRole('link', { name: /Zum Dashboard/i });
         expect(dashboardLink).toBeInTheDocument();
         expect(dashboardLink).toHaveAttribute('href', '/admin/dashboard');
-        expect(screen.queryByText(/Admin-Start/i)).toBeNull();
+        expect(screen.queryByText(/Mein Dashboard/i)).toBeNull();
     });
 
     it('shows admin navigation for admin on admin dashboard', () => {
         mockNavigate.mockReset();
         renderNavbar(
-            { authToken: 'token', currentUser: { username: 'Admin', roles: ['ROLE_ADMIN'], customerTrackingEnabled: true }, logout: vi.fn() },
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'Admin',
+                    roles: ['ROLE_ADMIN'],
+                    customerTrackingEnabled: true,
+                    pagePermissions: { adminDashboard: 'VIEW' },
+                },
+                logout: vi.fn(),
+            },
             '/admin/dashboard'
         );
-        expect(screen.getAllByRole('button', { name: /Admin/i })[0]).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /Plattform/i })).toBeInTheDocument();
         expect(screen.queryByText(/Mein Dashboard/i)).toBeNull();
     });
 

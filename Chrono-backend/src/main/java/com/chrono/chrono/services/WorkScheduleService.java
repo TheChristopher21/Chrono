@@ -116,6 +116,11 @@ public class WorkScheduleService {
     }
 
     public int getExpectedWeeklyMinutesForPercentageUser(User user, LocalDate dateInWeek, LocalDate evaluationEnd, List<VacationRequest> approvedVacationsInWeek) {
+        LocalDate startOfWeek = dateInWeek.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        return getExpectedWeeklyMinutesForPercentageUser(user, dateInWeek, startOfWeek, evaluationEnd, approvedVacationsInWeek);
+    }
+
+    public int getExpectedWeeklyMinutesForPercentageUser(User user, LocalDate dateInWeek, LocalDate evaluationStart, LocalDate evaluationEnd, List<VacationRequest> approvedVacationsInWeek) {
         if (!Boolean.TRUE.equals(user.getIsPercentage()) || user.getWorkPercentage() == null) {
             logger.warn("getExpectedWeeklyMinutesForPercentageUser called for non-percentage user {} or user with no workPercentage.", user.getUsername());
             return 0;
@@ -128,15 +133,19 @@ public class WorkScheduleService {
         int expectedMinutesInRange = 0;
         LocalDate startOfWeek = dateInWeek.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate endOfWeek = startOfWeek.plusDays(6);
+        LocalDate effectiveStart = evaluationStart != null && evaluationStart.isAfter(startOfWeek) ? evaluationStart : startOfWeek;
         LocalDate effectiveEnd = evaluationEnd.isBefore(endOfWeek) ? evaluationEnd : endOfWeek;
+        if (effectiveStart.isAfter(effectiveEnd)) {
+            return 0;
+        }
 
         List<SickLeave> sickLeavesForUser = sickLeaveRepository.findByUser(user);
-        List<UserHolidayOption> holidayOptionsInWeek = userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, startOfWeek, effectiveEnd);
+        List<UserHolidayOption> holidayOptionsInWeek = userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, effectiveStart, effectiveEnd);
 
         int modeledWorkDays = getModeledWorkDaysForPercentageUser(user, startOfWeek);
         int dailyValueMinutes = (int) Math.round((percentageWeeklyHours / modeledWorkDays) * 60);
 
-        for (LocalDate d = startOfWeek; !d.isAfter(effectiveEnd); d = d.plusDays(1)) {
+        for (LocalDate d = effectiveStart; !d.isAfter(effectiveEnd); d = d.plusDays(1)) {
             final LocalDate currentDate = d;
 
             if (!isModeledPercentageWorkDay(d, modeledWorkDays)) {
@@ -197,8 +206,8 @@ public class WorkScheduleService {
         }
 
         int netExpectedMinutes = Math.max(0, expectedMinutesInRange - absenceMinutesToDeduct);
-        logger.debug("User: {}, Week starting: {}, Effective end: {}, Base Expected in range ({}%): {}min, Total Absence Deduction (Vacation+Sick+Holiday): {}min, Net Expected: {}min",
-                user.getUsername(), startOfWeek, effectiveEnd, user.getWorkPercentage(), expectedMinutesInRange, absenceMinutesToDeduct, netExpectedMinutes);
+        logger.debug("User: {}, Week starting: {}, Effective range: {} to {}, Base Expected in range ({}%): {}min, Total Absence Deduction (Vacation+Sick+Holiday): {}min, Net Expected: {}min",
+                user.getUsername(), startOfWeek, effectiveStart, effectiveEnd, user.getWorkPercentage(), expectedMinutesInRange, absenceMinutesToDeduct, netExpectedMinutes);
         return netExpectedMinutes;
     }
 

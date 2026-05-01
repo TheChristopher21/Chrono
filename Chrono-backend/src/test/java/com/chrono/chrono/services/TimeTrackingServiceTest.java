@@ -1,8 +1,13 @@
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
+import com.chrono.chrono.dto.TimeTrackingEntryDTO;
+import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.DailyNote;
 import com.chrono.chrono.entities.Payslip;
+import com.chrono.chrono.entities.Project;
+import com.chrono.chrono.entities.Task;
 import com.chrono.chrono.entities.TimeTrackingEntry;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.VacationRequest;
@@ -34,6 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -335,6 +341,84 @@ class TimeTrackingServiceTest {
         ));
     }
 
+    @Test
+    void handlePunch_infersProjectFromTaskBeforeSaving() {
+        Company company = new Company();
+        company.setCustomerTrackingEnabled(true);
+        user.setCompany(company);
+
+        Customer customer = new Customer();
+        customer.setId(100L);
+
+        Project project = new Project();
+        project.setId(200L);
+        project.setCustomer(customer);
+
+        Task task = new Task();
+        task.setId(300L);
+        task.setProject(project);
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(taskRepository.findById(300L)).thenReturn(Optional.of(task));
+        when(customerRepository.findById(100L)).thenReturn(Optional.of(customer));
+        when(timeTrackingEntryRepository.findLastEntryByUserAndDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+        when(timeTrackingEntryRepository.save(any(TimeTrackingEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(Collections.emptyList());
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+
+        TimeTrackingEntryDTO dto = timeTrackingService.handlePunch(
+                "alice",
+                TimeTrackingEntry.PunchSource.MANUAL_PUNCH,
+                100L,
+                null,
+                300L,
+                null,
+                null
+        );
+
+        assertNotNull(dto);
+        assertEquals(project.getId(), dto.getProjectId());
+    }
+
+    @Test
+    void handlePunch_infersSingleCustomerProjectWhenNoProjectWasSelected() {
+        Company company = new Company();
+        company.setCustomerTrackingEnabled(true);
+        user.setCompany(company);
+
+        Customer customer = new Customer();
+        customer.setId(101L);
+
+        Project onlyProject = new Project();
+        onlyProject.setId(201L);
+        onlyProject.setCustomer(customer);
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(customerRepository.findById(101L)).thenReturn(Optional.of(customer));
+        when(projectRepository.findByCustomerIdOrderByNameAsc(101L)).thenReturn(List.of(onlyProject));
+        when(timeTrackingEntryRepository.findLastEntryByUserAndDate(eq(user), any(LocalDate.class))).thenReturn(Optional.empty());
+        when(timeTrackingEntryRepository.save(any(TimeTrackingEntry.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(Collections.emptyList());
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(Collections.emptyList());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+
+        TimeTrackingEntryDTO dto = timeTrackingService.handlePunch(
+                "alice",
+                TimeTrackingEntry.PunchSource.MANUAL_PUNCH,
+                101L,
+                null,
+                null,
+                null,
+                null
+        );
+
+        assertNotNull(dto);
+        assertEquals(onlyProject.getId(), dto.getProjectId());
+    }
+
 
     @Test
     void clearVacationOnPunchDay_ignoresNonChargeableDaysWithinVacationRange() throws Exception {
@@ -560,6 +644,43 @@ class TimeTrackingServiceTest {
 
         assertEquals(0, user.getTrackingBalanceInMinutes());
         verify(workScheduleService, times(0)).computeExpectedWorkMinutes(eq(user), eq(hourlyDay), any());
+    }
+
+    @Test
+    void rebuildUserBalance_usesHistoricalPercentageModelBeforeFutureStandardSwitch() {
+        user.setIsPercentage(false);
+        user.setIsHourly(false);
+        user.setDailyWorkHours(8.5);
+        user.setTrackingBalanceInMinutes(0);
+
+        LocalDate today = LocalDate.of(2026, 4, 27);
+        TimeTrackingEntry start = entry(user, today.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, today.atTime(17, 0), TimeTrackingEntry.PunchType.ENDE);
+
+        User historicalPercentageUser = new User();
+        historicalPercentageUser.setId(user.getId());
+        historicalPercentageUser.setUsername(user.getUsername());
+        historicalPercentageUser.setIsPercentage(true);
+        historicalPercentageUser.setIsHourly(false);
+        historicalPercentageUser.setWorkPercentage(60);
+        historicalPercentageUser.setExpectedWorkDays(5);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserOrderByEntryTimestampDesc(user)).thenReturn(List.of(end, start));
+        when(vacationRequestRepository.findByUserAndApprovedTrue(user)).thenReturn(Collections.emptyList());
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(employmentModelHistoryService.resolveUserSnapshotForDate(eq(user), eq(today))).thenReturn(historicalPercentageUser);
+        when(workScheduleService.getExpectedWeeklyMinutesForPercentageUser(eq(historicalPercentageUser), eq(today), eq(today), any())).thenReturn(306);
+        when(payslipRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(dailyNoteRepository.findByUserAndNoteDate(any(User.class), eq(today))).thenReturn(Optional.empty());
+
+        TimeTrackingService spyService = spy(timeTrackingService);
+        doReturn(today).when(spyService).getCurrentBerlinDate();
+
+        spyService.rebuildUserBalance(user);
+
+        assertEquals(174, user.getTrackingBalanceInMinutes());
+        verify(workScheduleService, times(0)).computeExpectedWorkMinutes(eq(user), eq(today), any());
     }
 
     @Test

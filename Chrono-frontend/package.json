@@ -2,7 +2,7 @@
   "name": "chrono-frontend",
   "version": "1.0.0",
   "description": "Chrono Zeiterfassung",
-  "author": "Chris <Siefert.sc@gmail.com>",
+  "author": "Chris <siefertchristopher@chrono-logisch.ch>",
   "homepage": "https://github.com/TheChristopher21/Chrono",
   "private": true,
   "type": "module",

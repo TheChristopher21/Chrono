@@ -264,6 +264,18 @@ public class PayrollService {
         return payslipRepository.findAll();
     }
 
+    public List<Payslip> getAllPayslips(User requestingAdmin) {
+        boolean isSuperAdmin = requestingAdmin.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        if (isSuperAdmin && requestingAdmin.getCompany() == null) {
+            return payslipRepository.findAll();
+        }
+        if (requestingAdmin.getCompany() == null) {
+            return List.of();
+        }
+        return payslipRepository.findByUser_Company_Id(requestingAdmin.getCompany().getId());
+    }
+
     public List<Payslip> getPendingPayslips(User requestingAdmin) {
         boolean isSuperAdmin = requestingAdmin.getRoles().stream()
                 .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
@@ -385,6 +397,23 @@ public class PayrollService {
             if (!u.isDeleted()) {
                 setPayslipSchedule(u.getId(), dayOfMonth);
             }
+        }
+    }
+
+    @Transactional
+    public void setPayslipScheduleForAll(User requestingAdmin, int dayOfMonth) {
+        boolean isSuperAdmin = requestingAdmin.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        List<User> users;
+        if (isSuperAdmin && requestingAdmin.getCompany() == null) {
+            users = userRepository.findByDeletedFalse();
+        } else if (requestingAdmin.getCompany() != null) {
+            users = userRepository.findByCompany_IdAndDeletedFalse(requestingAdmin.getCompany().getId());
+        } else {
+            users = List.of();
+        }
+        for (User u : users) {
+            setPayslipSchedule(u.getId(), dayOfMonth);
         }
     }
 }

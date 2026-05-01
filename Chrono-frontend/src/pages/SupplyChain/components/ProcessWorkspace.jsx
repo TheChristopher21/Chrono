@@ -220,10 +220,18 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
                 </div>
                 <div className="panel-actions">
                     {quickEntry?.enabled && (
-                        <button type="button" onClick={() => setQuickEntryOpen((prev) => !prev)}>
+                        <button type="button" className="sc-primary-action" onClick={() => setQuickEntryOpen((prev) => !prev)}>
                             {quickEntryOpen ? quickEntry.closeLabel : quickEntry.openLabel}
                         </button>
                     )}
+                    {receivingAssistant?.enabled && (
+                        <button type="button" onClick={() => setReceivingAssistantOpen((prev) => !prev)}>
+                            {receivingAssistantOpen ? receivingAssistant.closeLabel : receivingAssistant.openLabel}
+                        </button>
+                    )}
+                    <details className="sc-more-actions">
+                        <summary>{text.moreActions}</summary>
+                        <div className="sc-more-actions-menu">
                     {quickEntry?.createProduct?.enabled && (
                         <button type="button" onClick={() => setCreateProductOpen((prev) => !prev)}>
                             {createProductOpen ? quickEntry.createProduct.closeLabel : quickEntry.createProduct.openLabel}
@@ -234,14 +242,11 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
                             {createWarehouseOpen ? quickEntry.createWarehouse.closeLabel : quickEntry.createWarehouse.openLabel}
                         </button>
                     )}
-                    {receivingAssistant?.enabled && (
-                        <button type="button" onClick={() => setReceivingAssistantOpen((prev) => !prev)}>
-                            {receivingAssistantOpen ? receivingAssistant.closeLabel : receivingAssistant.openLabel}
-                        </button>
-                    )}
                     <button type="button" className="secondary" onClick={saveView}>{text.saveView}</button>
                     <button type="button" className="secondary" onClick={loadView}>{text.loadView}</button>
                     <button type="button" className="secondary" onClick={exportCsv}>{text.export}</button>
+                        </div>
+                    </details>
                 </div>
             </header>
 

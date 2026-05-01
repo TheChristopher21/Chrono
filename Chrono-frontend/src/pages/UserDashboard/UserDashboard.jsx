@@ -1,6 +1,7 @@
 // src/pages/UserDashboard/UserDashboard.jsx
 import  { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
+import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
 import VacationCalendar from '../../components/VacationCalendar';
 import UserVacationRequestsList from '../../components/UserVacationRequestsList';
 import { useAuth } from '../../context/AuthContext';
@@ -250,7 +251,9 @@ function UserDashboard() {
 
     async function doNfcCheck() {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`);
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`, {
+                headers: { 'X-NFC-Agent-Request': 'true' },
+            });
             if (!response.ok) return;
             const json = await response.json();
             if (json.status !== 'success' || !json.data) return;
@@ -503,6 +506,12 @@ function UserDashboard() {
                         {t("printReportButton")}
                     </button>
                 </header>
+
+                <AccessiblePagesPanel
+                    context="user"
+                    title="Deine freigegebenen Seiten"
+                    subtitle="Hier erscheinen genau die Bereiche, die für diesen Benutzer freigeschaltet wurden."
+                />
 
                 {punchMessage && <div className="punch-message">{punchMessage}</div>}
 

@@ -96,6 +96,29 @@ class WorkScheduleServiceTest {
         assertEquals(306, minutes);
     }
 
+    @Test
+    void getExpectedWeeklyMinutesForPercentageUser_respectsEvaluationStartWithinWeek() {
+        User user = new User();
+        user.setUsername("gabriela");
+        user.setIsPercentage(true);
+        user.setWorkPercentage(60);
+        user.setExpectedWorkDays(5);
+
+        LocalDate monday = LocalDate.of(2026, 3, 23);
+        LocalDate wednesday = monday.plusDays(2);
+        LocalDate friday = monday.plusDays(4);
+
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, wednesday, friday)).thenReturn(Collections.emptyList());
+        for (int i = 2; i <= 4; i++) {
+            when(holidayService.isHoliday(monday.plusDays(i), null)).thenReturn(false);
+        }
+
+        int minutes = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, monday, wednesday, friday, Collections.emptyList());
+
+        assertEquals(918, minutes);
+    }
+
 
     @Test
     void getExpectedWeeklyMinutesForPercentageUser_countsOnlyConfiguredWorkDays() {
@@ -109,7 +132,7 @@ class WorkScheduleServiceTest {
 
         when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
         when(userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, monday, monday.plusDays(4))).thenReturn(Collections.emptyList());
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 3; i++) {
             when(holidayService.isHoliday(monday.plusDays(i), null)).thenReturn(false);
         }
 
