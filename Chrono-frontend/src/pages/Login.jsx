@@ -46,7 +46,9 @@ const Login = () => {
 
             <main className="login-hero" aria-labelledby="login-title">
                 <section className="login-auth-panel">
-                    <Link className="login-panel-brand" to="/">Chrono</Link>
+                    <Link className="login-panel-brand" to="/">
+                        <img className="login-panel-brand-image" src="/img/komplettesLogo.png" alt="Chrono" />
+                    </Link>
 
                     <div className="login-copy">
                         <h1 id="login-title" className="login-h1">

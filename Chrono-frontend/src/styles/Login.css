@@ -109,14 +109,21 @@
 }
 
 .scoped-login .login-panel-brand {
-    width: fit-content;
-    color: var(--login-primary);
-    font-size: 1.42rem;
-    font-weight: 950;
-    letter-spacing: 0;
-    line-height: 1;
+    display: inline-flex;
+    width: 86px;
+    height: 86px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #ffffff;
     text-decoration: none;
-    text-shadow: 0 10px 22px rgba(91, 140, 255, 0.18);
+    box-shadow: 0 16px 34px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(159, 188, 255, 0.28);
+}
+
+.scoped-login .login-panel-brand-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
 .scoped-login .login-copy {

@@ -1277,7 +1277,7 @@ const LandingPage = () => {
 
             <footer className="lp-footer">
                 <div className="lp-container lp-footer-inner">
-                    <strong>Chrono</strong>
+                    <img className="lp-footer-logo" src="/img/komplettesLogo.png" alt="Chrono" loading="lazy" />
                     <nav aria-label={t("landing.footer.navLabel", "Footer Navigation")}>
                         <Link to="/ueber-chrono-logisch">{t("landing.footer.about", "Über Chrono-Logisch")}</Link>
                         <Link to="/impressum">{t("landing.footer.imprint", "Impressum")}</Link>

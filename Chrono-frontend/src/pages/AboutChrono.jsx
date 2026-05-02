@@ -136,7 +136,7 @@ const AboutChrono = () => {
 
             <footer className="lp-footer">
                 <div className="lp-container lp-footer-inner">
-                    <strong>Chrono</strong>
+                    <img className="lp-footer-logo" src="/img/komplettesLogo.png" alt="Chrono" loading="lazy" />
                     <nav aria-label="Footer Navigation">
                         <Link to="/">Startseite</Link>
                         <Link to="/impressum">Impressum</Link>

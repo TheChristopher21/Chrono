@@ -3382,6 +3382,16 @@
     color: var(--lp-text);
 }
 
+.landing-page.scoped-landing .lp-footer-logo {
+    display: block;
+    width: 52px;
+    height: 52px;
+    border-radius: 999px;
+    object-fit: cover;
+    background: #ffffff;
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18);
+}
+
 .landing-page.scoped-landing .lp-footer nav {
     display: flex;
     flex-wrap: wrap;

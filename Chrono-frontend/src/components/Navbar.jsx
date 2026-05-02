@@ -349,7 +349,13 @@ const Navbar = () => {
         <div className={styles['scoped-navbar']}>
             <nav className={styles.navbar} aria-label="Hauptnavigation">
                 <div className={styles['navbar-brand']}>
-                    <Link to="/" className={styles['navbar-logo']}>Chrono</Link>
+                    <Link to="/" className={styles['navbar-logo']}>
+                        <img
+                            className={styles['navbar-logo-image']}
+                            src="/img/komplettesLogo.png"
+                            alt="Chrono"
+                        />
+                    </Link>
                 </div>
 
                 <input
