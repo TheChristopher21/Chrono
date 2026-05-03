@@ -18,6 +18,7 @@ import PropTypes from "prop-types";
 import { formatDate, formatTime } from "./adminDashboardUtils";
 import CorrectionDecisionModal from "./CorrectionDecisionModal";
 import "../../styles/AdminDashboardScoped.css";
+import { getUserDisplayName, getUserSearchText } from "../../utils/userDisplay";
 
 /* ⇢ Helper to derive a readable status ------------------------------------ */
 const getStatus = (req) => {
@@ -34,7 +35,7 @@ const sortEntriesChronologically = (a, b) => {
 };
 
 /* ⇢ Main component --------------------------------------------------------- */
-function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal, canManage }) {
+function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal, canManage, users }) {
     /* ──────────────────────────────────── state */
     const [isExpanded, setIsExpanded] = useState(false);
     const [searchTerm, setSearchTerm] = useState("");
@@ -85,7 +86,7 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
         const groups = new Map();
 
         const filtered = allCorrections.filter((c) => {
-            const matchesUser = c.username?.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesUser = getUserSearchText(c.username, users).includes(searchTerm.toLowerCase());
             const matchesDate = !searchDate || c.requestDate === searchDate;
             return matchesUser && matchesDate;
         });
@@ -223,7 +224,7 @@ function AdminCorrectionsList({ t, allCorrections, onApprove, onDeny, openSignal
                                     return (
                                         <React.Fragment key={g.id}>
                                             <tr className={`status-${statusClass}`}>
-                                                <td>{g.username}</td>
+                                                <td>{getUserDisplayName(g.username, users, g.username)}</td>
                                                 <td>{formatDate(g.requestDate)}</td>
                                                 <td>
                                                     {/* 1-liner summary when collapsed */}
@@ -347,11 +348,13 @@ AdminCorrectionsList.propTypes = {
     onDeny: PropTypes.func.isRequired,
     openSignal: PropTypes.number,
     canManage: PropTypes.bool,
+    users: PropTypes.arrayOf(PropTypes.object),
 };
 
 AdminCorrectionsList.defaultProps = {
     openSignal: 0,
     canManage: true,
+    users: [],
 };
 
 export default AdminCorrectionsList;

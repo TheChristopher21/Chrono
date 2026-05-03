@@ -90,7 +90,7 @@ describe('VacationCalendarAdmin admin editing', () => {
             />
         );
 
-        const marker = await screen.findByRole('button', { name: /employee1/ });
+        const marker = await screen.findByRole('button', { name: /Erika Mustermann/ });
         await userEvent.click(marker);
 
         const startInput = await screen.findByLabelText(/Startdatum/);
@@ -190,7 +190,7 @@ describe('VacationCalendarAdmin admin editing', () => {
             />
         );
 
-        const marker = await screen.findByRole('button', { name: /employee1/ });
+        const marker = await screen.findByRole('button', { name: /Erika Mustermann/ });
         await userEvent.click(marker);
 
         const startInput = await screen.findByLabelText(/Startdatum/);

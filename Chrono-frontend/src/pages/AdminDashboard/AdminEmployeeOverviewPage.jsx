@@ -6,6 +6,7 @@ import EditTimeModal from './EditTimeModal';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import api from '../../utils/api';
+import { getUserDisplayName } from '../../utils/userDisplay';
 import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
 import {
     formatDate,
@@ -238,6 +239,7 @@ const AdminEmployeeOverviewPage = () => {
         () => users.find((user) => user?.username === username) || null,
         [users, username],
     );
+    const employeeDisplayName = getUserDisplayName(employee || username, users, username);
 
     const normalizedEmployeeConfig = useMemo(() => {
         if (!employee) return null;
@@ -1038,7 +1040,7 @@ const AdminEmployeeOverviewPage = () => {
                     <div className="employee-overview-header-main">
                         <h1>{t('adminEmployeeOverview.title', 'Mitarbeiter-Übersicht')}</h1>
                         <p className="employee-overview-userline">
-                            <strong>{employee?.firstName || ''} {employee?.lastName || ''} ({username})</strong>
+                            <strong>{employeeDisplayName}</strong>
                         </p>
                         <div className="employee-meta-chips" aria-label={t('adminEmployeeOverview.employeeMeta', 'Mitarbeiterdetails')}>
                             <span className="employee-meta-chip">{t('role', 'Rolle')}: {roleDisplayLabel}</span>
@@ -1275,7 +1277,7 @@ const AdminEmployeeOverviewPage = () => {
             {quickAction === 'vacation' && (
                 <ModalOverlay visible>
                     <div className="modal-content employee-quick-modal">
-                        <h3>Urlaub eintragen – {username}</h3>
+                        <h3>Urlaub eintragen – {employeeDisplayName}</h3>
                         <form onSubmit={handleQuickVacationSave} className="quick-form-grid">
                             <label>Von<input type="date" value={vacationForm.startDate} onChange={(e) => setVacationForm((prev) => ({ ...prev, startDate: e.target.value }))} required /></label>
                             <label>Bis<input type="date" value={vacationForm.endDate} onChange={(e) => setVacationForm((prev) => ({ ...prev, endDate: e.target.value }))} required /></label>
@@ -1292,7 +1294,7 @@ const AdminEmployeeOverviewPage = () => {
             {quickAction === 'sick' && (
                 <ModalOverlay visible>
                     <div className="modal-content employee-quick-modal">
-                        <h3>Krankmeldung eintragen – {username}</h3>
+                        <h3>Krankmeldung eintragen – {employeeDisplayName}</h3>
                         <form onSubmit={handleQuickSickSave} className="quick-form-grid">
                             <label>Von<input type="date" value={sickForm.startDate} onChange={(e) => setSickForm((prev) => ({ ...prev, startDate: e.target.value }))} required /></label>
                             <label>Bis<input type="date" value={sickForm.endDate} onChange={(e) => setSickForm((prev) => ({ ...prev, endDate: e.target.value }))} required /></label>

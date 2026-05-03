@@ -7,6 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { LanguageContext, useTranslation } from '../context/LanguageContext';
 import styles from '../styles/Navbar.module.css';
 import api from '../utils/api';
+import { getUserDisplayName } from '../utils/userDisplay';
 import {
     getDefaultLandingPage,
     getRouteForPage,
@@ -276,7 +277,8 @@ const Navbar = () => {
     const showProfileLink = canOpenPage('personalData');
     const changePasswordTarget = canOpenPage('adminChangePassword') ? '/admin/change-password' : '/personal-data';
     const showChangePassword = canOpenPage('adminChangePassword') || canOpenPage('personalData');
-    const userInitial = currentUser?.username?.[0]?.toUpperCase() || 'U';
+    const userDisplayName = getUserDisplayName(currentUser);
+    const userInitial = userDisplayName?.[0]?.toUpperCase() || currentUser?.username?.[0]?.toUpperCase() || 'U';
     const workspaceMenuLabel = t('navbar.platform', 'Plattform');
 
     const toggleWorkspaceMenu = () => {
@@ -504,7 +506,7 @@ const Navbar = () => {
                                     aria-expanded={openUser}
                                 >
                                     <span className={styles.avatar} aria-hidden="true">{userInitial}</span>
-                                    <span className={styles.username}>{currentUser?.username}</span>
+                                    <span className={styles.username}>{userDisplayName || currentUser?.username}</span>
                                     <IconChevronDown/>
                                 </button>
                                 <div className={styles['dropdown-menu']}>

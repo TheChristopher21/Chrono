@@ -7,6 +7,7 @@ import {
     formatLocalDateYMD,
     minutesToHHMM,
 } from './adminDashboardUtils';
+import { getUserDisplayName } from '../../utils/userDisplay';
 
 const isPending = (item) => item && !item.approved && !item.denied;
 
@@ -44,6 +45,7 @@ const AdminDashboardOverview = ({
     allCorrections,
     allSickLeaves,
     weeklyBalances,
+    users,
     issueSummary,
     onOpenTime,
     onOpenRequests,
@@ -61,6 +63,9 @@ const AdminDashboardOverview = ({
     const todayIso = formatLocalDateYMD(today);
     const rangeEndIso = formatLocalDateYMD(addDays(today, 7));
     const weekEnd = addDays(today, 7);
+    const unknownUserLabel = t('adminVacation.unknownUser', 'Unbekannt');
+    const getDisplayName = (username) => getUserDisplayName(username, users, unknownUserLabel);
+    const currentUserName = getUserDisplayName(currentUser, [], t('adminDashboard.overview.adminFallback', 'Admin'));
 
     const pendingVacations = Array.isArray(allVacations) ? allVacations.filter(isPending) : [];
     const pendingCorrections = Array.isArray(allCorrections) ? allCorrections.filter(isPending) : [];
@@ -69,7 +74,11 @@ const AdminDashboardOverview = ({
     const balanceRows = Array.isArray(weeklyBalances)
         ? weeklyBalances
             .filter((item) => item?.username && Number.isFinite(item?.trackingBalance))
-            .map((item) => ({ username: item.username, minutes: item.trackingBalance }))
+            .map((item) => ({
+                username: item.username,
+                displayName: getDisplayName(item.username),
+                minutes: item.trackingBalance,
+            }))
         : [];
 
     const negativeBalances = balanceRows.filter((item) => item.minutes < 0);
@@ -186,7 +195,7 @@ const AdminDashboardOverview = ({
             tone: 'info',
             eyebrow: t('adminDashboard.overview.cards.top.eyebrow', 'Top-Saldo'),
             value: topPositive ? minutesToHHMM(topPositive.minutes) : minutesToHHMM(0),
-            title: topPositive?.username || t('adminDashboard.kpis.unknownUser', 'Unbekannt'),
+            title: topPositive?.displayName || t('adminDashboard.kpis.unknownUser', 'Unbekannt'),
             meta: t('adminDashboard.overview.cards.top.meta', 'Höchster aktueller Saldo'),
             button: t('adminDashboard.overview.cards.top.button', 'Topliste anzeigen'),
             onClick: onFocusOvertimeLeaders,
@@ -198,7 +207,7 @@ const AdminDashboardOverview = ({
             <section className="cockpit-intro" aria-label={t('adminDashboard.overview.introLabel', 'Admin Übersicht')}>
                 <div>
                     <span className="cockpit-eyebrow">{t('adminDashboard.overview.eyebrow', 'Übersicht')}</span>
-                    <h3>{t('adminDashboard.overview.greeting', 'Guten Morgen')}, {currentUser?.username || t('adminDashboard.overview.adminFallback', 'Admin')}</h3>
+                    <h3>{t('adminDashboard.overview.greeting', 'Guten Morgen')}, {currentUserName}</h3>
                     <p>
                         {t('adminDashboard.overview.weekSummaryPrefix', 'Diese Woche gibt es')}{' '}
                         <strong>{pendingTotal}</strong> {t('adminDashboard.overview.openRequestsText', 'offene Anträge')}{' '}
@@ -261,7 +270,7 @@ const AdminDashboardOverview = ({
                                     className={`critical-row tone-${tone}`}
                                     onClick={() => onFocusEmployee(employee.username)}
                                 >
-                                    <span className="critical-user">{employee.username}</span>
+                                    <span className="critical-user">{employee.displayName || employee.username}</span>
                                     <span className="critical-balance">{minutesToHHMM(employee.minutes)}</span>
                                     <span className={`status-chip tone-${tone}`}>
                                         {getBalanceLabel(employee.minutes, t)}
@@ -288,7 +297,7 @@ const AdminDashboardOverview = ({
                         ) : absencePreview.map((absence) => (
                             <div key={absence.id} className={`absence-row tone-${absence.tone}`}>
                                 <span className="absence-type">{absence.type}</span>
-                                <strong>{absence.username || t('adminVacation.unknownUser', 'Unbekannt')}</strong>
+                                <strong>{getDisplayName(absence.username)}</strong>
                                 <span>{formatDate(absence.startDate)} - {formatDate(absence.endDate)}</span>
                             </div>
                         ))}
@@ -318,7 +327,7 @@ const AdminDashboardOverview = ({
                         ) : requestPreview.map((request) => (
                             <div key={request.id} className="request-preview-row">
                                 <span>{request.type}</span>
-                                <strong>{request.username || t('adminVacation.unknownUser', 'Unbekannt')}</strong>
+                                <strong>{getDisplayName(request.username)}</strong>
                                 <small>{formatDate(request.date)}</small>
                                 <p>{request.detail}</p>
                             </div>
@@ -364,6 +373,7 @@ AdminDashboardOverview.propTypes = {
     allCorrections: PropTypes.arrayOf(PropTypes.object),
     allSickLeaves: PropTypes.arrayOf(PropTypes.object),
     weeklyBalances: PropTypes.arrayOf(PropTypes.object),
+    users: PropTypes.arrayOf(PropTypes.object),
     issueSummary: PropTypes.shape({
         missing: PropTypes.number,
         incomplete: PropTypes.number,
@@ -391,6 +401,7 @@ AdminDashboardOverview.defaultProps = {
     allCorrections: [],
     allSickLeaves: [],
     weeklyBalances: [],
+    users: [],
     issueSummary: {
         missing: 0,
         incomplete: 0,

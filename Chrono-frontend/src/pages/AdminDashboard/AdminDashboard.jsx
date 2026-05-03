@@ -6,6 +6,7 @@ import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
 import { ACCESS_MANAGE, hasPageAccess } from '../../utils/pageAccess.js';
+import { getUserDisplayName } from '../../utils/userDisplay';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
@@ -1337,7 +1338,7 @@ const AdminDashboard = () => {
         );
 
         const userDetails = users.find(u => u.username === printUser);
-        const userNameDisplay = userDetails ? `${userDetails.firstName} ${userDetails.lastName} (${printUser})` : printUser;
+        const userNameDisplay = getUserDisplayName(userDetails || printUser, users, printUser);
         const balanceRecord = filteredWeeklyBalances.find(b => b.username === printUser);
         const overtimeStr = minutesToHHMM(balanceRecord?.trackingBalance || 0);
 
@@ -1475,7 +1476,7 @@ const AdminDashboard = () => {
                             {t('adminDashboard.header.team', 'Alle Teams')}
                         </p>
                         {currentUser && (
-                            <p className="header-login-context">{t('adminDashboard.loggedInAs')} {currentUser.username}</p>
+                            <p className="header-login-context">{t('adminDashboard.loggedInAs')} {getUserDisplayName(currentUser)}</p>
                         )}
                     </div>
                     <div className="dashboard-header-actions" aria-label={t('adminDashboard.header.actions', 'Dashboard-Aktionen')}>
@@ -1533,6 +1534,7 @@ const AdminDashboard = () => {
                             allCorrections={allCorrections}
                             allSickLeaves={allSickLeaves}
                             weeklyBalances={filteredWeeklyBalances}
+                            users={users}
                             issueSummary={issueSummary}
                             onOpenTime={() => openDashboardTab('time')}
                             onOpenRequests={() => openDashboardTab('requests')}
@@ -1596,6 +1598,7 @@ const AdminDashboard = () => {
                                     onReloadVacations={fetchAllVacations}
                                     openSignal={vacationOpenSignal}
                                     canManage={canManageAdminDashboard}
+                                    users={users}
                                 />
                             </div>
                             <div ref={correctionSectionRef}>
@@ -1606,6 +1609,7 @@ const AdminDashboard = () => {
                                     onDeny={handleDenyCorrection}
                                     openSignal={correctionOpenSignal}
                                     canManage={canManageAdminDashboard}
+                                    users={users}
                                 />
                             </div>
                         </section>
@@ -1711,6 +1715,7 @@ const AdminDashboard = () => {
                         onReloadVacations={fetchAllVacations}
                         openSignal={vacationOpenSignal}
                         canManage={canManageAdminDashboard}
+                        users={users}
                     />
                 </div>
                 <div ref={correctionSectionRef}>
@@ -1721,6 +1726,7 @@ const AdminDashboard = () => {
                         onDeny={handleDenyCorrection}
                         openSignal={correctionOpenSignal}
                         canManage={canManageAdminDashboard}
+                        users={users}
                     />
                 </div>
             </section>

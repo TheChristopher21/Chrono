@@ -9,6 +9,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNotification } from '../context/NotificationContext';
 import { useTranslation } from '../context/LanguageContext';
 import { formatLocalDateYMD } from '../pages/AdminDashboard/adminDashboardUtils.js'; // Passe den Pfad ggf. an
+import { getUserDisplayName } from '../utils/userDisplay';
 
 // Annahme: formatLocalDateYMD ist in einer Utility-Datei und wird hier importiert
 // import { formatLocalDateYMD } from './adminDashboardUtils'; // Oder der korrekte Pfad
@@ -518,14 +519,11 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
     const formatUserShortName = (username) => {
         const user = users.find(u => u.username === username);
-        return user?.firstName || username || t('adminVacation.unknownUser', 'Unbekannt');
+        return user?.firstName || getUserDisplayName(username, users, t('adminVacation.unknownUser', 'Unbekannt'));
     };
 
     const formatUserLongName = (username) => {
-        const user = users.find(u => u.username === username);
-        const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(' ').trim();
-        if (fullName && username && fullName !== username) return `${fullName} · ${username}`;
-        return fullName || username || t('adminVacation.unknownUser', 'Unbekannt');
+        return getUserDisplayName(username, users, t('adminVacation.unknownUser', 'Unbekannt'));
     };
 
     const formatDateRange = (entry) => {
@@ -966,7 +964,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                         disabled={Boolean(editingVacation)}
                                     >
                                         <option value="">{t('adminVacation.selectUserPlaceholder', 'Bitte Benutzer auswählen')}</option>
-                                        {scopedUsers.map((u) => (<option key={u.id} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
+                                        {scopedUsers.map((u) => (<option key={u.id} value={u.username}>{getUserDisplayName(u)}</option>))}
                                     </select>
                                 </div>
                             )}
@@ -1044,7 +1042,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                     disabled={Boolean(editingSickLeave)}
                                 >
                                     <option value="">{t('adminSickLeave.selectUserPlaceholder', 'Bitte Benutzer auswählen')}</option>
-                                    {scopedUsers.map((u) => (<option key={`sick-${u.id}`} value={u.username}>{u.firstName} {u.lastName} ({u.username})</option>))}
+                                    {scopedUsers.map((u) => (<option key={`sick-${u.id}`} value={u.username}>{getUserDisplayName(u)}</option>))}
                                 </select>
                             </div>
                             <div className="form-group">

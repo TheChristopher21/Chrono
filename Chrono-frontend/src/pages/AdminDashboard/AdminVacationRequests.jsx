@@ -5,6 +5,7 @@ import { formatDate } from './adminDashboardUtils';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { getUserDisplayName, getUserSearchText } from '../../utils/userDisplay';
 // Stelle sicher, dass die AdminDashboardScoped.css importiert wird, wenn sie hier benötigt wird,
 // oder dass die Styles global oder von AdminDashboard.jsx geerbt werden.
 // import '../../styles/AdminDashboardScoped.css'; // Ist typischerweise in AdminDashboard.jsx
@@ -25,6 +26,7 @@ const AdminVacationRequests = ({
                                    onReloadVacations, // Callback zum Neuladen der Urlaubsdaten
                                    openSignal,
                                    canManage,
+                                   users,
                                }) => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -99,11 +101,12 @@ const AdminVacationRequests = ({
         }));
     }, [getDecisionNoteKey]);
 
-    const filteredVacations = allVacations.filter((v) =>
-        (v.username || t('adminVacation.unknownUser', 'Unbekannt')).toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (formatDate(v.startDate) || '').includes(searchTerm) ||
-        (formatDate(v.endDate) || '').includes(searchTerm)
-    );
+    const filteredVacations = allVacations.filter((v) => {
+        const normalizedSearch = searchTerm.toLowerCase();
+        return getUserSearchText(v.username, users).includes(normalizedSearch) ||
+            (formatDate(v.startDate) || '').includes(searchTerm) ||
+            (formatDate(v.endDate) || '').includes(searchTerm);
+    });
 
     const sortedVacations = [...filteredVacations].sort((a, b) => b.id - a.id);
 
@@ -173,7 +176,7 @@ const AdminVacationRequests = ({
                                     return (
                                         <li key={v.id} className={`list-item vacation-item ${statusClass}`}>
                                             <div className="item-info">
-                                                <strong className="username">{v.username || t('adminVacation.unknownUser', 'Unbekannt')}</strong>
+                                                <strong className="username">{getUserDisplayName(v.username, users, t('adminVacation.unknownUser', 'Unbekannt'))}</strong>
                                                 <span>
                                                     {formatDate(v.startDate)} - {formatDate(v.endDate)}
                                                 </span>
@@ -254,7 +257,7 @@ const AdminVacationRequests = ({
                         <h3>{t('adminVacation.delete.confirmTitle', 'Urlaub löschen bestätigen')}</h3>
                         <p>
                             {t('adminVacation.delete.confirmMessage', 'Möchten Sie den Urlaubsantrag von')}
-                            <strong> {vacationToDelete.username || t('adminVacation.unknownUser', 'Unbekannt')} </strong>
+                            <strong> {getUserDisplayName(vacationToDelete.username, users, t('adminVacation.unknownUser', 'Unbekannt'))} </strong>
                             ({formatDate(vacationToDelete.startDate)} - {formatDate(vacationToDelete.endDate)}){' '}
                             {t('adminVacation.delete.irreversible', 'wirklich unwiderruflich löschen?')}
                         </p>
@@ -304,11 +307,13 @@ AdminVacationRequests.propTypes = {
     onReloadVacations: PropTypes.func.isRequired, // Wichtig für die Aktualisierung der Liste
     openSignal: PropTypes.number,
     canManage: PropTypes.bool,
+    users: PropTypes.arrayOf(PropTypes.object),
 };
 
 AdminVacationRequests.defaultProps = {
     openSignal: 0,
     canManage: true,
+    users: [],
 };
 
 export default AdminVacationRequests;

@@ -32,6 +32,7 @@ import {
 } from "./adminDashboardUtils"; // Ensure this path is correct
 import { parseISO, isValid } from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
+import { getUserDisplayName, getUserSearchText } from '../../utils/userDisplay';
 
 const HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY = 'adminDashboard_holidayOptions_v1';
 const HIDDEN_USERS_LOCAL_STORAGE_PREFIX = 'adminDashboard_hiddenUsers_v3';
@@ -333,6 +334,9 @@ const sortUserCollection = (collection, sortConfig) => {
                 + (b.problemIndicators?.unusualWeeklyDeltaCount || 0);
             valA = totalA;
             valB = totalB;
+        } else if (sortConfig.key === 'username') {
+            valA = (a.displayName || a.username || '').toLowerCase();
+            valB = (b.displayName || b.username || '').toLowerCase();
         } else if (typeof valA === 'string' && typeof valB === 'string') {
             valA = valA.toLowerCase();
             valB = valB.toLowerCase();
@@ -796,6 +800,8 @@ const AdminWeekSection = forwardRef(({
 
                 return {
                     username: user.username,
+                    displayName: getUserDisplayName(user),
+                    searchText: getUserSearchText(user),
                     userColor: /^#[0-9A-F]{6}$/i.test(userConfig.color || "") ? userConfig.color : "#007BFF", // Default color
                     weeklyActualMinutes,
                     weeklyExpectedMinutes,
@@ -861,12 +867,16 @@ const AdminWeekSection = forwardRef(({
             return {
                 ...(baseData || {
                     username: user.username,
+                    displayName: getUserDisplayName(user),
+                    searchText: getUserSearchText(user),
                     userConfig,
                     weeklyActualMinutes: 0,
                     weeklyExpectedMinutes: 0,
                     currentWeekOvertimeMinutes: 0,
                 }),
                 username: user.username,
+                displayName: baseData?.displayName || getUserDisplayName(user),
+                searchText: baseData?.searchText || getUserSearchText(user),
                 userColor,
                 userApprovedVacations,
                 userCurrentSickLeaves,
@@ -948,7 +958,7 @@ const AdminWeekSection = forwardRef(({
 
         return collection.filter(userData => {
             if (!userData?.username) return false;
-            if (normalizedSearch && !userData.username.toLowerCase().includes(normalizedSearch)) {
+            if (normalizedSearch && !(userData.searchText || userData.username.toLowerCase()).includes(normalizedSearch)) {
                 return false;
             }
             if (hiddenUsers.has(userData.username)) {
@@ -1848,7 +1858,7 @@ const AdminWeekSection = forwardRef(({
                                 <ul className="hidden-users-list list-disc list-inside ml-1 text-xs">
                                     {Array.from(hiddenUsers).sort().map(username => (
                                         <li key={username} className="flex justify-between items-center py-0.5">
-                                            <span>{username}</span>
+                                            <span>{getUserDisplayName(username, users, username)}</span>
                                             <button onClick={() => handleUnhideUser(username)} className="action-button unhide-button text-xs p-0.5 bg-blue-100 hover:bg-blue-200 rounded">
                                                 {t('adminDashboard.unhideUser', 'Einblenden')}
                                             </button>
@@ -1907,7 +1917,7 @@ const AdminWeekSection = forwardRef(({
                                 {sortedUserData.map((userData) => (
                                     <React.Fragment key={userData.username}>
                                         <tr className={`user-row ${detailedUser === userData.username ? "user-row-detailed" : ""} ${hiddenUsers.has(userData.username) ? "user-row-hidden" : ""}`}>
-                                            <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.username}</td>
+                                            <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.displayName || userData.username}</td>
                                             <td data-label={t('actualHours', 'Ist (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyActualMinutes)}</td>
                                             <td data-label={t('expectedHours', 'Soll (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyExpectedMinutes)}</td>
                                             <td data-label={t('balanceWeek', 'Saldo (Wo)')} className={`td-numeric ${userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.currentWeekOvertimeMinutes)}</td>
@@ -2136,7 +2146,7 @@ const AdminWeekSection = forwardRef(({
                                 <tbody>
                                 {sortedMonthlyUserData.map((userData) => (
                                     <tr key={userData.username} className={`user-row ${hiddenUsers.has(userData.username) ? "user-row-hidden" : ""}`}>
-                                        <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.username}</td>
+                                        <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.displayName || userData.username}</td>
                                         <td data-label={t('adminDashboard.monthView.actualHours', 'Ist (Zeitraum)')} className="td-numeric">{minutesToHHMM(userData.monthlyActualMinutes)}</td>
                                         <td data-label={t('adminDashboard.monthView.expectedHours', 'Soll (Zeitraum)')} className="td-numeric">{minutesToHHMM(userData.monthlyExpectedMinutes)}</td>
                                         <td data-label={t('adminDashboard.monthView.balanceRange', 'Saldo (Zeitraum)')} className={`td-numeric ${userData.monthlyOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.monthlyOvertimeMinutes)}</td>
@@ -2171,7 +2181,7 @@ const AdminWeekSection = forwardRef(({
                         <h3 className="text-lg font-semibold mb-4">{t('adminDashboard.deleteSickLeaveConfirmTitle', 'Krankmeldung löschen bestätigen')}</h3>
                         <p className="mb-4 text-sm">
                             {t('adminDashboard.deleteSickLeaveConfirmMessage', 'Möchten Sie die Krankmeldung für')}
-                            <strong> {sickLeaveToDelete.username} </strong>
+                            <strong> {getUserDisplayName(sickLeaveToDelete.username, users, sickLeaveToDelete.username)} </strong>
                             ({formatDate(parseISO(sickLeaveToDelete.startDate))} - {formatDate(parseISO(sickLeaveToDelete.endDate))})
                             {sickLeaveToDelete.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}
                             {t('adminDashboard.deleteSickLeaveIrreversible', ' wirklich löschen? Das Tagessoll und der Saldo werden neu berechnet.')}
@@ -2254,6 +2264,8 @@ AdminWeekSection.propTypes = {
     users: PropTypes.arrayOf(
         PropTypes.shape({ // Matches UserDTO more closely
             username: PropTypes.string.isRequired,
+            firstName: PropTypes.string,
+            lastName: PropTypes.string,
             trackingBalanceInMinutes: PropTypes.number,
             isPercentage: PropTypes.bool,
             isHourly: PropTypes.bool,

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import api from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { getUserDisplayName } from '../utils/userDisplay';
 import '../styles/ChatWidget.css';
 
 import chatIcon from '../assets/chat-icon.jpg';
@@ -158,11 +159,12 @@ function getRandomFallback() {
 
 export default function ChatWidget() {
     const { currentUser } = useAuth();
+    const currentUserDisplayName = getUserDisplayName(currentUser);
 
     const getInitialMessages = () => {
         const saved = sessionStorage.getItem('chatMessages');
         if (saved) return JSON.parse(saved);
-        const greet = currentUser ? `Hallo ${currentUser.username}! Wie kann ich dir helfen?` : 'Hallo! Wie kann ich dir helfen?';
+        const greet = currentUser ? `Hallo ${currentUserDisplayName}! Wie kann ich dir helfen?` : 'Hallo! Wie kann ich dir helfen?';
         return [{ sender: 'bot', text: greet }];
     };
 
@@ -180,11 +182,11 @@ export default function ChatWidget() {
     }, [messages]);
 
     useEffect(() => {
-        const greet = currentUser ? `Hallo ${currentUser.username}! Wie kann ich dir helfen?` : 'Hallo! Wie kann ich dir helfen?';
+        const greet = currentUser ? `Hallo ${currentUserDisplayName}! Wie kann ich dir helfen?` : 'Hallo! Wie kann ich dir helfen?';
         if (messages.length === 1 && messages[0].sender === 'bot') {
             setMessages([{ sender: 'bot', text: greet }]);
         }
-    }, [currentUser]);
+    }, [currentUser, currentUserDisplayName]);
 
     useEffect(() => {
         if (chatWindowRef.current) {
