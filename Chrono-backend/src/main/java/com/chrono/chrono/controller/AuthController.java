@@ -8,6 +8,7 @@ import com.chrono.chrono.dto.ErrorResponse;
 import com.chrono.chrono.exceptions.InvalidCredentialsException;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.services.AuthService;
+import com.chrono.chrono.services.DemoLoginRateLimiter;
 import com.chrono.chrono.services.LoginAttemptService;
 import com.chrono.chrono.services.UserPermissionService;
 import com.chrono.chrono.services.UserService;
@@ -32,6 +33,7 @@ public class AuthController {
     private final UserRepository userRepository;
     private final UserService userService;
     private final LoginAttemptService loginAttemptService;
+    private final DemoLoginRateLimiter demoLoginRateLimiter;
     private final UserPermissionService userPermissionService;
 
     @Value("${app.demo-login.enabled:false}")
@@ -44,6 +46,7 @@ public class AuthController {
                           UserRepository userRepository,
                           UserService userService,
                           LoginAttemptService loginAttemptService,
+                          DemoLoginRateLimiter demoLoginRateLimiter,
                           UserPermissionService userPermissionService) {
         this.authService = authService;
         this.jwtUtil = jwtUtil;
@@ -51,6 +54,7 @@ public class AuthController {
         this.userRepository = userRepository;
         this.userService = userService;
         this.loginAttemptService = loginAttemptService;
+        this.demoLoginRateLimiter = demoLoginRateLimiter;
         this.userPermissionService = userPermissionService;
     }
 
@@ -73,9 +77,15 @@ public class AuthController {
     }
 
     @PostMapping("/demo")
-    public ResponseEntity<?> demoLogin() {
+    public ResponseEntity<?> demoLogin(HttpServletRequest httpRequest) {
         if (!demoLoginEnabled) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Demo login is disabled");
+        }
+        DemoLoginRateLimiter.RateLimitDecision limit = demoLoginRateLimiter.check(resolveClientIp(httpRequest));
+        if (!limit.allowed()) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .header("Retry-After", String.valueOf(limit.retryAfterSeconds()))
+                    .body(new ErrorResponse("Zu viele Demo-Starts. Bitte versuche es spaeter erneut."));
         }
         AuthResponse response = authService.demoLogin();
         return ResponseEntity.ok(response);

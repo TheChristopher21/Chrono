@@ -23,6 +23,9 @@ public class SecurityStartupValidator implements ApplicationRunner {
     @Value("${app.demo-login.enabled:false}")
     private boolean demoLoginEnabled;
 
+    @Value("${app.demo-login.allow-production:false}")
+    private boolean demoLoginAllowedInProduction;
+
     @Value("${app.initialize.admin:false}")
     private boolean initializeAdmin;
 
@@ -51,8 +54,8 @@ public class SecurityStartupValidator implements ApplicationRunner {
         }
         requireSecret("JWT_SECRET", jwtSecret, 32);
         requireSecret("NFC_AGENT_TOKEN", nfcAgentToken, 32);
-        if (demoLoginEnabled) {
-            throw new IllegalStateException("Demo login must be disabled in production");
+        if (demoLoginEnabled && !demoLoginAllowedInProduction) {
+            throw new IllegalStateException("Production demo login requires APP_DEMO_LOGIN_ALLOW_PRODUCTION=true");
         }
         if (initializeAdmin && isUnsafe(adminPassword)) {
             throw new IllegalStateException("Production admin bootstrap requires a strong APP_ADMIN_PASSWORD");

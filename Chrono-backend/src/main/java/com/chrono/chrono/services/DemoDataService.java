@@ -12,6 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -42,6 +43,12 @@ public class DemoDataService {
     private CorrectionRequestRepository correctionRequestRepository;
 
     @Autowired
+    private SickLeaveRepository sickLeaveRepository;
+
+    @Autowired
+    private ComplianceAuditLogRepository complianceAuditLogRepository;
+
+    @Autowired
     private RoleRepository roleRepository;
 
     @Autowired
@@ -52,6 +59,7 @@ public class DemoDataService {
     @Transactional
     public void resetDemoData(User user) {
         Company company = ensureCompany(user);
+        String sessionSuffix = demoSessionSuffix(user);
 
         Role userRole = getOrCreateRole("ROLE_USER");
         Role adminRole = getOrCreateRole("ROLE_ADMIN");
@@ -63,7 +71,7 @@ public class DemoDataService {
                 user.getUsername(),
                 "Demo",
                 "Manager",
-                "demo@chrono-demo.ch",
+                demoEmail("demo", sessionSuffix),
                 "D-1000",
                 "#6366F1",
                 today.minusYears(3),
@@ -84,10 +92,10 @@ public class DemoDataService {
 
         User anna = ensureTeamMember(
                 company,
-                "anna",
+                demoUsername(user, "anna"),
                 "Anna",
                 "Fischer",
-                "anna.fischer@chrono-demo.ch",
+                demoEmail("anna.fischer", sessionSuffix),
                 "D-1001",
                 "#F97316",
                 today.minusYears(2),
@@ -108,10 +116,10 @@ public class DemoDataService {
 
         User ben = ensureTeamMember(
                 company,
-                "ben",
+                demoUsername(user, "ben"),
                 "Ben",
                 "Keller",
-                "ben.keller@chrono-demo.ch",
+                demoEmail("ben.keller", sessionSuffix),
                 "D-1002",
                 "#10B981",
                 today.minusYears(1).minusMonths(3),
@@ -132,10 +140,10 @@ public class DemoDataService {
 
         User carla = ensureTeamMember(
                 company,
-                "carla",
+                demoUsername(user, "carla"),
                 "Carla",
                 "Meier",
-                "carla.meier@chrono-demo.ch",
+                demoEmail("carla.meier", sessionSuffix),
                 "D-1003",
                 "#F59E0B",
                 today.minusMonths(9),
@@ -156,10 +164,10 @@ public class DemoDataService {
 
         User david = ensureTeamMember(
                 company,
-                "david",
+                demoUsername(user, "david"),
                 "David",
                 "Lenz",
-                "david.lenz@chrono-demo.ch",
+                demoEmail("david.lenz", sessionSuffix),
                 "D-1004",
                 "#3B82F6",
                 today.minusYears(4),
@@ -183,6 +191,7 @@ public class DemoDataService {
         teamMembers.forEach(member -> {
             correctionRequestRepository.deleteByUser(member);
             vacationRequestRepository.deleteByUser(member);
+            sickLeaveRepository.deleteByUser(member);
             timeTrackingEntryRepository.deleteByUser(member);
         });
 
@@ -305,12 +314,44 @@ public class DemoDataService {
         }
     }
 
+    @Transactional
+    public int cleanupExpiredDemoTenants() {
+        LocalDateTime now = LocalDateTime.now();
+        List<Company> expiredDemoCompanies = companyRepository.findByDemoTrueAndDemoExpiresAtBefore(now);
+        expiredDemoCompanies.forEach(this::deleteDemoCompany);
+        return expiredDemoCompanies.size();
+    }
+
+    private void deleteDemoCompany(Company company) {
+        if (company == null || company.getId() == null || !company.isDemo()) {
+            return;
+        }
+
+        Long companyId = company.getId();
+        List<User> teamMembers = userRepository.findByCompany_Id(companyId);
+        teamMembers.forEach(member -> {
+            correctionRequestRepository.deleteByUser(member);
+            vacationRequestRepository.deleteByUser(member);
+            sickLeaveRepository.deleteByUser(member);
+            timeTrackingEntryRepository.deleteByUser(member);
+            member.setLastCustomer(null);
+            member.setCompany(null);
+            userRepository.save(member);
+        });
+
+        complianceAuditLogRepository.deleteByCompanyId(companyId);
+        projectRepository.deleteByCustomerCompanyId(companyId);
+        customerRepository.deleteByCompanyId(companyId);
+        userRepository.deleteAll(teamMembers);
+        companyRepository.delete(company);
+    }
+
     private Company ensureCompany(User demoUser) {
         Company company = demoUser.getCompany();
         if (company == null) {
             company = new Company("Chrono Demo GmbH");
         }
-        company.setName("Chrono Demo GmbH");
+        company.setName(demoUser.isDemo() ? "Chrono Demo " + demoSessionSuffix(demoUser).toUpperCase() : "Chrono Demo GmbH");
         company.setAddressLine1("Musterstrasse 5");
         company.setPostalCode("8000");
         company.setCity("Zürich");
@@ -320,6 +361,12 @@ public class DemoDataService {
         company.setNotifyOvertime(true);
         company.setCustomerTrackingEnabled(true);
         company.setCantonAbbreviation("ZH");
+        if (demoUser.isDemo()) {
+            company.setDemo(true);
+            company.setDemoSessionId(demoUser.getDemoSessionId());
+            company.setDemoExpiresAt(demoUser.getDemoExpiresAt());
+            company.setEnabledFeatures(new LinkedHashSet<>(Set.of("projects", "analytics")));
+        }
         Company saved = companyRepository.save(company);
         demoUser.setCompany(saved);
         return saved;
@@ -369,6 +416,8 @@ public class DemoDataService {
         member.setDepartment(department);
         member.setCompany(company);
         member.setDemo(true);
+        member.setDemoSessionId(company.getDemoSessionId());
+        member.setDemoExpiresAt(company.getDemoExpiresAt());
         member.setIncludeInTimeTracking(true);
         member.setDeleted(false);
         member.setOptOut(false);
@@ -399,6 +448,30 @@ public class DemoDataService {
         member.setRoles(roles);
 
         return userRepository.save(member);
+    }
+
+    private String demoSessionSuffix(User user) {
+        String sessionId = user != null ? user.getDemoSessionId() : null;
+        if (sessionId != null && !sessionId.isBlank()) {
+            return sessionId.substring(0, Math.min(12, sessionId.length())).toLowerCase();
+        }
+        String username = user != null ? user.getUsername() : null;
+        if (username != null && username.startsWith("demo_") && username.length() > 5) {
+            return username.substring(5, Math.min(username.length(), 17)).toLowerCase();
+        }
+        return "shared";
+    }
+
+    private String demoUsername(User rootUser, String name) {
+        String rootUsername = rootUser != null ? rootUser.getUsername() : null;
+        if (rootUsername != null && rootUsername.startsWith("demo_")) {
+            return rootUsername + "_" + name;
+        }
+        return name;
+    }
+
+    private String demoEmail(String localPart, String sessionSuffix) {
+        return localPart + "+" + sessionSuffix + "@chrono-demo.ch";
     }
 
     private Customer createCustomer(Company company, String name) {

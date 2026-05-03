@@ -2,8 +2,10 @@ package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.AuthRequest;
 import com.chrono.chrono.dto.AuthResponse;
+import com.chrono.chrono.dto.ErrorResponse;
 import com.chrono.chrono.exceptions.InvalidCredentialsException;
 import com.chrono.chrono.services.AuthService;
+import com.chrono.chrono.services.DemoLoginRateLimiter;
 import com.chrono.chrono.services.LoginAttemptService;
 import com.chrono.chrono.services.UserPermissionService;
 import com.chrono.chrono.services.UserService;
@@ -25,6 +27,7 @@ class AuthControllerTest {
 
     private AuthService authService;
     private LoginAttemptService loginAttemptService;
+    private DemoLoginRateLimiter demoLoginRateLimiter;
     private AuthController controller;
     private HttpServletRequest servletRequest;
 
@@ -32,6 +35,7 @@ class AuthControllerTest {
     void setUp() {
         authService = mock(AuthService.class);
         loginAttemptService = mock(LoginAttemptService.class);
+        demoLoginRateLimiter = mock(DemoLoginRateLimiter.class);
         servletRequest = mock(HttpServletRequest.class);
         controller = new AuthController(
                 authService,
@@ -40,12 +44,14 @@ class AuthControllerTest {
                 null,
                 mock(UserService.class),
                 loginAttemptService,
+                demoLoginRateLimiter,
                 mock(UserPermissionService.class)
         );
 
         when(servletRequest.getHeader("X-Forwarded-For")).thenReturn(null);
         when(servletRequest.getHeader("X-Real-IP")).thenReturn(null);
         when(servletRequest.getRemoteAddr()).thenReturn("127.0.0.1");
+        when(demoLoginRateLimiter.check("127.0.0.1")).thenReturn(new DemoLoginRateLimiter.RateLimitDecision(true, 0));
     }
 
     @Test
@@ -88,9 +94,22 @@ class AuthControllerTest {
     void demoLogin_isDeniedWhenFeatureIsDisabled() {
         ReflectionTestUtils.setField(controller, "demoLoginEnabled", false);
 
-        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> controller.demoLogin());
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> controller.demoLogin(servletRequest));
 
         assertEquals(404, ex.getStatusCode().value());
+        verify(authService, never()).demoLogin();
+    }
+
+    @Test
+    void demoLogin_returnsTooManyRequestsWhenRateLimited() {
+        ReflectionTestUtils.setField(controller, "demoLoginEnabled", true);
+        when(demoLoginRateLimiter.check("127.0.0.1")).thenReturn(new DemoLoginRateLimiter.RateLimitDecision(false, 120));
+
+        ResponseEntity<?> response = controller.demoLogin(servletRequest);
+
+        assertEquals(429, response.getStatusCode().value());
+        assertEquals("120", response.getHeaders().getFirst("Retry-After"));
+        assertEquals("Zu viele Demo-Starts. Bitte versuche es spaeter erneut.", ((ErrorResponse) response.getBody()).getMessage());
         verify(authService, never()).demoLogin();
     }
 }

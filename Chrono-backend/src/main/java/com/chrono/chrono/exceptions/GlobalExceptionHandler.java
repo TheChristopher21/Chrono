@@ -10,6 +10,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.server.ResponseStatusException;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
@@ -68,6 +69,13 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         logger.warn("Access denied: {}", ex.getMessage());
         return new ResponseEntity<>(new ErrorResponse("Keine Berechtigung fuer diese Aktion."), HttpStatus.FORBIDDEN);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException ex) {
+        String message = ex.getReason() != null ? ex.getReason() : ex.getStatusCode().toString();
+        logger.warn("Request rejected with status {}: {}", ex.getStatusCode().value(), message);
+        return ResponseEntity.status(ex.getStatusCode()).body(new ErrorResponse(message));
     }
 
     @ExceptionHandler(Exception.class)
