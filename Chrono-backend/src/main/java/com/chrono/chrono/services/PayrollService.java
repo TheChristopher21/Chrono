@@ -406,9 +406,9 @@ public class PayrollService {
                 .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
         List<User> users;
         if (isSuperAdmin && requestingAdmin.getCompany() == null) {
-            users = userRepository.findByDeletedFalse();
+            users = userRepository.findOperationalUsersDeletedFalse();
         } else if (requestingAdmin.getCompany() != null) {
-            users = userRepository.findByCompany_IdAndDeletedFalse(requestingAdmin.getCompany().getId());
+            users = userRepository.findOperationalUsersByCompanyIdAndDeletedFalse(requestingAdmin.getCompany().getId());
         } else {
             users = List.of();
         }

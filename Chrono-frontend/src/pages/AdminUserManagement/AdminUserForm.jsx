@@ -67,8 +67,22 @@ const AdminUserForm = ({
     };
 
     const selectedRole = userData.roles?.[0] || 'ROLE_USER';
-    const selectedRoleLabel = ROLE_LABELS[selectedRole] || selectedRole.replace('ROLE_', '');
-    const permissionSections = getPermissionSectionsForRole(selectedRole, userData.companyFeatureKeys);
+    const getRoleLabel = (roleName) => {
+        switch (roleName) {
+            case 'ROLE_USER':
+                return t('roles.user', 'Mitarbeiter');
+            case 'ROLE_ADMIN':
+                return t('roles.admin', 'Admin');
+            case 'ROLE_PAYROLL_ADMIN':
+                return t('roles.payrollAdmin', 'Payroll Admin');
+            case 'ROLE_SUPERADMIN':
+                return t('roles.superAdmin', 'Superadmin');
+            default:
+                return ROLE_LABELS[roleName] || roleName?.replace('ROLE_', '') || t('userManagement.role', 'Rolle');
+        }
+    };
+    const selectedRoleLabel = getRoleLabel(selectedRole);
+    const permissionSections = getPermissionSectionsForRole(selectedRole, userData.companyFeatureKeys, t);
     const roleDefaultPermissions = buildDefaultPagePermissions(selectedRole, userData.companyFeatureKeys);
 
     const handleRoleChange = (e) => {
@@ -93,12 +107,12 @@ const AdminUserForm = ({
     const getAccessLabel = (accessLevel) => {
         switch (accessLevel) {
             case ACCESS_MANAGE:
-                return 'Verwalten';
+                return t('pageCatalog.access.manage', 'Verwalten');
             case ACCESS_VIEW:
-                return 'Ansehen';
+                return t('pageCatalog.access.view', 'Ansehen');
             case ACCESS_NONE:
             default:
-                return 'Kein Zugriff';
+                return t('pageCatalog.access.none', 'Kein Zugriff');
         }
     };
 
@@ -133,7 +147,9 @@ const AdminUserForm = ({
     const missingRequired = requiredChecks.filter((item) => !item.complete);
     const completionPercent = Math.round(((requiredChecks.length - missingRequired.length) / requiredChecks.length) * 100);
     const isActive = userData.active !== false && userData.enabled !== false && userData.deleted !== true;
-    const fullName = [userData.firstName, userData.lastName].filter(Boolean).join(' ').trim() || userData.username || 'Neuer Benutzer';
+    const fullName = [userData.firstName, userData.lastName].filter(Boolean).join(' ').trim()
+        || userData.username
+        || t('userManagement.newUser', 'Neuer Benutzer');
     const initials = (
         `${userData.firstName?.[0] || ''}${userData.lastName?.[0] || ''}`.trim()
         || userData.username?.slice(0, 2)
@@ -144,9 +160,14 @@ const AdminUserForm = ({
         : userData.isPercentage
             ? `${t('userTypes.percentage', 'Prozentual')} ${userData.workPercentage || 100}%`
             : t('userTypes.standard', 'Standard');
+    const activeStatusLabel = t('common.active', 'Aktiv');
+    const inactiveStatusLabel = t('common.inactive', 'Inaktiv');
+    const openStatusLabel = t('common.open', 'Offen');
+    const yesLabel = t('common.yes', 'Ja');
+    const noLabel = t('common.no', 'Nein');
     const payrollStatus = userData.isHourly
-        ? (hasValue(userData.hourlyWage) ? 'Aktiv' : 'Offen')
-        : (hasValue(userData.monthlySalary) ? 'Aktiv' : 'Offen');
+        ? (hasValue(userData.hourlyWage) ? activeStatusLabel : openStatusLabel)
+        : (hasValue(userData.monthlySalary) ? activeStatusLabel : openStatusLabel);
 
     const flattenedPages = permissionSections.flatMap((section) => section.pages);
     const customPermissionCount = flattenedPages.filter((page) => (
@@ -187,48 +208,68 @@ const AdminUserForm = ({
 
         const changeCandidates = [
             {
+                key: 'role',
                 label: t('userManagement.role', 'Rolle'),
-                before: ROLE_LABELS[originalUser.roles?.[0]] || originalUser.roles?.[0],
+                before: getRoleLabel(originalUser.roles?.[0]),
                 after: selectedRoleLabel,
             },
             {
+                key: 'fullName',
                 label: t('userManagement.fullName', 'Name'),
                 before: [originalUser.firstName, originalUser.lastName].filter(Boolean).join(' '),
                 after: fullName,
             },
-            { label: t('userManagement.email', 'E-Mail'), before: originalUser.email, after: userData.email },
-            { label: t('userManagement.mobilePhone', 'Handynummer'), before: originalUser.mobilePhone, after: userData.mobilePhone },
-            { label: t('userManagement.personnelNumber', 'Personalnummer'), before: originalUser.personnelNumber, after: userData.personnelNumber },
-            { label: t('userManagement.monthlySalary', 'Monatslohn'), before: originalUser.monthlySalary, after: userData.monthlySalary },
-            { label: t('userManagement.hourlyWage', 'Stundenlohn'), before: originalUser.hourlyRate, after: userData.hourlyWage },
-            { label: t('userManagement.annualVacationDays', 'Urlaubstage'), before: originalUser.annualVacationDays, after: userData.annualVacationDays },
-            { label: t('userManagement.breakDuration', 'Pausendauer'), before: originalUser.breakDuration, after: userData.breakDuration },
-            { label: t('userManagement.dailyWorkHours', 'Tagessoll'), before: originalUser.dailyWorkHours, after: userData.dailyWorkHours },
-            { label: t('userManagement.expectedWorkDays', 'Arbeitstage'), before: originalUser.expectedWorkDays, after: userData.expectedWorkDays },
-            { label: t('userManagement.workModel', 'Arbeitsmodell'), before: originalUser.isHourly ? 'Stundenlohn' : (originalUser.isPercentage ? 'Prozentual' : 'Standard'), after: workModelLabel },
-            { label: t('userManagement.pageAccessSummary', 'Seitenrechte'), before: originalUser.pagePermissions, after: userData.pagePermissions },
+            { key: 'email', label: t('userManagement.email', 'E-Mail'), before: originalUser.email, after: userData.email },
+            { key: 'mobilePhone', label: t('userManagement.mobilePhone', 'Handynummer'), before: originalUser.mobilePhone, after: userData.mobilePhone },
+            { key: 'personnelNumber', label: t('userManagement.personnelNumber', 'Personalnummer'), before: originalUser.personnelNumber, after: userData.personnelNumber },
+            { key: 'monthlySalary', label: t('userManagement.monthlySalary', 'Monatslohn'), before: originalUser.monthlySalary, after: userData.monthlySalary },
+            { key: 'hourlyWage', label: t('userManagement.hourlyWage', 'Stundenlohn'), before: originalUser.hourlyRate, after: userData.hourlyWage },
+            { key: 'annualVacationDays', label: t('userManagement.annualVacationDays', 'Urlaubstage'), before: originalUser.annualVacationDays, after: userData.annualVacationDays },
+            { key: 'breakDuration', label: t('userManagement.breakDuration', 'Pausendauer'), before: originalUser.breakDuration, after: userData.breakDuration },
+            { key: 'dailyWorkHours', label: t('userManagement.dailyWorkHours', 'Tagessoll'), before: originalUser.dailyWorkHours, after: userData.dailyWorkHours },
+            { key: 'expectedWorkDays', label: t('userManagement.expectedWorkDays', 'Arbeitstage'), before: originalUser.expectedWorkDays, after: userData.expectedWorkDays },
+            {
+                key: 'workModel',
+                label: t('userManagement.workModel', 'Arbeitsmodell'),
+                before: originalUser.isHourly
+                    ? t('userTypes.hourly', 'Stundenlohn')
+                    : (originalUser.isPercentage ? t('userTypes.percentage', 'Prozentual') : t('userTypes.standard', 'Standard')),
+                after: workModelLabel,
+            },
+            {
+                key: 'includeInTimeTracking',
+                label: t('userManagement.includeInTimeTrackingSummary', 'Zeitübersichten'),
+                before: originalUser.includeInTimeTracking !== false,
+                after: userData.includeInTimeTracking !== false,
+            },
+            { key: 'pagePermissions', label: t('userManagement.pageAccessSummary', 'Seitenrechte'), before: originalUser.pagePermissions, after: userData.pagePermissions },
         ];
 
         return changeCandidates.filter((item) => normalize(item.before) !== normalize(item.after));
-    }, [fullName, isEditing, originalUser, selectedRoleLabel, t, userData, workModelLabel]);
+    }, [fullName, getRoleLabel, isEditing, originalUser, selectedRoleLabel, t, userData, workModelLabel]);
+
+    const isTimeTrackingVisibilityOnlyChange = isEditing
+        && changedFieldSummaries.length === 1
+        && changedFieldSummaries[0]?.key === 'includeInTimeTracking';
+    const isSubmitBlockedByMissingRequired = missingRequired.length > 0 && !isTimeTrackingVisibilityOnlyChange;
 
     const wizardSteps = [
-        { id: 'account', label: 'Konto' },
-        { id: 'access', label: 'Rechte' },
-        { id: 'profile', label: 'Stammdaten' },
-        { id: 'payroll', label: 'Payroll' },
-        { id: 'worktime', label: 'Arbeitszeit' },
-        { id: 'preview', label: 'Vorschau' },
+        { id: 'account', label: t('userManagement.wizard.account', 'Konto') },
+        { id: 'access', label: t('userManagement.wizard.access', 'Rechte') },
+        { id: 'profile', label: t('userManagement.wizard.profile', 'Stammdaten') },
+        { id: 'payroll', label: t('userManagement.wizard.payroll', 'Payroll') },
+        { id: 'worktime', label: t('userManagement.wizard.worktime', 'Arbeitszeit') },
+        { id: 'preview', label: t('userManagement.wizard.preview', 'Vorschau') },
     ];
     const currentWizardStep = wizardSteps[wizardStepIndex];
     const isLastWizardStep = wizardStepIndex === wizardSteps.length - 1;
 
     const editTabs = [
-        { id: 'profile', label: 'Profil' },
-        { id: 'access', label: 'Zugriff' },
-        { id: 'permissions', label: 'Rechte' },
-        { id: 'payroll', label: 'Payroll' },
-        { id: 'worktime', label: 'Arbeitszeit' },
+        { id: 'profile', label: t('userManagement.tabs.profile', 'Profil') },
+        { id: 'access', label: t('userManagement.tabs.access', 'Zugriff') },
+        { id: 'permissions', label: t('userManagement.tabs.permissions', 'Rechte') },
+        { id: 'payroll', label: t('userManagement.tabs.payroll', 'Payroll') },
+        { id: 'worktime', label: t('userManagement.tabs.worktime', 'Arbeitszeit') },
     ];
 
     const goToNextWizardStep = () => {
@@ -246,7 +287,7 @@ const AdminUserForm = ({
             return;
         }
 
-        if (missingRequired.length > 0) {
+        if (isSubmitBlockedByMissingRequired) {
             event.preventDefault();
             setSubmitAttempted(true);
             return;
@@ -361,10 +402,11 @@ const AdminUserForm = ({
         required: true,
         children: (
             <>
-                <option value="ROLE_USER">Mitarbeiter</option>
-                <option value="ROLE_ADMIN">Admin</option>
-                <option value="ROLE_PAYROLL_ADMIN">Payroll Admin</option>
-                <option value="ROLE_SUPERADMIN">Superadmin</option>
+                {!['ROLE_USER', 'ROLE_ADMIN'].includes(selectedRole) ? (
+                    <option value={selectedRole}>{getRoleLabel(selectedRole)}</option>
+                ) : null}
+                <option value="ROLE_USER">{getRoleLabel('ROLE_USER')}</option>
+                <option value="ROLE_ADMIN">{getRoleLabel('ROLE_ADMIN')}</option>
             </>
         ),
     });
@@ -374,9 +416,16 @@ const AdminUserForm = ({
             {includePresetCards ? (
                 <div className="role-preset-grid full-width">
                     {[
-                        { role: 'ROLE_USER', title: 'Mitarbeiter', text: 'Zeiterfassung, Urlaub und eigene Daten.' },
-                        { role: 'ROLE_PAYROLL_ADMIN', title: 'Payroll Admin', text: 'Lohnbereiche und abrechnungsnahe Daten.' },
-                        { role: 'ROLE_ADMIN', title: 'Admin', text: 'Team, Rechte und operative Verwaltung.' },
+                        {
+                            role: 'ROLE_USER',
+                            title: getRoleLabel('ROLE_USER'),
+                            text: t('userManagement.rolePreset.user', 'Zeiterfassung, Urlaub und eigene Daten.'),
+                        },
+                        {
+                            role: 'ROLE_ADMIN',
+                            title: getRoleLabel('ROLE_ADMIN'),
+                            text: t('userManagement.rolePreset.admin', 'Team, Rechte und operative Verwaltung.'),
+                        },
                     ].map((preset) => (
                         <button
                             key={preset.role}
@@ -468,13 +517,13 @@ const AdminUserForm = ({
                     className="button-secondary button-small"
                     onClick={() => setShowColorPalette((open) => !open)}
                 >
-                    Farbe ändern
+                    {t('userManagement.changeColor', 'Farbe ändern')}
                 </button>
                 <input
                     type="color"
                     value={userData.color || STANDARD_COLORS[0]}
                     onChange={(e) => handleChange('color', e.target.value)}
-                    aria-label="Benutzerfarbe frei wählen"
+                    aria-label={t('userManagement.freeColorAria', 'Benutzerfarbe frei wählen')}
                 />
             </div>
             {showColorPalette ? (
@@ -489,7 +538,7 @@ const AdminUserForm = ({
                                 handleChange('color', color);
                                 setShowColorPalette(false);
                             }}
-                            aria-label={`Farbe ${color} auswählen`}
+                            aria-label={t('userManagement.selectColorAria', 'Farbe {{color}} auswählen', { color })}
                         />
                     ))}
                 </div>
@@ -611,37 +660,31 @@ const AdminUserForm = ({
                 }) : null}
                 {renderRoleSelect()}
                 <div className="readonly-status">
-                    <span>Status</span>
-                    <strong>{isActive ? 'Aktiv' : 'Inaktiv'}</strong>
+                    <span>{t('common.status', 'Status')}</span>
+                    <strong>{isActive ? activeStatusLabel : inactiveStatusLabel}</strong>
                 </div>
                 <div className="readonly-status">
-                    <span>Login erlaubt</span>
-                    <strong>{isActive ? 'Ja' : 'Nein'}</strong>
+                    <span>{t('userManagement.loginAllowed', 'Login erlaubt')}</span>
+                    <strong>{isActive ? yesLabel : noLabel}</strong>
                 </div>
-                {Array.isArray(userData.roles) && (
-                    userData.roles.includes('ROLE_ADMIN')
-                    || userData.roles.includes('ROLE_SUPERADMIN')
-                    || userData.roles.includes('ROLE_PAYROLL_ADMIN')
-                ) ? (
-                    <div className="time-tracking-toggle-group form-field-wide">
-                        <span className="form-label-text">
-                            {t('userManagement.includeInTimeTrackingLabel', 'In Zeiterfassung & Übersichten anzeigen')}
-                        </span>
-                        <button
-                            type="button"
-                            className={`time-tracking-toggle-button ${userData.includeInTimeTracking !== false ? 'active' : ''}`}
-                            onClick={() => handleChange('includeInTimeTracking', !(userData.includeInTimeTracking !== false))}
-                            aria-pressed={userData.includeInTimeTracking !== false}
-                        >
-                            {userData.includeInTimeTracking !== false
-                                ? t('userManagement.includeInTimeTrackingEnabled', 'Eingeschlossen in Zeitübersichten')
-                                : t('userManagement.includeInTimeTrackingDisabled', 'Von Zeitübersichten ausgeschlossen')}
-                        </button>
-                        <p className="form-group-description">
-                            {t('userManagement.includeInTimeTrackingHint', 'Admins ohne Arbeitszeiterfassung werden in Wochenansichten und Salden nicht angezeigt.')}
-                        </p>
-                    </div>
-                ) : null}
+                <div className="time-tracking-toggle-group form-field-wide">
+                    <span className="form-label-text">
+                        {t('userManagement.includeInTimeTrackingLabel', 'In Zeiterfassung & Übersichten anzeigen')}
+                    </span>
+                    <button
+                        type="button"
+                        className={`time-tracking-toggle-button ${userData.includeInTimeTracking !== false ? 'active' : ''}`}
+                        onClick={() => handleChange('includeInTimeTracking', !(userData.includeInTimeTracking !== false))}
+                        aria-pressed={userData.includeInTimeTracking !== false}
+                    >
+                        {userData.includeInTimeTracking !== false
+                            ? t('userManagement.includeInTimeTrackingEnabled', 'Eingeschlossen in Zeitübersichten')
+                            : t('userManagement.includeInTimeTrackingDisabled', 'Von Zeitübersichten ausgeschlossen')}
+                    </button>
+                    <p className="form-group-description">
+                        {t('userManagement.includeInTimeTrackingHint', 'Ausgeschlossene Benutzer werden in Wochenansichten und Salden nicht angezeigt.')}
+                    </p>
+                </div>
             </FormSection>
         </>
     );
@@ -652,11 +695,15 @@ const AdminUserForm = ({
             description={
                 selectedRole === 'ROLE_SUPERADMIN'
                     ? t('userManagement.section.pageAccessSuperadminHint', 'Superadmins behalten immer vollen Zugriff auf alle Bereiche.')
-                    : `Rolle = Vorlage. Rechte sind einzelne Abweichungen davon. Aktuell ${customPermissionCount} Abweichung(en).`
+                    : t(
+                        'userManagement.permissionRoleTemplateHint',
+                        'Rolle = Vorlage. Rechte sind einzelne Abweichungen davon. Aktuell {{count}} Abweichung(en).',
+                        { count: customPermissionCount }
+                    )
             }
             actions={selectedRole !== 'ROLE_SUPERADMIN' ? (
                 <button type="button" className="button-secondary button-small" onClick={resetPermissionsToRole}>
-                    Rollenrechte übernehmen
+                    {t('userManagement.applyRolePermissions', 'Rollenrechte übernehmen')}
                 </button>
             ) : null}
         >
@@ -671,8 +718,8 @@ const AdminUserForm = ({
                             type="search"
                             value={permissionSearch}
                             onChange={(e) => setPermissionSearch(e.target.value)}
-                            placeholder="Modul suchen"
-                            aria-label="Rechte nach Modul suchen"
+                            placeholder={t('userManagement.permissionSearchPlaceholder', 'Modul suchen')}
+                            aria-label={t('userManagement.permissionSearchAria', 'Rechte nach Modul suchen')}
                         />
                         <label className="compact-check">
                             <input
@@ -680,14 +727,18 @@ const AdminUserForm = ({
                                 checked={showOnlyCustomPermissions}
                                 onChange={(e) => setShowOnlyCustomPermissions(e.target.checked)}
                             />
-                            Nur Abweichungen
+                            {t('userManagement.onlyCustomPermissions', 'Nur Abweichungen')}
                         </label>
-                        <span className="soft-status-pill">{customPermissionCount} Abweichungen</span>
+                        <span className="soft-status-pill">
+                            {t('userManagement.customPermissionCount', '{{count}} Abweichungen', { count: customPermissionCount })}
+                        </span>
                     </div>
 
                     <div className="permission-list">
                         {filteredPermissionSections.length === 0 ? (
-                            <div className="permission-empty">Keine Rechte für diese Auswahl.</div>
+                            <div className="permission-empty">
+                                {t('userManagement.noPermissionsForSelection', 'Keine Rechte für diese Auswahl.')}
+                            </div>
                         ) : filteredPermissionSections.map((section) => (
                             <div key={section.group} className="permission-section">
                                 <h5>{section.group}</h5>
@@ -707,7 +758,7 @@ const AdminUserForm = ({
                                                 id={`permission-${page.key}`}
                                                 value={currentAccess}
                                                 onChange={(event) => handlePermissionChange(page.key, event.target.value)}
-                                                aria-label={`${page.label} Zugriff`}
+                                                aria-label={`${page.label} ${t('pageCatalog.access.accessLabel', 'Zugriff')}`}
                                             >
                                                 {choices.map((choice) => (
                                                     <option key={choice} value={choice}>
@@ -779,8 +830,8 @@ const AdminUserForm = ({
                     hint: t('userManagement.countryHint', 'steuert landesspezifische Felder'),
                     children: (
                         <>
-                            <option value="DE">Deutschland</option>
-                            <option value="CH">Schweiz</option>
+                            <option value="DE">{t('countries.germany', 'Deutschland')}</option>
+                            <option value="CH">{t('countries.switzerland', 'Schweiz')}</option>
                         </>
                     ),
                 })}
@@ -792,8 +843,8 @@ const AdminUserForm = ({
         <>
             {renderEmploymentFields()}
             <FormSection
-                title="Lohnmodell"
-                description="Monatslohn, Stundenlohn oder prozentuale Zeiterfassung festlegen."
+                title={t('userManagement.section.payrollModel', 'Lohnmodell')}
+                description={t('userManagement.section.payrollModelHint', 'Monatslohn, Stundenlohn oder prozentuale Zeiterfassung festlegen.')}
             >
                 <div className="toggle-row full-width">
                     {renderCheckboxField({
@@ -801,7 +852,7 @@ const AdminUserForm = ({
                         label: t('userManagement.isHourly', 'Stundenbasiert abrechnen'),
                         checked: !!userData.isHourly,
                         onChange: (e) => handleCheckboxChange('isHourly', e.target.checked),
-                        description: 'Stundenlohn mit flexibler Erfassung.',
+                        description: t('userManagement.isHourlyDescription', 'Stundenlohn mit flexibler Erfassung.'),
                     })}
                     {renderCheckboxField({
                         id: 'isPercentage',
@@ -809,7 +860,7 @@ const AdminUserForm = ({
                         checked: !!userData.isPercentage,
                         disabled: !!userData.isHourly,
                         onChange: (e) => handleCheckboxChange('isPercentage', e.target.checked),
-                        description: 'Pensum statt fixer Wochenplan.',
+                        description: t('userManagement.percentageTrackingDescription', 'Pensum statt fixer Wochenplan.'),
                     })}
                 </div>
 
@@ -852,8 +903,8 @@ const AdminUserForm = ({
             </FormSection>
 
             <FormSection
-                title="Bank & Versicherung"
-                description="Zahlungs- und Versicherungsdaten fuer die Abrechnung."
+                title={t('userManagement.section.bankInsurance', 'Bank & Versicherung')}
+                description={t('userManagement.section.bankInsuranceHint', 'Zahlungs- und Versicherungsdaten fuer die Abrechnung.')}
             >
                 {renderInputField({
                     id: 'bankAccount',
@@ -1001,7 +1052,7 @@ const AdminUserForm = ({
         <>
             <FormSection
                 title={t('userManagement.section.generalSettings', 'Regeln')}
-                description="Urlaub, Pausen und Solltage liegen direkt bei der Arbeitszeit."
+                description={t('userManagement.section.generalSettingsHint', 'Urlaub, Pausen und Solltage liegen direkt bei der Arbeitszeit.')}
             >
                 {renderInputField({
                     id: 'annualVacationDays',
@@ -1040,11 +1091,17 @@ const AdminUserForm = ({
 
             <FormSection
                 title={t('userManagement.scheduleConfig', 'Wochenplan & Sollzeiten')}
-                description={userData.isHourly || userData.isPercentage ? 'Für dieses Modell wird kein fixer Wochenplan gepflegt.' : 'Tagesziele, Zyklus und Wochenplan kompakt bearbeiten.'}
+                description={userData.isHourly || userData.isPercentage
+                    ? t('userManagement.scheduleFlexibleModelHint', 'Für dieses Modell wird kein fixer Wochenplan gepflegt.')
+                    : t('userManagement.scheduleFixedModelHint', 'Tagesziele, Zyklus und Wochenplan kompakt bearbeiten.')}
             >
                 {userData.isHourly || userData.isPercentage ? (
                     <div className="permission-empty full-width">
-                        Arbeitsmodell: {workModelLabel}. Die Sollzeiten werden ueber das gewählte Modell berechnet.
+                        {t(
+                            'userManagement.workModelTargetsHint',
+                            'Arbeitsmodell: {{model}}. Die Sollzeiten werden ueber das gewählte Modell berechnet.',
+                            { model: workModelLabel }
+                        )}
                     </div>
                 ) : (
                     <>
@@ -1099,7 +1156,7 @@ const AdminUserForm = ({
                                                     max="24"
                                                     step="0.01"
                                                     value={week[dayKey] !== null && week[dayKey] !== undefined ? week[dayKey] : ''}
-                                                    placeholder="Std."
+                                                    placeholder={t('userManagement.hoursShort', 'Std.')}
                                                     onChange={(e) => onWeeklyScheduleDayChange(weekIdx, dayKey, e.target.value)}
                                                 />
                                             </div>
@@ -1122,24 +1179,27 @@ const AdminUserForm = ({
                 </span>
                 <div>
                     <h4>{fullName}</h4>
-                    <p>{userData.email || 'Keine E-Mail'} · {selectedRoleLabel} · {userData.country || '-'}</p>
+                    <p>{userData.email || t('userManagement.noEmail', 'Keine E-Mail')} · {selectedRoleLabel} · {userData.country || '-'}</p>
                 </div>
             </div>
             <div className="preview-grid">
-                <span><strong>Personalnummer</strong>{userData.personnelNumber || '-'}</span>
+                <span><strong>{t('userManagement.personnelNumber', 'Personalnummer')}</strong>{userData.personnelNumber || '-'}</span>
                 <span><strong>Payroll</strong>{payrollStatus}</span>
-                <span><strong>Arbeitsmodell</strong>{workModelLabel}</span>
-                <span><strong>Rechte</strong>{customPermissionCount} Abweichungen</span>
+                <span><strong>{t('userManagement.workModel', 'Arbeitsmodell')}</strong>{workModelLabel}</span>
+                <span>
+                    <strong>{t('userManagement.section.pageAccess', 'Rechte')}</strong>
+                    {t('userManagement.customPermissionCount', '{{count}} Abweichungen', { count: customPermissionCount })}
+                </span>
             </div>
             {missingRequired.length > 0 ? (
                 <div className="missing-panel">
-                    <strong>Fehlende Pflichtangaben</strong>
+                    <strong>{t('userManagement.missingRequiredFields', 'Fehlende Pflichtangaben')}</strong>
                     <ul>
                         {missingRequired.map((item) => <li key={item.key}>{item.label}</li>)}
                     </ul>
                 </div>
             ) : (
-                <div className="ready-panel">Alle Pflichtangaben sind vorhanden.</div>
+                <div className="ready-panel">{t('userManagement.allRequiredFieldsComplete', 'Alle Pflichtangaben sind vorhanden.')}</div>
             )}
         </div>
     );
@@ -1149,8 +1209,8 @@ const AdminUserForm = ({
             case 'account':
                 return (
                     <FormSection
-                        title="Konto anlegen"
-                        description="Erst die wichtigsten Angaben erfassen, danach Rechte und Payroll sauber ergänzen."
+                        title={t('userManagement.createAccountTitle', 'Konto anlegen')}
+                        description={t('userManagement.createAccountHint', 'Erst die wichtigsten Angaben erfassen, danach Rechte und Payroll sauber ergänzen.')}
                     >
                         {renderAccountFields({ includePresetCards: true })}
                     </FormSection>
@@ -1196,23 +1256,23 @@ const AdminUserForm = ({
                 {initials}
             </div>
             <h4>{fullName}</h4>
-            <p>{userData.email || userData.username || 'Noch keine Kontaktdaten'}</p>
+            <p>{userData.email || userData.username || t('userManagement.noContactData', 'Noch keine Kontaktdaten')}</p>
 
             <dl>
                 <div>
-                    <dt>Rolle</dt>
+                    <dt>{t('userManagement.role', 'Rolle')}</dt>
                     <dd>{selectedRoleLabel}</dd>
                 </div>
                 <div>
-                    <dt>Status</dt>
-                    <dd>{isActive ? 'Aktiv' : 'Inaktiv'}</dd>
+                    <dt>{t('common.status', 'Status')}</dt>
+                    <dd>{isActive ? activeStatusLabel : inactiveStatusLabel}</dd>
                 </div>
                 <div>
-                    <dt>Personalnr.</dt>
+                    <dt>{t('userManagement.personnelNumberShort', 'Personalnr.')}</dt>
                     <dd>{userData.personnelNumber || '-'}</dd>
                 </div>
                 <div>
-                    <dt>Land</dt>
+                    <dt>{t('userManagement.country', 'Land')}</dt>
                     <dd>{userData.country || '-'}</dd>
                 </div>
                 <div>
@@ -1220,14 +1280,14 @@ const AdminUserForm = ({
                     <dd>{payrollStatus}</dd>
                 </div>
                 <div>
-                    <dt>Arbeitszeit</dt>
+                    <dt>{t('userManagement.worktime', 'Arbeitszeit')}</dt>
                     <dd>{workModelLabel}</dd>
                 </div>
             </dl>
 
             <div className="completion-box">
                 <div>
-                    <span>Vollständigkeit</span>
+                    <span>{t('userManagement.completion', 'Vollständigkeit')}</span>
                     <strong>{completionPercent}%</strong>
                 </div>
                 <div className="completion-track">
@@ -1236,13 +1296,17 @@ const AdminUserForm = ({
             </div>
 
             <div className="missing-summary">
-                <strong>{missingRequired.length > 0 ? 'Fehlende Angaben' : 'Pflichtangaben komplett'}</strong>
+                <strong>
+                    {missingRequired.length > 0
+                        ? t('userManagement.missingInformation', 'Fehlende Angaben')
+                        : t('userManagement.requiredFieldsComplete', 'Pflichtangaben komplett')}
+                </strong>
                 {missingRequired.length > 0 ? (
                     <ul>
                         {missingRequired.slice(0, 4).map((item) => <li key={item.key}>{item.label}</li>)}
                     </ul>
                 ) : (
-                    <p>Bereit zum Speichern.</p>
+                    <p>{t('userManagement.readyToSave', 'Bereit zum Speichern.')}</p>
                 )}
             </div>
         </aside>
@@ -1257,12 +1321,24 @@ const AdminUserForm = ({
                             {initials}
                         </span>
                         <div>
-                            <p className="eyebrow">{isEditing ? 'Benutzer bearbeiten' : 'Neuen Benutzer erstellen'}</p>
-                            <h3>{isEditing ? fullName : 'Benutzerkonto einrichten'}</h3>
+                            <p className="eyebrow">
+                                {isEditing
+                                    ? t('userManagement.editUser', 'Benutzer bearbeiten')
+                                    : t('userManagement.createNewUser', 'Neuen Benutzer erstellen')}
+                            </p>
+                            <h3>{isEditing ? fullName : t('userManagement.setupAccount', 'Benutzerkonto einrichten')}</h3>
                             <p>
                                 {isEditing
-                                    ? `${userData.email || 'Keine E-Mail'} · Personalnummer ${userData.personnelNumber || '-'} · Rolle: ${selectedRoleLabel}`
-                                    : 'Konto, Rolle, Stammdaten, Payroll und Arbeitszeit geführt erfassen.'}
+                                    ? t(
+                                        'userManagement.editHeaderMeta',
+                                        '{{email}} · Personalnummer {{personnelNumber}} · Rolle: {{role}}',
+                                        {
+                                            email: userData.email || t('userManagement.noEmail', 'Keine E-Mail'),
+                                            personnelNumber: userData.personnelNumber || '-',
+                                            role: selectedRoleLabel,
+                                        }
+                                    )
+                                    : t('userManagement.createHeaderHint', 'Konto, Rolle, Stammdaten, Payroll und Arbeitszeit geführt erfassen.')}
                             </p>
                         </div>
                     </div>
@@ -1270,29 +1346,32 @@ const AdminUserForm = ({
                         {isEditing ? (
                             <>
                                 <button type="button" className="button-secondary" onClick={() => setActiveTab('access')}>
-                                    Rolle ändern
+                                    {t('userManagement.changeRole', 'Rolle ändern')}
                                 </button>
                                 <button type="button" className="button-secondary" onClick={() => setActiveTab('payroll')}>
-                                    Arbeitsmodell
+                                    {t('userManagement.workModel', 'Arbeitsmodell')}
                                 </button>
-                                <button type="submit" className="button-primary" disabled={missingRequired.length > 0}>
-                                    Speichern
+                                <button type="submit" className="button-primary" disabled={isSubmitBlockedByMissingRequired}>
+                                    {t('save', 'Speichern')}
                                 </button>
                             </>
                         ) : (
                             <span className="wizard-progress-label">
-                                Schritt {wizardStepIndex + 1} von {wizardSteps.length}
+                                {t('userManagement.wizardProgress', 'Schritt {{current}} von {{total}}', {
+                                    current: wizardStepIndex + 1,
+                                    total: wizardSteps.length,
+                                })}
                             </span>
                         )}
                         <button type="button" onClick={onCancel} className="button-secondary">
-                            Abbrechen
+                            {t('cancel', 'Abbrechen')}
                         </button>
                     </div>
                 </div>
 
                 {!isEditing ? (
                     <div className="create-wizard-shell">
-                        <div className="wizard-steps" aria-label="Erstellungsschritte">
+                        <div className="wizard-steps" aria-label={t('userManagement.creationSteps', 'Erstellungsschritte')}>
                             {wizardSteps.map((step, index) => (
                                 <button
                                     key={step.id}
@@ -1313,7 +1392,7 @@ const AdminUserForm = ({
                     <div className="user-edit-shell">
                         {renderSummarySidebar()}
                         <div className="user-detail-panel">
-                            <div className="user-tabs" role="tablist" aria-label="Benutzerbereiche">
+                            <div className="user-tabs" role="tablist" aria-label={t('userManagement.userSections', 'Benutzerbereiche')}>
                                 {editTabs.map((tab) => (
                                     <button
                                         key={tab.id}
@@ -1334,9 +1413,9 @@ const AdminUserForm = ({
                     </div>
                 )}
 
-                {(submitAttempted && missingRequired.length > 0) ? (
+                {(submitAttempted && isSubmitBlockedByMissingRequired) ? (
                     <div className="missing-panel sticky-warning">
-                        <strong>Vor dem Speichern fehlen noch:</strong>
+                        <strong>{t('userManagement.missingBeforeSave', 'Vor dem Speichern fehlen noch:')}</strong>
                         <span>{missingRequired.map((item) => item.label).join(', ')}</span>
                     </div>
                 ) : null}
@@ -1347,37 +1426,51 @@ const AdminUserForm = ({
                             <>
                                 <strong>
                                     {changedFieldSummaries.length > 0
-                                        ? `${changedFieldSummaries.length} ungespeicherte Änderungen`
-                                        : 'Keine ungespeicherten Änderungen'}
+                                        ? t('userManagement.unsavedChangeCount', '{{count}} ungespeicherte Änderungen', { count: changedFieldSummaries.length })
+                                        : t('userManagement.noUnsavedChanges', 'Keine ungespeicherten Änderungen')}
                                 </strong>
                                 {changedFieldSummaries.length > 0 ? (
                                     <span>{changedFieldSummaries.slice(0, 3).map((item) => item.label).join(', ')}</span>
                                 ) : (
-                                    <span>Pflichtangaben: {missingRequired.length === 0 ? 'vollständig' : `${missingRequired.length} offen`}</span>
+                                    <span>
+                                        {t(
+                                            'userManagement.requiredStatus',
+                                            'Pflichtangaben: {{status}}',
+                                            {
+                                                status: missingRequired.length === 0
+                                                    ? t('userManagement.complete', 'vollständig')
+                                                    : t('userManagement.openCount', '{{count}} offen', { count: missingRequired.length }),
+                                            }
+                                        )}
+                                    </span>
                                 )}
                             </>
                         ) : (
                             <>
-                                <strong>{isLastWizardStep ? 'Benutzer wird vorbereitet' : currentWizardStep.label}</strong>
-                                <span>{missingRequired.length === 0 ? 'Alle Pflichtangaben vorhanden' : `${missingRequired.length} Pflichtangaben offen`}</span>
+                                <strong>{isLastWizardStep ? t('userManagement.userIsPrepared', 'Benutzer wird vorbereitet') : currentWizardStep.label}</strong>
+                                <span>
+                                    {missingRequired.length === 0
+                                        ? t('userManagement.allRequiredFieldsPresent', 'Alle Pflichtangaben vorhanden')
+                                        : t('userManagement.openRequiredCount', '{{count}} Pflichtangaben offen', { count: missingRequired.length })}
+                                </span>
                             </>
                         )}
                     </div>
                     <div className="sticky-actions">
                         {!isEditing && wizardStepIndex > 0 ? (
                             <button type="button" className="button-secondary" onClick={goToPreviousWizardStep}>
-                                Zurück
+                                {t('back', 'Zurück')}
                             </button>
                         ) : null}
                         <button type="button" onClick={onCancel} className="button-secondary">
-                            Abbrechen
+                            {t('cancel', 'Abbrechen')}
                         </button>
                         {!isEditing && !isLastWizardStep ? (
                             <button type="button" className="button-primary" onClick={goToNextWizardStep}>
-                                Weiter
+                                {t('next', 'Weiter')}
                             </button>
                         ) : (
-                            <button type="submit" className="button-primary" disabled={missingRequired.length > 0}>
+                            <button type="submit" className="button-primary" disabled={isSubmitBlockedByMissingRequired}>
                                 {isEditing
                                     ? t('userManagement.button.saveChanges', 'Änderungen speichern')
                                     : t('userManagement.button.createUser', 'Benutzer erstellen')}

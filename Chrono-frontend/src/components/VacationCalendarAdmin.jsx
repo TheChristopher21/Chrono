@@ -86,6 +86,7 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const loadedHolidayKeysRef = useRef(new Set());
     const [activeStartDate, setActiveStartDate] = useState(new Date());
     const [currentCantonForHolidays, setCurrentCantonForHolidays] = useState(null);
+    const [currentCompanyIdForHolidays, setCurrentCompanyIdForHolidays] = useState(null);
     const [selectedDayDetails, setSelectedDayDetails] = useState(null);
     // const [selectedUserForSickLeaveDetails, setSelectedUserForSickLeaveDetails] = useState(null); // Entfernt, da currentCantonForHolidays ausreicht
 
@@ -140,29 +141,35 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
 
     useEffect(() => {
         let cantonToUse = null;
+        let companyIdToUse = null;
         if (newVacationUser && users.length > 0) {
             const userDetails = users.find(u => u.username === newVacationUser);
             cantonToUse = userDetails?.company?.cantonAbbreviation || null;
+            companyIdToUse = userDetails?.companyId || userDetails?.company?.id || null;
         } else if (sickLeaveUser && users.length > 0) {
             const userDetails = users.find(u => u.username === sickLeaveUser);
             cantonToUse = userDetails?.company?.cantonAbbreviation || null;
+            companyIdToUse = userDetails?.companyId || userDetails?.company?.id || null;
         } else if (currentUser?.company?.cantonAbbreviation) {
             cantonToUse = currentUser.company.cantonAbbreviation;
+            companyIdToUse = currentUser?.companyId || currentUser?.company?.id || null;
         } else if (users.length > 0 && users[0]?.company?.cantonAbbreviation) {
             cantonToUse = users[0].company.cantonAbbreviation;
+            companyIdToUse = users[0]?.companyId || users[0]?.company?.id || null;
         }
         setCurrentCantonForHolidays(cantonToUse);
+        setCurrentCompanyIdForHolidays(companyIdToUse);
     }, [newVacationUser, sickLeaveUser, users, currentUser]);
 
-    const fetchHolidays = useCallback(async (year, canton) => {
-        const key = `${year}-${canton || 'ALL'}`;
+    const fetchHolidays = useCallback(async (year, canton, companyId) => {
+        const key = `${year}-${companyId || canton || 'ALL'}`;
         if (loadedHolidayKeysRef.current.has(key)) {
             return;
         }
         try {
             const yearStartDate = `${year}-01-01`;
             const yearEndDate = `${year}-12-31`;
-            const params = { year, cantonAbbreviation: canton || '', startDate: yearStartDate, endDate: yearEndDate };
+            const params = { year, cantonAbbreviation: canton || '', companyId: companyId || undefined, startDate: yearStartDate, endDate: yearEndDate };
             const response = await api.get('/api/holidays/details', { params });
             setHolidays(prevHolidays => ({ ...prevHolidays, ...response.data }));
             loadedHolidayKeysRef.current.add(key);
@@ -191,9 +198,10 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     useEffect(() => {
         const year = activeStartDate.getFullYear();
         const cantonToLoad = currentCantonForHolidays;
+        const companyIdToLoad = currentCompanyIdForHolidays;
 
-        fetchHolidays(year, cantonToLoad);
-    }, [activeStartDate, currentCantonForHolidays, fetchHolidays]);
+        fetchHolidays(year, cantonToLoad, companyIdToLoad);
+    }, [activeStartDate, currentCantonForHolidays, currentCompanyIdForHolidays, fetchHolidays]);
 
     useEffect(() => {
         fetchAllSickLeaves();

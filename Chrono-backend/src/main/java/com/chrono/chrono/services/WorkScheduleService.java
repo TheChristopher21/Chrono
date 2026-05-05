@@ -105,7 +105,16 @@ public class WorkScheduleService {
         logger.info("[CHRONO-DEBUG] Für Benutzer: '{}', Datum: {}, berechnete Soll-Stunden: {}", user.getUsername(), date.toString(), baseHours);
         // ======================= ENDE DEBUG-CODE =======================
 
-        if (isHalfDay(user, date)) {
+        boolean companyHoliday = isHolidayForUser(user, date);
+        boolean companyHolidayHalfDay = isHalfDayHolidayForUser(user, date);
+        boolean scheduleHalfDay = isHalfDay(user, date);
+
+        if (!Boolean.TRUE.equals(user.getIsPercentage()) && companyHoliday) {
+            if (!companyHolidayHalfDay) {
+                return 0.0;
+            }
+            baseHours = baseHours / 2.0;
+        } else if (scheduleHalfDay) {
             baseHours = baseHours / 2.0;
         }
 
@@ -152,8 +161,8 @@ public class WorkScheduleService {
                 continue;
             }
 
-            String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-            boolean isActualHoliday = holidayService.isHoliday(d, cantonAbbreviation);
+            boolean isActualHoliday = isHolidayForUser(user, d);
+            boolean isHalfDayHoliday = isHalfDayHolidayForUser(user, d);
 
             // Abwesenheiten (Urlaub, Krankheit)
             boolean vacationToday = approvedVacationsInWeek.stream()
@@ -180,7 +189,7 @@ public class WorkScheduleService {
 
                 expectedMinutesInRange += dailyValueMinutes;
                 if (handling == UserHolidayOption.HolidayHandlingOption.DEDUCT_FROM_WEEKLY_TARGET) {
-                    absenceMinutesToDeduct += dailyValueMinutes; // Feiertag reduziert Soll
+                    absenceMinutesToDeduct += isHalfDayHoliday ? dailyValueMinutes / 2 : dailyValueMinutes; // Feiertag reduziert Soll
                 } else if (handling == UserHolidayOption.HolidayHandlingOption.DO_NOT_DEDUCT_FROM_WEEKLY_TARGET) {
                     // Feiertag reduziert das Soll NICHT, also keine Änderung an absenceMinutesToDeduct
                 } else { // PENDING_DECISION - hier Standard: Soll NICHT reduzieren, bis Admin entscheidet
@@ -246,12 +255,6 @@ public class WorkScheduleService {
         // damit TimeTrackingService.computeDailyWorkDifference dies für die Saldenberechnung nutzen kann,
         // auch wenn prozentuale User wöchentlich saldiert werden.
         if (Boolean.TRUE.equals(user.getIsPercentage())) {
-            // Prüfe, ob der Tag ein Feiertag ist, der das Soll reduziert (gemäß UserHolidayOption)
-            if (isDayOff(user, date)) { // isDayOff berücksichtigt jetzt die Feiertagsoption für %-User
-                // Wenn isDayOff true ist (z.B. Feiertag, der Soll reduziert, oder Wochenende) -> Soll ist 0
-                return 0;
-            }
-
             // Prüfe auf ganztägigen Urlaub für diesen Tag
             for (VacationRequest vr : approvedVacationsForUser) {
                 if (!date.isBefore(vr.getStartDate()) && !date.isAfter(vr.getEndDate())) {
@@ -270,10 +273,21 @@ public class WorkScheduleService {
             double baseFullTimeWeeklyHours = BASE_FULL_TIME_WEEKLY_HOURS;
             double percentageWeeklyHours = baseFullTimeWeeklyHours * (user.getWorkPercentage() / 100.0);
             int modeledWorkDays = getModeledWorkDaysForPercentageUser(user, date);
+            boolean percentageHoliday = isHolidayForUser(user, date);
+            boolean percentageHalfDayHoliday = isHalfDayHolidayForUser(user, date);
             if (!isModeledPercentageWorkDay(date, modeledWorkDays)) {
                 return 0;
             }
             int dailyMinutes = (int) Math.round((percentageWeeklyHours / modeledWorkDays) * 60);
+
+            if (percentageHoliday) {
+                UserHolidayOption.HolidayHandlingOption handling = userHolidayOptionRepository.findByUserAndHolidayDate(user, date)
+                        .map(UserHolidayOption::getHolidayHandlingOption)
+                        .orElse(UserHolidayOption.HolidayHandlingOption.PENDING_DECISION);
+                if (handling == UserHolidayOption.HolidayHandlingOption.DEDUCT_FROM_WEEKLY_TARGET) {
+                    return percentageHalfDayHoliday ? dailyMinutes / 2 : 0;
+                }
+            }
 
             // Halbtägige Abwesenheiten reduzieren dieses Tagessoll
             for (VacationRequest vr : approvedVacationsForUser) {
@@ -364,9 +378,11 @@ public class WorkScheduleService {
     }
 
     public boolean isDayOff(User user, LocalDate date) {
-        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-
-        if (holidayService.isHoliday(date, cantonAbbreviation)) {
+        if (isHolidayForUser(user, date)) {
+            if (isHalfDayHolidayForUser(user, date)) {
+                logger.debug("Date {} is a half-day holiday for user {}. isDayOff returns false.", date, user.getUsername());
+                return false;
+            }
             if (Boolean.TRUE.equals(user.getIsPercentage())) {
                 Optional<UserHolidayOption> holidayOptionOpt = userHolidayOptionRepository.findByUserAndHolidayDate(user, date);
                 UserHolidayOption.HolidayHandlingOption handling = holidayOptionOpt
@@ -399,6 +415,21 @@ public class WorkScheduleService {
         }
 
         logger.trace("Date {} is not a holiday or weekend for user {}. isDayOff returns false.", date, user.getUsername());
+        return false;
+    }
+
+    private boolean isHolidayForUser(User user, LocalDate date) {
+        if (user.getCompany() != null && user.getCompany().isCustomHolidaySelectionEnabled()) {
+            return holidayService.isCompanyHoliday(date, user.getCompany());
+        }
+        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
+        return holidayService.isHoliday(date, cantonAbbreviation);
+    }
+
+    private boolean isHalfDayHolidayForUser(User user, LocalDate date) {
+        if (user.getCompany() != null && user.getCompany().isCustomHolidaySelectionEnabled()) {
+            return holidayService.isHalfDayHoliday(date, user.getCompany());
+        }
         return false;
     }
 

@@ -1,6 +1,8 @@
 // src/context/LanguageContext.jsx
 import React, { createContext, useState } from 'react';
 import { deAgbPage, enAgbPage } from '../content/agbTerms.js';
+import { additionalTranslations } from './additionalTranslations.js';
+import { routeTranslations } from './routeTranslations.js';
 
 const translations = {
     de: {
@@ -57,6 +59,338 @@ const translations = {
         inactive: "Inaktiv",
         refresh: "Aktualisieren",
         status: "Status",
+        pageCatalog: {
+            groups: {
+                Benutzer: "Benutzer",
+                Module: "Module",
+                Admin: "Admin",
+                Projekte: "Projekte",
+                Superadmin: "Superadmin",
+                Seiten: "Seiten",
+            },
+            access: {
+                none: "Kein Zugriff",
+                view: "Ansehen",
+                manage: "Verwalten",
+                accessLabel: "Zugriff",
+            },
+            pages: {
+                dashboard: {
+                    label: "Mein Dashboard",
+                    description: "Wochenübersicht, Zeiterfassung und persönliche Auswertung.",
+                },
+                personalData: {
+                    label: "Meine Daten",
+                    description: "Persönliche Daten, Kontaktangaben und Passwort.",
+                },
+                payslips: {
+                    label: "Abrechnungen",
+                    description: "Lohnabrechnungen und Dokumente ansehen.",
+                },
+                demoTour: {
+                    label: "Demo-Tour",
+                    description: "Kurze Einführung in Funktionen und Abläufe.",
+                },
+                printReport: {
+                    label: "Zeitbericht",
+                    description: "Berichte und Ausdrucke öffnen.",
+                },
+                supplyChain: {
+                    label: "Supply Chain",
+                    description: "Bestände, Wareneingang und operative Lieferkette.",
+                },
+                adminDashboard: {
+                    label: "Admin-Start",
+                    description: "Teamübersicht, Inbox und Kennzahlen.",
+                },
+                adminUsers: {
+                    label: "Benutzerverwaltung",
+                    description: "Benutzer, Rollen und Zugriffe verwalten.",
+                },
+                adminChangePassword: {
+                    label: "Admin-Passwort",
+                    description: "Eigenes Admin-Passwort ändern.",
+                },
+                adminCustomers: {
+                    label: "Kunden",
+                    description: "Kundenverwaltung und Zuordnungen.",
+                },
+                adminProjects: {
+                    label: "Projekte",
+                    description: "Projekte planen und pflegen.",
+                },
+                adminTasks: {
+                    label: "Aufgaben",
+                    description: "Aufgaben und operative Arbeitspakete.",
+                },
+                adminProjectReport: {
+                    label: "Projektbericht",
+                    description: "Projektberichte und Auswertungen.",
+                },
+                adminAnalytics: {
+                    label: "Analytics",
+                    description: "Kennzahlen, Trends und Reports ansehen.",
+                },
+                adminAccounting: {
+                    label: "Finanzbuchhaltung",
+                    description: "Buchhaltung und finanzielle Prozesse.",
+                },
+                chronoTwo: {
+                    label: "Chrono 2.0",
+                    description: "Zusatzmodul Chrono 2.0.",
+                },
+                crm: {
+                    label: "CRM & Marketing",
+                    description: "Leads, Pipeline und Marketingboard.",
+                },
+                banking: {
+                    label: "Zahlungsverkehr",
+                    description: "Banking, Zahlungen und Freigaben.",
+                },
+                adminPayslips: {
+                    label: "Payroll",
+                    description: "Abrechnungen erstellen und verwalten.",
+                },
+                adminSchedule: {
+                    label: "Dienstplan",
+                    description: "Schichten und Einsatzplanung steuern.",
+                },
+                adminPrintSchedule: {
+                    label: "Dienstplan drucken",
+                    description: "Dienstpläne exportieren und drucken.",
+                },
+                adminShiftRules: {
+                    label: "Schichtregeln",
+                    description: "Planregeln und Vorgaben pflegen.",
+                },
+                adminKnowledge: {
+                    label: "Firmenwissen",
+                    description: "Interne Wissensbasis und KI-Inhalte.",
+                },
+                companySettings: {
+                    label: "Firmeneinstellungen",
+                    description: "Globale Firmen- und Systemkonfiguration.",
+                },
+                adminImportTimes: {
+                    label: "Zeiten importieren",
+                    description: "Zeitdaten importieren und zuordnen.",
+                },
+                companyManagement: {
+                    label: "Firmenverwaltung",
+                    description: "Firmen und globale Chrono-Nutzung steuern.",
+                },
+            },
+        },
+        accessiblePages: {
+            eyebrow: "Zugängliche Seiten",
+            expand: "Seiten ausklappen",
+            collapse: "Seiten einklappen",
+            expandShort: "Ausklappen",
+            collapseShort: "Einklappen",
+        },
+        mobileTabBar: {
+            ariaLabel: "Mobile Navigation",
+        },
+        aboutChrono: {
+            values: {
+                directSupport: "Direkte Betreuung statt anonymer Supportwege",
+                fastDevelopment: "Schnelle Weiterentwicklung aus praktischen Anforderungen",
+                onboarding: "Individuelle Einführung und Hilfe beim Umstieg",
+                platform: "Ein System für Zeit, HR, Lohn, CRM, Finanzen, Lager und Reporting",
+            },
+            timeline: {
+                kicker: "Entstehung",
+                title: "Aus einem echten Bedarf entstanden.",
+                lead: "Chrono-Logisch ist nicht aus einer abstrakten Produktidee entstanden, sondern aus einem konkreten Problem im Alltag eines Unternehmens.",
+                interest: {
+                    title: "Frühes Interesse",
+                    text: "Christopher Siefert interessierte sich schon als Kind für Programmierung und dafür, wie Software echte Abläufe einfacher machen kann.",
+                },
+                firstChrono: {
+                    title: "Erstes Chrono",
+                    text: "Als seine Eltern eine Zeiterfassung brauchten, entstand die erste kleine Version von Chrono aus einem konkreten Bedarf heraus.",
+                },
+                platform: {
+                    text: "Aus diesem ersten Werkzeug wurde mit viel Herz, Feedback und kontinuierlicher Weiterentwicklung die Plattform Chrono-Logisch.",
+                },
+            },
+            hero: {
+                kicker: "Über Chrono-Logisch",
+                title: "Abläufe sollen klarer werden.",
+                text: "Viele Firmen arbeiten täglich mit Excel-Listen, Papierformularen, einzelnen Tools und manuellen Abstimmungen. Chrono-Logisch wurde entwickelt, um genau diese Abläufe zentraler, übersichtlicher und nachvollziehbarer zu machen.",
+            },
+            actions: {
+                contact: "Kontakt aufnehmen",
+                email: "E-Mail schreiben",
+                phone: "Telefon anrufen",
+                contactForm: "Zum Kontaktformular",
+            },
+            founder: {
+                role: "Gründer & Entwickler von Chrono",
+            },
+            idea: {
+                kicker: "Die Idee",
+                title: "Mehr als Zeiterfassung.",
+                text1: "Chrono verbindet Arbeitszeiten, Urlaub, Korrekturen, HR, Lohnprozesse, Rechnungen, CRM, Lager, Finanzen und Reporting in einem gemeinsamen System.",
+                text2: "Das Ziel ist nicht, Unternehmen mit noch einem weiteren Tool zu belasten, sondern bestehende Abläufe zu vereinfachen und in eine klare Struktur zu bringen.",
+            },
+            promise: {
+                kicker: "Leitsatz",
+                title: "Chrono bringt zusammen, was Firmen täglich brauchen.",
+                text: "Und wenn im Alltag etwas Entscheidendes fehlt, wird es gezielt weiterentwickelt.",
+            },
+            advantage: {
+                kicker: "Ihr Vorteil",
+                title: "Direkter Ansprechpartner für Einführung und Weiterentwicklung.",
+                text1: "Kunden sprechen bei Chrono-Logisch nicht mit einem anonymen Konzern, sondern mit einem Ansprechpartner, der das System kennt, weiterentwickelt und versteht, wie die einzelnen Module zusammenspielen.",
+                text2: "Feedback aus der Praxis kann dadurch gezielt aufgenommen werden. Auch beim Wechsel aus bestehenden Programmen unterstützt Chrono-Logisch bei Einführung, Einrichtung und Umstellung.",
+            },
+            contact: {
+                kicker: "Kontakt",
+                title: "Demo, Einführung oder Wechsel besprechen.",
+                text: "Sie können Chrono-Logisch per E-Mail, telefonisch oder über das Kontaktformular auf der Chrono-Seite erreichen.",
+            },
+            footer: {
+                home: "Startseite",
+                imprint: "Impressum",
+                privacy: "Datenschutz",
+                terms: "AGB",
+            },
+        },
+        demoTour: {
+            title: "Chrono Demo",
+            intro: "Willkommen! Diese Kurzführung zeigt dir die wichtigsten Bereiche.",
+            stepDashboard: "Im Dashboard findest du bereits angelegte Projekte und Zeiteinträge.",
+            stepMenu: "Wechsle über das Menü zu Kunden oder Projekten, um weitere Daten zu sehen.",
+            stepReset: "Teste gern alle Funktionen - Änderungen werden beim nächsten Demo-Login zurückgesetzt.",
+            dashboardCta: "Zum Dashboard",
+            adminCta: "Zum Admin-Dashboard",
+        },
+        scheduleRules: {
+            title: "Schicht-Einstellungen",
+            subtitle: "Hier können die globalen Schichten und ihre Zeiten für den Dienstplan konfiguriert werden.",
+            label: "Bezeichnung",
+            key: "Schlüssel (z.B. EARLY)",
+            start: "Startzeit",
+            end: "Endzeit",
+            active: "Aktiv",
+            save: "Speichern",
+            saving: "Speichern...",
+            saveFailed: "Speichern fehlgeschlagen.",
+            labelPlaceholder: "z. B. Frühschicht",
+            add: "+ Neue Schicht hinzufügen",
+        },
+        timeImport: {
+            title: "Stempelzeiten aus Excel importieren",
+            subtitle: "Laden Sie eine formatierte .xlsx-Datei hoch, um Arbeitszeiten für mehrere Benutzer gleichzeitig zu verarbeiten.",
+            fileSelectionCancelled: "Dateiauswahl abgebrochen.",
+            partialSuccess: "Import teilweise erfolgreich.",
+            reimportSuccess: "{{count}} Zeilen erfolgreich re-importiert!",
+            reimportError: "Fehler beim Re-Import.",
+            step1: "Schritt 1: Datei auswählen",
+            dropNow: "Lassen Sie die Datei jetzt los...",
+            selected: "Ausgewählt",
+            changeHint: "Klicken oder neue Datei hierher ziehen, um zu ändern.",
+            dropHint: "Excel-Datei hierher ziehen oder klicken.",
+            checkAndImport: "Datei prüfen & importieren",
+            step2: "Schritt 2: Ergebnis des Imports",
+            importedCountLabel: "Einträge erfolgreich importiert",
+            errorsFound: "Fehler gefunden",
+            correctRowsTitle: "Fehlerhafte Zeilen korrigieren",
+            correctRowsText: "Bearbeiten Sie die Daten direkt in der Tabelle und importieren Sie die korrigierten Zeilen erneut.",
+            reimporting: "Re-Import läuft...",
+            importCorrectedRows: "Korrigierte {{count}} Zeilen importieren",
+            formatTitle: "Hinweis zum Excel-Format",
+            formatText: "Bitte stellen Sie sicher, dass Ihre .xlsx-Datei die folgenden Spalten enthält. Die erste Zeile wird als Kopfzeile ignoriert.",
+            columnA: "Spalte A",
+            columnB: "Spalte B",
+            columnC: "Spalte C",
+            columnD: "Spalte D",
+            columnE: "Spalte E",
+            columnF: "Spalte F",
+            columnG: "Spalte G",
+            dateColumn: "Datum (Format: JJJJ-MM-TT)",
+            workStartColumn: "Arbeitsbeginn (Format: HH:mm)",
+            breakStartColumn: "Pausenbeginn (Format: HH:mm, optional)",
+            breakEndColumn: "Pausenende (Format: HH:mm, optional)",
+            workEndColumn: "Arbeitsende (Format: HH:mm)",
+            noteColumn: "Tagesnotiz (optional)",
+        },
+        workTimeCalculator: {
+            kicker: "Chrono Rechner",
+            title: "Arbeitszeit-Rechner",
+            subtitle: "Sollzeit, Arbeitstage, Feiertage, Pensum und Vortagsreduktionen in einer Ansicht.",
+            applyProfile: "Profilwerte übernehmen",
+            print: "Drucken",
+            exportCsv: "CSV exportieren",
+            layoutAria: "Arbeitszeit-Rechner Eingaben und Ergebnis",
+            settings: "Einstellungen",
+            loadingHolidays: "Feiertage laden...",
+            ready: "Bereit",
+            period: "Zeitraum",
+            from: "Von",
+            to: "Bis",
+            canton: "Kanton",
+            workload: "Pensum",
+            includeHolidays: "Feiertage berücksichtigen",
+            preHolidayReduction: "Zeitreduktion am Vortag",
+            hoursShort: "Std.",
+            workWeek: "Arbeitswoche",
+            standard: "Standard",
+            holidaysLoadError: "Feiertage konnten nicht geladen werden.",
+            manualSource: "Manuell",
+            customHolidayDateRequired: "Bitte ein Datum für den eigenen Feiertag auswählen.",
+            customHolidayFallback: "Eigener Feiertag",
+            customHolidayPlaceholder: "Eigener Feiertag",
+            add: "Hinzufügen",
+            remove: "Entfernen",
+            monthOverviewTitle: "Monatsübersicht",
+            monthOverviewText: "Brutto-Soll, Feiertagsabzug und Netto-Soll auf einen Blick.",
+            holidaysTitle: "Feiertage",
+            holidaysText: "Einzelne Feiertage können für diese Berechnung abgewählt werden.",
+            noHolidays: "Keine Feiertage im gewählten Zeitraum.",
+            relevantDaysTitle: "Relevante Tage",
+            relevantDaysText: "Feiertage und Tage mit Vortagsreduktion als schnelle Kontrolle.",
+            noAdjustments: "Keine Abzüge oder Sondertage im Zeitraum.",
+            holidayDeductionLine: "{{name}}: -{{hours}} Std.",
+            preHolidayReductionLine: "Vortagsreduktion: -{{hours}} Std.",
+            netLine: "Netto {{hours}} Std.",
+            presets: {
+                currentYear: "Aktuelles Jahr",
+                nextYear: "Nächstes Jahr",
+                currentQuarter: "Aktuelles Quartal",
+                currentMonth: "Aktueller Monat",
+                custom: "Eigener Zeitraum",
+            },
+            kpis: {
+                netTargetHours: "Sollstunden netto",
+                workdays: "Arbeitstage",
+                grossWorkdays: "{{count}} brutto",
+                holidayDeduction: "Feiertagsabzug",
+                onWorkdays: "{{count}} auf Arbeitstagen",
+                weeklyTarget: "Wochen-Soll",
+                averageNet: "Ø netto im Zeitraum {{hours}} Std.",
+            },
+            table: {
+                month: "Monat",
+                workdays: "Arbeitstage",
+                holidays: "Feiertage",
+                gross: "Brutto",
+                deduction: "Abzug",
+                net: "Netto",
+                netBar: "Netto-Balken",
+            },
+            csv: {
+                month: "Monat",
+                calendarDays: "Kalendertage",
+                grossWorkdays: "Arbeitstage brutto",
+                holidayWorkdays: "Feiertage an Arbeitstagen",
+                grossHours: "Sollstunden brutto",
+                holidayDeduction: "Feiertagsabzug",
+                preHolidayReduction: "Vortagsreduktion",
+                netTargetHours: "Sollstunden netto",
+            },
+        },
 
         project: {
             management: {
@@ -1438,7 +1772,8 @@ const translations = {
             includeInTimeTrackingLabel: "In Zeiterfassung & Übersichten anzeigen",
             includeInTimeTrackingEnabled: "Eingeschlossen in Zeitübersichten",
             includeInTimeTrackingDisabled: "Von Zeitübersichten ausgeschlossen",
-            includeInTimeTrackingHint: "Admins ohne Arbeitszeiterfassung werden in Wochenansichten und Salden nicht angezeigt.",
+            includeInTimeTrackingSummary: "Zeitübersichten",
+            includeInTimeTrackingHint: "Ausgeschlossene Benutzer werden in Wochenansichten und Salden nicht angezeigt.",
             button: {
                 save: "Speichern",
                 cancel: "Abbrechen",
@@ -2292,6 +2627,338 @@ const translations = {
         inactive: "Inactive",
         refresh: "Refresh",
         status: "Status",
+        pageCatalog: {
+            groups: {
+                Benutzer: "User",
+                Module: "Modules",
+                Admin: "Admin",
+                Projekte: "Projects",
+                Superadmin: "Superadmin",
+                Seiten: "Pages",
+            },
+            access: {
+                none: "No access",
+                view: "View",
+                manage: "Manage",
+                accessLabel: "access",
+            },
+            pages: {
+                dashboard: {
+                    label: "My Dashboard",
+                    description: "Weekly overview, time tracking and personal analytics.",
+                },
+                personalData: {
+                    label: "My Data",
+                    description: "Personal data, contact details and password.",
+                },
+                payslips: {
+                    label: "Payslips",
+                    description: "View payslips and documents.",
+                },
+                demoTour: {
+                    label: "Demo Tour",
+                    description: "A short introduction to features and workflows.",
+                },
+                printReport: {
+                    label: "Time Report",
+                    description: "Open reports and printouts.",
+                },
+                supplyChain: {
+                    label: "Supply Chain",
+                    description: "Inventory, goods receipt and operational supply chain.",
+                },
+                adminDashboard: {
+                    label: "Admin Home",
+                    description: "Team overview, inbox and metrics.",
+                },
+                adminUsers: {
+                    label: "User Management",
+                    description: "Manage users, roles and access.",
+                },
+                adminChangePassword: {
+                    label: "Admin Password",
+                    description: "Change your own admin password.",
+                },
+                adminCustomers: {
+                    label: "Customers",
+                    description: "Customer management and assignments.",
+                },
+                adminProjects: {
+                    label: "Projects",
+                    description: "Plan and maintain projects.",
+                },
+                adminTasks: {
+                    label: "Tasks",
+                    description: "Tasks and operational work packages.",
+                },
+                adminProjectReport: {
+                    label: "Project Report",
+                    description: "Project reports and analytics.",
+                },
+                adminAnalytics: {
+                    label: "Analytics",
+                    description: "View metrics, trends and reports.",
+                },
+                adminAccounting: {
+                    label: "Accounting",
+                    description: "Accounting and financial processes.",
+                },
+                chronoTwo: {
+                    label: "Chrono 2.0",
+                    description: "Chrono 2.0 add-on module.",
+                },
+                crm: {
+                    label: "CRM & Marketing",
+                    description: "Leads, pipeline and marketing board.",
+                },
+                banking: {
+                    label: "Payments",
+                    description: "Banking, payments and approvals.",
+                },
+                adminPayslips: {
+                    label: "Payroll",
+                    description: "Create and manage payroll documents.",
+                },
+                adminSchedule: {
+                    label: "Schedule",
+                    description: "Manage shifts and staff planning.",
+                },
+                adminPrintSchedule: {
+                    label: "Print Schedule",
+                    description: "Export and print schedules.",
+                },
+                adminShiftRules: {
+                    label: "Shift Rules",
+                    description: "Maintain planning rules and defaults.",
+                },
+                adminKnowledge: {
+                    label: "Company Knowledge",
+                    description: "Internal knowledge base and AI content.",
+                },
+                companySettings: {
+                    label: "Company Settings",
+                    description: "Global company and system configuration.",
+                },
+                adminImportTimes: {
+                    label: "Import Times",
+                    description: "Import and assign time data.",
+                },
+                companyManagement: {
+                    label: "Company Management",
+                    description: "Manage companies and global Chrono usage.",
+                },
+            },
+        },
+        accessiblePages: {
+            eyebrow: "Accessible pages",
+            expand: "Expand pages",
+            collapse: "Collapse pages",
+            expandShort: "Expand",
+            collapseShort: "Collapse",
+        },
+        mobileTabBar: {
+            ariaLabel: "Mobile navigation",
+        },
+        aboutChrono: {
+            values: {
+                directSupport: "Direct support instead of anonymous support channels",
+                fastDevelopment: "Fast development from practical requirements",
+                onboarding: "Individual onboarding and help when switching",
+                platform: "One system for time, HR, payroll, CRM, finance, inventory and reporting",
+            },
+            timeline: {
+                kicker: "Origins",
+                title: "Built from a real need.",
+                lead: "Chrono-Logisch did not start as an abstract product idea, but from a concrete problem in everyday company work.",
+                interest: {
+                    title: "Early interest",
+                    text: "Christopher Siefert was already interested in programming as a child and in how software can make real workflows easier.",
+                },
+                firstChrono: {
+                    title: "The first Chrono",
+                    text: "When his parents needed time tracking, the first small version of Chrono was created from a concrete need.",
+                },
+                platform: {
+                    text: "With care, feedback and continuous development, that first tool became the Chrono-Logisch platform.",
+                },
+            },
+            hero: {
+                kicker: "About Chrono-Logisch",
+                title: "Workflows should become clearer.",
+                text: "Many companies work every day with spreadsheets, paper forms, separate tools and manual coordination. Chrono-Logisch was built to make exactly those workflows more central, transparent and traceable.",
+            },
+            actions: {
+                contact: "Get in touch",
+                email: "Write an email",
+                phone: "Call by phone",
+                contactForm: "Open contact form",
+            },
+            founder: {
+                role: "Founder & developer of Chrono",
+            },
+            idea: {
+                kicker: "The idea",
+                title: "More than time tracking.",
+                text1: "Chrono connects working time, leave, corrections, HR, payroll processes, invoices, CRM, inventory, finance and reporting in one shared system.",
+                text2: "The goal is not to burden companies with yet another tool, but to simplify existing workflows and bring them into a clear structure.",
+            },
+            promise: {
+                kicker: "Guiding principle",
+                title: "Chrono brings together what companies need every day.",
+                text: "And when something important is missing in daily work, it is developed deliberately.",
+            },
+            advantage: {
+                kicker: "Your advantage",
+                title: "A direct contact for onboarding and further development.",
+                text1: "Chrono-Logisch customers do not speak with an anonymous corporation, but with a contact who knows the system, develops it and understands how the modules work together.",
+                text2: "Feedback from real use can be picked up directly. Chrono-Logisch also supports onboarding, setup and migration when switching from existing programs.",
+            },
+            contact: {
+                kicker: "Contact",
+                title: "Discuss a demo, onboarding or migration.",
+                text: "You can reach Chrono-Logisch by email, phone or via the contact form on the Chrono page.",
+            },
+            footer: {
+                home: "Home",
+                imprint: "Legal Notice",
+                privacy: "Privacy",
+                terms: "Terms",
+            },
+        },
+        demoTour: {
+            title: "Chrono Demo",
+            intro: "Welcome. This short tour shows you the most important areas.",
+            stepDashboard: "In the dashboard you will find existing projects and time entries.",
+            stepMenu: "Use the menu to switch to customers or projects and view more data.",
+            stepReset: "Feel free to test every feature - changes are reset with the next demo login.",
+            dashboardCta: "Go to Dashboard",
+            adminCta: "Go to Admin Dashboard",
+        },
+        scheduleRules: {
+            title: "Shift Settings",
+            subtitle: "Configure the global shifts and their times for the schedule.",
+            label: "Label",
+            key: "Key (e.g. EARLY)",
+            start: "Start time",
+            end: "End time",
+            active: "Active",
+            save: "Save",
+            saving: "Saving...",
+            saveFailed: "Save failed.",
+            labelPlaceholder: "e.g. Early shift",
+            add: "+ Add new shift",
+        },
+        timeImport: {
+            title: "Import punch times from Excel",
+            subtitle: "Upload a formatted .xlsx file to process working times for multiple users at once.",
+            fileSelectionCancelled: "File selection cancelled.",
+            partialSuccess: "Import partially successful.",
+            reimportSuccess: "{{count}} rows re-imported successfully!",
+            reimportError: "Error during re-import.",
+            step1: "Step 1: Select file",
+            dropNow: "Drop the file now...",
+            selected: "Selected",
+            changeHint: "Click or drag a new file here to change it.",
+            dropHint: "Drag an Excel file here or click.",
+            checkAndImport: "Check & import file",
+            step2: "Step 2: Import result",
+            importedCountLabel: "Entries imported successfully",
+            errorsFound: "Errors found",
+            correctRowsTitle: "Correct invalid rows",
+            correctRowsText: "Edit the data directly in the table and import the corrected rows again.",
+            reimporting: "Re-import running...",
+            importCorrectedRows: "Import {{count}} corrected rows",
+            formatTitle: "Excel format note",
+            formatText: "Make sure your .xlsx file contains the following columns. The first row is ignored as a header row.",
+            columnA: "Column A",
+            columnB: "Column B",
+            columnC: "Column C",
+            columnD: "Column D",
+            columnE: "Column E",
+            columnF: "Column F",
+            columnG: "Column G",
+            dateColumn: "Date (format: YYYY-MM-DD)",
+            workStartColumn: "Work start (format: HH:mm)",
+            breakStartColumn: "Break start (format: HH:mm, optional)",
+            breakEndColumn: "Break end (format: HH:mm, optional)",
+            workEndColumn: "Work end (format: HH:mm)",
+            noteColumn: "Day note (optional)",
+        },
+        workTimeCalculator: {
+            kicker: "Chrono Calculator",
+            title: "Work Time Calculator",
+            subtitle: "Target time, workdays, public holidays, workload and pre-holiday reductions in one view.",
+            applyProfile: "Apply profile values",
+            print: "Print",
+            exportCsv: "Export CSV",
+            layoutAria: "Work time calculator inputs and results",
+            settings: "Settings",
+            loadingHolidays: "Loading holidays...",
+            ready: "Ready",
+            period: "Period",
+            from: "From",
+            to: "To",
+            canton: "Canton",
+            workload: "Workload",
+            includeHolidays: "Include public holidays",
+            preHolidayReduction: "Pre-holiday time reduction",
+            hoursShort: "h",
+            workWeek: "Work week",
+            standard: "Default",
+            holidaysLoadError: "Holidays could not be loaded.",
+            manualSource: "Manual",
+            customHolidayDateRequired: "Please select a date for the custom holiday.",
+            customHolidayFallback: "Custom holiday",
+            customHolidayPlaceholder: "Custom holiday",
+            add: "Add",
+            remove: "Remove",
+            monthOverviewTitle: "Monthly overview",
+            monthOverviewText: "Gross target, holiday deduction and net target at a glance.",
+            holidaysTitle: "Public holidays",
+            holidaysText: "Individual holidays can be deselected for this calculation.",
+            noHolidays: "No holidays in the selected period.",
+            relevantDaysTitle: "Relevant days",
+            relevantDaysText: "Public holidays and days with pre-holiday reduction for a quick check.",
+            noAdjustments: "No deductions or special days in this period.",
+            holidayDeductionLine: "{{name}}: -{{hours}} h",
+            preHolidayReductionLine: "Pre-holiday reduction: -{{hours}} h",
+            netLine: "Net {{hours}} h",
+            presets: {
+                currentYear: "Current year",
+                nextYear: "Next year",
+                currentQuarter: "Current quarter",
+                currentMonth: "Current month",
+                custom: "Custom period",
+            },
+            kpis: {
+                netTargetHours: "Net target hours",
+                workdays: "Workdays",
+                grossWorkdays: "{{count}} gross",
+                holidayDeduction: "Holiday deduction",
+                onWorkdays: "{{count}} on workdays",
+                weeklyTarget: "Weekly target",
+                averageNet: "Ø net in period {{hours}} h",
+            },
+            table: {
+                month: "Month",
+                workdays: "Workdays",
+                holidays: "Holidays",
+                gross: "Gross",
+                deduction: "Deduction",
+                net: "Net",
+                netBar: "Net bar",
+            },
+            csv: {
+                month: "Month",
+                calendarDays: "Calendar days",
+                grossWorkdays: "Gross workdays",
+                holidayWorkdays: "Holidays on workdays",
+                grossHours: "Gross target hours",
+                holidayDeduction: "Holiday deduction",
+                preHolidayReduction: "Pre-holiday reduction",
+                netTargetHours: "Net target hours",
+            },
+        },
 
         project: {
             management: {
@@ -3672,7 +4339,8 @@ const translations = {
             includeInTimeTrackingLabel: "Show in time tracking & summaries",
             includeInTimeTrackingEnabled: "Included in time overviews",
             includeInTimeTrackingDisabled: "Excluded from time overviews",
-            includeInTimeTrackingHint: "Admins who opt out won't appear in weekly views or balance tables.",
+            includeInTimeTrackingSummary: "Time overviews",
+            includeInTimeTrackingHint: "Excluded users won't appear in weekly views or balance tables.",
             button: {
                 save: "Save",
                 cancel: "Cancel",
@@ -4455,6 +5123,8 @@ const translations = {
             pageNotFound: "404 - Page not found",
         },
         hourlyDashboard: {
+            title: "Hourly Dashboard",
+            mode: "Hourly",
             addEntryFirst: "Please add at least one correction entry.",
             userNotFound: "User not found, please log in again.",
         },
@@ -4465,10 +5135,74 @@ const translations = {
     },
 };
 
+const mergeTranslations = (target, source) => {
+    Object.entries(source ?? {}).forEach(([key, value]) => {
+        if (value && typeof value === "object" && !Array.isArray(value)) {
+            target[key] = mergeTranslations(
+                target[key] && typeof target[key] === "object" && !Array.isArray(target[key])
+                    ? target[key]
+                    : {},
+                value
+            );
+            return;
+        }
+        target[key] = value;
+    });
+
+    return target;
+};
+
+mergeTranslations(translations.de, routeTranslations.de);
+mergeTranslations(translations.en, routeTranslations.en);
+mergeTranslations(translations.de, additionalTranslations.de);
+mergeTranslations(translations.en, additionalTranslations.en);
+
 translations.de.agbPage = deAgbPage;
 translations.en.agbPage = enAgbPage;
 
-export const LanguageContext = createContext();
+const interpolateTranslation = (value, options) => {
+    if (typeof value !== "string" || !options || typeof options !== "object") {
+        return value;
+    }
+
+    const interpolationValues = { ...options };
+    delete interpolationValues.defaultValue;
+    delete interpolationValues.returnObjects;
+
+    return value.replace(/{{\s*(\w+)\s*}}/g, (match, token) => {
+        if (Object.prototype.hasOwnProperty.call(interpolationValues, token)) {
+            const replacement = interpolationValues[token];
+            return replacement === undefined || replacement === null
+                ? ""
+                : String(replacement);
+        }
+        return match;
+    });
+};
+
+const fallbackTranslate = (key, fallbackOrOptions, maybeOptions) => {
+    const hasFallbackString = typeof fallbackOrOptions === "string";
+    const options = hasFallbackString ? maybeOptions : fallbackOrOptions;
+    let value;
+
+    if (typeof fallbackOrOptions === "string") {
+        value = fallbackOrOptions;
+    } else if (typeof fallbackOrOptions?.defaultValue === "string") {
+        value = fallbackOrOptions.defaultValue;
+    } else if (typeof fallbackOrOptions?.fallback === "string") {
+        value = fallbackOrOptions.fallback;
+    } else {
+        value = key;
+    }
+
+    return interpolateTranslation(value, options);
+};
+
+export const LanguageContext = createContext({
+    language: "de",
+    setLanguage: () => {},
+    t: fallbackTranslate,
+});
 
 export const LanguageProvider = ({ children }) => {
     // Standard: "de" oder "en" je nach Vorliebe
@@ -4523,23 +5257,7 @@ export const LanguageProvider = ({ children }) => {
             }
         }
 
-        if (typeof value === "string" && options && typeof options === "object") {
-            const interpolationValues = { ...options };
-            delete interpolationValues.defaultValue;
-            delete interpolationValues.returnObjects;
-
-            value = value.replace(/{{\s*(\w+)\s*}}/g, (match, token) => {
-                if (Object.prototype.hasOwnProperty.call(interpolationValues, token)) {
-                    const replacement = interpolationValues[token];
-                    return replacement === undefined || replacement === null
-                        ? ""
-                        : String(replacement);
-                }
-                return match;
-            });
-        }
-
-        return value;
+        return interpolateTranslation(value, options);
     };
 
     return (
@@ -4550,6 +5268,6 @@ export const LanguageProvider = ({ children }) => {
 };
 
 export const useTranslation = () => {
-    const { t } = React.useContext(LanguageContext);
-    return { t };
+    const { t, language } = React.useContext(LanguageContext);
+    return { t, language };
 };

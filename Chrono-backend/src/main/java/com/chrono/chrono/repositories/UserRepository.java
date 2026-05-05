@@ -18,6 +18,46 @@ public interface UserRepository extends JpaRepository<User, Long> {
     List<User> findByCompany_Id(Long companyId);
     List<User> findByCompany_IdAndDeletedFalse(Long companyId);
     List<User> findByDeletedFalse();
+    @Query("""
+            SELECT DISTINCT u FROM User u
+            WHERE u.deleted = false
+              AND NOT EXISTS (
+                  SELECT r FROM u.roles r
+                  WHERE r.roleName = 'ROLE_SUPERADMIN'
+              )
+            """)
+    List<User> findOperationalUsersDeletedFalse();
+    @Query("""
+            SELECT DISTINCT u FROM User u
+            WHERE u.company.id = :companyId
+              AND u.deleted = false
+              AND NOT EXISTS (
+                  SELECT r FROM u.roles r
+                  WHERE r.roleName = 'ROLE_SUPERADMIN'
+              )
+            """)
+    List<User> findOperationalUsersByCompanyIdAndDeletedFalse(@Param("companyId") Long companyId);
+    @Query("""
+            SELECT DISTINCT u FROM User u
+            WHERE u.deleted = false
+              AND u.includeInTimeTracking = true
+              AND NOT EXISTS (
+                  SELECT r FROM u.roles r
+                  WHERE r.roleName = 'ROLE_SUPERADMIN'
+              )
+            """)
+    List<User> findTimeOverviewUsersDeletedFalse();
+    @Query("""
+            SELECT DISTINCT u FROM User u
+            WHERE u.company.id = :companyId
+              AND u.deleted = false
+              AND u.includeInTimeTracking = true
+              AND NOT EXISTS (
+                  SELECT r FROM u.roles r
+                  WHERE r.roleName = 'ROLE_SUPERADMIN'
+              )
+            """)
+    List<User> findTimeOverviewUsersByCompanyIdAndDeletedFalse(@Param("companyId") Long companyId);
     @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles LEFT JOIN FETCH u.company c LEFT JOIN FETCH c.enabledFeatures")
     List<User> findAllWithPermissionContext();
     @Lock(LockModeType.PESSIMISTIC_WRITE)

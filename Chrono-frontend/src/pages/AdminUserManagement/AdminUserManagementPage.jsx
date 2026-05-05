@@ -84,6 +84,106 @@ const createUserFormState = (featureKeys = [], overrides = {}) => {
     };
 };
 
+const normalizeComparableValue = (value) => {
+    if (value === undefined || value === '') {
+        return null;
+    }
+    if (typeof value === 'number' && Number.isNaN(value)) {
+        return null;
+    }
+    if (Array.isArray(value)) {
+        return value.map(normalizeComparableValue);
+    }
+    if (value && typeof value === 'object') {
+        return Object.keys(value)
+            .sort()
+            .reduce((acc, key) => {
+                acc[key] = normalizeComparableValue(value[key]);
+                return acc;
+            }, {});
+    }
+    return value;
+};
+
+const areComparableValuesEqual = (left, right) => (
+    JSON.stringify(normalizeComparableValue(left)) === JSON.stringify(normalizeComparableValue(right))
+);
+
+const primaryRole = (roles) => (Array.isArray(roles) && roles.length > 0 ? roles[0] : 'ROLE_USER');
+
+const isSuperAdminUser = (user) => Array.isArray(user?.roles) && user.roles.includes('ROLE_SUPERADMIN');
+
+const hasOnlyTimeTrackingVisibilityChanged = (originalUser, nextUser) => {
+    if (!originalUser || !nextUser) {
+        return false;
+    }
+
+    const originalVisibility = originalUser.includeInTimeTracking !== false;
+    const nextVisibility = nextUser.includeInTimeTracking !== false;
+    if (originalVisibility === nextVisibility) {
+        return false;
+    }
+
+    const comparableFields = [
+        'username',
+        'firstName',
+        'lastName',
+        'address',
+        'department',
+        'birthDate',
+        'entryDate',
+        'country',
+        'taxClass',
+        'tarifCode',
+        'canton',
+        'civilStatus',
+        'children',
+        'religion',
+        'federalState',
+        'churchTax',
+        'gkvAdditionalRate',
+        'bankAccount',
+        'socialSecurityNumber',
+        'healthInsurance',
+        'personnelNumber',
+        'email',
+        'mobilePhone',
+        'landlinePhone',
+        'expectedWorkDays',
+        'dailyWorkHours',
+        'breakDuration',
+        'annualVacationDays',
+        'scheduleCycle',
+        'weeklySchedule',
+        'scheduleEffectiveDate',
+        'isHourly',
+        'isPercentage',
+        'workPercentage',
+        'monthlySalary',
+        'hourlyRate',
+        'color',
+    ];
+
+    const originalRole = primaryRole(originalUser.roles);
+    const nextRole = primaryRole(nextUser.roles);
+    const originalPermissions = normalizePagePermissionsForRole(
+        originalRole,
+        originalUser.companyFeatureKeys,
+        originalUser.pagePermissions
+    );
+    const nextPermissions = normalizePagePermissionsForRole(
+        nextRole,
+        nextUser.companyFeatureKeys || originalUser.companyFeatureKeys,
+        nextUser.pagePermissions
+    );
+
+    return comparableFields.every((field) => (
+        areComparableValuesEqual(originalUser[field], nextUser[field])
+    ))
+        && areComparableValuesEqual(originalRole, nextRole)
+        && areComparableValuesEqual(originalPermissions, nextPermissions);
+};
+
 const AdminUserManagementPage = () => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -94,6 +194,7 @@ const AdminUserManagementPage = () => {
     const [isCreatingNewUser, setIsCreatingNewUser] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState({ show: false, userId: null, username: '' });
     const [programStatus, setProgramStatus] = useState("");
+    const [programStatusTone, setProgramStatusTone] = useState("info");
     const baseFeatureKeys = currentUser?.companyFeatureKeys || [];
     const canManageAdminUsers = hasPageAccess(currentUser, 'adminUsers', ACCESS_MANAGE);
 
@@ -171,7 +272,7 @@ const AdminUserManagementPage = () => {
         try {
             const res = await api.get('/api/admin/users');
             const userList = Array.isArray(res.data) ? res.data : [];
-            setUsers(userList.map(user => ({
+            setUsers(userList.filter(user => !isSuperAdminUser(user)).map(user => ({
                 ...user,
                 includeInTimeTracking: user.includeInTimeTracking !== false,
                 scheduleEffectiveDate: user.scheduleEffectiveDate ? user.scheduleEffectiveDate.toString() : getTodayISOString(),
@@ -374,6 +475,7 @@ const AdminUserManagementPage = () => {
             dataToSend.companyFeatureKeys || baseFeatureKeys,
             dataToSend.pagePermissions
         );
+        dataToSend.includeInTimeTracking = dataToSend.includeInTimeTracking !== false;
         delete dataToSend.companyFeatureKeys;
 
         if (Object.prototype.hasOwnProperty.call(dataToSend, 'hourlyWage')) {
@@ -426,6 +528,16 @@ const AdminUserManagementPage = () => {
         } else if (editingUser) {
             try {
                 const payloadForUpdate = { ...dataToSend, id: editingUser.id };
+                if (hasOnlyTimeTrackingVisibilityChanged(editingUser, payloadForUpdate)) {
+                    await api.patch(`/api/admin/users/${editingUser.id}/time-tracking-visibility`, {
+                        includeInTimeTracking: payloadForUpdate.includeInTimeTracking,
+                    });
+                    notify(t("userManagement.userUpdatedSuccess", "Benutzer erfolgreich aktualisiert!"), "success");
+                    fetchUsers();
+                    handleCancelForm();
+                    return;
+                }
+
                 const modelChanged = Boolean(editingUser.isHourly) !== Boolean(dataToSend.isHourly)
                     || Boolean(editingUser.isPercentage) !== Boolean(dataToSend.isPercentage);
                 const snapshotChanged = editingUser.dailyWorkHours !== dataToSend.dailyWorkHours
@@ -468,6 +580,7 @@ const AdminUserManagementPage = () => {
             ...userToEdit,          // Überschreibe mit User-Daten
             password: '',           // Passwort nicht vorausfüllen für Bearbeitung
             includeInTimeTracking: userToEdit.includeInTimeTracking !== false,
+            hourlyWage: userToEdit.hourlyRate ?? userToEdit.hourlyWage ?? null,
             roles: userToEdit.roles && userToEdit.roles.length > 0 ? userToEdit.roles : ['ROLE_USER'],
             companyFeatureKeys: featureKeys,
             scheduleEffectiveDate: userToEdit.scheduleEffectiveDate ? userToEdit.scheduleEffectiveDate.toString() : getTodayISOString(),
@@ -488,7 +601,6 @@ const AdminUserManagementPage = () => {
             workPercentage: userToEdit.workPercentage !== null && userToEdit.workPercentage !== undefined ? userToEdit.workPercentage : (userToEdit.isPercentage ? 100 : null),
             expectedWorkDays: userToEdit.expectedWorkDays !== null && userToEdit.expectedWorkDays !== undefined ? userToEdit.expectedWorkDays : (userToEdit.isHourly ? null : 5.0),
             employmentModelEffectiveFrom: getTodayISOString(),
-            hourlyWage: userToEdit.hourlyRate ?? null,
             monthlySalary: userToEdit.monthlySalary ?? null,
             pagePermissions: normalizePagePermissionsForRole(
                 userToEdit.roles?.[0] || 'ROLE_USER',
@@ -548,6 +660,7 @@ const AdminUserManagementPage = () => {
 
             if (response.data && response.data.id) {
                 setProgramStatus(t("userManagement.nfcProgramStart", "Kartenprogrammierung gestartet. Bitte NFC-Karte auflegen..."));
+                setProgramStatusTone("info");
                 const commandId = response.data.id;
                 let maxTries = 20; // Erhöhte Versuche für längere Wartezeit (20 * 1.5s = 30s)
                 let delay = 1500;
@@ -557,26 +670,36 @@ const AdminUserManagementPage = () => {
                         const res = await api.get(`/api/nfc/command/status/${commandId}`);
                         if (res.data.status === "done") {
                             setProgramStatus(t("userManagement.programCardSuccess", "Karte erfolgreich programmiert!"));
+                            setProgramStatusTone("success");
                             setTimeout(() => setProgramStatus(""), 7000);
                         } else if (res.data.status === "pending" && maxTries-- > 0) {
-                            setProgramStatus(t("userManagement.nfcProgramProgress", `Warte auf NFC-Agent... (${maxTries} Versuche übrig)`));
+                            setProgramStatus(t(
+                                "userManagement.nfcProgramProgress",
+                                "Warte auf NFC-Agent... ({{count}} Versuche übrig)",
+                                { count: maxTries }
+                            ));
+                            setProgramStatusTone("info");
                             setTimeout(pollStatus, delay);
                         } else {
                             setProgramStatus(t("userManagement.programCardErrorTimeout", "Zeitüberschreitung bei Kartenprogrammierung oder Befehl nicht gefunden."));
+                            setProgramStatusTone("error");
                             setTimeout(() => setProgramStatus(""), 7000);
                         }
                     } catch (pollError) {
                         console.error("NFC poll error:", pollError);
                         setProgramStatus(t("userManagement.programCardErrorComm", "Kommunikationsfehler mit NFC-Agent."));
+                        setProgramStatusTone("error");
                         setTimeout(() => setProgramStatus(""), 7000);
                     }
                 };
                 pollStatus();
             } else {
+                setProgramStatusTone("error");
                 notify(t("userManagement.programCardError", "Fehler beim Starten der Kartenprogrammierung."), 'error');
             }
         } catch (err) {
             console.error("Fehler beim Kartenprogrammieren:", err);
+            setProgramStatusTone("error");
             notify(t("userManagement.programCardError", "Fehler beim Kartenprogrammieren.") + `: ${err.response?.data?.message || err.response?.data || err.message}`, 'error');
         }
     }
@@ -587,7 +710,7 @@ const AdminUserManagementPage = () => {
             <Navbar />
 
             {programStatus && (
-                <div className={`nfc-status-message ${programStatus.includes(t("userManagement.programCardSuccess")) ? 'success' : (programStatus.includes("Fehler") || programStatus.includes("error") || programStatus.includes("Zeitüberschreitung") ? 'error' : 'info')}`}>{programStatus}</div>
+                <div className={`nfc-status-message ${programStatusTone}`}>{programStatus}</div>
             )}
 
 

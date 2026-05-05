@@ -1351,14 +1351,21 @@ const AdminDashboard = () => {
 
         doc.setFontSize(22);
         doc.setFont("helvetica", "bold");
-        doc.text("Zeitenbericht", pageWidth / 2, yPos, { align: "center" });
+        doc.text(t('adminDashboard.print.reportTitle', 'Zeitenbericht'), pageWidth / 2, yPos, { align: "center" });
         yPos += 10;
 
         doc.setFontSize(12);
         doc.setFont("helvetica", "normal");
-        doc.text(`für ${userNameDisplay}`, pageWidth / 2, yPos, { align: "center" });
+        doc.text(t('adminDashboard.print.forUser', 'für {{name}}', { name: userNameDisplay }), pageWidth / 2, yPos, { align: "center" });
         yPos += 6;
-        doc.text(`Zeitraum: ${formatDate(new Date(printUserStartDate))} - ${formatDate(new Date(printUserEndDate))}`, pageWidth / 2, yPos, { align: "center" });
+        doc.text(t(
+            'adminDashboard.print.period',
+            'Zeitraum: {{start}} - {{end}}',
+            {
+                start: formatDate(new Date(printUserStartDate)),
+                end: formatDate(new Date(printUserEndDate)),
+            }
+        ), pageWidth / 2, yPos, { align: "center" });
         yPos += 6;
         doc.text(`${t('overtimeBalance', 'Überstundensaldo')}: ${overtimeStr}`, pageWidth / 2, yPos, { align: "center" });
         yPos += 15;
@@ -1374,8 +1381,8 @@ const AdminDashboard = () => {
 
         doc.setFontSize(10);
         doc.setTextColor(108, 117, 125);
-        doc.text("Gesamte Arbeitszeit", summaryCol1, summaryTextY - 8, { align: 'center' });
-        doc.text("Gesamte Pausenzeit", summaryCol2, summaryTextY - 8, { align: 'center' });
+        doc.text(t('adminDashboard.print.totalWork', 'Gesamte Arbeitszeit'), summaryCol1, summaryTextY - 8, { align: 'center' });
+        doc.text(t('adminDashboard.print.totalBreak', 'Gesamte Pausenzeit'), summaryCol2, summaryTextY - 8, { align: 'center' });
 
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
@@ -1417,19 +1424,19 @@ const AdminDashboard = () => {
 
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
-            doc.text("Übersicht", pageMargin + 5, leftColY);
+            doc.text(t('overview', 'Übersicht'), pageMargin + 5, leftColY);
             leftColY += 7;
 
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
-            doc.text(`Gearbeitet: ${minutesToHHMM(dayData.workedMinutes)}`, pageMargin + 5, leftColY);
+            doc.text(t('adminDashboard.print.worked', 'Gearbeitet: {{time}}', { time: minutesToHHMM(dayData.workedMinutes) }), pageMargin + 5, leftColY);
             leftColY += 6;
-            doc.text(`Pause: ${minutesToHHMM(dayData.breakMinutes)}`, pageMargin + 5, leftColY);
+            doc.text(t('adminDashboard.print.break', 'Pause: {{time}}', { time: minutesToHHMM(dayData.breakMinutes) }), pageMargin + 5, leftColY);
             leftColY += 10;
 
             if (dayData.note) {
                 doc.setFont("helvetica", "bold");
-                doc.text("Notiz:", pageMargin + 5, leftColY);
+                doc.text(t('noteWithColon', 'Notiz:'), pageMargin + 5, leftColY);
                 leftColY += 6;
                 doc.setFont("helvetica", "italic");
                 const noteLines = doc.splitTextToSize(dayData.note, (contentWidth / 2.5) - 10);
@@ -1439,13 +1446,13 @@ const AdminDashboard = () => {
 
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
-            doc.text("Arbeitsblöcke", rightColX, rightColY);
+            doc.text(t('adminDashboard.print.workBlocks', 'Arbeitsblöcke'), rightColX, rightColY);
             rightColY += 7;
 
             doc.setFontSize(10);
             doc.setFont("helvetica", "normal");
             dayData.blocks.work.forEach(block => {
-                const text = `${block.description ? `${block.description}:` : 'Arbeit:'} ${block.start} - ${block.end} (${block.duration})`;
+                const text = `${block.description ? `${block.description}:` : t('adminDashboard.print.workLabel', 'Arbeit:')} ${block.start} - ${block.end} (${block.duration})`;
                 const textLines = doc.splitTextToSize(text, contentWidth - rightColX - 5);
                 doc.text(textLines, rightColX, rightColY);
                 rightColY += textLines.length * 5 + 2;
@@ -1649,8 +1656,8 @@ const AdminDashboard = () => {
 
             <AccessiblePagesPanel
                 context="admin"
-                title="Freigegebene Admin-Seiten"
-                subtitle="Diese Kacheln richten sich direkt nach den vergebenen Benutzerrechten."
+                title={t('adminDashboard.modulesTitle', 'Freigegebene Admin-Seiten')}
+                subtitle={t('adminDashboard.modulesSubtitleDetailed', 'Diese Kacheln richten sich direkt nach den vergebenen Benutzerrechten.')}
             />
 
             <section

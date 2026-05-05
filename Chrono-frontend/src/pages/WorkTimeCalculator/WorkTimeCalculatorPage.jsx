@@ -1,11 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import Navbar from "../../components/Navbar.jsx";
 import api from "../../utils/api.js";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { LanguageContext, useTranslation } from "../../context/LanguageContext.jsx";
 import { useNotification } from "../../context/NotificationContext.jsx";
 import {
     DAY_KEYS,
-    DAY_LABELS,
+    DAY_LABELS_BY_LANGUAGE,
     DEFAULT_WEEK_PATTERN,
     addDays,
     buildHolidayMap,
@@ -20,7 +21,7 @@ import {
 import "../../styles/WorkTimeCalculator.css";
 
 const CANTONS = [
-    { value: "", label: "Allgemein Schweiz" },
+    { value: "", label: "Allgemein Schweiz", labelEn: "General Switzerland" },
     { value: "AG", label: "Aargau" },
     { value: "AI", label: "Appenzell I.Rh." },
     { value: "AR", label: "Appenzell A.Rh." },
@@ -111,7 +112,7 @@ const getRangeForYearFetch = (year, startDate, endDate) => {
     };
 };
 
-const formatHours = (value) => roundHours(value).toLocaleString("de-CH", {
+const formatHours = (value, locale = "de-CH") => roundHours(value).toLocaleString(locale, {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
 });
@@ -121,6 +122,12 @@ const csvCell = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
 const WorkTimeCalculatorPage = () => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
+    const { t } = useTranslation();
+    const { language } = useContext(LanguageContext);
+    const locale = language === "en" ? "en-US" : "de-CH";
+    const dayLabels = DAY_LABELS_BY_LANGUAGE[language] ?? DAY_LABELS_BY_LANGUAGE.de;
+    const displayHours = useCallback((value) => formatHours(value, locale), [locale]);
+    const displayDate = useCallback((date) => formatDateDisplay(date, locale), [locale]);
     const initialRange = getCurrentYearRange();
     const defaultCanton = currentUser?.companyCantonAbbreviation || currentUser?.canton || "";
 
@@ -191,11 +198,11 @@ const WorkTimeCalculatorPage = () => {
         } catch (error) {
             console.error("Feiertage konnten nicht geladen werden", error);
             setApiHolidays({});
-            notify({ message: "Feiertage konnten nicht geladen werden.", type: "error" });
+            notify({ message: t("workTimeCalculator.holidaysLoadError", "Feiertage konnten nicht geladen werden."), type: "error" });
         } finally {
             setLoadingHolidays(false);
         }
-    }, [canton, endDate, normalizedEndDate, normalizedStartDate, notify, startDate]);
+    }, [canton, endDate, normalizedEndDate, normalizedStartDate, notify, startDate, t]);
 
     useEffect(() => {
         fetchHolidays();
@@ -215,15 +222,16 @@ const WorkTimeCalculatorPage = () => {
         workloadPercent,
         holidays: holidayMap,
         preHolidayReductionHours,
-    }), [holidayMap, normalizedEndDate, normalizedStartDate, preHolidayReductionHours, weekPattern, workloadPercent]);
+        language,
+    }), [holidayMap, language, normalizedEndDate, normalizedStartDate, preHolidayReductionHours, weekPattern, workloadPercent]);
 
     const allHolidayRows = useMemo(() => {
         const rows = new Map();
         Object.entries(apiHolidays).forEach(([date, name]) => {
-            rows.set(date, { date, name, source: "Chrono" });
+            rows.set(date, { date, name, source: "Chrono", sourceType: "chrono" });
         });
         customHolidays.forEach((holiday) => {
-            rows.set(holiday.date, { ...holiday, source: "Manuell" });
+            rows.set(holiday.date, { ...holiday, source: t("workTimeCalculator.manualSource", "Manuell"), sourceType: "manual" });
         });
         return Array.from(rows.values())
             .filter((holiday) => holiday.date >= normalizedStartDate && holiday.date <= normalizedEndDate)
@@ -233,7 +241,7 @@ const WorkTimeCalculatorPage = () => {
                 enabled: includeHolidays && !disabledHolidayDates.includes(holiday.date),
                 impact: calculation.days.find((day) => day.date === holiday.date)?.holidayDeduction ?? 0,
             }));
-    }, [apiHolidays, calculation.days, customHolidays, disabledHolidayDates, includeHolidays, normalizedEndDate, normalizedStartDate]);
+    }, [apiHolidays, calculation.days, customHolidays, disabledHolidayDates, includeHolidays, normalizedEndDate, normalizedStartDate, t]);
 
     const highlightedDays = useMemo(() => calculation.days
         .filter((day) => day.holiday || day.preHolidayReduction > 0)
@@ -263,14 +271,14 @@ const WorkTimeCalculatorPage = () => {
 
     const addCustomHoliday = () => {
         if (!customHolidayDraft.date) {
-            notify({ message: "Bitte ein Datum fuer den eigenen Feiertag auswaehlen.", type: "warn" });
+            notify({ message: t("workTimeCalculator.customHolidayDateRequired", "Bitte ein Datum für den eigenen Feiertag auswählen."), type: "warn" });
             return;
         }
         setCustomHolidays((current) => [
             ...current.filter((holiday) => holiday.date !== customHolidayDraft.date),
             {
                 date: customHolidayDraft.date,
-                name: customHolidayDraft.name || "Eigener Feiertag",
+                name: customHolidayDraft.name || t("workTimeCalculator.customHolidayFallback", "Eigener Feiertag"),
             },
         ]);
         setDisabledHolidayDates((current) => current.filter((date) => date !== customHolidayDraft.date));
@@ -283,16 +291,25 @@ const WorkTimeCalculatorPage = () => {
 
     const exportCsv = () => {
         const rows = [
-            ["Monat", "Kalendertage", "Arbeitstage brutto", "Feiertage an Arbeitstagen", "Sollstunden brutto", "Feiertagsabzug", "Vortagsreduktion", "Sollstunden netto"],
+            [
+                t("workTimeCalculator.csv.month", "Monat"),
+                t("workTimeCalculator.csv.calendarDays", "Kalendertage"),
+                t("workTimeCalculator.csv.grossWorkdays", "Arbeitstage brutto"),
+                t("workTimeCalculator.csv.holidayWorkdays", "Feiertage an Arbeitstagen"),
+                t("workTimeCalculator.csv.grossHours", "Sollstunden brutto"),
+                t("workTimeCalculator.csv.holidayDeduction", "Feiertagsabzug"),
+                t("workTimeCalculator.csv.preHolidayReduction", "Vortagsreduktion"),
+                t("workTimeCalculator.csv.netTargetHours", "Sollstunden netto"),
+            ],
             ...calculation.months.map((month) => [
                 month.label,
                 month.calendarDays,
                 month.grossWorkdays,
                 month.holidayWorkdays,
-                formatHours(month.grossHours),
-                formatHours(month.holidayHours),
-                formatHours(month.preHolidayReductionHours),
-                formatHours(month.targetHours),
+                displayHours(month.grossHours),
+                displayHours(month.holidayHours),
+                displayHours(month.preHolidayReductionHours),
+                displayHours(month.targetHours),
             ]),
         ];
         const csv = rows.map((row) => row.map(csvCell).join(";")).join("\n");
@@ -314,46 +331,46 @@ const WorkTimeCalculatorPage = () => {
             <main className="worktime-calculator-page">
                 <header className="worktime-calculator-hero">
                     <div>
-                        <p className="worktime-kicker">Chrono Rechner</p>
-                        <h1>Arbeitszeit-Rechner</h1>
+                        <p className="worktime-kicker">{t("workTimeCalculator.kicker", "Chrono Rechner")}</p>
+                        <h1>{t("workTimeCalculator.title", "Arbeitszeit-Rechner")}</h1>
                         <p>
-                            Sollzeit, Arbeitstage, Feiertage, Pensum und Vortagsreduktionen in einer Ansicht.
+                            {t("workTimeCalculator.subtitle", "Sollzeit, Arbeitstage, Feiertage, Pensum und Vortagsreduktionen in einer Ansicht.")}
                         </p>
                     </div>
                     <div className="worktime-hero-actions">
                         <button type="button" className="button-secondary" onClick={applyUserDefaults}>
-                            Profilwerte uebernehmen
+                            {t("workTimeCalculator.applyProfile", "Profilwerte übernehmen")}
                         </button>
                         <button type="button" className="button-secondary" onClick={() => window.print()}>
-                            Drucken
+                            {t("workTimeCalculator.print", "Drucken")}
                         </button>
                         <button type="button" className="button-primary" onClick={exportCsv}>
-                            CSV exportieren
+                            {t("workTimeCalculator.exportCsv", "CSV exportieren")}
                         </button>
                     </div>
                 </header>
 
-                <section className="worktime-layout" aria-label="Arbeitszeit-Rechner Eingaben und Ergebnis">
+                <section className="worktime-layout" aria-label={t("workTimeCalculator.layoutAria", "Arbeitszeit-Rechner Eingaben und Ergebnis")}>
                     <aside className="worktime-settings-panel">
                         <div className="worktime-panel-header">
-                            <h2>Einstellungen</h2>
-                            <span>{loadingHolidays ? "Feiertage laden..." : "Bereit"}</span>
+                            <h2>{t("workTimeCalculator.settings", "Einstellungen")}</h2>
+                            <span>{loadingHolidays ? t("workTimeCalculator.loadingHolidays", "Feiertage laden...") : t("workTimeCalculator.ready", "Bereit")}</span>
                         </div>
 
                         <div className="worktime-field">
-                            <label htmlFor="worktimePreset">Zeitraum</label>
+                            <label htmlFor="worktimePreset">{t("workTimeCalculator.period", "Zeitraum")}</label>
                             <select id="worktimePreset" value={preset} onChange={(event) => applyPreset(event.target.value)}>
-                                <option value="year">Aktuelles Jahr</option>
-                                <option value="nextYear">Naechstes Jahr</option>
-                                <option value="quarter">Aktuelles Quartal</option>
-                                <option value="month">Aktueller Monat</option>
-                                <option value="custom">Eigener Zeitraum</option>
+                                <option value="year">{t("workTimeCalculator.presets.currentYear", "Aktuelles Jahr")}</option>
+                                <option value="nextYear">{t("workTimeCalculator.presets.nextYear", "Nächstes Jahr")}</option>
+                                <option value="quarter">{t("workTimeCalculator.presets.currentQuarter", "Aktuelles Quartal")}</option>
+                                <option value="month">{t("workTimeCalculator.presets.currentMonth", "Aktueller Monat")}</option>
+                                <option value="custom">{t("workTimeCalculator.presets.custom", "Eigener Zeitraum")}</option>
                             </select>
                         </div>
 
                         <div className="worktime-field-grid">
                             <div className="worktime-field">
-                                <label htmlFor="worktimeStart">Von</label>
+                                <label htmlFor="worktimeStart">{t("workTimeCalculator.from", "Von")}</label>
                                 <input
                                     id="worktimeStart"
                                     type="date"
@@ -365,7 +382,7 @@ const WorkTimeCalculatorPage = () => {
                                 />
                             </div>
                             <div className="worktime-field">
-                                <label htmlFor="worktimeEnd">Bis</label>
+                                <label htmlFor="worktimeEnd">{t("workTimeCalculator.to", "Bis")}</label>
                                 <input
                                     id="worktimeEnd"
                                     type="date"
@@ -380,15 +397,17 @@ const WorkTimeCalculatorPage = () => {
 
                         <div className="worktime-field-grid">
                             <div className="worktime-field">
-                                <label htmlFor="worktimeCanton">Kanton</label>
+                                <label htmlFor="worktimeCanton">{t("workTimeCalculator.canton", "Kanton")}</label>
                                 <select id="worktimeCanton" value={canton} onChange={(event) => setCanton(event.target.value)}>
                                     {CANTONS.map((option) => (
-                                        <option key={option.value || "general"} value={option.value}>{option.label}</option>
+                                        <option key={option.value || "general"} value={option.value}>
+                                            {language === "en" ? option.labelEn ?? option.label : option.label}
+                                        </option>
                                     ))}
                                 </select>
                             </div>
                             <div className="worktime-field">
-                                <label htmlFor="workloadPercent">Pensum</label>
+                                <label htmlFor="workloadPercent">{t("workTimeCalculator.workload", "Pensum")}</label>
                                 <div className="worktime-input-with-unit">
                                     <input
                                         id="workloadPercent"
@@ -405,7 +424,7 @@ const WorkTimeCalculatorPage = () => {
                         </div>
 
                         <div className="worktime-switch-row">
-                            <label htmlFor="includeHolidays">Feiertage beruecksichtigen</label>
+                            <label htmlFor="includeHolidays">{t("workTimeCalculator.includeHolidays", "Feiertage berücksichtigen")}</label>
                             <input
                                 id="includeHolidays"
                                 type="checkbox"
@@ -415,7 +434,7 @@ const WorkTimeCalculatorPage = () => {
                         </div>
 
                         <div className="worktime-field">
-                            <label htmlFor="preHolidayReduction">Zeitreduktion am Vortag</label>
+                            <label htmlFor="preHolidayReduction">{t("workTimeCalculator.preHolidayReduction", "Zeitreduktion am Vortag")}</label>
                             <div className="worktime-input-with-unit">
                                 <input
                                     id="preHolidayReduction"
@@ -426,19 +445,19 @@ const WorkTimeCalculatorPage = () => {
                                     value={preHolidayReductionHours}
                                     onChange={(event) => setPreHolidayReductionHours(event.target.value)}
                                 />
-                                <span>Std.</span>
+                                <span>{t("workTimeCalculator.hoursShort", "Std.")}</span>
                             </div>
                         </div>
 
                         <div className="worktime-week-pattern">
                             <div className="worktime-subhead">
-                                <h3>Arbeitswoche</h3>
+                                <h3>{t("workTimeCalculator.workWeek", "Arbeitswoche")}</h3>
                                 <button
                                     type="button"
                                     className="worktime-link-button"
                                     onClick={() => setWeekPattern(DEFAULT_WEEK_PATTERN)}
                                 >
-                                    Standard
+                                    {t("workTimeCalculator.standard", "Standard")}
                                 </button>
                             </div>
                             {DAY_KEYS.map((dayKey) => (
@@ -449,7 +468,7 @@ const WorkTimeCalculatorPage = () => {
                                             checked={weekPattern[dayKey]?.active ?? false}
                                             onChange={(event) => updateDay(dayKey, { active: event.target.checked })}
                                         />
-                                        <span>{DAY_LABELS[dayKey]}</span>
+                                        <span>{dayLabels[dayKey]}</span>
                                     </label>
                                     <input
                                         type="number"
@@ -468,45 +487,45 @@ const WorkTimeCalculatorPage = () => {
                     <section className="worktime-results">
                         <div className="worktime-kpi-grid">
                             <article className="worktime-kpi primary">
-                                <span>Sollstunden netto</span>
-                                <strong>{formatHours(summary.targetHours)}</strong>
-                                <small>{formatDateDisplay(normalizedStartDate)} - {formatDateDisplay(normalizedEndDate)}</small>
+                                <span>{t("workTimeCalculator.kpis.netTargetHours", "Sollstunden netto")}</span>
+                                <strong>{displayHours(summary.targetHours)}</strong>
+                                <small>{displayDate(normalizedStartDate)} - {displayDate(normalizedEndDate)}</small>
                             </article>
                             <article className="worktime-kpi">
-                                <span>Arbeitstage</span>
+                                <span>{t("workTimeCalculator.kpis.workdays", "Arbeitstage")}</span>
                                 <strong>{summary.netWorkdays}</strong>
-                                <small>{summary.grossWorkdays} brutto</small>
+                                <small>{t("workTimeCalculator.kpis.grossWorkdays", "{{count}} brutto", { count: summary.grossWorkdays })}</small>
                             </article>
                             <article className="worktime-kpi">
-                                <span>Feiertagsabzug</span>
-                                <strong>{formatHours(summary.holidayHours)}</strong>
-                                <small>{summary.holidayWorkdays} auf Arbeitstagen</small>
+                                <span>{t("workTimeCalculator.kpis.holidayDeduction", "Feiertagsabzug")}</span>
+                                <strong>{displayHours(summary.holidayHours)}</strong>
+                                <small>{t("workTimeCalculator.kpis.onWorkdays", "{{count}} auf Arbeitstagen", { count: summary.holidayWorkdays })}</small>
                             </article>
                             <article className="worktime-kpi">
-                                <span>Wochen-Soll</span>
-                                <strong>{formatHours(summary.weeklyContractHours)}</strong>
-                                <small>Ø netto im Zeitraum {formatHours(summary.averageNetWeeklyHours)} Std.</small>
+                                <span>{t("workTimeCalculator.kpis.weeklyTarget", "Wochen-Soll")}</span>
+                                <strong>{displayHours(summary.weeklyContractHours)}</strong>
+                                <small>{t("workTimeCalculator.kpis.averageNet", "Ø netto im Zeitraum {{hours}} Std.", { hours: displayHours(summary.averageNetWeeklyHours) })}</small>
                             </article>
                         </div>
 
                         <section className="worktime-month-section">
                             <div className="worktime-section-title">
                                 <div>
-                                    <h2>Monatsuebersicht</h2>
-                                    <p>Brutto-Soll, Feiertagsabzug und Netto-Soll auf einen Blick.</p>
+                                    <h2>{t("workTimeCalculator.monthOverviewTitle", "Monatsübersicht")}</h2>
+                                    <p>{t("workTimeCalculator.monthOverviewText", "Brutto-Soll, Feiertagsabzug und Netto-Soll auf einen Blick.")}</p>
                                 </div>
                             </div>
                             <div className="worktime-month-table-wrap">
                                 <table className="worktime-month-table">
                                     <thead>
                                     <tr>
-                                        <th>Monat</th>
-                                        <th>Arbeitstage</th>
-                                        <th>Feiertage</th>
-                                        <th>Brutto</th>
-                                        <th>Abzug</th>
-                                        <th>Netto</th>
-                                        <th aria-label="Netto-Balken" />
+                                        <th>{t("workTimeCalculator.table.month", "Monat")}</th>
+                                        <th>{t("workTimeCalculator.table.workdays", "Arbeitstage")}</th>
+                                        <th>{t("workTimeCalculator.table.holidays", "Feiertage")}</th>
+                                        <th>{t("workTimeCalculator.table.gross", "Brutto")}</th>
+                                        <th>{t("workTimeCalculator.table.deduction", "Abzug")}</th>
+                                        <th>{t("workTimeCalculator.table.net", "Netto")}</th>
+                                        <th aria-label={t("workTimeCalculator.table.netBar", "Netto-Balken")} />
                                     </tr>
                                     </thead>
                                     <tbody>
@@ -515,9 +534,9 @@ const WorkTimeCalculatorPage = () => {
                                             <td>{month.label}</td>
                                             <td>{month.netWorkdays} / {month.grossWorkdays}</td>
                                             <td>{month.holidayWorkdays}</td>
-                                            <td>{formatHours(month.grossHours)}</td>
-                                            <td>{formatHours(month.holidayHours + month.preHolidayReductionHours)}</td>
-                                            <td><strong>{formatHours(month.targetHours)}</strong></td>
+                                            <td>{displayHours(month.grossHours)}</td>
+                                            <td>{displayHours(month.holidayHours + month.preHolidayReductionHours)}</td>
+                                            <td><strong>{displayHours(month.targetHours)}</strong></td>
                                             <td>
                                                 <span
                                                     className="worktime-bar"
@@ -535,8 +554,8 @@ const WorkTimeCalculatorPage = () => {
                             <div className="worktime-holiday-panel">
                                 <div className="worktime-section-title compact">
                                     <div>
-                                        <h2>Feiertage</h2>
-                                        <p>Einzelne Feiertage koennen fuer diese Berechnung abgewählt werden.</p>
+                                        <h2>{t("workTimeCalculator.holidaysTitle", "Feiertage")}</h2>
+                                        <p>{t("workTimeCalculator.holidaysText", "Einzelne Feiertage können für diese Berechnung abgewählt werden.")}</p>
                                     </div>
                                 </div>
                                 <div className="worktime-custom-holiday">
@@ -548,10 +567,10 @@ const WorkTimeCalculatorPage = () => {
                                     <input
                                         type="text"
                                         value={customHolidayDraft.name}
-                                        placeholder="Eigener Feiertag"
+                                        placeholder={t("workTimeCalculator.customHolidayPlaceholder", "Eigener Feiertag")}
                                         onChange={(event) => setCustomHolidayDraft((draft) => ({ ...draft, name: event.target.value }))}
                                     />
-                                    <button type="button" className="button-secondary" onClick={addCustomHoliday}>Hinzufuegen</button>
+                                    <button type="button" className="button-secondary" onClick={addCustomHoliday}>{t("workTimeCalculator.add", "Hinzufügen")}</button>
                                 </div>
                                 <div className="worktime-holiday-list">
                                     {allHolidayRows.length > 0 ? allHolidayRows.map((holiday) => (
@@ -565,18 +584,18 @@ const WorkTimeCalculatorPage = () => {
                                                 />
                                                 <span>
                                                     <strong>{holiday.name}</strong>
-                                                    <small>{formatDateDisplay(holiday.date)} · {holiday.source}</small>
+                                                    <small>{displayDate(holiday.date)} · {holiday.source}</small>
                                                 </span>
                                             </label>
                                             <div className="worktime-holiday-impact">
-                                                {formatHours(holiday.impact)} Std.
-                                                {holiday.source === "Manuell" && (
-                                                    <button type="button" onClick={() => removeCustomHoliday(holiday.date)}>Entfernen</button>
+                                                {displayHours(holiday.impact)} {t("workTimeCalculator.hoursShort", "Std.")}
+                                                {holiday.sourceType === "manual" && (
+                                                    <button type="button" onClick={() => removeCustomHoliday(holiday.date)}>{t("workTimeCalculator.remove", "Entfernen")}</button>
                                                 )}
                                             </div>
                                         </div>
                                     )) : (
-                                        <p className="worktime-empty">Keine Feiertage im gewaehlten Zeitraum.</p>
+                                        <p className="worktime-empty">{t("workTimeCalculator.noHolidays", "Keine Feiertage im gewählten Zeitraum.")}</p>
                                     )}
                                 </div>
                             </div>
@@ -584,26 +603,26 @@ const WorkTimeCalculatorPage = () => {
                             <div className="worktime-adjustment-panel">
                                 <div className="worktime-section-title compact">
                                     <div>
-                                        <h2>Relevante Tage</h2>
-                                        <p>Feiertage und Tage mit Vortagsreduktion als schnelle Kontrolle.</p>
+                                        <h2>{t("workTimeCalculator.relevantDaysTitle", "Relevante Tage")}</h2>
+                                        <p>{t("workTimeCalculator.relevantDaysText", "Feiertage und Tage mit Vortagsreduktion als schnelle Kontrolle.")}</p>
                                     </div>
                                 </div>
                                 <div className="worktime-adjustment-list">
                                     {highlightedDays.length > 0 ? highlightedDays.map((day) => (
                                         <div className="worktime-adjustment-row" key={day.date}>
                                             <div>
-                                                <strong>{formatDateDisplay(day.date)}</strong>
+                                                <strong>{displayDate(day.date)}</strong>
                                                 <span>{day.dayLabel}</span>
                                             </div>
                                             <p>
                                                 {day.holiday
-                                                    ? `${day.holiday.name}: -${formatHours(day.holidayDeduction)} Std.`
-                                                    : `Vortagsreduktion: -${formatHours(day.preHolidayReduction)} Std.`}
+                                                    ? t("workTimeCalculator.holidayDeductionLine", "{{name}}: -{{hours}} Std.", { name: day.holiday.name, hours: displayHours(day.holidayDeduction) })
+                                                    : t("workTimeCalculator.preHolidayReductionLine", "Vortagsreduktion: -{{hours}} Std.", { hours: displayHours(day.preHolidayReduction) })}
                                             </p>
-                                            <small>Netto {formatHours(day.targetHours)} Std.</small>
+                                            <small>{t("workTimeCalculator.netLine", "Netto {{hours}} Std.", { hours: displayHours(day.targetHours) })}</small>
                                         </div>
                                     )) : (
-                                        <p className="worktime-empty">Keine Abzuege oder Sondertage im Zeitraum.</p>
+                                        <p className="worktime-empty">{t("workTimeCalculator.noAdjustments", "Keine Abzüge oder Sondertage im Zeitraum.")}</p>
                                     )}
                                 </div>
                             </div>

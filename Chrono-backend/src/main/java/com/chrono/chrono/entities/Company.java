@@ -69,6 +69,9 @@ public class Company {
     @Column(name = "canton_abbreviation", length = 2)
     private String cantonAbbreviation;
 
+    @Column(name = "custom_holiday_selection_enabled", nullable = false)
+    private boolean customHolidaySelectionEnabled = false;
+
     // Sozialversicherungsraten (konfigurierbar je Firma)
     private Double uvgBuRate;       // Unfallversicherung Betrieb (AG)
     private Double uvgNbuRate;      // Nichtberufsunfall (AN)
@@ -122,6 +125,9 @@ public class Company {
 
     public String getCantonAbbreviation() { return cantonAbbreviation; } // NEUER GETTER
     public void setCantonAbbreviation(String cantonAbbreviation) { this.cantonAbbreviation = cantonAbbreviation; } // NEUER SETTER
+
+    public boolean isCustomHolidaySelectionEnabled() { return customHolidaySelectionEnabled; }
+    public void setCustomHolidaySelectionEnabled(boolean customHolidaySelectionEnabled) { this.customHolidaySelectionEnabled = customHolidaySelectionEnabled; }
 
     public Set<User> getUsers() { return users; }
     public void setUsers(Set<User> users) { this.users = users; }

@@ -176,7 +176,14 @@ const AdminDashboardOverview = ({
             eyebrow: t('adminDashboard.overview.cards.issues.eyebrow', 'Zeitprobleme'),
             value: issueSummary?.totalWithIssue || 0,
             title: t('adminDashboard.overview.cards.issues.title', 'Problemfälle'),
-            meta: `${issueSummary?.missing || 0} fehlend - ${issueSummary?.incomplete || 0} unvollständig`,
+            meta: t(
+                'adminDashboard.overview.cards.issues.meta',
+                '{{missing}} fehlend - {{incomplete}} unvollständig',
+                {
+                    missing: issueSummary?.missing || 0,
+                    incomplete: issueSummary?.incomplete || 0,
+                }
+            ),
             button: t('adminDashboard.overview.cards.issues.button', 'Problemfälle öffnen'),
             onClick: onShowIssueOverview,
         },

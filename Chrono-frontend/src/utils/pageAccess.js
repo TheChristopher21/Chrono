@@ -443,6 +443,22 @@ export const getPageDefinition = (pageKey) => PAGE_CATALOG.find((page) => page.k
 
 export const getRouteForPage = (pageKey) => getPageDefinition(pageKey)?.path ?? "/";
 
+const translateValue = (t, key, fallback) => (
+    typeof t === "function" ? t(key, fallback) : fallback
+);
+
+export const translatePageDefinition = (page, t) => {
+    if (!page) return page;
+    const groupFallback = page.group ?? "Seiten";
+
+    return {
+        ...page,
+        label: translateValue(t, `pageCatalog.pages.${page.key}.label`, page.label),
+        description: translateValue(t, `pageCatalog.pages.${page.key}.description`, page.description),
+        group: translateValue(t, `pageCatalog.groups.${groupFallback}`, groupFallback),
+    };
+};
+
 const isUserAssignablePage = (page) => {
     if (!page || page.audiences.includes("superadmin")) {
         return false;
@@ -552,7 +568,7 @@ export const normalizePagePermissionsForRole = (roleName, companyFeatureKeys = [
     return defaults;
 };
 
-export const getPermissionSectionsForRole = (roleName, companyFeatureKeys = []) => {
+export const getPermissionSectionsForRole = (roleName, companyFeatureKeys = [], t) => {
     const normalizedRole = String(roleName ?? "ROLE_USER").toUpperCase();
     if (normalizedRole === "ROLE_SUPERADMIN") {
         return [];
@@ -567,28 +583,29 @@ export const getPermissionSectionsForRole = (roleName, companyFeatureKeys = []) 
 
     const grouped = new Map();
     visiblePages.forEach((page) => {
-        const groupName = page.group ?? "Seiten";
+        const groupName = translateValue(t, `pageCatalog.groups.${page.group ?? "Seiten"}`, page.group ?? "Seiten");
         const existing = grouped.get(groupName) ?? [];
-        existing.push(page);
+        existing.push(translatePageDefinition(page, t));
         grouped.set(groupName, existing);
     });
 
     return Array.from(grouped.entries()).map(([group, pages]) => ({ group, pages }));
 };
 
-export const getDashboardPagesForContext = (user, context) => PAGE_CATALOG
+export const getDashboardPagesForContext = (user, context, t) => PAGE_CATALOG
     .filter((page) => page.dashboardContexts.includes(context))
     .filter((page) => hasFeatureAccess(user, page.featureKey))
     .filter((page) => hasPageAccess(user, page.key, ACCESS_VIEW))
-    .sort((left, right) => left.order - right.order);
+    .sort((left, right) => left.order - right.order)
+    .map((page) => translatePageDefinition(page, t));
 
-export const getMobilePagesForContext = (user, context) => getDashboardPagesForContext(user, context)
+export const getMobilePagesForContext = (user, context, t) => getDashboardPagesForContext(user, context, t)
     .filter((page) => page.mobileContexts.includes(context))
     .slice(0, 4);
 
 const LANDING_PRIORITY = [
-    "dashboard",
     "adminDashboard",
+    "dashboard",
     "supplyChain",
     "adminProjects",
     "adminProjectReport",
@@ -617,6 +634,12 @@ export const getDefaultLandingPage = (user) => {
 
     if (isSuperAdminUser(user) && hasPageAccess(user, "companyManagement", ACCESS_VIEW)) {
         return getRouteForPage("companyManagement");
+    }
+
+    if (!isSuperAdminUser(user)
+        && isAdminUser(user)
+        && hasPageAccess(user, "adminDashboard", ACCESS_VIEW)) {
+        return getRouteForPage("adminDashboard");
     }
 
     if (hasPageAccess(user, "dashboard", ACCESS_VIEW)) {

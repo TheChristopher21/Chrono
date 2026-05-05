@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import PropTypes from "prop-types";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTranslation } from "../context/LanguageContext.jsx";
 import { getDashboardPagesForContext } from "../utils/pageAccess.js";
 import "../styles/AccessiblePagesPanel.css";
 
@@ -15,6 +16,7 @@ const getStoredCollapsedState = (storageKey) => {
 
 const AccessiblePagesPanel = ({ context, title, subtitle }) => {
     const { currentUser } = useAuth();
+    const { t } = useTranslation();
     const location = useLocation();
     const userKey = currentUser?.id ?? currentUser?.username ?? currentUser?.email ?? "anonymous";
     const storageKey = useMemo(
@@ -22,7 +24,7 @@ const AccessiblePagesPanel = ({ context, title, subtitle }) => {
         [context, userKey]
     );
     const [collapsed, setCollapsed] = useState(() => getStoredCollapsedState(storageKey));
-    const pages = getDashboardPagesForContext(currentUser, context)
+    const pages = getDashboardPagesForContext(currentUser, context, t)
         .filter((page) => page.path !== location.pathname);
     const panelContentId = `accessible-pages-panel-${context}-content`;
 
@@ -50,7 +52,9 @@ const AccessiblePagesPanel = ({ context, title, subtitle }) => {
         <section className={`accessible-pages-panel card${collapsed ? " is-collapsed" : ""}`}>
             <div className="accessible-pages-panel__head">
                 <div>
-                    <p className="accessible-pages-panel__eyebrow">Zugängliche Seiten</p>
+                    <p className="accessible-pages-panel__eyebrow">
+                        {t("accessiblePages.eyebrow", "Zugängliche Seiten")}
+                    </p>
                     <h3>{title}</h3>
                 </div>
                 <div className="accessible-pages-panel__actions">
@@ -61,8 +65,12 @@ const AccessiblePagesPanel = ({ context, title, subtitle }) => {
                         onClick={toggleCollapsed}
                         aria-expanded={!collapsed}
                         aria-controls={panelContentId}
-                        aria-label={collapsed ? "Seiten ausklappen" : "Seiten einklappen"}
-                        title={collapsed ? "Ausklappen" : "Einklappen"}
+                        aria-label={collapsed
+                            ? t("accessiblePages.expand", "Seiten ausklappen")
+                            : t("accessiblePages.collapse", "Seiten einklappen")}
+                        title={collapsed
+                            ? t("accessiblePages.expandShort", "Ausklappen")
+                            : t("accessiblePages.collapseShort", "Einklappen")}
                     >
                         <span className="accessible-pages-panel__chevron" aria-hidden="true" />
                     </button>

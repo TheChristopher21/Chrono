@@ -1,6 +1,8 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
+import com.chrono.chrono.entities.UserHolidayOption;
 import com.chrono.chrono.entities.UserScheduleRule;
 
 import com.chrono.chrono.repositories.SickLeaveRepository;
@@ -157,6 +159,131 @@ class WorkScheduleServiceTest {
         int minutes = workScheduleService.computeExpectedWorkMinutes(user, thursday, Collections.emptyList());
 
         assertEquals(0, minutes);
+    }
+
+    @Test
+    void getExpectedWorkHours_keepsLegacyStGallenHolidayForExistingCompany() {
+        Company company = new Company("Chrono AG");
+        company.setCantonAbbreviation("SG");
+        company.setCustomHolidaySelectionEnabled(false);
+
+        User user = new User();
+        user.setUsername("maria");
+        user.setCompany(company);
+        user.setDailyWorkHours(8.5);
+
+        LocalDate berchtoldstag = LocalDate.of(2026, 1, 2);
+
+        when(holidayService.isHoliday(berchtoldstag, "SG")).thenReturn(true);
+        when(ruleRepo.findByUser(user)).thenReturn(Collections.emptyList());
+
+        double hours = workScheduleService.getExpectedWorkHours(user, berchtoldstag);
+
+        assertEquals(0.0, hours);
+    }
+
+    @Test
+    void getExpectedWorkHours_halvesCustomCompanyHalfDayHoliday() {
+        Company company = new Company("Chrono AG");
+        company.setId(1L);
+        company.setCustomHolidaySelectionEnabled(true);
+
+        User user = new User();
+        user.setUsername("maria");
+        user.setCompany(company);
+        user.setDailyWorkHours(8.5);
+
+        LocalDate holiday = LocalDate.of(2026, 4, 3);
+
+        when(holidayService.isCompanyHoliday(holiday, company)).thenReturn(true);
+        when(holidayService.isHalfDayHoliday(holiday, company)).thenReturn(true);
+        when(ruleRepo.findByUser(user)).thenReturn(Collections.emptyList());
+
+        double hours = workScheduleService.getExpectedWorkHours(user, holiday);
+
+        assertEquals(4.25, hours);
+    }
+
+    @Test
+    void getExpectedWeeklyMinutesForPercentageUser_preservesSavedDoNotDeductOption() {
+        User user = percentageUserWithStGallenCompany();
+        LocalDate berchtoldstag = LocalDate.of(2026, 1, 2);
+        UserHolidayOption option = new UserHolidayOption(
+                user,
+                berchtoldstag,
+                UserHolidayOption.HolidayHandlingOption.DO_NOT_DEDUCT_FROM_WEEKLY_TARGET
+        );
+
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, berchtoldstag, berchtoldstag)).thenReturn(List.of(option));
+        when(holidayService.isHoliday(berchtoldstag, "SG")).thenReturn(true);
+
+        int minutes = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, berchtoldstag, berchtoldstag, berchtoldstag, Collections.emptyList());
+
+        assertEquals(510, minutes);
+    }
+
+    @Test
+    void getExpectedWeeklyMinutesForPercentageUser_preservesSavedDeductOption() {
+        User user = percentageUserWithStGallenCompany();
+        LocalDate berchtoldstag = LocalDate.of(2026, 1, 2);
+        UserHolidayOption option = new UserHolidayOption(
+                user,
+                berchtoldstag,
+                UserHolidayOption.HolidayHandlingOption.DEDUCT_FROM_WEEKLY_TARGET
+        );
+
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, berchtoldstag, berchtoldstag)).thenReturn(List.of(option));
+        when(holidayService.isHoliday(berchtoldstag, "SG")).thenReturn(true);
+
+        int minutes = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, berchtoldstag, berchtoldstag, berchtoldstag, Collections.emptyList());
+
+        assertEquals(0, minutes);
+    }
+
+    @Test
+    void getExpectedWeeklyMinutesForPercentageUser_deductsHalfForSavedDeductOnHalfDayHoliday() {
+        Company company = new Company("Chrono AG");
+        company.setId(1L);
+        company.setCustomHolidaySelectionEnabled(true);
+
+        User user = new User();
+        user.setUsername("gabriela");
+        user.setCompany(company);
+        user.setIsPercentage(true);
+        user.setWorkPercentage(100);
+        user.setExpectedWorkDays(5);
+
+        LocalDate holiday = LocalDate.of(2026, 4, 3);
+        UserHolidayOption option = new UserHolidayOption(
+                user,
+                holiday,
+                UserHolidayOption.HolidayHandlingOption.DEDUCT_FROM_WEEKLY_TARGET
+        );
+
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, holiday, holiday)).thenReturn(List.of(option));
+        when(holidayService.isCompanyHoliday(holiday, company)).thenReturn(true);
+        when(holidayService.isHalfDayHoliday(holiday, company)).thenReturn(true);
+
+        int minutes = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, holiday, holiday, holiday, Collections.emptyList());
+
+        assertEquals(255, minutes);
+    }
+
+    private User percentageUserWithStGallenCompany() {
+        Company company = new Company("Chrono AG");
+        company.setCantonAbbreviation("SG");
+        company.setCustomHolidaySelectionEnabled(false);
+
+        User user = new User();
+        user.setUsername("gabriela");
+        user.setCompany(company);
+        user.setIsPercentage(true);
+        user.setWorkPercentage(100);
+        user.setExpectedWorkDays(5);
+        return user;
     }
 
 }

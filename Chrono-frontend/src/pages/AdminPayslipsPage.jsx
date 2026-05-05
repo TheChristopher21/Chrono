@@ -5,8 +5,6 @@ import '../styles/AdminPayslipsPageScoped.css';
 import { useTranslation, LanguageContext } from '../context/LanguageContext';
 import ScheduleAllModal from '../components/ScheduleAllModal';
 
-const PROCESS_STEPS = ['Vorbereiten', 'Pruefen', 'Freigeben', 'Auszahlen', 'Archiv'];
-
 const emptyForm = {
   userId: '',
   start: '',
@@ -34,13 +32,13 @@ const getSlipStatus = (slip) => {
   return hasPayrollWarning(slip) ? 'review' : 'open';
 };
 
-const getStatusMeta = (status) => {
+const getStatusMeta = (status, t = (key, fallback) => fallback ?? key) => {
   const map = {
-    open: { label: 'Offen', tone: 'open' },
-    review: { label: 'In Pruefung', tone: 'review' },
-    approved: { label: 'Freigegeben', tone: 'approved' },
-    paid: { label: 'Ausbezahlt', tone: 'paid' },
-    archive: { label: 'Archiviert', tone: 'archive' }
+    open: { label: t('adminPayslips.status.open', 'Offen'), tone: 'open' },
+    review: { label: t('adminPayslips.status.review', 'In Pruefung'), tone: 'review' },
+    approved: { label: t('adminPayslips.status.approved', 'Freigegeben'), tone: 'approved' },
+    paid: { label: t('adminPayslips.status.paid', 'Ausbezahlt'), tone: 'paid' },
+    archive: { label: t('adminPayslips.status.archive', 'Archiviert'), tone: 'archive' }
   };
   return map[status] ?? map.open;
 };
@@ -68,6 +66,13 @@ const AdminPayslipsPage = () => {
   const [scheduleVisible, setScheduleVisible] = useState(false);
 
   const locale = language === 'en' ? 'en-US' : 'de-CH';
+  const processSteps = [
+    t('adminPayslips.process.prepare', 'Vorbereiten'),
+    t('adminPayslips.process.review', 'Pruefen'),
+    t('adminPayslips.process.approve', 'Freigeben'),
+    t('adminPayslips.process.pay', 'Auszahlen'),
+    t('adminPayslips.process.archive', 'Archiv'),
+  ];
 
   const fetchPending = () => api.get('/api/payslips/admin/pending').then(res => {
     setPayslips(Array.isArray(res.data) ? res.data : []);
@@ -299,12 +304,12 @@ const AdminPayslipsPage = () => {
   }, [allPayslips]);
 
   const tabs = [
-    { id: 'all', label: 'Alle', count: counts.all },
-    { id: 'open', label: 'Offen', count: counts.open },
-    { id: 'review', label: 'In Pruefung', count: counts.review },
-    { id: 'approved', label: 'Freigegeben', count: counts.approved },
-    { id: 'paid', label: 'Ausbezahlt', count: counts.paid },
-    { id: 'archive', label: 'Archiv', count: counts.archive }
+    { id: 'all', label: t('all', 'Alle'), count: counts.all },
+    { id: 'open', label: t('adminPayslips.status.open', 'Offen'), count: counts.open },
+    { id: 'review', label: t('adminPayslips.status.review', 'In Pruefung'), count: counts.review },
+    { id: 'approved', label: t('adminPayslips.status.approved', 'Freigegeben'), count: counts.approved },
+    { id: 'paid', label: t('adminPayslips.status.paid', 'Ausbezahlt'), count: counts.paid },
+    { id: 'archive', label: t('adminPayslips.tabs.archive', 'Archiv'), count: counts.archive }
   ];
 
   const selectedSlips = useMemo(
@@ -365,7 +370,11 @@ const AdminPayslipsPage = () => {
 
   const bulkDelete = () => {
     if (!selectedSlips.length) return;
-    if (!window.confirm(`${selectedSlips.length} Abrechnung(en) wirklich loeschen?`)) return;
+    if (!window.confirm(t(
+      'adminPayslips.bulkDeleteConfirm',
+      '{{count}} Abrechnung(en) wirklich loeschen?',
+      { count: selectedSlips.length }
+    ))) return;
 
     Promise.all(selectedSlips.map(slip => api.delete(`/api/payslips/${slip.id}`))).then(() => {
       setSelectedIds([]);
@@ -383,27 +392,27 @@ const AdminPayslipsPage = () => {
 
       <header className="payroll-hero">
         <div className="payroll-title-block">
-          <p className="payroll-eyebrow">Payroll-Center</p>
+          <p className="payroll-eyebrow">{t('adminPayslips.centerEyebrow', 'Payroll-Center')}</p>
           <h1>{t('adminPayslips.centerTitle', 'Lohnabrechnung')}</h1>
           <p>{t('adminPayslips.centerSubtitle', 'Abrechnungslauf vorbereiten, pruefen, freigeben und archivieren.')}</p>
           <div className="payroll-run-summary">
-            <span>{totals.uniqueUsers || allPayslips.length} Mitarbeitende</span>
-            <span>Auszahlung {formatDate(totals.firstPayout)}</span>
-            <span>{loading ? 'Aktualisiere...' : 'Bereit'}</span>
+            <span>{t('adminPayslips.employeeCount', '{{count}} Mitarbeitende', { count: totals.uniqueUsers || allPayslips.length })}</span>
+            <span>{t('adminPayslips.nextPayout', 'Auszahlung {{date}}', { date: formatDate(totals.firstPayout) })}</span>
+            <span>{loading ? t('adminPayslips.refreshing', 'Aktualisiere...') : t('adminPayslips.ready', 'Bereit')}</span>
           </div>
         </div>
         <div className="payroll-hero-actions">
           <button type="button" className="secondary-btn" onClick={() => setSettingsOpen(true)}>
-            Dokumentdesign
+            {t('adminPayslips.documentDesign', 'Dokumentdesign')}
           </button>
           <button type="button" className="primary-btn" onClick={() => setCreateOpen(true)}>
-            + Neuer Abrechnungslauf
+            {t('adminPayslips.newPayrollRun', '+ Neuer Abrechnungslauf')}
           </button>
         </div>
       </header>
 
-      <section className="payroll-process" aria-label="Payroll Prozess">
-        {PROCESS_STEPS.map((step, index) => (
+      <section className="payroll-process" aria-label={t('adminPayslips.process.ariaLabel', 'Payroll Prozess')}>
+        {processSteps.map((step, index) => (
           <div className={`process-step ${index < 3 ? 'is-active' : ''}`} key={step}>
             <span>{index + 1}</span>
             <strong>{step}</strong>
@@ -411,31 +420,31 @@ const AdminPayslipsPage = () => {
         ))}
       </section>
 
-      <section className="payroll-kpi-grid" aria-label="Payroll Kennzahlen">
+      <section className="payroll-kpi-grid" aria-label={t('adminPayslips.kpis.ariaLabel', 'Payroll Kennzahlen')}>
         <article className="payroll-kpi">
-          <span>Offen</span>
+          <span>{t('adminPayslips.status.open', 'Offen')}</span>
           <strong>{counts.open}</strong>
-          <small>Abrechnungen bereit</small>
+          <small>{t('adminPayslips.kpis.openHint', 'Abrechnungen bereit')}</small>
         </article>
         <article className="payroll-kpi kpi-warning">
-          <span>In Pruefung</span>
+          <span>{t('adminPayslips.status.review', 'In Pruefung')}</span>
           <strong>{counts.review}</strong>
-          <small>Warnungen oder negative Werte</small>
+          <small>{t('adminPayslips.kpis.reviewHint', 'Warnungen oder negative Werte')}</small>
         </article>
         <article className="payroll-kpi kpi-success">
-          <span>Freigegeben</span>
+          <span>{t('adminPayslips.status.approved', 'Freigegeben')}</span>
           <strong>{counts.approved}</strong>
-          <small>PDF und Auszahlung bereit</small>
+          <small>{t('adminPayslips.kpis.approvedHint', 'PDF und Auszahlung bereit')}</small>
         </article>
         <article className="payroll-kpi">
-          <span>Auszahlung gesamt</span>
+          <span>{t('adminPayslips.kpis.totalPayout', 'Auszahlung gesamt')}</span>
           <strong>{formatCurrency(totals.payoutTotal)}</strong>
-          <small>AG-Beitraege {formatCurrency(totals.employerTotal)}</small>
+          <small>{t('adminPayslips.kpis.employerContributions', 'AG-Beitraege {{amount}}', { amount: formatCurrency(totals.employerTotal) })}</small>
         </article>
       </section>
 
       <section className="payroll-workspace">
-        <div className="payroll-tabs" role="tablist" aria-label="Status Filter">
+        <div className="payroll-tabs" role="tablist" aria-label={t('adminPayslips.statusFilter', 'Status Filter')}>
           {tabs.map(tab => (
             <button
               type="button"
@@ -452,7 +461,7 @@ const AdminPayslipsPage = () => {
 
         <div className="payroll-toolbar">
           <label>
-            <span>Suche</span>
+            <span>{t('search', 'Suche')}</span>
             <input
               value={filter.name}
               placeholder="Name"
@@ -460,7 +469,7 @@ const AdminPayslipsPage = () => {
             />
           </label>
           <label>
-            <span>Start</span>
+            <span>{t('start', 'Start')}</span>
             <input
               type="date"
               value={filter.start}
@@ -468,7 +477,7 @@ const AdminPayslipsPage = () => {
             />
           </label>
           <label>
-            <span>Ende</span>
+            <span>{t('end', 'Ende')}</span>
             <input
               type="date"
               value={filter.end}
@@ -476,7 +485,7 @@ const AdminPayslipsPage = () => {
             />
           </label>
           <label>
-            <span>Auszahlung</span>
+            <span>{t('adminPayslips.payout', 'Auszahlung')}</span>
             <input
               type="date"
               value={filter.payoutDate}
@@ -484,36 +493,36 @@ const AdminPayslipsPage = () => {
             />
           </label>
           <label>
-            <span>Drucksprache</span>
+            <span>{t('adminPayslips.printLanguage', 'Drucksprache')}</span>
             <select value={printLang} onChange={event => setPrintLang(event.target.value)}>
               <option value="de">DE</option>
               <option value="en">EN</option>
             </select>
           </label>
           <div className="toolbar-actions">
-            <button type="button" onClick={approveAll}>Alle freigeben</button>
-            <button type="button" onClick={scheduleAll}>Alle planen</button>
+            <button type="button" onClick={approveAll}>{t('adminPayslips.approveAllButton', 'Alle freigeben')}</button>
+            <button type="button" onClick={scheduleAll}>{t('adminPayslips.scheduleAllButton', 'Alle planen')}</button>
             <button type="button" onClick={exportCsv}>CSV Export</button>
             <button type="button" onClick={backup}>Backup</button>
           </div>
         </div>
 
-        <div className="saved-views" aria-label="Gespeicherte Ansichten">
-          <button type="button" onClick={() => setActiveTab('open')}>Offene Abrechnungen</button>
-          <button type="button" onClick={() => setActiveTab('review')}>Fehlerhafte</button>
-          <button type="button" onClick={() => setFilter({ ...filter, payoutDate: new Date().toISOString().slice(0, 10) })}>Auszahlung heute</button>
-          <button type="button" onClick={() => setActiveTab('archive')}>Archiv</button>
+        <div className="saved-views" aria-label={t('adminPayslips.savedViews', 'Gespeicherte Ansichten')}>
+          <button type="button" onClick={() => setActiveTab('open')}>{t('adminPayslips.savedViewOpen', 'Offene Abrechnungen')}</button>
+          <button type="button" onClick={() => setActiveTab('review')}>{t('adminPayslips.savedViewReview', 'Fehlerhafte')}</button>
+          <button type="button" onClick={() => setFilter({ ...filter, payoutDate: new Date().toISOString().slice(0, 10) })}>{t('adminPayslips.savedViewToday', 'Auszahlung heute')}</button>
+          <button type="button" onClick={() => setActiveTab('archive')}>{t('adminPayslips.tabs.archive', 'Archiv')}</button>
         </div>
 
         {selectedIds.length > 0 && (
           <div className="bulk-action-bar">
-            <strong>{selectedIds.length} ausgewaehlt</strong>
-            <button type="button" onClick={bulkApprove}>Freigeben</button>
-            <button type="button" onClick={bulkSetPayout}>Auszahlung planen</button>
-            <button type="button" onClick={bulkPrintPdf}>PDF generieren</button>
+            <strong>{t('adminPayslips.selectedCount', '{{count}} ausgewaehlt', { count: selectedIds.length })}</strong>
+            <button type="button" onClick={bulkApprove}>{t('adminPayslips.approveButton', 'Freigeben')}</button>
+            <button type="button" onClick={bulkSetPayout}>{t('adminPayslips.schedulePayout', 'Auszahlung planen')}</button>
+            <button type="button" onClick={bulkPrintPdf}>{t('adminPayslips.generatePdf', 'PDF generieren')}</button>
             <button type="button" onClick={exportCsv}>CSV Export</button>
-            <button type="button" className="danger-btn" onClick={bulkDelete}>Loeschen</button>
-            <button type="button" className="ghost-btn" onClick={() => setSelectedIds([])}>Auswahl aufheben</button>
+            <button type="button" className="danger-btn" onClick={bulkDelete}>{t('delete', 'Loeschen')}</button>
+            <button type="button" className="ghost-btn" onClick={() => setSelectedIds([])}>{t('adminPayslips.clearSelection', 'Auswahl aufheben')}</button>
           </div>
         )}
 
@@ -530,80 +539,80 @@ const AdminPayslipsPage = () => {
                 <th className="check-col">
                   <input
                     type="checkbox"
-                    aria-label="Alle sichtbaren Abrechnungen auswaehlen"
+                    aria-label={t('adminPayslips.selectVisible', 'Alle sichtbaren Abrechnungen auswaehlen')}
                     checked={visiblePayslips.length > 0 && visiblePayslips.every(slip => selectedSet.has(slip.id))}
                     onChange={toggleVisibleSelection}
                   />
                 </th>
-                <th>Mitarbeiter</th>
-                <th>Zeitraum</th>
-                <th>Brutto</th>
-                <th>Netto</th>
-                <th>Status</th>
-                <th>Auszahlung</th>
-                <th className="actions-col">Aktion</th>
+                <th>{t('employee', 'Mitarbeiter')}</th>
+                <th>{t('period', 'Zeitraum')}</th>
+                <th>{t('adminPayslips.gross', 'Brutto')}</th>
+                <th>{t('adminPayslips.net', 'Netto')}</th>
+                <th>{t('common.status', 'Status')}</th>
+                <th>{t('adminPayslips.payout', 'Auszahlung')}</th>
+                <th className="actions-col">{t('actions', 'Aktion')}</th>
               </tr>
             </thead>
             <tbody>
               {visiblePayslips.map((slip) => {
                 const status = getSlipStatus(slip);
-                const statusMeta = getStatusMeta(status);
+                const statusMeta = getStatusMeta(status, t);
                 const warning = hasPayrollWarning(slip);
                 const currency = slip.currency || 'CHF';
 
                 return (
                   <tr key={slip.id} className={warning ? 'has-warning' : ''}>
-                    <td data-label="Auswahl" className="check-col">
+                    <td data-label={t('selection', 'Auswahl')} className="check-col">
                       <input
                         type="checkbox"
                         checked={selectedSet.has(slip.id)}
                         onChange={() => toggleSelected(slip.id)}
-                        aria-label={`${getEmployeeName(slip)} auswaehlen`}
+                        aria-label={t('adminPayslips.selectEmployeeSlip', '{{name}} auswaehlen', { name: getEmployeeName(slip) })}
                       />
                     </td>
-                    <td data-label="Mitarbeiter">
+                    <td data-label={t('employee', 'Mitarbeiter')}>
                       <button type="button" className="employee-link" onClick={() => setDetailSlip(slip)}>
                         <strong>{getEmployeeName(slip)}</strong>
-                        <span>{formatBilledOvertime(slip)} abgerechnete Ueberstunden</span>
+                        <span>{t('adminPayslips.billedOvertime', '{{hours}} abgerechnete Ueberstunden', { hours: formatBilledOvertime(slip) })}</span>
                       </button>
                     </td>
-                    <td data-label="Zeitraum">{formatDate(slip.periodStart)} - {formatDate(slip.periodEnd)}</td>
-                    <td data-label="Brutto" className={Number(slip.grossSalary) < 0 ? 'amount-negative' : ''}>
+                    <td data-label={t('period', 'Zeitraum')}>{formatDate(slip.periodStart)} - {formatDate(slip.periodEnd)}</td>
+                    <td data-label={t('adminPayslips.gross', 'Brutto')} className={Number(slip.grossSalary) < 0 ? 'amount-negative' : ''}>
                       {formatCurrency(slip.grossSalary, currency)}
                     </td>
-                    <td data-label="Netto" className={Number(slip.netSalary) < 0 ? 'amount-negative' : ''}>
+                    <td data-label={t('adminPayslips.net', 'Netto')} className={Number(slip.netSalary) < 0 ? 'amount-negative' : ''}>
                       {formatCurrency(slip.netSalary, currency)}
-                      {Number(slip.netSalary) < 0 && <span className="inline-warning">Negativer Nettolohn</span>}
+                      {Number(slip.netSalary) < 0 && <span className="inline-warning">{t('adminPayslips.negativeNetSalary', 'Negativer Nettolohn')}</span>}
                     </td>
-                    <td data-label="Status">
+                    <td data-label={t('common.status', 'Status')}>
                       <span className={`status-chip status-${statusMeta.tone}`}>{statusMeta.label}</span>
                     </td>
-                    <td data-label="Auszahlung">{formatDate(slip.payoutDate)}</td>
-                    <td data-label="Aktion" className="actions-col">
+                    <td data-label={t('adminPayslips.payout', 'Auszahlung')}>{formatDate(slip.payoutDate)}</td>
+                    <td data-label={t('actions', 'Aktion')} className="actions-col">
                       {status === 'approved' ? (
                         <button type="button" className="compact-action" onClick={() => printPdf(slip.id)}>PDF</button>
                       ) : (
-                        <button type="button" className="compact-action" onClick={() => setDetailSlip(slip)}>Pruefen</button>
+                        <button type="button" className="compact-action" onClick={() => setDetailSlip(slip)}>{t('adminPayslips.reviewButton', 'Pruefen')}</button>
                       )}
                       <button
                         type="button"
                         className="icon-action"
-                        aria-label="Weitere Aktionen"
+                        aria-label={t('adminPayslips.moreActions', 'Weitere Aktionen')}
                         onClick={() => setMenuOpenId(menuOpenId === slip.id ? null : slip.id)}
                       >
                         ...
                       </button>
                       {menuOpenId === slip.id && (
                         <div className="row-menu">
-                          <button type="button" onClick={() => { setDetailSlip(slip); setMenuOpenId(null); }}>Details anzeigen</button>
-                          <button type="button" onClick={() => { printPdf(slip.id); setMenuOpenId(null); }}>PDF drucken</button>
-                          <button type="button" onClick={() => { editPayoutDate(slip.id, slip.payoutDate); setMenuOpenId(null); }}>Auszahlung aendern</button>
+                          <button type="button" onClick={() => { setDetailSlip(slip); setMenuOpenId(null); }}>{t('adminPayslips.showDetails', 'Details anzeigen')}</button>
+                          <button type="button" onClick={() => { printPdf(slip.id); setMenuOpenId(null); }}>{t('adminPayslips.printPdf', 'PDF drucken')}</button>
+                          <button type="button" onClick={() => { editPayoutDate(slip.id, slip.payoutDate); setMenuOpenId(null); }}>{t('adminPayslips.changePayout', 'Auszahlung aendern')}</button>
                           {status !== 'approved' ? (
-                            <button type="button" onClick={() => { approve(slip.id); setMenuOpenId(null); }}>Freigeben</button>
+                            <button type="button" onClick={() => { approve(slip.id); setMenuOpenId(null); }}>{t('adminPayslips.approveButton', 'Freigeben')}</button>
                           ) : (
-                            <button type="button" onClick={() => { reopen(slip.id); setMenuOpenId(null); }}>Zurueckziehen</button>
+                            <button type="button" onClick={() => { reopen(slip.id); setMenuOpenId(null); }}>{t('adminPayslips.reopen', 'Zurueckziehen')}</button>
                           )}
-                          <button type="button" className="danger-text" onClick={() => { deletePayslip(slip.id); setMenuOpenId(null); }}>Loeschen</button>
+                          <button type="button" className="danger-text" onClick={() => { deletePayslip(slip.id); setMenuOpenId(null); }}>{t('delete', 'Loeschen')}</button>
                         </div>
                       )}
                     </td>
@@ -613,7 +622,7 @@ const AdminPayslipsPage = () => {
               {visiblePayslips.length === 0 && (
                 <tr>
                   <td colSpan="8" className="empty-state">
-                    Keine Abrechnungen in dieser Ansicht.
+                    {t('adminPayslips.emptyView', 'Keine Abrechnungen in dieser Ansicht.')}
                   </td>
                 </tr>
               )}
@@ -622,9 +631,9 @@ const AdminPayslipsPage = () => {
         </div>
 
         <footer className="payroll-pagination">
-          <span>{filteredPayslips.length} Abrechnungen</span>
+          <span>{t('adminPayslips.payslipCount', '{{count}} Abrechnungen', { count: filteredPayslips.length })}</span>
           <label>
-            <span>Pro Seite</span>
+            <span>{t('adminPayslips.perPage', 'Pro Seite')}</span>
             <select value={pageSize} onChange={event => setPageSize(Number(event.target.value))}>
               <option value={25}>25</option>
               <option value={50}>50</option>
@@ -632,9 +641,9 @@ const AdminPayslipsPage = () => {
             </select>
           </label>
           <div>
-            <button type="button" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>Zurueck</button>
-            <span>Seite {currentPage} / {totalPages}</span>
-            <button type="button" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>Weiter</button>
+            <button type="button" disabled={currentPage <= 1} onClick={() => setPage(currentPage - 1)}>{t('back', 'Zurueck')}</button>
+            <span>{t('adminPayslips.pageIndicator', 'Seite {{current}} / {{total}}', { current: currentPage, total: totalPages })}</span>
+            <button type="button" disabled={currentPage >= totalPages} onClick={() => setPage(currentPage + 1)}>{t('next', 'Weiter')}</button>
           </div>
         </footer>
       </section>
@@ -649,6 +658,7 @@ const AdminPayslipsPage = () => {
           onPrint={() => printPdf(detailSlip.id)}
           onEditPayout={() => editPayoutDate(detailSlip.id, detailSlip.payoutDate)}
           onReopen={() => reopen(detailSlip.id)}
+          t={t}
         />
       )}
 
@@ -667,6 +677,7 @@ const AdminPayslipsPage = () => {
           previewGross={previewGross}
           previewNet={previewNet}
           formatCurrency={formatCurrency}
+          t={t}
         />
       )}
 
@@ -676,52 +687,53 @@ const AdminPayslipsPage = () => {
           setLogoFile={setLogoFile}
           onSave={uploadLogo}
           onClose={() => setSettingsOpen(false)}
+          t={t}
         />
       )}
     </div>
   );
 };
 
-const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, onPrint, onEditPayout, onReopen }) => {
+const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, onPrint, onEditPayout, onReopen, t }) => {
   const status = getSlipStatus(slip);
-  const statusMeta = getStatusMeta(status);
+  const statusMeta = getStatusMeta(status, t);
   const currency = slip.currency || 'CHF';
   const contributions = Array.isArray(slip.employerContribList) ? slip.employerContribList : [];
 
   return (
     <div className="drawer-layer" role="presentation">
-      <button type="button" className="drawer-backdrop" aria-label="Details schliessen" onClick={onClose} />
-      <aside className="payslip-drawer" aria-label={`Lohnabrechnung ${getEmployeeName(slip)}`}>
+      <button type="button" className="drawer-backdrop" aria-label={t('adminPayslips.closeDetails', 'Details schliessen')} onClick={onClose} />
+      <aside className="payslip-drawer" aria-label={t('adminPayslips.drawerAria', 'Lohnabrechnung {{name}}', { name: getEmployeeName(slip) })}>
         <div className="drawer-head">
           <div>
             <span className={`status-chip status-${statusMeta.tone}`}>{statusMeta.label}</span>
-            <h2>Lohnabrechnung: {getEmployeeName(slip)}</h2>
+            <h2>{t('adminPayslips.drawerTitle', 'Lohnabrechnung: {{name}}', { name: getEmployeeName(slip) })}</h2>
             <p>{formatDate(slip.periodStart)} - {formatDate(slip.periodEnd)}</p>
           </div>
-          <button type="button" className="icon-action" onClick={onClose} aria-label="Schliessen">x</button>
+          <button type="button" className="icon-action" onClick={onClose} aria-label={t('close', 'Schliessen')}>x</button>
         </div>
 
         <dl className="drawer-metrics">
           <div>
-            <dt>Brutto</dt>
+            <dt>{t('adminPayslips.gross', 'Brutto')}</dt>
             <dd className={Number(slip.grossSalary) < 0 ? 'amount-negative' : ''}>{formatCurrency(slip.grossSalary, currency)}</dd>
           </div>
           <div>
-            <dt>Netto</dt>
+            <dt>{t('adminPayslips.net', 'Netto')}</dt>
             <dd className={Number(slip.netSalary) < 0 ? 'amount-negative' : ''}>{formatCurrency(slip.netSalary, currency)}</dd>
           </div>
           <div>
-            <dt>Abzuege</dt>
+            <dt>{t('adminPayslips.deductions', 'Abzuege')}</dt>
             <dd>{formatCurrency(slip.deductions, currency)}</dd>
           </div>
           <div>
-            <dt>Auszahlung</dt>
+            <dt>{t('adminPayslips.payout', 'Auszahlung')}</dt>
             <dd>{formatDate(slip.payoutDate)}</dd>
           </div>
         </dl>
 
         <section className="drawer-section">
-          <h3>Arbeitgeberbeitraege</h3>
+          <h3>{t('adminPayslips.employerContributionsTitle', 'Arbeitgeberbeitraege')}</h3>
           {contributions.length > 0 ? (
             <ul className="contribution-list">
               {contributions.map((entry, index) => (
@@ -732,20 +744,20 @@ const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, o
               ))}
             </ul>
           ) : (
-            <p className="muted-text">Keine einzelnen Arbeitgeberbeitraege vorhanden.</p>
+            <p className="muted-text">{t('adminPayslips.noEmployerContributions', 'Keine einzelnen Arbeitgeberbeitraege vorhanden.')}</p>
           )}
           <div className="drawer-total">
-            <span>Summe AG-Beitraege</span>
+            <span>{t('adminPayslips.employerContributionsTotal', 'Summe AG-Beitraege')}</span>
             <strong>{formatCurrency(slip.employerContributions, currency)}</strong>
           </div>
         </section>
 
         <section className="drawer-section">
-          <h3>Weitere Angaben</h3>
+          <h3>{t('adminPayslips.moreDetails', 'Weitere Angaben')}</h3>
           <dl className="drawer-grid">
-            <dt>Ueberstunden</dt>
+            <dt>{t('overtime', 'Ueberstunden')}</dt>
             <dd>{slip.payoutOvertime ? `${Number(slip.overtimeHours || 0).toFixed(2)} Std.` : '-'}</dd>
-            <dt>Zulagen</dt>
+            <dt>{t('adminPayslips.allowances', 'Zulagen')}</dt>
             <dd>{formatCurrency(slip.allowances, currency)}</dd>
             <dt>Bonus</dt>
             <dd>{formatCurrency(slip.bonuses, currency)}</dd>
@@ -755,13 +767,13 @@ const PayslipDrawer = ({ slip, formatCurrency, formatDate, onClose, onApprove, o
         </section>
 
         <div className="drawer-actions">
-          <button type="button" onClick={onPrint}>PDF oeffnen</button>
+          <button type="button" onClick={onPrint}>{t('adminPayslips.openPdf', 'PDF oeffnen')}</button>
           {status === 'approved' ? (
-            <button type="button" className="warning-btn" onClick={onReopen}>Zurueckziehen</button>
+            <button type="button" className="warning-btn" onClick={onReopen}>{t('adminPayslips.reopen', 'Zurueckziehen')}</button>
           ) : (
-            <button type="button" className="primary-btn" onClick={onApprove}>Freigeben</button>
+            <button type="button" className="primary-btn" onClick={onApprove}>{t('adminPayslips.approveButton', 'Freigeben')}</button>
           )}
-          <button type="button" onClick={onEditPayout}>Korrigieren</button>
+          <button type="button" onClick={onEditPayout}>{t('adminPayslips.correct', 'Korrigieren')}</button>
         </div>
       </aside>
     </div>
@@ -778,67 +790,68 @@ const CreatePayslipModal = ({
   onClose,
   previewGross,
   previewNet,
-  formatCurrency
+  formatCurrency,
+  t
 }) => (
   <div className="modal-layer" role="presentation">
-    <button type="button" className="modal-backdrop" aria-label="Dialog schliessen" onClick={onClose} />
+    <button type="button" className="modal-backdrop" aria-label={t('adminPayslips.closeDialog', 'Dialog schliessen')} onClick={onClose} />
     <section className="payroll-modal" role="dialog" aria-modal="true" aria-labelledby="create-payslip-title">
       <div className="modal-head">
         <div>
-          <p className="payroll-eyebrow">Neuer Lauf</p>
-          <h2 id="create-payslip-title">Neuen Abrechnungslauf erstellen</h2>
+          <p className="payroll-eyebrow">{t('adminPayslips.newRunEyebrow', 'Neuer Lauf')}</p>
+          <h2 id="create-payslip-title">{t('adminPayslips.createRunTitle', 'Neuen Abrechnungslauf erstellen')}</h2>
         </div>
-        <button type="button" className="icon-action" onClick={onClose} aria-label="Schliessen">x</button>
+        <button type="button" className="icon-action" onClick={onClose} aria-label={t('close', 'Schliessen')}>x</button>
       </div>
 
       <div className="wizard-grid">
         <fieldset>
-          <legend>1. Zeitraum</legend>
+          <legend>{t('adminPayslips.stepPeriod', '1. Zeitraum')}</legend>
           <label>
-            <span>Startdatum</span>
+            <span>{t('adminPayslips.startDate', 'Startdatum')}</span>
             <input type="date" value={form.start} onChange={event => setForm({ ...form, start: event.target.value })} />
           </label>
           <label>
-            <span>Enddatum</span>
+            <span>{t('adminPayslips.endDate', 'Enddatum')}</span>
             <input type="date" value={form.end} onChange={event => setForm({ ...form, end: event.target.value })} />
           </label>
           <label>
-            <span>Auszahlung</span>
+            <span>{t('adminPayslips.payout', 'Auszahlung')}</span>
             <input type="date" value={form.payoutDate} onChange={event => setForm({ ...form, payoutDate: event.target.value })} />
           </label>
         </fieldset>
 
         <fieldset>
-          <legend>2. Mitarbeitende</legend>
+          <legend>{t('adminPayslips.stepEmployees', '2. Mitarbeitende')}</legend>
           <label>
-            <span>Mitarbeiter</span>
+            <span>{t('employee', 'Mitarbeiter')}</span>
             <select value={form.userId} onChange={event => setForm({ ...form, userId: event.target.value })}>
-              <option value="">Benutzer waehlen</option>
+              <option value="">{t('adminPayslips.chooseUser', 'Benutzer waehlen')}</option>
               {users.map(user => (
                 <option key={user.id} value={user.id}>{user.firstName || user.username} {user.lastName || ''}</option>
               ))}
             </select>
           </label>
-          <div className="segmented-control" aria-label="Mitarbeitenden-Auswahl">
-            <button type="button" className="is-active">Einzeln</button>
-            <button type="button" disabled>Alle aktiven</button>
-            <button type="button" disabled>Abteilung</button>
+          <div className="segmented-control" aria-label={t('adminPayslips.employeeSelection', 'Mitarbeitenden-Auswahl')}>
+            <button type="button" className="is-active">{t('adminPayslips.singleEmployee', 'Einzeln')}</button>
+            <button type="button" disabled>{t('adminPayslips.allActiveEmployees', 'Alle aktiven')}</button>
+            <button type="button" disabled>{t('adminPayslips.department', 'Abteilung')}</button>
           </div>
         </fieldset>
 
         <fieldset>
-          <legend>3. Optionen</legend>
+          <legend>{t('adminPayslips.stepOptions', '3. Optionen')}</legend>
           <label className="checkbox-label">
             <input
               type="checkbox"
               checked={form.payoutOvertime}
               onChange={event => setForm({ ...form, payoutOvertime: event.target.checked })}
             />
-            <span>Ueberstunden auszahlen</span>
+            <span>{t('adminPayslips.payOutOvertime', 'Ueberstunden auszahlen')}</span>
           </label>
           {form.payoutOvertime && (
             <label>
-              <span>Ueberstunden (Std.)</span>
+              <span>{t('adminPayslips.overtimeHours', 'Ueberstunden (Std.)')}</span>
               <input
                 type="number"
                 min="0"
@@ -850,33 +863,33 @@ const CreatePayslipModal = ({
           )}
           <label className="checkbox-label">
             <input type="checkbox" checked readOnly />
-            <span>Abzuege automatisch berechnen</span>
+            <span>{t('adminPayslips.calculateDeductionsAutomatically', 'Abzuege automatisch berechnen')}</span>
           </label>
           <label className="checkbox-label">
             <input type="checkbox" checked readOnly />
-            <span>Vorschau vor Erstellung anzeigen</span>
+            <span>{t('adminPayslips.showPreviewBeforeCreate', 'Vorschau vor Erstellung anzeigen')}</span>
           </label>
         </fieldset>
       </div>
 
       {wizardPreview && (
         <div className="run-preview">
-          <h3>Vorschau Abrechnung</h3>
+          <h3>{t('adminPayslips.previewTitle', 'Vorschau Abrechnung')}</h3>
           <dl>
             <div>
-              <dt>Mitarbeitende</dt>
+              <dt>{t('adminPayslips.employees', 'Mitarbeitende')}</dt>
               <dd>{form.userId ? 1 : 0}</dd>
             </div>
             <div>
-              <dt>Fehler</dt>
+              <dt>{t('errorsLabel', 'Fehler')}</dt>
               <dd>{Number(previewNet) < 0 ? 1 : 0}</dd>
             </div>
             <div>
-              <dt>Gesamtes Brutto</dt>
+              <dt>{t('adminPayslips.totalGross', 'Gesamtes Brutto')}</dt>
               <dd>{formatCurrency(previewGross)}</dd>
             </div>
             <div>
-              <dt>Gesamtes Netto</dt>
+              <dt>{t('adminPayslips.totalNet', 'Gesamtes Netto')}</dt>
               <dd>{formatCurrency(previewNet)}</dd>
             </div>
           </dl>
@@ -884,50 +897,50 @@ const CreatePayslipModal = ({
       )}
 
       <div className="modal-actions">
-        <button type="button" onClick={() => setWizardPreview(true)}>Vorschau berechnen</button>
+        <button type="button" onClick={() => setWizardPreview(true)}>{t('adminPayslips.calculatePreview', 'Vorschau berechnen')}</button>
         <button type="button" className="primary-btn" onClick={onCreate} disabled={!form.userId || !form.start || !form.end}>
-          Abrechnungslauf erstellen
+          {t('adminPayslips.createRunButton', 'Abrechnungslauf erstellen')}
         </button>
       </div>
     </section>
   </div>
 );
 
-const DocumentSettingsModal = ({ logoFile, setLogoFile, onSave, onClose }) => (
+const DocumentSettingsModal = ({ logoFile, setLogoFile, onSave, onClose, t }) => (
   <div className="modal-layer" role="presentation">
-    <button type="button" className="modal-backdrop" aria-label="Dialog schliessen" onClick={onClose} />
+    <button type="button" className="modal-backdrop" aria-label={t('adminPayslips.closeDialog', 'Dialog schliessen')} onClick={onClose} />
     <section className="payroll-modal compact-modal" role="dialog" aria-modal="true" aria-labelledby="document-settings-title">
       <div className="modal-head">
         <div>
-          <p className="payroll-eyebrow">Dokumentdesign</p>
+          <p className="payroll-eyebrow">{t('adminPayslips.documentDesign', 'Dokumentdesign')}</p>
           <h2 id="document-settings-title">PDF-Layout</h2>
         </div>
-        <button type="button" className="icon-action" onClick={onClose} aria-label="Schliessen">x</button>
+        <button type="button" className="icon-action" onClick={onClose} aria-label={t('close', 'Schliessen')}>x</button>
       </div>
       <div className="settings-grid">
         <label>
-          <span>Firmenlogo</span>
+          <span>{t('adminPayslips.companyLogo', 'Firmenlogo')}</span>
           <input type="file" accept="image/*" onChange={event => setLogoFile(event.target.files?.[0] ?? null)} />
         </label>
         <label>
-          <span>Sprache</span>
+          <span>{t('language', 'Sprache')}</span>
           <select defaultValue="de">
             <option value="de">Deutsch</option>
             <option value="en">English</option>
           </select>
         </label>
         <label>
-          <span>Standard-Auszahlungsdatum</span>
+          <span>{t('adminPayslips.defaultPayoutDay', 'Standard-Auszahlungsdatum')}</span>
           <input type="number" min="1" max="31" defaultValue="25" />
         </label>
         <label>
-          <span>Nummernkreis</span>
+          <span>{t('adminPayslips.numberRange', 'Nummernkreis')}</span>
           <input defaultValue="PAY-2026" />
         </label>
       </div>
       <div className="modal-actions">
-        <button type="button" onClick={onClose}>Abbrechen</button>
-        <button type="button" className="primary-btn" onClick={onSave} disabled={!logoFile}>Logo speichern</button>
+        <button type="button" onClick={onClose}>{t('cancel', 'Abbrechen')}</button>
+        <button type="button" className="primary-btn" onClick={onSave} disabled={!logoFile}>{t('adminPayslips.saveLogo', 'Logo speichern')}</button>
       </div>
     </section>
   </div>

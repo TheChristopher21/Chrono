@@ -187,7 +187,7 @@ public class VacationService {
         if (halfDay && !start.isEqual(end)) {
             throw new IllegalArgumentException("Halbtags Urlaub kann nur für einen einzelnen Tag beantragt werden.");
         }
-        List<User> users = userRepo.findByCompany_Id(company.getId());
+        List<User> users = userRepo.findOperationalUsersByCompanyIdAndDeletedFalse(company.getId());
         List<VacationRequest> created = new ArrayList<>();
         for (User user : users) {
             VacationRequest vr = new VacationRequest();
@@ -395,7 +395,9 @@ public class VacationService {
             logger.warn("getAllVacationsInCompany aufgerufen mit companyId null."); //
             return Collections.emptyList(); //
         }
-        return vacationRepo.findByUser_Company_Id(companyId); //
+        return vacationRepo.findByUser_Company_Id(companyId).stream()
+                .filter(vacation -> !isSuperAdminUser(vacation.getUser()))
+                .toList(); //
     }
 
     @Transactional
@@ -570,7 +572,15 @@ public class VacationService {
 
 
     public List<VacationRequest> getAllVacations() {
-        return vacationRepo.findAll(); //
+        return vacationRepo.findAll().stream()
+                .filter(vacation -> !isSuperAdminUser(vacation.getUser()))
+                .toList(); //
+    }
+
+    private boolean isSuperAdminUser(User user) {
+        return user != null
+                && user.getRoles() != null
+                && user.getRoles().stream().anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
     }
 
     public double calculateRemainingVacationDays(String username, int year) {
@@ -690,8 +700,13 @@ public class VacationService {
     }
 
     private boolean isChargeableVacationDay(User user, LocalDate date) {
+        boolean customHolidaySelection = user.getCompany() != null && user.getCompany().isCustomHolidaySelectionEnabled();
         String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-        if (holidayService.isHoliday(date, cantonAbbreviation)) {
+        boolean holiday = customHolidaySelection
+                ? holidayService.isCompanyHoliday(date, user.getCompany())
+                : holidayService.isHoliday(date, cantonAbbreviation);
+        boolean halfDayHoliday = customHolidaySelection && holidayService.isHalfDayHoliday(date, user.getCompany());
+        if (holiday && !halfDayHoliday) {
             return false;
         }
         return !workScheduleService.isDayOff(user, date);

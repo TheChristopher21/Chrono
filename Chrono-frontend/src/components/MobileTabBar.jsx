@@ -1,16 +1,18 @@
 import { NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useTranslation } from "../context/LanguageContext.jsx";
 import { getMobilePagesForContext, isAdminUser } from "../utils/pageAccess.js";
 import "../styles/MobileTabBar.css";
 
 const MobileTabBar = () => {
     const location = useLocation();
     const { currentUser } = useAuth();
+    const { t } = useTranslation();
     const { pathname } = location;
 
     const inAdminArea = pathname.startsWith("/admin");
     const context = inAdminArea || isAdminUser(currentUser) ? "admin" : "user";
-    const navItems = getMobilePagesForContext(currentUser, context);
+    const navItems = getMobilePagesForContext(currentUser, context, t);
     const inKnownArea = navItems.some((item) => pathname === item.path || pathname.startsWith(`${item.path}/`))
         || pathname === "/workspace/supply-chain";
 
@@ -21,7 +23,7 @@ const MobileTabBar = () => {
     return (
         <>
             <div className="mobile-tab-spacer" aria-hidden="true" />
-            <nav className="mobile-tab-bar" aria-label="Mobile Navigation">
+            <nav className="mobile-tab-bar" aria-label={t("mobileTabBar.ariaLabel", "Mobile Navigation")}>
                 {navItems.map((item) => (
                     <NavLink
                         key={item.key}

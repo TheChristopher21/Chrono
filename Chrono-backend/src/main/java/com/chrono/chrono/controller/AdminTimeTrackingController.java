@@ -50,9 +50,9 @@ public class AdminTimeTrackingController {
 
         List<User> usersToList;
         if (isSuperAdmin) {
-            usersToList = userRepository.findByDeletedFalse();
+            usersToList = userRepository.findTimeOverviewUsersDeletedFalse();
         } else if (adminCompanyId != null) {
-            usersToList = userRepository.findByCompany_IdAndDeletedFalse(adminCompanyId);
+            usersToList = userRepository.findTimeOverviewUsersByCompanyIdAndDeletedFalse(adminCompanyId);
         } else {
             logger.warn("Admin {} has no company assigned. Denying time summaries.", principal.getName());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Admin has no company assigned."));
@@ -149,9 +149,9 @@ public class AdminTimeTrackingController {
         boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
         List<User> usersToList;
         if (isSuperAdmin) {
-            usersToList = userRepository.findByDeletedFalse();
+            usersToList = userRepository.findTimeOverviewUsersDeletedFalse();
         } else if (adminUser.getCompany() != null) {
-            usersToList = userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId());
+            usersToList = userRepository.findTimeOverviewUsersByCompanyIdAndDeletedFalse(adminUser.getCompany().getId());
         } else {
             logger.warn("Admin {} has no company assigned. Denying weekly balances.", principal.getName());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Admin has no company assigned."));
@@ -182,9 +182,9 @@ public class AdminTimeTrackingController {
         boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
         List<User> usersToList;
         if (isSuperAdmin) {
-            usersToList = userRepository.findByDeletedFalse();
+            usersToList = userRepository.findTimeOverviewUsersDeletedFalse();
         } else if (adminUser.getCompany() != null) {
-            usersToList = userRepository.findByCompany_IdAndDeletedFalse(adminUser.getCompany().getId());
+            usersToList = userRepository.findTimeOverviewUsersByCompanyIdAndDeletedFalse(adminUser.getCompany().getId());
         } else {
             logger.warn("Admin {} has no company assigned. Denying tracking balances.", principal.getName());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Admin has no company assigned."));
@@ -218,6 +218,9 @@ public class AdminTimeTrackingController {
                     "Keine Berechtigung für Änderungen im Admin-Dashboard."
             );
             User targetUser = userRepository.findByUsername(targetUsername).orElseThrow(() -> new RuntimeException("Zielbenutzer nicht gefunden."));
+            if (targetUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Superadmin-Konten werden nicht in operativen Zeitübersichten verwaltet."));
+            }
 
             if (!adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) &&
                 (adminUser.getCompany() == null || targetUser.getCompany() == null || !adminUser.getCompany().getId().equals(targetUser.getCompany().getId()))) {

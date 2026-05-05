@@ -1930,7 +1930,7 @@ const AdminWeekSection = forwardRef(({
                                                     {detailedUser === userData.username ? '📂' : '📄'}
                                                 </button>
                                                 <button onClick={() => onOpenUserOverview?.(userData.username)} className="action-button overview-user-button" title={t('adminDashboard.openOverview', 'Mitarbeiter-Übersicht öffnen')}>
-                                                    Übersicht
+                                                    {t('overview', 'Übersicht')}
                                                 </button>
                                                 <button onClick={() => openPrintUserModal(userData.username)} className="action-button print-user-button" title={t('printButtonUser', 'Zeiten dieses Benutzers drucken')}>
                                                     🖨️
@@ -2156,7 +2156,7 @@ const AdminWeekSection = forwardRef(({
                                         </td>
                                         <td data-label={t('actions', 'Aktionen')} className="actions-cell">
                                             <button onClick={() => onOpenUserOverview?.(userData.username)} className="action-button overview-user-button" title={t('adminDashboard.openOverview', 'Mitarbeiter-Übersicht öffnen')}>
-                                                Übersicht
+                                                {t('overview', 'Übersicht')}
                                             </button>
                                             <button onClick={() => openPrintUserModal(userData.username)} className="action-button print-user-button" title={t('printButtonUser', 'Zeiten dieses Benutzers drucken')}>
                                                 🖨️

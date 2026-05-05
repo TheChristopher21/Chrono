@@ -66,13 +66,14 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
         setSickComment('');
     }, []);
 
-    const fetchHolidays = useCallback(async (year, canton) => {
+    const fetchHolidays = useCallback(async (year, canton, companyId) => {
         try {
             const yearStartDate = `${year}-01-01`;
             const yearEndDate = `${year}-12-31`;
             const params = {
                 year: year,
                 cantonAbbreviation: canton || '',
+                companyId: companyId || undefined,
                 startDate: yearStartDate,
                 endDate: yearEndDate,
             };
@@ -98,6 +99,7 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
     useEffect(() => {
         const year = activeStartDate.getFullYear();
         const canton = userProfile?.company?.cantonAbbreviation;
+        const companyId = userProfile?.companyId || userProfile?.company?.id;
         const firstDayOfYearKey = `${year}-01-01`; // Oder ein anderer zuverlässiger Schlüssel für das Jahr
         let holidaysLoadedForYear = false;
         // Überprüfen, ob *irgendein* Feiertag für dieses Jahr geladen wurde, um unnötige Abfragen zu vermeiden.
@@ -110,7 +112,7 @@ function VacationCalendar({ vacationRequests, userProfile, onRefreshVacations })
         }
 
         if (!holidaysLoadedForYear) {
-            fetchHolidays(year, canton);
+            fetchHolidays(year, canton, companyId);
         }
         fetchSickLeaves();
     }, [activeStartDate, userProfile, fetchHolidays, fetchSickLeaves, holidays]);

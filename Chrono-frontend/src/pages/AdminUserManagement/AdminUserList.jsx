@@ -3,16 +3,19 @@ import 'react';
 import PropTypes from 'prop-types';
 import { ACCESS_MANAGE, ACCESS_NONE, normalizeAccessLevel } from '../../utils/pageAccess.js';
 
-const summarizePermissions = (pagePermissions = {}) => {
+const summarizePermissions = (pagePermissions = {}, t) => {
     const normalizedValues = Object.values(pagePermissions || {}).map(normalizeAccessLevel);
     const visibleCount = normalizedValues.filter((value) => value !== ACCESS_NONE).length;
     const manageableCount = normalizedValues.filter((value) => value === ACCESS_MANAGE).length;
 
     if (visibleCount === 0) {
-        return 'Keine Seiten';
+        return t('userManagement.noPages', 'Keine Seiten');
     }
 
-    return `${visibleCount} Seiten, ${manageableCount}x Verwalten`;
+    return t('userManagement.permissionSummary', '{{visibleCount}} Seiten, {{manageableCount}}x Verwalten', {
+        visibleCount,
+        manageableCount,
+    });
 };
 
 const AdminUserList = ({ users, t, handleEditUser, requestDeleteUser, handleProgramCard, canManage }) => {
@@ -56,7 +59,7 @@ const AdminUserList = ({ users, t, handleEditUser, requestDeleteUser, handleProg
                                         : t('userTypes.standard', 'Standard'))}
                             </td>
                             <td data-label={t('userManagement.pageAccessSummary', 'Seitenrechte')}>
-                                {summarizePermissions(user.pagePermissions)}
+                                {summarizePermissions(user.pagePermissions, t)}
                             </td>
                             <td data-label={t('userManagement.annualVacationDays', 'Urlaubstage')}>
                                 {user.annualVacationDays ?? '-'}

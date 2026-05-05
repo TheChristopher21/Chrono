@@ -29,6 +29,10 @@ const isAdminAccount = (user) => {
     return normalizedRoles.every(role => role.toUpperCase().includes('ADMIN'));
 };
 
+const isSuperAdminAccount = (user) => (
+    normalizeRoles(user?.roles).some(role => role.toUpperCase() === 'ROLE_SUPERADMIN')
+);
+
 const collectUsernames = (collection) => new Set(
     collection
         .map(user => user?.username)
@@ -47,18 +51,19 @@ export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}
         };
     }
 
-    const totalKnownUsers = users.filter(user => user?.username).length;
+    const operationalUsers = users.filter(user => user?.username && !isSuperAdminAccount(user));
+    const totalKnownUsers = operationalUsers.length;
 
     const explicitOptOutAdmins = collectUsernames(
-        users.filter(user => user?.includeInTimeTracking === false && isAdminAccount(user))
+        operationalUsers.filter(user => user?.includeInTimeTracking === false && isAdminAccount(user))
     );
 
     const explicitOptOutNonAdmins = collectUsernames(
-        users.filter(user => user?.includeInTimeTracking === false && !isAdminAccount(user))
+        operationalUsers.filter(user => user?.includeInTimeTracking === false && !isAdminAccount(user))
 
     );
 
-    const filtered = users.filter(user => user?.includeInTimeTracking !== false);
+    const filtered = operationalUsers.filter(user => user?.includeInTimeTracking !== false);
 
     if (filtered.length > 0 || !fallbackToKnownUsers) {
         return {
@@ -74,7 +79,7 @@ export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}
         };
     }
 
-    const nonAdminFallbackCandidates = users.filter(user => user?.username && !isAdminAccount(user));
+    const nonAdminFallbackCandidates = operationalUsers.filter(user => !isAdminAccount(user));
 
     if (nonAdminFallbackCandidates.length > 0) {
         const reactivatedSet = collectUsernames(
@@ -120,7 +125,7 @@ export const selectTrackableUsers = (users, { fallbackToKnownUsers = true } = {}
 
     }
 
-    const fallbackUsers = users.filter(user => user && user.username);
+    const fallbackUsers = operationalUsers;
 
     if (fallbackUsers.length > 0) {
         return {

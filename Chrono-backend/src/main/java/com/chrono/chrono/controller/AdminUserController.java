@@ -87,10 +87,10 @@ public class AdminUserController {
 
         List<User> users;
         if (isSuperAdmin) {
-            users = userRepository.findByDeletedFalse();
+            users = userRepository.findOperationalUsersDeletedFalse();
         } else if (admin.getCompany() != null) {
             Long companyId = admin.getCompany().getId();
-            users = userRepository.findByCompany_IdAndDeletedFalse(companyId);
+            users = userRepository.findOperationalUsersByCompanyIdAndDeletedFalse(companyId);
         } else {
             logger.warn("Admin {} has no company assigned. Access to user listing is denied.", principal.getName());
             return ResponseEntity.status(403).build();
@@ -200,7 +200,7 @@ public class AdminUserController {
 
         // Security check for role assignment by non-SUPERADMIN
         if (!hasAnyRole(admin, "ROLE_SUPERADMIN") && isPrivilegedRole(finalRoleName)) {
-            return ResponseEntity.status(403).body("Only SUPERADMIN can assign privileged roles.");
+            return ResponseEntity.status(403).body("Only SUPERADMIN can assign SUPERADMIN roles.");
         }
 
 
@@ -220,7 +220,8 @@ public class AdminUserController {
         newUser.setBreakDuration(userDTO.getBreakDuration() != null ? userDTO.getBreakDuration() : 30);
         newUser.setHourlyRate(userDTO.getHourlyRate());
         newUser.setMonthlySalary(userDTO.getMonthlySalary());
-        newUser.setIncludeInTimeTracking(userDTO.getIncludeInTimeTracking() != null ? userDTO.getIncludeInTimeTracking() : true);
+        newUser.setIncludeInTimeTracking(!"ROLE_SUPERADMIN".equals(finalRoleName)
+                && (userDTO.getIncludeInTimeTracking() != null ? userDTO.getIncludeInTimeTracking() : true));
 
         boolean isHourly = userDTO.getIsHourly() != null ? userDTO.getIsHourly() : false;
         boolean isPercentage = userDTO.getIsPercentage() != null ? userDTO.getIsPercentage() : false;
@@ -309,8 +310,8 @@ public class AdminUserController {
                 logger.warn("Admin {} attempted to update user {} from a different company or user with no company.", adminUser.getUsername(), existingUser.getUsername());
                 return ResponseEntity.status(403).body("Admin cannot update user from a different company or a user not assigned to any company.");
             }
-            if (isPrivilegedUser(existingUser)) {
-                return ResponseEntity.status(403).body("Only SUPERADMIN can update privileged users.");
+            if (isSuperAdminUser(existingUser)) {
+                return ResponseEntity.status(403).body("Only SUPERADMIN can update SUPERADMIN users.");
             }
         }
         // SUPERADMIN specific logic for changing user's company
@@ -413,13 +414,16 @@ public class AdminUserController {
             final String finalRoleName = roleNameInput;
 
             if (!hasAnyRole(adminUser, "ROLE_SUPERADMIN") && isPrivilegedRole(finalRoleName)) {
-                return ResponseEntity.status(403).body("Only SUPERADMIN can assign privileged roles.");
+                return ResponseEntity.status(403).body("Only SUPERADMIN can assign SUPERADMIN roles.");
             }
 
             Role dbRole = roleRepository.findByRoleName(finalRoleName)
                     .orElseGet(() -> roleRepository.save(new Role(finalRoleName)));
             existingUser.getRoles().clear();
             existingUser.getRoles().add(dbRole);
+        }
+        if (isSuperAdminUser(existingUser)) {
+            existingUser.setIncludeInTimeTracking(false);
         }
 
         existingUser.setPagePermissions(userPermissionService.resolvePermissionsForPersistence(existingUser, userDTO.getPagePermissions()));
@@ -541,6 +545,47 @@ public class AdminUserController {
         return ResponseEntity.ok(toUserDTO(updatedUser));
     }
 
+    @PatchMapping("/{id}/time-tracking-visibility")
+    @Transactional
+    public ResponseEntity<?> updateTimeTrackingVisibility(
+            @PathVariable Long id,
+            @RequestBody Map<String, Boolean> payload,
+            Principal principal
+    ) {
+        if (payload == null || payload.get("includeInTimeTracking") == null) {
+            return ResponseEntity.badRequest().body("includeInTimeTracking is required");
+        }
+
+        User adminUser = userRepository.findByUsername(principal.getName())
+                .orElseThrow(() -> new RuntimeException("Admin not found: " + principal.getName()));
+        userPermissionService.assertPageAccess(
+                adminUser,
+                UserPermissionService.PAGE_ADMIN_USERS,
+                UserPermissionService.ACCESS_MANAGE,
+                "Keine Berechtigung zum Verwalten von Benutzern."
+        );
+
+        User targetUser = userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with ID: " + id));
+
+        if (!hasAnyRole(adminUser, "ROLE_SUPERADMIN")) {
+            if (adminUser.getCompany() == null) {
+                return ResponseEntity.status(403).body("Admin has no company and cannot update users.");
+            }
+            if (targetUser.getCompany() == null || !adminUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
+                logger.warn("Admin {} attempted to update time tracking visibility for user {} from a different company or user with no company.",
+                        adminUser.getUsername(), targetUser.getUsername());
+                return ResponseEntity.status(403).body("Admin cannot update user from a different company or a user not assigned to any company.");
+            }
+        }
+
+        targetUser.setIncludeInTimeTracking(!isSuperAdminUser(targetUser) && payload.get("includeInTimeTracking"));
+        User savedUser = userRepository.save(targetUser);
+        logger.info("Admin {} updated time tracking visibility for user {} to {}",
+                adminUser.getUsername(), savedUser.getUsername(), savedUser.isIncludeInTimeTracking());
+        return ResponseEntity.ok(toUserDTO(savedUser));
+    }
+
     @DeleteMapping("/{id}")
     @Transactional
     public ResponseEntity<?> deleteUser(@PathVariable Long id, Principal principal) {
@@ -594,13 +639,11 @@ public class AdminUserController {
     }
 
     private boolean isPrivilegedRole(String roleName) {
-        return "ROLE_ADMIN".equals(roleName)
-                || "ROLE_SUPERADMIN".equals(roleName)
-                || "ROLE_PAYROLL_ADMIN".equals(roleName);
+        return "ROLE_SUPERADMIN".equals(roleName);
     }
 
-    private boolean isPrivilegedUser(User user) {
-        return hasAnyRole(user, "ROLE_ADMIN", "ROLE_SUPERADMIN", "ROLE_PAYROLL_ADMIN");
+    private boolean isSuperAdminUser(User user) {
+        return hasAnyRole(user, "ROLE_SUPERADMIN");
     }
 
     private User copyUserForHistory(User source) {

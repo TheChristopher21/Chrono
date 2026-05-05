@@ -4,6 +4,8 @@ import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.services.HolidayService;
+import com.chrono.chrono.services.TimeTrackingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +20,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -30,6 +33,10 @@ public class AdminCompanyController {
     private UserRepository userRepository;
     @Autowired
     private CompanyRepository companyRepository;
+    @Autowired
+    private HolidayService holidayService;
+    @Autowired
+    private TimeTrackingService timeTrackingService;
 
     @GetMapping
     public ResponseEntity<?> getCompany(Principal principal) {
@@ -55,7 +62,15 @@ public class AdminCompanyController {
                     .body("Admin has no company");
         }
         Company company = admin.getCompany();
-        return ResponseEntity.ok(CompanySettingsDTO.fromEntity(company));
+        return ResponseEntity.ok(CompanySettingsDTO.fromEntity(
+                company,
+                holidayService.getCompanyHolidayPreferences(company)
+        ));
+    }
+
+    @GetMapping("/holiday-catalog")
+    public ResponseEntity<?> getHolidayCatalog() {
+        return ResponseEntity.ok(holidayService.getHolidayCatalog());
     }
 
     @PutMapping("/settings")
@@ -66,9 +81,25 @@ public class AdminCompanyController {
                     .body("Admin has no company");
         }
         Company company = admin.getCompany();
+        boolean holidaySettingsChanged = dto.getHolidayPreferences() != null || dto.getCustomHolidaySelectionEnabled() != null;
+        if (dto.getHolidayPreferences() != null && dto.getCustomHolidaySelectionEnabled() == null) {
+            dto.setCustomHolidaySelectionEnabled(true);
+        }
         dto.applyToEntity(company);
         companyRepository.save(company);
-        return ResponseEntity.ok(CompanySettingsDTO.fromEntity(company));
+        if (dto.getHolidayPreferences() != null) {
+            holidayService.replaceCompanyHolidayPreferences(company, dto.getHolidayPreferences());
+        }
+        if (holidaySettingsChanged) {
+            List<User> companyUsers = userRepository.findByCompany_IdAndDeletedFalse(company.getId());
+            for (User user : companyUsers) {
+                timeTrackingService.rebuildUserBalance(user);
+            }
+        }
+        return ResponseEntity.ok(CompanySettingsDTO.fromEntity(
+                company,
+                holidayService.getCompanyHolidayPreferences(company)
+        ));
     }
 
     @PutMapping("/logo")

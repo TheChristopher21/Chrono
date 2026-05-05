@@ -138,9 +138,9 @@ public class AccessControlService {
 
     public List<User> visibleUsersForAdmin(User actor) {
         if (isSuperAdmin(actor)) {
-            return userRepository.findByDeletedFalse();
+            return userRepository.findOperationalUsersDeletedFalse();
         }
         Long companyId = requireCompanyIdForTenantAdmin(actor);
-        return userRepository.findByCompany_IdAndDeletedFalse(companyId);
+        return userRepository.findOperationalUsersByCompanyIdAndDeletedFalse(companyId);
     }
 }

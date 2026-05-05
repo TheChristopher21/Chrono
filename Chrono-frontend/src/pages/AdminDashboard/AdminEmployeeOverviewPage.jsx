@@ -46,7 +46,7 @@ const getRequestStatusClass = (request) => {
 
 const getMonthStart = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
 const getMonthEnd = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
-const weekDayLabels = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+const weekDayLabels = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 const MAX_CORRECTION_PREVIEW_PUNCHES = 4;
 
 const formatPunchTypeLabel = (type, t) => {
@@ -175,8 +175,18 @@ const AdminEmployeeOverviewPage = () => {
     const { username: encodedUsername } = useParams();
     const username = decodeURIComponent(encodedUsername || '');
     const todayYmd = formatLocalDateYMD(new Date());
-    const { t } = useTranslation();
+    const { t, language } = useTranslation();
     const { notify } = useNotification();
+    const dateLocale = language === 'en' ? 'en-US' : 'de-DE';
+    const localizedWeekDayLabels = useMemo(() => ({
+        monday: t('daysShort.monday', 'Mo'),
+        tuesday: t('daysShort.tuesday', 'Di'),
+        wednesday: t('daysShort.wednesday', 'Mi'),
+        thursday: t('daysShort.thursday', 'Do'),
+        friday: t('daysShort.friday', 'Fr'),
+        saturday: t('daysShort.saturday', 'Sa'),
+        sunday: t('daysShort.sunday', 'So'),
+    }), [t]);
 
     const [loading, setLoading] = useState(true);
     const [users, setUsers] = useState([]);
@@ -540,21 +550,21 @@ const AdminEmployeeOverviewPage = () => {
             ...employeeVacations
                 .filter((item) => !item.denied && item.endDate >= todayYmd)
                 .map((item) => ({
-                    type: 'Urlaub',
+                    type: t('adminEmployeeOverview.absence.vacation', 'Urlaub'),
                     startDate: item.startDate,
                     endDate: item.endDate,
                 })),
             ...employeeSickLeaves
                 .filter((item) => item.endDate >= todayYmd)
                 .map((item) => ({
-                    type: 'Krank',
+                    type: t('adminEmployeeOverview.absence.sick', 'Krank'),
                     startDate: item.startDate,
                     endDate: item.endDate,
                 })),
         ].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
 
         return upcoming[0] || null;
-    }, [employeeSickLeaves, employeeVacations, todayYmd]);
+    }, [employeeSickLeaves, employeeVacations, t, todayYmd]);
 
     const weeklyAbsenceDays = useMemo(() => {
         const coveredDays = new Set();
@@ -1069,8 +1079,11 @@ const AdminEmployeeOverviewPage = () => {
                                 <h2>{t('adminDashboard.issueRibbon.title', 'Problemfokus')}</h2>
                                 <button type="button" className="text-link-btn" onClick={handleCycleProblem} disabled={prioritizedProblems.length === 0}>
                                     {prioritizedProblems.length > 0
-                                        ? `Zum Problem (${((problemCursor + 1) % prioritizedProblems.length) + 1}/${prioritizedProblems.length})`
-                                        : 'Keine Problemfälle'}
+                                        ? t('adminEmployeeOverview.nextProblem', 'Zum Problem ({{current}}/{{total}})', {
+                                            current: ((problemCursor + 1) % prioritizedProblems.length) + 1,
+                                            total: prioritizedProblems.length,
+                                        })
+                                        : t('adminEmployeeOverview.noProblemCases', 'Keine Problemfälle')}
                                 </button>
                             </div>
                             <div className="problem-ribbon-row" role="list" aria-label={t('adminDashboard.issueFilters.groupLabel', 'Problemtypen filtern')}>
@@ -1091,13 +1104,15 @@ const AdminEmployeeOverviewPage = () => {
 
                         <section className="employee-overview-kpis">
                             <article className="card-style kpi-card">
-                                <h3>Heute</h3>
+                                <h3>{t('today', 'Heute')}</h3>
                                 <p><strong>{todaysSummary ? t('adminDashboard.stamped', 'Gestempelt') : t('adminDashboard.noDataShort', 'Keine Daten')}</strong></p>
                                 <p>{todaysSummary ? `${minutesToHHMM(todaysSummary.workedMinutes || 0)} · ${minutesToHHMM(todaysSummary.breakMinutes || 0)}` : t('adminEmployeeOverview.noTrackingData', 'Keine Zeiterfassungen vorhanden.')}</p>
                             </article>
                             <article className="card-style kpi-card">
-                                <h3>Woche</h3>
-                                <p>Soll {minutesToHHMM(periodTargetMinutes)} / Ist <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></p>
+                                <h3>{t('week', 'Woche')}</h3>
+                                <p>
+                                    {t('expectedTimeShort', 'Soll')} {minutesToHHMM(periodTargetMinutes)} / {t('actualTimeShort', 'Ist')} <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong>
+                                </p>
                                 <p>{t('overtime', 'Überstunden')}: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></p>
                             </article>
                             <article className="card-style kpi-card">
@@ -1111,19 +1126,19 @@ const AdminEmployeeOverviewPage = () => {
                             <div className="left-column">
                                 <article className="card-style employee-overview-card" ref={timeTrackingSectionRef}>
                                     <div className="card-heading-row">
-                                        <h2>Zeiterfassung</h2>
+                                        <h2>{t('timeTracking', 'Zeiterfassung')}</h2>
                                         <div className="request-tabs">
-                                            <button className={timeRangeMode === 'week' ? 'active' : ''} onClick={() => setTimeRangeMode('week')}>Woche</button>
-                                            <button className={timeRangeMode === 'month' ? 'active' : ''} onClick={() => setTimeRangeMode('month')}>Monat</button>
+                                            <button className={timeRangeMode === 'week' ? 'active' : ''} onClick={() => setTimeRangeMode('week')}>{t('week', 'Woche')}</button>
+                                            <button className={timeRangeMode === 'month' ? 'active' : ''} onClick={() => setTimeRangeMode('month')}>{t('month', 'Monat')}</button>
                                         </div>
                                     </div>
                                     <div className="week-navigation-row">
                                         {timeRangeMode === 'month' ? (
                                             <>
                                                 <button type="button" className="text-link-btn" onClick={goToPreviousMonth}>←</button>
-                                                <strong>{selectedMonth.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })}</strong>
+                                                <strong>{selectedMonth.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })}</strong>
                                                 <button type="button" className="text-link-btn" onClick={goToNextMonth}>→</button>
-                                                <button type="button" className="text-link-btn" onClick={goToCurrentMonth}>Dieser Monat</button>
+                                                <button type="button" className="text-link-btn" onClick={goToCurrentMonth}>{t('adminEmployeeOverview.currentMonth', 'Dieser Monat')}</button>
                                             </>
                                         ) : (
                                             <>
@@ -1132,24 +1147,24 @@ const AdminEmployeeOverviewPage = () => {
                                                     {formatDate(new Date(`${weekDates[0]}T00:00:00`))} – {formatDate(new Date(`${weekDates[6]}T00:00:00`))}
                                                 </strong>
                                                 <button type="button" className="text-link-btn" onClick={goToNextWeek}>→</button>
-                                                <button type="button" className="text-link-btn" onClick={goToCurrentWeek}>Diese Woche</button>
+                                                <button type="button" className="text-link-btn" onClick={goToCurrentWeek}>{t('adminEmployeeOverview.currentWeek', 'Diese Woche')}</button>
                                             </>
                                         )}
                                     </div>
                                     <div className="mini-stats-row">
-                                        <span>Gesamtstunden: <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></span>
-                                        <span>Überstunden/Minus: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></span>
-                                        <span>Fehlzeiten: <strong>{periodAbsenceDays} Tage</strong></span>
+                                        <span>{t('adminEmployeeOverview.totalHours', 'Gesamtstunden')}: <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></span>
+                                        <span>{t('adminEmployeeOverview.overtimeMinus', 'Überstunden/Minus')}: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></span>
+                                        <span>{t('adminEmployeeOverview.absences', 'Fehlzeiten')}: <strong>{periodAbsenceDays} {t('daysLabel', 'Tage')}</strong></span>
                                         <span>{t('balanceTotal', 'Gesamtüberstunden')}: <strong>{minutesToHHMM(employeeBalance?.trackingBalance || 0)}</strong></span>
                                     </div>
                                     <div className="punch-overview-list">
                                         <div className="card-heading-row">
-                                            <h3>Gestempelte Zeiten</h3>
+                                            <h3>{t('adminEmployeeOverview.punchedTimes', 'Gestempelte Zeiten')}</h3>
                                         </div>
                                         <div className="punch-calendar-grid-wrap">
                                             <div className="punch-calendar-weekdays">
-                                                {weekDayLabels.map((label) => (
-                                                    <span key={label}>{label}</span>
+                                                {weekDayLabels.map((dayKey) => (
+                                                    <span key={dayKey}>{localizedWeekDayLabels[dayKey]}</span>
                                                 ))}
                                             </div>
                                             <div className={`punch-calendar-grid punch-calendar-grid--${timeRangeMode}`}>
@@ -1181,7 +1196,7 @@ const AdminEmployeeOverviewPage = () => {
                                                                     className="text-link-btn"
                                                                     onClick={() => openEditModal(dateString)}
                                                                 >
-                                                                    Korrigieren
+                                                                    {t('adminEmployeeOverview.correctButton', 'Korrigieren')}
                                                                 </button>
                                                             </div>
                                                             {(holidayNameOnThisDay || vacationOnThisDay || sickOnThisDay) && (
@@ -1238,15 +1253,25 @@ const AdminEmployeeOverviewPage = () => {
 
                             <div className="right-column">
                                 <article className="card-style employee-overview-card absence-summary-card">
-                                    <h2>Abwesenheits-Zusammenfassung</h2>
+                                    <h2>{t('adminEmployeeOverview.absenceSummary', 'Abwesenheits-Zusammenfassung')}</h2>
                                     <div className="absence-summary-list">
                                         <p><span>{t('remainingVacation', 'Verfügbar')}</span><strong>{vacationStats.availableDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
                                         <p><span>{t('adminEmployeeOverview.plannedVacation', 'Geplant')}</span><strong>{vacationStats.plannedDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
                                         <p><span>{t('adminEmployeeOverview.annualVacationEntitlement', 'Urlaubstage dieses Jahr')}</span><strong>{vacationStats.annual.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
-                                        <p><span>Nächste Abwesenheit</span><strong>{nextAbsence ? `${nextAbsence.type} · ${formatDate(new Date(`${nextAbsence.startDate}T00:00:00`))}` : 'Keine geplant'}</strong></p>
-                                        <p><span>Aktueller Status</span><strong>{currentStatus.label}</strong></p>
-                                        <p><span>Diese Woche</span><strong>{weeklyAbsenceDays} Tage abwesend</strong></p>
-                                        <p><span>{t('breakTime', 'Pause')} (Woche)</span><strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
+                                        <p>
+                                            <span>{t('adminEmployeeOverview.nextAbsence', 'Nächste Abwesenheit')}</span>
+                                            <strong>
+                                                {nextAbsence
+                                                    ? `${nextAbsence.type} · ${formatDate(new Date(`${nextAbsence.startDate}T00:00:00`))}`
+                                                    : t('adminEmployeeOverview.nonePlanned', 'Keine geplant')}
+                                            </strong>
+                                        </p>
+                                        <p><span>{t('adminEmployeeOverview.currentStatus', 'Aktueller Status')}</span><strong>{currentStatus.label}</strong></p>
+                                        <p>
+                                            <span>{t('adminEmployeeOverview.currentWeek', 'Diese Woche')}</span>
+                                            <strong>{t('adminEmployeeOverview.weeklyAbsenceDays', '{{count}} Tage abwesend', { count: weeklyAbsenceDays })}</strong>
+                                        </p>
+                                        <p><span>{t('breakTime', 'Pause')} ({t('week', 'Woche')})</span><strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
                                     </div>
                                 </article>
                                 <section className="calendar-requests-layout">
@@ -1277,11 +1302,11 @@ const AdminEmployeeOverviewPage = () => {
             {quickAction === 'vacation' && (
                 <ModalOverlay visible>
                     <div className="modal-content employee-quick-modal">
-                        <h3>Urlaub eintragen – {employeeDisplayName}</h3>
+                        <h3>{t('adminEmployeeOverview.recordVacationFor', 'Urlaub eintragen – {{name}}', { name: employeeDisplayName })}</h3>
                         <form onSubmit={handleQuickVacationSave} className="quick-form-grid">
-                            <label>Von<input type="date" value={vacationForm.startDate} onChange={(e) => setVacationForm((prev) => ({ ...prev, startDate: e.target.value }))} required /></label>
-                            <label>Bis<input type="date" value={vacationForm.endDate} onChange={(e) => setVacationForm((prev) => ({ ...prev, endDate: e.target.value }))} required /></label>
-                            <label className="checkbox-label"><input type="checkbox" checked={vacationForm.halfDay} onChange={(e) => setVacationForm((prev) => ({ ...prev, halfDay: e.target.checked }))} />Halbtag</label>
+                            <label>{t('from', 'Von')}<input type="date" value={vacationForm.startDate} onChange={(e) => setVacationForm((prev) => ({ ...prev, startDate: e.target.value }))} required /></label>
+                            <label>{t('to', 'Bis')}<input type="date" value={vacationForm.endDate} onChange={(e) => setVacationForm((prev) => ({ ...prev, endDate: e.target.value }))} required /></label>
+                            <label className="checkbox-label"><input type="checkbox" checked={vacationForm.halfDay} onChange={(e) => setVacationForm((prev) => ({ ...prev, halfDay: e.target.checked }))} />{t('halfDay', 'Halbtag')}</label>
                             <div className="modal-actions">
                                 <button type="button" onClick={() => setQuickAction(null)}>{t('cancel', 'Abbrechen')}</button>
                                 <button type="submit">{t('save', 'Speichern')}</button>
@@ -1294,12 +1319,12 @@ const AdminEmployeeOverviewPage = () => {
             {quickAction === 'sick' && (
                 <ModalOverlay visible>
                     <div className="modal-content employee-quick-modal">
-                        <h3>Krankmeldung eintragen – {employeeDisplayName}</h3>
+                        <h3>{t('adminEmployeeOverview.recordSickLeaveFor', 'Krankmeldung eintragen – {{name}}', { name: employeeDisplayName })}</h3>
                         <form onSubmit={handleQuickSickSave} className="quick-form-grid">
-                            <label>Von<input type="date" value={sickForm.startDate} onChange={(e) => setSickForm((prev) => ({ ...prev, startDate: e.target.value }))} required /></label>
-                            <label>Bis<input type="date" value={sickForm.endDate} onChange={(e) => setSickForm((prev) => ({ ...prev, endDate: e.target.value }))} required /></label>
-                            <label>Notiz<input type="text" value={sickForm.comment} onChange={(e) => setSickForm((prev) => ({ ...prev, comment: e.target.value }))} /></label>
-                            <label className="checkbox-label"><input type="checkbox" checked={sickForm.halfDay} onChange={(e) => setSickForm((prev) => ({ ...prev, halfDay: e.target.checked }))} />Halbtag</label>
+                            <label>{t('from', 'Von')}<input type="date" value={sickForm.startDate} onChange={(e) => setSickForm((prev) => ({ ...prev, startDate: e.target.value }))} required /></label>
+                            <label>{t('to', 'Bis')}<input type="date" value={sickForm.endDate} onChange={(e) => setSickForm((prev) => ({ ...prev, endDate: e.target.value }))} required /></label>
+                            <label>{t('note', 'Notiz')}<input type="text" value={sickForm.comment} onChange={(e) => setSickForm((prev) => ({ ...prev, comment: e.target.value }))} /></label>
+                            <label className="checkbox-label"><input type="checkbox" checked={sickForm.halfDay} onChange={(e) => setSickForm((prev) => ({ ...prev, halfDay: e.target.checked }))} />{t('halfDay', 'Halbtag')}</label>
                             <div className="modal-actions">
                                 <button type="button" onClick={() => setQuickAction(null)}>{t('cancel', 'Abbrechen')}</button>
                                 <button type="submit">{t('save', 'Speichern')}</button>

@@ -10,6 +10,19 @@ export const DAY_LABELS = {
     sunday: "So",
 };
 
+export const DAY_LABELS_BY_LANGUAGE = {
+    de: DAY_LABELS,
+    en: {
+        monday: "Mon",
+        tuesday: "Tue",
+        wednesday: "Wed",
+        thursday: "Thu",
+        friday: "Fri",
+        saturday: "Sat",
+        sunday: "Sun",
+    },
+};
+
 export const MONTH_LABELS = [
     "Januar",
     "Februar",
@@ -24,6 +37,24 @@ export const MONTH_LABELS = [
     "November",
     "Dezember",
 ];
+
+export const MONTH_LABELS_BY_LANGUAGE = {
+    de: MONTH_LABELS,
+    en: [
+        "January",
+        "February",
+        "March",
+        "April",
+        "May",
+        "June",
+        "July",
+        "August",
+        "September",
+        "October",
+        "November",
+        "December",
+    ],
+};
 
 export const DEFAULT_WEEK_PATTERN = {
     monday: { active: true, hours: 8.5 },
@@ -50,9 +81,9 @@ export const formatDateISO = (date) => {
     return `${year}-${month}-${day}`;
 };
 
-export const formatDateDisplay = (date) => {
+export const formatDateDisplay = (date, locale = "de-CH") => {
     const parsed = toDate(date);
-    return parsed.toLocaleDateString("de-CH", {
+    return parsed.toLocaleDateString(locale, {
         day: "2-digit",
         month: "2-digit",
         year: "numeric",
@@ -115,6 +146,7 @@ export const calculateWorkTime = ({
     workloadPercent = 100,
     holidays = new Map(),
     preHolidayReductionHours = 0,
+    language = "de",
 }) => {
     const { start, end } = clampRange(startDate, endDate);
     const workloadFactor = Math.max(0, Number(workloadPercent || 0)) / 100;
@@ -165,9 +197,9 @@ export const calculateWorkTime = ({
         const dayRecord = {
             date: iso,
             monthKey: `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, "0")}`,
-            monthLabel: `${MONTH_LABELS[cursor.getMonth()]} ${cursor.getFullYear()}`,
+            monthLabel: `${(MONTH_LABELS_BY_LANGUAGE[language] ?? MONTH_LABELS)[cursor.getMonth()]} ${cursor.getFullYear()}`,
             dayKey,
-            dayLabel: DAY_LABELS[dayKey],
+            dayLabel: (DAY_LABELS_BY_LANGUAGE[language] ?? DAY_LABELS)[dayKey],
             scheduledHours,
             targetHours,
             holiday,

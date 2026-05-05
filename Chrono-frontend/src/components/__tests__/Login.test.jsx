@@ -19,6 +19,7 @@ import { AuthContext } from '../../context/AuthContext.jsx';
 import { LanguageProvider } from '../../context/LanguageContext.jsx';
 
 beforeEach(() => {
+    mockNavigate.mockClear();
     vi.spyOn(global, 'fetch').mockResolvedValue({ ok: false, json: () => Promise.resolve({}) });
 });
 
@@ -52,5 +53,35 @@ describe('Login', () => {
 
         expect(loginMock).toHaveBeenCalledWith('alice', 'secret');
         expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+    });
+
+    it('sends admins to the admin dashboard after successful login', async () => {
+        const loginMock = vi.fn().mockResolvedValue({
+            success: true,
+            user: {
+                username: 'admin',
+                roles: ['ROLE_ADMIN'],
+                pagePermissions: {
+                    dashboard: 'VIEW',
+                    adminDashboard: 'MANAGE',
+                },
+            },
+        });
+
+        render(
+            <MemoryRouter>
+                <LanguageProvider>
+                    <AuthContext.Provider value={{ login: loginMock }}>
+                        <Login />
+                    </AuthContext.Provider>
+                </LanguageProvider>
+            </MemoryRouter>
+        );
+
+        await userEvent.type(screen.getByLabelText(/Benutzername/i), 'admin');
+        await userEvent.type(screen.getByLabelText(/Passwort/i), 'secret');
+        await userEvent.click(screen.getByRole('button', { name: /Login/i }));
+
+        expect(mockNavigate).toHaveBeenCalledWith('/admin/dashboard', { replace: true });
     });
 });

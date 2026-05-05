@@ -509,8 +509,22 @@ public class ChatService {
         if (admin.getCompany() == null || admin.getCompany().getId() == null) {
             return List.of();
         }
-        List<User> users = Optional.ofNullable(userRepository.findByCompany_IdAndDeletedFalse(admin.getCompany().getId())).orElse(List.of());
-        return users.isEmpty() ? Optional.ofNullable(userRepository.findByCompany_Id(admin.getCompany().getId())).orElse(List.of()) : users;
+        List<User> users = Optional.ofNullable(userRepository.findOperationalUsersByCompanyIdAndDeletedFalse(admin.getCompany().getId()))
+                .orElse(List.of());
+        if (!users.isEmpty()) {
+            return users;
+        }
+        return Optional.ofNullable(userRepository.findByCompany_IdAndDeletedFalse(admin.getCompany().getId()))
+                .orElse(List.of())
+                .stream()
+                .filter(user -> !isSuperAdminUser(user))
+                .collect(Collectors.toList());
+    }
+
+    private boolean isSuperAdminUser(User user) {
+        return user != null
+                && user.getRoles() != null
+                && user.getRoles().stream().anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
     }
 
     private Optional<User> findMentionedUser(List<User> users, String normalizedMessage) {

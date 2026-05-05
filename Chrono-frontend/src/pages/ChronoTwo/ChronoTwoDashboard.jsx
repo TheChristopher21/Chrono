@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Line, OrbitControls } from "@react-three/drei";
 import api from "../../utils/api.js";
+import { LanguageContext } from "../../context/LanguageContext.jsx";
 import "../../styles/ChronoTwoDashboard.css";
 
 const prettifyMetricKey = (metric) =>
@@ -16,7 +17,7 @@ const initialForms = {
     accounting: { purchaseOrderId: "PO-", orderedAmount: "", receivedAmount: "", invoicedAmount: "" },
     inbound: { productId: "", quantity: 10, dockLocationId: "Dock-1" },
     pick: { items: [{ productId: "", quantity: 1 }] },
-    nlp: "Wie hoch ist unser Überbestand?",
+    nlp: "",
     sensor: { locationId: "", temperature: 21, humidity: 48, weight: 100 },
 };
 
@@ -39,6 +40,8 @@ const LocationCube = ({ position, occupancyRatio, height, highlight }) => {
 };
 
 const ChronoTwoDashboard = () => {
+    const { language } = useContext(LanguageContext);
+    const l = useCallback((de, en) => (language === "en" ? en : de), [language]);
     const [products, setProducts] = useState([]);
     const [locations, setLocations] = useState([]);
     const [inventory, setInventory] = useState([]);
@@ -80,13 +83,13 @@ const ChronoTwoDashboard = () => {
                     fetchForecast(prodRes.data[0].id);
                 }
             } catch (err) {
-                setError(err.message ?? "Fehler beim Laden der Chrono 2.0 Daten");
+                setError(err.message ?? l("Fehler beim Laden der Chrono 2.0 Daten", "Failed to load Chrono 2.0 data"));
             } finally {
                 setLoading(false);
             }
         };
         load();
-    }, []);
+    }, [l]);
 
     const occupancyByLocation = useMemo(() => {
         const map = new Map();
@@ -122,7 +125,7 @@ const ChronoTwoDashboard = () => {
             const response = await api.get(`/chrono2/inventory/${productId}/forecast`);
             setForecast(response.data);
         } catch (err) {
-            setError(err.message ?? "Vorhersage konnte nicht geladen werden");
+            setError(err.message ?? l("Vorhersage konnte nicht geladen werden", "Forecast could not be loaded"));
         }
     };
 
@@ -145,7 +148,7 @@ const ChronoTwoDashboard = () => {
             setProducts((prev) => [response.data, ...prev.filter((p) => p.id !== response.data.id)]);
             setFormState((prev) => ({ ...prev, product: initialForms.product }));
         } catch (err) {
-            setError(err.message ?? "Produkt konnte nicht gespeichert werden");
+            setError(err.message ?? l("Produkt konnte nicht gespeichert werden", "Product could not be saved"));
         }
     };
 
@@ -161,7 +164,7 @@ const ChronoTwoDashboard = () => {
             const response = await api.post("/chrono2/slotting", payload);
             setSlotting(response.data);
         } catch (err) {
-            setError(err.message ?? "Smart Slotting fehlgeschlagen");
+            setError(err.message ?? l("Smart Slotting fehlgeschlagen", "Smart slotting failed"));
         }
     };
 
@@ -180,7 +183,7 @@ const ChronoTwoDashboard = () => {
             setSensorForm({ ...initialForms.sensor });
             setError(null);
         } catch (err) {
-            setError(err.message ?? "IoT-Übermittlung fehlgeschlagen");
+            setError(err.message ?? l("IoT-Übermittlung fehlgeschlagen", "IoT transmission failed"));
         }
     };
 
@@ -195,7 +198,7 @@ const ChronoTwoDashboard = () => {
             });
             setSourcing(response.data);
         } catch (err) {
-            setError(err.message ?? "Smart Sourcing fehlgeschlagen");
+            setError(err.message ?? l("Smart Sourcing fehlgeschlagen", "Smart sourcing failed"));
         }
     };
 
@@ -210,7 +213,7 @@ const ChronoTwoDashboard = () => {
             });
             setAccounting(response.data);
         } catch (err) {
-            setError(err.message ?? "Autonomous Accounting fehlgeschlagen");
+            setError(err.message ?? l("Autonomous Accounting fehlgeschlagen", "Autonomous accounting failed"));
         }
     };
 
@@ -223,7 +226,7 @@ const ChronoTwoDashboard = () => {
             });
             setInbound(response.data);
         } catch (err) {
-            setError(err.message ?? "Inbound Guidance fehlgeschlagen");
+            setError(err.message ?? l("Inbound Guidance fehlgeschlagen", "Inbound guidance failed"));
         }
     };
 
@@ -239,7 +242,7 @@ const ChronoTwoDashboard = () => {
             const response = await api.post("/chrono2/outbound/pick-route", payload);
             setPickRoute(response.data);
         } catch (err) {
-            setError(err.message ?? "Pick-by-Vision Planung fehlgeschlagen");
+            setError(err.message ?? l("Pick-by-Vision Planung fehlgeschlagen", "Pick-by-vision planning failed"));
         }
     };
 
@@ -249,7 +252,7 @@ const ChronoTwoDashboard = () => {
             const response = await api.post("/chrono2/analytics/nlp", { query: formState.nlp });
             setNlpResponse(response.data);
         } catch (err) {
-            setError(err.message ?? "NLP-Anfrage konnte nicht beantwortet werden");
+            setError(err.message ?? l("NLP-Anfrage konnte nicht beantwortet werden", "The NLP request could not be answered"));
         }
     };
 
@@ -285,8 +288,8 @@ const ChronoTwoDashboard = () => {
             <header className="chrono-two__header">
                 <div className="chrono-two__title">
                     <span className="chrono-two__pill">Release Candidate</span>
-                    <h1>Chrono 2.0 – Regelbasierte Lagersteuerung</h1>
-                    <p className="muted">Heuristische Analysen, AR und Automatisierung nahtlos in einer Plattform.</p>
+                    <h1>{l("Chrono 2.0 - Regelbasierte Lagersteuerung", "Chrono 2.0 - Rule-Based Warehouse Control")}</h1>
+                    <p className="muted">{l("Heuristische Analysen, AR und Automatisierung nahtlos in einer Plattform.", "Heuristic analytics, AR and automation in one seamless platform.")}</p>
                 </div>
                 <div className="kpi-strip">
                     {humanReadableKpis.map(([key, value]) => {
@@ -309,12 +312,12 @@ const ChronoTwoDashboard = () => {
             </header>
 
             {error && <div className="alert alert-error">{error}</div>}
-            {loading && <div className="loading">Chrono 2.0 Daten werden geladen …</div>}
+            {loading && <div className="loading">{l("Chrono 2.0 Daten werden geladen...", "Loading Chrono 2.0 data...")}</div>}
 
             <section className="grid grid-2">
                 <article className="card">
-                    <h2>3D-Lager-Zwilling</h2>
-                    <p className="muted">WebGL-Ansicht des Lagers mit Echtzeit-Auslastung.</p>
+                    <h2>{l("3D-Lager-Zwilling", "3D Warehouse Twin")}</h2>
+                    <p className="muted">{l("WebGL-Ansicht des Lagers mit Echtzeit-Auslastung.", "WebGL warehouse view with real-time utilization.")}</p>
                     <div className="three-wrapper">
                         <Canvas camera={{ position: [5, 5, 8] }}>
                             <ambientLight intensity={0.6} />
@@ -348,10 +351,10 @@ const ChronoTwoDashboard = () => {
                 </article>
 
                 <article className="card">
-                    <h2>Stammdaten & regelbasierte Datenanreicherung</h2>
+                    <h2>{l("Stammdaten & regelbasierte Datenanreicherung", "Master Data & Rule-Based Enrichment")}</h2>
                     <form className="form-grid" onSubmit={submitProduct}>
                         <label>
-                            Produktname
+                            {l("Produktname", "Product name")}
                             <input
                                 type="text"
                                 value={formState.product.name}
@@ -360,7 +363,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Kategorie
+                            {l("Kategorie", "Category")}
                             <input
                                 type="text"
                                 value={formState.product.category}
@@ -368,7 +371,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Einstandspreis (CHF)
+                            {l("Einstandspreis (CHF)", "Cost price (CHF)")}
                             <input
                                 type="number"
                                 step="0.01"
@@ -377,7 +380,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Gewicht (kg)
+                            {l("Gewicht (kg)", "Weight (kg)")}
                             <input
                                 type="number"
                                 step="0.1"
@@ -385,16 +388,16 @@ const ChronoTwoDashboard = () => {
                                 onChange={(e) => handleFormChange("product", "weightKg", e.target.value)}
                             />
                         </label>
-                        <button className="btn primary" type="submit">Produkt anreichern</button>
+                        <button className="btn primary" type="submit">{l("Produkt anreichern", "Enrich product")}</button>
                     </form>
                     <div className="table-wrapper">
                         <table>
                             <thead>
                                 <tr>
-                                    <th>Produkt</th>
-                                    <th>Kategorie</th>
-                                    <th>Gewicht</th>
-                                    <th>VK-Preis</th>
+                                    <th>{l("Produkt", "Product")}</th>
+                                    <th>{l("Kategorie", "Category")}</th>
+                                    <th>{l("Gewicht", "Weight")}</th>
+                                    <th>{l("VK-Preis", "Sales price")}</th>
                                     <th>Segment</th>
                                 </tr>
                             </thead>
@@ -419,7 +422,7 @@ const ChronoTwoDashboard = () => {
                     <h3>Smart Slotting</h3>
                     <form className="form-grid" onSubmit={submitSlotting}>
                         <label>
-                            Produkt-ID
+                            {l("Produkt-ID", "Product ID")}
                             <input
                                 type="text"
                                 value={formState.slotting.productId}
@@ -428,7 +431,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Gewicht (kg)
+                            {l("Gewicht (kg)", "Weight (kg)")}
                             <input
                                 type="number"
                                 value={formState.slotting.weightKg}
@@ -436,7 +439,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Volumen (m³)
+                            {l("Volumen (m³)", "Volume (m³)")}
                             <input
                                 type="number"
                                 value={formState.slotting.volumeCubicM}
@@ -444,20 +447,20 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Umschlagszeit (Tage)
+                            {l("Umschlagszeit (Tage)", "Turnover time (days)")}
                             <input
                                 type="number"
                                 value={formState.slotting.expectedTurnoverDays}
                                 onChange={(e) => handleFormChange("slotting", "expectedTurnoverDays", e.target.value)}
                             />
                         </label>
-                        <button className="btn" type="submit">Optimale Position berechnen</button>
+                        <button className="btn" type="submit">{l("Optimale Position berechnen", "Calculate optimal position")}</button>
                     </form>
                     {slotting && (
                         <div className="result">
-                            <strong>Lagerplatz:</strong> {slotting.locationId}<br />
+                            <strong>{l("Lagerplatz", "Storage location")}:</strong> {slotting.locationId}<br />
                             <strong>Confidence:</strong> {(slotting.confidence * 100).toFixed(1)} %<br />
-                            <strong>Grund:</strong> {slotting.reason}
+                            <strong>{l("Grund", "Reason")}:</strong> {slotting.reason}
                         </div>
                     )}
                 </article>
@@ -469,17 +472,17 @@ const ChronoTwoDashboard = () => {
                             {Object.entries(forecast.forecast).map(([date, value]) => (
                                 <li key={date}>
                                     <span>{date}</span>
-                                    <span>{value} Stk.</span>
+                                    <span>{value} {l("Stk.", "pcs.")}</span>
                                 </li>
                             ))}
                         </ul>
                     ) : (
-                        <p className="muted">Wähle ein Produkt, um die 6-Wochen-Vorhersage zu sehen.</p>
+                        <p className="muted">{l("Wähle ein Produkt, um die 6-Wochen-Vorhersage zu sehen.", "Select a product to see the 6-week forecast.")}</p>
                     )}
                     {forecast && (
                         <div className="alerts">
-                            {forecast.stockOutRisk && <span className="badge warning">Stock-Out Risiko</span>}
-                            {forecast.overstockRisk && <span className="badge info">Überbestand möglich</span>}
+                            {forecast.stockOutRisk && <span className="badge warning">{l("Stock-Out Risiko", "Stock-out risk")}</span>}
+                            {forecast.overstockRisk && <span className="badge info">{l("Überbestand möglich", "Overstock possible")}</span>}
                         </div>
                     )}
                 </article>
@@ -488,7 +491,7 @@ const ChronoTwoDashboard = () => {
                     <h3>IoT Monitoring</h3>
                     <form className="form-grid" onSubmit={submitSensor}>
                         <label>
-                            Lagerplatz
+                            {l("Lagerplatz", "Storage location")}
                             <input
                                 type="text"
                                 value={sensorForm.locationId}
@@ -497,7 +500,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Temperatur (°C)
+                            {l("Temperatur (°C)", "Temperature (°C)")}
                             <input
                                 type="number"
                                 value={sensorForm.temperature}
@@ -505,7 +508,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Luftfeuchte (%)
+                            {l("Luftfeuchte (%)", "Humidity (%)")}
                             <input
                                 type="number"
                                 value={sensorForm.humidity}
@@ -513,16 +516,16 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Gewicht (kg)
+                            {l("Gewicht (kg)", "Weight (kg)")}
                             <input
                                 type="number"
                                 value={sensorForm.weight}
                                 onChange={(e) => setSensorForm((prev) => ({ ...prev, weight: e.target.value }))}
                             />
                         </label>
-                        <button className="btn" type="submit">Messwert senden</button>
+                        <button className="btn" type="submit">{l("Messwert senden", "Send reading")}</button>
                     </form>
-                    <p className="muted">Werte werden revisionssicher dokumentiert.</p>
+                    <p className="muted">{l("Werte werden revisionssicher dokumentiert.", "Readings are documented with an audit trail.")}</p>
                     {Object.entries(sensorData).length > 0 && (
                         <ul className="ledger">
                             {Object.entries(sensorData).map(([loc, readings]) => {
@@ -544,7 +547,7 @@ const ChronoTwoDashboard = () => {
                     <h3>Smart Sourcing</h3>
                     <form className="form-grid" onSubmit={submitSourcing}>
                         <label>
-                            Produkt-ID
+                            {l("Produkt-ID", "Product ID")}
                             <input
                                 type="text"
                                 value={formState.sourcing.productId}
@@ -553,23 +556,23 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Menge
+                            {l("Menge", "Quantity")}
                             <input
                                 type="number"
                                 value={formState.sourcing.quantity}
                                 onChange={(e) => handleFormChange("sourcing", "quantity", e.target.value)}
                             />
                         </label>
-                        <button className="btn" type="submit">Lieferanten bewerten</button>
+                        <button className="btn" type="submit">{l("Lieferanten bewerten", "Evaluate suppliers")}</button>
                     </form>
                     {sourcing && (
                         <div className="result">
-                            <strong>Empfehlung:</strong> {sourcing.recommended?.supplierName}<br />
+                            <strong>{l("Empfehlung", "Recommendation")}:</strong> {sourcing.recommended?.supplierName}<br />
                             <strong>Score:</strong> {sourcing.recommended?.score.toFixed?.(2)}
                             <ul className="muted">
                                 {sourcing.rankedSuppliers?.map((supplier) => (
                                     <li key={supplier.supplierId}>
-                                        {supplier.supplierName} · Score {supplier.score.toFixed(2)} · {supplier.leadTimeDays} Tage
+                                        {supplier.supplierName} · Score {supplier.score.toFixed(2)} · {supplier.leadTimeDays} {l("Tage", "days")}
                                     </li>
                                 ))}
                             </ul>
@@ -581,7 +584,7 @@ const ChronoTwoDashboard = () => {
                     <h3>Autonomous Accounting</h3>
                     <form className="form-grid" onSubmit={submitAccounting}>
                         <label>
-                            Bestellnummer
+                            {l("Bestellnummer", "Purchase order number")}
                             <input
                                 type="text"
                                 value={formState.accounting.purchaseOrderId}
@@ -590,7 +593,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Bestellt (CHF)
+                            {l("Bestellt (CHF)", "Ordered (CHF)")}
                             <input
                                 type="number"
                                 value={formState.accounting.orderedAmount}
@@ -599,7 +602,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Wareneingang (CHF)
+                            {l("Wareneingang (CHF)", "Goods receipt (CHF)")}
                             <input
                                 type="number"
                                 value={formState.accounting.receivedAmount}
@@ -608,7 +611,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Rechnung (CHF)
+                            {l("Rechnung (CHF)", "Invoice (CHF)")}
                             <input
                                 type="number"
                                 value={formState.accounting.invoicedAmount}
@@ -616,12 +619,12 @@ const ChronoTwoDashboard = () => {
                                 required
                             />
                         </label>
-                        <button className="btn" type="submit">3-Wege-Abgleich prüfen</button>
+                        <button className="btn" type="submit">{l("3-Wege-Abgleich prüfen", "Check three-way match")}</button>
                     </form>
                     {accounting && (
                         <div className="result">
-                            <strong>Status:</strong> {accounting.autoApproved ? "Auto-Freigabe" : "Manuelle Prüfung"}<br />
-                            <strong>Abweichung:</strong> {accounting.deviation} CHF
+                            <strong>Status:</strong> {accounting.autoApproved ? l("Auto-Freigabe", "Auto-approved") : l("Manuelle Prüfung", "Manual review")}<br />
+                            <strong>{l("Abweichung", "Deviation")}:</strong> {accounting.deviation} CHF
                         </div>
                     )}
                 </article>
@@ -630,7 +633,7 @@ const ChronoTwoDashboard = () => {
                     <h3>Mobile Inbound</h3>
                     <form className="form-grid" onSubmit={submitInbound}>
                         <label>
-                            Produkt-ID
+                            {l("Produkt-ID", "Product ID")}
                             <input
                                 type="text"
                                 value={formState.inbound.productId}
@@ -639,7 +642,7 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Menge
+                            {l("Menge", "Quantity")}
                             <input
                                 type="number"
                                 value={formState.inbound.quantity}
@@ -647,14 +650,14 @@ const ChronoTwoDashboard = () => {
                             />
                         </label>
                         <label>
-                            Rampe
+                            {l("Rampe", "Dock")}
                             <input
                                 type="text"
                                 value={formState.inbound.dockLocationId}
                                 onChange={(e) => handleFormChange("inbound", "dockLocationId", e.target.value)}
                             />
                         </label>
-                        <button className="btn" type="submit">Route anzeigen</button>
+                        <button className="btn" type="submit">{l("Route anzeigen", "Show route")}</button>
                     </form>
                     {inbound && (
                         <ul className="muted">
@@ -671,12 +674,12 @@ const ChronoTwoDashboard = () => {
 
             <section className="grid grid-2">
                 <article className="card">
-                    <h3>Pick-by-Vision Routen</h3>
+                    <h3>{l("Pick-by-Vision Routen", "Pick-by-Vision Routes")}</h3>
                     <form className="form-grid" onSubmit={submitPick}>
                         {pickItems.map((item, index) => (
                             <div key={`pick-${index}`} className="pick-item">
                                 <label>
-                                    Produkt-ID
+                                    {l("Produkt-ID", "Product ID")}
                                     <input
                                         type="text"
                                         value={item.productId}
@@ -685,7 +688,7 @@ const ChronoTwoDashboard = () => {
                                     />
                                 </label>
                                 <label>
-                                    Menge
+                                    {l("Menge", "Quantity")}
                                     <input
                                         type="number"
                                         value={item.quantity}
@@ -695,20 +698,20 @@ const ChronoTwoDashboard = () => {
                                 </label>
                                 {pickItems.length > 1 && (
                                     <button type="button" className="btn ghost" onClick={() => removePickItem(index)}>
-                                        Entfernen
+                                        {l("Entfernen", "Remove")}
                                     </button>
                                 )}
                             </div>
                         ))}
                         <div className="pick-actions">
-                            <button type="button" className="btn ghost" onClick={addPickItem}>Position hinzufügen</button>
-                            <button type="submit" className="btn">Route planen</button>
+                            <button type="button" className="btn ghost" onClick={addPickItem}>{l("Position hinzufügen", "Add item")}</button>
+                            <button type="submit" className="btn">{l("Route planen", "Plan route")}</button>
                         </div>
                     </form>
                     {pickRoute && (
                         <div className="result">
-                            <strong>Gesamtzeit:</strong> {pickRoute.estimatedDurationSeconds.toFixed?.(1)} s<br />
-                            <strong>Distanz:</strong> {pickRoute.totalDistance.toFixed?.(1)} m
+                            <strong>{l("Gesamtzeit", "Total time")}:</strong> {pickRoute.estimatedDurationSeconds.toFixed?.(1)} s<br />
+                            <strong>{l("Distanz", "Distance")}:</strong> {pickRoute.totalDistance.toFixed?.(1)} m
                             <ul>
                                 {pickRoute.waypoints?.map((wp, idx) => (
                                     <li key={`${wp.locationId}-${idx}`}>
@@ -721,15 +724,15 @@ const ChronoTwoDashboard = () => {
                 </article>
 
                 <article className="card">
-                    <h3>Analyse-Dashboard</h3>
+                    <h3>{l("Analyse-Dashboard", "Analytics Dashboard")}</h3>
                     <form className="form-inline" onSubmit={submitNlp}>
                         <input
                             type="text"
                             value={formState.nlp}
                             onChange={(e) => setFormState((prev) => ({ ...prev, nlp: e.target.value }))}
-                            placeholder="Frage die Lageranalyse …"
+                            placeholder={l("Frage die Lageranalyse...", "Ask warehouse analytics...")}
                         />
-                        <button className="btn" type="submit">Analysieren</button>
+                        <button className="btn" type="submit">{l("Analysieren", "Analyze")}</button>
                     </form>
                     {nlpResponse && (
                         <div className="result">
@@ -743,7 +746,7 @@ const ChronoTwoDashboard = () => {
 
             <section className="grid grid-2">
                 <article className="card">
-                    <h3>Zirkuläre Logistik</h3>
+                    <h3>{l("Zirkuläre Logistik", "Circular Logistics")}</h3>
                     <ul>
                         {returns.map((item) => (
                             <li key={item.caseId}>
@@ -754,11 +757,11 @@ const ChronoTwoDashboard = () => {
                 </article>
 
                 <article className="card">
-                    <h3>Blockchain-Bewegungen</h3>
+                    <h3>{l("Blockchain-Bewegungen", "Blockchain Movements")}</h3>
                     <ul className="ledger">
                         {movementLedger.map((entry) => (
                             <li key={entry.id}>
-                                {entry.productId}: {entry.fromLocation ?? "Anlieferung"} ➜ {entry.toLocation} · {entry.quantity} Stk.
+                                {entry.productId}: {entry.fromLocation ?? l("Anlieferung", "Inbound")} ➜ {entry.toLocation} · {entry.quantity} {l("Stk.", "pcs.")}
                             </li>
                         ))}
                     </ul>

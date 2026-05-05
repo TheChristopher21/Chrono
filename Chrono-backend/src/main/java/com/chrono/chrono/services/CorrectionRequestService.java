@@ -199,6 +199,7 @@ public class CorrectionRequestService {
     public List<AdminCorrectionRequestDTO> getAllRequestsForAdminDashboard() {
         return correctionRepo.findAllWithDetails()
                 .stream()
+                .filter(request -> !isSuperAdminUser(request.getUser()))
                 .map(this::toAdminDto)
                 .collect(Collectors.toList());
     }
@@ -207,6 +208,7 @@ public class CorrectionRequestService {
     public List<AdminCorrectionRequestDTO> getRequestsByCompanyForAdminDashboard(Long companyId) {
         return correctionRepo.findAllByCompanyId(companyId)
                 .stream()
+                .filter(request -> !isSuperAdminUser(request.getUser()))
                 .map(this::toAdminDto)
                 .collect(Collectors.toList());
     }
@@ -240,6 +242,12 @@ public class CorrectionRequestService {
     }
 
     public UserRepository getUserRepo() { return userRepo; }
+
+    private boolean isSuperAdminUser(User user) {
+        return user != null
+                && user.getRoles() != null
+                && user.getRoles().stream().anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
+    }
 
     private AdminCorrectionRequestDTO toAdminDto(CorrectionRequest request) {
         var targetEntry = request.getTargetEntry();
