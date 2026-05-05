@@ -1,6 +1,6 @@
 // src/pages/LandingPage.jsx
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import "../styles/LandingPageScoped.css";
 import { useTranslation } from "../context/LanguageContext";
@@ -674,9 +674,18 @@ const LandingPage = () => {
     const { t } = useTranslation();
     const { notify } = useNotification();
     const { loginDemo } = useAuth();
+    const location = useLocation();
     const navigate = useNavigate();
     const [contact, setContact] = useState({ name: "", email: "", message: "" });
     const [sending, setSending] = useState(false);
+
+    useEffect(() => {
+        if (location.pathname !== "/preise") return;
+
+        requestAnimationFrame(() => {
+            document.getElementById("preise")?.scrollIntoView({ block: "start" });
+        });
+    }, [location.pathname]);
 
     const onChange = (e) => setContact({ ...contact, [e.target.name]: e.target.value });
 
@@ -1041,6 +1050,23 @@ const LandingPage = () => {
         t("landing.pricing.modules.crm", "CRM / Supply Chain optional"),
     ];
 
+    const brandFaqs = [
+        {
+            question: t("landing.faq.what.question", "Was ist Chrono-Logisch?"),
+            answer: t(
+                "landing.faq.what.answer",
+                "Chrono-Logisch ist eine Schweizer Unternehmensplattform für Zeiterfassung, Urlaub, HR, Lohnabrechnung, Finanzen, CRM, Lager und Betriebsprozesse."
+            ),
+        },
+        {
+            question: t("landing.faq.spelling.question", "Wird Chrono-Logisch auch \"Chrono logisch\" geschrieben?"),
+            answer: t(
+                "landing.faq.spelling.answer",
+                "Ja. Viele suchen nach \"Chrono logisch\" oder \"chrono logisch\". Die offizielle Schreibweise ist Chrono-Logisch."
+            ),
+        },
+    ];
+
     return (
         <div className="landing-page scoped-landing">
             <Navbar />
@@ -1053,7 +1079,7 @@ const LandingPage = () => {
                         <span className="lp-hero-badge">
                             {t("landing.hero.badge", "All-in-One Plattform für Teams in CH & DE")}
                         </span>
-                        <h1>{t("landing.hero.title", "Eine Plattform für Arbeitszeit, Urlaub, Lohn & Prozesse.")}</h1>
+                        <h1>{t("landing.hero.title", "Chrono-Logisch: Zeiterfassung, HR & Lohnabrechnung für KMU")}</h1>
                         <p>
                             {t(
                                 "landing.hero.text",
@@ -1215,6 +1241,29 @@ const LandingPage = () => {
                                 {t("landing.pricing.cardCta", "Konfiguration starten")}
                             </Link>
                         </aside>
+                    </div>
+                </section>
+
+                <section className="lp-section lp-faq-section" id="faq" aria-labelledby="chrono-faq-title">
+                    <div className="lp-container lp-faq-layout">
+                        <div className="lp-section-heading lp-faq-heading">
+                            <span className="lp-kicker">{t("landing.faq.kicker", "Chrono-Logisch")}</span>
+                            <h2 id="chrono-faq-title">{t("landing.faq.title", "Kurz erklärt.")}</h2>
+                            <p>
+                                {t(
+                                    "landing.faq.lead",
+                                    "Die wichtigsten Begriffe rund um Chrono-Logisch, Chrono logisch und die Schweizer Unternehmensplattform."
+                                )}
+                            </p>
+                        </div>
+                        <div className="lp-faq-list">
+                            {brandFaqs.map((item) => (
+                                <article className="lp-faq-item" key={item.question}>
+                                    <h3>{item.question}</h3>
+                                    <p>{item.answer}</p>
+                                </article>
+                            ))}
+                        </div>
                     </div>
                 </section>
 

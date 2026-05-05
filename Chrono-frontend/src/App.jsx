@@ -77,6 +77,7 @@ function App() {
                         <Route path="/ueber-chrono-logisch" element={<AboutChrono />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Registration />} />
+                        <Route path="/preise" element={<LandingPage />} />
                         <Route path="/arbeitszeit-rechner" element={<WorkTimeCalculatorPage />} />
                         <Route path="/agb" element={<AGB />} />
                         <Route path="/datenschutz" element={<Datenschutz />} />
