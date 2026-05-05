@@ -100,6 +100,7 @@ public class SecurityConfig {
                     auth.requestMatchers("/api/nfc/write-sector0").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/apply").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/contact").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/public/analytics/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/holidays/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/public/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/report/timesheet/ics-feed/**").permitAll();

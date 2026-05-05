@@ -163,6 +163,7 @@ public class AdminTimeTrackingController {
             Map<String, Object> entry = new HashMap<>();
             entry.put("username", u.getUsername());
             entry.put("weeklyBalance", timeTrackingService.getWeeklyBalance(u, mondayDate));
+            entry.put("isHourly", u.getIsHourly());
             entry.put("color", u.getColor());
             return entry;
         }).collect(Collectors.toList());
@@ -196,6 +197,7 @@ public class AdminTimeTrackingController {
             Map<String, Object> entry = new HashMap<>();
             entry.put("username", u.getUsername());
             entry.put("trackingBalance", u.getTrackingBalanceInMinutes());
+            entry.put("isHourly", u.getIsHourly());
             entry.put("color", u.getColor());
             return entry;
         }).collect(Collectors.toList());

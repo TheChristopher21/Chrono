@@ -5,6 +5,7 @@ import Navbar from '../components/Navbar';
 import '../styles/CompanyManagementScoped.css';
 import { useAuth } from '../context/AuthContext';
 import { FEATURE_CATALOG } from '../constants/registrationFeatures';
+import { isAnalyticsExcluded, setAnalyticsExcluded } from '../utils/analytics';
 
 const OPTIONAL_FEATURES = FEATURE_CATALOG.filter((feature) => !feature.alwaysAvailable);
 const ALWAYS_AVAILABLE_LABELS = FEATURE_CATALOG.filter((feature) => feature.alwaysAvailable).map(
@@ -206,12 +207,33 @@ const formatDate = (value) => {
     return date.toLocaleDateString();
 };
 
+const formatNumber = (value) => new Intl.NumberFormat().format(Number(value || 0));
+
+const formatShortDate = (value) => {
+    if (!value) return '';
+    const date = new Date(`${value}T00:00:00`);
+    if (Number.isNaN(date.getTime())) {
+        return value;
+    }
+    return date.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' });
+};
+
 const CompanyManagementPage = () => {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
     const [companies, setCompanies] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [analyticsSummary, setAnalyticsSummary] = useState(null);
+    const [analyticsLoading, setAnalyticsLoading] = useState(true);
+    const [analyticsError, setAnalyticsError] = useState('');
+    const [analyticsDays, setAnalyticsDays] = useState(14);
+    const [analyticsExcluded, setAnalyticsExcludedState] = useState(() => isAnalyticsExcluded());
+    const [analyticsExcludedIps, setAnalyticsExcludedIps] = useState([]);
+    const [analyticsIpAddressInput, setAnalyticsIpAddressInput] = useState('');
+    const [analyticsIpLabelInput, setAnalyticsIpLabelInput] = useState('');
+    const [analyticsIpSaving, setAnalyticsIpSaving] = useState(false);
+    const [analyticsIpError, setAnalyticsIpError] = useState('');
 
     const [newCompanyName, setNewCompanyName] = useState('');
     const [newCompanyCanton, setNewCompanyCanton] = useState('');
@@ -263,12 +285,57 @@ const CompanyManagementPage = () => {
     const quickCreateRef = useRef(null);
     const advancedCreateRef = useRef(null);
     const companiesRef = useRef(null);
+    const isSuperAdmin = currentUser?.roles?.includes('ROLE_SUPERADMIN');
 
     useEffect(() => {
         fetchCompanies();
         const interval = setInterval(fetchCompanies, 30000);
         return () => clearInterval(interval);
     }, []);
+
+    useEffect(() => {
+        if (isSuperAdmin && !isAnalyticsExcluded()) {
+            setAnalyticsExcluded(true);
+        }
+        setAnalyticsExcludedState(isAnalyticsExcluded());
+    }, [isSuperAdmin]);
+
+    useEffect(() => {
+        if (!isSuperAdmin) {
+            setAnalyticsLoading(false);
+            return;
+        }
+
+        let isMounted = true;
+        async function fetchAnalyticsSummary() {
+            setAnalyticsLoading(true);
+            setAnalyticsError('');
+            try {
+                const [summaryRes, excludedIpsRes] = await Promise.all([
+                    api.get(`/api/superadmin/analytics/summary?days=${analyticsDays}`),
+                    api.get('/api/superadmin/analytics/excluded-ips'),
+                ]);
+                if (isMounted) {
+                    setAnalyticsSummary(summaryRes.data || null);
+                    setAnalyticsExcludedIps(Array.isArray(excludedIpsRes.data) ? excludedIpsRes.data : []);
+                }
+            } catch (err) {
+                console.error('Error fetching analytics summary:', err);
+                if (isMounted) {
+                    setAnalyticsError('Analytics konnten nicht geladen werden');
+                }
+            } finally {
+                if (isMounted) {
+                    setAnalyticsLoading(false);
+                }
+            }
+        }
+
+        fetchAnalyticsSummary();
+        return () => {
+            isMounted = false;
+        };
+    }, [analyticsDays, isSuperAdmin]);
 
     async function fetchCompanies() {
         setLoading(true);
@@ -588,6 +655,63 @@ const CompanyManagementPage = () => {
         });
     }, [companies, searchTerm, statusFilter]);
 
+    const maxDailyPageViews = useMemo(() => {
+        const daily = analyticsSummary?.daily || [];
+        return Math.max(1, ...daily.map((point) => Number(point.pageViews || 0)));
+    }, [analyticsSummary]);
+
+    const handleAnalyticsExcludedChange = (event) => {
+        const excluded = event.target.checked;
+        setAnalyticsExcluded(excluded);
+        setAnalyticsExcludedState(excluded);
+    };
+
+    const refreshAnalyticsExcludedIps = async () => {
+        const res = await api.get('/api/superadmin/analytics/excluded-ips');
+        setAnalyticsExcludedIps(Array.isArray(res.data) ? res.data : []);
+    };
+
+    const handleAddAnalyticsExcludedIp = async (event) => {
+        event.preventDefault();
+        const ipAddress = analyticsIpAddressInput.trim();
+        if (!ipAddress) {
+            setAnalyticsIpError('Bitte eine IP-Adresse eingeben.');
+            return;
+        }
+
+        setAnalyticsIpSaving(true);
+        setAnalyticsIpError('');
+        try {
+            await api.post('/api/superadmin/analytics/excluded-ips', {
+                ipAddress,
+                label: analyticsIpLabelInput.trim() || null,
+            });
+            setAnalyticsIpAddressInput('');
+            setAnalyticsIpLabelInput('');
+            await refreshAnalyticsExcludedIps();
+        } catch (err) {
+            console.error('Error saving analytics excluded IP:', err);
+            setAnalyticsIpError(err.response?.data?.message || 'IP-Adresse konnte nicht gespeichert werden.');
+        } finally {
+            setAnalyticsIpSaving(false);
+        }
+    };
+
+    const handleRemoveAnalyticsExcludedIp = async (entry) => {
+        if (!entry?.id || entry.configured) {
+            return;
+        }
+
+        setAnalyticsIpError('');
+        try {
+            await api.delete(`/api/superadmin/analytics/excluded-ips/${entry.id}`);
+            await refreshAnalyticsExcludedIps();
+        } catch (err) {
+            console.error('Error removing analytics excluded IP:', err);
+            setAnalyticsIpError('IP-Filter konnte nicht entfernt werden.');
+        }
+    };
+
     return (
         <div className="company-management-page scoped-company">
             <Navbar />
@@ -662,6 +786,209 @@ const CompanyManagementPage = () => {
                     <div className="cmp-state cmp-state--error">{error}</div>
                 ) : (
                     <>
+                        {isSuperAdmin && (
+                            <section className="cmp-section cmp-section--analytics">
+                                <div className="cmp-section__header cmp-section__header--analytics">
+                                    <div>
+                                        <h3>{t('companyManagement.analytics.title', 'Chrono Analytics')}</h3>
+                                        <p>
+                                            {t(
+                                                'companyManagement.analytics.hint',
+                                                'Eigene Seitenaufrufe und Klicks, ohne externe Tracking-Dienste.'
+                                            )}
+                                        </p>
+                                    </div>
+                                    <div className="cmp-analytics-controls">
+                                        <select
+                                            value={analyticsDays}
+                                            onChange={(event) => setAnalyticsDays(Number(event.target.value))}
+                                            aria-label={t('companyManagement.analytics.period', 'Zeitraum')}
+                                        >
+                                            <option value={7}>7 Tage</option>
+                                            <option value={14}>14 Tage</option>
+                                            <option value={30}>30 Tage</option>
+                                            <option value={90}>90 Tage</option>
+                                        </select>
+                                        <label className="cmp-toggle cmp-analytics-optout">
+                                            <input
+                                                type="checkbox"
+                                                checked={analyticsExcluded}
+                                                onChange={handleAnalyticsExcludedChange}
+                                            />
+                                            <span>{t('companyManagement.analytics.optOut', 'Diesen Browser nicht zaehlen')}</span>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div className="cmp-analytics-ip-note">
+                                    {t(
+                                        'companyManagement.analytics.ipExcluded',
+                                        'Deine IP 146.185.87.126 wird serverseitig nicht gezaehlt.'
+                                    )}
+                                </div>
+
+                                <div className="cmp-analytics-ip-manager">
+                                    <form className="cmp-analytics-ip-form" onSubmit={handleAddAnalyticsExcludedIp}>
+                                        <label className="cmp-field">
+                                            <span>{t('companyManagement.analytics.excludedIp', 'IP ausschliessen')}</span>
+                                            <input
+                                                type="text"
+                                                value={analyticsIpAddressInput}
+                                                onChange={(event) => setAnalyticsIpAddressInput(event.target.value)}
+                                                placeholder="203.0.113.10"
+                                            />
+                                        </label>
+                                        <label className="cmp-field">
+                                            <span>{t('companyManagement.analytics.ipLabel', 'Notiz')}</span>
+                                            <input
+                                                type="text"
+                                                value={analyticsIpLabelInput}
+                                                onChange={(event) => setAnalyticsIpLabelInput(event.target.value)}
+                                                placeholder={t('companyManagement.analytics.ipLabelPlaceholder', 'z.B. Buero, Zuhause')}
+                                            />
+                                        </label>
+                                        <button
+                                            type="submit"
+                                            className="cmp-button cmp-button--primary"
+                                            disabled={analyticsIpSaving}
+                                        >
+                                            {analyticsIpSaving
+                                                ? t('saving', 'Speichern...')
+                                                : t('companyManagement.analytics.addIp', 'Hinzufuegen')}
+                                        </button>
+                                    </form>
+                                    {analyticsIpError && (
+                                        <div className="cmp-analytics-ip-error">{analyticsIpError}</div>
+                                    )}
+                                    <div className="cmp-analytics-ip-list">
+                                        {analyticsExcludedIps.length === 0 ? (
+                                            <p className="cmp-module-empty">Keine ausgeschlossenen IPs hinterlegt.</p>
+                                        ) : (
+                                            analyticsExcludedIps.map((entry) => (
+                                                <div className="cmp-analytics-ip-row" key={`${entry.configured ? 'cfg' : 'db'}-${entry.ipAddress}`}>
+                                                    <div>
+                                                        <strong>{entry.ipAddress}</strong>
+                                                        <span>
+                                                            {entry.label || (entry.configured ? 'Konfiguration' : 'Manuell')}
+                                                        </span>
+                                                    </div>
+                                                    {entry.configured ? (
+                                                        <span className="cmp-tag">Fix</span>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            className="cmp-button cmp-button--danger"
+                                                            onClick={() => handleRemoveAnalyticsExcludedIp(entry)}
+                                                        >
+                                                            {t('delete', 'Loeschen')}
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {analyticsLoading ? (
+                                    <div className="cmp-state">{t('loading', 'Lade...')}</div>
+                                ) : analyticsError ? (
+                                    <div className="cmp-state cmp-state--error">{analyticsError}</div>
+                                ) : (
+                                    <>
+                                        <div className="cmp-analytics-kpis">
+                                            <div className="cmp-analytics-kpi">
+                                                <span>Aufrufe</span>
+                                                <strong>{formatNumber(analyticsSummary?.totalPageViews)}</strong>
+                                                <small>{formatNumber(analyticsSummary?.todayPageViews)} heute</small>
+                                            </div>
+                                            <div className="cmp-analytics-kpi">
+                                                <span>Besucher</span>
+                                                <strong>{formatNumber(analyticsSummary?.uniqueVisitors)}</strong>
+                                                <small>eindeutige Browser</small>
+                                            </div>
+                                            <div className="cmp-analytics-kpi">
+                                                <span>Klicks</span>
+                                                <strong>{formatNumber(analyticsSummary?.totalClicks)}</strong>
+                                                <small>{formatNumber(analyticsSummary?.todayClicks)} heute</small>
+                                            </div>
+                                        </div>
+
+                                        <div className="cmp-analytics-grid">
+                                            <div className="cmp-analytics-panel">
+                                                <h4>Verlauf</h4>
+                                                <div className="cmp-analytics-bars">
+                                                    {(analyticsSummary?.daily || []).map((point) => {
+                                                        const height = Math.max(
+                                                            6,
+                                                            Math.round((Number(point.pageViews || 0) / maxDailyPageViews) * 100)
+                                                        );
+                                                        return (
+                                                            <div className="cmp-analytics-bar" key={point.date}>
+                                                                <span
+                                                                    className="cmp-analytics-bar__fill"
+                                                                    style={{ height: `${height}%` }}
+                                                                    title={`${formatShortDate(point.date)}: ${formatNumber(point.pageViews)} Aufrufe`}
+                                                                />
+                                                                <span className="cmp-analytics-bar__label">{formatShortDate(point.date)}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            <div className="cmp-analytics-panel">
+                                                <h4>Top Seiten</h4>
+                                                <div className="cmp-analytics-list">
+                                                    {(analyticsSummary?.topPages || []).length === 0 ? (
+                                                        <p className="cmp-module-empty">Noch keine Seitenaufrufe erfasst.</p>
+                                                    ) : (
+                                                        analyticsSummary.topPages.map((page) => (
+                                                            <div className="cmp-analytics-row" key={page.path}>
+                                                                <span>{page.path}</span>
+                                                                <strong>{formatNumber(page.pageViews)}</strong>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="cmp-analytics-panel">
+                                                <h4>Top Klicks</h4>
+                                                <div className="cmp-analytics-list">
+                                                    {(analyticsSummary?.topClicks || []).length === 0 ? (
+                                                        <p className="cmp-module-empty">Noch keine Klicks erfasst.</p>
+                                                    ) : (
+                                                        analyticsSummary.topClicks.map((click) => (
+                                                            <div className="cmp-analytics-row" key={`${click.path}-${click.label}`}>
+                                                                <span>{click.label}</span>
+                                                                <strong>{formatNumber(click.clicks)}</strong>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <div className="cmp-analytics-panel">
+                                                <h4>Quellen</h4>
+                                                <div className="cmp-analytics-list">
+                                                    {(analyticsSummary?.referrers || []).length === 0 ? (
+                                                        <p className="cmp-module-empty">Noch keine Quellen erfasst.</p>
+                                                    ) : (
+                                                        analyticsSummary.referrers.map((referrer) => (
+                                                            <div className="cmp-analytics-row" key={referrer.referrer}>
+                                                                <span>{referrer.referrer}</span>
+                                                                <strong>{formatNumber(referrer.pageViews)}</strong>
+                                                            </div>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </section>
+                        )}
+
                         <section className="cmp-section cmp-section--quick" ref={quickCreateRef}>
                             <div className="cmp-section__header">
                                 <div>

@@ -21,6 +21,29 @@ const normalizeRoles = (roles) => {
         .filter(Boolean);
 };
 
+const parseBooleanFlag = (value) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        return ['true', '1', 'yes', 'ja'].includes(normalized);
+    }
+    return false;
+};
+
+export const isHourlyEmploymentModel = (user) => {
+    if (!user) return false;
+    if (parseBooleanFlag(user?.isHourly)) return true;
+
+    const normalizedRoles = normalizeRoles(user?.roles)
+        .map(role => role.toUpperCase());
+    const roleLabel = typeof user?.role === 'string' ? user.role.toUpperCase() : '';
+
+    return normalizedRoles.some(role => role.includes('HOURLY'))
+        || roleLabel.includes('HOURLY')
+        || roleLabel.includes('STUNDEN');
+};
+
 const isAdminAccount = (user) => {
     const normalizedRoles = normalizeRoles(user?.roles);
     if (normalizedRoles.length === 0) {

@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuth } from "./context/AuthContext.jsx";
 import ActionButtons from "./components/ActionButtons.jsx";
 import MobileTabBar from "./components/MobileTabBar.jsx";
+import AnalyticsTracker from "./components/AnalyticsTracker.jsx";
 
 // Globale Styles
 import "./styles/global.css";
@@ -69,6 +70,7 @@ function App() {
         <QueryClientProvider client={queryClient}>
             <ErrorBoundary>
                 <div className="App">
+                    <AnalyticsTracker />
                     <Routes>
                         {/* Öffentliche Routen */}
                         <Route path="/" element={<LandingPage />} />

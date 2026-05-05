@@ -5,6 +5,7 @@ import {
     addDays,
     formatDate,
     formatLocalDateYMD,
+    isHourlyEmploymentModel,
     minutesToHHMM,
 } from './adminDashboardUtils';
 import { getUserDisplayName } from '../../utils/userDisplay';
@@ -66,6 +67,11 @@ const AdminDashboardOverview = ({
     const unknownUserLabel = t('adminVacation.unknownUser', 'Unbekannt');
     const getDisplayName = (username) => getUserDisplayName(username, users, unknownUserLabel);
     const currentUserName = getUserDisplayName(currentUser, [], t('adminDashboard.overview.adminFallback', 'Admin'));
+    const usersByUsername = new Map(
+        (Array.isArray(users) ? users : [])
+            .filter((user) => user?.username)
+            .map((user) => [user.username, user])
+    );
 
     const pendingVacations = Array.isArray(allVacations) ? allVacations.filter(isPending) : [];
     const pendingCorrections = Array.isArray(allCorrections) ? allCorrections.filter(isPending) : [];
@@ -78,19 +84,21 @@ const AdminDashboardOverview = ({
                 username: item.username,
                 displayName: getDisplayName(item.username),
                 minutes: item.trackingBalance,
+                isHourly: isHourlyEmploymentModel(usersByUsername.get(item.username) || item),
             }))
         : [];
 
-    const negativeBalances = balanceRows.filter((item) => item.minutes < 0);
-    const averageBalance = balanceRows.length
-        ? Math.round(balanceRows.reduce((sum, item) => sum + item.minutes, 0) / balanceRows.length)
+    const overtimeBalanceRows = balanceRows.filter((item) => !item.isHourly);
+    const negativeBalances = overtimeBalanceRows.filter((item) => item.minutes < 0);
+    const averageBalance = overtimeBalanceRows.length
+        ? Math.round(overtimeBalanceRows.reduce((sum, item) => sum + item.minutes, 0) / overtimeBalanceRows.length)
         : 0;
-    const topPositive = balanceRows.reduce((best, item) => {
+    const topPositive = overtimeBalanceRows.reduce((best, item) => {
         if (!best || item.minutes > best.minutes) return item;
         return best;
     }, null);
 
-    const criticalEmployees = [...balanceRows]
+    const criticalEmployees = [...overtimeBalanceRows]
         .sort((left, right) => left.minutes - right.minutes)
         .slice(0, 5);
 
