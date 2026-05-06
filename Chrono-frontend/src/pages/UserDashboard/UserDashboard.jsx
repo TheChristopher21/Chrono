@@ -314,13 +314,36 @@ function UserDashboard() {
 
 
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
+    const todayIso = formatLocalDate(new Date());
+    const weekDatesForTotals = weekDates.filter(d => formatLocalDate(d) <= todayIso);
+    const workedDateSetForWeek = new Set(
+        weekDates
+            .map(d => {
+                const isoDate = formatLocalDate(d);
+                const summaryForDay = dailySummaries.find(s => s.date === isoDate);
+                return ((summaryForDay?.entries?.length || 0) > 0 || (summaryForDay?.workedMinutes || 0) > 0)
+                    ? isoDate
+                    : null;
+            })
+            .filter(Boolean)
+    );
 
-    const weeklyExpectedMins = weekDates.reduce((sum, d) => {
-        const expHours = getExpectedHoursForDay(d, userProfile, defaultExpectedHours, holidaysForUserCanton?.data, vacationRequests, sickLeaves);
+    const weeklyExpectedMins = weekDatesForTotals.reduce((sum, d) => {
+        const isoDate = formatLocalDate(d);
+        const expHours = getExpectedHoursForDay(
+            d,
+            userProfile,
+            defaultExpectedHours,
+            holidaysForUserCanton?.data,
+            vacationRequests,
+            sickLeaves,
+            null,
+            workedDateSetForWeek.has(isoDate)
+        );
         return sum + Math.round((expHours || 0) * 60);
     }, 0);
 
-    const weeklyActualWorkedMinutes = weekDates.reduce((acc, date) => {
+    const weeklyActualWorkedMinutes = weekDatesForTotals.reduce((acc, date) => {
         const isoDate = formatLocalDate(date);
         const summaryForDay = dailySummaries.find(s => s.date === isoDate);
         return acc + (summaryForDay?.workedMinutes || 0);
@@ -332,7 +355,16 @@ function UserDashboard() {
     const chartData = weekDates.map(d => {
         const iso = formatLocalDate(d);
         const summary = dailySummaries.find(s => s.date === iso);
-        const expectedMins = Math.round(getExpectedHoursForDay(d, userProfile, defaultExpectedHours, holidaysForUserCanton?.data, vacationRequests, sickLeaves) * 60);
+        const expectedMins = Math.round(getExpectedHoursForDay(
+            d,
+            userProfile,
+            defaultExpectedHours,
+            holidaysForUserCanton?.data,
+            vacationRequests,
+            sickLeaves,
+            null,
+            workedDateSetForWeek.has(iso)
+        ) * 60);
         return { date: iso, workedMinutes: summary ? summary.workedMinutes : 0, expectedMinutes: expectedMins };
     });
 
@@ -619,17 +651,20 @@ function UserDashboard() {
                             if (holidayName) dayClass += ' holiday-day';
 
                             let expectedMinsToday = Math.round(getExpectedHoursForDay(
-                                dayObj, userProfile, defaultExpectedHours, holidaysForUserCanton?.data, vacationRequests, sickLeaves
+                                dayObj,
+                                userProfile,
+                                defaultExpectedHours,
+                                holidaysForUserCanton?.data,
+                                vacationRequests,
+                                sickLeaves,
+                                null,
+                                hasWorkedEntries
                             ) * 60);
-                            if (holidayName) {
-                                expectedMinsToday = 0;
-                            } else if (vacationToday) {
-                                expectedMinsToday = vacationToday.halfDay ? expectedMinsToday / 2 : 0;
-                            } else if (sickToday) {
-                                expectedMinsToday = sickToday.halfDay ? expectedMinsToday / 2 : 0;
-                            }
 
-                            const dailyDiffMinutes = summary ? summary.workedMinutes - expectedMinsToday : (holidayName || vacationToday || sickToday ? 0 : -expectedMinsToday);
+                            const isFutureDate = isoDate > todayIso;
+                            const dailyDiffMinutes = summary
+                                ? summary.workedMinutes - expectedMinsToday
+                                : (isFutureDate || holidayName || vacationToday || sickToday ? 0 : -expectedMinsToday);
 
                             return (
                                 <div key={isoDate} className={dayClass}>

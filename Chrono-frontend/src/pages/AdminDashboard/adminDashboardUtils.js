@@ -272,6 +272,33 @@ export function addDays(date, days) {
     return d;
 }
 
+function normalizeExpectedWorkDays(expectedWorkDays) {
+    const parsed = Number(expectedWorkDays);
+    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= 7) {
+        return Math.trunc(parsed);
+    }
+    return 5;
+}
+
+function isModeledPercentageWorkDay(date, modeledWorkDays) {
+    const dayIndex = date.getDay() === 0 ? 7 : date.getDay();
+    return dayIndex <= modeledWorkDays;
+}
+
+export function getDatesUpToReferenceDate(dates, referenceDate = new Date()) {
+    if (!Array.isArray(dates)) return [];
+    if (!(referenceDate instanceof Date) || Number.isNaN(referenceDate.getTime())) {
+        return dates.filter(date => date instanceof Date && !Number.isNaN(date.getTime()));
+    }
+
+    const referenceIso = formatLocalDateYMD(referenceDate);
+    return dates.filter(date => (
+        date instanceof Date
+        && !Number.isNaN(date.getTime())
+        && formatLocalDateYMD(date) <= referenceIso
+    ));
+}
+
 export function minutesToHHMM(totalMinutes) {
     if (typeof totalMinutes !== 'number' || isNaN(totalMinutes)) {
         return "0h 0m";
@@ -298,20 +325,18 @@ export function getExpectedHoursForDay(
     if (userConfig?.isHourly === true) return 0;
 
     const isoDate = formatLocalDateYMD(dayObj);
-    const dayOfWeekJs = dayObj.getDay();
 
     const isHoliday = holidaysForUserCanton && holidaysForUserCanton[isoDate];
     const vacationToday = userApprovedVacations?.find(v => isoDate >= v.startDate && isoDate <= v.endDate && v.approved);
     const sickToday = userSickLeaves?.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
 
     if (userConfig?.isPercentage === true) {
-        let dailySollPercentage = 0;
-        const workDaysInModel = userConfig.expectedWorkDays || 5;
+        const workDaysInModel = normalizeExpectedWorkDays(userConfig.expectedWorkDays);
         const baseWeekHoursFullTime = defaultExpectedHours * 5;
         const userWeeklyHours = baseWeekHoursFullTime * ((userConfig.workPercentage || 100) / 100.0);
-        if (workDaysInModel > 0) {
-            dailySollPercentage = userWeeklyHours / workDaysInModel;
-        }
+        const dailySollPercentage = userWeeklyHours / workDaysInModel;
+
+        if (!isModeledPercentageWorkDay(dayObj, workDaysInModel)) return 0;
 
         if (isHoliday) {
             const handlingOption = userHolidayOptionsForThisDay?.holidayHandlingOption || 'PENDING_DECISION';
@@ -320,9 +345,6 @@ export function getExpectedHoursForDay(
         if (vacationToday) return vacationToday.halfDay ? dailySollPercentage / 2 : 0;
         if (sickToday) return sickToday.halfDay ? dailySollPercentage / 2 : 0;
 
-        if (dayOfWeekJs === 0 || dayOfWeekJs === 6) {
-            if (workDaysInModel <= 5) return 0;
-        }
         return dailySollPercentage;
     }
 
@@ -389,22 +411,20 @@ export function calculateWeeklyExpectedMinutes(
 
     if (userConfig.isPercentage === true) {
         const pct = userConfig.workPercentage ?? 100;
-        const workDaysInModel = userConfig.expectedWorkDays || 5;
+        const workDaysInModel = normalizeExpectedWorkDays(userConfig.expectedWorkDays);
         const baseWeeklyHoursFullTimeStandard = defaultExpectedHours * 5;
         const userTargetWeeklyHours = baseWeeklyHoursFullTimeStandard * (pct / 100.0);
-        let userTargetWeeklyMinutes = Math.round(userTargetWeeklyHours * 60);
+        const userTargetWeeklyMinutes = Math.round(userTargetWeeklyHours * 60);
 
+        let expectedMinutesInRange = 0;
         let absenceAndHolidayDeductionMinutes = 0;
         const valueOfOneUserWorkDayMinutes = workDaysInModel > 0 ? Math.round(userTargetWeeklyMinutes / workDaysInModel) : 0;
 
         for (const date of weekDates) {
             const isoDate = formatLocalDateYMD(date);
-            const dayOfWeekJs = date.getDay();
 
-            let isPotentialWorkDayForUser = true;
-            if (workDaysInModel <= 5 && (dayOfWeekJs === 0 || dayOfWeekJs === 6)) isPotentialWorkDayForUser = false;
-            if (workDaysInModel === 6 && dayOfWeekJs === 0) isPotentialWorkDayForUser = false;
-            if (!isPotentialWorkDayForUser) continue;
+            if (!isModeledPercentageWorkDay(date, workDaysInModel)) continue;
+            expectedMinutesInRange += valueOfOneUserWorkDayMinutes;
 
             const isHoliday = holidaysForUserCanton && holidaysForUserCanton[isoDate];
             const hasTrackedEntriesToday = workedDateSet?.has?.(isoDate) === true;
@@ -428,11 +448,15 @@ export function calculateWeeklyExpectedMinutes(
                 absenceAndHolidayDeductionMinutes += sickToday.halfDay ? Math.round(valueOfOneUserWorkDayMinutes / 2) : valueOfOneUserWorkDayMinutes;
             }
         }
-        return Math.max(0, userTargetWeeklyMinutes - absenceAndHolidayDeductionMinutes);
+        return Math.max(0, expectedMinutesInRange - absenceAndHolidayDeductionMinutes);
 
     } else {
         return weekDates.reduce((acc, date) => {
-            const dailyExpectedHours = getExpectedHoursForDay(date, userConfig, defaultExpectedHours, holidaysForUserCanton, userApprovedVacations, userSickLeaves, null);
+            const isoDate = formatLocalDateYMD(date);
+            const effectiveVacationsForDate = workedDateSet?.has?.(isoDate) === true
+                ? userApprovedVacations?.filter(vac => isoDate < vac.startDate || isoDate > vac.endDate)
+                : userApprovedVacations;
+            const dailyExpectedHours = getExpectedHoursForDay(date, userConfig, defaultExpectedHours, holidaysForUserCanton, effectiveVacationsForDate, userSickLeaves, null);
             return acc + Math.round(dailyExpectedHours * 60);
         }, 0);
     }

@@ -28,6 +28,7 @@ import {
     getDetailedGlobalProblemIndicators,
     getMondayOfWeek,
     addDays,
+    getDatesUpToReferenceDate,
     selectTrackableUsers,
 } from "./adminDashboardUtils"; // Ensure this path is correct
 import { parseISO, isValid } from "date-fns"; // Make sure date-fns is installed
@@ -703,6 +704,15 @@ const AdminWeekSection = forwardRef(({
     }, [monthRangeStart, monthRangeEnd]);
 
     const monthRangeIsValid = monthRangeDates.length > 0;
+    const accountingWeekDates = useMemo(
+        () => getDatesUpToReferenceDate(weekDates),
+        [weekDates]
+    );
+    const accountingMonthRangeDates = useMemo(
+        () => getDatesUpToReferenceDate(monthRangeDates),
+        [monthRangeDates]
+    );
+    const todayIsoForAccounting = formatLocalDateYMD(new Date());
     const shouldShowWeeklyDeltaIssues = useMemo(() => {
         if (!(selectedMonday instanceof Date) || Number.isNaN(selectedMonday.getTime())) return false;
         const weekEndDate = addDays(selectedMonday, 6);
@@ -748,7 +758,10 @@ const AdminWeekSection = forwardRef(({
                 const holidaysForThisUserYearObj = allHolidays[userCantonKey] || allHolidays['GENERAL']; // allHolidays is now holidaysByCanton
                 const holidaysForThisUserYear = holidaysForThisUserYearObj?.data || {}; // Ensure data field is accessed
 
-                const weeklyActualMinutes = calculateWeeklyActualMinutes(Object.values(userDayMapCurrentWeek));
+                const summariesForAccountingWeek = accountingWeekDates.map(date => (
+                    userDayMapCurrentWeek[formatLocalDateYMD(date)]
+                ));
+                const weeklyActualMinutes = calculateWeeklyActualMinutes(summariesForAccountingWeek);
 
                 const storedHolidayOptions = holidayOptionsByUser[user.username] || {};
                 const allHolidayOptionsForUser = Object.values(storedHolidayOptions);
@@ -758,14 +771,14 @@ const AdminWeekSection = forwardRef(({
 
 
                 const workedDateSetForCurrentWeek = new Set(
-                    Object.values(userDayMapCurrentWeek)
+                    summariesForAccountingWeek
                         .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
                         .map(summary => summary.date)
                         .filter(Boolean)
                 );
 
                 const weeklyExpectedMinutes = calculateWeeklyExpectedMinutes(
-                    userConfig, weekDates, defaultExpectedHours,
+                    userConfig, accountingWeekDates, defaultExpectedHours,
                     userApprovedVacations, userCurrentSickLeaves, holidaysForThisUserYear,
                     holidayOptionsForThisUserInThisWeek,
                     workedDateSetForCurrentWeek
@@ -815,7 +828,7 @@ const AdminWeekSection = forwardRef(({
                     holidayOptions: allHolidayOptionsForUser,
                 };
             });
-    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser, selectedMonday, weeklyDeltaAcknowledged, shouldShowWeeklyDeltaIssues]);
+    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, accountingWeekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser, selectedMonday, weeklyDeltaAcknowledged, shouldShowWeeklyDeltaIssues]);
 
     const userAnalyticsMap = useMemo(() => {
         const map = new Map();
@@ -835,7 +848,8 @@ const AdminWeekSection = forwardRef(({
             const baseData = userAnalyticsMap.get(user.username) || null;
             const userConfig = baseData?.userConfig || user;
             const allUserSummariesList = dailySummariesForWeekSection.filter(summary => summary.username === user.username);
-            const monthSummaries = allUserSummariesList.filter(summary => summary.date >= monthRangeStart && summary.date <= monthRangeEnd);
+            const accountingMonthIsoSet = new Set(accountingMonthRangeDates.map(date => formatLocalDateYMD(date)));
+            const monthSummaries = allUserSummariesList.filter(summary => accountingMonthIsoSet.has(summary.date));
             const monthlyActualMinutes = monthSummaries.reduce((acc, summary) => acc + (summary?.workedMinutes || 0), 0);
 
             const userApprovedVacations = allVacations.filter(vac => vac.username === user.username && vac.approved);
@@ -845,15 +859,25 @@ const AdminWeekSection = forwardRef(({
             const storedHolidayOptions = holidayOptionsByUser[user.username] || {};
             const allHolidayOptionsForUser = Object.values(storedHolidayOptions);
 
-            const monthlyExpectedMinutes = monthRangeDates.reduce((acc, dateObj) => {
+            const workedDateSetForMonth = new Set(
+                monthSummaries
+                    .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
+                    .map(summary => summary.date)
+                    .filter(Boolean)
+            );
+
+            const monthlyExpectedMinutes = accountingMonthRangeDates.reduce((acc, dateObj) => {
                 const isoDate = formatLocalDateYMD(dateObj);
                 const holidayOptionForDay = allHolidayOptionsForUser.find(opt => opt?.holidayDate === isoDate);
+                const effectiveVacationsForDay = workedDateSetForMonth.has(isoDate)
+                    ? userApprovedVacations.filter(vac => isoDate < vac.startDate || isoDate > vac.endDate)
+                    : userApprovedVacations;
                 const expectedHours = getExpectedHoursForDay(
                     dateObj,
                     userConfig,
                     defaultExpectedHours,
                     holidaysForThisUserYear,
-                    userApprovedVacations,
+                    effectiveVacationsForDay,
                     userCurrentSickLeaves,
                     holidayOptionForDay
                 );
@@ -887,7 +911,7 @@ const AdminWeekSection = forwardRef(({
                 monthlyOvertimeMinutes: monthlyActualMinutes - monthlyExpectedMinutes,
             };
         });
-    }, [trackableUsers, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, monthRangeStart, monthRangeEnd, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, monthRangeDates, defaultExpectedHours]);
+    }, [trackableUsers, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, accountingMonthRangeDates, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, defaultExpectedHours]);
 
 
     const issueSummary = useMemo(() => {
@@ -1973,13 +1997,16 @@ const AdminWeekSection = forwardRef(({
                                                                     ? userData.userApprovedVacations.filter(vac => isoDate < vac.startDate || isoDate > vac.endDate)
                                                                     : userData.userApprovedVacations;
                                                                 const expectedMinsToday = Math.round(getExpectedHoursForDay(d, userData.userConfig, defaultExpectedHours, holidaysDataForDay, effectiveVacationsForDay, userData.userCurrentSickLeaves, holidayOptionForThisDay) * 60);
-                                                                const diffMinsToday = actualMinsToday - expectedMinsToday;
+                                                                const isFutureDate = isoDate > todayIsoForAccounting;
+                                                                const hasTrackedEntries = !!(dailySummary?.entries && dailySummary.entries.length > 0);
+                                                                const diffMinsToday = isFutureDate && !hasTrackedEntries && actualMinsToday === 0
+                                                                    ? 0
+                                                                    : actualMinsToday - expectedMinsToday;
 
                                                                 const isFocused = focusedProblem.username === userData.username && focusedProblem.dateIso === isoDate;
                                                                 let cardClass = `admin-day-card ${isFocused ? (focusedProblem.type.includes('auto_completed') ? 'highlight-autocompleted' : (focusedProblem.type === 'holiday_pending_decision' ? 'highlight-holiday-pending' : 'focused-problem')) : ''}`;
                                                                 if (dailySummary?.needsCorrection && !isFocused) cardClass += ' auto-completed-day-card';
 
-                                                                const hasTrackedEntries = !!(dailySummary?.entries && dailySummary.entries.length > 0);
                                                                 const vacationOnThisDay = hasTrackedEntries
                                                                     ? null
                                                                     : userData.userApprovedVacations.find(vac => isoDate >= vac.startDate && isoDate <= vac.endDate);

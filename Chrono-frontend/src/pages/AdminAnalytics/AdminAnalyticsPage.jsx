@@ -9,6 +9,7 @@ import {
     addDays,
     formatLocalDateYMD,
     calculateWeeklyExpectedMinutes,
+    getDatesUpToReferenceDate,
     minutesToHHMM,
     selectTrackableUsers,
 } from '../AdminDashboard/adminDashboardUtils';
@@ -391,20 +392,33 @@ const AdminAnalyticsPage = () => {
                 const sickLeaves = sickLeavesByUser.get(user.username) || [];
 
                 const weekValues = analysisWeeks.map(({ dates }) => {
-                    const actualMinutes = dates.reduce((acc, date) => {
+                    const accountingDates = getDatesUpToReferenceDate(dates);
+                    const workedDateSet = new Set(
+                        accountingDates
+                            .map(date => {
+                                const iso = formatLocalDateYMD(date);
+                                const summary = summaryMap.get(iso);
+                                return ((summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
+                                    ? iso
+                                    : null;
+                            })
+                            .filter(Boolean)
+                    );
+                    const actualMinutes = accountingDates.reduce((acc, date) => {
                         const iso = formatLocalDateYMD(date);
                         const summary = summaryMap.get(iso);
                         return acc + (summary?.workedMinutes || 0);
                     }, 0);
-                    const holidayMap = holidayLookupForUser(user, dates);
+                    const holidayMap = holidayLookupForUser(user, accountingDates);
                     const expectedMinutes = calculateWeeklyExpectedMinutes(
                         user,
-                        dates,
+                        accountingDates,
                         DEFAULT_EXPECTED_HOURS,
                         approvedVacations,
                         sickLeaves,
                         holidayMap,
                         null,
+                        workedDateSet,
                     );
                     const overtimeMinutes = actualMinutes - expectedMinutes;
                     return Number((overtimeMinutes / 60).toFixed(2));

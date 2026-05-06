@@ -19,6 +19,7 @@ import {
     getExpectedHoursForDay,
     calculateWeeklyExpectedMinutes,
     getDetailedGlobalProblemIndicators,
+    getDatesUpToReferenceDate,
 } from './adminDashboardUtils';
 import '../../styles/AdminEmployeeOverviewScoped.css';
 
@@ -302,6 +303,12 @@ const AdminEmployeeOverviewPage = () => {
     }, [selectedMonth]);
 
     const visibleDates = timeRangeMode === 'month' ? monthDates : weekDates;
+    const accountingVisibleDates = useMemo(
+        () => getDatesUpToReferenceDate(
+            visibleDates.map((dateString) => new Date(`${dateString}T00:00:00`))
+        ).map(formatLocalDateYMD),
+        [visibleDates],
+    );
 
     useEffect(() => {
         const fetchHolidayDetails = async () => {
@@ -345,6 +352,10 @@ const AdminEmployeeOverviewPage = () => {
     const periodSummaries = useMemo(
         () => employeeSummaries.filter((entry) => visibleDates.includes(entry?.date)),
         [employeeSummaries, visibleDates],
+    );
+    const accountingPeriodSummaries = useMemo(
+        () => employeeSummaries.filter((entry) => accountingVisibleDates.includes(entry?.date)),
+        [employeeSummaries, accountingVisibleDates],
     );
 
     const periodEntriesOverview = useMemo(
@@ -460,13 +471,13 @@ const AdminEmployeeOverviewPage = () => {
     }, [employee, employeeVacations, todayYmd]);
 
     const totalWorkedWeekMinutes = useMemo(
-        () => periodSummaries.reduce((sum, entry) => sum + (entry?.workedMinutes || 0), 0),
-        [periodSummaries],
+        () => accountingPeriodSummaries.reduce((sum, entry) => sum + (entry?.workedMinutes || 0), 0),
+        [accountingPeriodSummaries],
     );
 
     const totalBreakWeekMinutes = useMemo(
-        () => periodSummaries.reduce((sum, entry) => sum + (entry?.breakMinutes || 0), 0),
-        [periodSummaries],
+        () => accountingPeriodSummaries.reduce((sum, entry) => sum + (entry?.breakMinutes || 0), 0),
+        [accountingPeriodSummaries],
     );
 
     const effectiveConfigForTarget = useMemo(() => {
@@ -491,24 +502,42 @@ const AdminEmployeeOverviewPage = () => {
         () => {
             if (timeRangeMode === 'week') {
                 const weekDateObjects = weekDates.map((dateString) => new Date(`${dateString}T00:00:00`));
+                const accountingWeekDateObjects = getDatesUpToReferenceDate(weekDateObjects);
+                const workedDateSet = new Set(
+                    accountingPeriodSummaries
+                        .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
+                        .map(summary => summary.date)
+                        .filter(Boolean)
+                );
                 return calculateWeeklyExpectedMinutes(
                     effectiveConfigForTarget,
-                    weekDateObjects,
+                    accountingWeekDateObjects,
                     employee?.dailyWorkHours ?? 8.5,
                     employeeVacations,
                     employeeSickLeaves,
                     holidaysForEmployee,
                     null,
+                    workedDateSet,
                 );
             }
 
-            return visibleDates.reduce((sum, dateString) => {
+            const workedDateSet = new Set(
+                accountingPeriodSummaries
+                    .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
+                    .map(summary => summary.date)
+                    .filter(Boolean)
+            );
+
+            return accountingVisibleDates.reduce((sum, dateString) => {
+                const effectiveVacationsForDay = workedDateSet.has(dateString)
+                    ? employeeVacations.filter(vacation => dateString < vacation.startDate || dateString > vacation.endDate)
+                    : employeeVacations;
                 const expectedHours = getExpectedHoursForDay(
                     new Date(`${dateString}T00:00:00`),
                     effectiveConfigForTarget,
                     employee?.dailyWorkHours ?? 8.5,
                     holidaysForEmployee,
-                    employeeVacations,
+                    effectiveVacationsForDay,
                     employeeSickLeaves,
                     null,
                 );
@@ -522,7 +551,8 @@ const AdminEmployeeOverviewPage = () => {
             employeeVacations,
             holidaysForEmployee,
             timeRangeMode,
-            visibleDates,
+            accountingVisibleDates,
+            accountingPeriodSummaries,
             weekDates,
         ],
     );

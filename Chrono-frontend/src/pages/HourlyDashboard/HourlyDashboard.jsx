@@ -63,6 +63,7 @@ const HourlyDashboard = () => {
     const [correctionDate, setCorrectionDate] = useState(null);
     const [dailySummaryForCorrection, setDailySummaryForCorrection] = useState(null);
     const [punchMessage, setPunchMessage] = useState('');
+    const [allDailySummaries, setAllDailySummaries] = useState([]);
     const [monthlyTotalMins, setMonthlyTotalMins] = useState(0);
 
     // KORREKTE IMPLEMENTIERUNG: Die Funktion ruft die API direkt auf.
@@ -133,13 +134,17 @@ const assignCustomerForDay = async (isoDate, customerId) => {
     const fetchDataForUser = useCallback(async () => {
         if (!currentUser?.username) return;
         try {
-            const profileResponse = await api.get(`/api/users/profile/${currentUser.username}`);
+            const [profileResponse, vacationResponse, historyResponse] = await Promise.all([
+                api.get(`/api/users/profile/${currentUser.username}`),
+                api.get(`/api/vacation/user/${currentUser.username}`),
+                api.get(`/api/timetracking/history?username=${currentUser.username}`),
+            ]);
             setUserProfile(profileResponse.data);
             if (profileResponse.data.lastCustomerId && !selectedCustomerId) {
                 setSelectedCustomerId(String(profileResponse.data.lastCustomerId));
             }
-            const vacationResponse = await api.get(`/api/vacation/user/${currentUser.username}`);
             setVacationRequests(vacationResponse.data || []);
+            setAllDailySummaries(Array.isArray(historyResponse.data) ? historyResponse.data : []);
         } catch (error) {
             console.error("Fehler beim Laden der Benutzerdaten:", error);
             notify(t('errors.fetchUserData', 'Fehler beim Laden der Benutzerdaten.'), 'error');
@@ -209,21 +214,21 @@ const assignCustomerForDay = async (isoDate, customerId) => {
     }, [currentUser, selectedMonday, fetchDataForUser, fetchWeeklyData, fetchCorrectionRequests]);
 
     useEffect(() => {
-        if (!dailySummaries || dailySummaries.length === 0) {
+        if (!allDailySummaries || allDailySummaries.length === 0) {
             setMonthlyTotalMins(0);
             return;
         }
         const currentMonth = selectedMonday.getMonth();
         const currentYear = selectedMonday.getFullYear();
-        const monthlyMinutes = dailySummaries
+        const monthlyMinutes = allDailySummaries
             .filter(s => {
-                const summaryDate = new Date(s.date);
+                const summaryDate = new Date(`${s.date}T00:00:00`);
                 return summaryDate.getMonth() === currentMonth && summaryDate.getFullYear() === currentYear;
             })
             .reduce((acc, curr) => acc + (curr.workedMinutes || 0), 0);
         setMonthlyTotalMins(monthlyMinutes);
 
-    }, [dailySummaries, selectedMonday]);
+    }, [allDailySummaries, selectedMonday]);
 
     const handleOpenCorrectionModal = (date, summary) => {
         setCorrectionDate(formatLocalDate(date));
