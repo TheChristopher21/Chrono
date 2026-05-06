@@ -12,5 +12,6 @@ import java.util.Optional;
 public interface ServiceRequestRepository extends JpaRepository<ServiceRequest, Long> {
     List<ServiceRequest> findByStatus(ServiceRequestStatus status);
     Optional<ServiceRequest> findByIdAndCompany_Id(Long id, Long companyId);
+    List<ServiceRequest> findAllByCompany_Id(Long companyId);
     Page<ServiceRequest> findAllByCompany_Id(Long companyId, Pageable pageable);
 }

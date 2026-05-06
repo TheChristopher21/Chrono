@@ -5,9 +5,14 @@ import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.repositories.CustomerRepository;
+import com.chrono.chrono.repositories.PayslipRepository;
 import com.chrono.chrono.repositories.ProjectRepository;
+import com.chrono.chrono.repositories.ScheduleEntryRepository;
 import com.chrono.chrono.repositories.TimeTrackingEntryRepository;
 import com.chrono.chrono.repositories.UserRepository;
+import com.chrono.chrono.repositories.inventory.ProductRepository;
+import com.chrono.chrono.repositories.inventory.StockLevelRepository;
+import com.chrono.chrono.repositories.inventory.WarehouseRepository;
 import com.chrono.chrono.utils.JwtUtil;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
@@ -48,6 +53,21 @@ class DemoLoginIntegrationTest {
     private TimeTrackingEntryRepository timeTrackingEntryRepository;
 
     @Autowired
+    private ScheduleEntryRepository scheduleEntryRepository;
+
+    @Autowired
+    private PayslipRepository payslipRepository;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @Autowired
+    private WarehouseRepository warehouseRepository;
+
+    @Autowired
+    private StockLevelRepository stockLevelRepository;
+
+    @Autowired
     private DemoDataService demoDataService;
 
     @Autowired
@@ -74,6 +94,14 @@ class DemoLoginIntegrationTest {
         assertFalse(customerRepository.findAll().isEmpty());
         assertFalse(projectRepository.findAll().isEmpty());
         assertFalse(timeTrackingEntryRepository.findAll().isEmpty());
+        assertFalse(scheduleEntryRepository.findAll().isEmpty());
+        assertFalse(payslipRepository.findAll().isEmpty());
+        assertFalse(productRepository.findAllByCompany_Id(demoUser.getCompany().getId()).isEmpty());
+        assertFalse(warehouseRepository.findAllByCompany_Id(demoUser.getCompany().getId()).isEmpty());
+        assertFalse(stockLevelRepository.findAllByProduct_Company_Id(demoUser.getCompany().getId()).isEmpty());
+        assertTrue(demoUser.getCompany().getEnabledFeatures().contains("supplyChain"));
+        assertTrue(demoUser.getCompany().getEnabledFeatures().contains("payroll"));
+        assertTrue(demoUser.getCompany().getEnabledFeatures().contains("roster"));
     }
 
     @Test

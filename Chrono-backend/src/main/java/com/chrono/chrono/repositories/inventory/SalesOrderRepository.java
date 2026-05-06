@@ -16,6 +16,7 @@ public interface SalesOrderRepository extends JpaRepository<SalesOrder, Long> {
     Optional<SalesOrder> findByOrderNumberIgnoreCase(String orderNumber);
     Optional<SalesOrder> findByIdAndCompany_Id(Long id, Long companyId);
     Optional<SalesOrder> findByOrderNumberIgnoreCaseAndCompany_Id(String orderNumber, Long companyId);
+    List<SalesOrder> findAllByCompany_Id(Long companyId);
     Page<SalesOrder> findAllByCompany_Id(Long companyId, Pageable pageable);
     List<SalesOrder> findAllByIdInAndCompany_Id(Collection<Long> ids, Long companyId);
 }

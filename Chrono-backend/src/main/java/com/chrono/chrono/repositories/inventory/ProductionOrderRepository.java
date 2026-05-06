@@ -14,5 +14,6 @@ public interface ProductionOrderRepository extends JpaRepository<ProductionOrder
     Optional<ProductionOrder> findByOrderNumberIgnoreCase(String orderNumber);
     Optional<ProductionOrder> findByIdAndCompany_Id(Long id, Long companyId);
     Optional<ProductionOrder> findByOrderNumberIgnoreCaseAndCompany_Id(String orderNumber, Long companyId);
+    List<ProductionOrder> findAllByCompany_Id(Long companyId);
     Page<ProductionOrder> findAllByCompany_Id(Long companyId, Pageable pageable);
 }

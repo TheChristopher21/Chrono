@@ -15,5 +15,7 @@ public interface StockLevelRepository extends JpaRepository<StockLevel, Long> {
 
     List<StockLevel> findByProduct(Product product);
 
+    List<StockLevel> findAllByProduct_Company_Id(Long companyId);
+
     Page<StockLevel> findAllByProduct_Company_Id(Long companyId, Pageable pageable);
 }

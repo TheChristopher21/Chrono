@@ -15,4 +15,6 @@ public interface ScheduleEntryRepository extends JpaRepository<ScheduleEntry, Lo
     Optional<ScheduleEntry> findByUserAndDate(User user, LocalDate date);
 
     List<ScheduleEntry> findByUserAndDateBetween(User user, LocalDate start, LocalDate end);
+
+    void deleteByUser(User user);
 }

@@ -9,6 +9,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public interface CycleCountRepository extends JpaRepository<CycleCount, Long> {
@@ -16,6 +17,7 @@ public interface CycleCountRepository extends JpaRepository<CycleCount, Long> {
                                                                                         Warehouse warehouse,
                                                                                         Collection<CycleCountStatus> statuses);
     Optional<CycleCount> findByIdAndCompany_Id(Long id, Long companyId);
+    List<CycleCount> findAllByCompany_Id(Long companyId);
     Page<CycleCount> findAllByCompany_Id(Long companyId, Pageable pageable);
     long countByCompany_Id(Long companyId);
 }
