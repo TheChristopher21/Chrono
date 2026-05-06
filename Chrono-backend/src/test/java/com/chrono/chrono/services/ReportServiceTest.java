@@ -1,6 +1,7 @@
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.ProjectHierarchyNodeDTO;
+import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.Project;
@@ -18,11 +19,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -191,5 +195,45 @@ class ReportServiceTest {
         assertEquals(project.getId(), node.getId());
         assertEquals(180L, node.getTotalMinutes());
         assertEquals(0.30, node.getUtilization(), 0.0001);
+    }
+
+    @Test
+    void generateCsv_neutralizesFormulaLikeDailyNotes() {
+        User user = new User();
+        user.setUsername("anna");
+        user.setFirstName("Anna");
+        user.setLastName("Fischer");
+
+        DailyTimeSummaryDTO formulaNote = new DailyTimeSummaryDTO(
+                "anna",
+                LocalDate.of(2024, 2, 1),
+                60,
+                0,
+                List.of(),
+                "=HYPERLINK(\"https://example.invalid\")",
+                false,
+                null
+        );
+        DailyTimeSummaryDTO normalNote = new DailyTimeSummaryDTO(
+                "anna",
+                LocalDate.of(2024, 2, 2),
+                60,
+                0,
+                List.of(),
+                "normal note",
+                false,
+                null
+        );
+
+        when(userRepository.findByUsername("anna")).thenReturn(Optional.of(user));
+        when(timeTrackingService.getUserHistory("anna")).thenReturn(List.of(formulaNote, normalNote));
+
+        String csv = new String(
+                reportService.generateCsv("anna", LocalDate.of(2024, 2, 1), LocalDate.of(2024, 2, 29)),
+                StandardCharsets.UTF_8
+        );
+
+        assertTrue(csv.contains("\"'=HYPERLINK(\"\"https://example.invalid\"\")\""));
+        assertTrue(csv.contains("\"normal note\""));
     }
 }

@@ -443,7 +443,14 @@ public class BankingService {
 
     private String normalizeCurrency(String currency) {
         String normalized = normalizeOptionalText(currency);
-        return StringUtils.hasText(normalized) ? normalized.toUpperCase(Locale.ROOT) : "CHF";
+        if (!StringUtils.hasText(normalized)) {
+            return "CHF";
+        }
+        String upper = normalized.toUpperCase(Locale.ROOT);
+        if (!upper.matches("[A-Z]{3}")) {
+            throw new IllegalArgumentException("Currency must be a three-letter ISO 4217 code");
+        }
+        return upper;
     }
 
     private String normalizeOptionalBankCode(String value) {

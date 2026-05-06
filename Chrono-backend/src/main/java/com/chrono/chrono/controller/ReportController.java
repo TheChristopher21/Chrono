@@ -19,7 +19,11 @@ import java.security.Principal;
 import java.security.MessageDigest;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 @RestController
 @RequestMapping("/api/report")
@@ -53,16 +57,34 @@ public class ReportController {
         accessControlService.requireCanAccessUser(requester, target);
     }
 
-    private boolean validFeedToken(String token) {
+    boolean validFeedToken(String username, String token) {
         if (publicIcsFeedWithoutToken) {
             return true;
         }
         if (icsFeedToken == null || icsFeedToken.isBlank() || token == null || token.isBlank()) {
             return false;
         }
-        byte[] expected = icsFeedToken.trim().getBytes(StandardCharsets.UTF_8);
+        String expectedToken = feedTokenForUsername(username);
+        if (expectedToken == null) {
+            return false;
+        }
+        byte[] expected = expectedToken.getBytes(StandardCharsets.UTF_8);
         byte[] actual = token.trim().getBytes(StandardCharsets.UTF_8);
         return expected.length == actual.length && MessageDigest.isEqual(expected, actual);
+    }
+
+    String feedTokenForUsername(String username) {
+        if (icsFeedToken == null || icsFeedToken.isBlank() || username == null || username.isBlank()) {
+            return null;
+        }
+        try {
+            Mac mac = Mac.getInstance("HmacSHA256");
+            mac.init(new SecretKeySpec(icsFeedToken.trim().getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            byte[] digest = mac.doFinal(username.trim().getBytes(StandardCharsets.UTF_8));
+            return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);
+        } catch (Exception ex) {
+            throw new IllegalStateException("Unable to create ICS feed token", ex);
+        }
     }
 
     @GetMapping("/analytics/projects")
@@ -172,6 +194,22 @@ public class ReportController {
         return new ResponseEntity<>(ics, headers, HttpStatus.OK);
     }
 
+    @GetMapping("/timesheet/ics-feed-token/{username}")
+    public ResponseEntity<Map<String, String>> icsFeedToken(
+            @PathVariable String username,
+            Principal principal
+    ) {
+        requireTimesheetAccess(username, principal);
+        if (publicIcsFeedWithoutToken) {
+            return ResponseEntity.ok(Map.of("token", ""));
+        }
+        String token = feedTokenForUsername(username);
+        if (token == null) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
+        return ResponseEntity.ok(Map.of("token", token));
+    }
+
     @GetMapping("/timesheet/ics-feed/{username}")
     public ResponseEntity<byte[]> icsFeed(
             @PathVariable String username,
@@ -179,7 +217,7 @@ public class ReportController {
             @RequestParam(required = false) String token,
             Principal principal
     ) {
-        if (!validFeedToken(token)) {
+        if (!validFeedToken(username, token)) {
             requireTimesheetAccess(username, principal);
         }
         ZoneId zoneId = zone != null ? ZoneId.of(zone) : ZoneId.systemDefault();

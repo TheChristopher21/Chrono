@@ -23,6 +23,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
@@ -121,16 +124,57 @@ public class AuthController {
             return "unknown";
         }
 
-        String forwardedFor = httpRequest.getHeader("X-Forwarded-For");
-        if (forwardedFor != null && !forwardedFor.isBlank()) {
-            return forwardedFor.split(",")[0].trim();
+        String remoteAddr = cleanIpCandidate(httpRequest.getRemoteAddr());
+        if (isTrustedProxyRemote(remoteAddr)) {
+            String forwardedFor = lastForwardedForAddress(httpRequest.getHeader("X-Forwarded-For"));
+            if (forwardedFor != null) {
+                return forwardedFor;
+            }
+
+            String realIp = cleanIpCandidate(httpRequest.getHeader("X-Real-IP"));
+            if (realIp != null) {
+                return realIp;
+            }
         }
 
-        String realIp = httpRequest.getHeader("X-Real-IP");
-        if (realIp != null && !realIp.isBlank()) {
-            return realIp.trim();
+        return remoteAddr != null ? remoteAddr : "unknown";
+    }
+
+    private String lastForwardedForAddress(String forwardedFor) {
+        if (forwardedFor == null || forwardedFor.isBlank()) {
+            return null;
         }
 
-        return httpRequest.getRemoteAddr();
+        String[] parts = forwardedFor.split(",");
+        for (int i = parts.length - 1; i >= 0; i--) {
+            String candidate = cleanIpCandidate(parts[i]);
+            if (candidate != null) {
+                return candidate;
+            }
+        }
+        return null;
+    }
+
+    private String cleanIpCandidate(String value) {
+        if (value == null) {
+            return null;
+        }
+        String candidate = value.trim();
+        if (candidate.isEmpty() || candidate.contains("\r") || candidate.contains("\n")) {
+            return null;
+        }
+        return candidate;
+    }
+
+    private boolean isTrustedProxyRemote(String remoteAddr) {
+        if (remoteAddr == null) {
+            return false;
+        }
+        try {
+            InetAddress address = InetAddress.getByName(remoteAddr);
+            return address.isLoopbackAddress() || address.isSiteLocalAddress();
+        } catch (UnknownHostException ex) {
+            return false;
+        }
     }
 }

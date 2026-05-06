@@ -405,7 +405,7 @@ public class ReportService {
                 .collect(Collectors.joining(" | "));
             sb.append("\"").append(stamps).append("\"").append(";");
 
-            sb.append(summary.getDailyNote() != null ? "\"" + summary.getDailyNote().replace("\"", "\"\"") + "\"" : "").append(";");
+            sb.append(csvCell(summary.getDailyNote())).append(";");
             sb.append(summary.isNeedsCorrection() ? "JA" : "NEIN").append("\n");
         }
         
@@ -463,6 +463,26 @@ public class ReportService {
 
         sb.append("END:VCALENDAR\r\n");
         return sb.toString().getBytes(StandardCharsets.UTF_8);
+    }
+
+    private String csvCell(String value) {
+        if (value == null) {
+            return "";
+        }
+        String safeValue = neutralizeSpreadsheetFormula(value);
+        return "\"" + safeValue.replace("\"", "\"\"") + "\"";
+    }
+
+    private String neutralizeSpreadsheetFormula(String value) {
+        String stripped = value.stripLeading();
+        if (stripped.isEmpty()) {
+            return value;
+        }
+        char first = stripped.charAt(0);
+        if (first == '=' || first == '+' || first == '-' || first == '@' || first == '\t' || first == '\r' || first == '\n') {
+            return "'" + value;
+        }
+        return value;
     }
 
     public byte[] generateIcs(String username, LocalDate start, LocalDate end) {

@@ -4,6 +4,7 @@ import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.banking.BankAccount;
 import com.chrono.chrono.entities.banking.DigitalSignatureRequest;
 import com.chrono.chrono.entities.banking.PaymentBatch;
+import com.chrono.chrono.entities.banking.PaymentInstruction;
 import com.chrono.chrono.entities.banking.PaymentStatus;
 import com.chrono.chrono.entities.banking.SecureMessage;
 import com.chrono.chrono.entities.banking.SignatureStatus;
@@ -17,10 +18,13 @@ import com.chrono.chrono.repositories.banking.SecureMessageRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -133,5 +137,57 @@ class BankingServiceTest {
         assertThat(message.isDelivered()).isTrue();
         assertThat(message.getProviderReference()).isEqualTo("MSG-1");
         assertThat(message.getProviderStatus()).isEqualTo("DELIVERED");
+    }
+
+    @Test
+    void createBatchRejectsCurrencyOutsideIsoCodeShape() {
+        Company company = new Company();
+        company.setId(10L);
+        company.setName("Chrono AG");
+
+        BankAccount account = new BankAccount();
+        account.setCompany(company);
+        account.setName("Main");
+        account.setIban("CH9300762011623852957");
+
+        PaymentInstruction instruction = new PaymentInstruction();
+        instruction.setCreditorName("Vendor");
+        instruction.setCreditorIban("CH5604835012345678009");
+        instruction.setAmount(BigDecimal.TEN);
+        instruction.setCurrency("CHF\"></InstdAmt><Injected Ccy=\"CHF");
+
+        when(bankAccountRepository.findByIdAndCompany(3L, company)).thenReturn(Optional.of(account));
+        when(paymentBatchRepository.save(any(PaymentBatch.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        assertThatThrownBy(() -> bankingService.createBatch(company, 3L, List.of(instruction)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Currency");
+    }
+
+    @Test
+    void createBatchNormalizesValidCurrency() {
+        Company company = new Company();
+        company.setId(10L);
+        company.setName("Chrono AG");
+
+        BankAccount account = new BankAccount();
+        account.setCompany(company);
+        account.setName("Main");
+        account.setIban("CH9300762011623852957");
+
+        PaymentInstruction instruction = new PaymentInstruction();
+        instruction.setCreditorName("Vendor");
+        instruction.setCreditorIban("CH5604835012345678009");
+        instruction.setAmount(BigDecimal.TEN);
+        instruction.setCurrency("eur");
+
+        when(bankAccountRepository.findByIdAndCompany(3L, company)).thenReturn(Optional.of(account));
+        when(paymentBatchRepository.save(any(PaymentBatch.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(paymentInstructionRepository.save(any(PaymentInstruction.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        PaymentBatch batch = bankingService.createBatch(company, 3L, List.of(instruction));
+
+        assertThat(batch.getInstructions()).hasSize(1);
+        assertThat(batch.getInstructions().get(0).getCurrency()).isEqualTo("EUR");
     }
 }

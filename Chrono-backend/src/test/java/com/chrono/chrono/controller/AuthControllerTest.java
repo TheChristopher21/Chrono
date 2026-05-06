@@ -91,6 +91,34 @@ class AuthControllerTest {
     }
 
     @Test
+    void login_usesLastForwardedAddressFromTrustedProxy() {
+        AuthRequest request = new AuthRequest("john", "secret");
+        when(servletRequest.getRemoteAddr()).thenReturn("172.20.0.10");
+        when(servletRequest.getHeader("X-Forwarded-For")).thenReturn("198.51.100.44, 203.0.113.7");
+        when(loginAttemptService.isBlocked("john@203.0.113.7")).thenReturn(false);
+        when(authService.login(request)).thenReturn(new AuthResponse("jwt-token"));
+
+        ResponseEntity<?> response = controller.login(request, servletRequest);
+
+        assertEquals(200, response.getStatusCode().value());
+        verify(loginAttemptService).recordSuccess("john@203.0.113.7");
+    }
+
+    @Test
+    void login_ignoresForwardedAddressFromUntrustedRemote() {
+        AuthRequest request = new AuthRequest("john", "secret");
+        when(servletRequest.getRemoteAddr()).thenReturn("203.0.113.99");
+        when(servletRequest.getHeader("X-Forwarded-For")).thenReturn("198.51.100.44");
+        when(loginAttemptService.isBlocked("john@203.0.113.99")).thenReturn(false);
+        when(authService.login(request)).thenReturn(new AuthResponse("jwt-token"));
+
+        ResponseEntity<?> response = controller.login(request, servletRequest);
+
+        assertEquals(200, response.getStatusCode().value());
+        verify(loginAttemptService).recordSuccess("john@203.0.113.99");
+    }
+
+    @Test
     void demoLogin_isDeniedWhenFeatureIsDisabled() {
         ReflectionTestUtils.setField(controller, "demoLoginEnabled", false);
 

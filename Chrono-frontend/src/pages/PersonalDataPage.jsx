@@ -29,6 +29,7 @@ const PersonalDataPage = () => {
     });
     const [message, setMessage] = useState('');
     const [showExportModal, setShowExportModal] = useState(false);
+    const [icsFeedToken, setIcsFeedToken] = useState('');
 
     const { notify } = useNotification();
     const { t } = useTranslation();
@@ -39,6 +40,34 @@ const PersonalDataPage = () => {
         }
         // eslint-disable-next-line
     }, [currentUser]);
+
+    useEffect(() => {
+        let cancelled = false;
+
+        async function fetchIcsFeedToken() {
+            if (!currentUser?.username) {
+                setIcsFeedToken('');
+                return;
+            }
+            try {
+                const username = encodeURIComponent(currentUser.username);
+                const res = await api.get(`/api/report/timesheet/ics-feed-token/${username}`);
+                if (!cancelled) {
+                    setIcsFeedToken(res.data?.token || '');
+                }
+            } catch (err) {
+                console.error('Could not load ICS feed token', err);
+                if (!cancelled) {
+                    setIcsFeedToken('');
+                }
+            }
+        }
+
+        fetchIcsFeedToken();
+        return () => {
+            cancelled = true;
+        };
+    }, [currentUser?.username]);
 
     async function fetchPersonalData() {
         try {
@@ -105,8 +134,9 @@ const PersonalDataPage = () => {
 
     const baseUrl = api.defaults.baseURL.replace(/\/$/, "");
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const tokenParam = icsFeedToken ? `&token=${encodeURIComponent(icsFeedToken)}` : '';
     const icsUrl = currentUser
-        ? `${baseUrl}/api/report/timesheet/ics-feed/${currentUser.username}?zone=${encodeURIComponent(timeZone)}`
+        ? `${baseUrl}/api/report/timesheet/ics-feed/${encodeURIComponent(currentUser.username)}?zone=${encodeURIComponent(timeZone)}${tokenParam}`
         : '';
 
     function handleCopyLink() {
