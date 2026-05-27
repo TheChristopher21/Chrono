@@ -1,0 +1,7 @@
+<resources>
+    <color name="chrono_background">#F4F6F8</color>
+    <color name="chrono_logo_background">#FFFFFF</color>
+    <color name="chrono_icon_background">#2563EB</color>
+    <color name="chrono_icon_foreground">#FFFFFF</color>
+    <color name="chrono_icon_accent">#0F172A</color>
+</resources>

@@ -36,6 +36,9 @@ public class AdminShiftDefinitionController {
             Optional<ScheduleRule> existingRuleOpt = ruleRepository.findById(rule.getId());
             if (existingRuleOpt.isPresent()) {
                 ScheduleRule existingRule = existingRuleOpt.get();
+                if (rule.getShiftKey() != null && !rule.getShiftKey().isBlank()) {
+                    existingRule.setShiftKey(rule.getShiftKey());
+                }
                 existingRule.setLabel(rule.getLabel());
                 existingRule.setStartTime(rule.getStartTime());
                 existingRule.setEndTime(rule.getEndTime());

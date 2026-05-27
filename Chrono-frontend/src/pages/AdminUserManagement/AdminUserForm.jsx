@@ -31,6 +31,33 @@ const ROLE_LABELS = {
     ROLE_SUPERADMIN: 'Superadmin',
 };
 
+const FormSection = ({ title, description, children, actions }) => (
+    <section className="form-section">
+        <div className="section-heading">
+            <div>
+                <h4>{title}</h4>
+                {description ? <p>{description}</p> : null}
+            </div>
+            {actions ? <div className="section-actions">{actions}</div> : null}
+        </div>
+        <div className="admin-user-form-grid">
+            {children}
+        </div>
+    </section>
+);
+
+FormSection.propTypes = {
+    title: PropTypes.string.isRequired,
+    description: PropTypes.string,
+    children: PropTypes.node.isRequired,
+    actions: PropTypes.node,
+};
+
+FormSection.defaultProps = {
+    description: '',
+    actions: null,
+};
+
 const AdminUserForm = ({
                            t,
                            isEditing,
@@ -365,33 +392,6 @@ const AdminUserForm = ({
             </label>
         </div>
     );
-
-    const FormSection = ({ title, description, children, actions }) => (
-        <section className="form-section">
-            <div className="section-heading">
-                <div>
-                    <h4>{title}</h4>
-                    {description ? <p>{description}</p> : null}
-                </div>
-                {actions ? <div className="section-actions">{actions}</div> : null}
-            </div>
-            <div className="admin-user-form-grid">
-                {children}
-            </div>
-        </section>
-    );
-
-    FormSection.propTypes = {
-        title: PropTypes.string.isRequired,
-        description: PropTypes.string,
-        children: PropTypes.node.isRequired,
-        actions: PropTypes.node,
-    };
-
-    FormSection.defaultProps = {
-        description: '',
-        actions: null,
-    };
 
     const renderRoleSelect = () => renderSelectField({
         id: 'roles',

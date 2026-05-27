@@ -461,7 +461,9 @@ public class TimeTrackingService {
 
     public DailyTimeSummaryDTO getDailySummary(String username, LocalDate date) {
         User user = loadUserByUsername(username);
-        List<TimeTrackingEntry> entries = timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date);
+        List<TimeTrackingEntry> entries = sortEntriesChronologically(
+                timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date)
+        );
         return calculateDailySummaryFromEntries(entries, user, date);
     }
 
@@ -485,12 +487,24 @@ public class TimeTrackingService {
         return entriesByDate.entrySet().stream()
                 .map(entry -> {
                     // Einträge innerhalb eines Tages aufsteigend sortieren für die Berechnung
-                    List<TimeTrackingEntry> dailyEntriesSortedAsc = entry.getValue().stream()
-                            .sorted(Comparator.comparing(TimeTrackingEntry::getEntryTimestamp))
-                            .collect(Collectors.toList());
+                    List<TimeTrackingEntry> dailyEntriesSortedAsc = sortEntriesChronologically(entry.getValue());
                     return calculateDailySummaryFromEntries(dailyEntriesSortedAsc, user, entry.getKey());
                 })
                 .collect(Collectors.toList()); // Die resultierende Liste ist nach Datum absteigend sortiert wegen TreeMap
+    }
+
+    private List<TimeTrackingEntry> sortEntriesChronologically(List<TimeTrackingEntry> entries) {
+        if (entries == null || entries.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return entries.stream()
+                .sorted(Comparator
+                        .comparing(
+                                TimeTrackingEntry::getEntryTimestamp,
+                                Comparator.nullsLast(Comparator.naturalOrder())
+                        )
+                        .thenComparing(entry -> entry.getId() != null ? entry.getId() : Long.MAX_VALUE))
+                .collect(Collectors.toList());
     }
 
     private DailyTimeSummaryDTO.PrimaryTimes getPrimaryPunchTimes(List<TimeTrackingEntry> entries) {
@@ -524,16 +538,17 @@ public class TimeTrackingService {
     }
 
     private DailyTimeSummaryDTO calculateDailySummaryFromEntries(List<TimeTrackingEntry> entries, User user, LocalDate date) {
+        List<TimeTrackingEntry> orderedEntries = sortEntriesChronologically(entries);
         Duration totalWorkTime = Duration.ZERO;
         Duration totalBreakTime = Duration.ZERO;
         LocalDateTime lastStartTime = null;
         LocalDateTime lastWorkEndTime = null;
-        List<TimeTrackingEntryDTO> entryDTOs = entries.stream()
+        List<TimeTrackingEntryDTO> entryDTOs = orderedEntries.stream()
                 .map(TimeTrackingEntryDTO::fromEntity)
                 .collect(Collectors.toList());
         String dailyNoteContent = getDailyNoteContent(user, date);
 
-        for (TimeTrackingEntry entry : entries) {
+        for (TimeTrackingEntry entry : orderedEntries) {
             if (entry.getPunchType() == TimeTrackingEntry.PunchType.START) {
                 if (lastWorkEndTime != null && entry.getEntryTimestamp().isAfter(lastWorkEndTime)) {
                     totalBreakTime = totalBreakTime.plus(Duration.between(lastWorkEndTime, entry.getEntryTimestamp()));
@@ -554,7 +569,7 @@ public class TimeTrackingService {
             }
         }
 
-        boolean needsCorrection = entries.stream()
+        boolean needsCorrection = orderedEntries.stream()
                 .anyMatch(e -> e.getSource() == TimeTrackingEntry.PunchSource.SYSTEM_AUTO_END && !e.isCorrectedByUser());
 
         return new DailyTimeSummaryDTO(
@@ -565,7 +580,7 @@ public class TimeTrackingService {
                 entryDTOs,
                 dailyNoteContent,
                 needsCorrection,
-                getPrimaryPunchTimes(entries)
+                getPrimaryPunchTimes(orderedEntries)
         );
     }
 

@@ -46,6 +46,7 @@ public class SecurityConfig {
 
             // NEU: Die Ursprünge des Capacitor WebViews (siehe Log-Fehler!)
             "capacitor://localhost",   // Standard Capacitor Origin
+            "http://localhost",
             "https://localhost"        // Die Origin, die in Ihrem Logcat-Fehler aufgetreten ist
     };
     // ...

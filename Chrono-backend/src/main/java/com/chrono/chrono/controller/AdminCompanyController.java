@@ -20,6 +20,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.Principal;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -47,11 +48,11 @@ public class AdminCompanyController {
                     .body("Admin has no company");
         }
         Company company = admin.getCompany();
-        return ResponseEntity.ok(Map.of(
-                "id", company.getId(),
-                "name", company.getName(),
-                "logoPath", company.getLogoPath()
-        ));
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("id", company.getId());
+        body.put("name", company.getName());
+        body.put("logoPath", company.getLogoPath());
+        return ResponseEntity.ok(body);
     }
 
     @GetMapping("/settings")

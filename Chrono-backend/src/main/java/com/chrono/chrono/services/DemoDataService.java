@@ -438,7 +438,7 @@ public class DemoDataService {
             company.setDemoSessionId(demoUser.getDemoSessionId());
             company.setDemoExpiresAt(demoUser.getDemoExpiresAt());
             company.setEnabledFeatures(new LinkedHashSet<>(
-                    List.of("projects", "analytics", "supplyChain", "payroll", "roster")));
+                    List.of("projects", "analytics", "supplyChain", "payroll", "roster", "accounting", "crm", "banking")));
         }
         Company saved = companyRepository.save(company);
         demoUser.setCompany(saved);

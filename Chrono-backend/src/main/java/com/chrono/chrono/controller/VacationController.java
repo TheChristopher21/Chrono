@@ -35,10 +35,37 @@ public class VacationController {
     private UserPermissionService userPermissionService;
 
     @GetMapping("/user/{username}")
-    @PreAuthorize("#username == principal.name or hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<List<VacationRequest>> getUserVacations(@PathVariable String username) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<VacationRequest>> getUserVacations(@PathVariable String username, Principal principal) {
+        if (!canAccessUserRecords(principal, username)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(vacationService.getUserVacations(username));
     }
+
+    private boolean canAccessUserRecords(Principal principal, String targetUsername) {
+        if (principal == null || targetUsername == null || targetUsername.isBlank()) {
+            return false;
+        }
+        User requester = userService.getUserByUsername(principal.getName());
+        User target = userService.getUserByUsername(targetUsername);
+        if (requester.getUsername().equals(target.getUsername())) {
+            return true;
+        }
+        if (hasRole(requester, "ROLE_SUPERADMIN")) {
+            return true;
+        }
+        return hasRole(requester, "ROLE_ADMIN")
+                && requester.getCompany() != null
+                && target.getCompany() != null
+                && requester.getCompany().getId().equals(target.getCompany().getId());
+    }
+
+    private boolean hasRole(User user, String roleName) {
+        return user != null && user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(role -> roleName.equals(role.getRoleName()));
+    }
+
     @PostMapping("/create")
     public ResponseEntity<?> createVacation(@RequestParam String username,
                                             @RequestParam String startDate,

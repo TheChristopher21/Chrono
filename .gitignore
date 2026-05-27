@@ -8,6 +8,8 @@
 compose-log.txt
 
 data/
+!Chrono-android/app/src/main/java/ch/chronologisch/chrono/data/
+!Chrono-android/app/src/main/java/ch/chronologisch/chrono/data/**
 data-backup/
 db_data/
 grafana_data/

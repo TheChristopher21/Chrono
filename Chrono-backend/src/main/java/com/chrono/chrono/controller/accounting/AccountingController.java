@@ -7,13 +7,14 @@ import com.chrono.chrono.entities.accounting.Account;
 import com.chrono.chrono.entities.accounting.Asset;
 import com.chrono.chrono.entities.accounting.JournalEntry;
 import com.chrono.chrono.entities.accounting.JournalEntryLine;
+import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.accounting.AccountRepository;
 import com.chrono.chrono.repositories.accounting.AssetRepository;
+import com.chrono.chrono.services.UserPermissionService;
 import com.chrono.chrono.services.accounting.AccountingService;
 import com.chrono.chrono.services.accounting.AccountsPayableService;
 import com.chrono.chrono.services.accounting.AccountsReceivableService;
 import com.chrono.chrono.services.accounting.AssetManagementService;
-import com.chrono.chrono.services.UserService;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -46,7 +47,8 @@ public class AccountingController {
     private final AssetManagementService assetManagementService;
     private final AccountRepository accountRepository;
     private final AssetRepository assetRepository;
-    private final UserService userService;
+    private final UserRepository userRepository;
+    private final UserPermissionService userPermissionService;
 
     public AccountingController(AccountingService accountingService,
                                 AccountsReceivableService accountsReceivableService,
@@ -54,21 +56,25 @@ public class AccountingController {
                                  AssetManagementService assetManagementService,
                                  AccountRepository accountRepository,
                                  AssetRepository assetRepository,
-                                 UserService userService) {
+                                 UserRepository userRepository,
+                                 UserPermissionService userPermissionService) {
         this.accountingService = accountingService;
         this.accountsReceivableService = accountsReceivableService;
         this.accountsPayableService = accountsPayableService;
         this.assetManagementService = assetManagementService;
         this.accountRepository = accountRepository;
         this.assetRepository = assetRepository;
-        this.userService = userService;
+        this.userRepository = userRepository;
+        this.userPermissionService = userPermissionService;
     }
 
     private User requireUser(Principal principal) {
         if (principal == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
-        return userService.getUserByUsername(principal.getName());
+        return userRepository.findByUsernameWithPermissionContext(principal.getName())
+                .filter(user -> !user.isDeleted())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
     }
 
     private Company requireCompany(Principal principal) {
@@ -79,18 +85,16 @@ public class AccountingController {
         return user.getCompany();
     }
 
-    private void requireSuperAdmin(Principal principal) {
+    private void requireAccountingAccess(Principal principal, String requiredLevel) {
         User user = requireUser(principal);
-        boolean superAdmin = user.getRoles() != null && user.getRoles().stream()
-                .anyMatch(role -> "ROLE_SUPERADMIN".equals(role.getRoleName()));
-        if (!superAdmin) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accounting setup is limited to superadmins until tenant migration is complete");
+        if (!userPermissionService.hasPageAccess(user, UserPermissionService.PAGE_ADMIN_ACCOUNTING, requiredLevel)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Accounting access required");
         }
     }
 
     @GetMapping("/accounts")
     public ResponseEntity<List<AccountDTO>> listAccounts(Principal principal) {
-        requireSuperAdmin(principal);
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
         List<AccountDTO> accounts = accountingService.listAccounts().stream()
                 .map(AccountDTO::from)
                 .toList();
@@ -99,7 +103,7 @@ public class AccountingController {
 
     @PostMapping("/accounts")
     public ResponseEntity<AccountDTO> createAccount(@RequestBody CreateAccountRequest request, Principal principal) {
-        requireSuperAdmin(principal);
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
         Account saved = accountingService.saveAccount(request.toEntity());
         return ResponseEntity.created(URI.create("/api/accounting/accounts/" + saved.getId()))
                 .body(AccountDTO.from(saved));
@@ -109,7 +113,7 @@ public class AccountingController {
     public ResponseEntity<Page<JournalEntryDTO>> listJournal(@RequestParam(defaultValue = "0") int page,
                                                              @RequestParam(defaultValue = "20") int size,
                                                              Principal principal) {
-        requireSuperAdmin(principal);
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
         Page<JournalEntryDTO> entries = accountingService.listEntries(pageable)
                 .map(JournalEntryDTO::from);
@@ -118,7 +122,7 @@ public class AccountingController {
 
     @GetMapping("/assets")
     public ResponseEntity<List<AssetDTO>> listAssets(Principal principal) {
-        requireSuperAdmin(principal);
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_VIEW);
         List<AssetDTO> assets = assetManagementService.listAssets().stream()
                 .map(AssetDTO::from)
                 .toList();
@@ -128,7 +132,7 @@ public class AccountingController {
     @PostMapping("/journal")
     public ResponseEntity<JournalEntryDTO> createJournalEntry(@Valid @RequestBody CreateJournalEntryRequest request,
                                                               Principal principal) {
-        requireSuperAdmin(principal);
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(request.getEntryDate() != null ? request.getEntryDate() : LocalDate.now());
         entry.setDescription(request.getDescription());
@@ -186,7 +190,7 @@ public class AccountingController {
 
     @PostMapping("/assets")
     public ResponseEntity<AssetDTO> registerAsset(@RequestBody CreateAssetRequest request, Principal principal) {
-        requireSuperAdmin(principal);
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
         Asset saved = assetManagementService.registerAsset(request.toEntity());
         return ResponseEntity.created(URI.create("/api/accounting/assets/" + saved.getId()))
                 .body(AssetDTO.from(saved));
@@ -194,7 +198,7 @@ public class AccountingController {
 
     @PostMapping("/assets/{id}/depreciate")
     public ResponseEntity<AssetDTO> depreciate(@PathVariable Long id, Principal principal) {
-        requireSuperAdmin(principal);
+        requireAccountingAccess(principal, UserPermissionService.ACCESS_MANAGE);
         return assetRepository.findById(id)
                 .map(assetManagementService::runMonthlyDepreciation)
                 .map(AssetDTO::from)

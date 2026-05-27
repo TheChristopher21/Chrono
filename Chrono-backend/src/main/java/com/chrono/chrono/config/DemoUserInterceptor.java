@@ -29,6 +29,8 @@ public class DemoUserInterceptor implements HandlerInterceptor {
             "/api/vacation/create",
             "/api/correction/create",
             "/api/sick-leave/report",
+            "/api/timetracking/punch",
+            "/api/timetracking/daily-note",
             "/api/chat"
     );
 

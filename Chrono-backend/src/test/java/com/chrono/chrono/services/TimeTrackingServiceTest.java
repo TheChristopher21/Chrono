@@ -117,6 +117,28 @@ class TimeTrackingServiceTest {
     }
 
     @Test
+    void getDailySummary_closesDayWhenStartAndEndShareTheSameMinute() {
+        TimeTrackingEntry start = entry(user, date.atTime(17, 39), TimeTrackingEntry.PunchType.START);
+        start.setId(10L);
+        TimeTrackingEntry end = entry(user, date.atTime(17, 39), TimeTrackingEntry.PunchType.ENDE);
+        end.setId(11L);
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date))
+                .thenReturn(List.of(end, start));
+        when(dailyNoteRepository.findByUserAndNoteDate(user, date)).thenReturn(Optional.empty());
+
+        DailyTimeSummaryDTO summary = timeTrackingService.getDailySummary("alice", date);
+
+        assertEquals(0, summary.getWorkedMinutes());
+        assertEquals(LocalTime.of(17, 39), summary.getPrimaryTimes().getFirstStartTime());
+        assertEquals(LocalTime.of(17, 39), summary.getPrimaryTimes().getLastEndTime());
+        assertFalse(summary.getPrimaryTimes().isOpen());
+        assertEquals(TimeTrackingEntry.PunchType.START, summary.getEntries().get(0).getPunchType());
+        assertEquals(TimeTrackingEntry.PunchType.ENDE, summary.getEntries().get(1).getPunchType());
+    }
+
+    @Test
     void computeDailyWorkDifference_usesExpectedMinutesFromSchedule() {
         TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
         TimeTrackingEntry end = entry(user, date.atTime(16, 0), TimeTrackingEntry.PunchType.ENDE);

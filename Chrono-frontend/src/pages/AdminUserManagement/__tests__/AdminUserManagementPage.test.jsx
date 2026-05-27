@@ -122,4 +122,22 @@ describe('AdminUserManagementPage time tracking visibility', () => {
         });
         expect(apiMock.put).not.toHaveBeenCalled();
     });
+
+    it('keeps the active create-user input focused while typing multiple characters', async () => {
+        render(<AdminUserManagementPage />);
+
+        await screen.findByText('team-admin');
+        await userEvent.click(screen.getByRole('button', { name: /Neuen Benutzer hinzuf/i }));
+
+        await userEvent.click(screen.getByLabelText(/Benutzername/i));
+        await userEvent.keyboard('a');
+
+        const usernameInput = screen.getByLabelText(/Benutzername/i);
+        expect(usernameInput).toHaveValue('a');
+        expect(document.activeElement).toBe(usernameInput);
+
+        await userEvent.keyboard('lice');
+
+        expect(screen.getByLabelText(/Benutzername/i)).toHaveValue('alice');
+    });
 });

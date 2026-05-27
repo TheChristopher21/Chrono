@@ -114,4 +114,32 @@ class DemoUserInterceptorTest {
         assertTrue(allowed);
         verify(demoDataService).refreshDemoDataIfOutdated(demoUser);
     }
+
+    @Test
+    void preHandleAllowsDemoTimeTrackingPunches() throws Exception {
+        DemoUserInterceptor interceptor = new DemoUserInterceptor();
+        UserRepository userRepository = mock(UserRepository.class);
+        DemoDataService demoDataService = mock(DemoDataService.class);
+        ReflectionTestUtils.setField(interceptor, "userRepository", userRepository);
+        ReflectionTestUtils.setField(interceptor, "demoDataService", demoDataService);
+
+        User demoUser = new User();
+        demoUser.setUsername("demo_active");
+        demoUser.setDemo(true);
+        demoUser.setDemoExpiresAt(LocalDateTime.now().plusHours(1));
+        when(userRepository.findByUsername("demo_active")).thenReturn(Optional.of(demoUser));
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken("demo_active", null, List.of())
+        );
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getRequestURI()).thenReturn("/api/timetracking/punch");
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        boolean allowed = interceptor.preHandle(request, response, new Object());
+
+        assertTrue(allowed);
+        verify(demoDataService).refreshDemoDataIfOutdated(demoUser);
+    }
 }

@@ -54,6 +54,15 @@ public class AdminScheduleRuleController {
         return ResponseEntity.ok(rules);
     }
 
+    @GetMapping("/all")
+    public ResponseEntity<?> getAllRules(Principal principal) {
+        User admin = accessControlService.requireAuthenticatedUser(principal);
+        var rules = accessControlService.isSuperAdmin(admin)
+                ? ruleRepository.findAll()
+                : ruleRepository.findByUser_Company_Id(accessControlService.requireCompanyIdForTenantAdmin(admin));
+        return ResponseEntity.ok(rules.stream().map(UserScheduleRuleDTO::new).toList());
+    }
+
     @GetMapping("/expected-work-minutes")
     public int getExpectedWorkMinutes(@RequestParam String username, @RequestParam String date, Principal principal) {
         User admin = accessControlService.requireAuthenticatedUser(principal);

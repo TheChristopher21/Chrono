@@ -1,0 +1,9 @@
+<resources>
+    <style name="Theme.Chrono" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/chrono_background</item>
+        <item name="android:navigationBarColor">@color/chrono_background</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+    </style>
+</resources>

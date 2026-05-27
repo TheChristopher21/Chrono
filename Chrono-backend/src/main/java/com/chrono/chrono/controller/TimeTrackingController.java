@@ -12,10 +12,13 @@ import com.chrono.chrono.services.AccessControlService;
 import com.chrono.chrono.services.NfcAgentAuthService;
 import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -39,6 +42,10 @@ public class TimeTrackingController {
     private AccessControlService accessControlService;
     @Autowired
     private NfcAgentAuthService nfcAgentAuthService;
+    @Autowired
+    private JwtUtil jwtUtil;
+    @Autowired
+    private UserDetailsService userDetailsService;
 
 
     @PostMapping("/punch")
@@ -52,10 +59,11 @@ public class TimeTrackingController {
         Principal principal,
         @RequestHeader(value = "X-Agent-Token", required = false) String nfcAgentToken,
         @RequestHeader(value = "X-NFC-Agent-Request", required = false) String nfcAgentHeader,
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
         @RequestParam(value = "source", required = false) String sourceStr,
         HttpServletRequest httpRequest
     ) {
-        User requestingUser = (principal != null) ? userService.getUserByUsername(principal.getName()) : null;
+        User requestingUser = resolveRequestingUser(principal, authorizationHeader);
         User targetUser = userService.getUserByUsername(username);
 
         TimeTrackingEntry.PunchSource punchSource;
@@ -87,6 +95,28 @@ public class TimeTrackingController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
+    }
+
+    private User resolveRequestingUser(Principal principal, String authorizationHeader) {
+        if (principal != null && principal.getName() != null && !principal.getName().isBlank()) {
+            return userService.getUserByUsername(principal.getName());
+        }
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return null;
+        }
+
+        String token = authorizationHeader.substring(7);
+        try {
+            String username = jwtUtil.extractUsername(token);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (Boolean.TRUE.equals(jwtUtil.validateToken(token, userDetails))) {
+                return userService.getUserByUsername(username);
+            }
+        } catch (Exception ignored) {
+            return null;
+        }
+        return null;
     }
 
     @GetMapping("/history")

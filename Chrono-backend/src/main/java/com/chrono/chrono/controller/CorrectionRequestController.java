@@ -185,9 +185,37 @@ public class CorrectionRequestController {
     // Add this new method inside the CorrectionRequestController class
 
     @GetMapping("/user/{username}")
-    @PreAuthorize("#username == principal.name or hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<List<CorrectionRequest>> getRequestsForUser(@PathVariable String username) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<CorrectionRequest>> getRequestsForUser(@PathVariable String username, Principal principal) {
+        if (!canAccessUserRecords(principal, username)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(correctionRequestService.getRequestsForUser(username));
+    }
+
+    private boolean canAccessUserRecords(Principal principal, String targetUsername) {
+        if (principal == null || targetUsername == null || targetUsername.isBlank()) {
+            return false;
+        }
+        User requester = userRepo.findByUsername(principal.getName())
+                .orElseThrow(() -> new SecurityException("Authentifizierter Benutzer nicht in der Datenbank gefunden."));
+        User target = userRepo.findByUsername(targetUsername)
+                .orElseThrow(() -> new SecurityException("Zielbenutzer nicht in der Datenbank gefunden."));
+        if (requester.getUsername().equals(target.getUsername())) {
+            return true;
+        }
+        if (hasRole(requester, "ROLE_SUPERADMIN")) {
+            return true;
+        }
+        return hasRole(requester, "ROLE_ADMIN")
+                && requester.getCompany() != null
+                && target.getCompany() != null
+                && requester.getCompany().getId().equals(target.getCompany().getId());
+    }
+
+    private boolean hasRole(User user, String roleName) {
+        return user != null && user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(role -> roleName.equals(role.getRoleName()));
     }
 
     @PostMapping("/approve/{id}")
