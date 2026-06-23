@@ -9,6 +9,7 @@ export default function AdminScheduleRulesPage() {
     const [rules, setRules] = useState([]);
     const [loading, setLoading] = useState(true);
     const [savingId, setSavingId] = useState(null);
+    const [deletingId, setDeletingId] = useState(null);
     const endpoint = "/api/admin/shift-definitions";
 
     const pad2 = (n) => String(n).padStart(2, "0");
@@ -95,6 +96,34 @@ export default function AdminScheduleRulesPage() {
         }
     };
 
+    const deleteRule = async (rule) => {
+        if (!rule) return;
+        const label = rule.label || rule.key || t("scheduleRules.unnamedShift", "diese Schicht");
+        const confirmed = window.confirm(
+            t(
+                "scheduleRules.deleteConfirm",
+                `Schicht "${label}" wirklich lÃ¶schen?`
+            )
+        );
+        if (!confirmed) return;
+
+        if (!rule.serverId) {
+            setRules((prev) => prev.filter((r) => r.id !== rule.id));
+            return;
+        }
+
+        try {
+            setDeletingId(rule.id);
+            await api.delete(`${endpoint}/${rule.serverId}`);
+            setRules((prev) => prev.filter((r) => r.id !== rule.id));
+        } catch (e) {
+            console.error(e);
+            alert(t("scheduleRules.deleteFailed", "LÃ¶schen fehlgeschlagen."));
+        } finally {
+            setDeletingId(null);
+        }
+    };
+
     return (
         <>
             <Navbar />
@@ -115,6 +144,7 @@ export default function AdminScheduleRulesPage() {
                                 <div className="srp-group fg-end"><label>{t("scheduleRules.end", "Endzeit")}</label><div className="skeleton" /></div>
                                 <div className="srp-toggle fg-active"><label>{t("scheduleRules.active", "Aktiv")}</label></div>
                                 <div className="srp-actions fg-save"><button disabled>{t("scheduleRules.save", "Speichern")}</button></div>
+                                <div className="srp-actions fg-delete"><button disabled>{t("delete", "LÃ¶schen")}</button></div>
                             </div>
                         </div>
                     ) : rules.map((rule) => (
@@ -172,10 +202,22 @@ export default function AdminScheduleRulesPage() {
                                 <div className="srp-actions fg-save">
                                     <button
                                         onClick={() => saveRule(rule)}
-                                        disabled={savingId === rule.id}
+                                        disabled={savingId === rule.id || deletingId === rule.id}
                                         aria-busy={savingId === rule.id}
                                     >
                                         {savingId === rule.id ? t("scheduleRules.saving", "Speichern...") : t("scheduleRules.save", "Speichern")}
+                                    </button>
+                                </div>
+
+                                <div className="srp-actions fg-delete">
+                                    <button
+                                        type="button"
+                                        className="button-delete-shift"
+                                        onClick={() => deleteRule(rule)}
+                                        disabled={savingId === rule.id || deletingId === rule.id}
+                                        aria-busy={deletingId === rule.id}
+                                    >
+                                        {deletingId === rule.id ? t("scheduleRules.deleting", "LÃ¶schen...") : t("delete", "LÃ¶schen")}
                                     </button>
                                 </div>
                             </div>

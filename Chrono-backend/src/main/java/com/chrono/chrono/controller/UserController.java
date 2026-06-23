@@ -97,6 +97,9 @@ public class UserController {
         if (dto.getEmail() != null) user.setEmail(dto.getEmail());
         if (dto.getMobilePhone() != null) user.setMobilePhone(dto.getMobilePhone());
         if (dto.getLandlinePhone() != null) user.setLandlinePhone(dto.getLandlinePhone());
+        if (dto.getCivilStatus() != null) user.setCivilStatus(dto.getCivilStatus());
+        if (dto.getChildren() != null) user.setChildren(dto.getChildren());
+        if (dto.getBankAccount() != null) user.setBankAccount(dto.getBankAccount());
         if (dto.getEmailNotifications() != null) user.setEmailNotifications(dto.getEmailNotifications());
 
         userRepository.save(user);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
 import { formatDate } from './adminDashboardUtils';
@@ -27,6 +27,8 @@ const AdminVacationRequests = ({
                                    openSignal,
                                    canManage,
                                    users,
+                                   focusedRequest,
+                                   onOpenInTimeReview,
                                }) => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -38,6 +40,11 @@ const AdminVacationRequests = ({
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [vacationToDelete, setVacationToDelete] = useState(null);
     const [decisionNotes, setDecisionNotes] = useState({});
+    const sectionRef = useRef(null);
+
+    const focusedRequestKey = focusedRequest?.type === 'vacation' && focusedRequest?.id
+        ? `vacation-${focusedRequest.id}`
+        : null;
 
     function toggleExpansion() {
         setIsExpanded(!isExpanded);
@@ -48,6 +55,12 @@ const AdminVacationRequests = ({
             setIsExpanded(true);
         }
     }, [openSignal]);
+
+    useEffect(() => {
+        if (focusedRequestKey) {
+            setIsExpanded(true);
+        }
+    }, [focusedRequestKey]);
 
     function handleSearch(e) {
         setSearchTerm(e.target.value);
@@ -114,9 +127,32 @@ const AdminVacationRequests = ({
     const hasPending = pendingCount > 0;
     const isScrollable = sortedVacations.length >= 10;
 
+    useEffect(() => {
+        if (!focusedRequestKey || !isExpanded) return undefined;
+        const timeoutId = window.setTimeout(() => {
+            const target = sectionRef.current?.querySelector(`[data-request-anchor="${focusedRequestKey}"]`);
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.focus?.({ preventScroll: true });
+        }, 80);
+        return () => window.clearTimeout(timeoutId);
+    }, [focusedRequestKey, isExpanded, sortedVacations]);
+
+    const openVacationInTimeReview = useCallback((vacation) => {
+        if (!onOpenInTimeReview || !vacation) return;
+        onOpenInTimeReview({
+            type: 'vacation',
+            id: vacation.id,
+            username: vacation.username,
+            dateIso: vacation.startDate,
+            startDate: vacation.startDate,
+            endDate: vacation.endDate,
+        });
+    }, [onOpenInTimeReview]);
+
     return (
         <> {/* Stellt sicher, dass CSS-Variablen verfügbar sind */}
-            <section className={`vacation-section content-section${!isExpanded ? ' is-collapsed' : ''}${(!isExpanded && hasPending) ? ' has-pending' : ''}`}> {/* Allgemeine Klasse für Sektionen */}
+            <section ref={sectionRef} className={`vacation-section content-section${!isExpanded ? ' is-collapsed' : ''}${(!isExpanded && hasPending) ? ' has-pending' : ''}`}> {/* Allgemeine Klasse für Sektionen */}
                 <div
                     className="section-header"
                     onClick={toggleExpansion}
@@ -172,9 +208,25 @@ const AdminVacationRequests = ({
                                             : v.denied
                                                 ? 'status-denied'
                                                 : 'status-pending';
+                                    const requestAnchor = `vacation-${v.id}`;
+                                    const isFocusedRequest = focusedRequestKey === requestAnchor;
 
                                     return (
-                                        <li key={v.id} className={`list-item vacation-item ${statusClass}`}>
+                                        <li
+                                            key={v.id}
+                                            className={`list-item vacation-item ${statusClass} request-jump-row${isFocusedRequest ? ' is-request-focused' : ''}`}
+                                            data-request-anchor={requestAnchor}
+                                            tabIndex={0}
+                                            role="button"
+                                            onClick={() => openVacationInTimeReview(v)}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter' || event.key === ' ') {
+                                                    event.preventDefault();
+                                                    openVacationInTimeReview(v);
+                                                }
+                                            }}
+                                            title={t('adminDashboard.openRequestInTimeReview', 'In der ZeitprÃ¼fung Ã¶ffnen')}
+                                        >
                                             <div className="item-info">
                                                 <strong className="username">{getUserDisplayName(v.username, users, t('adminVacation.unknownUser', 'Unbekannt'))}</strong>
                                                 <span>
@@ -189,7 +241,11 @@ const AdminVacationRequests = ({
                                                     </span>
                                                 )}
                                             </div>
-                                            <div className="item-actions">
+                                            <div
+                                                className="item-actions"
+                                                onClick={(event) => event.stopPropagation()}
+                                                onKeyDown={(event) => event.stopPropagation()}
+                                            >
                                                 {canManage && isPending && (
                                                     <>
                                                         <input
@@ -308,12 +364,19 @@ AdminVacationRequests.propTypes = {
     openSignal: PropTypes.number,
     canManage: PropTypes.bool,
     users: PropTypes.arrayOf(PropTypes.object),
+    focusedRequest: PropTypes.shape({
+        type: PropTypes.string,
+        id: PropTypes.string,
+    }),
+    onOpenInTimeReview: PropTypes.func,
 };
 
 AdminVacationRequests.defaultProps = {
     openSignal: 0,
     canManage: true,
     users: [],
+    focusedRequest: null,
+    onOpenInTimeReview: undefined,
 };
 
 export default AdminVacationRequests;

@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.Duration;
 import java.security.Principal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
@@ -46,9 +47,109 @@ public class AdminScheduleEntryController {
                 .map(rule -> {
                     LocalTime start = LocalTime.parse(rule.getStartTime());
                     LocalTime end = LocalTime.parse(rule.getEndTime());
-                    return (int) Duration.between(start, end).toMinutes();
+                    long minutes = Duration.between(start, end).toMinutes();
+                    if (minutes <= 0) {
+                        minutes += Duration.ofHours(24).toMinutes();
+                    }
+                    return (int) minutes;
                 })
                 .orElse(0);
+    }
+
+    private int toMinuteOfDay(String time) {
+        LocalTime parsed = LocalTime.parse(time);
+        return (parsed.getHour() * 60) + parsed.getMinute();
+    }
+
+    private List<int[]> getShiftIntervals(String shiftKey) {
+        Optional<ScheduleRule> ruleOpt = ruleRepo.findByShiftKey(shiftKey);
+        if (ruleOpt.isEmpty()) {
+            return List.of();
+        }
+        ScheduleRule rule = ruleOpt.get();
+        int start = toMinuteOfDay(rule.getStartTime());
+        int end = toMinuteOfDay(rule.getEndTime());
+        if (end > start) {
+            return List.of(new int[] { start, end });
+        }
+        if (end < start) {
+            List<int[]> intervals = new ArrayList<>();
+            intervals.add(new int[] { start, 24 * 60 });
+            intervals.add(new int[] { 0, end });
+            return intervals;
+        }
+        return List.of();
+    }
+
+    private boolean shiftsOverlap(String leftShift, String rightShift) {
+        List<int[]> leftIntervals = getShiftIntervals(leftShift);
+        List<int[]> rightIntervals = getShiftIntervals(rightShift);
+        for (int[] left : leftIntervals) {
+            for (int[] right : rightIntervals) {
+                if (Math.max(left[0], right[0]) < Math.min(left[1], right[1])) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private int getExpectedDailyMinutes(User user, LocalDate date) {
+        return Math.max(0, (int) Math.round(workScheduleService.getExpectedWorkHours(user, date) * 60));
+    }
+
+    private int sumShiftMinutes(List<ScheduleEntry> entries) {
+        return entries.stream()
+                .mapToInt(entry -> getShiftDurationMinutes(entry.getShift()))
+                .sum();
+    }
+
+    private List<ScheduleEntry> getDayEntriesExcluding(User user, LocalDate date, Long excludedEntryId) {
+        return entryRepo.findAllByUserAndDate(user, date).stream()
+                .filter(entry -> excludedEntryId == null || !entry.getId().equals(excludedEntryId))
+                .toList();
+    }
+
+    private String validateAssignment(User user, LocalDate date, String shiftKey, Long excludedEntryId) {
+        if (date == null || shiftKey == null || shiftKey.isBlank()) {
+            return "Date and shift are required";
+        }
+        int newEntryMinutes = getShiftDurationMinutes(shiftKey);
+        if (newEntryMinutes <= 0) {
+            return "Shift is invalid";
+        }
+        if (workScheduleService.isDayOff(user, date) || getExpectedDailyMinutes(user, date) <= 0) {
+            return "User is not scheduled to work on this day";
+        }
+
+        List<ScheduleEntry> dayEntries = getDayEntriesExcluding(user, date, excludedEntryId);
+        boolean sameShiftExists = dayEntries.stream().anyMatch(entry -> shiftKey.equals(entry.getShift()));
+        if (sameShiftExists) {
+            return "User already scheduled for this shift";
+        }
+        boolean overlaps = dayEntries.stream().anyMatch(entry -> shiftsOverlap(shiftKey, entry.getShift()));
+        if (overlaps) {
+            return "Shift overlaps with another shift for this user";
+        }
+
+        int existingDayMinutes = sumShiftMinutes(dayEntries);
+        int maxDayMinutes = getExpectedDailyMinutes(user, date);
+        if (existingDayMinutes + newEntryMinutes > maxDayMinutes) {
+            return "Daily work hours limit exceeded";
+        }
+
+        LocalDate weekStart = date.with(DayOfWeek.MONDAY);
+        LocalDate weekEnd = weekStart.plusDays(6);
+        List<ScheduleEntry> weekEntries = entryRepo.findByUserAndDateBetween(user, weekStart, weekEnd).stream()
+                .filter(entry -> excludedEntryId == null || !entry.getId().equals(excludedEntryId))
+                .toList();
+        int existingWeekMinutes = sumShiftMinutes(weekEntries);
+        int maxWeekMinutes = workScheduleService.getExpectedWeeklyMinutes(user, date);
+        if (existingWeekMinutes + newEntryMinutes > maxWeekMinutes) {
+            return "Weekly work hours limit exceeded";
+        }
+
+        return null;
     }
 
     @GetMapping
@@ -79,11 +180,6 @@ public class AdminScheduleEntryController {
         User user = userOpt.get();
         accessControlService.requireCanManageUser(admin, user);
 
-        if (workScheduleService.isDayOff(user, dto.getDate())
-                || workScheduleService.getExpectedWorkHours(user, dto.getDate()) <= 0) {
-            return ResponseEntity.badRequest().body("User is not scheduled to work on this day");
-        }
-
         // Update existing entry if ID is provided
         if (dto.getId() != null) {
             Optional<ScheduleEntry> entryOpt = entryRepo.findById(dto.getId());
@@ -93,22 +189,9 @@ public class AdminScheduleEntryController {
             ScheduleEntry entry = entryOpt.get();
             accessControlService.requireCanManageUser(admin, entry.getUser());
 
-            Optional<ScheduleEntry> conflict = entryRepo.findByUserAndDate(user, dto.getDate());
-            if (conflict.isPresent() && !conflict.get().getId().equals(entry.getId())) {
-                return ResponseEntity.badRequest().body("User already scheduled to work on this day");
-            }
-
-            LocalDate weekStart = dto.getDate().with(DayOfWeek.MONDAY);
-            LocalDate weekEnd = weekStart.plusDays(6);
-            List<ScheduleEntry> weekEntries = entryRepo.findByUserAndDateBetween(user, weekStart, weekEnd);
-            int existingMinutes = weekEntries.stream()
-                    .filter(e -> !e.getId().equals(entry.getId()))
-                    .mapToInt(e -> getShiftDurationMinutes(e.getShift()))
-                    .sum();
-            int newEntryMinutes = getShiftDurationMinutes(dto.getShift());
-            int maxMinutes = workScheduleService.getExpectedWeeklyMinutes(user, dto.getDate());
-            if (existingMinutes + newEntryMinutes > maxMinutes) {
-                return ResponseEntity.badRequest().body("Weekly work hours limit exceeded");
+            String validationError = validateAssignment(user, dto.getDate(), dto.getShift(), entry.getId());
+            if (validationError != null) {
+                return ResponseEntity.badRequest().body(validationError);
             }
 
             entry.setDate(dto.getDate());
@@ -118,19 +201,14 @@ public class AdminScheduleEntryController {
             return ResponseEntity.ok(new ScheduleEntryDTO(entry));
         }
 
-        Optional<ScheduleEntry> existingEntry = entryRepo.findByUserAndDate(user, dto.getDate());
+        Optional<ScheduleEntry> existingEntry = entryRepo.findByUserAndDateAndShift(user, dto.getDate(), dto.getShift());
         if(existingEntry.isPresent()) {
             return ResponseEntity.ok(new ScheduleEntryDTO(existingEntry.get()));
         }
 
-        LocalDate weekStart = dto.getDate().with(DayOfWeek.MONDAY);
-        LocalDate weekEnd = weekStart.plusDays(6);
-        List<ScheduleEntry> weekEntries = entryRepo.findByUserAndDateBetween(user, weekStart, weekEnd);
-        int existingMinutes = weekEntries.stream().mapToInt(e -> getShiftDurationMinutes(e.getShift())).sum();
-        int newEntryMinutes = getShiftDurationMinutes(dto.getShift());
-        int maxMinutes = workScheduleService.getExpectedWeeklyMinutes(user, dto.getDate());
-        if (existingMinutes + newEntryMinutes > maxMinutes) {
-            return ResponseEntity.badRequest().body("Weekly work hours limit exceeded");
+        String validationError = validateAssignment(user, dto.getDate(), dto.getShift(), null);
+        if (validationError != null) {
+            return ResponseEntity.badRequest().body(validationError);
         }
 
         ScheduleEntry newEntry = new ScheduleEntry();
@@ -148,46 +226,97 @@ public class AdminScheduleEntryController {
     public ResponseEntity<?> autoFillSchedule(@RequestBody List<ScheduleEntryDTO> entries, Principal principal) {
         User admin = accessControlService.requireAuthenticatedUser(principal);
         Map<String, Integer> weeklyMinutes = new HashMap<>();
-        List<ScheduleEntry> newEntries = entries.stream().map(dto -> {
+        Map<String, Integer> dailyMinutes = new HashMap<>();
+        Map<String, List<String>> plannedShiftKeys = new HashMap<>();
+        List<ScheduleEntry> newEntries = new ArrayList<>();
+
+        for (ScheduleEntryDTO dto : entries) {
+            if (dto == null || dto.getUserId() == null || dto.getDate() == null || dto.getShift() == null || dto.getShift().isBlank()) {
+                continue;
+            }
             User user = userRepo.findById(dto.getUserId()).orElse(null);
             if (user == null) {
-                return null;
+                continue;
             }
             try {
                 accessControlService.requireCanManageUser(admin, user);
             } catch (RuntimeException ex) {
-                return null;
+                continue;
             }
-            if (workScheduleService.isDayOff(user, dto.getDate())
-                    || workScheduleService.getExpectedWorkHours(user, dto.getDate()) <= 0) {
-                return null;
-            }
-            Optional<ScheduleEntry> existing = entryRepo.findByUserAndDate(user, dto.getDate());
-            if (existing.isPresent()) {
-                return null;
-            }
-            LocalDate weekStart = dto.getDate().with(DayOfWeek.MONDAY);
-            String key = user.getId() + ":" + weekStart;
-            int current = weeklyMinutes.computeIfAbsent(key, k -> {
-                List<ScheduleEntry> weekEntries = entryRepo.findByUserAndDateBetween(user, weekStart, weekStart.plusDays(6));
-                return weekEntries.stream().mapToInt(e -> getShiftDurationMinutes(e.getShift())).sum();
-            });
+
             int newMinutes = getShiftDurationMinutes(dto.getShift());
-            int max = workScheduleService.getExpectedWeeklyMinutes(user, dto.getDate());
-            if (current + newMinutes > max) {
-                return null;
+            if (newMinutes <= 0 || workScheduleService.isDayOff(user, dto.getDate()) || getExpectedDailyMinutes(user, dto.getDate()) <= 0) {
+                continue;
             }
-            weeklyMinutes.put(key, current + newMinutes);
+
+            String dayKey = user.getId() + ":" + dto.getDate();
+            List<String> shiftKeysForDay = plannedShiftKeys.computeIfAbsent(dayKey, key ->
+                    entryRepo.findAllByUserAndDate(user, dto.getDate()).stream()
+                            .map(ScheduleEntry::getShift)
+                            .collect(Collectors.toCollection(ArrayList::new))
+            );
+            boolean dayConflict = shiftKeysForDay.stream()
+                    .anyMatch(existingShift -> dto.getShift().equals(existingShift) || shiftsOverlap(dto.getShift(), existingShift));
+            if (dayConflict) {
+                continue;
+            }
+
+            int currentDayMinutes = dailyMinutes.computeIfAbsent(dayKey, key ->
+                    sumShiftMinutes(entryRepo.findAllByUserAndDate(user, dto.getDate()))
+            );
+            int maxDayMinutes = getExpectedDailyMinutes(user, dto.getDate());
+            if (currentDayMinutes + newMinutes > maxDayMinutes) {
+                continue;
+            }
+
+            LocalDate weekStart = dto.getDate().with(DayOfWeek.MONDAY);
+            String weekKey = user.getId() + ":" + weekStart;
+            int currentWeekMinutes = weeklyMinutes.computeIfAbsent(weekKey, k -> {
+                List<ScheduleEntry> weekEntries = entryRepo.findByUserAndDateBetween(user, weekStart, weekStart.plusDays(6));
+                return sumShiftMinutes(weekEntries);
+            });
+            int max = workScheduleService.getExpectedWeeklyMinutes(user, dto.getDate());
+            if (currentWeekMinutes + newMinutes > max) {
+                continue;
+            }
+            dailyMinutes.put(dayKey, currentDayMinutes + newMinutes);
+            weeklyMinutes.put(weekKey, currentWeekMinutes + newMinutes);
+            shiftKeysForDay.add(dto.getShift());
 
             ScheduleEntry newEntry = new ScheduleEntry();
             newEntry.setUser(user);
             newEntry.setDate(dto.getDate());
             newEntry.setShift(dto.getShift());
-            return newEntry;
-        }).filter(java.util.Objects::nonNull).collect(Collectors.toList());
+            newEntries.add(newEntry);
+        }
 
-        entryRepo.saveAll(newEntries);
-        return ResponseEntity.ok().build();
+        List<ScheduleEntry> savedEntries = entryRepo.saveAll(newEntries);
+        return ResponseEntity.ok(Map.of(
+                "created", savedEntries.size(),
+                "entries", savedEntries.stream().map(ScheduleEntryDTO::new).toList()
+        ));
+    }
+
+    @PostMapping("/bulk-delete")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<?> deleteEntries(@RequestBody List<Long> ids, Principal principal) {
+        User admin = accessControlService.requireAuthenticatedUser(principal);
+        if (ids == null || ids.isEmpty()) {
+            return ResponseEntity.ok(Map.of("deleted", 0));
+        }
+
+        int deleted = 0;
+        for (Long id : ids.stream().filter(Objects::nonNull).distinct().toList()) {
+            Optional<ScheduleEntry> entry = entryRepo.findById(id);
+            if (entry.isEmpty()) {
+                continue;
+            }
+            accessControlService.requireCanManageUser(admin, entry.get().getUser());
+            entryRepo.delete(entry.get());
+            deleted++;
+        }
+
+        return ResponseEntity.ok(Map.of("deleted", deleted));
     }
 
     @PostMapping("/copy")

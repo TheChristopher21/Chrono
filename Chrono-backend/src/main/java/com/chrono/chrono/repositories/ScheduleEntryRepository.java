@@ -11,8 +11,10 @@ public interface ScheduleEntryRepository extends JpaRepository<ScheduleEntry, Lo
     List<ScheduleEntry> findByDateBetween(LocalDate start, LocalDate end);
     List<ScheduleEntry> findByUser_Company_IdAndDateBetween(Long companyId, LocalDate start, LocalDate end);
 
-    // Verhindert doppelte Einträge pro Nutzer und Datum
-    Optional<ScheduleEntry> findByUserAndDate(User user, LocalDate date);
+    // Verhindert doppelte Eintraege pro Nutzer, Datum und Schicht
+    Optional<ScheduleEntry> findByUserAndDateAndShift(User user, LocalDate date, String shift);
+
+    List<ScheduleEntry> findAllByUserAndDate(User user, LocalDate date);
 
     List<ScheduleEntry> findByUserAndDateBetween(User user, LocalDate start, LocalDate end);
 

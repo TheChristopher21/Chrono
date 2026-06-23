@@ -178,6 +178,9 @@ class ModuleRepository(
                 "Heute" to "/api/timetracking/daily-summary?username=$username&date=$today",
                 "Monatsreport" to "/api/timetracking/report?username=$username&startDate=$monthStart&endDate=$today",
                 "Differenz" to "/api/timetracking/work-difference?username=$username&date=$today",
+                "Korrekturen" to "/api/correction/my?username=$username",
+                "Kunden" to "/api/customers",
+                "Projekte" to "/api/projects",
             )
             AppSection.WORK_MODEL -> e(
                 "Woche" to "/api/dashboard/user/$username/week?startDate=$weekStart&endDate=$weekEnd",
@@ -210,12 +213,12 @@ class ModuleRepository(
                 "Audit" to "/api/audit?limit=25",
             )
             AppSection.INFO -> e(
-                "Letzte Aenderung" to "/api/changelog/latest",
-                "Aenderungen" to "/api/changelog",
+                "Letzte Änderung" to "/api/changelog/latest",
+                "Änderungen" to "/api/changelog",
                 "Chat Status" to "/api/chat/status",
             )
             AppSection.ADMIN_HOME -> e(
-                "Zeituebersicht" to "/api/admin/timetracking/all-summaries",
+                "Zeitübersicht" to "/api/admin/timetracking/all-summaries",
                 "Mitarbeiter" to "/api/admin/users",
                 "Kunden" to "/api/customers",
                 "Projekte" to "/api/projects",
@@ -224,14 +227,25 @@ class ModuleRepository(
                 "Korrekturen" to "/api/correction/all",
                 "Urlaub" to "/api/vacation/all",
                 "Krankheit" to "/api/sick-leave/company",
-                "Payroll offen" to "/api/payslips/admin/pending",
+                "Abrechnungen offen" to "/api/payslips/admin/pending",
+            )
+            AppSection.TIME_OVERVIEW -> e(
+                "Zeitübersicht" to "/api/admin/timetracking/all-summaries",
+                "Mitarbeiter" to "/api/admin/users",
+                "Zeitkonten" to "/api/admin/timetracking/admin/tracking-balances",
+                "Wochensaldo" to "/api/admin/timetracking/admin/weekly-balance?monday=$weekStart",
+            )
+            AppSection.TEAM_CALENDAR -> e(
+                "Urlaub" to "/api/vacation/all",
+                "Krankheit" to "/api/sick-leave/company",
+                "Mitarbeiter" to "/api/admin/users",
             )
             AppSection.SUPERADMIN_HOME -> e(
                 "App Feedback" to "/api/mobile-feedback?limit=100",
                 "Firmen" to "/api/superadmin/companies",
                 "Analytics" to "/api/superadmin/analytics/summary?days=30",
                 "Ausgeschlossene IPs" to "/api/superadmin/analytics/excluded-ips",
-                "Aenderungen" to "/api/changelog",
+                "Änderungen" to "/api/changelog",
             )
             AppSection.EMPLOYEES -> e(
                 "Mitarbeiter" to "/api/admin/users",
@@ -240,7 +254,15 @@ class ModuleRepository(
                 "Urlaub" to "/api/vacation/all",
                 "Krankheit" to "/api/sick-leave/company",
             )
-            AppSection.USERS -> e("Benutzer" to "/api/admin/users", "Audit" to "/api/audit?limit=25")
+            AppSection.USERS -> e(
+                "Benutzer" to "/api/admin/users",
+                "Mitarbeiter" to "/api/admin/users",
+                "Zeitkonten" to "/api/admin/timetracking/admin/tracking-balances",
+                "Wochensaldo" to "/api/admin/timetracking/admin/weekly-balance?monday=$weekStart",
+                "Urlaub" to "/api/vacation/all",
+                "Krankheit" to "/api/sick-leave/company",
+                "Audit" to "/api/audit?limit=25",
+            )
             AppSection.ADMIN_PASSWORD -> e("Session" to "/api/auth/me", "Profil" to "/api/users/profile/$username")
             AppSection.CUSTOMERS_PROJECTS -> e(
                 "Kunden" to "/api/customers",
@@ -269,17 +291,18 @@ class ModuleRepository(
                 "Audit" to "/api/audit?limit=25",
             )
             AppSection.ANALYTICS -> e(
-                "Zeituebersicht" to "/api/admin/timetracking/all-summaries",
+                "Zeitübersicht" to "/api/admin/timetracking/all-summaries",
                 "Projektanalyse" to "/api/report/analytics/projects?startDate=$monthStart&endDate=$today",
                 "Audit" to "/api/audit?limit=25",
             )
             AppSection.TIME_IMPORT -> e(
-                "Zeituebersicht" to "/api/admin/timetracking/all-summaries",
+                "Zeitübersicht" to "/api/admin/timetracking/all-summaries",
                 "Zeitkonten" to "/api/admin/timetracking/admin/tracking-balances",
                 "Audit" to "/api/audit?limit=25",
             )
             AppSection.SCHEDULE -> e(
                 "Dienstplan" to "/api/admin/schedule?start=$weekStart&end=$weekEnd",
+                "Mitarbeiter" to "/api/admin/users",
                 "Schichten" to "/api/admin/shift-definitions",
                 "Planregeln" to "/api/admin/schedule-rules/all",
                 "Sollzeit heute" to "/api/admin/schedule-rules/expected-work-minutes?username=$username&date=$today",
@@ -327,8 +350,8 @@ class ModuleRepository(
             )
             AppSection.BANKING -> e(
                 "Bankkonten" to "/api/banking/accounts",
-                "Zahlungslaeufe" to "/api/banking/batches",
-                "Offene Laeufe" to "/api/banking/batches/open?page=0&size=5",
+                "Zahlungsläufe" to "/api/banking/batches",
+                "Offene Läufe" to "/api/banking/batches/open?page=0&size=5",
                 "Kreditoren" to "/api/accounting/payables/open?page=0&size=25",
                 "Debitoren" to "/api/accounting/receivables/open?page=0&size=25",
                 "Signaturen" to "/api/banking/signatures",
@@ -344,7 +367,7 @@ class ModuleRepository(
                 "Firmen" to "/api/superadmin/companies",
                 "Analytics" to "/api/superadmin/analytics/summary?days=30",
                 "Ausgeschlossene IPs" to "/api/superadmin/analytics/excluded-ips",
-                "Aenderungen" to "/api/changelog",
+                "Änderungen" to "/api/changelog",
             )
         }
     }
@@ -353,10 +376,11 @@ class ModuleRepository(
         val today = LocalDate.now()
         val now = LocalDateTime.now().withSecond(0).withNano(0).toString()
         return when (section) {
-            AppSection.TIME -> listOf(correction(today, now))
+            AppSection.TIME -> listOf(correction(today, now), userDayCustomer(today), userDayProject(today))
             AppSection.WORK_MODEL, AppSection.PAYSLIPS, AppSection.REPORTS, AppSection.INFO, AppSection.SUPERADMIN_HOME -> emptyList()
             AppSection.ABSENCES -> listOf(vacation(today), sickLeave(today), correction(today, now))
-            AppSection.PROFILE, AppSection.ADMIN_PASSWORD -> listOf(changePassword())
+            AppSection.PROFILE -> listOf(profileUpdate(), changePassword())
+            AppSection.ADMIN_PASSWORD -> listOf(changePassword())
             AppSection.SUPPLY_CHAIN -> listOf(
                 product(),
                 warehouse(),
@@ -394,8 +418,20 @@ class ModuleRepository(
                 adminSickLeave(today),
                 vacationDelete(),
                 sickLeaveDelete(),
+                payslipApprove(),
+                payslipSetPayout(today),
             )
-            AppSection.EMPLOYEES, AppSection.USERS -> listOf(userCreate(), userVisibilityUpdate(), userDelete(), adminVacation(today), adminSickLeave(today))
+            AppSection.TIME_OVERVIEW -> listOf(
+                adminEditDay(today),
+                timeEntryApprove(),
+                timeEntryRevoke(),
+                timeEntryCustomer(),
+                timeEntryProject(),
+                dayCustomer(today),
+                dayProject(today),
+            )
+            AppSection.TEAM_CALENDAR -> listOf(adminVacation(today), adminSickLeave(today))
+            AppSection.EMPLOYEES, AppSection.USERS -> listOf(userCreate(), userVisibilityUpdate(), userDelete())
             AppSection.CUSTOMERS_PROJECTS -> listOf(customerCreate(), customerUpdate(), projectCreate(), projectUpdate(), taskCreate(), taskUpdate(), customerDelete(), projectDelete(), taskDelete())
             AppSection.CUSTOMERS -> listOf(customerCreate(), customerUpdate(), customerDelete())
             AppSection.PROJECTS -> listOf(projectCreate(), projectUpdate(), projectDelete(), taskCreate(), taskUpdate())
@@ -406,7 +442,7 @@ class ModuleRepository(
             AppSection.SCHEDULE -> listOf(scheduleEntry(today), scheduleEntryUpdate(today), scheduleAutofill(today), scheduleCopy(today), scheduleDelete())
             AppSection.PRINT_SCHEDULE -> emptyList()
             AppSection.SHIFT_RULES -> listOf(shiftDefinition(), shiftDefinitionUpdate(), scheduleRuleCreate(today), scheduleRuleUpdate(today), scheduleRuleDelete())
-            AppSection.PAYROLL_ADMIN -> listOf(payslipGenerate(today), payslipApprove(), payslipApproveAll(), payslipSetPayout(today), payslipScheduleAll(today), payslipReopen(), payslipDelete())
+            AppSection.PAYROLL_ADMIN -> listOf(payslipGenerate(today), payslipApprove(), payslipApproveAll(), payslipSetPayout(today), payslipScheduleUser(today), payslipScheduleAll(today), payslipReopen(), payslipDelete())
             AppSection.ACCOUNTING -> listOf(accountCreate(), journalEntry(today), assetCreate(today), assetDepreciate(), receivablePayment(today), payablePayment(today))
             AppSection.CHRONO_TWO -> listOf(chronoTwoProduct(), chronoTwoSlotting(), chronoTwoIot(), chronoTwoMovement(), chronoTwoSourcing(), chronoTwoPickRoute(), chronoTwoReturn(), chronoTwoNlp())
             AppSection.CRM -> listOf(leadCreate(), leadStatus(), opportunityCreate(today), opportunityUpdate(today), campaignCreate(today), campaignUpdate(today), crmContactCreate(), crmActivityCreate(now), crmAddressCreate(), crmDocumentCreate(), crmDocumentDelete())
@@ -428,7 +464,7 @@ class ModuleRepository(
     private fun vacation(today: LocalDate) = action(
         "vacation-create", "Urlaub beantragen", ModuleActionMethod.POST,
         "/api/vacation/create?username={username}&startDate={startDate}&endDate={endDate}&halfDay={halfDay}&usesOvertime={usesOvertime}",
-        fields = listOf(f("startDate", "Startdatum", ModuleActionFieldType.DATE, "$today"), f("endDate", "Enddatum", ModuleActionFieldType.DATE, "$today"), f("halfDay", "Halber Tag", ModuleActionFieldType.BOOLEAN, "false"), f("usesOvertime", "Ueberzeit verwenden", ModuleActionFieldType.BOOLEAN, "false")),
+        fields = listOf(f("startDate", "Startdatum", ModuleActionFieldType.DATE, "$today"), f("endDate", "Enddatum", ModuleActionFieldType.DATE, "$today"), f("halfDay", "Halber Tag", ModuleActionFieldType.BOOLEAN, "false"), f("usesOvertime", "Überzeit verwenden", ModuleActionFieldType.BOOLEAN, "false")),
     )
 
     private fun sickLeave(today: LocalDate) = action(
@@ -438,9 +474,25 @@ class ModuleRepository(
     )
 
     private fun changePassword() = action(
-        "change-password", "Passwort aendern", ModuleActionMethod.PUT, "/api/user/change-password",
+        "change-password", "Passwort ändern", ModuleActionMethod.PUT, "/api/user/change-password",
         body = """{"username":"{username}","currentPassword":"{currentPassword}","newPassword":"{newPassword}"}""",
         fields = listOf(f("currentPassword", "Aktuelles Passwort", ModuleActionFieldType.PASSWORD), f("newPassword", "Neues Passwort", ModuleActionFieldType.PASSWORD)),
+    )
+    private fun profileUpdate() = action(
+        "profile-update", "Persönliche Daten speichern", ModuleActionMethod.PUT, "/api/user/update",
+        body = """{"username":"{username}","firstName":"{firstName}","lastName":"{lastName}","email":"{email}","address":"{address}","mobilePhone":"{mobilePhone}","landlinePhone":"{landlinePhone}","civilStatus":"{civilStatus}","children":{children},"bankAccount":"{bankAccount}","emailNotifications":{emailNotifications}}""",
+        fields = listOf(
+            f("firstName", "Vorname"),
+            f("lastName", "Nachname"),
+            f("email", "E-Mail", required = false),
+            f("address", "Adresse", required = false),
+            f("mobilePhone", "Telefon", required = false),
+            f("landlinePhone", "Festnetz", required = false),
+            f("civilStatus", "Zivilstand", required = false),
+            f("children", "Kinder", ModuleActionFieldType.NUMBER, "0"),
+            f("bankAccount", "Bankkonto", required = false),
+            f("emailNotifications", "E-Mail Benachrichtigungen", ModuleActionFieldType.BOOLEAN, "true"),
+        ),
     )
 
     private fun product() = action(
@@ -470,7 +522,7 @@ class ModuleRepository(
     private fun serviceRequest(today: LocalDate) = action(
         "service-request-create", "Servicefall anlegen", ModuleActionMethod.POST, "/api/supply-chain/service-requests",
         body = """{"customerName":"{customerName}","subject":"{subject}","description":"{description}","status":"{status}","openedDate":"{openedDate}"}""",
-        fields = listOf(f("customerName", "Kunde"), f("subject", "Betreff"), f("description", "Beschreibung", ModuleActionFieldType.MULTILINE, required = false), f("status", "Status", default = "OPEN"), f("openedDate", "Geoeffnet am", ModuleActionFieldType.DATE, "$today")),
+        fields = listOf(f("customerName", "Kunde"), f("subject", "Betreff"), f("description", "Beschreibung", ModuleActionFieldType.MULTILINE, required = false), f("status", "Status", default = "OPEN"), f("openedDate", "Geöffnet am", ModuleActionFieldType.DATE, "$today")),
     )
 
     private fun productionOrder(today: LocalDate) = action(
@@ -480,9 +532,9 @@ class ModuleRepository(
     )
 
     private fun cycleCountSubmit() = action(
-        "cycle-count-submit", "Inventur zaehlen", ModuleActionMethod.POST, "/api/supply-chain/cycle-counts/{id}/submit",
+        "cycle-count-submit", "Inventur zählen", ModuleActionMethod.POST, "/api/supply-chain/cycle-counts/{id}/submit",
         body = """{"countedQuantity":{countedQuantity}}""",
-        fields = listOf(f("id", "Inventur-ID", ModuleActionFieldType.NUMBER), f("countedQuantity", "Gezaehlte Menge", ModuleActionFieldType.NUMBER, "0")),
+        fields = listOf(f("id", "Inventur-ID", ModuleActionFieldType.NUMBER), f("countedQuantity", "Gezählte Menge", ModuleActionFieldType.NUMBER, "0")),
     )
 
     private fun cycleCountApprove() = action(
@@ -505,7 +557,7 @@ class ModuleRepository(
     private fun salesOrder(today: LocalDate) = action(
         "sales-order-create", "Verkauf anlegen", ModuleActionMethod.POST, "/api/supply-chain/sales-orders",
         body = """{"orderNumber":"{orderNumber}","customerName":"{customerName}","dueDate":"{dueDate}","lines":[{"productId":{productId},"quantity":{quantity},"unitPrice":{unitPrice}}]}""",
-        fields = listOf(f("orderNumber", "Auftragsnummer"), f("customerName", "Kunde"), f("dueDate", "Faellig", ModuleActionFieldType.DATE, "$today"), f("productId", "Artikel"), f("quantity", "Menge", ModuleActionFieldType.NUMBER, "1"), f("unitPrice", "Preis", ModuleActionFieldType.NUMBER, "0")),
+        fields = listOf(f("orderNumber", "Auftragsnummer"), f("customerName", "Kunde"), f("dueDate", "Fällig", ModuleActionFieldType.DATE, "$today"), f("productId", "Artikel"), f("quantity", "Menge", ModuleActionFieldType.NUMBER, "1"), f("unitPrice", "Preis", ModuleActionFieldType.NUMBER, "0")),
     )
 
     private fun salesFulfill() = action(
@@ -516,7 +568,7 @@ class ModuleRepository(
 
     private fun receivingPreview() = action(
         "receiving-preview",
-        "Wareneingang pruefen",
+        "Wareneingang prüfen",
         ModuleActionMethod.POST,
         "/api/supply-chain/receiving/preview",
         body = """{"scanValue":"{scanValue}","documentText":"{documentText}","fileName":"{fileName}","detectedCodes":{raw:detectedCodes}}""",
@@ -538,7 +590,7 @@ class ModuleRepository(
             f("warehouseId", "Lager"),
             f("reference", "Referenz", required = false),
             f("purchaseOrderId", "Einkauf-ID", ModuleActionFieldType.NUMBER, "null", required = false),
-            f("completePurchaseOrder", "Bestellung abschliessen", ModuleActionFieldType.BOOLEAN, "true"),
+            f("completePurchaseOrder", "Bestellung abschließen", ModuleActionFieldType.BOOLEAN, "true"),
             f("items", "Positionen JSON", ModuleActionFieldType.MULTILINE, """[{"productId":0,"quantity":1}]"""),
         ),
         refreshHistory = true,
@@ -583,8 +635,8 @@ class ModuleRepository(
         body = """{"salesOrderIds":{raw:salesOrderIds},"maxOrdersPerWave":{maxOrdersPerWave},"includeDrafts":{includeDrafts}}""",
         fields = listOf(
             f("salesOrderIds", "Verkaufs-IDs JSON", ModuleActionFieldType.MULTILINE, "[]"),
-            f("maxOrdersPerWave", "Max. Auftraege/Wave", ModuleActionFieldType.NUMBER, "10"),
-            f("includeDrafts", "Entwuerfe einbeziehen", ModuleActionFieldType.BOOLEAN, "false"),
+            f("maxOrdersPerWave", "Max. Aufträge/Wave", ModuleActionFieldType.NUMBER, "10"),
+            f("includeDrafts", "Entwürfe einbeziehen", ModuleActionFieldType.BOOLEAN, "false"),
         ),
     )
 
@@ -604,8 +656,8 @@ class ModuleRepository(
     private fun denyCorrection() = action("correction-deny", "Korrektur ablehnen", ModuleActionMethod.POST, "/api/correction/deny/{id}?comment={comment}", fields = listOf(f("id", "Korrektur-ID", ModuleActionFieldType.NUMBER), f("comment", "Kommentar", ModuleActionFieldType.MULTILINE, required = false)), refreshHistory = true)
     private fun approveVacation() = action("vacation-approve", "Urlaub genehmigen", ModuleActionMethod.POST, "/api/vacation/approve/{id}", fields = listOf(f("id", "Urlaubs-ID", ModuleActionFieldType.NUMBER)))
     private fun denyVacation() = action("vacation-deny", "Urlaub ablehnen", ModuleActionMethod.POST, "/api/vacation/deny/{id}", fields = listOf(f("id", "Urlaubs-ID", ModuleActionFieldType.NUMBER)))
-    private fun vacationDelete() = action("vacation-delete", "Urlaub loeschen", ModuleActionMethod.DELETE, "/api/vacation/{id}", fields = listOf(f("id", "Urlaubs-ID", ModuleActionFieldType.NUMBER)))
-    private fun sickLeaveDelete() = action("sick-delete", "Krankheit loeschen", ModuleActionMethod.DELETE, "/api/sick-leave/{id}", fields = listOf(f("id", "Krankheits-ID", ModuleActionFieldType.NUMBER)))
+    private fun vacationDelete() = action("vacation-delete", "Urlaub löschen", ModuleActionMethod.DELETE, "/api/vacation/{id}", fields = listOf(f("id", "Urlaubs-ID", ModuleActionFieldType.NUMBER)))
+    private fun sickLeaveDelete() = action("sick-delete", "Krankheit löschen", ModuleActionMethod.DELETE, "/api/sick-leave/{id}", fields = listOf(f("id", "Krankheits-ID", ModuleActionFieldType.NUMBER)))
 
     private fun adminEditDay(today: LocalDate) = action(
         "admin-edit-day",
@@ -616,7 +668,7 @@ class ModuleRepository(
         fields = listOf(
             f("targetUsername", "Mitarbeiter"),
             f("date", "Datum", ModuleActionFieldType.DATE, "$today"),
-            f("entries", "Zeit-Eintraege JSON", ModuleActionFieldType.MULTILINE, "[]"),
+            f("entries", "Zeit-Einträge JSON", ModuleActionFieldType.MULTILINE, "[]"),
         ),
         description = "Kompletten Tag als JSON-Liste speichern, wie im Web-Admin.",
         refreshHistory = true,
@@ -626,17 +678,19 @@ class ModuleRepository(
     private fun timeEntryRevoke() = action("time-entry-revoke", "Zeitfreigabe aufheben", ModuleActionMethod.POST, "/api/timetracking/entry/{id}/revoke-approval", fields = listOf(f("id", "Zeit-Eintrag", ModuleActionFieldType.NUMBER)), refreshHistory = true)
     private fun timeEntryCustomer() = action("time-entry-customer", "Eintrag Kunde", ModuleActionMethod.PUT, "/api/timetracking/entry/{id}/customer?customerId={customerId}", fields = listOf(f("id", "Zeit-Eintrag", ModuleActionFieldType.NUMBER), f("customerId", "Kunde", ModuleActionFieldType.NUMBER, "0")), refreshHistory = true)
     private fun timeEntryProject() = action("time-entry-project", "Eintrag Projekt", ModuleActionMethod.PUT, "/api/timetracking/entry/{id}/project?projectId={projectId}", fields = listOf(f("id", "Zeit-Eintrag", ModuleActionFieldType.NUMBER), f("projectId", "Projekt", ModuleActionFieldType.NUMBER, "0")), refreshHistory = true)
+    private fun userDayCustomer(today: LocalDate) = action("user-day-customer", "Tag Kunde zuweisen", ModuleActionMethod.PUT, "/api/timetracking/day/customer?username={username}&date={date}&customerId={customerId}", fields = listOf(f("date", "Datum", ModuleActionFieldType.DATE, "$today"), f("customerId", "Kunde", ModuleActionFieldType.NUMBER, "0")), refreshHistory = true)
+    private fun userDayProject(today: LocalDate) = action("user-day-project", "Tag Projekt zuweisen", ModuleActionMethod.PUT, "/api/timetracking/day/project?username={username}&date={date}&projectId={projectId}", fields = listOf(f("date", "Datum", ModuleActionFieldType.DATE, "$today"), f("projectId", "Projekt", ModuleActionFieldType.NUMBER, "0")), refreshHistory = true)
     private fun dayCustomer(today: LocalDate) = action("day-customer", "Tag Kunde", ModuleActionMethod.PUT, "/api/timetracking/day/customer?username={targetUsername}&date={date}&customerId={customerId}", fields = listOf(f("targetUsername", "Mitarbeiter"), f("date", "Datum", ModuleActionFieldType.DATE, "$today"), f("customerId", "Kunde", ModuleActionFieldType.NUMBER, "0")), refreshHistory = true)
     private fun dayProject(today: LocalDate) = action("day-project", "Tag Projekt", ModuleActionMethod.PUT, "/api/timetracking/day/project?username={targetUsername}&date={date}&projectId={projectId}", fields = listOf(f("targetUsername", "Mitarbeiter"), f("date", "Datum", ModuleActionFieldType.DATE, "$today"), f("projectId", "Projekt", ModuleActionFieldType.NUMBER, "0")), refreshHistory = true)
 
     private fun adminVacation(today: LocalDate) = action(
-        "admin-vacation-create", "Urlaub fuer Mitarbeiter", ModuleActionMethod.POST,
+        "admin-vacation-create", "Urlaub für Mitarbeiter", ModuleActionMethod.POST,
         "/api/vacation/adminCreate?adminUsername={username}&username={targetUsername}&startDate={startDate}&endDate={endDate}&halfDay={halfDay}&usesOvertime={usesOvertime}",
-        fields = listOf(f("targetUsername", "Mitarbeiter"), f("startDate", "Start", ModuleActionFieldType.DATE, "$today"), f("endDate", "Ende", ModuleActionFieldType.DATE, "$today"), f("halfDay", "Halber Tag", ModuleActionFieldType.BOOLEAN, "false"), f("usesOvertime", "Ueberzeit verwenden", ModuleActionFieldType.BOOLEAN, "false")),
+        fields = listOf(f("targetUsername", "Mitarbeiter"), f("startDate", "Start", ModuleActionFieldType.DATE, "$today"), f("endDate", "Ende", ModuleActionFieldType.DATE, "$today"), f("halfDay", "Halber Tag", ModuleActionFieldType.BOOLEAN, "false"), f("usesOvertime", "Überzeit verwenden", ModuleActionFieldType.BOOLEAN, "false")),
     )
 
     private fun adminSickLeave(today: LocalDate) = action(
-        "admin-sick-create", "Krankheit fuer Mitarbeiter", ModuleActionMethod.POST,
+        "admin-sick-create", "Krankheit für Mitarbeiter", ModuleActionMethod.POST,
         "/api/sick-leave/report?targetUsername={targetUsername}&startDate={startDate}&endDate={endDate}&halfDay={halfDay}&comment={comment}",
         fields = listOf(f("targetUsername", "Mitarbeiter"), f("startDate", "Start", ModuleActionFieldType.DATE, "$today"), f("endDate", "Ende", ModuleActionFieldType.DATE, "$today"), f("halfDay", "Halber Tag", ModuleActionFieldType.BOOLEAN, "false"), f("comment", "Kommentar", ModuleActionFieldType.MULTILINE, required = false)),
     )
@@ -647,36 +701,37 @@ class ModuleRepository(
         fields = listOf(f("newUsername", "Benutzername"), f("password", "Startpasswort", ModuleActionFieldType.PASSWORD), f("firstName", "Vorname"), f("lastName", "Nachname"), f("country", "Land", default = "CH"), f("taxClass", "Steuerklasse DE", required = false), f("tarifCode", "Tarifcode CH", default = "A0"), f("personnelNumber", "Personalnummer"), f("role", "Rolle", default = "ROLE_USER"), f("dailyWorkHours", "Tages-Soll", ModuleActionFieldType.NUMBER, "8.5"), f("isHourly", "Stundenlohn", ModuleActionFieldType.BOOLEAN, "false"), f("isPercentage", "Prozentmodell", ModuleActionFieldType.BOOLEAN, "false"), f("workPercentage", "Pensum %", ModuleActionFieldType.NUMBER, "100"), f("expectedWorkDays", "Arbeitstage", ModuleActionFieldType.NUMBER, "5")),
     )
 
-    private fun userDelete() = action("user-delete", "Mitarbeiter loeschen", ModuleActionMethod.DELETE, "/api/admin/users/{id}", fields = listOf(f("id", "Benutzer-ID", ModuleActionFieldType.NUMBER)))
-    private fun userVisibilityUpdate() = action("user-visibility-update", "Zeituebersicht umschalten", ModuleActionMethod.PATCH, "/api/admin/users/{id}/time-tracking-visibility", body = """{"includeInTimeTracking":{includeInTimeTracking}}""", fields = listOf(f("id", "Mitarbeiter"), f("includeInTimeTracking", "In Zeituebersicht anzeigen", ModuleActionFieldType.BOOLEAN, "true")))
+    private fun userDelete() = action("user-delete", "Mitarbeiter löschen", ModuleActionMethod.DELETE, "/api/admin/users/{id}", fields = listOf(f("id", "Benutzer-ID", ModuleActionFieldType.NUMBER)))
+    private fun userVisibilityUpdate() = action("user-visibility-update", "Zeitübersicht umschalten", ModuleActionMethod.PATCH, "/api/admin/users/{id}/time-tracking-visibility", body = """{"includeInTimeTracking":{includeInTimeTracking}}""", fields = listOf(f("id", "Mitarbeiter"), f("includeInTimeTracking", "In Zeitübersicht anzeigen", ModuleActionFieldType.BOOLEAN, "true")))
     private fun customerCreate() = action("customer-create", "Kunde anlegen", ModuleActionMethod.POST, "/api/customers", body = """{"name":"{name}"}""", fields = listOf(f("name", "Kundenname")))
     private fun customerUpdate() = action("customer-update", "Kunde bearbeiten", ModuleActionMethod.PUT, "/api/customers/{id}", body = """{"name":"{name}"}""", fields = listOf(f("id", "Kunde"), f("name", "Kundenname")))
-    private fun customerDelete() = action("customer-delete", "Kunde loeschen", ModuleActionMethod.DELETE, "/api/customers/{id}", fields = listOf(f("id", "Kunden-ID", ModuleActionFieldType.NUMBER)))
+    private fun customerDelete() = action("customer-delete", "Kunde löschen", ModuleActionMethod.DELETE, "/api/customers/{id}", fields = listOf(f("id", "Kunden-ID", ModuleActionFieldType.NUMBER)))
     private fun projectCreate() = action("project-create", "Projekt anlegen", ModuleActionMethod.POST, "/api/projects", body = """{"name":"{name}","customer":{"id":{customerId}},"budgetMinutes":{budgetMinutes},"hourlyRate":{hourlyRate}}""", fields = listOf(f("name", "Projektname"), f("customerId", "Kunden-ID", ModuleActionFieldType.NUMBER), f("budgetMinutes", "Budget Minuten", ModuleActionFieldType.NUMBER, "0"), f("hourlyRate", "Stundensatz", ModuleActionFieldType.NUMBER, "0")))
     private fun projectUpdate() = action("project-update", "Projekt bearbeiten", ModuleActionMethod.PUT, "/api/projects/{id}", body = """{"name":"{name}","customer":{"id":{customerId}},"budgetMinutes":{budgetMinutes},"parent":{"id":{parentId}},"hourlyRate":{hourlyRate}}""", fields = listOf(f("id", "Projekt"), f("name", "Projektname"), f("customerId", "Kunde"), f("budgetMinutes", "Budget Minuten", ModuleActionFieldType.NUMBER, "0"), f("parentId", "Parent Projekt-ID", ModuleActionFieldType.NUMBER, "null", required = false), f("hourlyRate", "Stundensatz", ModuleActionFieldType.NUMBER, "0")))
-    private fun projectDelete() = action("project-delete", "Projekt loeschen", ModuleActionMethod.DELETE, "/api/projects/{id}", fields = listOf(f("id", "Projekt-ID", ModuleActionFieldType.NUMBER)))
+    private fun projectDelete() = action("project-delete", "Projekt löschen", ModuleActionMethod.DELETE, "/api/projects/{id}", fields = listOf(f("id", "Projekt-ID", ModuleActionFieldType.NUMBER)))
     private fun taskCreate() = action("task-create", "Task anlegen", ModuleActionMethod.POST, "/api/tasks", body = """{"name":"{name}","project":{"id":{projectId}},"budgetMinutes":{budgetMinutes},"billable":{billable}}""", fields = listOf(f("name", "Taskname"), f("projectId", "Projekt-ID", ModuleActionFieldType.NUMBER), f("budgetMinutes", "Budget Minuten", ModuleActionFieldType.NUMBER, "0"), f("billable", "Verrechenbar", ModuleActionFieldType.BOOLEAN, "true")))
     private fun taskUpdate() = action("task-update", "Task bearbeiten", ModuleActionMethod.PUT, "/api/tasks/{id}", body = """{"name":"{name}","budgetMinutes":{budgetMinutes},"billable":{billable}}""", fields = listOf(f("id", "Task-ID", ModuleActionFieldType.NUMBER), f("name", "Taskname"), f("budgetMinutes", "Budget Minuten", ModuleActionFieldType.NUMBER, "0"), f("billable", "Verrechenbar", ModuleActionFieldType.BOOLEAN, "true")))
-    private fun taskDelete() = action("task-delete", "Task loeschen", ModuleActionMethod.DELETE, "/api/tasks/{id}", fields = listOf(f("id", "Task-ID", ModuleActionFieldType.NUMBER)))
+    private fun taskDelete() = action("task-delete", "Task löschen", ModuleActionMethod.DELETE, "/api/tasks/{id}", fields = listOf(f("id", "Task-ID", ModuleActionFieldType.NUMBER)))
     private fun timeImport() = action("time-import-json", "Zeitimport JSON", ModuleActionMethod.POST, "/api/admin/timetracking/import/json", body = "{raw:rows}", fields = listOf(f("rows", "JSON-Zeilen", ModuleActionFieldType.MULTILINE, "[]")), refreshHistory = true)
     private fun rebuildBalances() = action("time-rebuild-balances", "Salden neu berechnen", ModuleActionMethod.POST, "/api/admin/timetracking/rebuild-balances", refreshHistory = true)
     private fun scheduleEntry(today: LocalDate) = action("schedule-entry-create", "Schicht eintragen", ModuleActionMethod.POST, "/api/admin/schedule", body = """{"userId":{userId},"date":"{date}","shift":"{shift}","note":"{note}"}""", fields = listOf(f("userId", "Benutzer-ID", ModuleActionFieldType.NUMBER), f("date", "Datum", ModuleActionFieldType.DATE, "$today"), f("shift", "Schicht-Key"), f("note", "Notiz", ModuleActionFieldType.MULTILINE, required = false)))
     private fun scheduleEntryUpdate(today: LocalDate) = action("schedule-entry-update", "Schicht bearbeiten", ModuleActionMethod.POST, "/api/admin/schedule", body = """{"id":{id},"userId":{userId},"date":"{date}","shift":"{shift}","note":"{note}"}""", fields = listOf(f("id", "Dienstplan-ID", ModuleActionFieldType.NUMBER), f("userId", "Benutzer-ID", ModuleActionFieldType.NUMBER), f("date", "Datum", ModuleActionFieldType.DATE, "$today"), f("shift", "Schicht-Key"), f("note", "Notiz", ModuleActionFieldType.MULTILINE, required = false)))
     private fun scheduleAutofill(today: LocalDate) = action("schedule-autofill", "Dienstplan Autofill", ModuleActionMethod.POST, "/api/admin/schedule/autofill", body = "{raw:entries}", fields = listOf(f("entries", "Schichten JSON", ModuleActionFieldType.MULTILINE, """[{"userId":0,"date":"$today","shift":"EARLY"}]""")), refreshHistory = true)
     private fun scheduleCopy(today: LocalDate) = action("schedule-copy", "Woche kopieren", ModuleActionMethod.POST, "/api/admin/schedule/copy", body = "{raw:entries}", fields = listOf(f("entries", "Neue Woche JSON", ModuleActionFieldType.MULTILINE, """[{"userId":0,"date":"$today","shift":"EARLY"}]""")), refreshHistory = true)
-    private fun scheduleDelete() = action("schedule-entry-delete", "Schicht loeschen", ModuleActionMethod.DELETE, "/api/admin/schedule/{id}", fields = listOf(f("id", "Eintrag-ID", ModuleActionFieldType.NUMBER)))
+    private fun scheduleDelete() = action("schedule-entry-delete", "Schicht löschen", ModuleActionMethod.DELETE, "/api/admin/schedule/{id}", fields = listOf(f("id", "Eintrag-ID", ModuleActionFieldType.NUMBER)))
     private fun shiftDefinition() = action("shift-definition-create", "Schichtdefinition speichern", ModuleActionMethod.POST, "/api/admin/shift-definitions", body = """{"shiftKey":"{shiftKey}","label":"{label}","startTime":"{startTime}","endTime":"{endTime}","isActive":{isActive}}""", fields = listOf(f("shiftKey", "Schicht-Key", default = "EARLY"), f("label", "Name"), f("startTime", "Start HH:mm", default = "08:00"), f("endTime", "Ende HH:mm", default = "17:00"), f("isActive", "Aktiv", ModuleActionFieldType.BOOLEAN, "true")))
     private fun shiftDefinitionUpdate() = action("shift-definition-update", "Schichtdefinition bearbeiten", ModuleActionMethod.POST, "/api/admin/shift-definitions", body = """{"id":{id},"shiftKey":"{shiftKey}","label":"{label}","startTime":"{startTime}","endTime":"{endTime}","isActive":{isActive}}""", fields = listOf(f("id", "Schicht"), f("shiftKey", "Schicht-Key", required = false), f("label", "Name"), f("startTime", "Start HH:mm", default = "08:00"), f("endTime", "Ende HH:mm", default = "17:00"), f("isActive", "Aktiv", ModuleActionFieldType.BOOLEAN, "true")))
     private fun scheduleRuleCreate(today: LocalDate) = action("schedule-rule-create", "Planregel anlegen", ModuleActionMethod.POST, "/api/admin/schedule-rules", body = """{"userId":{userId},"ruleType":"{ruleType}","startDate":"{startDate}","repeatIntervalDays":{repeatIntervalDays},"dayOfWeek":{dayOfWeek},"dayMode":"{dayMode}"}""", fields = listOf(f("userId", "Mitarbeiter", ModuleActionFieldType.NUMBER), f("ruleType", "Regeltyp", default = "REPEATING_DAY_MODE"), f("startDate", "Start", ModuleActionFieldType.DATE, "$today"), f("repeatIntervalDays", "Intervall Tage", ModuleActionFieldType.NUMBER, "14"), f("dayOfWeek", "Wochentag 1-7", ModuleActionFieldType.NUMBER, "5"), f("dayMode", "Modus", default = "OFF")), refreshHistory = true)
     private fun scheduleRuleUpdate(today: LocalDate) = action("schedule-rule-update", "Planregel bearbeiten", ModuleActionMethod.PUT, "/api/admin/schedule-rules/{id}", body = """{"ruleType":"{ruleType}","startDate":"{startDate}","repeatIntervalDays":{repeatIntervalDays},"dayOfWeek":{dayOfWeek},"dayMode":"{dayMode}"}""", fields = listOf(f("id", "Planregel", ModuleActionFieldType.NUMBER), f("ruleType", "Regeltyp", default = "REPEATING_DAY_MODE"), f("startDate", "Start", ModuleActionFieldType.DATE, "$today"), f("repeatIntervalDays", "Intervall Tage", ModuleActionFieldType.NUMBER, "14"), f("dayOfWeek", "Wochentag 1-7", ModuleActionFieldType.NUMBER, "5"), f("dayMode", "Modus", default = "OFF")), refreshHistory = true)
-    private fun scheduleRuleDelete() = action("schedule-rule-delete", "Planregel loeschen", ModuleActionMethod.DELETE, "/api/admin/schedule-rules/{id}", fields = listOf(f("id", "Planregel", ModuleActionFieldType.NUMBER)), refreshHistory = true)
-    private fun payslipGenerate(today: LocalDate) = action("payslip-generate", "Lohnabrechnung generieren", ModuleActionMethod.POST, "/api/payslips/generate?userId={userId}&start={start}&end={end}&payoutOvertime={payoutOvertime}", fields = listOf(f("userId", "Benutzer-ID", ModuleActionFieldType.NUMBER), f("start", "Start", ModuleActionFieldType.DATE, "${today.withDayOfMonth(1)}"), f("end", "Ende", ModuleActionFieldType.DATE, "$today"), f("payoutOvertime", "Ueberzeit auszahlen", ModuleActionFieldType.BOOLEAN, "false")))
-    private fun payslipApprove() = action("payslip-approve", "Lohnabrechnung freigeben", ModuleActionMethod.POST, "/api/payslips/approve/{id}?comment={comment}", fields = listOf(f("id", "Payslip-ID", ModuleActionFieldType.NUMBER), f("comment", "Kommentar", ModuleActionFieldType.MULTILINE, required = false)))
+    private fun scheduleRuleDelete() = action("schedule-rule-delete", "Planregel löschen", ModuleActionMethod.DELETE, "/api/admin/schedule-rules/{id}", fields = listOf(f("id", "Planregel", ModuleActionFieldType.NUMBER)), refreshHistory = true)
+    private fun payslipGenerate(today: LocalDate) = action("payslip-generate", "Lohnabrechnung generieren", ModuleActionMethod.POST, "/api/payslips/generate?userId={userId}&start={start}&end={end}&payoutOvertime={payoutOvertime}", fields = listOf(f("userId", "Mitarbeiter", ModuleActionFieldType.NUMBER), f("start", "Start", ModuleActionFieldType.DATE, "${today.withDayOfMonth(1)}"), f("end", "Ende", ModuleActionFieldType.DATE, "$today"), f("payoutOvertime", "Überzeit auszahlen", ModuleActionFieldType.BOOLEAN, "false")))
+    private fun payslipApprove() = action("payslip-approve", "Lohnabrechnung freigeben", ModuleActionMethod.POST, "/api/payslips/approve/{id}?comment={comment}", fields = listOf(f("id", "Abrechnung", ModuleActionFieldType.NUMBER), f("comment", "Kommentar", ModuleActionFieldType.MULTILINE, required = false)))
     private fun payslipApproveAll() = action("payslip-approve-all", "Alle freigeben", ModuleActionMethod.POST, "/api/payslips/approve-all?comment={comment}", fields = listOf(f("comment", "Kommentar", ModuleActionFieldType.MULTILINE, required = false)))
-    private fun payslipSetPayout(today: LocalDate) = action("payslip-set-payout", "Auszahlung setzen", ModuleActionMethod.POST, "/api/payslips/set-payout/{id}?payoutDate={payoutDate}", fields = listOf(f("id", "Payslip-ID", ModuleActionFieldType.NUMBER), f("payoutDate", "Auszahlung", ModuleActionFieldType.DATE, "$today")))
-    private fun payslipScheduleAll(today: LocalDate) = action("payslip-schedule-all", "Auszahlung planen", ModuleActionMethod.POST, "/api/payslips/schedule-all?day={day}", fields = listOf(f("day", "Tag", ModuleActionFieldType.DATE, "$today")))
-    private fun payslipReopen() = action("payslip-reopen", "Payslip wieder oeffnen", ModuleActionMethod.POST, "/api/payslips/reopen/{id}", fields = listOf(f("id", "Payslip-ID", ModuleActionFieldType.NUMBER)))
-    private fun payslipDelete() = action("payslip-delete", "Payslip loeschen", ModuleActionMethod.DELETE, "/api/payslips/{id}", fields = listOf(f("id", "Payslip-ID", ModuleActionFieldType.NUMBER)))
+    private fun payslipSetPayout(today: LocalDate) = action("payslip-set-payout", "Auszahlung setzen", ModuleActionMethod.POST, "/api/payslips/set-payout/{id}?payoutDate={payoutDate}", fields = listOf(f("id", "Abrechnung", ModuleActionFieldType.NUMBER), f("payoutDate", "Auszahlung", ModuleActionFieldType.DATE, "$today")))
+    private fun payslipScheduleUser(today: LocalDate) = action("payslip-schedule-user", "Auszahlungstag je Mitarbeiter", ModuleActionMethod.POST, "/api/payslips/schedule?userId={userId}&day={day}", fields = listOf(f("userId", "Mitarbeiter", ModuleActionFieldType.NUMBER), f("day", "Tag im Monat", ModuleActionFieldType.NUMBER, "${today.dayOfMonth}")))
+    private fun payslipScheduleAll(today: LocalDate) = action("payslip-schedule-all", "Auszahlungstag für alle", ModuleActionMethod.POST, "/api/payslips/schedule-all?day={day}", fields = listOf(f("day", "Tag im Monat", ModuleActionFieldType.NUMBER, "${today.dayOfMonth}")))
+    private fun payslipReopen() = action("payslip-reopen", "Abrechnung wieder öffnen", ModuleActionMethod.POST, "/api/payslips/reopen/{id}", fields = listOf(f("id", "Abrechnung", ModuleActionFieldType.NUMBER)))
+    private fun payslipDelete() = action("payslip-delete", "Abrechnung löschen", ModuleActionMethod.DELETE, "/api/payslips/{id}", fields = listOf(f("id", "Abrechnung", ModuleActionFieldType.NUMBER)))
     private fun accountCreate() = action("account-create", "Konto anlegen", ModuleActionMethod.POST, "/api/accounting/accounts", body = """{"code":"{code}","name":"{name}","type":"{type}","active":{active}}""", fields = listOf(f("code", "Kontocode"), f("name", "Name"), f("type", "Typ", default = "ASSET"), f("active", "Aktiv", ModuleActionFieldType.BOOLEAN, "true")))
     private fun journalEntry(today: LocalDate) = action(
         "journal-create", "Journalbuchung", ModuleActionMethod.POST, "/api/accounting/journal",
@@ -702,22 +757,22 @@ class ModuleRepository(
     private fun campaignCreate(today: LocalDate) = action("campaign-create", "Kampagne anlegen", ModuleActionMethod.POST, "/api/crm/campaigns", body = """{"name":"{name}","status":"{status}","startDate":"{startDate}","endDate":"{endDate}","channel":"{channel}","budget":{budget}}""", fields = listOf(f("name", "Name"), f("status", "Status", default = "PLANNED"), f("startDate", "Start", ModuleActionFieldType.DATE, "$today"), f("endDate", "Ende", ModuleActionFieldType.DATE, "${today.plusDays(30)}"), f("channel", "Kanal", default = "Online"), f("budget", "Budget", ModuleActionFieldType.NUMBER, "0")))
     private fun campaignUpdate(today: LocalDate) = action("campaign-update", "Kampagne Status", ModuleActionMethod.PUT, "/api/crm/campaigns/{id}", body = """{"name":"{name}","status":"{status}","startDate":"{startDate}","endDate":"{endDate}","budget":{budget},"channel":"{channel}"}""", fields = listOf(f("id", "Kampagnen-ID", ModuleActionFieldType.NUMBER), f("name", "Name"), f("status", "Status", default = "ACTIVE"), f("startDate", "Start", ModuleActionFieldType.DATE, "$today"), f("endDate", "Ende", ModuleActionFieldType.DATE, "${today.plusDays(30)}"), f("budget", "Budget", ModuleActionFieldType.NUMBER, "0"), f("channel", "Kanal", default = "Online")))
     private fun crmContactCreate() = action("crm-contact-create", "Kontakt anlegen", ModuleActionMethod.POST, "/api/crm/customers/{customerId}/contacts", body = """{"firstName":"{firstName}","lastName":"{lastName}","email":"{email}","phone":"{phone}","role":"{role}"}""", fields = listOf(f("customerId", "Kunde"), f("firstName", "Vorname"), f("lastName", "Nachname"), f("email", "E-Mail", required = false), f("phone", "Telefon", required = false), f("role", "Rolle", required = false)))
-    private fun crmActivityCreate(now: String) = action("crm-activity-create", "Aktivitaet", ModuleActionMethod.POST, "/api/crm/customers/{customerId}/activities", body = """{"type":"{type}","notes":"{notes}","contactId":{contactId},"timestamp":"{timestamp}"}""", fields = listOf(f("customerId", "Kunde"), f("type", "Typ", default = "NOTE"), f("notes", "Notiz", ModuleActionFieldType.MULTILINE), f("contactId", "Kontakt-ID", ModuleActionFieldType.NUMBER, "0"), f("timestamp", "Zeitpunkt", ModuleActionFieldType.DATETIME, now)))
-    private fun crmAddressCreate() = action("crm-address-create", "Adresse anlegen", ModuleActionMethod.POST, "/api/crm/customers/{customerId}/addresses", body = """{"type":"{type}","street":"{street}","postalCode":"{postalCode}","city":"{city}","country":"{country}"}""", fields = listOf(f("customerId", "Kunde"), f("type", "Typ", default = "OFFICE"), f("street", "Strasse"), f("postalCode", "PLZ"), f("city", "Ort"), f("country", "Land", default = "CH")))
+    private fun crmActivityCreate(now: String) = action("crm-activity-create", "Aktivität", ModuleActionMethod.POST, "/api/crm/customers/{customerId}/activities", body = """{"type":"{type}","notes":"{notes}","contactId":{contactId},"timestamp":"{timestamp}"}""", fields = listOf(f("customerId", "Kunde"), f("type", "Typ", default = "NOTE"), f("notes", "Notiz", ModuleActionFieldType.MULTILINE), f("contactId", "Kontakt-ID", ModuleActionFieldType.NUMBER, "0"), f("timestamp", "Zeitpunkt", ModuleActionFieldType.DATETIME, now)))
+    private fun crmAddressCreate() = action("crm-address-create", "Adresse anlegen", ModuleActionMethod.POST, "/api/crm/customers/{customerId}/addresses", body = """{"type":"{type}","street":"{street}","postalCode":"{postalCode}","city":"{city}","country":"{country}"}""", fields = listOf(f("customerId", "Kunde"), f("type", "Typ", default = "OFFICE"), f("street", "Straße"), f("postalCode", "PLZ"), f("city", "Ort"), f("country", "Land", default = "CH")))
     private fun crmDocumentCreate() = action("crm-document-create", "Dokument-Link", ModuleActionMethod.POST, "/api/crm/customers/{customerId}/documents", body = """{"fileName":"{fileName}","url":"{url}"}""", fields = listOf(f("customerId", "Kunde"), f("fileName", "Dateiname"), f("url", "URL")))
-    private fun crmDocumentDelete() = action("crm-document-delete", "Dokument loeschen", ModuleActionMethod.DELETE, "/api/crm/customers/{customerId}/documents/{id}", fields = listOf(f("customerId", "Kunde"), f("id", "Dokument-ID", ModuleActionFieldType.NUMBER)))
+    private fun crmDocumentDelete() = action("crm-document-delete", "Dokument löschen", ModuleActionMethod.DELETE, "/api/crm/customers/{customerId}/documents/{id}", fields = listOf(f("customerId", "Kunde"), f("id", "Dokument-ID", ModuleActionFieldType.NUMBER)))
     private fun bankAccountCreate() = action("bank-account-create", "Bankkonto anlegen", ModuleActionMethod.POST, "/api/banking/accounts", body = """{"iban":"{iban}","bic":"{bic}","name":"{name}","clearingNumber":"{clearingNumber}"}""", fields = listOf(f("iban", "IBAN"), f("bic", "BIC", required = false), f("name", "Name"), f("clearingNumber", "Clearing", required = false)))
     private fun bankAccountUpdate() = action("bank-account-update", "Bankkonto bearbeiten", ModuleActionMethod.PUT, "/api/banking/accounts/{id}", body = """{"iban":"{iban}","bic":"{bic}","name":"{name}","clearingNumber":"{clearingNumber}"}""", fields = listOf(f("id", "Bankkonto"), f("iban", "IBAN"), f("bic", "BIC", required = false), f("name", "Name"), f("clearingNumber", "Clearing", required = false)))
-    private fun bankAccountDelete() = action("bank-account-delete", "Bankkonto loeschen", ModuleActionMethod.DELETE, "/api/banking/accounts/{id}", fields = listOf(f("id", "Bankkonto-ID", ModuleActionFieldType.NUMBER)))
-    private fun paymentBatchCreate() = action("payment-batch-create", "Zahlungslauf", ModuleActionMethod.POST, "/api/banking/batches", body = """{"bankAccountId":{bankAccountId},"instructions":[{"creditorName":"{creditorName}","creditorIban":"{creditorIban}","creditorBic":"{creditorBic}","amount":{amount},"currency":"{currency}","reference":"{reference}"}]}""", fields = listOf(f("bankAccountId", "Bankkonto"), f("creditorName", "Empfaenger"), f("creditorIban", "IBAN"), f("creditorBic", "BIC", required = false), f("amount", "Betrag", ModuleActionFieldType.NUMBER, "0"), f("currency", "Waehrung", default = "CHF"), f("reference", "Referenz", required = false)))
+    private fun bankAccountDelete() = action("bank-account-delete", "Bankkonto löschen", ModuleActionMethod.DELETE, "/api/banking/accounts/{id}", fields = listOf(f("id", "Bankkonto-ID", ModuleActionFieldType.NUMBER)))
+    private fun paymentBatchCreate() = action("payment-batch-create", "Zahlungslauf", ModuleActionMethod.POST, "/api/banking/batches", body = """{"bankAccountId":{bankAccountId},"instructions":[{"creditorName":"{creditorName}","creditorIban":"{creditorIban}","creditorBic":"{creditorBic}","amount":{amount},"currency":"{currency}","reference":"{reference}"}]}""", fields = listOf(f("bankAccountId", "Bankkonto"), f("creditorName", "Empfänger"), f("creditorIban", "IBAN"), f("creditorBic", "BIC", required = false), f("amount", "Betrag", ModuleActionFieldType.NUMBER, "0"), f("currency", "Währung", default = "CHF"), f("reference", "Referenz", required = false)))
     private fun paymentBatchApprove() = action("payment-batch-approve", "Zahlung freigeben", ModuleActionMethod.POST, "/api/banking/batches/{id}/approve", fields = listOf(f("id", "Zahlungslauf-ID", ModuleActionFieldType.NUMBER)))
     private fun paymentBatchTransmit() = action("payment-batch-transmit", "Zahlung senden", ModuleActionMethod.POST, "/api/banking/batches/{id}/transmit", body = """{"reference":"{reference}"}""", fields = listOf(f("id", "Zahlungslauf-ID", ModuleActionFieldType.NUMBER), f("reference", "Referenz")))
-    private fun bankMessageCreate() = action("bank-message-create", "Banknachricht senden", ModuleActionMethod.POST, "/api/banking/messages", body = """{"recipient":"{recipient}","subject":"{subject}","body":"{body}","transport":"{transport}"}""", fields = listOf(f("recipient", "Empfaenger"), f("subject", "Betreff"), f("body", "Nachricht", ModuleActionFieldType.MULTILINE), f("transport", "Transport", default = "EMAIL")))
+    private fun bankMessageCreate() = action("bank-message-create", "Banknachricht senden", ModuleActionMethod.POST, "/api/banking/messages", body = """{"recipient":"{recipient}","subject":"{subject}","body":"{body}","transport":"{transport}"}""", fields = listOf(f("recipient", "Empfänger"), f("subject", "Betreff"), f("body", "Nachricht", ModuleActionFieldType.MULTILINE), f("transport", "Transport", default = "EMAIL")))
     private fun signatureCreate() = action("signature-create", "Signatur anfragen", ModuleActionMethod.POST, "/api/banking/signatures", body = """{"documentType":"{documentType}","documentPath":"{documentPath}","email":"{email}"}""", fields = listOf(f("documentType", "Dokumenttyp", default = "PDF"), f("documentPath", "Dokumentpfad"), f("email", "E-Mail")))
-    private fun signatureRefresh() = action("signature-refresh", "Signatur pruefen", ModuleActionMethod.POST, "/api/banking/signatures/{id}/refresh", fields = listOf(f("id", "Signatur-ID", ModuleActionFieldType.NUMBER)))
-    private fun signatureComplete() = action("signature-complete", "Signatur abschliessen", ModuleActionMethod.POST, "/api/banking/signatures/{id}/complete", fields = listOf(f("id", "Signatur-ID", ModuleActionFieldType.NUMBER)))
+    private fun signatureRefresh() = action("signature-refresh", "Signatur prüfen", ModuleActionMethod.POST, "/api/banking/signatures/{id}/refresh", fields = listOf(f("id", "Signatur-ID", ModuleActionFieldType.NUMBER)))
+    private fun signatureComplete() = action("signature-complete", "Signatur abschließen", ModuleActionMethod.POST, "/api/banking/signatures/{id}/complete", fields = listOf(f("id", "Signatur-ID", ModuleActionFieldType.NUMBER)))
     private fun knowledgeCreate() = action("knowledge-create", "Wissenseintrag anlegen", ModuleActionMethod.POST, "/api/admin/knowledge", body = """{"title":"{title}","content":"{content}","accessLevel":"{accessLevel}"}""", fields = listOf(f("title", "Titel"), f("content", "Inhalt", ModuleActionFieldType.MULTILINE), f("accessLevel", "Zugriff", default = "ALL")))
-    private fun knowledgeDelete() = action("knowledge-delete", "Wissenseintrag loeschen", ModuleActionMethod.DELETE, "/api/admin/knowledge/{id}", fields = listOf(f("id", "Eintrag-ID", ModuleActionFieldType.NUMBER)))
+    private fun knowledgeDelete() = action("knowledge-delete", "Wissenseintrag löschen", ModuleActionMethod.DELETE, "/api/admin/knowledge/{id}", fields = listOf(f("id", "Eintrag-ID", ModuleActionFieldType.NUMBER)))
     private fun companySettingsUpdate() = action(
         "company-settings-update",
         "Firmenparameter speichern",
@@ -738,12 +793,12 @@ class ModuleRepository(
     private fun companyCreate() = action("company-create", "Firma anlegen", ModuleActionMethod.POST, "/api/superadmin/companies", body = """{"name":"{name}","addressLine1":"{addressLine1}","postalCode":"{postalCode}","city":"{city}","active":{active},"cantonAbbreviation":"{cantonAbbreviation}","customerTrackingEnabled":{customerTrackingEnabled},"enabledFeatures":["{featureKey}"]}""", fields = listOf(f("name", "Firmenname"), f("addressLine1", "Adresse", required = false), f("postalCode", "PLZ", required = false), f("city", "Ort", required = false), f("active", "Aktiv", ModuleActionFieldType.BOOLEAN, "true"), f("cantonAbbreviation", "Kanton", required = false), f("customerTrackingEnabled", "Projektzeiten", ModuleActionFieldType.BOOLEAN, "true"), f("featureKey", "Feature", default = "projects")))
     private fun companyUpdate() = action("company-update", "Firma bearbeiten", ModuleActionMethod.PUT, "/api/superadmin/companies/{id}", body = """{"name":"{name}","addressLine1":"{addressLine1}","postalCode":"{postalCode}","city":"{city}","active":{active},"customerTrackingEnabled":{customerTrackingEnabled}}""", fields = listOf(f("id", "Firma"), f("name", "Firmenname"), f("addressLine1", "Adresse", required = false), f("postalCode", "PLZ", required = false), f("city", "Ort", required = false), f("active", "Aktiv", ModuleActionFieldType.BOOLEAN, "true"), f("customerTrackingEnabled", "Projektzeiten", ModuleActionFieldType.BOOLEAN, "true")))
     private fun companyCreateWithAdmin() = action("company-create-admin", "Firma + Admin", ModuleActionMethod.POST, "/api/superadmin/companies/create-with-admin", body = """{"companyName":"{companyName}","adminUsername":"{adminUsername}","adminPassword":"{adminPassword}","adminEmail":"{adminEmail}","adminFirstName":"{adminFirstName}","adminLastName":"{adminLastName}","city":"{city}","active":true,"enabledFeatures":["{featureKey}"],"customerTrackingEnabled":true}""", fields = listOf(f("companyName", "Firma"), f("adminUsername", "Admin Benutzer"), f("adminPassword", "Admin Passwort", ModuleActionFieldType.PASSWORD), f("adminEmail", "Admin E-Mail", required = false), f("adminFirstName", "Admin Vorname", required = false), f("adminLastName", "Admin Nachname", required = false), f("city", "Ort", required = false), f("featureKey", "Feature", default = "projects")))
-    private fun companyAdminCreate() = action("company-admin-create", "Admin fuer Firma", ModuleActionMethod.POST, "/api/superadmin/users/createAdminForCompany", body = """{"companyId":{companyId},"username":"{adminUsername}","password":"{adminPassword}","roles":[{"roleName":"ROLE_ADMIN"}]}""", fields = listOf(f("companyId", "Firma"), f("adminUsername", "Admin Benutzer"), f("adminPassword", "Admin Passwort", ModuleActionFieldType.PASSWORD)), refreshHistory = true)
-    private fun companyPayment() = action("company-payment", "Zahlungsstatus", ModuleActionMethod.PUT, "/api/superadmin/companies/{id}/payment", body = """{"paymentMethod":"{paymentMethod}","paid":{paid},"canceled":{canceled}}""", fields = listOf(f("id", "Firma"), f("paymentMethod", "Zahlungsart", default = "invoice"), f("paid", "Bezahlt", ModuleActionFieldType.BOOLEAN, "true"), f("canceled", "Gekuendigt", ModuleActionFieldType.BOOLEAN, "false")))
-    private fun companyDelete() = action("company-delete", "Firma loeschen", ModuleActionMethod.DELETE, "/api/superadmin/companies/{id}", fields = listOf(f("id", "Firma")))
+    private fun companyAdminCreate() = action("company-admin-create", "Admin für Firma", ModuleActionMethod.POST, "/api/superadmin/users/createAdminForCompany", body = """{"companyId":{companyId},"username":"{adminUsername}","password":"{adminPassword}","roles":[{"roleName":"ROLE_ADMIN"}]}""", fields = listOf(f("companyId", "Firma"), f("adminUsername", "Admin Benutzer"), f("adminPassword", "Admin Passwort", ModuleActionFieldType.PASSWORD)), refreshHistory = true)
+    private fun companyPayment() = action("company-payment", "Zahlungsstatus", ModuleActionMethod.PUT, "/api/superadmin/companies/{id}/payment", body = """{"paymentMethod":"{paymentMethod}","paid":{paid},"canceled":{canceled}}""", fields = listOf(f("id", "Firma"), f("paymentMethod", "Zahlungsart", default = "invoice"), f("paid", "Bezahlt", ModuleActionFieldType.BOOLEAN, "true"), f("canceled", "Gekündigt", ModuleActionFieldType.BOOLEAN, "false")))
+    private fun companyDelete() = action("company-delete", "Firma löschen", ModuleActionMethod.DELETE, "/api/superadmin/companies/{id}", fields = listOf(f("id", "Firma")))
     private fun excludedIpCreate() = action("excluded-ip-create", "IP ausschliessen", ModuleActionMethod.POST, "/api/superadmin/analytics/excluded-ips", body = """{"ipAddress":"{ipAddress}","label":"{label}"}""", fields = listOf(f("ipAddress", "IP-Adresse"), f("label", "Label", required = false)))
     private fun excludedIpDelete() = action("excluded-ip-delete", "IP entfernen", ModuleActionMethod.DELETE, "/api/superadmin/analytics/excluded-ips/{id}", fields = listOf(f("id", "IP-ID", ModuleActionFieldType.NUMBER)))
-    private fun changelogCreate() = action("changelog-create", "Changelog veroeffentlichen", ModuleActionMethod.POST, "/api/changelog", body = """{"version":"{version}","title":"{title}","content":"{content}"}""", fields = listOf(f("version", "Version"), f("title", "Titel"), f("content", "Inhalt", ModuleActionFieldType.MULTILINE)), refreshHistory = true)
+    private fun changelogCreate() = action("changelog-create", "Changelog veröffentlichen", ModuleActionMethod.POST, "/api/changelog", body = """{"version":"{version}","title":"{title}","content":"{content}"}""", fields = listOf(f("version", "Version"), f("title", "Titel"), f("content", "Inhalt", ModuleActionFieldType.MULTILINE)), refreshHistory = true)
 
     private fun action(
         id: String,
@@ -917,7 +972,7 @@ class ModuleRepository(
                     else -> primary ?: status
                 }
             }
-            is JSONArray -> "${value.length()} Eintraege"
+            is JSONArray -> "${value.length()} Einträge"
             else -> value.toString().take(80)
         }
 
@@ -995,6 +1050,22 @@ private fun JSONObject.keysList(): List<String> {
 }
 
 private fun JSONObject.detailRows(): List<ModuleItemDetail> {
+    val rows = mutableListOf<ModuleItemDetail>()
+    optJSONObject("primaryTimes")?.let { primaryTimes ->
+        primaryTimes.optNullableString("firstStartTime")?.let { rows += ModuleItemDetail("Start", it.take(5)) }
+        primaryTimes.optNullableString("lastEndTime")?.let { rows += ModuleItemDetail("Ende", it.take(5)) }
+        primaryTimes.optNullableString("open")?.let { rows += ModuleItemDetail("Offen", it.renderBooleanText()) }
+        primaryTimes.optNullableString("isOpen")?.let { rows += ModuleItemDetail("Offen", it.renderBooleanText()) }
+    }
+    optJSONArray("entries")?.let { entries ->
+        rows += ModuleItemDetail("Stempel", "${entries.length()} Einträge")
+        rows += ModuleItemDetail("Einträge JSON", entries.toAdminEditEntriesJson())
+        (0 until minOf(entries.length(), 6)).forEach { index ->
+            val entry = entries.optJSONObject(index) ?: return@forEach
+            rows += ModuleItemDetail("Stempel ${index + 1}", entry.renderPunchEntry())
+        }
+    }
+
     val preferredKeys = listOf(
         "id",
         "createdAt",
@@ -1033,9 +1104,11 @@ private fun JSONObject.detailRows(): List<ModuleItemDetail> {
         "workflowStatus",
         "approvalStatus",
         "shiftKey",
+        "shift",
         "label",
         "startTime",
         "endTime",
+        "note",
         "ruleType",
         "repeatIntervalDays",
         "dayOfWeek",
@@ -1047,6 +1120,11 @@ private fun JSONObject.detailRows(): List<ModuleItemDetail> {
         "paid",
         "canceled",
         "includeInTimeTracking",
+        "workedMinutes",
+        "breakMinutes",
+        "needsCorrection",
+        "trackingBalance",
+        "weeklyBalance",
         "startDate",
         "endDate",
         "requestDate",
@@ -1054,6 +1132,16 @@ private fun JSONObject.detailRows(): List<ModuleItemDetail> {
         "date",
         "periodStart",
         "periodEnd",
+        "grossSalary",
+        "deductions",
+        "netSalary",
+        "currency",
+        "payoutDate",
+        "approved",
+        "locked",
+        "version",
+        "overtimeHours",
+        "payoutOvertime",
         "punchType",
         "desiredPunchType",
         "quantity",
@@ -1088,18 +1176,21 @@ private fun JSONObject.detailRows(): List<ModuleItemDetail> {
         "comment",
         "adminComment",
     )
-    val orderedKeys = (preferredKeys + keysList()).distinct().filter { has(it) && !isNull(it) }
-    return orderedKeys.mapNotNull { key ->
+    val orderedKeys = (preferredKeys + keysList())
+        .distinct()
+        .filter { has(it) && !isNull(it) && it !in setOf("primaryTimes", "entries") }
+    rows += orderedKeys.mapNotNull { key ->
         val rendered = opt(key).renderDetailValue().takeIf { it.isNotBlank() } ?: return@mapNotNull null
         ModuleItemDetail(key.toDetailLabel(), rendered.take(160))
-    }.take(18)
+    }
+    return rows.distinctBy { it.label to it.value }.take(28)
 }
 
 private fun Any?.renderDetailValue(): String =
     when (this) {
         null, JSONObject.NULL -> ""
         is Boolean -> if (this) "Ja" else "Nein"
-        is JSONArray -> "${length()} Eintraege"
+        is JSONArray -> "${length()} Einträge"
         is JSONObject -> firstString(
             "name",
             "title",
@@ -1114,6 +1205,50 @@ private fun Any?.renderDetailValue(): String =
         else -> toString()
     }
 
+private fun JSONObject.renderPunchEntry(): String {
+    val time = optNullableString("entryTimestamp")?.let { timestamp ->
+        timestamp.substringAfter('T', timestamp).take(5)
+    }.orEmpty()
+    val type = firstString("punchType", "type").orEmpty()
+    val assignment = listOfNotNull(
+        optNullableString("customerName"),
+        optNullableString("projectName"),
+        optNullableString("taskName"),
+    ).joinToString(" / ")
+    return listOf(time, type, assignment).filter { it.isNotBlank() }.joinToString(" - ")
+}
+
+private fun JSONArray.toAdminEditEntriesJson(): String {
+    val entries = (0 until length()).mapNotNull { index ->
+        optJSONObject(index)?.toAdminEditEntryJson()
+    }
+    return if (entries.isEmpty()) "[]" else entries.joinToString(separator = ",\n", prefix = "[\n", postfix = "\n]") { "  $it" }
+}
+
+private fun JSONObject.toAdminEditEntryJson(): String {
+    val entry = JSONObject()
+    listOf(
+        "id",
+        "entryTimestamp",
+        "punchType",
+        "source",
+        "customerId",
+        "projectId",
+        "taskId",
+        "durationMinutes",
+        "description",
+        "approved",
+        "systemGeneratedNote",
+    ).forEach { key ->
+        if (has(key) && !isNull(key)) entry.put(key, opt(key))
+    }
+    entry.put("correctedByUser", true)
+    return entry.toString()
+}
+
+private fun String.renderBooleanText(): String =
+    if (equals("true", ignoreCase = true) || equals("ja", ignoreCase = true)) "Ja" else "Nein"
+
 private fun String.toDetailLabel(): String =
     when (this) {
         "id" -> "ID"
@@ -1121,11 +1256,11 @@ private fun String.toDetailLabel(): String =
         "message" -> "Feedback"
         "displayName" -> "Name"
         "username" -> "Benutzer"
-        "appMenuTitle" -> "App-Menue"
+        "appMenuTitle" -> "App-Menü"
         "appMenuGroup" -> "Bereich"
         "appVersionName" -> "App-Version"
         "appVersionCode" -> "Version Code"
-        "deviceInfo" -> "Geraet"
+        "deviceInfo" -> "Gerät"
         "firstName" -> "Vorname"
         "lastName" -> "Nachname"
         "email" -> "E-Mail"
@@ -1150,9 +1285,11 @@ private fun String.toDetailLabel(): String =
         "taskName" -> "Aufgabe"
         "status", "state", "workflowStatus", "approvalStatus" -> "Status"
         "shiftKey" -> "Schicht-Key"
+        "shift" -> "Schicht"
         "label" -> "Bezeichnung"
         "startTime" -> "Startzeit"
         "endTime" -> "Endzeit"
+        "note" -> "Notiz"
         "ruleType" -> "Regeltyp"
         "repeatIntervalDays" -> "Intervall Tage"
         "dayOfWeek" -> "Wochentag"
@@ -1162,8 +1299,14 @@ private fun String.toDetailLabel(): String =
         "denied" -> "Abgelehnt"
         "active" -> "Aktiv"
         "paid" -> "Bezahlt"
-        "canceled" -> "Gekuendigt"
-        "includeInTimeTracking" -> "Zeituebersicht"
+        "canceled" -> "Gekündigt"
+        "includeInTimeTracking" -> "Zeitübersicht"
+        "workedMinutes" -> "Ist Minuten"
+        "breakMinutes" -> "Pause Minuten"
+        "needsCorrection" -> "Korrektur nötig"
+        "trackingBalance" -> "Saldo Minuten"
+        "weeklyBalance" -> "Wochensaldo Minuten"
+        "color" -> "Farbe"
         "startDate" -> "Start"
         "endDate" -> "Ende"
         "requestDate" -> "Antrag"
@@ -1171,12 +1314,31 @@ private fun String.toDetailLabel(): String =
         "date" -> "Datum"
         "periodStart" -> "Periode Start"
         "periodEnd" -> "Periode Ende"
+        "grossSalary" -> "Bruttolohn"
+        "deductions" -> "Abzüge"
+        "netSalary" -> "Nettolohn"
+        "allowances" -> "Zulagen"
+        "bonuses" -> "Bonus"
+        "oneTimePayments" -> "Einmalzahlungen"
+        "taxFreeAllowances" -> "Steuerfreie Zulagen"
+        "earnings" -> "Verdienstbestandteile"
+        "deductionsList" -> "Abzugsliste"
+        "employerContribList" -> "Arbeitgeberbeiträge"
+        "employerContributions" -> "Arbeitgeberanteil"
+        "payoutDate" -> "Auszahlung"
+        "socialSecurityNumber" -> "Sozialversicherung"
+        "payType" -> "Lohnart"
+        "locked" -> "Gesperrt"
+        "pdfPath" -> "PDF"
+        "version" -> "Version"
+        "overtimeHours" -> "Überstunden"
+        "payoutOvertime" -> "Überzeit auszahlen"
         "punchType", "desiredPunchType" -> "Stempel"
         "quantity" -> "Menge"
         "quantityOnHand" -> "Bestand"
-        "availableQuantity" -> "Verfuegbar"
+        "availableQuantity" -> "Verfügbar"
         "amount" -> "Betrag"
-        "currency" -> "Waehrung"
+        "currency" -> "Währung"
         "budgetMinutes" -> "Budget Minuten"
         "hourlyRate" -> "Stundensatz"
         "monthlySalary" -> "Monatslohn"

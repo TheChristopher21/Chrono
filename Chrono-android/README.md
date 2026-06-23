@@ -100,7 +100,7 @@ Die sichtbaren Bereiche richten sich nach Rollen und Page-Permissions aus `GET /
 Der Play-Store-Build wird als Android App Bundle gebaut:
 
 ```powershell
-.\gradlew.bat bundleRelease "-PchronoVersionCode=4" "-PchronoVersionName=0.1.5"
+.\gradlew.bat bundleRelease "-PchronoVersionCode=8" "-PchronoVersionName=0.1.8"
 ```
 
 Die Datei liegt danach unter:

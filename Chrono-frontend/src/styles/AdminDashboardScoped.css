@@ -2643,6 +2643,78 @@
 }
 .admin-dashboard.scoped-dashboard
   .admin-week-display-detail
+  .admin-day-card-absence-conflict {
+  border-color: color-mix(in srgb, var(--c-warn) 55%, var(--c-line));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--c-warn) 30%, transparent);
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .absence-conflict-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .absence-conflict-note {
+  color: var(--c-muted);
+  margin: 0;
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .day-card-flip-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .day-card-flip-label {
+  color: var(--c-muted);
+  font-weight: 600;
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .admin-day-card
+  .flip-day-button {
+  align-self: flex-start;
+  background: var(--c-pri);
+  border: 1px solid var(--c-pri);
+  border-radius: var(--u-radius-sm);
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 0.35rem 0.65rem;
+  transition: background-color var(--u-dur), border-color var(--u-dur), color var(--u-dur);
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .admin-day-card
+  .flip-day-button:hover {
+  background: var(--c-pri-dim);
+  border-color: var(--c-pri-dim);
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .admin-day-card
+  .flip-day-button.secondary {
+  background: var(--c-surface);
+  border-color: var(--c-border);
+  color: var(--c-text);
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
+  .admin-day-card
+  .flip-day-button.secondary:hover {
+  background: color-mix(in srgb, var(--c-pri) 10%, var(--c-surface));
+  border-color: color-mix(in srgb, var(--c-pri) 35%, var(--c-border));
+}
+.admin-dashboard.scoped-dashboard
+  .admin-week-display-detail
   .admin-day-card-holiday {
   background-color: var(--c-bg-holiday);
   border-left: 3px solid var(--c-text-holiday);
@@ -3634,6 +3706,27 @@
 
 .vacation-request-list .vacation-item:last-child {
   border-bottom: none;
+}
+
+.admin-dashboard.scoped-dashboard .request-jump-row {
+  cursor: pointer;
+}
+
+.admin-dashboard.scoped-dashboard .request-jump-row:focus-visible {
+  outline: 2px solid var(--c-pri);
+  outline-offset: -2px;
+}
+
+.admin-dashboard.scoped-dashboard .request-jump-row.is-request-focused {
+  box-shadow: inset 0 0 0 2px var(--c-pri);
+}
+
+.admin-dashboard.scoped-dashboard .vacation-request-list .request-jump-row:hover {
+  filter: brightness(0.98);
+}
+
+.admin-dashboard.scoped-dashboard .corrections-table tbody tr.request-jump-row:hover td {
+  background-color: color-mix(in srgb, var(--c-pri) 8%, transparent);
 }
 
 .correction-request-list .correction-item.status-approved,

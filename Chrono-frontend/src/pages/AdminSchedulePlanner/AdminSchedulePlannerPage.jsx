@@ -49,6 +49,7 @@ const saveScheduleEntry = (entry) => {
 };
 const deleteScheduleEntry = (id) => api.delete(`/api/admin/schedule/${id}`);
 const autoFillSchedule = (entries) => api.post('/api/admin/schedule/autofill', entries);
+const deleteScheduleEntries = (ids) => api.post('/api/admin/schedule/bulk-delete', ids);
 const copyScheduleRequest = (entries) => api.post('/api/admin/schedule/copy', entries);
 
 /* ===========================
@@ -84,6 +85,8 @@ const usePlannerStore = create((set) => ({
    Helpers
    =========================== */
 const getExpectedHoursForDate = (user, dateKey) => {
+    if (Boolean(user.isHourly)) return 0;
+
     const dateObj = new Date(dateKey);
     const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
     const dayName = dayNames[dateObj.getDay()];
@@ -106,6 +109,8 @@ const getExpectedHoursForDate = (user, dateKey) => {
     return user.dailyWorkHours ?? 8.5;
 };
 
+const getExpectedMinutesForDate = (user, dateKey) => Math.max(0, Math.round(getExpectedHoursForDate(user, dateKey) * 60));
+
 // drag helper – mark as "move"
 const beginDragAssigned = (user, entry, e) => {
     if (e?.dataTransfer) {
@@ -119,16 +124,172 @@ const beginDragAssigned = (user, entry, e) => {
     }
 };
 
-const hoursBetween = (a = '00:00', b = '00:00') => {
-    const [ah, am] = a.split(':').map(n => +n || 0);
-    const [bh, bm] = b.split(':').map(n => +n || 0);
-    return Math.max(0, (bh + bm / 60) - (ah + am / 60));
+const timeToMinutes = (time = '00:00') => {
+    const [hours, minutes] = String(time || '00:00').split(':').map(n => +n || 0);
+    return (hours * 60) + minutes;
+};
+
+const shiftDurationMinutes = (shift) => {
+    if (!shift) return 0;
+    const start = timeToMinutes(shift.startTime);
+    const end = timeToMinutes(shift.endTime);
+    const duration = end - start;
+    return duration > 0 ? duration : duration + (24 * 60);
+};
+
+const getShiftIntervals = (shift) => {
+    if (!shift) return [];
+    const start = timeToMinutes(shift.startTime);
+    const end = timeToMinutes(shift.endTime);
+    if (end > start) return [[start, end]];
+    if (end < start) return [[start, 24 * 60], [0, end]];
+    return [];
+};
+
+const shiftsOverlap = (leftShift, rightShift) => {
+    const leftIntervals = getShiftIntervals(leftShift);
+    const rightIntervals = getShiftIntervals(rightShift);
+    return leftIntervals.some(([leftStart, leftEnd]) =>
+        rightIntervals.some(([rightStart, rightEnd]) => Math.max(leftStart, rightStart) < Math.min(leftEnd, rightEnd))
+    );
+};
+
+const sumEntryMinutes = (entries, shiftByKey) => (entries || []).reduce((sum, entry) => {
+    const shift = shiftByKey.get(entry.shift);
+    return sum + shiftDurationMinutes(shift);
+}, 0);
+
+const buildScheduleAnalysis = ({ entries, user, dateKey, shiftByKey }) => {
+    const dayEntries = entries || [];
+    const expectedMinutes = getExpectedMinutesForDate(user, dateKey);
+    const scheduledMinutes = sumEntryMinutes(dayEntries, shiftByKey);
+    const hasDuplicateShift = dayEntries.some((entry, index) =>
+        dayEntries.findIndex(other => other.shift === entry.shift) !== index
+    );
+    const hasOverlap = dayEntries.some((entry, index) => {
+        const shift = shiftByKey.get(entry.shift);
+        if (!shift) return false;
+        return dayEntries.slice(index + 1).some(other => shiftsOverlap(shift, shiftByKey.get(other.shift)));
+    });
+
+    return {
+        expectedMinutes,
+        scheduledMinutes,
+        hasDuplicateShift,
+        hasOverlap,
+        isOverTarget: expectedMinutes > 0 && scheduledMinutes > expectedMinutes,
+    };
+};
+
+const isSameUserEntryConflict = ({ existingEntries, nextShift, shiftByKey, ignoredEntryId = null }) => {
+    return (existingEntries || [])
+        .filter(entry => !ignoredEntryId || entry.id !== ignoredEntryId)
+        .some(entry => entry.shift === nextShift.shiftKey || shiftsOverlap(nextShift, shiftByKey.get(entry.shift)));
+};
+
+const buildAutoFillEntries = ({ availableUsers, shifts, schedule, weekStart, holidays, vacationMap }) => {
+    const dateKeys = Array.from({ length: 7 }, (_, i) => formatISO(addDays(weekStart, i), { representation: 'date' }));
+    const activeShifts = (shifts || [])
+        .filter(shift => shift.isActive)
+        .slice()
+        .sort((a, b) => timeToMinutes(a.startTime) - timeToMinutes(b.startTime));
+    const shiftByKey = new Map((shifts || []).map(shift => [shift.shiftKey, shift]));
+
+    const statsByUserId = new Map(availableUsers.map(user => {
+        const weeklyTargetMinutes = dateKeys.reduce((sum, dateKey) => {
+            const isUnavailable = holidays?.[dateKey] || (user.username && vacationMap?.[user.username]?.[dateKey]);
+            return sum + (isUnavailable ? 0 : getExpectedMinutesForDate(user, dateKey));
+        }, 0);
+
+        return [user.id, {
+            user,
+            weeklyTargetMinutes,
+            weeklyMinutes: 0,
+            dailyMinutes: new Map(),
+            shiftCounts: new Map(),
+            assignments: 0,
+        }];
+    }));
+
+    dateKeys.forEach(dateKey => {
+        (schedule?.[dateKey] || []).forEach(entry => {
+            const stats = statsByUserId.get(entry.userId);
+            if (!stats) return;
+            const duration = shiftDurationMinutes(shiftByKey.get(entry.shift));
+            stats.weeklyMinutes += duration;
+            stats.dailyMinutes.set(dateKey, (stats.dailyMinutes.get(dateKey) || 0) + duration);
+            stats.shiftCounts.set(entry.shift, (stats.shiftCounts.get(entry.shift) || 0) + 1);
+            stats.assignments += 1;
+        });
+    });
+
+    const plannedSchedule = Object.fromEntries(dateKeys.map(dateKey => [dateKey, [...(schedule?.[dateKey] || [])]]));
+    const newEntries = [];
+
+    dateKeys.forEach(dateKey => {
+        if (holidays?.[dateKey]) return;
+
+        activeShifts.forEach(shift => {
+            const shiftAlreadyFilled = (plannedSchedule[dateKey] || []).some(entry => entry.shift === shift.shiftKey);
+            if (shiftAlreadyFilled) return;
+
+            const duration = shiftDurationMinutes(shift);
+            if (duration <= 0) return;
+
+            const candidates = availableUsers
+                .map(user => {
+                    const stats = statsByUserId.get(user.id);
+                    if (!stats) return null;
+                    if (user.username && vacationMap?.[user.username]?.[dateKey]) return null;
+
+                    const dayTarget = getExpectedMinutesForDate(user, dateKey);
+                    if (dayTarget <= 0) return null;
+
+                    const existingUserEntriesToday = (plannedSchedule[dateKey] || []).filter(entry => entry.userId === user.id);
+                    if (isSameUserEntryConflict({ existingEntries: existingUserEntriesToday, nextShift: shift, shiftByKey })) return null;
+
+                    const dayMinutes = stats.dailyMinutes.get(dateKey) || 0;
+                    const nextDayMinutes = dayMinutes + duration;
+                    const nextWeekMinutes = stats.weeklyMinutes + duration;
+                    if (nextDayMinutes > dayTarget) return null;
+                    if (stats.weeklyTargetMinutes > 0 && nextWeekMinutes > stats.weeklyTargetMinutes) return null;
+
+                    const dayRemainingAfter = dayTarget - nextDayMinutes;
+                    const weekRemainingAfter = Math.max(0, stats.weeklyTargetMinutes - nextWeekMinutes);
+                    const shiftLoad = stats.shiftCounts.get(shift.shiftKey) || 0;
+                    const weeklyLoadPercent = stats.weeklyTargetMinutes > 0
+                        ? nextWeekMinutes / stats.weeklyTargetMinutes
+                        : 1;
+
+                    return {
+                        user,
+                        stats,
+                        score: (dayRemainingAfter * 2) + (weekRemainingAfter * 0.05) + (weeklyLoadPercent * 35) + (shiftLoad * 20) + (stats.assignments * 4),
+                    };
+                })
+                .filter(Boolean)
+                .sort((left, right) => left.score - right.score || String(left.user.lastName || '').localeCompare(String(right.user.lastName || '')));
+
+            const selected = candidates[0];
+            if (!selected) return;
+
+            const entry = { userId: selected.user.id, date: dateKey, shift: shift.shiftKey };
+            newEntries.push(entry);
+            plannedSchedule[dateKey].push(entry);
+            selected.stats.weeklyMinutes += duration;
+            selected.stats.dailyMinutes.set(dateKey, (selected.stats.dailyMinutes.get(dateKey) || 0) + duration);
+            selected.stats.shiftCounts.set(shift.shiftKey, (selected.stats.shiftCounts.get(shift.shiftKey) || 0) + 1);
+            selected.stats.assignments += 1;
+        });
+    });
+
+    return newEntries;
 };
 
 /* ===========================
    Week Navigator (with toggles)
    =========================== */
-const WeekNavigator = ({ onAutoFill, onCopyWeek, onPasteWeek }) => {
+const WeekNavigator = ({ onAutoFill, onUndoAutoFill, canUndoAutoFill, isUndoingAutoFill, onCopyWeek, onPasteWeek }) => {
     const { t } = useTranslation();
     const {
         weekStart, changeWeek, setWeekStart, copiedWeek,
@@ -157,6 +318,16 @@ const WeekNavigator = ({ onAutoFill, onCopyWeek, onPasteWeek }) => {
                 <button onClick={onCopyWeek} className="button-copy">Woche kopieren</button>
                 {copiedWeek && <button onClick={onPasteWeek} className="button-paste">Einfügen</button>}
                 <button onClick={onAutoFill} className="button-autofill">Automatisch auffüllen</button>
+                {canUndoAutoFill && (
+                    <button
+                        type="button"
+                        onClick={onUndoAutoFill}
+                        className="button-autofill-undo"
+                        disabled={isUndoingAutoFill}
+                    >
+                        {isUndoingAutoFill ? 'Wird rückgängig gemacht...' : 'Automatik rückgängig'}
+                    </button>
+                )}
 
                 {/* Quick-Filters */}
                 <label className="mini-toggle">
@@ -298,6 +469,37 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
             return;
         }
 
+        const targetShift = byShiftKey.get(shiftKey);
+        if (!targetShift) {
+            notify(t('schedulePlanner.unknownShift', 'Diese Schicht ist nicht mehr gültig.'));
+            clearDrag();
+            return;
+        }
+
+        const existingUserEntriesToday = dayEntries.filter(entry => entry.userId === dragUser.id);
+        if (isSameUserEntryConflict({
+            existingEntries: existingUserEntriesToday,
+            nextShift: targetShift,
+            shiftByKey: byShiftKey,
+            ignoredEntryId: dragEntry?.id,
+        })) {
+            notify(t('schedulePlanner.shiftOverlap', 'Diese Schicht überschneidet sich mit einer bestehenden Schicht des Mitarbeiters.'));
+            clearDrag();
+            return;
+        }
+
+        const existingMinutesToday = sumEntryMinutes(
+            existingUserEntriesToday.filter(entry => !dragEntry?.id || entry.id !== dragEntry.id),
+            byShiftKey
+        );
+        const nextMinutesToday = existingMinutesToday + shiftDurationMinutes(targetShift);
+        const expectedMinutesToday = getExpectedMinutesForDate(dragUser, dateKey);
+        if (nextMinutesToday > expectedMinutesToday) {
+            notify(t('schedulePlanner.dailyLimitExceeded', 'Diese Schicht passt nicht mehr in die Sollzeit dieses Tages.'));
+            clearDrag();
+            return;
+        }
+
         if (!userAlreadyInShift) {
             const payload = { userId: dragUser.id, date: dateKey, shift: shiftKey };
 
@@ -331,7 +533,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
     }
 
     // schnelles Mapping ShiftKey->ShiftInfo
-    const byShiftKey = Object.fromEntries((shifts || []).map(s => [s.shiftKey, s]));
+    const byShiftKey = new Map((shifts || []).map(s => [s.shiftKey, s]));
 
     return (
         <div className="schedule-table-wrapper">
@@ -380,18 +582,22 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
                                                             const user = users.find(u => u.id === entry.userId);
                                                             if (!user) return null;
 
-                                                            // Konflikt-Ermittlung
                                                             const dayEntriesAll = (schedule[dateKey] || []).filter(e => e.userId === user.id);
-                                                            const isDoubleBooked = dayEntriesAll.length > 1;
-                                                            const expected = getExpectedHoursForDate(user, dateKey);
-                                                            const isDayOff = expected <= 0;
+                                                            const analysis = buildScheduleAnalysis({ entries: dayEntriesAll, user, dateKey, shiftByKey: byShiftKey });
+                                                            const hasPlanConflict = analysis.hasDuplicateShift || analysis.hasOverlap || analysis.isOverTarget;
+                                                            const isDayOff = analysis.expectedMinutes <= 0;
                                                             const isVacation = user.username && vacationMap?.[user.username]?.[dateKey];
                                                             const isDisabled = disabledUserIds.has(user.id);
+                                                            const titleParts = [
+                                                                `${analysis.scheduledMinutes} / ${analysis.expectedMinutes} Min. geplant`,
+                                                                analysis.hasOverlap ? t('schedulePlanner.overlapConflict', 'Schichten überschneiden sich') : '',
+                                                                analysis.isOverTarget ? t('schedulePlanner.overTargetConflict', 'Mehr geplant als Sollzeit') : '',
+                                                            ].filter(Boolean);
 
                                                             const cls = [
                                                                 'assigned-user',
                                                                 dragEntry?.id === entry.id ? 'dragging' : '',
-                                                                highlightConflicts && isDoubleBooked ? 'conflict-double' : '',
+                                                                highlightConflicts && hasPlanConflict ? 'conflict-double' : '',
                                                                 highlightConflicts && isDayOff ? 'conflict-dayoff' : '',
                                                                 highlightConflicts && isVacation ? 'conflict-vac' : '',
                                                                 isDisabled ? 'disabled-user' : ''
@@ -402,6 +608,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
                                                                     key={entry.id}
                                                                     className={cls}
                                                                     style={{ backgroundColor: user.color || 'var(--ud-c-primary)' }}
+                                                                    title={titleParts.join(' | ')}
                                                                     draggable
                                                                     onDragStart={(e) => { usePlannerStore.getState().setDragUser(user, entry); beginDragAssigned(user, entry, e); }}
                                                                     onDragEnd={() => clearDrag()}
@@ -441,12 +648,14 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
 const AdminSchedulePlannerPage = () => {
     const { t } = useTranslation();
     const { currentUser } = useAuth();
+    const { notify } = useNotification();
 
     const weekStart = usePlannerStore(state => state.weekStart);
     const copiedWeek = usePlannerStore(state => state.copiedWeek);
     const setCopiedWeek = usePlannerStore(state => state.setCopiedWeek);
     const navigate = useNavigate();
     const weekKey = formatISO(weekStart, { representation: 'date' });
+    const [lastAutoFillBatch, setLastAutoFillBatch] = React.useState({ weekKey: null, entryIds: [] });
 
     const queryClient = useQueryClient();
 
@@ -499,10 +708,11 @@ const AdminSchedulePlannerPage = () => {
     // KPIs
     const allDayKeys = Array.from({ length: 7 }, (_, i) => formatISO(addDays(weekStart, i), { representation: 'date' }));
     const activeShifts = (shifts || []).filter(s => s.isActive);
+    const shiftByKey = React.useMemo(() => new Map((shifts || []).map(shift => [shift.shiftKey, shift])), [shifts]);
 
     const kpi = React.useMemo(() => {
         let emptySlots = 0;
-        let double = 0;
+        let planConflicts = 0;
         let vacationConflicts = 0;
 
         allDayKeys.forEach(dk => {
@@ -513,10 +723,17 @@ const AdminSchedulePlannerPage = () => {
                 if (!entries.some(e => e.shift === sh.shiftKey)) emptySlots++;
             });
 
-            // Doppelbuchungen je Nutzer/Tag
             const byUser = new Map();
-            entries.forEach(e => byUser.set(e.userId, (byUser.get(e.userId) || 0) + 1));
-            byUser.forEach(v => { if (v > 1) double++; });
+            entries.forEach(entry => {
+                if (!byUser.has(entry.userId)) byUser.set(entry.userId, []);
+                byUser.get(entry.userId).push(entry);
+            });
+            byUser.forEach((userEntries, userId) => {
+                const user = users.find(x => x.id === userId);
+                if (!user) return;
+                const analysis = buildScheduleAnalysis({ entries: userEntries, user, dateKey: dk, shiftByKey });
+                if (analysis.hasDuplicateShift || analysis.hasOverlap || analysis.isOverTarget) planConflicts++;
+            });
 
             // Urlaubskonflikte
             entries.forEach(e => {
@@ -525,15 +742,44 @@ const AdminSchedulePlannerPage = () => {
             });
         });
 
-        return { emptySlots, double, vacationConflicts, users: users.length };
-    }, [allDayKeys, schedule, activeShifts, users, vacationMap]);
+        return { emptySlots, planConflicts, vacationConflicts, users: users.length };
+    }, [allDayKeys, schedule, activeShifts, users, vacationMap, shiftByKey]);
 
     const autoFillMutation = useMutation({
         mutationFn: autoFillSchedule,
-        onSuccess: () => {
+        onSuccess: (response) => {
             queryClient.invalidateQueries({ queryKey: ['schedule', weekKey] });
+            const created = response?.data?.created;
+            const entryIds = Array.isArray(response?.data?.entries)
+                ? response.data.entries.map(entry => entry.id).filter(Boolean)
+                : [];
+            setLastAutoFillBatch({ weekKey, entryIds });
+            if (typeof created === 'number') {
+                notify({
+                    message: t('schedulePlanner.autoFillCreated', `${created} Schichten automatisch eingetragen.`),
+                    type: created > 0 ? 'success' : 'info',
+                });
+            }
         },
         onError: (err) => alert(`Fehler beim automatischen Füllen: ${err.response?.data?.message || err.message}`),
+    });
+
+    const undoAutoFillMutation = useMutation({
+        mutationFn: deleteScheduleEntries,
+        onSuccess: (response) => {
+            queryClient.invalidateQueries({ queryKey: ['schedule', weekKey] });
+            const deleted = response?.data?.deleted;
+            const deletedCount = typeof deleted === 'number' ? deleted : lastAutoFillBatch.entryIds.length;
+            setLastAutoFillBatch({ weekKey: null, entryIds: [] });
+            notify({
+                message: t('schedulePlanner.autoFillUndone', `${deletedCount} automatisch eingetragene Schichten entfernt.`),
+                type: 'success',
+            });
+        },
+        onError: (err) => {
+            const message = err?.response?.data?.message || err?.response?.data || err.message;
+            notify({ message, type: 'error' });
+        },
     });
 
     const copyWeekMutation = useMutation({
@@ -550,43 +796,29 @@ const AdminSchedulePlannerPage = () => {
             alert(t('schedulePlanner.noActiveUsers', 'Keine aktiven Mitarbeiter für das automatische Auffüllen verfügbar.'));
             return;
         }
-        const newEntries = [];
-        const dateKeys = Array.from({ length: 7 }, (_, i) => formatISO(addDays(weekStart, i), { representation: 'date' }));
-        let userIndex = 0;
-
-        dateKeys.forEach(dateKey => {
-            if (holidays[dateKey]) return;
-
-            const assignedUsersToday = new Set((schedule[dateKey] || []).map(e => e.userId));
-            const active = shifts.filter(s => s.isActive);
-
-            active.forEach(shift => {
-                const alreadyAssignedToShift = (schedule[dateKey] || []).some(e => e.shift === shift.shiftKey);
-                if (!alreadyAssignedToShift && availableUsers.length > 0) {
-                    let assigned = false;
-                    let attempts = 0;
-                    while (!assigned && attempts < availableUsers.length) {
-                        const userToAssign = availableUsers[userIndex % availableUsers.length];
-                        const username = userToAssign.username;
-                        const onVacation = username && vacationMap[username] && vacationMap[username][dateKey];
-                        if (
-                            !assignedUsersToday.has(userToAssign.id) &&
-                            getExpectedHoursForDate(userToAssign, dateKey) > 0 &&
-                            !onVacation
-                        ) {
-                            newEntries.push({ userId: userToAssign.id, date: dateKey, shift: shift.shiftKey });
-                            assignedUsersToday.add(userToAssign.id);
-                            assigned = true;
-                        }
-                        userIndex++;
-                        attempts++;
-                    }
-                }
-            });
+        const newEntries = buildAutoFillEntries({
+            availableUsers,
+            shifts,
+            schedule,
+            weekStart,
+            holidays,
+            vacationMap,
         });
 
         if (newEntries.length > 0) autoFillMutation.mutate(newEntries);
-        else alert('Keine leeren Schichten zum Füllen gefunden oder keine Mitarbeiter verfügbar.');
+        else {
+            notify({
+                message: t('schedulePlanner.noAutoFillCandidates', 'Keine passenden freien Schichten gefunden. Mitarbeiter, Sollzeiten, Urlaub und bestehende Planung sind bereits berücksichtigt.'),
+                type: 'info',
+            });
+        }
+    };
+
+    const canUndoAutoFill = lastAutoFillBatch.weekKey === weekKey && lastAutoFillBatch.entryIds.length > 0;
+
+    const handleUndoAutoFill = () => {
+        if (!canUndoAutoFill) return;
+        undoAutoFillMutation.mutate(lastAutoFillBatch.entryIds);
     };
 
     const handleCopyWeek = () => {
@@ -639,13 +871,16 @@ const AdminSchedulePlannerPage = () => {
                         {/* KPI Strip */}
                         <div className="planner-kpis">
                             <div className="kpi"><span className="kpi-label">Leere Slots</span><strong className="kpi-value">{kpi.emptySlots}</strong></div>
-                            <div className="kpi"><span className="kpi-label">Doppelbuchungen</span><strong className="kpi-value">{kpi.double}</strong></div>
+                            <div className="kpi"><span className="kpi-label">Plan-Konflikte</span><strong className="kpi-value">{kpi.planConflicts}</strong></div>
                             <div className="kpi"><span className="kpi-label">Urlaub-Konflikte</span><strong className="kpi-value">{kpi.vacationConflicts}</strong></div>
                             <div className="kpi"><span className="kpi-label">Mitarbeiter</span><strong className="kpi-value">{kpi.users}</strong></div>
                         </div>
 
                         <WeekNavigator
                             onAutoFill={handleAutoFill}
+                            onUndoAutoFill={handleUndoAutoFill}
+                            canUndoAutoFill={canUndoAutoFill}
+                            isUndoingAutoFill={undoAutoFillMutation.isPending}
                             onCopyWeek={handleCopyWeek}
                             onPasteWeek={handlePasteWeek}
                         />

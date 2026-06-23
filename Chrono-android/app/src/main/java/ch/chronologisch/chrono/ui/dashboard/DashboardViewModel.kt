@@ -181,7 +181,7 @@ class DashboardViewModel(
             if (result == null) {
                 uiState = uiState.copy(
                     isSubmittingModuleAction = false,
-                    errorMessage = "Aktion konnte nicht ausgefuehrt werden.",
+                    errorMessage = "Aktion konnte nicht ausgeführt werden.",
                 )
                 return@launch
             }

@@ -5,7 +5,7 @@
 - Build signed release AAB:
 
 ```powershell
-.\gradlew.bat bundleRelease "-PchronoVersionCode=4" "-PchronoVersionName=0.1.5"
+.\gradlew.bat bundleRelease "-PchronoVersionCode=8" "-PchronoVersionName=0.1.8"
 ```
 
 - Upload file:

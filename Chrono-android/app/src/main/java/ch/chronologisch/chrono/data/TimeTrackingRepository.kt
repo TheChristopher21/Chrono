@@ -128,7 +128,7 @@ class TimeTrackingRepository(
 
             responseBody
         } catch (_: SocketTimeoutException) {
-            throw TimeTrackingException("Backend antwortet nicht. Bitte Verbindung pruefen.")
+            throw TimeTrackingException("Backend antwortet nicht. Bitte Verbindung prüfen.")
         } finally {
             connection.disconnect()
         }

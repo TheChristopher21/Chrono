@@ -43,6 +43,23 @@ class ChronoAuthRepository(
         sessionStore.clear()
     }
 
+    suspend fun submitApplication(application: RegistrationApplication) = withContext(Dispatchers.IO) {
+        val payload = JSONObject()
+            .put("companyName", application.companyName)
+            .put("contactName", application.contactName)
+            .put("email", application.email)
+            .put("phone", application.phone)
+            .put("additionalInfo", application.additionalInfo)
+            .put("employeeCount", application.employeeCount)
+            .put("billingPeriod", "monthly")
+            .put("includeOptionalTraining", false)
+            .put("selectedFeatures", JSONArray(listOf("base")))
+            .put("selectedFeatureNames", JSONArray(listOf("Zeiterfassung (Basis)")))
+            .toString()
+
+        postJson(path = "/api/apply", body = payload)
+    }
+
     private suspend fun requestToken(username: String, password: String): String = withContext(Dispatchers.IO) {
         val payload = JSONObject()
             .put("username", username)
@@ -112,7 +129,7 @@ class ChronoAuthRepository(
 
             responseBody
         } catch (_: SocketTimeoutException) {
-            throw AuthException("Backend antwortet nicht. Bitte Verbindung pruefen.")
+            throw AuthException("Backend antwortet nicht. Bitte Verbindung prüfen.")
         } finally {
             connection.disconnect()
         }
@@ -149,6 +166,15 @@ class ChronoAuthRepository(
         }
     }
 }
+
+data class RegistrationApplication(
+    val companyName: String,
+    val contactName: String,
+    val email: String,
+    val phone: String,
+    val additionalInfo: String,
+    val employeeCount: Int,
+)
 
 private fun JSONObject.optNullableString(name: String): String? =
     if (isNull(name)) null else optString(name)

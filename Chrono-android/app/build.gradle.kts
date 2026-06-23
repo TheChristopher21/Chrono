@@ -35,8 +35,8 @@ android {
         applicationId = "ch.chronologisch.app"
         minSdk = 26
         targetSdk = 35
-        versionCode = (providers.gradleProperty("chronoVersionCode").orNull ?: "4").toInt()
-        versionName = providers.gradleProperty("chronoVersionName").orNull ?: "0.1.5"
+        versionCode = (providers.gradleProperty("chronoVersionCode").orNull ?: "8").toInt()
+        versionName = providers.gradleProperty("chronoVersionName").orNull ?: "0.1.8"
         manifestPlaceholders["usesCleartextTraffic"] = "false"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"

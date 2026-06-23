@@ -11,8 +11,20 @@ import ch.chronologisch.chrono.BuildConfig
 import ch.chronologisch.chrono.data.AuthException
 import ch.chronologisch.chrono.data.AuthenticatedSession
 import ch.chronologisch.chrono.data.ChronoAuthRepository
+import ch.chronologisch.chrono.data.RegistrationApplication
 import ch.chronologisch.chrono.data.SessionStore
 import kotlinx.coroutines.launch
+
+data class ContactRequestForm(
+    val companyName: String = "",
+    val contactName: String = "",
+    val email: String = "",
+    val phone: String = "",
+    val employeeCount: String = "10",
+    val additionalInfo: String = "",
+    val termsAccepted: Boolean = false,
+    val contactAccepted: Boolean = false,
+)
 
 data class LoginUiState(
     val username: String = "",
@@ -20,6 +32,11 @@ data class LoginUiState(
     val isLoading: Boolean = false,
     val isRestoringSession: Boolean = true,
     val errorMessage: String? = null,
+    val contactFormOpen: Boolean = false,
+    val contactForm: ContactRequestForm = ContactRequestForm(),
+    val isSubmittingContact: Boolean = false,
+    val contactMessage: String? = null,
+    val contactError: String? = null,
     val session: AuthenticatedSession? = null,
 )
 
@@ -39,6 +56,95 @@ class LoginViewModel(
 
     fun updatePassword(value: String) {
         uiState = uiState.copy(password = value, errorMessage = null)
+    }
+
+    fun setContactFormOpen(open: Boolean) {
+        uiState = uiState.copy(contactFormOpen = open, contactMessage = null, contactError = null)
+    }
+
+    fun updateContactCompanyName(value: String) {
+        uiState = uiState.copy(contactForm = uiState.contactForm.copy(companyName = value), contactError = null)
+    }
+
+    fun updateContactName(value: String) {
+        uiState = uiState.copy(contactForm = uiState.contactForm.copy(contactName = value), contactError = null)
+    }
+
+    fun updateContactEmail(value: String) {
+        uiState = uiState.copy(contactForm = uiState.contactForm.copy(email = value), contactError = null)
+    }
+
+    fun updateContactPhone(value: String) {
+        uiState = uiState.copy(contactForm = uiState.contactForm.copy(phone = value), contactError = null)
+    }
+
+    fun updateContactEmployeeCount(value: String) {
+        uiState = uiState.copy(contactForm = uiState.contactForm.copy(employeeCount = value.filter(Char::isDigit).take(3)), contactError = null)
+    }
+
+    fun updateContactAdditionalInfo(value: String) {
+        uiState = uiState.copy(contactForm = uiState.contactForm.copy(additionalInfo = value), contactError = null)
+    }
+
+    fun updateContactTermsAccepted(value: Boolean) {
+        uiState = uiState.copy(contactForm = uiState.contactForm.copy(termsAccepted = value), contactError = null)
+    }
+
+    fun updateContactAccepted(value: Boolean) {
+        uiState = uiState.copy(contactForm = uiState.contactForm.copy(contactAccepted = value), contactError = null)
+    }
+
+    fun submitContactRequest() {
+        val form = uiState.contactForm
+        val employeeCount = form.employeeCount.toIntOrNull()
+        when {
+            form.companyName.isBlank() -> {
+                uiState = uiState.copy(contactError = "Bitte Firmennamen eingeben.")
+                return
+            }
+            form.contactName.isBlank() -> {
+                uiState = uiState.copy(contactError = "Bitte Ansprechperson eingeben.")
+                return
+            }
+            form.email.isBlank() -> {
+                uiState = uiState.copy(contactError = "Bitte E-Mail eingeben.")
+                return
+            }
+            employeeCount == null || employeeCount !in 1..200 -> {
+                uiState = uiState.copy(contactError = "Bitte Mitarbeiterzahl zwischen 1 und 200 eingeben.")
+                return
+            }
+            !form.termsAccepted || !form.contactAccepted -> {
+                uiState = uiState.copy(contactError = "Bitte beide Bestätigungen aktivieren.")
+                return
+            }
+        }
+
+        uiState = uiState.copy(isSubmittingContact = true, contactError = null, contactMessage = null)
+        viewModelScope.launch {
+            uiState = try {
+                repository.submitApplication(
+                    RegistrationApplication(
+                        companyName = form.companyName.trim(),
+                        contactName = form.contactName.trim(),
+                        email = form.email.trim(),
+                        phone = form.phone.trim(),
+                        additionalInfo = form.additionalInfo.trim(),
+                        employeeCount = employeeCount,
+                    ),
+                )
+                uiState.copy(
+                    contactForm = ContactRequestForm(),
+                    contactFormOpen = false,
+                    isSubmittingContact = false,
+                    contactMessage = "Danke, deine Anfrage wurde gesendet.",
+                )
+            } catch (ex: AuthException) {
+                uiState.copy(isSubmittingContact = false, contactError = ex.message)
+            } catch (_: Exception) {
+                uiState.copy(isSubmittingContact = false, contactError = "Anfrage konnte nicht gesendet werden.")
+            }
+        }
     }
 
     fun login() {

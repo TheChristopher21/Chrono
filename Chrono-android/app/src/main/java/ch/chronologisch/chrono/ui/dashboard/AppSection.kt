@@ -20,19 +20,19 @@ enum class AppSection(
     WORK_MODEL(
         title = "Arbeitsmodell",
         group = "Meine Arbeit",
-        subtitle = "Prozentmodell, Stundenlohn und persoenliche Sollzeit.",
+        subtitle = "Prozentmodell, Stundenlohn und persönliche Sollzeit.",
         primaryItems = listOf("Pensum", "Stundenlohn", "Saldo", "Sollzeit"),
     ),
     ABSENCES(
         title = "Absenzen",
         group = "Meine Arbeit",
-        subtitle = "Urlaub, Krankheit und Korrekturantraege.",
+        subtitle = "Urlaub, Krankheit und Korrekturanträge.",
         primaryItems = listOf("Urlaub", "Krankmeldung", "Korrekturen", "Freigabestatus"),
     ),
     PAYSLIPS(
         title = "Lohn",
         group = "Meine Arbeit",
-        subtitle = "Lohnabrechnungen und Payroll-Freigaben.",
+        subtitle = "Lohnabrechnungen und Freigaben.",
         primaryItems = listOf("Meine Lohnabrechnungen", "Monatsstatus", "Download", "Archiv"),
         payrollRoleAllowed = true,
     ),
@@ -45,7 +45,7 @@ enum class AppSection(
     PROFILE(
         title = "Profil",
         group = "Meine Arbeit",
-        subtitle = "Persoenliche Daten, Konto und Sicherheit.",
+        subtitle = "Persönliche Daten, Konto und Sicherheit.",
         primaryItems = listOf("Stammdaten", "Rollen", "Passwort", "Benachrichtigungen"),
     ),
     SUPPLY_CHAIN(
@@ -63,14 +63,28 @@ enum class AppSection(
     ADMIN_HOME(
         title = "Admin",
         group = "Admin",
-        subtitle = "Zentrale Uebersicht fuer Team, Zeit, Lohn und Prozesse.",
+        subtitle = "Zentrale Übersicht für Team, Zeit, Lohn und Prozesse.",
         primaryItems = listOf("Teamstatus", "Offene Punkte", "Monatsabschluss", "Kennzahlen"),
+        adminOnly = true,
+    ),
+    TIME_OVERVIEW(
+        title = "Zeitübersicht",
+        group = "Admin",
+        subtitle = "Team-Wochenübersicht, Mitarbeitende und Zeiteinträge.",
+        primaryItems = listOf("Mitarbeiter", "Woche", "Stempel", "Korrekturen"),
+        adminOnly = true,
+    ),
+    TEAM_CALENDAR(
+        title = "Urlaubskalender",
+        group = "Admin",
+        subtitle = "Urlaub und Krankheit im Team als Monatskalender.",
+        primaryItems = listOf("Monat", "Urlaub", "Krankheit", "Team"),
         adminOnly = true,
     ),
     SUPERADMIN_HOME(
         title = "Superadmin",
         group = "Superadmin",
-        subtitle = "App-Feedback, Firmen und zentrale Superadmin-Uebersicht.",
+        subtitle = "App-Feedback, Firmen und zentrale Superadmin-Übersicht.",
         primaryItems = listOf("App Feedback", "Firmen", "Analytics", "Systemstatus"),
         adminOnly = true,
         superadminOnly = true,
@@ -78,7 +92,7 @@ enum class AppSection(
     EMPLOYEES(
         title = "Mitarbeiter",
         group = "Admin",
-        subtitle = "Mitarbeiteruebersicht, Profile und Zeitkonten.",
+        subtitle = "Mitarbeiterübersicht, Profile und Zeitkonten.",
         primaryItems = listOf("Alle Mitarbeiter", "Zeitkonten", "Detailansicht", "Rollen"),
         adminOnly = true,
     ),
@@ -86,20 +100,20 @@ enum class AppSection(
         title = "Benutzer",
         group = "Admin",
         subtitle = "Benutzerverwaltung, Berechtigungen und Passwortwechsel.",
-        primaryItems = listOf("Benutzer", "Rollen", "Seitenrechte", "Passwort aendern"),
+        primaryItems = listOf("Benutzer", "Rollen", "Seitenrechte", "Passwort ändern"),
         adminOnly = true,
     ),
     ADMIN_PASSWORD(
         title = "Admin-Passwort",
         group = "Admin",
-        subtitle = "Eigenes Admin-Passwort aendern.",
+        subtitle = "Eigenes Admin-Passwort ändern.",
         primaryItems = listOf("Aktuelles Passwort", "Neues Passwort", "Sicherheit"),
         adminOnly = true,
     ),
     CUSTOMERS_PROJECTS(
         title = "Projekt-Hub",
         group = "Admin",
-        subtitle = "Kunden, Projekte, Aufgaben und Projektberichte als Uebersicht.",
+        subtitle = "Kunden, Projekte, Aufgaben und Projektberichte als Übersicht.",
         primaryItems = listOf("Kunden", "Projekte", "Aufgaben", "Projektbericht"),
         adminOnly = true,
     ),
@@ -107,13 +121,13 @@ enum class AppSection(
         title = "Kunden",
         group = "Projekte",
         subtitle = "Kundenverwaltung und Zuordnungen.",
-        primaryItems = listOf("Kundenliste", "Anlegen", "Loeschen", "Zuordnung"),
+        primaryItems = listOf("Kundenliste", "Anlegen", "Löschen", "Zuordnung"),
         adminOnly = true,
     ),
     PROJECTS(
         title = "Projekte",
         group = "Projekte",
-        subtitle = "Projekte, Hierarchie, Budgets und Stundensaetze.",
+        subtitle = "Projekte, Hierarchie, Budgets und Stundensätze.",
         primaryItems = listOf("Projektliste", "Hierarchie", "Budget", "Stundensatz"),
         adminOnly = true,
     ),
@@ -155,7 +169,7 @@ enum class AppSection(
     PRINT_SCHEDULE(
         title = "Druckplan",
         group = "Dienstplan",
-        subtitle = "Dienstplaene fuer Woche und Team vorbereiten.",
+        subtitle = "Dienstpläne für Woche und Team vorbereiten.",
         primaryItems = listOf("Wochenplan", "Mitarbeiter", "Schichten", "Druckdaten"),
         adminOnly = true,
     ),
@@ -167,17 +181,17 @@ enum class AppSection(
         adminOnly = true,
     ),
     PAYROLL_ADMIN(
-        title = "Lohnlauf",
+        title = "Abrechnungen",
         group = "Admin",
-        subtitle = "Lohnlaeufe, Mitarbeiter-Lohnabrechnungen und Freigaben.",
-        primaryItems = listOf("Lohnlaeufe", "Payslips", "Freigaben", "Archiv"),
+        subtitle = "Lohnläufe, Mitarbeiter-Abrechnungen und Freigaben.",
+        primaryItems = listOf("Lohnläufe", "Abrechnungen", "Freigaben", "Archiv"),
         adminOnly = true,
         payrollRoleAllowed = true,
     ),
     ACCOUNTING(
         title = "Buchhaltung",
         group = "Admin",
-        subtitle = "Accounting, Rechnungen und Finanzuebersicht.",
+        subtitle = "Accounting, Rechnungen und Finanzübersicht.",
         primaryItems = listOf("Belege", "Rechnungen", "Konten", "Auswertungen"),
         adminOnly = true,
     ),
@@ -191,8 +205,8 @@ enum class AppSection(
     CRM(
         title = "CRM",
         group = "Admin",
-        subtitle = "Kontakte, Deals, Aktivitaeten und Pipeline.",
-        primaryItems = listOf("Kontakte", "Deals", "Aktivitaeten", "Pipeline"),
+        subtitle = "Kontakte, Deals, Aktivitäten und Pipeline.",
+        primaryItems = listOf("Kontakte", "Deals", "Aktivitäten", "Pipeline"),
         adminOnly = true,
     ),
     BANKING(
@@ -206,7 +220,7 @@ enum class AppSection(
         title = "Firmenwissen",
         group = "Admin",
         subtitle = "Interne Wissensbasis und KI-Inhalte.",
-        primaryItems = listOf("Wissen", "Anlegen", "Zugriff", "Loeschen"),
+        primaryItems = listOf("Wissen", "Anlegen", "Zugriff", "Löschen"),
         adminOnly = true,
     ),
     COMPANY_SETTINGS(
@@ -219,7 +233,7 @@ enum class AppSection(
     COMPANY(
         title = "Firmen",
         group = "Superadmin",
-        subtitle = "Mandanten, Firmenstatus, Zahlungsstatus und Superadmin-Uebersicht.",
+        subtitle = "Mandanten, Firmenstatus, Zahlungsstatus und Superadmin-Übersicht.",
         primaryItems = listOf("Firmen", "Aktiv/Inaktiv", "Zahlungen", "Mandanten"),
         adminOnly = true,
         superadminOnly = true,
@@ -249,7 +263,7 @@ enum class AppSection(
             return when (this) {
                 SUPPLY_CHAIN -> features.hasAny("supplyChain")
                 CUSTOMERS_PROJECTS, CUSTOMERS, PROJECTS, TASKS, PROJECT_REPORT -> features.hasAny("projects")
-                ANALYTICS -> features.hasAny("analytics")
+                ANALYTICS -> false
                 SCHEDULE, PRINT_SCHEDULE, SHIFT_RULES -> features.hasAny("roster")
                 PAYROLL_ADMIN -> features.hasAny("payroll")
                 ACCOUNTING -> features.hasAny("accounting")
@@ -274,6 +288,8 @@ enum class AppSection(
                 SUPPLY_CHAIN -> user.hasAnyPageAccess("supplyChain")
                 INFO -> user.hasAnyPageAccess("demoTour")
                 ADMIN_HOME -> user.hasAnyPageAccess("adminDashboard")
+                TIME_OVERVIEW -> user.hasAnyPageAccess("adminDashboard")
+                TEAM_CALENDAR -> user.hasAnyPageAccess("adminDashboard")
                 SUPERADMIN_HOME -> user.roles.contains("ROLE_SUPERADMIN")
                 EMPLOYEES -> user.hasAnyPageAccess("adminUsers", "adminDashboard")
                 USERS -> user.hasAnyPageAccess("adminUsers")

@@ -52,4 +52,14 @@ public class AdminShiftDefinitionController {
         ScheduleRule newRule = ruleRepository.save(rule);
         return ResponseEntity.ok(newRule);
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<Void> deleteRule(@PathVariable Long id) {
+        if (!ruleRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        ruleRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
+    }
 }

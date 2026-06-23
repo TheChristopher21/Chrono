@@ -50,6 +50,8 @@ const DEFAULT_MONTH_RANGE_SETTINGS = {
 
 const isBrowserEnvironment = () => typeof window !== 'undefined' && typeof window.localStorage !== 'undefined';
 
+const getAbsenceDayFlipKey = (username, isoDate) => `${username || ''}::${isoDate}`;
+
 const areSetsEqual = (setA, setB) => {
     if (setA === setB) return true;
     if (!setA || !setB || setA.size !== setB.size) return false;
@@ -409,10 +411,24 @@ const AdminWeekSection = forwardRef(({
     const [showOnlyIssues, setShowOnlyIssues] = useState(false);
     const [issueTypeFilters, setIssueTypeFilters] = useState(() => ({ ...DEFAULT_ISSUE_FILTER_STATE }));
     const [weekJumpInputValue, setWeekJumpInputValue] = useState(() => formatLocalDateYMD(selectedMonday));
+    const [flippedAbsenceDayCards, setFlippedAbsenceDayCards] = useState(() => new Set());
 
     useEffect(() => {
         setWeekJumpInputValue(formatLocalDateYMD(selectedMonday));
     }, [selectedMonday]);
+
+    const toggleAbsenceDayCard = useCallback((username, isoDate) => {
+        const flipKey = getAbsenceDayFlipKey(username, isoDate);
+        setFlippedAbsenceDayCards(prev => {
+            const next = new Set(prev);
+            if (next.has(flipKey)) {
+                next.delete(flipKey);
+            } else {
+                next.add(flipKey);
+            }
+            return next;
+        });
+    }, []);
 
     const readHiddenUsersFromStorage = useCallback(() => {
         if (!browserHasStorage) return new Set();
@@ -1433,7 +1449,7 @@ const AdminWeekSection = forwardRef(({
             }
         }
         return () => clearTimeout(highlightTimeoutId); // Cleanup timeout on unmount or if focusedProblem changes
-    }, [focusedProblem]); // Re-run when focusedProblem changes
+    }, [focusedProblem, detailedUser, weekDates, sortedUserData]); // Re-run when focused target or rendered week data changes
 
 
     const handleHideUser = (usernameToHide) => {
@@ -1577,6 +1593,21 @@ const AdminWeekSection = forwardRef(({
             setSearchTerm(username);
             setDetailedUser(username);
             setFocusedProblem({ username, dateIso: null, type: 'direct_focus' });
+            scrollSectionIntoView();
+        },
+        focusUserDate(username, dateIso = null, focusType = 'request_focus') {
+            if (!username) return;
+            setHiddenUsers(prev => {
+                if (!prev.has(username)) return prev;
+                const next = new Set(prev);
+                next.delete(username);
+                return next;
+            });
+            setActiveTab('week');
+            setShowOnlyIssues(false);
+            setSearchTerm(username);
+            setDetailedUser(username);
+            setFocusedProblem({ username, dateIso, type: focusType || 'request_focus' });
             scrollSectionIntoView();
         },
         focusNegativeBalances() {
@@ -2007,10 +2038,54 @@ const AdminWeekSection = forwardRef(({
                                                                 let cardClass = `admin-day-card ${isFocused ? (focusedProblem.type.includes('auto_completed') ? 'highlight-autocompleted' : (focusedProblem.type === 'holiday_pending_decision' ? 'highlight-holiday-pending' : 'focused-problem')) : ''}`;
                                                                 if (dailySummary?.needsCorrection && !isFocused) cardClass += ' auto-completed-day-card';
 
-                                                                const vacationOnThisDay = hasTrackedEntries
-                                                                    ? null
-                                                                    : userData.userApprovedVacations.find(vac => isoDate >= vac.startDate && isoDate <= vac.endDate);
+                                                                const vacationRecordOnThisDay = userData.userApprovedVacations.find(vac => isoDate >= vac.startDate && isoDate <= vac.endDate);
+                                                                const vacationOnThisDay = hasTrackedEntries ? null : vacationRecordOnThisDay;
                                                                 const sickOnThisDay = userData.userCurrentSickLeaves.find(sick => isoDate >= sick.startDate && isoDate <= sick.endDate);
+                                                                const absenceWithTrackedEntries = !!(hasTrackedEntries && (vacationRecordOnThisDay || sickOnThisDay));
+                                                                const showTrackedTimesForAbsenceDay = flippedAbsenceDayCards.has(getAbsenceDayFlipKey(userData.username, isoDate));
+                                                                const trackedTimesContent = hasTrackedEntries ? (
+                                                                    <>
+                                                                        <div className="admin-day-card-header justify-between items-start mb-1">
+                                                                            <div className="text-xs">
+                                                                                {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {minutesToHHMM(expectedMinsToday)})</span>}
+                                                                                {!userData.userConfig.isHourly && <span className={`daily-diff ml-1 ${diffMinsToday < 0 ? 'text-red-600' : 'text-green-600'}`}>({t('diffTimeShort', 'Diff')}: {minutesToHHMM(diffMinsToday)})</span>}
+                                                                                {dailySummary.needsCorrection && <span className="auto-completed-tag ml-1 text-red-600 font-bold" title={t('adminDashboard.needsCorrectionTooltip', 'Automatisch beendet und unkorrigiert')}>KORR?</span>}
+                                                                            </div>
+                                                                            <button className="edit-day-button text-xs py-0.5 px-1 bg-gray-200 hover:bg-gray-300 rounded" onClick={() => openEditModal(userData.username, d, dailySummary)}>
+                                                                                {t("adminDashboard.editButton", "Bearb.")}
+                                                                            </button>
+                                                                        </div>
+                                                                        <ul className="time-entry-list-condensed text-xs">
+                                                                            {sortEntries(dailySummary.entries).map(entry => {
+                                                                                let typeLabel = entry.punchType;
+                                                                                try {
+                                                                                    typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
+                                                                                } catch (e) { /* Fallback */ }
+
+                                                                                let sourceIndicator = '';
+                                                                                if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
+                                                                                } else if (entry.source === 'ADMIN_CORRECTION') {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
+                                                                                } else if (entry.source === 'USER_CORRECTION') {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
+                                                                                } else if (entry.source === 'MANUAL_IMPORT') {
+                                                                                    sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
+                                                                                }
+
+                                                                                return (
+                                                                                    <li key={entry.id || entry.key} className="py-0.5">
+                                                                                        {`${typeLabel}: ${formatTime(entry.entryTimestamp)}${sourceIndicator}`}
+                                                                                    </li>
+                                                                                );
+                                                                            })}
+                                                                        </ul>
+                                                                        <p className="text-xs mt-1">
+                                                                            <strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(actualMinsToday)} | <strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(dailySummary.breakMinutes)}
+                                                                        </p>
+                                                                        {dailySummary.dailyNote && <p className="text-xs mt-1 italic">📝 {dailySummary.dailyNote}</p>}
+                                                                    </>
+                                                                ) : null;
 
                                                                 let dayCardContent;
                                                                 if (holidayNameOnThisDay) {
@@ -2035,6 +2110,35 @@ const AdminWeekSection = forwardRef(({
                                                                                 </div>
                                                                             )}
                                                                         </>
+                                                                    );
+                                                                } else if (absenceWithTrackedEntries) {
+                                                                    cardClass += ' admin-day-card-absence-conflict';
+                                                                    if (vacationRecordOnThisDay) cardClass += ' admin-day-card-vacation';
+                                                                    if (sickOnThisDay) cardClass += ' admin-day-card-sick';
+
+                                                                    dayCardContent = showTrackedTimesForAbsenceDay ? (
+                                                                        <>
+                                                                            <div className="day-card-flip-toolbar">
+                                                                                <span className="day-card-flip-label text-xs">{t('adminDashboard.trackedTimesLabel', 'Stempelzeiten')}</span>
+                                                                                <button type="button" className="edit-day-button flip-day-button secondary" onClick={() => toggleAbsenceDayCard(userData.username, isoDate)}>
+                                                                                    {t('adminDashboard.showAbsenceButton', 'Abwesenheit anzeigen')}
+                                                                                </button>
+                                                                            </div>
+                                                                            {trackedTimesContent}
+                                                                        </>
+                                                                    ) : (
+                                                                        <div className="absence-conflict-summary">
+                                                                            {vacationRecordOnThisDay && (
+                                                                                <p className="vacation-indicator text-xs">🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}{vacationRecordOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}{vacationRecordOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}</p>
+                                                                            )}
+                                                                            {sickOnThisDay && (
+                                                                                <p className="sick-indicator text-xs">🤒 {t('adminDashboard.onSickLeave', 'Krank gemeldet')}{sickOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}</p>
+                                                                            )}
+                                                                            <p className="absence-conflict-note text-xs">{t('adminDashboard.absenceWithEntriesNote', 'Stempelzeiten vorhanden - bitte prüfen.')}</p>
+                                                                            <button type="button" className="edit-day-button flip-day-button" onClick={() => toggleAbsenceDayCard(userData.username, isoDate)}>
+                                                                                {t('adminDashboard.showTrackedTimesButton', 'Zeiten anzeigen')}
+                                                                            </button>
+                                                                        </div>
                                                                     );
                                                                 } else if (vacationOnThisDay) {
                                                                     cardClass += ' admin-day-card-vacation';
@@ -2075,49 +2179,7 @@ const AdminWeekSection = forwardRef(({
                                                                         </>
                                                                     );
                                                                 } else {
-                                                                    dayCardContent = (
-                                                                        <>
-                                                                            <div className="admin-day-card-header justify-between items-start mb-1">
-                                                                                <div className="text-xs">
-                                                                                    {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {minutesToHHMM(expectedMinsToday)})</span>}
-                                                                                    {!userData.userConfig.isHourly && <span className={`daily-diff ml-1 ${diffMinsToday < 0 ? 'text-red-600' : 'text-green-600'}`}>({t('diffTimeShort', 'Diff')}: {minutesToHHMM(diffMinsToday)})</span>}
-                                                                                    {dailySummary.needsCorrection && <span className="auto-completed-tag ml-1 text-red-600 font-bold" title={t('adminDashboard.needsCorrectionTooltip', 'Automatisch beendet und unkorrigiert')}>KORR?</span>}
-                                                                                </div>
-                                                                                <button className="edit-day-button text-xs py-0.5 px-1 bg-gray-200 hover:bg-gray-300 rounded" onClick={() => openEditModal(userData.username, d, dailySummary)}>
-                                                                                    {t("adminDashboard.editButton", "Bearb.")}
-                                                                                </button>
-                                                                            </div>
-                                                                            <ul className="time-entry-list-condensed text-xs">
-                                                                                {sortEntries(dailySummary.entries).map(entry => {
-                                                                                    let typeLabel = entry.punchType;
-                                                                                    try {
-                                                                                        typeLabel = t(`punchTypes.${entry.punchType}`, entry.punchType);
-                                                                                    } catch (e) { /* Fallback */ }
-
-                                                                                    let sourceIndicator = '';
-                                                                                    if (entry.source === 'SYSTEM_AUTO_END' && !entry.correctedByUser) {
-                                                                                        sourceIndicator = t('adminDashboard.entrySource.autoSuffix', ' (Auto)');
-                                                                                    } else if (entry.source === 'ADMIN_CORRECTION') {
-                                                                                        sourceIndicator = t('adminDashboard.entrySource.adminSuffix', ' (AdmK)');
-                                                                                    } else if (entry.source === 'USER_CORRECTION') {
-                                                                                        sourceIndicator = t('adminDashboard.entrySource.userSuffix', ' (UsrK)');
-                                                                                    } else if (entry.source === 'MANUAL_IMPORT') {
-                                                                                        sourceIndicator = t('adminDashboard.entrySource.importSuffix', ' (Imp)');
-                                                                                    }
-
-                                                                                    return (
-                                                                                        <li key={entry.id || entry.key} className="py-0.5">
-                                                                                            {`${typeLabel}: ${formatTime(entry.entryTimestamp)}${sourceIndicator}`}
-                                                                                        </li>
-                                                                                    );
-                                                                                })}
-                                                                            </ul>
-                                                                            <p className="text-xs mt-1">
-                                                                                <strong>{t('actualTime', 'Ist')}:</strong> {minutesToHHMM(actualMinsToday)} | <strong>{t('breakTime', 'Pause')}:</strong> {minutesToHHMM(dailySummary.breakMinutes)}
-                                                                            </p>
-                                                                            {dailySummary.dailyNote && <p className="text-xs mt-1 italic">📝 {dailySummary.dailyNote}</p>}
-                                                                        </>
-                                                                    );
+                                                                    dayCardContent = trackedTimesContent;
                                                                 }
 
                                                                 return (

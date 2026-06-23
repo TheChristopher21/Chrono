@@ -7,7 +7,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
 import { ACCESS_MANAGE, hasPageAccess } from '../../utils/pageAccess.js';
 import { getUserDisplayName } from '../../utils/userDisplay';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../../styles/AdminDashboardScoped.css';
 import jsPDF from "jspdf";
 
@@ -34,6 +34,7 @@ import {
 
 const INBOX_FILTER_STORAGE_KEY = 'adminDashboard_inboxFilters_v1';
 const INBOX_VIEWS_STORAGE_KEY = 'adminDashboard_savedViews_v1';
+const DASHBOARD_TAB_KEYS = ['overview', 'time', 'requests', 'calendar', 'modules'];
 
 const DEFAULT_INBOX_FILTERS = {
     status: 'pending',
@@ -45,6 +46,61 @@ const DEFAULT_INBOX_FILTERS = {
 };
 
 const isBrowserEnvironment = () => typeof window !== 'undefined' && !!window.localStorage;
+
+const getValidDashboardTab = (tabId) => (
+    DASHBOARD_TAB_KEYS.includes(tabId) ? tabId : 'overview'
+);
+
+const extractIsoDate = (value) => {
+    if (!value) return null;
+    if (value instanceof Date && !Number.isNaN(value.getTime())) {
+        return formatLocalDateYMD(value);
+    }
+    if (typeof value === 'string') {
+        const directMatch = value.match(/^(\d{4}-\d{2}-\d{2})/);
+        if (directMatch) return directMatch[1];
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return null;
+    return formatLocalDateYMD(parsed);
+};
+
+const parseIsoDateAsLocal = (isoDate) => {
+    if (!isoDate || typeof isoDate !== 'string') return null;
+    const parsed = new Date(`${isoDate}T00:00:00`);
+    return Number.isNaN(parsed.getTime()) ? null : parsed;
+};
+
+const getMondayIsoForDate = (isoDate) => {
+    const parsed = parseIsoDateAsLocal(isoDate);
+    return parsed ? formatLocalDateYMD(getMondayOfWeek(parsed)) : null;
+};
+
+const getCorrectionTargetDateIso = (correctionLike) => {
+    if (!correctionLike) return null;
+    const entries = Array.isArray(correctionLike.entries) ? correctionLike.entries : [];
+    const firstEntry = entries[0] || correctionLike;
+    return extractIsoDate(firstEntry?.desiredTimestamp)
+        || extractIsoDate(correctionLike.desiredTimestamp)
+        || extractIsoDate(correctionLike.requestDate)
+        || extractIsoDate(firstEntry?.originalTimestamp)
+        || extractIsoDate(correctionLike.originalTimestamp);
+};
+
+const makeDashboardSearch = (baseParams, updates = {}, options = {}) => {
+    const params = options.preserve ? new URLSearchParams(baseParams) : new URLSearchParams();
+    Object.entries(updates).forEach(([key, value]) => {
+        if (value === null || value === undefined || value === '') {
+            params.delete(key);
+        } else {
+            params.set(key, String(value));
+        }
+    });
+    if (params.get('tab') === 'overview') {
+        params.delete('tab');
+    }
+    return params.toString();
+};
 
 const loadStoredFilters = () => {
     if (!isBrowserEnvironment()) return null;
@@ -118,6 +174,7 @@ const AdminDashboard = () => {
     const { notify } = useNotification();
     const { t } = useTranslation();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const canManageAdminDashboard = hasPageAccess(currentUser, 'adminDashboard', ACCESS_MANAGE);
 
     const notifyAdminDashboardReadOnly = useCallback(() => {
@@ -174,7 +231,7 @@ const AdminDashboard = () => {
     const [inboxFilters, setInboxFilters] = useState(storedFilters || DEFAULT_INBOX_FILTERS);
     const [inboxSearch, setInboxSearch] = useState(() => (storedFilters?.query ? String(storedFilters.query) : ''));
     const [customViews, setCustomViews] = useState(() => loadStoredViews());
-    const [activeMainTab, setActiveMainTab] = useState('overview');
+    const [activeMainTab, setActiveMainTab] = useState(() => getValidDashboardTab(searchParams.get('tab')));
     const [vacationOpenSignal, setVacationOpenSignal] = useState(0);
     const [correctionOpenSignal, setCorrectionOpenSignal] = useState(0);
 
@@ -190,17 +247,42 @@ const AdminDashboard = () => {
         }, 0);
     }, []);
 
+    const navigateDashboard = useCallback((updates = {}, options = {}) => {
+        const search = makeDashboardSearch(searchParams, updates, { preserve: options.preserve });
+        navigate({
+            pathname: '/admin/dashboard',
+            search: search ? `?${search}` : '',
+        }, {
+            replace: !!options.replace,
+            state: options.state,
+        });
+    }, [navigate, searchParams]);
+
+    const openDashboardTab = useCallback((tabId, options = {}) => {
+        const normalizedTab = getValidDashboardTab(tabId);
+        setActiveMainTab(normalizedTab);
+        setActiveIssuePill(null);
+        navigateDashboard({
+            tab: normalizedTab,
+            week: null,
+            focusUser: null,
+            focusDate: null,
+            requestType: null,
+            requestId: null,
+        }, options);
+    }, [navigateDashboard]);
+
     const handleNavigateToVacations = useCallback(() => {
-        setActiveMainTab('requests');
+        openDashboardTab('requests');
         setVacationOpenSignal((prev) => prev + 1);
         queueScrollTo(vacationSectionRef);
-    }, [queueScrollTo]);
+    }, [openDashboardTab, queueScrollTo]);
 
     const handleNavigateToCorrections = useCallback(() => {
-        setActiveMainTab('requests');
+        openDashboardTab('requests');
         setCorrectionOpenSignal((prev) => prev + 1);
         queueScrollTo(correctionSectionRef);
-    }, [queueScrollTo]);
+    }, [openDashboardTab, queueScrollTo]);
 
     const handleOpenUserOverview = useCallback((username) => {
         if (!username) return;
@@ -903,14 +985,14 @@ const AdminDashboard = () => {
     }, []);
 
     const handleFocusIssues = useCallback((filterKey) => {
-        setActiveMainTab('time');
+        openDashboardTab('time');
         setActiveIssuePill(filterKey);
         scheduleNextFrame(() => {
             if (weekSectionRef.current?.focusIssueType) {
                 weekSectionRef.current.focusIssueType(filterKey);
             }
         });
-    }, [scheduleNextFrame]);
+    }, [openDashboardTab, scheduleNextFrame]);
 
     const handleResetIssueFilters = useCallback(() => {
         setActiveIssuePill(null);
@@ -922,24 +1004,24 @@ const AdminDashboard = () => {
     }, [handleFocusIssues]);
 
     const handleFocusNegativeBalances = useCallback(() => {
-        setActiveMainTab('time');
+        openDashboardTab('time');
         setActiveIssuePill(null);
         scheduleNextFrame(() => {
             weekSectionRef.current?.focusNegativeBalances?.();
         });
-    }, [scheduleNextFrame]);
+    }, [openDashboardTab, scheduleNextFrame]);
 
     const handleFocusPositiveBalances = useCallback(() => {
-        setActiveMainTab('time');
+        openDashboardTab('time');
         setActiveIssuePill(null);
         scheduleNextFrame(() => {
             weekSectionRef.current?.focusPositiveBalances?.();
         });
-    }, [scheduleNextFrame]);
+    }, [openDashboardTab, scheduleNextFrame]);
 
     function handleFocusUserFromTask(username) {
         if (!username) return;
-        setActiveMainTab('time');
+        openDashboardTab('time');
         setActiveIssuePill(null);
         scheduleNextFrame(() => {
             weekSectionRef.current?.focusUser?.(username);
@@ -1008,6 +1090,78 @@ const AdminDashboard = () => {
         }
     }, [hasIssues, activeIssuePill]);
 
+    const dashboardSearchKey = searchParams.toString();
+
+    const focusedRequest = useMemo(() => {
+        const params = new URLSearchParams(dashboardSearchKey);
+        if (getValidDashboardTab(params.get('tab')) !== 'requests') {
+            return null;
+        }
+        const type = params.get('requestType');
+        const id = params.get('requestId');
+        if (!['vacation', 'correction'].includes(type) || !id) {
+            return null;
+        }
+        return { type, id };
+    }, [dashboardSearchKey]);
+
+    const timeFocusTarget = useMemo(() => {
+        const params = new URLSearchParams(dashboardSearchKey);
+        if (getValidDashboardTab(params.get('tab')) !== 'time') {
+            return null;
+        }
+        const username = params.get('focusUser');
+        const dateIso = extractIsoDate(params.get('focusDate'));
+        if (!username) return null;
+        return { username, dateIso };
+    }, [dashboardSearchKey]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(dashboardSearchKey);
+        const nextTab = getValidDashboardTab(params.get('tab'));
+        setActiveMainTab(prev => (prev === nextTab ? prev : nextTab));
+
+        const weekIso = extractIsoDate(params.get('week'));
+        if (weekIso) {
+            const parsedWeekDate = parseIsoDateAsLocal(weekIso);
+            if (parsedWeekDate) {
+                const nextMonday = getMondayOfWeek(parsedWeekDate);
+                setSelectedMonday(prev => (
+                    prev.getTime() === nextMonday.getTime() ? prev : nextMonday
+                ));
+            }
+        }
+    }, [dashboardSearchKey]);
+
+    useEffect(() => {
+        if (activeMainTab !== 'time' || !timeFocusTarget?.username) return undefined;
+
+        let cancelled = false;
+        const runFocus = () => {
+            if (cancelled) return;
+            weekSectionRef.current?.focusUserDate?.(
+                timeFocusTarget.username,
+                timeFocusTarget.dateIso,
+                'request_focus'
+            );
+        };
+
+        scheduleNextFrame(runFocus);
+        const timeoutId = window.setTimeout(runFocus, 120);
+
+        return () => {
+            cancelled = true;
+            window.clearTimeout(timeoutId);
+        };
+    }, [
+        activeMainTab,
+        timeFocusTarget,
+        selectedMonday,
+        users.length,
+        dailySummaries.length,
+        scheduleNextFrame,
+    ]);
+
     const dashboardTabs = useMemo(() => ([
         { id: 'overview', label: t('adminDashboard.tabs.overview', 'Übersicht') },
         { id: 'time', label: t('adminDashboard.tabs.timeReview', 'Zeitprüfung') },
@@ -1016,16 +1170,12 @@ const AdminDashboard = () => {
         { id: 'modules', label: t('adminDashboard.tabs.modules', 'Module') },
     ]), [inboxItems, t]);
 
-    const openDashboardTab = useCallback((tabId) => {
-        setActiveMainTab(tabId);
-    }, []);
-
     const handlePrintTimesFromHeader = useCallback(() => {
-        setActiveMainTab('time');
+        openDashboardTab('time');
         scheduleNextFrame(() => {
             weekSectionRef.current?.printOverview?.();
         });
-    }, [scheduleNextFrame]);
+    }, [openDashboardTab, scheduleNextFrame]);
 
     const fetchUsers = useCallback(async () => {
         try {
@@ -1163,22 +1313,87 @@ const AdminDashboard = () => {
         }
     }, [selectedMonday, users, currentUser, fetchHolidaysForAllRelevantCantons]);
 
+    const updateSelectedWeek = useCallback((dateForWeek) => {
+        if (!dateForWeek || Number.isNaN(dateForWeek.getTime())) return;
+        const nextMonday = getMondayOfWeek(dateForWeek);
+        setSelectedMonday(nextMonday);
+        if (activeMainTab === 'time') {
+            navigateDashboard({
+                tab: 'time',
+                week: formatLocalDateYMD(nextMonday),
+                focusDate: null,
+            }, { preserve: true, replace: true });
+        }
+    }, [activeMainTab, navigateDashboard]);
+
+    const handleOpenRequestInTimeReview = useCallback((request) => {
+        if (!request?.type || request.id === undefined || request.id === null || !request.username) {
+            return;
+        }
+
+        const requestType = request.type === 'vacation' ? 'vacation' : 'correction';
+        const requestId = String(request.id);
+        const targetDateIso = extractIsoDate(request.dateIso)
+            || (requestType === 'correction'
+                ? getCorrectionTargetDateIso(request)
+                : extractIsoDate(request.startDate));
+        const targetWeekIso = getMondayIsoForDate(targetDateIso);
+
+        if (!targetDateIso || !targetWeekIso) {
+            notify(t('adminDashboard.requestJumpMissingDate', 'FÃ¼r diesen Antrag konnte kein gÃ¼ltiges PrÃ¼fdatum gefunden werden.'), 'warning');
+            return;
+        }
+
+        navigateDashboard({
+            tab: 'requests',
+            requestType,
+            requestId,
+            week: null,
+            focusUser: null,
+            focusDate: null,
+        }, {
+            replace: true,
+            state: { focusedRequest: { type: requestType, id: requestId } },
+        });
+
+        scheduleNextFrame(() => {
+            const parsedWeekDate = parseIsoDateAsLocal(targetWeekIso);
+            if (parsedWeekDate) {
+                setSelectedMonday(parsedWeekDate);
+            }
+            setActiveMainTab('time');
+            setActiveIssuePill(null);
+            navigateDashboard({
+                tab: 'time',
+                week: targetWeekIso,
+                focusUser: request.username,
+                focusDate: targetDateIso,
+            }, {
+                state: {
+                    fromRequest: {
+                        type: requestType,
+                        id: requestId,
+                    },
+                },
+            });
+        });
+    }, [navigateDashboard, notify, scheduleNextFrame, t]);
 
     function handlePrevWeek() {
-        setSelectedMonday(prev => addDays(prev, -7));
+        updateSelectedWeek(addDays(selectedMonday, -7));
     }
     function handleNextWeek() {
-        setSelectedMonday(prev => addDays(prev, 7));
+        updateSelectedWeek(addDays(selectedMonday, 7));
     }
     function handleWeekJump(e) {
         const picked = new Date(e.target.value);
         if (!isNaN(picked.getTime())) {
-            setSelectedMonday(getMondayOfWeek(picked));
+            updateSelectedWeek(picked);
         }
     }
 
     function handleCurrentWeek() {
-        setSelectedMonday(getMondayOfWeek(new Date()));
+        updateSelectedWeek(new Date());
     }
 
     async function handleApproveVacation(id, adminNote = '') {
@@ -1295,9 +1510,9 @@ const AdminDashboard = () => {
 
     const focusWeekForProblem = useCallback((dateForWeek) => {
         if (dateForWeek && !isNaN(new Date(dateForWeek).getTime())) {
-            setSelectedMonday(getMondayOfWeek(new Date(dateForWeek)));
+            updateSelectedWeek(new Date(dateForWeek));
         }
-    }, []);
+    }, [updateSelectedWeek]);
 
     function openPrintUserModal(username) {
         setPrintUser(username);
@@ -1606,6 +1821,8 @@ const AdminDashboard = () => {
                                     openSignal={vacationOpenSignal}
                                     canManage={canManageAdminDashboard}
                                     users={users}
+                                    focusedRequest={focusedRequest}
+                                    onOpenInTimeReview={handleOpenRequestInTimeReview}
                                 />
                             </div>
                             <div ref={correctionSectionRef}>
@@ -1617,6 +1834,8 @@ const AdminDashboard = () => {
                                     openSignal={correctionOpenSignal}
                                     canManage={canManageAdminDashboard}
                                     users={users}
+                                    focusedRequest={focusedRequest}
+                                    onOpenInTimeReview={handleOpenRequestInTimeReview}
                                 />
                             </div>
                         </section>
