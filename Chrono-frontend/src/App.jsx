@@ -254,7 +254,6 @@ function App() {
                             path="/admin/schedule"
                             element={
                                 <PrivateRoute
-                                    requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]}
                                     requiredFeature="roster"
                                     requiredPagePermission="adminSchedule"
                                     redirectTo="/admin/dashboard"

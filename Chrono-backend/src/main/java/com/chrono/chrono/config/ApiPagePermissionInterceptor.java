@@ -215,7 +215,7 @@ public class ApiPagePermissionInterceptor implements HandlerInterceptor {
                     pages(UserPermissionService.PAGE_ADMIN_DASHBOARD)),
 
             rule("/api/vacation/all",
-                    pages(UserPermissionService.PAGE_ADMIN_DASHBOARD),
+                    pages(UserPermissionService.PAGE_ADMIN_DASHBOARD, UserPermissionService.PAGE_ADMIN_SCHEDULE),
                     pages()),
             rule("/api/vacation/adminCreate",
                     pages(),

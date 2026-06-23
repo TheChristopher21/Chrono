@@ -18,13 +18,13 @@ public class AdminShiftDefinitionController {
     private ScheduleRuleRepository ruleRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public List<ScheduleRule> getActiveRules() {
         return ruleRepository.findByIsActiveTrueOrderByStartTime();
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public List<ScheduleRule> getAllRules() {
         return ruleRepository.findAll();
     }

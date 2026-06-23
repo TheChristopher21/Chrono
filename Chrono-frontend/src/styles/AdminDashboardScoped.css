@@ -1752,6 +1752,9 @@
   padding: var(--u-gap-sm);
   border-radius: var(--u-radius-sm);
 }
+.admin-dashboard.scoped-dashboard .week-navigation.table-week-navigation {
+  margin-bottom: var(--u-gap-sm);
+}
 [data-theme="dark"] .admin-dashboard.scoped-dashboard .week-navigation {
   background-color: var(--c-card);
 }

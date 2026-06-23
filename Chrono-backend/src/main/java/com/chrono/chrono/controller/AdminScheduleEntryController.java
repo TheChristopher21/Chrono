@@ -1,9 +1,12 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.repositories.ScheduleEntryRepository;
+import com.chrono.chrono.repositories.ScheduleChangeLogRepository;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.ScheduleRuleRepository;
+import com.chrono.chrono.dto.ScheduleChangeLogDTO;
 import com.chrono.chrono.dto.ScheduleEntryDTO;
+import com.chrono.chrono.entities.ScheduleChangeLog;
 import com.chrono.chrono.entities.ScheduleEntry;
 import com.chrono.chrono.entities.ScheduleRule;
 import com.chrono.chrono.entities.User;
@@ -11,6 +14,7 @@ import com.chrono.chrono.services.AccessControlService;
 import com.chrono.chrono.services.WorkScheduleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,6 +45,69 @@ public class AdminScheduleEntryController {
     private WorkScheduleService workScheduleService;
     @Autowired
     private AccessControlService accessControlService;
+    @Autowired
+    private ScheduleChangeLogRepository scheduleChangeLogRepository;
+
+    private Long requireCompanyIdForSchedule(User actor) {
+        if (accessControlService.isSuperAdmin(actor)) {
+            return null;
+        }
+        if (actor == null || actor.getCompany() == null || actor.getCompany().getId() == null) {
+            throw new AccessDeniedException("Company scoped schedule access required");
+        }
+        return actor.getCompany().getId();
+    }
+
+    private void requireScheduleUserAccess(User actor, User target) {
+        if (accessControlService.isSuperAdmin(actor)) {
+            return;
+        }
+        if (!accessControlService.sameCompany(actor, target)) {
+            throw new AccessDeniedException("Not allowed to manage this schedule entry");
+        }
+    }
+
+    private String displayName(User user) {
+        if (user == null) {
+            return "";
+        }
+        String firstName = user.getFirstName() != null ? user.getFirstName().trim() : "";
+        String lastName = user.getLastName() != null ? user.getLastName().trim() : "";
+        String fullName = (firstName + " " + lastName).trim();
+        return fullName.isBlank() ? user.getUsername() : fullName;
+    }
+
+    private String truncate(String value) {
+        if (value == null || value.length() <= 2000) {
+            return value;
+        }
+        return value.substring(0, 1997) + "...";
+    }
+
+    private String entrySummary(User user, LocalDate date, String shift) {
+        return displayName(user) + " / " + date + " / " + shift;
+    }
+
+    private void recordScheduleChange(User actor, ScheduleEntry entry, String action, String details) {
+        if (actor == null || entry == null || entry.getDate() == null || action == null || action.isBlank()) {
+            return;
+        }
+        User target = entry.getUser();
+        ScheduleChangeLog log = new ScheduleChangeLog();
+        log.setActor(actor);
+        log.setTargetUser(target);
+        log.setCompany(target != null && target.getCompany() != null ? target.getCompany() : actor.getCompany());
+        log.setScheduleEntryId(entry.getId());
+        log.setActorUsername(actor.getUsername());
+        log.setActorDisplayName(displayName(actor));
+        log.setTargetUsername(target != null ? target.getUsername() : null);
+        log.setTargetDisplayName(displayName(target));
+        log.setAction(action);
+        log.setScheduleDate(entry.getDate());
+        log.setShift(entry.getShift());
+        log.setDetails(truncate(details));
+        scheduleChangeLogRepository.save(log);
+    }
 
     private int getShiftDurationMinutes(String shiftKey) {
         return ruleRepo.findByShiftKey(shiftKey)
@@ -153,22 +220,38 @@ public class AdminScheduleEntryController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public List<ScheduleEntryDTO> getEntries(@RequestParam String start, @RequestParam String end, Principal principal) {
-        User admin = accessControlService.requireAuthenticatedUser(principal);
+        User actor = accessControlService.requireAuthenticatedUser(principal);
         LocalDate s = LocalDate.parse(start);
         LocalDate e = LocalDate.parse(end);
-        List<ScheduleEntry> entries = accessControlService.isSuperAdmin(admin)
+        List<ScheduleEntry> entries = accessControlService.isSuperAdmin(actor)
                 ? entryRepo.findByDateBetween(s, e)
                 : entryRepo.findByUser_Company_IdAndDateBetween(
-                    accessControlService.requireCompanyIdForTenantAdmin(admin), s, e);
+                    requireCompanyIdForSchedule(actor), s, e);
         return entries.stream().map(ScheduleEntryDTO::new).toList();
     }
 
+    @GetMapping("/logs")
+    @PreAuthorize("isAuthenticated()")
+    public List<ScheduleChangeLogDTO> getChangeLogs(@RequestParam String start, @RequestParam String end, Principal principal) {
+        User actor = accessControlService.requireAuthenticatedUser(principal);
+        if (!accessControlService.isAdmin(actor)) {
+            throw new AccessDeniedException("Schedule change log is admin only");
+        }
+        LocalDate s = LocalDate.parse(start);
+        LocalDate e = LocalDate.parse(end);
+        List<ScheduleChangeLog> logs = accessControlService.isSuperAdmin(actor)
+                ? scheduleChangeLogRepository.findByScheduleDateBetweenOrderByCreatedAtDesc(s, e)
+                : scheduleChangeLogRepository.findByCompany_IdAndScheduleDateBetweenOrderByCreatedAtDesc(
+                    requireCompanyIdForSchedule(actor), s, e);
+        return logs.stream().map(ScheduleChangeLogDTO::new).toList();
+    }
+
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> saveEntry(@RequestBody ScheduleEntryDTO dto, Principal principal) {
-        User admin = accessControlService.requireAuthenticatedUser(principal);
+        User actor = accessControlService.requireAuthenticatedUser(principal);
         if (dto.getUserId() == null || dto.getShift() == null || dto.getShift().isEmpty()) {
             return ResponseEntity.badRequest().body("User ID and Shift are required.");
         }
@@ -178,7 +261,7 @@ public class AdminScheduleEntryController {
             return ResponseEntity.badRequest().body("User not found");
         }
         User user = userOpt.get();
-        accessControlService.requireCanManageUser(admin, user);
+        requireScheduleUserAccess(actor, user);
 
         // Update existing entry if ID is provided
         if (dto.getId() != null) {
@@ -187,17 +270,20 @@ public class AdminScheduleEntryController {
                 return ResponseEntity.badRequest().body("Entry not found");
             }
             ScheduleEntry entry = entryOpt.get();
-            accessControlService.requireCanManageUser(admin, entry.getUser());
+            requireScheduleUserAccess(actor, entry.getUser());
 
             String validationError = validateAssignment(user, dto.getDate(), dto.getShift(), entry.getId());
             if (validationError != null) {
                 return ResponseEntity.badRequest().body(validationError);
             }
 
+            String before = entrySummary(entry.getUser(), entry.getDate(), entry.getShift());
+            entry.setUser(user);
             entry.setDate(dto.getDate());
             entry.setShift(dto.getShift());
             entry.setNote(dto.getNote());
             entryRepo.save(entry);
+            recordScheduleChange(actor, entry, "UPDATE", "Von " + before + " zu " + entrySummary(user, dto.getDate(), dto.getShift()));
             return ResponseEntity.ok(new ScheduleEntryDTO(entry));
         }
 
@@ -218,13 +304,21 @@ public class AdminScheduleEntryController {
         newEntry.setNote(dto.getNote());
 
         entryRepo.save(newEntry);
+        recordScheduleChange(actor, newEntry, "CREATE", "Schicht erstellt: " + entrySummary(user, dto.getDate(), dto.getShift()));
         return ResponseEntity.ok(new ScheduleEntryDTO(newEntry));
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<?> updateEntry(@PathVariable Long id, @RequestBody ScheduleEntryDTO dto, Principal principal) {
+        dto.setId(id);
+        return saveEntry(dto, principal);
+    }
+
     @PostMapping("/autofill")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> autoFillSchedule(@RequestBody List<ScheduleEntryDTO> entries, Principal principal) {
-        User admin = accessControlService.requireAuthenticatedUser(principal);
+        User actor = accessControlService.requireAuthenticatedUser(principal);
         Map<String, Integer> weeklyMinutes = new HashMap<>();
         Map<String, Integer> dailyMinutes = new HashMap<>();
         Map<String, List<String>> plannedShiftKeys = new HashMap<>();
@@ -239,7 +333,7 @@ public class AdminScheduleEntryController {
                 continue;
             }
             try {
-                accessControlService.requireCanManageUser(admin, user);
+                requireScheduleUserAccess(actor, user);
             } catch (RuntimeException ex) {
                 continue;
             }
@@ -291,6 +385,12 @@ public class AdminScheduleEntryController {
         }
 
         List<ScheduleEntry> savedEntries = entryRepo.saveAll(newEntries);
+        savedEntries.forEach(entry -> recordScheduleChange(
+                actor,
+                entry,
+                "AUTOFILL_CREATE",
+                "Automatisch eingetragen: " + entrySummary(entry.getUser(), entry.getDate(), entry.getShift())
+        ));
         return ResponseEntity.ok(Map.of(
                 "created", savedEntries.size(),
                 "entries", savedEntries.stream().map(ScheduleEntryDTO::new).toList()
@@ -298,9 +398,9 @@ public class AdminScheduleEntryController {
     }
 
     @PostMapping("/bulk-delete")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> deleteEntries(@RequestBody List<Long> ids, Principal principal) {
-        User admin = accessControlService.requireAuthenticatedUser(principal);
+        User actor = accessControlService.requireAuthenticatedUser(principal);
         if (ids == null || ids.isEmpty()) {
             return ResponseEntity.ok(Map.of("deleted", 0));
         }
@@ -311,7 +411,13 @@ public class AdminScheduleEntryController {
             if (entry.isEmpty()) {
                 continue;
             }
-            accessControlService.requireCanManageUser(admin, entry.get().getUser());
+            requireScheduleUserAccess(actor, entry.get().getUser());
+            recordScheduleChange(
+                    actor,
+                    entry.get(),
+                    "BULK_DELETE",
+                    "Schicht entfernt: " + entrySummary(entry.get().getUser(), entry.get().getDate(), entry.get().getShift())
+            );
             entryRepo.delete(entry.get());
             deleted++;
         }
@@ -320,9 +426,9 @@ public class AdminScheduleEntryController {
     }
 
     @PostMapping("/copy")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> copySchedule(@RequestBody List<ScheduleEntryDTO> entries, Principal principal) {
-        User admin = accessControlService.requireAuthenticatedUser(principal);
+        User actor = accessControlService.requireAuthenticatedUser(principal);
         if (entries == null || entries.isEmpty()) {
             return ResponseEntity.ok().build();
         }
@@ -331,11 +437,17 @@ public class AdminScheduleEntryController {
         LocalDate weekStart = firstDate.with(DayOfWeek.MONDAY);
         LocalDate weekEnd = weekStart.plusDays(6);
 
-        List<ScheduleEntry> existingEntries = accessControlService.isSuperAdmin(admin)
+        List<ScheduleEntry> existingEntries = accessControlService.isSuperAdmin(actor)
                 ? entryRepo.findByDateBetween(weekStart, weekEnd)
                 : entryRepo.findByUser_Company_IdAndDateBetween(
-                    accessControlService.requireCompanyIdForTenantAdmin(admin), weekStart, weekEnd);
+                    requireCompanyIdForSchedule(actor), weekStart, weekEnd);
         if (!existingEntries.isEmpty()) {
+            existingEntries.forEach(entry -> recordScheduleChange(
+                    actor,
+                    entry,
+                    "COPY_DELETE",
+                    "Beim Einfuegen ersetzt: " + entrySummary(entry.getUser(), entry.getDate(), entry.getShift())
+            ));
             entryRepo.deleteAll(existingEntries);
         }
 
@@ -346,7 +458,7 @@ public class AdminScheduleEntryController {
                         return null;
                     }
                     try {
-                        accessControlService.requireCanManageUser(admin, user);
+                        requireScheduleUserAccess(actor, user);
                     } catch (RuntimeException ex) {
                         return null;
                     }
@@ -359,21 +471,33 @@ public class AdminScheduleEntryController {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
 
-        entryRepo.saveAll(newEntriesToSave);
+        List<ScheduleEntry> savedEntries = entryRepo.saveAll(newEntriesToSave);
+        savedEntries.forEach(entry -> recordScheduleChange(
+                actor,
+                entry,
+                "COPY_CREATE",
+                "Aus kopierter Woche eingefuegt: " + entrySummary(entry.getUser(), entry.getDate(), entry.getShift())
+        ));
 
         return ResponseEntity.ok().build();
     }
 
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> deleteEntry(@PathVariable Long id, Principal principal) {
-        User admin = accessControlService.requireAuthenticatedUser(principal);
+        User actor = accessControlService.requireAuthenticatedUser(principal);
         Optional<ScheduleEntry> entry = entryRepo.findById(id);
         if (entry.isEmpty()) {
             return ResponseEntity.badRequest().body("Entry not found");
         }
-        accessControlService.requireCanManageUser(admin, entry.get().getUser());
+        requireScheduleUserAccess(actor, entry.get().getUser());
+        recordScheduleChange(
+                actor,
+                entry.get(),
+                "DELETE",
+                "Schicht geloescht: " + entrySummary(entry.get().getUser(), entry.get().getDate(), entry.get().getShift())
+        );
         entryRepo.deleteById(id);
         return ResponseEntity.ok("deleted");
     }

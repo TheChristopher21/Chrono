@@ -1646,6 +1646,29 @@ const AdminWeekSection = forwardRef(({
         setWeekJumpInputValue(formatLocalDateYMD(selectedMonday));
     }, [handleWeekJump, selectedMonday]);
 
+    const weekNavigationControls = activeTab === 'week' ? (
+        <div className="week-navigation table-week-navigation">
+            <button onClick={handlePrevWeek} aria-label={t('adminDashboard.prevWeek', 'Vorige Woche')}>←</button>
+            <input
+                type="date"
+                value={weekJumpInputValue}
+                onChange={(e) => setWeekJumpInputValue(e.target.value)}
+                onBlur={(e) => commitWeekJumpInput(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        commitWeekJumpInput(e.currentTarget.value);
+                        e.currentTarget.blur();
+                    }
+                }}
+                aria-label={t('adminDashboard.jumpToDate', 'Datum auswählen')}
+            />
+            <button onClick={handleNextWeek} aria-label={t('adminDashboard.nextWeek', 'Nächste Woche')}>→</button>
+            <button onClick={handleCurrentWeek} aria-label={t('adminDashboard.currentWeek', 'Aktuelle Woche')}>
+                {t('currentWeek', 'Aktuelle Woche')}
+            </button>
+        </div>
+    ) : null;
+
 
     return (
         <> {/* Added scoped-dashboard here */}
@@ -1667,28 +1690,7 @@ const AdminWeekSection = forwardRef(({
                             ? t("adminDashboard.timeTrackingCurrentWeek", "Zeiterfassung Aktuelle Woche")
                             : t("adminDashboard.timeTrackingRangeTitle", "Zeiterfassung Zeitraum")}
                     </h3>
-                    {activeTab === 'week' ? (
-                        <div className="week-navigation">
-                            <button onClick={handlePrevWeek} aria-label={t('adminDashboard.prevWeek', 'Vorige Woche')}>←</button>
-                            <input
-                                type="date"
-                                value={weekJumpInputValue}
-                                onChange={(e) => setWeekJumpInputValue(e.target.value)}
-                                onBlur={(e) => commitWeekJumpInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        commitWeekJumpInput(e.currentTarget.value);
-                                        e.currentTarget.blur();
-                                    }
-                                }}
-                                aria-label={t('adminDashboard.jumpToDate', 'Datum auswählen')}
-                            />
-                            <button onClick={handleNextWeek} aria-label={t('adminDashboard.nextWeek', 'Nächste Woche')}>→</button>
-                            <button onClick={handleCurrentWeek} aria-label={t('adminDashboard.currentWeek', 'Aktuelle Woche')}>
-                                {t('currentWeek', 'Aktuelle Woche')}
-                            </button>
-                        </div>
-                    ) : (
+                    {activeTab === 'month' && (
                         <div className="month-range-controls">
                             <label className="month-range-field month-range-mode">
                                 <span>{t('adminDashboard.monthView.modeLabel', 'Zeitraum-Modus')}</span>
@@ -1928,6 +1930,7 @@ const AdminWeekSection = forwardRef(({
                     </div>
                 )}
 
+                {weekNavigationControls}
 
                 {activeTab === 'month' && !monthRangeIsValid ? (
                     <p className="no-data-message italic text-gray-600 p-4 text-center">

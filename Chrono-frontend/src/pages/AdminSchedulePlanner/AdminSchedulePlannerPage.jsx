@@ -9,6 +9,7 @@ import '../../styles/AdminSchedulePlannerPageScoped.css';
 import { useTranslation } from '../../context/LanguageContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useAuth } from '../../context/AuthContext';
+import { ACCESS_MANAGE, ACCESS_VIEW, hasPageAccess, isAdminUser } from '../../utils/pageAccess';
 
 const days = ['Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag', 'Sonntag'];
 
@@ -46,6 +47,13 @@ const fetchSchedule = async (weekStart) => {
 const saveScheduleEntry = (entry) => {
     if (entry?.id) return api.put(`/api/admin/schedule/${entry.id}`, entry);
     return api.post('/api/admin/schedule', entry);
+};
+
+const fetchScheduleLogs = async (weekStart) => {
+    const start = formatISO(weekStart, { representation: 'date' });
+    const end = formatISO(addDays(weekStart, 6), { representation: 'date' });
+    const { data } = await api.get('/api/admin/schedule/logs', { params: { start, end } });
+    return Array.isArray(data) ? data : [];
 };
 const deleteScheduleEntry = (id) => api.delete(`/api/admin/schedule/${id}`);
 const autoFillSchedule = (entries) => api.post('/api/admin/schedule/autofill', entries);
@@ -286,10 +294,110 @@ const buildAutoFillEntries = ({ availableUsers, shifts, schedule, weekStart, hol
     return newEntries;
 };
 
+const scheduleLogActionLabels = {
+    CREATE: 'Erstellt',
+    UPDATE: 'Geaendert',
+    DELETE: 'Geloescht',
+    AUTOFILL_CREATE: 'Automatik',
+    BULK_DELETE: 'Entfernt',
+    COPY_DELETE: 'Ersetzt',
+    COPY_CREATE: 'Eingefuegt',
+};
+
+const formatLogTimestamp = (value) => {
+    if (!value) return '-';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return String(value);
+    return parsed.toLocaleString('de-CH', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
+const formatLogDate = (value) => {
+    if (!value) return '-';
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return String(value);
+    return parsed.toLocaleDateString('de-CH', { day: '2-digit', month: '2-digit', year: 'numeric' });
+};
+
+const ScheduleChangeLogModal = ({ logs, isLoading, isRefreshing, onClose, onRefresh, weekStart }) => {
+    const weekEnd = addDays(weekStart, 6);
+
+    return (
+        <div className="schedule-log-backdrop" role="presentation" onMouseDown={onClose}>
+            <section
+                className="schedule-log-dialog"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="schedule-log-title"
+                onMouseDown={(event) => event.stopPropagation()}
+            >
+                <div className="schedule-log-header">
+                    <div>
+                        <h3 id="schedule-log-title">Dienstplan-Log</h3>
+                        <p>{formatLogDate(weekStart)} bis {formatLogDate(weekEnd)}</p>
+                    </div>
+                    <div className="schedule-log-actions">
+                        <button type="button" onClick={onRefresh} disabled={isRefreshing}>
+                            {isRefreshing ? 'Aktualisiere...' : 'Aktualisieren'}
+                        </button>
+                        <button type="button" onClick={onClose} className="schedule-log-close" aria-label="Log schliessen">
+                            x
+                        </button>
+                    </div>
+                </div>
+
+                {isLoading ? (
+                    <div className="schedule-log-empty">Log wird geladen...</div>
+                ) : logs.length === 0 ? (
+                    <div className="schedule-log-empty">Keine Aenderungen in dieser Woche.</div>
+                ) : (
+                    <div className="schedule-log-table-wrap">
+                        <table className="schedule-log-table">
+                            <thead>
+                            <tr>
+                                <th>Zeitpunkt</th>
+                                <th>Geaendert von</th>
+                                <th>Aktion</th>
+                                <th>Mitarbeiter</th>
+                                <th>Datum</th>
+                                <th>Schicht</th>
+                                <th>Details</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            {logs.map(log => (
+                                <tr key={log.id}>
+                                    <td>{formatLogTimestamp(log.createdAt)}</td>
+                                    <td>{log.actorName || log.actorUsername || '-'}</td>
+                                    <td>
+                                        <span className={`schedule-log-badge action-${String(log.action || '').toLowerCase()}`}>
+                                            {scheduleLogActionLabels[log.action] || log.action || '-'}
+                                        </span>
+                                    </td>
+                                    <td>{log.targetName || log.targetUsername || '-'}</td>
+                                    <td>{formatLogDate(log.scheduleDate)}</td>
+                                    <td>{log.shift || '-'}</td>
+                                    <td>{log.details || '-'}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </section>
+        </div>
+    );
+};
+
 /* ===========================
    Week Navigator (with toggles)
    =========================== */
-const WeekNavigator = ({ onAutoFill, onUndoAutoFill, canUndoAutoFill, isUndoingAutoFill, onCopyWeek, onPasteWeek }) => {
+const WeekNavigator = ({ onAutoFill, onUndoAutoFill, canUndoAutoFill, isUndoingAutoFill, onCopyWeek, onPasteWeek, canManageSchedule }) => {
     const { t } = useTranslation();
     const {
         weekStart, changeWeek, setWeekStart, copiedWeek,
@@ -315,18 +423,22 @@ const WeekNavigator = ({ onAutoFill, onUndoAutoFill, canUndoAutoFill, isUndoingA
                     value={format(weekStart, 'yyyy-MM-dd')}
                     onChange={(e) => setWeekStart(new Date(e.target.value))}
                 />
-                <button onClick={onCopyWeek} className="button-copy">Woche kopieren</button>
-                {copiedWeek && <button onClick={onPasteWeek} className="button-paste">Einfügen</button>}
-                <button onClick={onAutoFill} className="button-autofill">Automatisch auffüllen</button>
-                {canUndoAutoFill && (
-                    <button
-                        type="button"
-                        onClick={onUndoAutoFill}
-                        className="button-autofill-undo"
-                        disabled={isUndoingAutoFill}
-                    >
-                        {isUndoingAutoFill ? 'Wird rückgängig gemacht...' : 'Automatik rückgängig'}
-                    </button>
+                {canManageSchedule && (
+                    <>
+                        <button onClick={onCopyWeek} className="button-copy">Woche kopieren</button>
+                        {copiedWeek && <button onClick={onPasteWeek} className="button-paste">Einfuegen</button>}
+                        <button onClick={onAutoFill} className="button-autofill">Automatisch auffuellen</button>
+                        {canUndoAutoFill && (
+                            <button
+                                type="button"
+                                onClick={onUndoAutoFill}
+                                className="button-autofill-undo"
+                                disabled={isUndoingAutoFill}
+                            >
+                                {isUndoingAutoFill ? 'Wird rueckgaengig gemacht...' : 'Automatik rueckgaengig'}
+                            </button>
+                        )}
+                    </>
                 )}
 
                 {/* Quick-Filters */}
@@ -346,7 +458,7 @@ const WeekNavigator = ({ onAutoFill, onUndoAutoFill, canUndoAutoFill, isUndoingA
 /* ===========================
    Sidebar: User list
    =========================== */
-const UserList = () => {
+const UserList = ({ canManageSchedule }) => {
     const { t } = useTranslation();
     const { data: users = [], isLoading: isLoadingUsers } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
     const dragUser = usePlannerStore(state => state.dragUser);
@@ -365,9 +477,9 @@ const UserList = () => {
                         <div
                             key={u.id}
                             className={`user-list-item ${dragUser?.id === u.id ? 'dragging' : ''} ${isDisabled ? 'disabled' : ''}`}
-                            draggable={!isDisabled}
+                            draggable={canManageSchedule && !isDisabled}
                             onDragStart={(e) => {
-                                if (isDisabled) {
+                                if (!canManageSchedule || isDisabled) {
                                     e.preventDefault();
                                     return;
                                 }
@@ -383,17 +495,19 @@ const UserList = () => {
                                 <span>{u.firstName} {u.lastName}</span>
                                 {isDisabled && <span className="user-status-tag">{t('schedulePlanner.userDisabled', 'Deaktiviert')}</span>}
                             </div>
-                            <button
-                                type="button"
-                                className="user-disable-toggle"
-                                onClick={(event) => {
-                                    event.stopPropagation();
-                                    toggleUserDisabled(u.id);
-                                }}
-                                onMouseDown={(event) => event.stopPropagation()}
-                            >
-                                {isDisabled ? t('schedulePlanner.enableUser', 'Aktivieren') : t('schedulePlanner.disableUser', 'Deaktivieren')}
-                            </button>
+                            {canManageSchedule && (
+                                <button
+                                    type="button"
+                                    className="user-disable-toggle"
+                                    onClick={(event) => {
+                                        event.stopPropagation();
+                                        toggleUserDisabled(u.id);
+                                    }}
+                                    onMouseDown={(event) => event.stopPropagation()}
+                                >
+                                    {isDisabled ? t('schedulePlanner.enableUser', 'Aktivieren') : t('schedulePlanner.disableUser', 'Deaktivieren')}
+                                </button>
+                            )}
                         </div>
                     );
                 })}
@@ -405,7 +519,7 @@ const UserList = () => {
 /* ===========================
    Schedule table
    =========================== */
-const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
+const ScheduleTable = ({ schedule, holidays, vacationMap, canManageSchedule }) => {
     const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
     const { data: shifts = [], isLoading: isLoadingShifts } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
 
@@ -428,6 +542,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
     const mutationOptions = {
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['schedule', weekKey] });
+            queryClient.invalidateQueries({ queryKey: ['scheduleLogs', weekKey] });
         },
         onError: (err) => {
             const message = err?.response?.data?.message || err?.response?.data || err.message;
@@ -445,6 +560,10 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
         e.preventDefault();
         e.stopPropagation();
         setHoveredCell(null);
+        if (!canManageSchedule) {
+            clearDrag();
+            return;
+        }
         if (!dragUser) return;
         if (disabledUserIds.has(dragUser.id)) {
             notify(t('schedulePlanner.userDisabledDrop', 'Der Nutzer ist deaktiviert und kann nicht zugewiesen werden.'));
@@ -525,6 +644,7 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
     };
 
     const clearEntry = (entryId) => {
+        if (!canManageSchedule) return;
         deleteMutation.mutate(entryId);
     };
 
@@ -566,8 +686,13 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
                                         return (
                                             <div
                                                 key={shiftKey}
-                                                className={`shift-slot ${isHovered ? 'droppable-hover' : ''}`}
-                                                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setHoveredCell({ dateKey, shiftKey }); }}
+                                                className={`shift-slot ${isHovered ? 'droppable-hover' : ''} ${!canManageSchedule ? 'read-only' : ''}`}
+                                                onDragOver={(e) => {
+                                                    if (!canManageSchedule) return;
+                                                    e.preventDefault();
+                                                    e.dataTransfer.dropEffect = 'move';
+                                                    setHoveredCell({ dateKey, shiftKey });
+                                                }}
                                                 onDragLeave={() => setHoveredCell(null)}
                                                 onDrop={(e) => onDrop(e, dateKey, shiftKey)}
                                             >
@@ -609,23 +734,32 @@ const ScheduleTable = ({ schedule, holidays, vacationMap }) => {
                                                                     className={cls}
                                                                     style={{ backgroundColor: user.color || 'var(--ud-c-primary)' }}
                                                                     title={titleParts.join(' | ')}
-                                                                    draggable
-                                                                    onDragStart={(e) => { usePlannerStore.getState().setDragUser(user, entry); beginDragAssigned(user, entry, e); }}
+                                                                    draggable={canManageSchedule}
+                                                                    onDragStart={(e) => {
+                                                                        if (!canManageSchedule) {
+                                                                            e.preventDefault();
+                                                                            return;
+                                                                        }
+                                                                        usePlannerStore.getState().setDragUser(user, entry);
+                                                                        beginDragAssigned(user, entry, e);
+                                                                    }}
                                                                     onDragEnd={() => clearDrag()}
                                                                 >
                                                                     <span>{user.firstName} {user.lastName}</span>
-                                                                    <button
-                                                                        className="clear-cell-btn"
-                                                                        onClick={(ev) => { ev.stopPropagation(); ev.preventDefault(); clearEntry(entry.id); }}
-                                                                        title="Entfernen"
-                                                                    >
-                                                                        ×
-                                                                    </button>
+                                                                    {canManageSchedule && (
+                                                                        <button
+                                                                            className="clear-cell-btn"
+                                                                            onClick={(ev) => { ev.stopPropagation(); ev.preventDefault(); clearEntry(entry.id); }}
+                                                                            title="Entfernen"
+                                                                        >
+                                                                            x
+                                                                        </button>
+                                                                    )}
                                                                 </div>
                                                             );
                                                         })
                                                     ) : (
-                                                        <div className="empty-shift-slot">+</div>
+                                                        <div className="empty-shift-slot">{canManageSchedule ? '+' : ''}</div>
                                                     )}
                                                 </div>
                                             </div>
@@ -656,6 +790,11 @@ const AdminSchedulePlannerPage = () => {
     const navigate = useNavigate();
     const weekKey = formatISO(weekStart, { representation: 'date' });
     const [lastAutoFillBatch, setLastAutoFillBatch] = React.useState({ weekKey: null, entryIds: [] });
+    const [showChangeLog, setShowChangeLog] = React.useState(false);
+    const canManageSchedule = hasPageAccess(currentUser, 'adminSchedule', ACCESS_MANAGE);
+    const canViewScheduleLog = isAdminUser(currentUser);
+    const canOpenShiftSettings = hasPageAccess(currentUser, 'adminShiftRules', ACCESS_MANAGE);
+    const canPrintSchedule = hasPageAccess(currentUser, 'adminPrintSchedule', ACCESS_VIEW);
 
     const queryClient = useQueryClient();
 
@@ -667,6 +806,17 @@ const AdminSchedulePlannerPage = () => {
 
     const { data: users = [] } = useQuery({ queryKey: ['users'], queryFn: fetchUsers });
     const { data: shifts = [] } = useQuery({ queryKey: ['scheduleRules'], queryFn: fetchScheduleRules });
+    const {
+        data: scheduleLogs = [],
+        isLoading: isLoadingScheduleLogs,
+        isFetching: isFetchingScheduleLogs,
+        refetch: refetchScheduleLogs,
+    } = useQuery({
+        queryKey: ['scheduleLogs', weekKey],
+        queryFn: () => fetchScheduleLogs(weekStart),
+        enabled: canViewScheduleLog && showChangeLog,
+        initialData: [],
+    });
     const disabledUserIds = usePlannerStore(state => state.disabledUserIds);
     const availableUsers = React.useMemo(
         () => users.filter(u => !disabledUserIds.has(u.id)),
@@ -749,6 +899,7 @@ const AdminSchedulePlannerPage = () => {
         mutationFn: autoFillSchedule,
         onSuccess: (response) => {
             queryClient.invalidateQueries({ queryKey: ['schedule', weekKey] });
+            queryClient.invalidateQueries({ queryKey: ['scheduleLogs', weekKey] });
             const created = response?.data?.created;
             const entryIds = Array.isArray(response?.data?.entries)
                 ? response.data.entries.map(entry => entry.id).filter(Boolean)
@@ -768,6 +919,7 @@ const AdminSchedulePlannerPage = () => {
         mutationFn: deleteScheduleEntries,
         onSuccess: (response) => {
             queryClient.invalidateQueries({ queryKey: ['schedule', weekKey] });
+            queryClient.invalidateQueries({ queryKey: ['scheduleLogs', weekKey] });
             const deleted = response?.data?.deleted;
             const deletedCount = typeof deleted === 'number' ? deleted : lastAutoFillBatch.entryIds.length;
             setLastAutoFillBatch({ weekKey: null, entryIds: [] });
@@ -786,12 +938,14 @@ const AdminSchedulePlannerPage = () => {
         mutationFn: copyScheduleRequest,
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['schedule', weekKey] });
+            queryClient.invalidateQueries({ queryKey: ['scheduleLogs', weekKey] });
             alert('Woche erfolgreich eingefügt!');
         },
         onError: (err) => alert(`Fehler beim Einfügen der Woche: ${err.response?.data?.message || err.message}`),
     });
 
     const handleAutoFill = () => {
+        if (!canManageSchedule) return;
         if (availableUsers.length === 0) {
             alert(t('schedulePlanner.noActiveUsers', 'Keine aktiven Mitarbeiter für das automatische Auffüllen verfügbar.'));
             return;
@@ -817,11 +971,13 @@ const AdminSchedulePlannerPage = () => {
     const canUndoAutoFill = lastAutoFillBatch.weekKey === weekKey && lastAutoFillBatch.entryIds.length > 0;
 
     const handleUndoAutoFill = () => {
+        if (!canManageSchedule) return;
         if (!canUndoAutoFill) return;
         undoAutoFillMutation.mutate(lastAutoFillBatch.entryIds);
     };
 
     const handleCopyWeek = () => {
+        if (!canManageSchedule) return;
         const allEntries = Object.values(schedule).flat();
         if (allEntries.length === 0) {
             alert('Diese Woche ist leer und kann nicht kopiert werden.');
@@ -832,6 +988,7 @@ const AdminSchedulePlannerPage = () => {
     };
 
     const handlePasteWeek = () => {
+        if (!canManageSchedule) return;
         if (!copiedWeek) return;
         const dayOffset = differenceInDays(weekStart, copiedWeek.sourceWeekStart);
         const newEntries = copiedWeek.entries.map(entry => {
@@ -857,14 +1014,21 @@ const AdminSchedulePlannerPage = () => {
                         <div className="planner-header">
                             <h2 className="cmp-title">Dienstplan</h2>
                             <div className="header-actions">
-                                <Link to="/admin/shift-rules" className="button-settings">
-                                    <span role="img" aria-label="settings">⚙️</span>
-                                    Schicht-Einstellungen
-                                </Link>
-                                <button onClick={handlePrintSchedule} className="button-print">
-                                    <span role="img" aria-label="print">🖨️</span>
-                                    Drucken
-                                </button>
+                                {canViewScheduleLog && (
+                                    <button type="button" onClick={() => setShowChangeLog(true)} className="button-log">
+                                        Aenderungslog
+                                    </button>
+                                )}
+                                {canOpenShiftSettings && (
+                                    <Link to="/admin/shift-rules" className="button-settings">
+                                        Schicht-Einstellungen
+                                    </Link>
+                                )}
+                                {canPrintSchedule && (
+                                    <button onClick={handlePrintSchedule} className="button-print">
+                                        Drucken
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -883,16 +1047,32 @@ const AdminSchedulePlannerPage = () => {
                             isUndoingAutoFill={undoAutoFillMutation.isPending}
                             onCopyWeek={handleCopyWeek}
                             onPasteWeek={handlePasteWeek}
+                            canManageSchedule={canManageSchedule}
                         />
 
                         {isLoading ? (
                             <div className="loading-indicator">Lade Arbeitsplan...</div>
                         ) : (
-                            <ScheduleTable schedule={schedule} holidays={holidays} vacationMap={vacationMap} />
+                            <ScheduleTable
+                                schedule={schedule}
+                                holidays={holidays}
+                                vacationMap={vacationMap}
+                                canManageSchedule={canManageSchedule}
+                            />
                         )}
                     </div>
-                    <UserList />
+                    <UserList canManageSchedule={canManageSchedule} />
                 </div>
+                {canViewScheduleLog && showChangeLog && (
+                    <ScheduleChangeLogModal
+                        logs={scheduleLogs}
+                        isLoading={isLoadingScheduleLogs}
+                        isRefreshing={isFetchingScheduleLogs}
+                        onClose={() => setShowChangeLog(false)}
+                        onRefresh={() => refetchScheduleLogs()}
+                        weekStart={weekStart}
+                    />
+                )}
             </div>
         </>
     );

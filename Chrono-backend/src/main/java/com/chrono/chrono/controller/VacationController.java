@@ -174,14 +174,15 @@ public class VacationController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getAllVacations(Principal principal) {
         User adminUser = userService.getUserByUsername(principal.getName());
-        userPermissionService.assertPageAccess(
+        userPermissionService.assertAnyPageAccess(
                 adminUser,
-                UserPermissionService.PAGE_ADMIN_DASHBOARD,
                 UserPermissionService.ACCESS_VIEW,
-                "Keine Berechtigung für das Admin-Dashboard."
+                "Keine Berechtigung fuer Urlaubsuebersichten.",
+                UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                UserPermissionService.PAGE_ADMIN_SCHEDULE
         );
         if (adminUser.getCompany() == null && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
             // Admin (nicht SUPERADMIN) ohne Firma darf keine Firmen-Urlaube sehen.

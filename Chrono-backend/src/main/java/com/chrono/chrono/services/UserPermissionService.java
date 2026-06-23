@@ -84,7 +84,6 @@ public class UserPermissionService {
             PAGE_ADMIN_TASKS,
             PAGE_ADMIN_ANALYTICS,
             PAGE_ADMIN_PAYSLIPS,
-            PAGE_ADMIN_SCHEDULE,
             PAGE_ADMIN_PRINT_SCHEDULE,
             PAGE_ADMIN_KNOWLEDGE,
             PAGE_COMPANY_SETTINGS,

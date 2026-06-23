@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS schedule_change_logs (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    company_id BIGINT NULL,
+    actor_user_id BIGINT NULL,
+    target_user_id BIGINT NULL,
+    schedule_entry_id BIGINT NULL,
+    actor_username VARCHAR(160) NOT NULL,
+    actor_display_name VARCHAR(255) NULL,
+    target_username VARCHAR(160) NULL,
+    target_display_name VARCHAR(255) NULL,
+    action VARCHAR(64) NOT NULL,
+    schedule_date DATE NOT NULL,
+    shift VARCHAR(120) NULL,
+    details VARCHAR(2000) NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    PRIMARY KEY (id),
+    INDEX idx_schedule_change_company_date_created (company_id, schedule_date, created_at),
+    INDEX idx_schedule_change_target_date (target_user_id, schedule_date),
+    INDEX idx_schedule_change_actor_created (actor_user_id, created_at),
+    CONSTRAINT fk_schedule_change_company FOREIGN KEY (company_id) REFERENCES companies(id),
+    CONSTRAINT fk_schedule_change_actor FOREIGN KEY (actor_user_id) REFERENCES users(id),
+    CONSTRAINT fk_schedule_change_target FOREIGN KEY (target_user_id) REFERENCES users(id)
+);

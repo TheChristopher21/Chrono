@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/users")
-@PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN') or hasRole('PAYROLL_ADMIN')")
+@PreAuthorize("isAuthenticated()")
 public class AdminUserController {
 
     private static final Logger logger = LoggerFactory.getLogger(AdminUserController.class);
