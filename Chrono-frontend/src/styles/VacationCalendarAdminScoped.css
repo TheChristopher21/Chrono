@@ -496,6 +496,23 @@
   transform: translateY(-1px);
 }
 
+.vacation-calendar-admin.scoped-vacation .modal-buttons .button-danger {
+  background-color: var(--c-danger, #dc3545);
+  color: #fff;
+  border: 1px solid color-mix(in srgb, var(--c-danger, #dc3545) 82%, #000);
+}
+
+.vacation-calendar-admin.scoped-vacation .modal-buttons .button-danger:hover {
+  background-color: color-mix(in srgb, var(--c-danger, #dc3545) 84%, #000);
+  transform: translateY(-1px);
+}
+
+.vacation-calendar-admin.scoped-vacation .modal-buttons button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+  transform: none;
+}
+
 .vacation-calendar-admin.scoped-vacation .modal-buttons .button-cancel {
   background-color: var(--c-surface); /* Hellerer Hintergrund für Abbrechen */
   color: var(--c-text);
@@ -1487,19 +1504,57 @@
   width: 100%;
   min-width: 0;
   display: grid;
-  gap: 0.15rem;
-  text-align: left;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
   border: 1px solid transparent;
   background: var(--c-card);
   color: var(--c-text);
   border-radius: 7px;
-  padding: 0.65rem 0.75rem;
-  cursor: pointer;
+  padding: 0.35rem;
 }
 
 .vacation-calendar-admin.scoped-vacation .calendar-day-detail-item:hover,
-.vacation-calendar-admin.scoped-vacation .calendar-day-detail-item:focus {
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-item:focus-within {
   border-color: var(--c-pri);
+  outline: none;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-main {
+  min-width: 0;
+  display: grid;
+  gap: 0.15rem;
+  text-align: left;
+  border: none;
+  background: transparent;
+  color: inherit;
+  border-radius: 5px;
+  padding: 0.3rem 0.4rem;
+  cursor: pointer;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-main:focus {
+  outline: 2px solid color-mix(in srgb, var(--c-pri) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-delete {
+  min-width: 76px;
+  align-self: stretch;
+  border: 1px solid color-mix(in srgb, var(--c-danger, #dc3545) 38%, var(--c-border));
+  background: color-mix(in srgb, var(--c-danger, #dc3545) 9%, transparent);
+  color: var(--c-danger, #dc3545);
+  border-radius: 5px;
+  padding: 0 0.55rem;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-delete:hover,
+.vacation-calendar-admin.scoped-vacation .calendar-day-detail-delete:focus {
+  background: var(--c-danger, #dc3545);
+  color: #fff;
   outline: none;
 }
 

@@ -19,6 +19,7 @@ vi.mock('../../utils/api', () => {
             get: vi.fn(),
             post: vi.fn(),
             put: vi.fn(),
+            delete: vi.fn(),
         },
     };
 });
@@ -41,6 +42,7 @@ describe('VacationCalendarAdmin admin editing', () => {
         api.get.mockReset();
         api.post.mockReset();
         api.put.mockReset();
+        api.delete.mockReset();
     });
 
     const companyUsers = [
@@ -219,6 +221,98 @@ describe('VacationCalendarAdmin admin editing', () => {
             }
         );
         expect(notifyMock).toHaveBeenCalledWith({ message: 'Krankmeldung wurde aktualisiert.', type: 'success' });
+        expect(onReloadVacations).toHaveBeenCalled();
+    });
+
+    it('deletes vacation entries after confirmation', async () => {
+        api.get.mockImplementation((url) => {
+            if (url.includes('/api/holidays/details')) {
+                return Promise.resolve({ data: {} });
+            }
+            if (url.includes('/api/sick-leave')) {
+                return Promise.resolve({ data: [] });
+            }
+            return Promise.resolve({ data: [] });
+        });
+        api.delete.mockResolvedValue({ data: {} });
+
+        const vacation = {
+            id: 44,
+            username: 'employee1',
+            startDate: formatLocalDateYMD(new Date()),
+            endDate: formatLocalDateYMD(new Date()),
+            halfDay: false,
+            usesOvertime: false,
+            color: '#336699',
+            approved: true,
+            denied: false,
+            companyVacation: false,
+        };
+        const onReloadVacations = vi.fn();
+
+        render(
+            <VacationCalendarAdmin
+                vacationRequests={[vacation]}
+                onReloadVacations={onReloadVacations}
+                companyUsers={companyUsers}
+            />
+        );
+
+        const marker = await screen.findByRole('button', { name: /Erika Mustermann/ });
+        await userEvent.click(marker);
+        await userEvent.click(screen.getByRole('button', { name: /Urlaub loeschen/ }));
+        await userEvent.click(screen.getByRole('button', { name: /Ja, loeschen/ }));
+
+        await waitFor(() => expect(api.delete).toHaveBeenCalled());
+        expect(api.delete).toHaveBeenCalledWith(
+            '/api/vacation/44',
+            { params: { adminUsername: 'admin' } }
+        );
+        expect(notifyMock).toHaveBeenCalledWith({ message: 'Urlaubseintrag wurde geloescht.', type: 'success' });
+        expect(onReloadVacations).toHaveBeenCalled();
+    });
+
+    it('deletes sick leave entries after confirmation', async () => {
+        const todayIso = formatLocalDateYMD(new Date());
+        const sickLeave = {
+            id: 92,
+            username: 'employee1',
+            startDate: todayIso,
+            endDate: todayIso,
+            halfDay: false,
+            comment: 'Initial',
+            color: '#FF6347'
+        };
+
+        api.get.mockImplementation((url) => {
+            if (url.includes('/api/holidays/details')) {
+                return Promise.resolve({ data: {} });
+            }
+            if (url.includes('/api/sick-leave')) {
+                return Promise.resolve({ data: [sickLeave] });
+            }
+            return Promise.resolve({ data: [] });
+        });
+        api.delete.mockResolvedValue({ data: {} });
+
+        const onReloadVacations = vi.fn();
+
+        render(
+            <VacationCalendarAdmin
+                vacationRequests={[]}
+                onReloadVacations={onReloadVacations}
+                companyUsers={companyUsers}
+            />
+        );
+
+        const marker = await screen.findByRole('button', { name: /Erika Mustermann/ });
+        await userEvent.click(marker);
+        await userEvent.click(screen.getByRole('button', { name: /Krankmeldung loeschen/ }));
+        await userEvent.click(screen.getByRole('button', { name: /Ja, loeschen/ }));
+
+        await waitFor(() => expect(api.delete).toHaveBeenCalled());
+        expect(api.delete).toHaveBeenCalledWith('/api/sick-leave/92');
+        expect(notifyMock).toHaveBeenCalledWith({ message: 'Krankmeldung wurde geloescht.', type: 'success' });
         expect(onReloadVacations).toHaveBeenCalled();
     });
 });

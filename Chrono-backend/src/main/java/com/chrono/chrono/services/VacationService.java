@@ -38,6 +38,9 @@ public class VacationService {
     @Autowired
     private WorkScheduleService workScheduleService; //
 
+    @Autowired
+    private TimeTrackingService timeTrackingService;
+
     @Autowired // NEU: HolidayService injizieren
     private HolidayService holidayService;
 
@@ -461,6 +464,7 @@ public class VacationService {
         }
 
         vacationRepo.delete(vr); //
+        timeTrackingService.rebuildUserBalance(user);
         logger.info("VacationService: VacationRequest ID {} wurde gelöscht (admin='{}').", vacationId, adminUsername); //
         VacationRequest deletedRequest = new VacationRequest(); //
         deletedRequest.setId(vacationId); //

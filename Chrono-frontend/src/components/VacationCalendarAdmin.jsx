@@ -80,6 +80,8 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
     const [sickLeaveComment, setSickLeaveComment] = useState('');
     const [allSickLeaves, setAllSickLeaves] = useState([]);
     const [editingSickLeave, setEditingSickLeave] = useState(null);
+    const [absenceToDelete, setAbsenceToDelete] = useState(null);
+    const [isDeletingAbsence, setIsDeletingAbsence] = useState(false);
 
     const [users, setUsers] = useState(initialCompanyUsers || []);
     const [holidays, setHolidays] = useState({});
@@ -572,6 +574,78 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
         openSickLeaveEditModal(sickLeave);
     };
 
+    const openDeleteAbsenceConfirmation = (type, item) => {
+        if (!item?.id) {
+            pushNotification(translate('adminCalendar.deleteMissingEntry', 'Kein Eintrag zum Loeschen gefunden.'), 'error');
+            return;
+        }
+        setAbsenceToDelete({
+            type: type === 'sick' ? 'sick' : 'vacation',
+            item,
+        });
+    };
+
+    const closeDeleteAbsenceConfirmation = () => {
+        if (isDeletingAbsence) return;
+        setAbsenceToDelete(null);
+    };
+
+    const getAbsenceTypeLabel = (target = absenceToDelete) => {
+        if (!target) return t('adminCalendar.absence', 'Abwesenheit');
+        if (target.type === 'sick') return t('adminSickLeave.shortTitle', 'Krank');
+        if (target.item?.usesOvertime) return t('overtimeVacation', 'Ueberstundenfrei');
+        return t('vacation.normalVacation', 'Urlaub');
+    };
+
+    const handleDeleteAbsence = async () => {
+        if (!absenceToDelete?.item?.id) {
+            pushNotification(translate('adminCalendar.deleteMissingEntry', 'Kein Eintrag zum Loeschen gefunden.'), 'error');
+            return;
+        }
+        if (!currentUser?.username) {
+            pushNotification(translate('errors.notLoggedIn', 'Admin nicht eingeloggt oder Benutzername fehlt.'), 'error');
+            return;
+        }
+
+        const deleteType = absenceToDelete.type === 'sick' ? 'sick' : 'vacation';
+        setIsDeletingAbsence(true);
+        try {
+            if (deleteType === 'sick') {
+                await api.delete(`/api/sick-leave/${absenceToDelete.item.id}`);
+            } else {
+                await api.delete(`/api/vacation/${absenceToDelete.item.id}`, {
+                    params: { adminUsername: currentUser.username },
+                });
+            }
+
+            pushNotification(
+                deleteType === 'sick'
+                    ? translate('adminSickLeave.deleteSuccess', 'Krankmeldung wurde geloescht.')
+                    : translate('adminVacation.delete.success', 'Urlaubseintrag wurde geloescht.'),
+                'success',
+            );
+            setAbsenceToDelete(null);
+            setSelectedDayDetails(null);
+            setShowVacationModal(false);
+            setShowSickLeaveModal(false);
+            resetVacationForm();
+            resetSickLeaveForm();
+            await fetchAllSickLeaves();
+            if (onReloadVacations) {
+                await onReloadVacations();
+            }
+        } catch (err) {
+            console.error('Error deleting admin calendar absence:', err);
+            const errorMsg = err.response?.data?.message || err.response?.data || err.message || t('errors.unknownError', 'Unbekannter Fehler');
+            const errorPrefix = deleteType === 'sick'
+                ? translate('adminSickLeave.deleteError', 'Fehler beim Loeschen der Krankmeldung:')
+                : translate('adminVacation.delete.error', 'Fehler beim Loeschen des Urlaubs:');
+            pushNotification(`${errorPrefix} ${errorMsg}`, 'error');
+        } finally {
+            setIsDeletingAbsence(false);
+        }
+    };
+
     const renderDayDetailGroup = (title, items, type, emptyText) => (
         <section className={`calendar-day-detail-group ${type}`}>
             <div className="calendar-day-detail-group-title">
@@ -584,20 +658,30 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                         const key = `${type}-${item.id || item.username || index}`;
                         const isSick = type === 'sick';
                         return (
-                            <button
-                                type="button"
-                                key={key}
-                                className="calendar-day-detail-item"
-                                onClick={() => isSick ? openSickLeaveFromDetails(item) : openVacationFromDetails(item)}
-                            >
-                                <span className="calendar-day-detail-person">{formatUserLongName(item.username)}</span>
-                                <span className="calendar-day-detail-meta">
-                                    {formatDateRange(item)}
-                                    {item.halfDay ? ` · ${t('adminVacation.halfDayShort', '½ Tag')}` : ''}
-                                    {item.companyVacation ? ` · ${t('adminVacation.companyVacationLabel', 'Betriebsurlaub')}` : ''}
-                                    {isSick && item.comment ? ` · ${item.comment}` : ''}
-                                </span>
-                            </button>
+                            <div key={key} className="calendar-day-detail-item">
+                                <button
+                                    type="button"
+                                    className="calendar-day-detail-main"
+                                    onClick={() => isSick ? openSickLeaveFromDetails(item) : openVacationFromDetails(item)}
+                                >
+                                    <span className="calendar-day-detail-person">{formatUserLongName(item.username)}</span>
+                                    <span className="calendar-day-detail-meta">
+                                        {formatDateRange(item)}
+                                        {item.halfDay ? ` · ${t('adminVacation.halfDayShort', '½ Tag')}` : ''}
+                                        {item.companyVacation ? ` · ${t('adminVacation.companyVacationLabel', 'Betriebsurlaub')}` : ''}
+                                        {isSick && item.comment ? ` · ${item.comment}` : ''}
+                                    </span>
+                                </button>
+                                <button
+                                    type="button"
+                                    className="calendar-day-detail-delete"
+                                    onClick={() => openDeleteAbsenceConfirmation(isSick ? 'sick' : 'vacation', item)}
+                                    title={t('adminCalendar.deleteAbsenceButton', 'Eintrag loeschen')}
+                                    aria-label={`${t('adminCalendar.deleteAbsenceButton', 'Eintrag loeschen')}: ${formatUserLongName(item.username)} ${formatDateRange(item)}`}
+                                >
+                                    {t('delete', 'Loeschen')}
+                                </button>
+                            </div>
                         );
                     })}
                 </div>
@@ -1025,6 +1109,15 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                 </div>
                             )}
                             <div className="modal-buttons">
+                                {editingVacation && (
+                                    <button
+                                        type="button"
+                                        className="button-danger"
+                                        onClick={() => openDeleteAbsenceConfirmation('vacation', editingVacation)}
+                                    >
+                                        {t('adminVacation.delete.buttonTitle', 'Urlaub loeschen')}
+                                    </button>
+                                )}
                                 <button type="submit" className="button-confirm">
                                     {editingVacation ? t('adminVacation.updateButton', 'Urlaub aktualisieren') : t('adminVacation.confirmButton', 'Urlaub erstellen')}
                                 </button>
@@ -1070,12 +1163,62 @@ const VacationCalendarAdmin = ({ vacationRequests, onReloadVacations, companyUse
                                 <textarea id="sickLeaveCommentInput" value={sickLeaveComment} onChange={e => setSickLeaveComment(e.target.value)} rows="3" placeholder={t('sickLeave.commentPlaceholder', 'Grund, Arztbesuch etc.')}></textarea>
                             </div>
                             <div className="modal-buttons">
+                                {editingSickLeave && (
+                                    <button
+                                        type="button"
+                                        className="button-danger"
+                                        onClick={() => openDeleteAbsenceConfirmation('sick', editingSickLeave)}
+                                    >
+                                        {t('adminSickLeave.deleteButton', 'Krankmeldung loeschen')}
+                                    </button>
+                                )}
                                 <button type="submit" className="button-confirm">
                                     {editingSickLeave ? t('adminSickLeave.updateButtonModal', 'Krankmeldung aktualisieren') : t('adminSickLeave.reportButtonModal', 'Krankmeldung speichern')}
                                 </button>
                                 <button type="button" onClick={handleCloseSickLeaveModal} className="button-cancel">{t('cancel', 'Abbrechen')}</button>
                             </div>
                         </form>
+                    </div>
+                </ModalOverlay>
+            )}
+
+            {absenceToDelete && (
+                <ModalOverlay visible onClose={closeDeleteAbsenceConfirmation}>
+                    <div className="modal-content delete-confirmation-modal absence-delete-modal">
+                        <h3>{t('adminCalendar.deleteAbsenceTitle', 'Abwesenheit loeschen bestaetigen')}</h3>
+                        <p>
+                            {t('adminCalendar.deleteAbsenceQuestion', 'Moechten Sie diesen Eintrag wirklich loeschen?')}{' '}
+                            <strong>{formatUserLongName(absenceToDelete.item.username)}</strong>{' '}
+                            <span>
+                                ({getAbsenceTypeLabel()} · {formatDateRange(absenceToDelete.item)}
+                                {absenceToDelete.item.halfDay ? ` · ${t('adminVacation.halfDayShort', '1/2 Tag')}` : ''})
+                            </span>
+                        </p>
+                        <p className="info-text">
+                            {absenceToDelete.type === 'sick'
+                                ? t('adminCalendar.deleteSickRecalculationInfo', 'Die Krankmeldung wird entfernt und der Zeitsaldo fuer den Benutzer neu berechnet.')
+                                : t('adminCalendar.deleteVacationRecalculationInfo', 'Der Urlaub wird entfernt; Resturlaub und Zeitsaldo werden danach wieder aus den aktuellen Daten berechnet.')}
+                        </p>
+                        <div className="modal-buttons">
+                            <button
+                                type="button"
+                                className="button-danger"
+                                onClick={handleDeleteAbsence}
+                                disabled={isDeletingAbsence}
+                            >
+                                {isDeletingAbsence
+                                    ? t('adminCalendar.deletingAbsence', 'Wird geloescht...')
+                                    : t('adminVacation.delete.confirmDeleteButton', 'Ja, loeschen')}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={closeDeleteAbsenceConfirmation}
+                                className="button-cancel"
+                                disabled={isDeletingAbsence}
+                            >
+                                {t('cancel', 'Abbrechen')}
+                            </button>
+                        </div>
                     </div>
                 </ModalOverlay>
             )}
