@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useAuth } from "./context/AuthContext.jsx";
 import ActionButtons from "./components/ActionButtons.jsx";
 import MobileTabBar from "./components/MobileTabBar.jsx";
+import AnalyticsTracker from "./components/AnalyticsTracker.jsx";
 
 // Globale Styles
 import "./styles/global.css";
@@ -16,12 +17,14 @@ import "./styles/PercentageDashboardScoped.css";
 
 // Seiten-Komponenten
 import LandingPage from "./pages/LandingPage.jsx";
+import AboutChrono from "./pages/AboutChrono.jsx";
 import Login from "./pages/Login.jsx";
 import Registration from "./pages/Registration.jsx";
 import UserDashboard from "./pages/UserDashboard/UserDashboard.jsx";
 import PercentagePunch from "./pages/PercentageDashboard/PercentageDashboard.jsx";
 import PersonalDataPage from "./pages/PersonalDataPage.jsx";
 import AdminDashboard from "./pages/AdminDashboard/AdminDashboard.jsx";
+import AdminEmployeeOverviewPage from "./pages/AdminDashboard/AdminEmployeeOverviewPage.jsx";
 import AdminUserManagementPage from "./pages/AdminUserManagement/AdminUserManagementPage.jsx";
 import AdminChangePassword from "./pages/AdminChangePassword.jsx";
 import AdminCustomersPage from "./pages/AdminCustomers/AdminCustomersPage.jsx";
@@ -50,6 +53,7 @@ import SupplyChainDashboard from "./pages/SupplyChain/SupplyChainDashboard.jsx";
 import ChronoTwoDashboard from "./pages/ChronoTwo/ChronoTwoDashboard.jsx";
 import CrmDashboard from "./pages/CRM/CrmDashboard.jsx";
 import BankingOperationsPage from "./pages/AdminBanking/BankingOperationsPage.jsx";
+import WorkTimeCalculatorPage from "./pages/WorkTimeCalculator/WorkTimeCalculatorPage.jsx";
 
 // Hilfs-Komponenten
 import PrivateRoute from "./components/PrivateRoute.jsx";
@@ -59,38 +63,56 @@ const queryClient = new QueryClient();
 
 function App() {
     // NEU: Auth-Token prüfen, um zu entscheiden, ob der Chatbot angezeigt wird
-    const { authToken } = useAuth();
+    const { authToken, currentUser } = useAuth();
+    const chatbotEnabled = Boolean(authToken && currentUser?.companyFeatureKeys?.includes("chatbot"));
 
     return (
         <QueryClientProvider client={queryClient}>
             <ErrorBoundary>
                 <div className="App">
+                    <AnalyticsTracker />
                     <Routes>
                         {/* Öffentliche Routen */}
                         <Route path="/" element={<LandingPage />} />
+                        <Route path="/ueber-chrono-logisch" element={<AboutChrono />} />
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Registration />} />
+                        <Route path="/preise" element={<LandingPage />} />
+                        <Route path="/arbeitszeit-rechner" element={<WorkTimeCalculatorPage />} />
                         <Route path="/agb" element={<AGB />} />
                         <Route path="/datenschutz" element={<Datenschutz />} />
                         <Route path="/impressum" element={<Impressum />} />
 
                         {/* Geschützte Benutzer-Routen */}
-                        <Route path="/dashboard" element={<PrivateRoute><UserDashboard /></PrivateRoute>} />
-                        <Route path="/percentage-punch" element={<PrivateRoute><PercentagePunch /></PrivateRoute>} />
-                        <Route path="/personal-data" element={<PrivateRoute><PersonalDataPage /></PrivateRoute>} />
-                        <Route path="/payslips" element={<PrivateRoute><PayslipsPage /></PrivateRoute>} />
-                        <Route path="/demo-tour" element={<PrivateRoute><DemoTour /></PrivateRoute>} />
+                        <Route path="/dashboard" element={<PrivateRoute requiredPagePermission="dashboard"><UserDashboard /></PrivateRoute>} />
+                        <Route path="/percentage-punch" element={<PrivateRoute requiredPagePermission="dashboard"><PercentagePunch /></PrivateRoute>} />
+                        <Route path="/personal-data" element={<PrivateRoute requiredPagePermission="personalData"><PersonalDataPage /></PrivateRoute>} />
+                        <Route path="/payslips" element={<PrivateRoute requiredPagePermission="payslips"><PayslipsPage /></PrivateRoute>} />
+                        <Route path="/demo-tour" element={<PrivateRoute requiredPagePermission="demoTour"><DemoTour /></PrivateRoute>} />
+                        <Route
+                            path="/workspace/supply-chain"
+                            element={
+                                <PrivateRoute
+                                    requiredFeature="supplyChain"
+                                    requiredPagePermission="supplyChain"
+                                    redirectTo="/dashboard"
+                                >
+                                    <SupplyChainDashboard />
+                                </PrivateRoute>
+                            }
+                        />
 
                         {/* Admin-Routen */}
-                        <Route path="/admin/dashboard" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminDashboard /></PrivateRoute>} />
-                        <Route path="/admin/users" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminUserManagementPage /></PrivateRoute>} />
-                        <Route path="/admin/change-password" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminChangePassword /></PrivateRoute>} />
+                        <Route path="/admin/dashboard" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminDashboard"><AdminDashboard /></PrivateRoute>} />
+                        <Route path="/admin/dashboard/mitarbeiter/:username" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminDashboard"><AdminEmployeeOverviewPage /></PrivateRoute>} />
+                        <Route path="/admin/users" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminUsers"><AdminUserManagementPage /></PrivateRoute>} />
+                        <Route path="/admin/change-password" element={<PrivateRoute requiredPagePermission="adminChangePassword"><AdminChangePassword /></PrivateRoute>} />
                         <Route
                             path="/admin/customers"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
                                     requiredFeature="projects"
+                                    requiredPagePermission={["adminCustomers", "adminProjects"]}
                                     redirectTo="/admin/dashboard"
                                 >
                                     <AdminCustomersPage />
@@ -101,8 +123,8 @@ function App() {
                             path="/admin/projects"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
                                     requiredFeature="projects"
+                                    requiredPagePermission={["adminCustomers", "adminProjects", "adminTasks"]}
                                     redirectTo="/admin/dashboard"
                                 >
                                     <AdminProjectsPage />
@@ -113,8 +135,8 @@ function App() {
                             path="/admin/tasks"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
                                     requiredFeature="projects"
+                                    requiredPagePermission={["adminProjects", "adminTasks"]}
                                     redirectTo="/admin/dashboard"
                                 >
                                     <AdminTasksPage />
@@ -125,8 +147,9 @@ function App() {
                             path="/admin/analytics"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
+                                    requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]}
                                     requiredFeature="analytics"
+                                    requiredPagePermission="adminAnalytics"
                                     redirectTo="/admin/dashboard"
                                 >
                                     <AdminAnalyticsPage />
@@ -137,8 +160,8 @@ function App() {
                             path="/admin/accounting"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
                                     requiredFeature="accounting"
+                                    requiredPagePermission="adminAccounting"
                                     redirectTo="/admin/dashboard"
                                 >
                                     <AdminAccountingPage />
@@ -149,8 +172,8 @@ function App() {
                             path="/admin/chrono-two"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
                                     requiredFeature="chrono2"
+                                    requiredPagePermission="chronoTwo"
                                     redirectTo="/admin/dashboard"
                                 >
                                     <ChronoTwoDashboard />
@@ -161,8 +184,9 @@ function App() {
                             path="/admin/supply-chain"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
+                                    requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]}
                                     requiredFeature="supplyChain"
+                                    requiredPagePermission="supplyChain"
                                     redirectTo="/admin/dashboard"
                                 >
                                     <SupplyChainDashboard />
@@ -173,8 +197,8 @@ function App() {
                             path="/admin/crm"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
                                     requiredFeature="crm"
+                                    requiredPagePermission="crm"
                                     redirectTo="/admin/dashboard"
                                 >
                                     <CrmDashboard />
@@ -185,8 +209,8 @@ function App() {
                             path="/admin/banking"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
                                     requiredFeature="banking"
+                                    requiredPagePermission="banking"
                                     redirectTo="/admin/dashboard"
                                 >
                                     <BankingOperationsPage />
@@ -197,8 +221,8 @@ function App() {
                             path="/admin/project-report"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
                                     requiredFeature="projects"
+                                    requiredPagePermission="adminProjectReport"
                                     redirectTo="/admin/dashboard"
                                 >
                                     <AdminProjectReportPage />
@@ -208,7 +232,7 @@ function App() {
                         <Route
                             path="/admin/company"
                             element={
-                                <PrivateRoute requiredRole={["ROLE_SUPERADMIN"]}>
+                                <PrivateRoute requiredRole={["ROLE_SUPERADMIN"]} requiredPagePermission="companyManagement">
                                     <CompanyManagementPage />
                                 </PrivateRoute>
                             }
@@ -217,8 +241,9 @@ function App() {
                             path="/admin/payslips"
                             element={
                                 <PrivateRoute
-                                    requiredRole={["ROLE_ADMIN", "ROLE_PAYROLL_ADMIN"]}
+                                    requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN", "ROLE_PAYROLL_ADMIN"]}
                                     requiredFeature="payroll"
+                                    requiredPagePermission="adminPayslips"
                                     redirectTo="/admin/dashboard"
                                 >
                                     <AdminPayslipsPage />
@@ -229,8 +254,8 @@ function App() {
                             path="/admin/schedule"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
                                     requiredFeature="roster"
+                                    requiredPagePermission="adminSchedule"
                                     redirectTo="/admin/dashboard"
                                 >
                                     <AdminSchedulePlannerPage />
@@ -241,8 +266,9 @@ function App() {
                             path="/admin/print-schedule"
                             element={
                                 <PrivateRoute
-                                    requiredRole="ROLE_ADMIN"
+                                    requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]}
                                     requiredFeature="roster"
+                                    requiredPagePermission="adminPrintSchedule"
                                     redirectTo="/admin/dashboard"
                                 >
                                     <PrintSchedule />
@@ -250,28 +276,28 @@ function App() {
                             }
                         />
 
-                        <Route path="/admin/knowledge" element={<PrivateRoute requiredRole="ROLE_ADMIN"><AdminKnowledgePage /></PrivateRoute>} />
-                        <Route path="/admin/company-settings" element={<PrivateRoute requiredRole="ROLE_ADMIN"><CompanySettingsPage /></PrivateRoute>} />
+                        <Route path="/admin/knowledge" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminKnowledge"><AdminKnowledgePage /></PrivateRoute>} />
+                        <Route path="/admin/company-settings" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="companySettings"><CompanySettingsPage /></PrivateRoute>} />
 
                         {/* NEU: Route für die Schicht-Einstellungsseite */}
                         <Route
                             path="/admin/shift-rules"
                             element={
-                                <PrivateRoute requiredRole="ROLE_ADMIN">
+                                <PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredFeature="roster" requiredPagePermission="adminShiftRules">
                                     <AdminShiftRulesPage />
                                 </PrivateRoute>
                             }
                         />
 
-                        <Route path="/admin/import-times" element={<PrivateRoute requiredRole="ROLE_ADMIN"><TimeTrackingImport /></PrivateRoute>} />
+                        <Route path="/admin/import-times" element={<PrivateRoute requiredRole={["ROLE_ADMIN", "ROLE_SUPERADMIN"]} requiredPagePermission="adminImportTimes"><TimeTrackingImport /></PrivateRoute>} />
                         <Route path="/whats-new" element={<PrivateRoute><WhatsNewPage /></PrivateRoute>} />
-                        <Route path="/print-report" element={<PrintReport />} />
+                        <Route path="/print-report" element={<PrivateRoute requiredPagePermission="printReport"><PrintReport /></PrivateRoute>} />
                         <Route path="*" element={<Navigate to="/" replace />} />
                     </Routes>
 
-                    {/* NEU: Fügt den Chatbot (via ActionButtons) auf allen Seiten für eingeloggte User hinzu */}
+                    {/* NEU: Fügt den Chatbot nur als freigeschaltetes Firmen-Feature hinzu */}
                     {authToken && <>
-                        <ActionButtons />
+                        {chatbotEnabled && <ActionButtons />}
                         <MobileTabBar />
                     </>}
                 </div>

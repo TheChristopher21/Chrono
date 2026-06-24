@@ -66,10 +66,91 @@ public class TimeTrackingService {
     private TaskRepository taskRepository;
     @Autowired
     private PayslipRepository payslipRepository;
+    @Autowired
+    private EmploymentModelHistoryService employmentModelHistoryService;
 
     private User loadUserByUsername(String username) {
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+    }
+
+    private boolean sameCompany(User user, Customer customer) {
+        return user != null
+                && user.getCompany() != null
+                && customer != null
+                && ((customer.getCompany() == null && user.getCompany().getId() == null)
+                    || (customer.getCompany() != null
+                        && Objects.equals(user.getCompany().getId(), customer.getCompany().getId())));
+    }
+
+    private Customer resolveCustomerForUser(Long customerId, User user) {
+        if (customerId == null) {
+            return null;
+        }
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+        if (!sameCompany(user, customer)) {
+            throw new SecurityException("Customer belongs to another company");
+        }
+        return customer;
+    }
+
+    private Project resolveProjectForUser(Long projectId, User user) {
+        if (projectId == null) {
+            return null;
+        }
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new IllegalArgumentException("Project not found"));
+        if (project.getCustomer() == null || !sameCompany(user, project.getCustomer())) {
+            throw new SecurityException("Project belongs to another company");
+        }
+        return project;
+    }
+
+    private Task resolveTaskForUser(Long taskId, User user) {
+        if (taskId == null) {
+            return null;
+        }
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new IllegalArgumentException("Task not found"));
+        Project project = task.getProject();
+        if (project == null || project.getCustomer() == null || !sameCompany(user, project.getCustomer())) {
+            throw new SecurityException("Task belongs to another company");
+        }
+        return task;
+    }
+
+    private boolean hasRole(User user, String roleName) {
+        return user != null
+                && user.getRoles() != null
+                && user.getRoles().stream().anyMatch(role -> roleName.equals(role.getRoleName()));
+    }
+
+    private boolean canAdminAccess(User requester, User target) {
+        return hasRole(requester, "ROLE_SUPERADMIN")
+                || (hasRole(requester, "ROLE_ADMIN")
+                    && requester.getCompany() != null
+                    && target.getCompany() != null
+                    && Objects.equals(requester.getCompany().getId(), target.getCompany().getId()));
+    }
+
+    private Project resolveImplicitProject(User user, Customer customer, Project project, Task task) {
+        if (project != null) {
+            return project;
+        }
+        if (task != null && task.getProject() != null) {
+            return task.getProject();
+        }
+        if (customer == null || user == null || user.getCompany() == null
+                || !Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
+            return null;
+        }
+
+        List<Project> customerProjects = projectRepository.findByCustomerIdOrderByNameAsc(customer.getId());
+        if (customerProjects.size() == 1) {
+            return customerProjects.get(0);
+        }
+        return null;
     }
 
     @Transactional
@@ -77,18 +158,18 @@ public class TimeTrackingService {
         User user = loadUserByUsername(username);
         Customer customer = null;
         if (customerId != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
-            customer = customerRepository.findById(customerId).orElse(null);
+            customer = resolveCustomerForUser(customerId, user);
         }
         Project project = null;
         if (projectId != null && user.getCompany() != null && Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
-            project = projectRepository.findById(projectId).orElse(null);
+            project = resolveProjectForUser(projectId, user);
         }
         Task task = null;
         if (taskId != null) {
-            task = taskRepository.findById(taskId).orElse(null);
+            task = resolveTaskForUser(taskId, user);
         }
         // Default to CET/Berlin timezone for all automatic timestamps
-        LocalDate today = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        LocalDate today = getCurrentBerlinDate();
         LocalDateTime now = LocalDateTime.now(ZoneId.of("Europe/Berlin")).truncatedTo(ChronoUnit.MINUTES);
 
         Optional<TimeTrackingEntry> lastEntryOpt = timeTrackingEntryRepository.findLastEntryByUserAndDate(user, today);
@@ -114,6 +195,8 @@ public class TimeTrackingService {
             project = lastEntryOpt.get().getProject();
         }
 
+        project = resolveImplicitProject(user, customer, project, task);
+
         TimeTrackingEntry newEntry = new TimeTrackingEntry(user, customer, project, now, nextPunchType, source);
         newEntry.setTask(task);
         if (nextPunchType == TimeTrackingEntry.PunchType.ENDE && source == TimeTrackingEntry.PunchSource.SYSTEM_AUTO_END) {
@@ -134,6 +217,7 @@ public class TimeTrackingService {
         }
 
         TimeTrackingEntry savedEntry = timeTrackingEntryRepository.save(newEntry);
+        clearVacationOnPunchDay(user, today);
         if (savedEntry.getCustomer() != null) {
             user.setLastCustomer(savedEntry.getCustomer());
             userRepository.save(user);
@@ -141,6 +225,175 @@ public class TimeTrackingService {
         logger.info("User '{}' punched {}. Timestamp: {}, Source: {}", username, nextPunchType, now, source);
         rebuildUserBalance(user); // Saldo nach jedem Stempel neu berechnen
         return TimeTrackingEntryDTO.fromEntity(savedEntry);
+    }
+
+    private void clearVacationOnPunchDay(User user, LocalDate punchDay) {
+        List<VacationRequest> vacationRequests = vacationRequestRepository.findByUserAndApprovedTrue(user);
+        List<VacationRequest> affectedVacations = vacationRequests.stream()
+                .filter(vr -> !punchDay.isBefore(vr.getStartDate()) && !punchDay.isAfter(vr.getEndDate()))
+                .toList();
+
+        for (VacationRequest vacation : affectedVacations) {
+            if (!isChargeableVacationDay(user, punchDay)) {
+                logger.info("Urlaubseintrag {} für User '{}' bleibt unverändert, da {} kein anrechenbarer Urlaubstag ist.",
+                        vacation.getId(), user.getUsername(), punchDay);
+                continue;
+            }
+
+            LocalDate originalStart = vacation.getStartDate();
+            LocalDate originalEnd = vacation.getEndDate();
+            Integer originalOvertimeDeductionMinutes = vacation.getOvertimeDeductionMinutes();
+
+            if (originalStart.equals(punchDay) && originalEnd.equals(punchDay)) {
+                vacationRequestRepository.delete(vacation);
+                logger.info("Urlaubseintrag {} für User '{}' wurde wegen Stempel am {} gelöscht.", vacation.getId(), user.getUsername(), punchDay);
+                continue;
+            }
+
+            if (originalStart.equals(punchDay)) {
+                vacation.setStartDate(originalStart.plusDays(1));
+                vacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(
+                        originalOvertimeDeductionMinutes,
+                        countChargeableVacationDays(user, vacation.getStartDate(), originalEnd),
+                        0
+                ));
+                vacationRequestRepository.save(vacation);
+                logger.info("Urlaubseintrag {} für User '{}' angepasst: neuer Start {} nach Stempel am {}.", vacation.getId(), user.getUsername(), vacation.getStartDate(), punchDay);
+                continue;
+            }
+
+            if (originalEnd.equals(punchDay)) {
+                vacation.setEndDate(originalEnd.minusDays(1));
+                vacation.setOvertimeDeductionMinutes(recalculateOvertimeDeductionMinutes(
+                        originalOvertimeDeductionMinutes,
+                        countChargeableVacationDays(user, originalStart, vacation.getEndDate()),
+                        0
+                ));
+                vacationRequestRepository.save(vacation);
+                logger.info("Urlaubseintrag {} für User '{}' angepasst: neues Ende {} nach Stempel am {}.", vacation.getId(), user.getUsername(), vacation.getEndDate(), punchDay);
+                continue;
+            }
+
+            LocalDate leftEnd = punchDay.minusDays(1);
+            LocalDate rightStart = punchDay.plusDays(1);
+            long leftChargeableDays = countChargeableVacationDays(user, originalStart, leftEnd);
+            long rightChargeableDays = countChargeableVacationDays(user, rightStart, originalEnd);
+
+            vacation.setEndDate(leftEnd);
+            Integer leftDeductionMinutes = recalculateOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, leftChargeableDays, rightChargeableDays);
+            vacation.setOvertimeDeductionMinutes(leftDeductionMinutes);
+            vacationRequestRepository.save(vacation);
+
+            VacationRequest splitVacation = new VacationRequest();
+            splitVacation.setUser(vacation.getUser());
+            splitVacation.setStartDate(rightStart);
+            splitVacation.setEndDate(originalEnd);
+            splitVacation.setApproved(vacation.isApproved());
+            splitVacation.setDenied(vacation.isDenied());
+            splitVacation.setHalfDay(vacation.isHalfDay());
+            splitVacation.setUsesOvertime(vacation.isUsesOvertime());
+            splitVacation.setCompanyVacation(vacation.isCompanyVacation());
+            splitVacation.setOvertimeDeductionMinutes(calculateRemainingOvertimeDeductionMinutes(originalOvertimeDeductionMinutes, leftDeductionMinutes));
+            splitVacation.setAdminNote(vacation.getAdminNote());
+            vacationRequestRepository.save(splitVacation);
+
+            logger.info("Urlaubseintrag {} für User '{}' wurde wegen Stempel am {} aufgeteilt ({} bis {} und {} bis {}).",
+                    vacation.getId(), user.getUsername(), punchDay, originalStart, vacation.getEndDate(), splitVacation.getStartDate(), splitVacation.getEndDate());
+        }
+    }
+
+    private long countChargeableVacationDays(User user, LocalDate startDate, LocalDate endDate) {
+        return countChargeableVacationDays(user, startDate, endDate, null);
+    }
+
+    private long countChargeableVacationDays(User user, LocalDate startDate, LocalDate endDate, Map<LocalDate, User> effectiveUserCache) {
+        if (startDate == null || endDate == null || endDate.isBefore(startDate)) {
+            return 0;
+        }
+
+        long chargeableDays = 0;
+        for (LocalDate current = startDate; !current.isAfter(endDate); current = current.plusDays(1)) {
+            User effectiveUser = resolveEffectiveUserForBalanceDate(user, current, effectiveUserCache);
+            if (isChargeableVacationDay(effectiveUser, current)) {
+                chargeableDays++;
+            }
+        }
+        return chargeableDays;
+    }
+
+    private boolean isChargeableVacationDay(User user, LocalDate date) {
+        return workScheduleService.computeExpectedWorkMinutes(user, date, Collections.emptyList()) > 0;
+    }
+
+    private User resolveEffectiveUserForBalanceDate(User user, LocalDate date, Map<LocalDate, User> effectiveUserCache) {
+        if (user == null || date == null || employmentModelHistoryService == null) {
+            return user;
+        }
+        if (effectiveUserCache == null) {
+            return resolveEffectiveUserSnapshot(user, date);
+        }
+        return effectiveUserCache.computeIfAbsent(date, d -> resolveEffectiveUserSnapshot(user, d));
+    }
+
+    private User resolveEffectiveUserSnapshot(User user, LocalDate date) {
+        try {
+            User snapshot = employmentModelHistoryService.resolveUserSnapshotForDate(user, date);
+            return snapshot != null ? snapshot : user;
+        } catch (Exception ex) {
+            logger.warn("Konnte historischen Arbeitsmodell-Snapshot für User {} am {} nicht laden. Verwende aktuellen User-Zustand.",
+                    user.getUsername(), date, ex);
+            return user;
+        }
+    }
+
+    private LocalDate findHistoricalBalanceSegmentEnd(User baseUser, LocalDate segmentStart, LocalDate maxEnd, Map<LocalDate, User> effectiveUserCache) {
+        User firstSnapshot = resolveEffectiveUserForBalanceDate(baseUser, segmentStart, effectiveUserCache);
+        LocalDate segmentEnd = segmentStart;
+        while (segmentEnd.plusDays(1).compareTo(maxEnd) <= 0) {
+            LocalDate next = segmentEnd.plusDays(1);
+            User nextSnapshot = resolveEffectiveUserForBalanceDate(baseUser, next, effectiveUserCache);
+            if (!hasSameBalanceRelevantConfig(firstSnapshot, nextSnapshot)) {
+                break;
+            }
+            segmentEnd = next;
+        }
+        return segmentEnd;
+    }
+
+    private boolean hasSameBalanceRelevantConfig(User left, User right) {
+        if (left == right) {
+            return true;
+        }
+        if (left == null || right == null) {
+            return false;
+        }
+        return Objects.equals(left.getIsHourly(), right.getIsHourly())
+                && Objects.equals(left.getIsPercentage(), right.getIsPercentage())
+                && Objects.equals(left.getWorkPercentage(), right.getWorkPercentage())
+                && Objects.equals(left.getExpectedWorkDays(), right.getExpectedWorkDays())
+                && Objects.equals(left.getDailyWorkHours(), right.getDailyWorkHours())
+                && Objects.equals(left.getScheduleCycle(), right.getScheduleCycle())
+                && Objects.equals(left.getScheduleEffectiveDate(), right.getScheduleEffectiveDate())
+                && Objects.equals(left.getWeeklySchedule(), right.getWeeklySchedule());
+    }
+
+    private Integer recalculateOvertimeDeductionMinutes(Integer originalMinutes, long keptChargeableDays, long otherChargeableDays) {
+        if (originalMinutes == null || originalMinutes <= 0) {
+            return originalMinutes;
+        }
+        long totalChargeableDays = keptChargeableDays + otherChargeableDays;
+        if (totalChargeableDays <= 0) {
+            return 0;
+        }
+        return Math.max((int) Math.round((double) originalMinutes * keptChargeableDays / totalChargeableDays), 0);
+    }
+
+    private Integer calculateRemainingOvertimeDeductionMinutes(Integer originalMinutes, Integer allocatedMinutes) {
+        if (originalMinutes == null || originalMinutes <= 0) {
+            return originalMinutes;
+        }
+        int safeAllocatedMinutes = allocatedMinutes != null ? allocatedMinutes : 0;
+        return Math.max(originalMinutes - safeAllocatedMinutes, 0);
     }
 
     @Transactional
@@ -175,6 +428,18 @@ public class TimeTrackingService {
     }
 
     @Transactional
+    public TimeTrackingEntryDTO approveEntry(Long id, String requestingUsername) {
+        User requester = loadUserByUsername(requestingUsername);
+        TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Entry not found"));
+        if (!canAdminAccess(requester, entry.getUser())) {
+            throw new SecurityException("Not allowed");
+        }
+        entry.setApproved(true);
+        return TimeTrackingEntryDTO.fromEntity(timeTrackingEntryRepository.save(entry));
+    }
+
+    @Transactional
     public TimeTrackingEntryDTO revokeApproval(Long id) {
         TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Entry not found"));
@@ -182,9 +447,23 @@ public class TimeTrackingService {
         return TimeTrackingEntryDTO.fromEntity(timeTrackingEntryRepository.save(entry));
     }
 
+    @Transactional
+    public TimeTrackingEntryDTO revokeApproval(Long id, String requestingUsername) {
+        User requester = loadUserByUsername(requestingUsername);
+        TimeTrackingEntry entry = timeTrackingEntryRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Entry not found"));
+        if (!canAdminAccess(requester, entry.getUser())) {
+            throw new SecurityException("Not allowed");
+        }
+        entry.setApproved(false);
+        return TimeTrackingEntryDTO.fromEntity(timeTrackingEntryRepository.save(entry));
+    }
+
     public DailyTimeSummaryDTO getDailySummary(String username, LocalDate date) {
         User user = loadUserByUsername(username);
-        List<TimeTrackingEntry> entries = timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date);
+        List<TimeTrackingEntry> entries = sortEntriesChronologically(
+                timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date)
+        );
         return calculateDailySummaryFromEntries(entries, user, date);
     }
 
@@ -208,12 +487,24 @@ public class TimeTrackingService {
         return entriesByDate.entrySet().stream()
                 .map(entry -> {
                     // Einträge innerhalb eines Tages aufsteigend sortieren für die Berechnung
-                    List<TimeTrackingEntry> dailyEntriesSortedAsc = entry.getValue().stream()
-                            .sorted(Comparator.comparing(TimeTrackingEntry::getEntryTimestamp))
-                            .collect(Collectors.toList());
+                    List<TimeTrackingEntry> dailyEntriesSortedAsc = sortEntriesChronologically(entry.getValue());
                     return calculateDailySummaryFromEntries(dailyEntriesSortedAsc, user, entry.getKey());
                 })
                 .collect(Collectors.toList()); // Die resultierende Liste ist nach Datum absteigend sortiert wegen TreeMap
+    }
+
+    private List<TimeTrackingEntry> sortEntriesChronologically(List<TimeTrackingEntry> entries) {
+        if (entries == null || entries.isEmpty()) {
+            return Collections.emptyList();
+        }
+        return entries.stream()
+                .sorted(Comparator
+                        .comparing(
+                                TimeTrackingEntry::getEntryTimestamp,
+                                Comparator.nullsLast(Comparator.naturalOrder())
+                        )
+                        .thenComparing(entry -> entry.getId() != null ? entry.getId() : Long.MAX_VALUE))
+                .collect(Collectors.toList());
     }
 
     private DailyTimeSummaryDTO.PrimaryTimes getPrimaryPunchTimes(List<TimeTrackingEntry> entries) {
@@ -247,16 +538,17 @@ public class TimeTrackingService {
     }
 
     private DailyTimeSummaryDTO calculateDailySummaryFromEntries(List<TimeTrackingEntry> entries, User user, LocalDate date) {
+        List<TimeTrackingEntry> orderedEntries = sortEntriesChronologically(entries);
         Duration totalWorkTime = Duration.ZERO;
         Duration totalBreakTime = Duration.ZERO;
         LocalDateTime lastStartTime = null;
         LocalDateTime lastWorkEndTime = null;
-        List<TimeTrackingEntryDTO> entryDTOs = entries.stream()
+        List<TimeTrackingEntryDTO> entryDTOs = orderedEntries.stream()
                 .map(TimeTrackingEntryDTO::fromEntity)
                 .collect(Collectors.toList());
         String dailyNoteContent = getDailyNoteContent(user, date);
 
-        for (TimeTrackingEntry entry : entries) {
+        for (TimeTrackingEntry entry : orderedEntries) {
             if (entry.getPunchType() == TimeTrackingEntry.PunchType.START) {
                 if (lastWorkEndTime != null && entry.getEntryTimestamp().isAfter(lastWorkEndTime)) {
                     totalBreakTime = totalBreakTime.plus(Duration.between(lastWorkEndTime, entry.getEntryTimestamp()));
@@ -277,7 +569,7 @@ public class TimeTrackingService {
             }
         }
 
-        boolean needsCorrection = entries.stream()
+        boolean needsCorrection = orderedEntries.stream()
                 .anyMatch(e -> e.getSource() == TimeTrackingEntry.PunchSource.SYSTEM_AUTO_END && !e.isCorrectedByUser());
 
         return new DailyTimeSummaryDTO(
@@ -288,7 +580,7 @@ public class TimeTrackingService {
                 entryDTOs,
                 dailyNoteContent,
                 needsCorrection,
-                getPrimaryPunchTimes(entries)
+                getPrimaryPunchTimes(orderedEntries)
         );
     }
 
@@ -298,8 +590,11 @@ public class TimeTrackingService {
         User freshUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new UserNotFoundException("User not found with id: " + user.getId()));
 
+        LocalDate currentBalanceDate = getCurrentBerlinDate();
+        User effectiveUserToday = resolveEffectiveUserForBalanceDate(freshUser, currentBalanceDate, new HashMap<>());
+
         // ====================== FINALE KORREKTUR FÜR STUNDENLÖHNER ======================
-        if (Boolean.TRUE.equals(freshUser.getIsHourly())) {
+        if (Boolean.TRUE.equals(effectiveUserToday.getIsHourly())) {
             logger.info("Führe dedizierte Saldo-Neuberechnung für stundenbasierten Mitarbeiter {} durch.", freshUser.getUsername());
 
             List<TimeTrackingEntry> allEntries = timeTrackingEntryRepository.findByUserOrderByEntryTimestampAsc(freshUser);
@@ -325,6 +620,7 @@ public class TimeTrackingService {
             }
 
             int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
+                    .filter(Payslip::isApproved)
                     .filter(Payslip::isPayoutOvertime)
                     .map(Payslip::getOvertimeHours)
                     .filter(Objects::nonNull)
@@ -350,7 +646,8 @@ public class TimeTrackingService {
             freshUser.setTrackingBalanceInMinutes(0);
         }
 
-        if (allEntriesForUser.isEmpty() && approvedVacations.isEmpty() && sickLeaveRepository.findByUser(freshUser).isEmpty()) {
+        boolean hasNoTrackedData = allEntriesForUser.isEmpty() && approvedVacations.isEmpty() && sickLeaveRepository.findByUser(freshUser).isEmpty();
+        if (hasNoTrackedData && !Boolean.TRUE.equals(effectiveUserToday.getIsPercentage())) {
             if (freshUser.getTrackingBalanceInMinutes() != 0) {
                 logger.info("Saldo für {} auf 0 gesetzt (keine Zeiteinträge oder relevante Abwesenheiten). Alter Saldo war: {}", freshUser.getUsername(), freshUser.getTrackingBalanceInMinutes());
                 freshUser.setTrackingBalanceInMinutes(0);
@@ -361,7 +658,7 @@ public class TimeTrackingService {
             return;
         }
 
-        LocalDate firstDayToConsider = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        LocalDate firstDayToConsider = currentBalanceDate;
 
         Optional<LocalDate> firstTrackingDayOpt = allEntriesForUser.stream().map(TimeTrackingEntry::getEntryDate).filter(Objects::nonNull).min(LocalDate::compareTo);
         Optional<LocalDate> firstVacationDayOpt = approvedVacations.stream().map(VacationRequest::getStartDate).min(LocalDate::compareTo);
@@ -370,10 +667,20 @@ public class TimeTrackingService {
         firstDayToConsider = Stream.of(firstTrackingDayOpt, firstVacationDayOpt, firstSickLeaveDayOpt)
                 .filter(Optional::isPresent).map(Optional::get).min(LocalDate::compareTo).orElse(firstDayToConsider);
 
-        LocalDate lastDay = LocalDate.now(ZoneId.of("Europe/Berlin"));
+        LocalDate today = currentBalanceDate;
+        LocalDate lastDay = today;
         Optional<LocalDate> lastTrackingDayOpt = allEntriesForUser.stream().map(TimeTrackingEntry::getEntryDate).filter(Objects::nonNull).max(LocalDate::compareTo);
         if(lastTrackingDayOpt.isPresent() && lastTrackingDayOpt.get().isAfter(lastDay)){
             lastDay = lastTrackingDayOpt.get();
+        }
+
+        LocalDate balancePeriodStart = employmentModelHistoryService != null
+                ? employmentModelHistoryService.resolveCurrentOvertimeStreakStart(freshUser)
+                : null;
+        if (balancePeriodStart != null && balancePeriodStart.isAfter(firstDayToConsider)) {
+            logger.info("Saldo-Neuberechnung für {} beginnt erst ab {}. Frühere Stundenlohn-Zeiträume werden nicht als Überstundenkonto weitergeführt.",
+                    freshUser.getUsername(), balancePeriodStart);
+            firstDayToConsider = balancePeriodStart;
         }
 
         int totalMinutesBalance = 0;
@@ -383,33 +690,58 @@ public class TimeTrackingService {
                     .filter(e -> e.getEntryDate() != null)
                     .collect(Collectors.groupingBy(TimeTrackingEntry::getEntryDate));
 
-            if (Boolean.TRUE.equals(freshUser.getIsPercentage())) {
-                LocalDate currentWeekStart = firstDayToConsider.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-                while (!currentWeekStart.isAfter(lastDay)) {
-                    totalMinutesBalance += computeWeeklyWorkDifferenceForPercentageUser(freshUser, currentWeekStart, lastDay, approvedVacations, entriesGroupedByDate);
-                    currentWeekStart = currentWeekStart.plusWeeks(1);
-                }
-            } else { // Dieser Block ist für Standard-Mitarbeiter
-                for (LocalDate d = firstDayToConsider; !d.isAfter(lastDay); d = d.plusDays(1)) {
+            Map<LocalDate, User> effectiveUserCache = new HashMap<>();
+            LocalDate currentBalanceDay = firstDayToConsider;
+            while (!currentBalanceDay.isAfter(lastDay)) {
+                User effectiveUser = resolveEffectiveUserForBalanceDate(freshUser, currentBalanceDay, effectiveUserCache);
+                if (Boolean.TRUE.equals(effectiveUser.getIsPercentage())) {
+                    LocalDate weekStart = currentBalanceDay.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+                    LocalDate weekEnd = weekStart.plusDays(6).isAfter(lastDay) ? lastDay : weekStart.plusDays(6);
+                    LocalDate segmentEnd = findHistoricalBalanceSegmentEnd(freshUser, currentBalanceDay, weekEnd, effectiveUserCache);
+                    totalMinutesBalance += computeWeeklyWorkDifferenceForPercentageUserInRange(
+                            effectiveUser,
+                            weekStart,
+                            currentBalanceDay,
+                            segmentEnd,
+                            approvedVacations,
+                            entriesGroupedByDate
+                    );
+                    currentBalanceDay = segmentEnd.plusDays(1);
+                } else {
+                    LocalDate d = currentBalanceDay;
                     List<TimeTrackingEntry> entriesForDay = entriesGroupedByDate.getOrDefault(d, Collections.emptyList())
                             .stream().sorted(Comparator.comparing(TimeTrackingEntry::getEntryTimestamp)).collect(Collectors.toList());
-                    int dailyDifference = computeDailyWorkDifference(freshUser, d, approvedVacations, entriesForDay);
+                    int dailyDifference = computeDailyWorkDifference(effectiveUser, d, approvedVacations, entriesForDay);
                     totalMinutesBalance += dailyDifference;
                     if ("Chantale".equals(freshUser.getUsername()) || logger.isTraceEnabled()) { // Debugging
-                        DailyTimeSummaryDTO summary = calculateDailySummaryFromEntries(entriesForDay, freshUser, d);
-                        int expected = workScheduleService.computeExpectedWorkMinutes(freshUser, d, approvedVacations);
+                        DailyTimeSummaryDTO summary = calculateDailySummaryFromEntries(entriesForDay, effectiveUser, d);
+                        int expected = workScheduleService.computeExpectedWorkMinutes(effectiveUser, d, approvedVacations);
                         logger.info("[User: {}] Saldo Tag {}: Ist: {}min, Soll: {}min, Diff: {}min, Saldo bisher: {}min",
                                 freshUser.getUsername(), d, summary.getWorkedMinutes(), expected, dailyDifference, totalMinutesBalance - dailyDifference);
                     }
+                    currentBalanceDay = currentBalanceDay.plusDays(1);
                 }
             }
             int paidOvertimeMinutes = payslipRepository.findByUser(freshUser).stream()
+                    .filter(Payslip::isApproved)
                     .filter(Payslip::isPayoutOvertime)
+                    .filter(payslip -> {
+                        LocalDate deductionDate = payslip.getPayoutDate() != null ? payslip.getPayoutDate() : payslip.getPeriodEnd();
+                        return deductionDate == null || balancePeriodStart == null || !deductionDate.isBefore(balancePeriodStart);
+                    })
                     .map(Payslip::getOvertimeHours)
                     .filter(Objects::nonNull)
                     .mapToInt(h -> (int) Math.round(h * 60))
                     .sum();
             totalMinutesBalance -= paidOvertimeMinutes;
+
+            LocalDate balanceCutoff = lastDay;
+            int overtimeVacationDeductionMinutes = approvedVacations.stream()
+                    .filter(VacationRequest::isUsesOvertime)
+                    .mapToInt(vacation -> calculateAppliedOvertimeVacationMinutesInRange(freshUser, vacation, balancePeriodStart, balanceCutoff, effectiveUserCache))
+                    .sum();
+            totalMinutesBalance -= overtimeVacationDeductionMinutes;
+
             if (freshUser.getTrackingBalanceInMinutes() != totalMinutesBalance) {
                 logger.info("Saldo für {} aktualisiert von {} auf {} Minuten.", freshUser.getUsername(), freshUser.getTrackingBalanceInMinutes(), totalMinutesBalance);
                 freshUser.setTrackingBalanceInMinutes(totalMinutesBalance);
@@ -428,38 +760,148 @@ public class TimeTrackingService {
         return entriesForDay.isEmpty() ? 0 : calculateDailySummaryFromEntries(entriesForDay, user, date).getWorkedMinutes();
     }
 
-    private int computeWeeklyWorkDifferenceForPercentageUser(User user, LocalDate weekStart, LocalDate lastDayOverall, List<VacationRequest> allApprovedVacationsForUser, Map<LocalDate, List<TimeTrackingEntry>> allUserEntriesGroupedByDate) {
+    private int computeWeeklyWorkDifferenceForPercentageUser(User user, LocalDate weekStart, LocalDate weekEvaluationEnd, List<VacationRequest> allApprovedVacationsForUser, Map<LocalDate, List<TimeTrackingEntry>> allUserEntriesGroupedByDate) {
+        return computeWeeklyWorkDifferenceForPercentageUserInRange(user, weekStart, weekStart, weekEvaluationEnd, allApprovedVacationsForUser, allUserEntriesGroupedByDate);
+    }
+
+    private int computeWeeklyWorkDifferenceForPercentageUserInRange(User user, LocalDate weekStart, LocalDate rangeStart, LocalDate rangeEnd, List<VacationRequest> allApprovedVacationsForUser, Map<LocalDate, List<TimeTrackingEntry>> allUserEntriesGroupedByDate) {
         int totalWorkedMinutesInWeek = 0;
         LocalDate endOfWeek = weekStart.plusDays(6);
-        for (LocalDate d = weekStart; !d.isAfter(endOfWeek) && !d.isAfter(lastDayOverall); d = d.plusDays(1)) {
+        LocalDate effectiveRangeStart = rangeStart.isBefore(weekStart) ? weekStart : rangeStart;
+        LocalDate effectiveRangeEnd = rangeEnd.isBefore(endOfWeek) ? rangeEnd : endOfWeek;
+        if (effectiveRangeStart.isAfter(effectiveRangeEnd)) {
+            return 0;
+        }
+        for (LocalDate d = effectiveRangeStart; !d.isAfter(endOfWeek) && !d.isAfter(effectiveRangeEnd); d = d.plusDays(1)) {
             totalWorkedMinutesInWeek += getWorkedMinutesForDate(user, d, allUserEntriesGroupedByDate);
         }
-        List<VacationRequest> approvedVacationsInThisWeek = allApprovedVacationsForUser.stream()
-                .filter(vr -> vr.isApproved() && !vr.getEndDate().isBefore(weekStart) && !vr.getStartDate().isAfter(endOfWeek))
-                .collect(Collectors.toList());
-        int expectedWeeklyMinutesAdjusted = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, weekStart, approvedVacationsInThisWeek);
+        List<VacationRequest> approvedVacationsInThisWeek = expandVacationsExcludingWorkedDays(
+                allApprovedVacationsForUser.stream()
+                        .filter(vr -> vr.isApproved() && !vr.getEndDate().isBefore(effectiveRangeStart) && !vr.getStartDate().isAfter(effectiveRangeEnd))
+                        .collect(Collectors.toList()),
+                effectiveRangeStart,
+                effectiveRangeEnd,
+                allUserEntriesGroupedByDate
+        );
+        int expectedWeeklyMinutesAdjusted = effectiveRangeStart.equals(weekStart)
+                ? workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, weekStart, effectiveRangeEnd, approvedVacationsInThisWeek)
+                : workScheduleService.getExpectedWeeklyMinutesForPercentageUser(user, weekStart, effectiveRangeStart, effectiveRangeEnd, approvedVacationsInThisWeek);
 
         int weeklyDifference = totalWorkedMinutesInWeek - expectedWeeklyMinutesAdjusted;
-        logger.debug("User: {}, Woche ab: {}, Gearbeitet: {}min, Erwartet (bereinigt): {}min, Differenz diese Woche: {}min",
-                user.getUsername(), weekStart, totalWorkedMinutesInWeek, expectedWeeklyMinutesAdjusted, weeklyDifference);
+        logger.debug("User: {}, Woche ab: {}, Bereich: {} bis {}, Gearbeitet: {}min, Erwartet (bereinigt): {}min, Differenz diese Woche: {}min",
+                user.getUsername(), weekStart, effectiveRangeStart, effectiveRangeEnd, totalWorkedMinutesInWeek, expectedWeeklyMinutesAdjusted, weeklyDifference);
         return weeklyDifference;
     }
 
     public int computeDailyWorkDifference(User user, LocalDate date, List<VacationRequest> approvedVacations, List<TimeTrackingEntry> entriesForDay) {
         DailyTimeSummaryDTO summary = calculateDailySummaryFromEntries(entriesForDay, user, date);
         int workedMinutes = summary.getWorkedMinutes();
-        // Bei Betriebsurlaub gilt: nur dann als Urlaub behandeln, wenn nicht gestempelt wurde.
         List<VacationRequest> vacationsForExpectedMinutes = approvedVacations;
-        boolean hasPunchesOnCompanyVacationDay = !entriesForDay.isEmpty() && approvedVacations.stream()
-                .anyMatch(vr -> vr.isCompanyVacation() && !date.isBefore(vr.getStartDate()) && !date.isAfter(vr.getEndDate()));
-        if (hasPunchesOnCompanyVacationDay) {
+        boolean hasWorkedEntries = workedMinutes > 0 || !entriesForDay.isEmpty();
+        if (hasWorkedEntries) {
             vacationsForExpectedMinutes = approvedVacations.stream()
-                    .filter(vr -> !vr.isCompanyVacation() || date.isBefore(vr.getStartDate()) || date.isAfter(vr.getEndDate()))
+                    .filter(vr -> date.isBefore(vr.getStartDate()) || date.isAfter(vr.getEndDate()))
                     .collect(Collectors.toList());
         }
 
         int adjustedExpectedMinutes = workScheduleService.computeExpectedWorkMinutes(user, date, vacationsForExpectedMinutes);
         return workedMinutes - adjustedExpectedMinutes;
+    }
+
+    private List<VacationRequest> expandVacationsExcludingWorkedDays(List<VacationRequest> vacations,
+                                                                   LocalDate rangeStart,
+                                                                   LocalDate rangeEnd,
+                                                                   Map<LocalDate, List<TimeTrackingEntry>> entriesGroupedByDate) {
+        List<VacationRequest> result = new ArrayList<>();
+        for (VacationRequest vacation : vacations) {
+            LocalDate overlapStart = vacation.getStartDate().isAfter(rangeStart) ? vacation.getStartDate() : rangeStart;
+            LocalDate overlapEnd = vacation.getEndDate().isBefore(rangeEnd) ? vacation.getEndDate() : rangeEnd;
+            LocalDate segmentStart = null;
+            for (LocalDate current = overlapStart; !current.isAfter(overlapEnd); current = current.plusDays(1)) {
+                boolean hasWorkedEntries = !entriesGroupedByDate.getOrDefault(current, Collections.emptyList()).isEmpty();
+                if (hasWorkedEntries) {
+                    if (segmentStart != null) {
+                        result.add(copyVacationSegment(vacation, segmentStart, current.minusDays(1)));
+                        segmentStart = null;
+                    }
+                    continue;
+                }
+                if (segmentStart == null) {
+                    segmentStart = current;
+                }
+            }
+            if (segmentStart != null) {
+                result.add(copyVacationSegment(vacation, segmentStart, overlapEnd));
+            }
+        }
+        return result;
+    }
+
+    private VacationRequest copyVacationSegment(VacationRequest source, LocalDate startDate, LocalDate endDate) {
+        VacationRequest segment = new VacationRequest();
+        segment.setUser(source.getUser());
+        segment.setApproved(source.isApproved());
+        segment.setDenied(source.isDenied());
+        segment.setHalfDay(source.isHalfDay() && startDate.equals(endDate));
+        segment.setUsesOvertime(source.isUsesOvertime());
+        segment.setCompanyVacation(source.isCompanyVacation());
+        segment.setAdminNote(source.getAdminNote());
+        segment.setStartDate(startDate);
+        segment.setEndDate(endDate);
+        segment.setOvertimeDeductionMinutes(source.getOvertimeDeductionMinutes());
+        return segment;
+    }
+
+    private int calculateAppliedOvertimeVacationMinutesUpTo(User user, VacationRequest vacation, LocalDate balanceCutoff) {
+        return calculateAppliedOvertimeVacationMinutesInRange(user, vacation, null, balanceCutoff, null);
+    }
+
+    private int calculateAppliedOvertimeVacationMinutesInRange(User user,
+                                                               VacationRequest vacation,
+                                                               LocalDate balanceStart,
+                                                               LocalDate balanceCutoff,
+                                                               Map<LocalDate, User> effectiveUserCache) {
+        Integer originalMinutes = vacation.getOvertimeDeductionMinutes();
+        if (originalMinutes == null || originalMinutes <= 0 || vacation.getStartDate() == null || vacation.getEndDate() == null) {
+            return 0;
+        }
+        LocalDate effectiveStart = vacation.getStartDate();
+        LocalDate effectiveEnd = vacation.getEndDate();
+
+        if (balanceStart != null && effectiveEnd.isBefore(balanceStart)) {
+            return 0;
+        }
+        if (balanceCutoff != null && effectiveStart.isAfter(balanceCutoff)) {
+            return 0;
+        }
+
+        if (balanceStart != null && effectiveStart.isBefore(balanceStart)) {
+            effectiveStart = balanceStart;
+        }
+        if (balanceCutoff != null && effectiveEnd.isAfter(balanceCutoff)) {
+            effectiveEnd = balanceCutoff;
+        }
+        if (effectiveEnd.isBefore(effectiveStart)) {
+            return 0;
+        }
+
+        long totalChargeableDays = countChargeableVacationDays(user, vacation.getStartDate(), vacation.getEndDate(), effectiveUserCache);
+        if (totalChargeableDays <= 0) {
+            return 0;
+        }
+        long applicableChargeableDays = countChargeableVacationDays(user, effectiveStart, effectiveEnd, effectiveUserCache);
+        if (applicableChargeableDays <= 0) {
+            return 0;
+        }
+
+        if (applicableChargeableDays >= totalChargeableDays) {
+            return originalMinutes;
+        }
+        return Math.max((int) Math.round((double) originalMinutes * applicableChargeableDays / totalChargeableDays), 0);
+    }
+
+    LocalDate getCurrentBerlinDate() {
+        return LocalDate.now(ZoneId.of("Europe/Berlin"));
     }
 
     @Transactional
@@ -483,20 +925,33 @@ public class TimeTrackingService {
                 .filter(e -> e.getEntryDate() != null)
                 .collect(Collectors.groupingBy(TimeTrackingEntry::getEntryDate));
 
-        if (Boolean.TRUE.equals(freshUser.getIsPercentage())) {
-            return computeWeeklyWorkDifferenceForPercentageUser(freshUser, monday, monday.plusDays(6), approvedVacations, entriesGroupedByDate);
-        } else {
-            int sum = 0;
-            for (int i = 0; i < 7; i++) {
-                LocalDate currentDate = monday.plusDays(i);
+        int sum = 0;
+        Map<LocalDate, User> effectiveUserCache = new HashMap<>();
+        LocalDate weekEnd = monday.plusDays(6);
+        LocalDate currentDate = monday;
+        while (!currentDate.isAfter(weekEnd)) {
+            User effectiveUser = resolveEffectiveUserForBalanceDate(freshUser, currentDate, effectiveUserCache);
+            if (Boolean.TRUE.equals(effectiveUser.getIsPercentage())) {
+                LocalDate segmentEnd = findHistoricalBalanceSegmentEnd(freshUser, currentDate, weekEnd, effectiveUserCache);
+                sum += computeWeeklyWorkDifferenceForPercentageUserInRange(
+                        effectiveUser,
+                        monday,
+                        currentDate,
+                        segmentEnd,
+                        approvedVacations,
+                        entriesGroupedByDate
+                );
+                currentDate = segmentEnd.plusDays(1);
+            } else {
                 List<TimeTrackingEntry> entriesForDay = entriesGroupedByDate.getOrDefault(currentDate, Collections.emptyList())
                         .stream()
                         .sorted(Comparator.comparing(TimeTrackingEntry::getEntryTimestamp))
                         .collect(Collectors.toList());
-                sum += computeDailyWorkDifference(freshUser, currentDate, approvedVacations, entriesForDay);
+                sum += computeDailyWorkDifference(effectiveUser, currentDate, approvedVacations, entriesForDay);
+                currentDate = currentDate.plusDays(1);
             }
-            return sum;
         }
+        return sum;
     }
 
     @Transactional
@@ -941,7 +1396,7 @@ public class TimeTrackingService {
         }
         Customer customer = null;
         if (customerId != null) {
-            customer = customerRepository.findById(customerId).orElse(null);
+            customer = resolveCustomerForUser(customerId, entryUser);
         }
         entry.setCustomer(customer);
         TimeTrackingEntry saved = timeTrackingEntryRepository.save(entry);
@@ -976,7 +1431,7 @@ public class TimeTrackingService {
         }
         Project project = null;
         if (projectId != null) {
-            project = projectRepository.findById(projectId).orElse(null);
+            project = resolveProjectForUser(projectId, entryUser);
         }
         entry.setProject(project);
         TimeTrackingEntry saved = timeTrackingEntryRepository.save(entry);
@@ -996,7 +1451,7 @@ public class TimeTrackingService {
         if (user.getCompany() == null || !Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
             throw new IllegalStateException("Feature disabled");
         }
-        Customer customer = customerId != null ? customerRepository.findById(customerId).orElse(null) : null;
+        Customer customer = resolveCustomerForUser(customerId, user);
         List<TimeTrackingEntry> entries = timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date);
         for (TimeTrackingEntry e : entries) {
             e.setCustomer(customer);
@@ -1019,7 +1474,7 @@ public class TimeTrackingService {
         if (user.getCompany() == null || !Boolean.TRUE.equals(user.getCompany().getCustomerTrackingEnabled())) {
             throw new IllegalStateException("Feature disabled");
         }
-        Project project = projectId != null ? projectRepository.findById(projectId).orElse(null) : null;
+        Project project = resolveProjectForUser(projectId, user);
         List<TimeTrackingEntry> entries = timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date);
         for (TimeTrackingEntry e : entries) {
             e.setProject(project);
@@ -1041,7 +1496,7 @@ public class TimeTrackingService {
             startTime = endTime;
             endTime = tmp;
         }
-        Customer customer = customerId != null ? customerRepository.findById(customerId).orElse(null) : null;
+        Customer customer = resolveCustomerForUser(customerId, user);
         LocalDateTime startDt = LocalDateTime.of(date, startTime);
         LocalDateTime endDt = LocalDateTime.of(date, endTime);
         List<TimeTrackingEntry> entries = timeTrackingEntryRepository

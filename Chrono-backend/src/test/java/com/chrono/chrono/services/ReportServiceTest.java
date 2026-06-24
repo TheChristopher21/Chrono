@@ -1,6 +1,7 @@
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.ProjectHierarchyNodeDTO;
+import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.Customer;
 import com.chrono.chrono.entities.Project;
@@ -18,11 +19,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -145,5 +149,91 @@ class ReportServiceTest {
         assertEquals(90L, childNode.getTotalMinutes());
         assertEquals(60L, childNode.getBillableMinutes());
         assertEquals(0.75, childNode.getUtilization(), 0.0001);
+    }
+
+    @Test
+    void getProjectAnalytics_assignsCustomerOnlyPunchesToSingleCustomerProject() {
+        Long companyId = 7L;
+
+        Company company = new Company();
+        company.setId(companyId);
+
+        Customer customer = new Customer();
+        customer.setId(11L);
+        customer.setCompany(company);
+
+        Project project = new Project();
+        project.setId(21L);
+        project.setName("Only Project");
+        project.setCustomer(customer);
+        project.setBudgetMinutes(600);
+
+        when(projectRepository.findByCustomerCompanyIdOrderByNameAsc(companyId))
+                .thenReturn(List.of(project));
+
+        User user = new User();
+        user.setId(42L);
+
+        LocalDateTime base = LocalDateTime.of(2024, 1, 8, 8, 0);
+        TimeTrackingEntry startEntry = new TimeTrackingEntry(user, customer, null, base,
+                TimeTrackingEntry.PunchType.START, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        TimeTrackingEntry endEntry = new TimeTrackingEntry(user, customer, null, base.plusMinutes(180),
+                TimeTrackingEntry.PunchType.ENDE, TimeTrackingEntry.PunchSource.MANUAL_PUNCH);
+        endEntry.setDurationMinutes(180);
+
+        when(timeTrackingEntryRepository.findByCompanyIdAndEntryTimestampBetween(eq(companyId), any(), any()))
+                .thenReturn(List.of(startEntry, endEntry));
+
+        List<ProjectHierarchyNodeDTO> analytics = reportService.getProjectAnalytics(
+                companyId,
+                LocalDate.of(2024, 1, 1),
+                LocalDate.of(2024, 1, 31)
+        );
+
+        assertEquals(1, analytics.size());
+        ProjectHierarchyNodeDTO node = analytics.get(0);
+        assertEquals(project.getId(), node.getId());
+        assertEquals(180L, node.getTotalMinutes());
+        assertEquals(0.30, node.getUtilization(), 0.0001);
+    }
+
+    @Test
+    void generateCsv_neutralizesFormulaLikeDailyNotes() {
+        User user = new User();
+        user.setUsername("anna");
+        user.setFirstName("Anna");
+        user.setLastName("Fischer");
+
+        DailyTimeSummaryDTO formulaNote = new DailyTimeSummaryDTO(
+                "anna",
+                LocalDate.of(2024, 2, 1),
+                60,
+                0,
+                List.of(),
+                "=HYPERLINK(\"https://example.invalid\")",
+                false,
+                null
+        );
+        DailyTimeSummaryDTO normalNote = new DailyTimeSummaryDTO(
+                "anna",
+                LocalDate.of(2024, 2, 2),
+                60,
+                0,
+                List.of(),
+                "normal note",
+                false,
+                null
+        );
+
+        when(userRepository.findByUsername("anna")).thenReturn(Optional.of(user));
+        when(timeTrackingService.getUserHistory("anna")).thenReturn(List.of(formulaNote, normalNote));
+
+        String csv = new String(
+                reportService.generateCsv("anna", LocalDate.of(2024, 2, 1), LocalDate.of(2024, 2, 29)),
+                StandardCharsets.UTF_8
+        );
+
+        assertTrue(csv.contains("\"'=HYPERLINK(\"\"https://example.invalid\"\")\""));
+        assertTrue(csv.contains("\"normal note\""));
     }
 }

@@ -1,0 +1,13 @@
+global:
+  scrape_interval: 10s # Etwas mehr Zeit zwischen den Abfragen
+
+scrape_configs:
+  - job_name: 'chrono-backend'
+    metrics_path: '/actuator/prometheus'
+    scrape_interval: 30s # Geben Sie dem Backend nach dem Start mehr Zeit
+    static_configs:
+      - targets: ['backend:8081'] # Der neue, eindeutige Port für das Backend
+
+  - job_name: 'nginx-web'
+    static_configs:
+      - targets: ['nginx-exporter:9113']

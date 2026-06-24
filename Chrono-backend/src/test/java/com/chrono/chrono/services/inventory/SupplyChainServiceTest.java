@@ -6,9 +6,11 @@ import com.chrono.chrono.dto.inventory.AutoReplenishResponse;
 import com.chrono.chrono.dto.inventory.PlanWavePickRequest;
 import com.chrono.chrono.dto.inventory.WavePickResponse;
 import com.chrono.chrono.dto.inventory.WavePickWaveDTO;
+import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.accounting.InvoiceStatus;
 import com.chrono.chrono.entities.accounting.VendorInvoice;
 import com.chrono.chrono.entities.inventory.*;
+import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.repositories.accounting.VendorInvoiceRepository;
 import com.chrono.chrono.repositories.inventory.StockLevelRepository;
 import com.chrono.chrono.services.accounting.AccountingService;
@@ -25,6 +27,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
 @Import({AccountingService.class, AccountsPayableService.class, WarehouseIntelligenceService.class, SupplyChainService.class})
@@ -39,6 +42,9 @@ class SupplyChainServiceTest {
 
     @Autowired
     private VendorInvoiceRepository vendorInvoiceRepository;
+
+    @Autowired
+    private CompanyRepository companyRepository;
 
     @Test
     void receivePurchaseOrderUpdatesStockAndCreatesInvoice() {
@@ -255,5 +261,153 @@ class SupplyChainServiceTest {
         assertThat(firstWave.getOrders()).isNotEmpty();
         assertThat(firstWave.getStops()).isNotEmpty();
         assertThat(firstWave.getStops().get(0).getQuantity()).isPositive();
+    }
+
+    @Test
+    void cycleCountPersistsAndAdjustsStockAfterApproval() {
+        Product product = new Product();
+        product.setSku("SKU-COUNT");
+        product.setName("Counted Item");
+        product = supplyChainService.saveProduct(product);
+
+        Warehouse warehouse = new Warehouse();
+        warehouse.setCode("COUNT");
+        warehouse.setName("Count Warehouse");
+        warehouse = supplyChainService.saveWarehouse(warehouse);
+
+        supplyChainService.adjustStock(product, warehouse, new BigDecimal("10"), StockMovementType.RECEIPT, "Initial", null, null, null);
+
+        CycleCount cycleCount = supplyChainService.createCycleCount(product, warehouse, "auditor");
+        assertThat(cycleCount.getExpectedQuantity()).isEqualByComparingTo(new BigDecimal("10"));
+        assertThat(cycleCount.getStatus()).isEqualTo(CycleCountStatus.PLANNED);
+
+        CycleCount submitted = supplyChainService.submitCycleCount(cycleCount.getId(), new BigDecimal("8"), "counter");
+        assertThat(submitted.getStatus()).isEqualTo(CycleCountStatus.APPROVAL_REQUIRED);
+        assertThat(submitted.getVariance()).isEqualByComparingTo(new BigDecimal("-2"));
+
+        CycleCount approved = supplyChainService.approveCycleCount(submitted.getId(), "supervisor");
+        assertThat(approved.getStatus()).isEqualTo(CycleCountStatus.COMPLETED);
+        assertThat(approved.getApprovedBy()).isEqualTo("supervisor");
+        assertThat(approved.getExpectedQuantity()).isEqualByComparingTo(new BigDecimal("8"));
+
+        StockLevel updated = stockLevelRepository.findByProductAndWarehouse(product, warehouse).orElseThrow();
+        assertThat(updated.getQuantity()).isEqualByComparingTo(new BigDecimal("8"));
+    }
+
+    @Test
+    void allowsSameSupplyChainBusinessKeysAcrossDifferentCompanies() {
+        Company alpha = createCompany("Alpha Industries");
+        Company beta = createCompany("Beta Industries");
+
+        Product alphaProduct = new Product();
+        alphaProduct.setSku("SKU-SHARED");
+        alphaProduct.setName("Shared Product");
+        alphaProduct = supplyChainService.saveProduct(alphaProduct, alpha);
+
+        Product betaProduct = new Product();
+        betaProduct.setSku("SKU-SHARED");
+        betaProduct.setName("Shared Product");
+        betaProduct = supplyChainService.saveProduct(betaProduct, beta);
+
+        Warehouse alphaWarehouse = new Warehouse();
+        alphaWarehouse.setCode("MAIN");
+        alphaWarehouse.setName("Main");
+        alphaWarehouse = supplyChainService.saveWarehouse(alphaWarehouse, alpha);
+
+        Warehouse betaWarehouse = new Warehouse();
+        betaWarehouse.setCode("MAIN");
+        betaWarehouse.setName("Main");
+        betaWarehouse = supplyChainService.saveWarehouse(betaWarehouse, beta);
+
+        PurchaseOrder alphaPurchase = new PurchaseOrder();
+        alphaPurchase.setOrderNumber("PO-SHARED");
+        alphaPurchase.setVendorName("Vendor A");
+        PurchaseOrderLine alphaPurchaseLine = new PurchaseOrderLine();
+        alphaPurchaseLine.setProduct(alphaProduct);
+        alphaPurchaseLine.setQuantity(new BigDecimal("2"));
+        alphaPurchaseLine.setUnitCost(new BigDecimal("10"));
+        alphaPurchase.setLines(new java.util.ArrayList<>(List.of(alphaPurchaseLine)));
+        alphaPurchase = supplyChainService.createPurchaseOrder(alphaPurchase, alpha);
+
+        PurchaseOrder betaPurchase = new PurchaseOrder();
+        betaPurchase.setOrderNumber("PO-SHARED");
+        betaPurchase.setVendorName("Vendor B");
+        PurchaseOrderLine betaPurchaseLine = new PurchaseOrderLine();
+        betaPurchaseLine.setProduct(betaProduct);
+        betaPurchaseLine.setQuantity(new BigDecimal("3"));
+        betaPurchaseLine.setUnitCost(new BigDecimal("12"));
+        betaPurchase.setLines(new java.util.ArrayList<>(List.of(betaPurchaseLine)));
+        betaPurchase = supplyChainService.createPurchaseOrder(betaPurchase, beta);
+
+        SalesOrder alphaSales = new SalesOrder();
+        alphaSales.setOrderNumber("SO-SHARED");
+        alphaSales.setCustomerName("Customer A");
+        SalesOrderLine alphaSalesLine = new SalesOrderLine();
+        alphaSalesLine.setProduct(alphaProduct);
+        alphaSalesLine.setQuantity(new BigDecimal("1"));
+        alphaSalesLine.setUnitPrice(new BigDecimal("19"));
+        alphaSales.setLines(new java.util.ArrayList<>(List.of(alphaSalesLine)));
+        alphaSales = supplyChainService.createSalesOrder(alphaSales, alpha);
+
+        SalesOrder betaSales = new SalesOrder();
+        betaSales.setOrderNumber("SO-SHARED");
+        betaSales.setCustomerName("Customer B");
+        SalesOrderLine betaSalesLine = new SalesOrderLine();
+        betaSalesLine.setProduct(betaProduct);
+        betaSalesLine.setQuantity(new BigDecimal("1"));
+        betaSalesLine.setUnitPrice(new BigDecimal("21"));
+        betaSales.setLines(new java.util.ArrayList<>(List.of(betaSalesLine)));
+        betaSales = supplyChainService.createSalesOrder(betaSales, beta);
+
+        ProductionOrder alphaProduction = new ProductionOrder();
+        alphaProduction.setOrderNumber("MO-SHARED");
+        alphaProduction.setProduct(alphaProduct);
+        alphaProduction.setQuantity(new BigDecimal("4"));
+        alphaProduction = supplyChainService.saveProductionOrder(alphaProduction, alpha);
+
+        ProductionOrder betaProduction = new ProductionOrder();
+        betaProduction.setOrderNumber("MO-SHARED");
+        betaProduction.setProduct(betaProduct);
+        betaProduction.setQuantity(new BigDecimal("5"));
+        betaProduction = supplyChainService.saveProductionOrder(betaProduction, beta);
+
+        supplyChainService.adjustStock(alphaProduct, alphaWarehouse, new BigDecimal("7"), StockMovementType.RECEIPT, "INIT-A", null, null, null);
+        supplyChainService.adjustStock(betaProduct, betaWarehouse, new BigDecimal("9"), StockMovementType.RECEIPT, "INIT-B", null, null, null);
+
+        CycleCount alphaCount = supplyChainService.createCycleCount(alpha.getId(), alphaProduct, alphaWarehouse, "alpha");
+        CycleCount betaCount = supplyChainService.createCycleCount(beta.getId(), betaProduct, betaWarehouse, "beta");
+
+        assertThat(alphaProduct.getId()).isNotEqualTo(betaProduct.getId());
+        assertThat(alphaWarehouse.getId()).isNotEqualTo(betaWarehouse.getId());
+        assertThat(alphaPurchase.getId()).isNotEqualTo(betaPurchase.getId());
+        assertThat(alphaSales.getId()).isNotEqualTo(betaSales.getId());
+        assertThat(alphaProduction.getId()).isNotEqualTo(betaProduction.getId());
+        assertThat(alphaCount.getPlanNumber()).isEqualTo(betaCount.getPlanNumber());
+        assertThat(alphaCount.getCompany().getId()).isEqualTo(alpha.getId());
+        assertThat(betaCount.getCompany().getId()).isEqualTo(beta.getId());
+    }
+
+    @Test
+    void rejectsDuplicateSkuWithinSameCompany() {
+        Company company = createCompany("Scoped Duplicate Test");
+
+        Product first = new Product();
+        first.setSku("SKU-DUP");
+        first.setName("First");
+        supplyChainService.saveProduct(first, company);
+
+        Product duplicate = new Product();
+        duplicate.setSku("SKU-DUP");
+        duplicate.setName("Second");
+
+        assertThatThrownBy(() -> supplyChainService.saveProduct(duplicate, company))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("already exists");
+    }
+
+    private Company createCompany(String name) {
+        Company company = new Company();
+        company.setName(name);
+        return companyRepository.save(company);
     }
 }

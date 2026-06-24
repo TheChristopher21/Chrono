@@ -510,6 +510,22 @@
   font-weight: 700;
 }
 
+.billing-note {
+  margin: 0.55rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.pricing-promo {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  color: var(--accent);
+  font-weight: 600;
+}
+
 .pricing-disclaimer,
 .pricing-on-request {
   margin: 0;

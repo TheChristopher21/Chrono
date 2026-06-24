@@ -8,6 +8,7 @@ public class SecureMessageDTO {
     private final Long id;
     private final String recipient;
     private final String subject;
+    private final String body;
     private final String transport;
     private final boolean delivered;
     private final LocalDateTime sentAt;
@@ -15,12 +16,13 @@ public class SecureMessageDTO {
     private final String providerStatus;
     private final String providerMessage;
 
-    public SecureMessageDTO(Long id, String recipient, String subject, String transport,
+    public SecureMessageDTO(Long id, String recipient, String subject, String body, String transport,
                             boolean delivered, LocalDateTime sentAt,
                             String providerReference, String providerStatus, String providerMessage) {
         this.id = id;
         this.recipient = recipient;
         this.subject = subject;
+        this.body = body;
         this.transport = transport;
         this.delivered = delivered;
         this.sentAt = sentAt;
@@ -34,6 +36,7 @@ public class SecureMessageDTO {
                 message.getId(),
                 message.getRecipient(),
                 message.getSubject(),
+                message.getBody(),
                 message.getTransport(),
                 message.isDelivered(),
                 message.getSentAt(),
@@ -52,6 +55,10 @@ public class SecureMessageDTO {
 
     public String getSubject() {
         return subject;
+    }
+
+    public String getBody() {
+        return body;
     }
 
     public String getTransport() {

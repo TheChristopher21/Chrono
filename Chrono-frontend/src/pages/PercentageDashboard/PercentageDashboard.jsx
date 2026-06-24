@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from '../../components/Navbar';
+import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -19,8 +20,8 @@ import {
     formatDate,
     formatTime,
     minutesToHHMM,
-    computeTotalWorkedMinutesInRange,
-    expectedDayMinutesForPercentageUser,
+    getDatesUpToReferenceDate,
+    calculateExpectedPercentageMinutesForDates,
     parseHex16,
     sortEntries
 } from './percentageDashUtils';
@@ -184,7 +185,9 @@ const PercentageDashboard = () => {
 
     async function doNfcCheck() {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`);
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`, {
+                headers: { 'X-NFC-Agent-Request': 'true' },
+            });
             if (!response.ok) return;
             const json = await response.json();
             if (json.status !== 'success' || !json.data) return;
@@ -323,27 +326,28 @@ const PercentageDashboard = () => {
         doc.save(`Zeitenbericht_Prozent_${userProfile.username}_${printStartDate}_bis_${printEndDate}.pdf`);
     }
 
-    const weekDatesForOverview = Array.from({ length: 5 }, (_, i) => addDays(selectedMonday, i));
-    const weeklyWorked = computeTotalWorkedMinutesInRange(dailySummaries, selectedMonday, addDays(selectedMonday, 4));
-
-    const expectedWorkDaysPerWeek = (userProfile?.expectedWorkDays && userProfile.expectedWorkDays > 0)
-        ? userProfile.expectedWorkDays
-        : 5;
-
-    const weeklyExpected = weekDatesForOverview.reduce((sum, dayObj, index) => {
+    const weekDatesForOverview = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
+    const weekDatesForTotals = getDatesUpToReferenceDate(weekDatesForOverview);
+    const workedDateSetForWeek = new Set(
+        weekDatesForOverview
+            .map(dayObj => {
+                const isoDate = formatLocalDate(dayObj);
+                const summary = dailySummaries.find(s => s.date === isoDate);
+                return ((summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0) ? isoDate : null;
+            })
+            .filter(Boolean)
+    );
+    const weeklyWorked = weekDatesForTotals.reduce((sum, dayObj) => {
         const isoDate = formatLocalDate(dayObj);
-        const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
-        const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
-        const isHoliday = holidaysForUserCanton?.data && holidaysForUserCanton.data[isoDate];
-        let daySoll = index < expectedWorkDaysPerWeek ? expectedDayMinutesForPercentageUser(userProfile) : 0;
-
-        if (isHoliday || (vacationToday && !vacationToday.halfDay) || (sickToday && !sickToday.halfDay)) {
-            daySoll = 0;
-        } else if (vacationToday?.halfDay || sickToday?.halfDay) {
-            daySoll = Math.round(daySoll / 2);
-        }
-        return sum + daySoll;
+        const summary = dailySummaries.find(s => s.date === isoDate);
+        return sum + (summary?.workedMinutes || 0);
     }, 0);
+    const weeklyExpected = calculateExpectedPercentageMinutesForDates(userProfile, weekDatesForTotals, {
+        holidaysForUserCanton: holidaysForUserCanton?.data || {},
+        vacationRequests,
+        sickLeaves,
+        workedDateSet: workedDateSetForWeek,
+    });
     const weeklyDiff = weeklyWorked - weeklyExpected;
     const overtimeBalanceStr = minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0);
 
@@ -378,6 +382,12 @@ const PercentageDashboard = () => {
                         </Link>
                     </div>
                 </header>
+
+                <AccessiblePagesPanel
+                    context="user"
+                    title="Deine freigegebenen Seiten"
+                    subtitle="Hier findest du alle zusätzlichen Bereiche, die für diesen Benutzer sichtbar sein sollen."
+                />
 
                 {punchMessage && <div className="punch-message">{punchMessage}</div>}
 

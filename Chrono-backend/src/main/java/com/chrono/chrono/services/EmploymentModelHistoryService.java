@@ -77,6 +77,35 @@ public class EmploymentModelHistoryService {
         return LocalDate.now(ZoneId.of("Europe/Berlin"));
     }
 
+    public LocalDate resolveCurrentOvertimeStreakStart(User user) {
+        if (user == null) {
+            return null;
+        }
+
+        LocalDate today = currentBerlinDate();
+        LocalDate fallback = user.getEntryDate();
+        List<UserEmploymentModelHistory> history = historyRepository.findByUserOrderByEffectiveFromAsc(user);
+        if (history.isEmpty()) {
+            return fallback;
+        }
+
+        LocalDate streakStart = null;
+        for (UserEmploymentModelHistory row : history) {
+            if (row.getEffectiveFrom() == null || row.getEffectiveFrom().isAfter(today)) {
+                continue;
+            }
+            if (row.getModelType() == EmploymentModelType.HOURLY) {
+                streakStart = null;
+                continue;
+            }
+            if (streakStart == null) {
+                streakStart = row.getEffectiveFrom();
+            }
+        }
+
+        return streakStart != null ? streakStart : fallback;
+    }
+
     public boolean needsBaselineBefore(User user, LocalDate baselineDate) {
         if (user == null || baselineDate == null) {
             return false;

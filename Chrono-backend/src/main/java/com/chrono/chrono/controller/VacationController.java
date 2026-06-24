@@ -3,6 +3,7 @@ package com.chrono.chrono.controller;
 
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.VacationRequest;
+import com.chrono.chrono.services.UserPermissionService;
 import com.chrono.chrono.services.UserService;
 import com.chrono.chrono.services.VacationService;
 import org.slf4j.Logger; // SLF4J Logger importieren
@@ -30,11 +31,41 @@ public class VacationController {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private UserPermissionService userPermissionService;
+
     @GetMapping("/user/{username}")
-    @PreAuthorize("#username == principal.name or hasRole('ADMIN') or hasRole('SUPERADMIN')")
-    public ResponseEntity<List<VacationRequest>> getUserVacations(@PathVariable String username) {
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<VacationRequest>> getUserVacations(@PathVariable String username, Principal principal) {
+        if (!canAccessUserRecords(principal, username)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
         return ResponseEntity.ok(vacationService.getUserVacations(username));
     }
+
+    private boolean canAccessUserRecords(Principal principal, String targetUsername) {
+        if (principal == null || targetUsername == null || targetUsername.isBlank()) {
+            return false;
+        }
+        User requester = userService.getUserByUsername(principal.getName());
+        User target = userService.getUserByUsername(targetUsername);
+        if (requester.getUsername().equals(target.getUsername())) {
+            return true;
+        }
+        if (hasRole(requester, "ROLE_SUPERADMIN")) {
+            return true;
+        }
+        return hasRole(requester, "ROLE_ADMIN")
+                && requester.getCompany() != null
+                && target.getCompany() != null
+                && requester.getCompany().getId().equals(target.getCompany().getId());
+    }
+
+    private boolean hasRole(User user, String roleName) {
+        return user != null && user.getRoles() != null && user.getRoles().stream()
+                .anyMatch(role -> roleName.equals(role.getRoleName()));
+    }
+
     @PostMapping("/create")
     public ResponseEntity<?> createVacation(@RequestParam String username,
                                             @RequestParam String startDate,
@@ -72,6 +103,13 @@ public class VacationController {
                                                  @RequestParam(required = false, defaultValue = "false") boolean usesOvertime,
                                                  @RequestParam(required = false) Integer overtimeDeductionMinutes,
                                                  Principal principal) {
+        User adminUser = userService.getUserByUsername(principal.getName());
+        userPermissionService.assertPageAccess(
+                adminUser,
+                UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                UserPermissionService.ACCESS_MANAGE,
+                "Keine Berechtigung für Änderungen im Admin-Dashboard."
+        );
         if (!principal.getName().equals(adminUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Aktion nicht erlaubt. Admin-Username stimmt nicht mit angemeldetem User überein."));
@@ -101,6 +139,13 @@ public class VacationController {
                                                         @RequestParam String endDate,
                                                         @RequestParam(required = false, defaultValue = "false") boolean halfDay,
                                                         Principal principal) {
+        User adminUser = userService.getUserByUsername(principal.getName());
+        userPermissionService.assertPageAccess(
+                adminUser,
+                UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                UserPermissionService.ACCESS_MANAGE,
+                "Keine Berechtigung für Änderungen im Admin-Dashboard."
+        );
         if (!principal.getName().equals(adminUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Aktion nicht erlaubt. Admin-Username stimmt nicht mit angemeldetem User überein."));
@@ -129,9 +174,16 @@ public class VacationController {
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> getAllVacations(Principal principal) {
         User adminUser = userService.getUserByUsername(principal.getName());
+        userPermissionService.assertAnyPageAccess(
+                adminUser,
+                UserPermissionService.ACCESS_VIEW,
+                "Keine Berechtigung fuer Urlaubsuebersichten.",
+                UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                UserPermissionService.PAGE_ADMIN_SCHEDULE
+        );
         if (adminUser.getCompany() == null && !adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
             // Admin (nicht SUPERADMIN) ohne Firma darf keine Firmen-Urlaube sehen.
             logger.warn("Admin user {} has no company assigned and is not SUPERADMIN. Cannot fetch all vacations.", adminUser.getUsername());
@@ -157,6 +209,13 @@ public class VacationController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> approve(@PathVariable Long id, Principal principal) {
         try {
+            User adminUser = userService.getUserByUsername(principal.getName());
+            userPermissionService.assertPageAccess(
+                    adminUser,
+                    UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                    UserPermissionService.ACCESS_MANAGE,
+                    "Keine Berechtigung für Änderungen im Admin-Dashboard."
+            );
             VacationRequest request = vacationService.approveVacation(id, principal.getName());
             return ResponseEntity.ok(request);
         } catch (SecurityException e) {
@@ -172,6 +231,13 @@ public class VacationController {
     @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
     public ResponseEntity<?> deny(@PathVariable Long id, Principal principal) {
         try {
+            User adminUser = userService.getUserByUsername(principal.getName());
+            userPermissionService.assertPageAccess(
+                    adminUser,
+                    UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                    UserPermissionService.ACCESS_MANAGE,
+                    "Keine Berechtigung für Änderungen im Admin-Dashboard."
+            );
             VacationRequest request = vacationService.denyVacation(id, principal.getName());
             return ResponseEntity.ok(request);
         } catch (SecurityException e) {
@@ -188,6 +254,13 @@ public class VacationController {
     public ResponseEntity<?> deleteVacation(@PathVariable Long id,
                                             @RequestParam String adminUsername,
                                             Principal principal) {
+        User adminUser = userService.getUserByUsername(principal.getName());
+        userPermissionService.assertPageAccess(
+                adminUser,
+                UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                UserPermissionService.ACCESS_MANAGE,
+                "Keine Berechtigung für Änderungen im Admin-Dashboard."
+        );
         if (!principal.getName().equals(adminUsername)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("message", "Aktion nicht erlaubt. Admin-Username stimmt nicht mit angemeldetem User überein."));
@@ -210,6 +283,13 @@ public class VacationController {
                                             @RequestBody VacationUpdateRequest body,
                                             Principal principal) {
         try {
+            User adminUser = userService.getUserByUsername(principal.getName());
+            userPermissionService.assertPageAccess(
+                    adminUser,
+                    UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                    UserPermissionService.ACCESS_MANAGE,
+                    "Keine Berechtigung für Änderungen im Admin-Dashboard."
+            );
             LocalDate start = body.getStartDate() != null ? LocalDate.parse(body.getStartDate()) : null;
             LocalDate end = body.getEndDate() != null ? LocalDate.parse(body.getEndDate()) : null;
 
@@ -222,7 +302,8 @@ public class VacationController {
                     body.getUsesOvertime(),
                     body.getOvertimeDeductionMinutes(),
                     body.getApproved(),
-                    body.getDenied());
+                    body.getDenied(),
+                    body.getAdminNote());
             return ResponseEntity.ok(updated);
         } catch (IllegalArgumentException e) {
             logger.warn("IllegalArgumentException in updateVacation for id {}: {}", id, e.getMessage());
@@ -245,6 +326,7 @@ public class VacationController {
         private Integer overtimeDeductionMinutes;
         private Boolean approved;
         private Boolean denied;
+        private String adminNote;
 
         public String getStartDate() {
             return startDate;
@@ -300,6 +382,14 @@ public class VacationController {
 
         public void setDenied(Boolean denied) {
             this.denied = denied;
+        }
+
+        public String getAdminNote() {
+            return adminNote;
+        }
+
+        public void setAdminNote(String adminNote) {
+            this.adminNote = adminNote;
         }
     }
 

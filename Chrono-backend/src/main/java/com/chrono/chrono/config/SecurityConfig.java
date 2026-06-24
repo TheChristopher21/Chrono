@@ -6,6 +6,7 @@ import com.chrono.chrono.utils.PasswordEncoderConfig;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -24,6 +25,7 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 public class SecurityConfig {
 
 // SecurityConfig.java
@@ -44,6 +46,7 @@ public class SecurityConfig {
 
             // NEU: Die Ursprünge des Capacitor WebViews (siehe Log-Fehler!)
             "capacitor://localhost",   // Standard Capacitor Origin
+            "http://localhost",
             "https://localhost"        // Die Origin, die in Ihrem Logcat-Fehler aufgetreten ist
     };
     // ...
@@ -62,7 +65,7 @@ public class SecurityConfig {
         configuration.setAllowedOriginPatterns(List.of(ALLOWED_ORIGINS)); // Verwende List.of
         configuration.setAllowedOrigins(List.of(ALLOWED_ORIGINS)); // Erlaubt nur die definierten Origins
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Origin"));
+        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Origin", "X-Agent-Token", "X-NFC-Agent-Request"));
         configuration.setExposedHeaders(List.of("Authorization")); // Wichtig für das Lesen des Tokens im Frontend
         configuration.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -90,7 +93,7 @@ public class SecurityConfig {
 
                     // Öffentliche Endpunkte
                     auth.requestMatchers("/api/auth/**").permitAll();
-                    auth.requestMatchers("/actuator/**").permitAll();
+                    auth.requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/nfc/command").permitAll();
                     auth.requestMatchers(HttpMethod.PUT, "/api/nfc/command/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/timetracking/punch").permitAll();
@@ -98,12 +101,18 @@ public class SecurityConfig {
                     auth.requestMatchers("/api/nfc/write-sector0").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/apply").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/contact").permitAll();
-                    auth.requestMatchers("/api/chat").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/public/analytics/**").permitAll();
+                    auth.requestMatchers(HttpMethod.GET, "/api/holidays/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/public/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/report/timesheet/ics-feed/**").permitAll();
 
                     // Admin-Endpunkte
-                    auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
+                    auth.requestMatchers("/api/admin/users", "/api/admin/users/**")
+                            .hasAnyRole("ADMIN", "SUPERADMIN", "PAYROLL_ADMIN");
+                    auth.requestMatchers("/api/admin/company/logo")
+                            .hasAnyRole("ADMIN", "SUPERADMIN", "PAYROLL_ADMIN");
+                    auth.requestMatchers("/api/admin/**").hasAnyRole("ADMIN", "SUPERADMIN");
+                    auth.requestMatchers("/api/supply-chain/**").authenticated();
                     auth.requestMatchers("/api/superadmin/**").hasRole("SUPERADMIN");
 
                     // Alle anderen Endpunkte erfordern eine gültige Authentifizierung

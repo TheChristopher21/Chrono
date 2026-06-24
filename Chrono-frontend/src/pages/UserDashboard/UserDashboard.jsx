@@ -1,7 +1,9 @@
 // src/pages/UserDashboard/UserDashboard.jsx
 import  { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
+import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
 import VacationCalendar from '../../components/VacationCalendar';
+import UserVacationRequestsList from '../../components/UserVacationRequestsList';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -84,11 +86,16 @@ function UserDashboard() {
     const [noteContent, setNoteContent] = useState('');
     const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
     const isCustomerTrackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
+    const delegatedDashboard = currentUser?.isHourly ? 'hourly' : currentUser?.isPercentage ? 'percentage' : null;
 
 
     const defaultExpectedHours = userProfile?.dailyWorkHours ?? 8.5;
 
     const loadProfileAndInitialData = useCallback(async () => {
+        if (delegatedDashboard) {
+            return;
+        }
+
         try {
             const profile = await fetchCurrentUser();
             if (profile && Object.keys(profile).length > 0) {
@@ -100,8 +107,8 @@ function UserDashboard() {
                     profile.scheduleCycle = 1;
                 }
                 setUserProfile(profile);
-                if (profile.lastCustomerId && !selectedCustomerId) {
-                    setSelectedCustomerId(String(profile.lastCustomerId));
+                if (profile.lastCustomerId) {
+                    setSelectedCustomerId((prevSelectedCustomerId) => prevSelectedCustomerId || String(profile.lastCustomerId));
                 }
             } else {
                 throw new Error("User profile could not be loaded.");
@@ -110,7 +117,7 @@ function UserDashboard() {
             console.error(t('personalData.errorLoading'), err);
             notify(t('errors.fetchProfileError', 'Fehler beim Laden des Profils.'), 'error');
         }
-    }, [fetchCurrentUser, t, notify, selectedCustomerId]);
+    }, [delegatedDashboard, fetchCurrentUser, t, notify]);
 
     const fetchDataForUser = useCallback(async () => {
         if (!userProfile?.username) return;
@@ -160,10 +167,20 @@ function UserDashboard() {
 
 
     useEffect(() => {
+        if (delegatedDashboard) {
+            return;
+        }
+
         loadProfileAndInitialData();
-    }, [loadProfileAndInitialData]);
+    }, [delegatedDashboard, loadProfileAndInitialData]);
 
     useEffect(() => {
+        if (delegatedDashboard) {
+            setRecentCustomers([]);
+            setProjects([]);
+            return;
+        }
+
         if (isCustomerTrackingEnabled) {
             fetchCustomers();
             api.get('/api/customers/recent')
@@ -176,7 +193,7 @@ function UserDashboard() {
             setRecentCustomers([]);
             setProjects([]);
         }
-    }, [userProfile, currentUser, fetchCustomers, isCustomerTrackingEnabled]);
+    }, [delegatedDashboard, fetchCustomers, isCustomerTrackingEnabled]);
 
     useEffect(() => {
         if (selectedProjectId) {
@@ -206,6 +223,10 @@ function UserDashboard() {
 
 
     useEffect(() => {
+        if (delegatedDashboard) {
+            return;
+        }
+
         if (userProfile) {
             fetchDataForUser();
             const cantonAbbr = userProfile.company?.cantonAbbreviation || userProfile.companyCantonAbbreviation;
@@ -215,18 +236,24 @@ function UserDashboard() {
                 fetchHolidaysForUser(selectedMonday.getFullYear(), '');
             }
         }
-    }, [userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
+    }, [delegatedDashboard, userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
 
 
     // Logik für NFC-Check und manuelles Stempeln
     useEffect(() => {
+        if (delegatedDashboard) {
+            return undefined;
+        }
+
         const interval = setInterval(doNfcCheck, 2000);
         return () => clearInterval(interval);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [delegatedDashboard]); // eslint-disable-line react-hooks/exhaustive-deps
 
     async function doNfcCheck() {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`);
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`, {
+                headers: { 'X-NFC-Agent-Request': 'true' },
+            });
             if (!response.ok) return;
             const json = await response.json();
             if (json.status !== 'success' || !json.data) return;
@@ -287,13 +314,36 @@ function UserDashboard() {
 
 
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
+    const todayIso = formatLocalDate(new Date());
+    const weekDatesForTotals = weekDates.filter(d => formatLocalDate(d) <= todayIso);
+    const workedDateSetForWeek = new Set(
+        weekDates
+            .map(d => {
+                const isoDate = formatLocalDate(d);
+                const summaryForDay = dailySummaries.find(s => s.date === isoDate);
+                return ((summaryForDay?.entries?.length || 0) > 0 || (summaryForDay?.workedMinutes || 0) > 0)
+                    ? isoDate
+                    : null;
+            })
+            .filter(Boolean)
+    );
 
-    const weeklyExpectedMins = weekDates.reduce((sum, d) => {
-        const expHours = getExpectedHoursForDay(d, userProfile, defaultExpectedHours, holidaysForUserCanton?.data, vacationRequests, sickLeaves);
+    const weeklyExpectedMins = weekDatesForTotals.reduce((sum, d) => {
+        const isoDate = formatLocalDate(d);
+        const expHours = getExpectedHoursForDay(
+            d,
+            userProfile,
+            defaultExpectedHours,
+            holidaysForUserCanton?.data,
+            vacationRequests,
+            sickLeaves,
+            null,
+            workedDateSetForWeek.has(isoDate)
+        );
         return sum + Math.round((expHours || 0) * 60);
     }, 0);
 
-    const weeklyActualWorkedMinutes = weekDates.reduce((acc, date) => {
+    const weeklyActualWorkedMinutes = weekDatesForTotals.reduce((acc, date) => {
         const isoDate = formatLocalDate(date);
         const summaryForDay = dailySummaries.find(s => s.date === isoDate);
         return acc + (summaryForDay?.workedMinutes || 0);
@@ -305,7 +355,16 @@ function UserDashboard() {
     const chartData = weekDates.map(d => {
         const iso = formatLocalDate(d);
         const summary = dailySummaries.find(s => s.date === iso);
-        const expectedMins = Math.round(getExpectedHoursForDay(d, userProfile, defaultExpectedHours, holidaysForUserCanton?.data, vacationRequests, sickLeaves) * 60);
+        const expectedMins = Math.round(getExpectedHoursForDay(
+            d,
+            userProfile,
+            defaultExpectedHours,
+            holidaysForUserCanton?.data,
+            vacationRequests,
+            sickLeaves,
+            null,
+            workedDateSetForWeek.has(iso)
+        ) * 60);
         return { date: iso, workedMinutes: summary ? summary.workedMinutes : 0, expectedMinutes: expectedMins };
     });
 
@@ -443,6 +502,14 @@ function UserDashboard() {
     }
 
     // Lade- und Routing-Logik
+    if (delegatedDashboard === 'hourly') {
+        return <HourlyDashboard />;
+    }
+
+    if (delegatedDashboard === 'percentage') {
+        return <PercentageDashboard />;
+    }
+
     if (!userProfile) {
         return (
             <div className="user-dashboard scoped-dashboard">
@@ -450,10 +517,6 @@ function UserDashboard() {
                 <div className="skeleton-card"></div>
             </div>
         );
-    }
-    if (userProfile?.username && currentUser?.username && userProfile.username === currentUser.username) {
-        if (userProfile.isHourly) return <HourlyDashboard />;
-        if (userProfile.isPercentage) return <PercentageDashboard />;
     }
 
     return (
@@ -475,6 +538,12 @@ function UserDashboard() {
                         {t("printReportButton")}
                     </button>
                 </header>
+
+                <AccessiblePagesPanel
+                    context="user"
+                    title="Deine freigegebenen Seiten"
+                    subtitle="Hier erscheinen genau die Bereiche, die für diesen Benutzer freigeschaltet wurden."
+                />
 
                 {punchMessage && <div className="punch-message">{punchMessage}</div>}
 
@@ -555,7 +624,9 @@ function UserDashboard() {
                             const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
                             const formattedDisplayDate = formatDate(dayObj);
 
-                            const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
+                            const rawVacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
+                            const hasWorkedEntries = Boolean(summary?.entries?.length);
+                            const vacationToday = hasWorkedEntries ? null : rawVacationToday;
                             const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
                             const holidayName = holidaysForUserCanton.data?.[isoDate];
 
@@ -580,17 +651,20 @@ function UserDashboard() {
                             if (holidayName) dayClass += ' holiday-day';
 
                             let expectedMinsToday = Math.round(getExpectedHoursForDay(
-                                dayObj, userProfile, defaultExpectedHours, holidaysForUserCanton?.data, vacationRequests, sickLeaves
+                                dayObj,
+                                userProfile,
+                                defaultExpectedHours,
+                                holidaysForUserCanton?.data,
+                                vacationRequests,
+                                sickLeaves,
+                                null,
+                                hasWorkedEntries
                             ) * 60);
-                            if (holidayName) {
-                                expectedMinsToday = 0;
-                            } else if (vacationToday) {
-                                expectedMinsToday = vacationToday.halfDay ? expectedMinsToday / 2 : 0;
-                            } else if (sickToday) {
-                                expectedMinsToday = sickToday.halfDay ? expectedMinsToday / 2 : 0;
-                            }
 
-                            const dailyDiffMinutes = summary ? summary.workedMinutes - expectedMinsToday : (holidayName || vacationToday || sickToday ? 0 : -expectedMinsToday);
+                            const isFutureDate = isoDate > todayIso;
+                            const dailyDiffMinutes = summary
+                                ? summary.workedMinutes - expectedMinsToday
+                                : (isFutureDate || holidayName || vacationToday || sickToday ? 0 : -expectedMinsToday);
 
                             return (
                                 <div key={isoDate} className={dayClass}>
@@ -706,6 +780,7 @@ function UserDashboard() {
                         userProfile={userProfile}
                         onRefreshVacations={fetchDataForUser}
                     />
+                    <UserVacationRequestsList vacationRequests={vacationRequests} t={t} />
                 </section>
 
                 <UserCorrectionsPanel

@@ -237,6 +237,212 @@
   font-size: 0.95rem;
 }
 
+.company-management-page.scoped-company .cmp-section__header--analytics {
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.company-management-page.scoped-company .cmp-analytics-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.9rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-controls select {
+  min-height: 42px;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  background: var(--c-input-bg);
+  color: var(--c-text);
+  padding: 0 0.85rem;
+  font: inherit;
+}
+
+.company-management-page.scoped-company .cmp-analytics-optout {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  background: var(--c-input-bg);
+  font-size: 0.88rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-ip-note {
+  border: 1px solid rgba(26, 188, 156, 0.28);
+  border-radius: 10px;
+  background: rgba(26, 188, 156, 0.09);
+  color: var(--c-text);
+  padding: 0.8rem 1rem;
+  font-size: 0.9rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-ip-manager {
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  background: rgba(71, 91, 255, 0.04);
+  padding: 1rem;
+  display: grid;
+  gap: 0.9rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-ip-form {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr) auto;
+  gap: 0.8rem;
+  align-items: end;
+}
+
+.company-management-page.scoped-company .cmp-analytics-ip-form .cmp-button {
+  min-height: 48px;
+}
+
+.company-management-page.scoped-company .cmp-analytics-ip-error {
+  border: 1px solid rgba(231, 76, 60, 0.35);
+  border-radius: 10px;
+  background: rgba(231, 76, 60, 0.09);
+  color: var(--c-danger);
+  padding: 0.7rem 0.9rem;
+  font-size: 0.9rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-ip-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-ip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--c-border);
+  border-radius: 10px;
+  background: var(--c-card);
+  padding: 0.75rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-ip-row div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-ip-row strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.company-management-page.scoped-company .cmp-analytics-ip-row span {
+  color: var(--c-muted);
+  font-size: 0.82rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-kpis {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.company-management-page.scoped-company .cmp-analytics-kpi {
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 1rem;
+  background: var(--c-input-bg);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-kpi span,
+.company-management-page.scoped-company .cmp-analytics-kpi small {
+  color: var(--c-muted);
+}
+
+.company-management-page.scoped-company .cmp-analytics-kpi strong {
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.company-management-page.scoped-company .cmp-analytics-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.company-management-page.scoped-company .cmp-analytics-panel {
+  border: 1px solid var(--c-border);
+  border-radius: 12px;
+  padding: 1rem;
+  min-width: 0;
+}
+
+.company-management-page.scoped-company .cmp-analytics-panel h4 {
+  margin: 0 0 0.85rem;
+  font-size: 1rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-bars {
+  min-height: 180px;
+  display: flex;
+  align-items: end;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-top: 0.5rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-bar {
+  min-width: 32px;
+  height: 150px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-bar__fill {
+  display: block;
+  border-radius: 8px 8px 3px 3px;
+  background: linear-gradient(180deg, #1abc9c, #475bff);
+  min-height: 6px;
+}
+
+.company-management-page.scoped-company .cmp-analytics-bar__label {
+  color: var(--c-muted);
+  font-size: 0.72rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.company-management-page.scoped-company .cmp-analytics-list {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 1rem;
+  align-items: center;
+  border-bottom: 1px solid var(--c-border);
+  padding-bottom: 0.65rem;
+}
+
+.company-management-page.scoped-company .cmp-analytics-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.company-management-page.scoped-company .cmp-analytics-row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--c-muted);
+}
+
+.company-management-page.scoped-company .cmp-analytics-row strong {
+  font-variant-numeric: tabular-nums;
+}
+
 .company-management-page.scoped-company .cmp-form {
   display: flex;
   flex-direction: column;
@@ -715,6 +921,14 @@
   .company-management-page.scoped-company .cmp-release-grid {
     grid-template-columns: 1fr;
   }
+
+  .company-management-page.scoped-company .cmp-analytics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .company-management-page.scoped-company .cmp-analytics-ip-form {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -738,5 +952,16 @@
 
   .company-management-page.scoped-company .cmp-search {
     flex: 1 1 100%;
+  }
+
+  .company-management-page.scoped-company .cmp-analytics-controls,
+  .company-management-page.scoped-company .cmp-analytics-controls select,
+  .company-management-page.scoped-company .cmp-analytics-optout {
+    width: 100%;
+  }
+
+  .company-management-page.scoped-company .cmp-analytics-ip-row {
+    align-items: stretch;
+    flex-direction: column;
   }
 }

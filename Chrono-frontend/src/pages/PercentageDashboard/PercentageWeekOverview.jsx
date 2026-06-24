@@ -133,7 +133,9 @@ const PercentageWeekOverview = ({
                     const summary = dailySummaries.find(s => s.date === isoDate);
                     const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
 
-                    const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
+                    const rawVacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
+                    const hasWorkedEntries = Boolean(summary?.entries?.length);
+                    const vacationToday = hasWorkedEntries ? null : rawVacationToday;
                     const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
                     const holidayName = holidaysForUserCanton && holidaysForUserCanton[isoDate];
 

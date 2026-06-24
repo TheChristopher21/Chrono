@@ -106,4 +106,38 @@ class AccountingServiceTest {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         assertThat(totalDebit).isEqualByComparingTo(totalCredit);
     }
+
+    @Test
+    void recordPayrollPostingCreatesBalancedEntryForNegativePayslip() {
+        Payslip payslip = new Payslip();
+        payslip.setGrossSalary(-1845.63);
+        payslip.setDeductions(-118.12);
+        payslip.setNetSalary(-1727.51);
+        payslip.setEmployerContributions(-177.18);
+        payslip.setPayoutDate(LocalDate.of(2026, 3, 23));
+
+        User user = new User();
+        user.setUsername("mirjam.burkhardt");
+        user.setPassword("secret");
+        user.setCountry("CH");
+        user.setPersonnelNumber("EMP-2");
+        payslip.setUser(user);
+
+        JournalEntry entry = accountingService.recordPayrollPosting(payslip);
+
+        assertThat(entry.getId()).isNotNull();
+        assertThat(entry.getLines()).hasSize(5);
+        assertThat(entry.getLines()).allSatisfy(line -> {
+            assertThat(line.getDebit()).isGreaterThanOrEqualTo(BigDecimal.ZERO);
+            assertThat(line.getCredit()).isGreaterThanOrEqualTo(BigDecimal.ZERO);
+        });
+
+        BigDecimal totalDebit = entry.getLines().stream()
+                .map(JournalEntryLine::getDebit)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal totalCredit = entry.getLines().stream()
+                .map(JournalEntryLine::getCredit)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        assertThat(totalDebit).isEqualByComparingTo(totalCredit);
+    }
 }

@@ -1,0 +1,1382 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import Navbar from '../../components/Navbar';
+import ModalOverlay from '../../components/ModalOverlay';
+import EditTimeModal from './EditTimeModal';
+import { useTranslation } from '../../context/LanguageContext';
+import { useNotification } from '../../context/NotificationContext';
+import api from '../../utils/api';
+import { getUserDisplayName } from '../../utils/userDisplay';
+import VacationCalendarAdmin from '../../components/VacationCalendarAdmin';
+import {
+    formatDate,
+    formatDateWithWeekday,
+    formatTime,
+    formatLocalDateYMD,
+    getMondayOfWeek,
+    addDays,
+    minutesToHHMM,
+    getExpectedHoursForDay,
+    calculateWeeklyExpectedMinutes,
+    getDetailedGlobalProblemIndicators,
+    getDatesUpToReferenceDate,
+} from './adminDashboardUtils';
+import '../../styles/AdminEmployeeOverviewScoped.css';
+
+const isWorkDay = (dateObj) => {
+    const day = dateObj.getDay();
+    return day !== 0 && day !== 6;
+};
+
+const isDateInRange = (dateString, startDate, endDate) => {
+    if (!dateString || !startDate || !endDate) return false;
+    return dateString >= startDate && dateString <= endDate;
+};
+
+const getRequestStatusLabel = (request, t) => {
+    if (request?.approved) return t('approved', 'Genehmigt');
+    if (request?.denied) return t('denied', 'Abgelehnt');
+    return t('pending', 'Offen');
+};
+
+const getRequestStatusClass = (request) => {
+    if (request?.approved) return 'ok';
+    if (request?.denied) return 'bad';
+    return 'pending';
+};
+
+const getMonthStart = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth(), 1);
+const getMonthEnd = (dateObj) => new Date(dateObj.getFullYear(), dateObj.getMonth() + 1, 0);
+const weekDayLabels = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const MAX_CORRECTION_PREVIEW_PUNCHES = 4;
+
+const formatPunchTypeLabel = (type, t) => {
+    if (!type) return '';
+    return t(`punchTypes.${type}`, type);
+};
+
+const parseWorkPercentageValue = (workPercentageRaw) => {
+    if (typeof workPercentageRaw === 'number' && Number.isFinite(workPercentageRaw)) {
+        return workPercentageRaw;
+    }
+    if (typeof workPercentageRaw === 'string') {
+        const normalized = workPercentageRaw.replace(',', '.').replace('%', '').trim();
+        const parsed = Number.parseFloat(normalized);
+        if (Number.isFinite(parsed)) return parsed;
+    }
+    return 100;
+};
+
+const parseBooleanFlag = (value) => {
+    if (typeof value === 'boolean') return value;
+    if (typeof value === 'number') return value === 1;
+    if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        return ['true', '1', 'yes', 'ja'].includes(normalized);
+    }
+    return false;
+};
+
+const normalizeRoleValues = (roles) => {
+    if (!Array.isArray(roles)) return [];
+    return roles
+        .map((role) => (typeof role === 'string' ? role.trim().toUpperCase() : ''))
+        .filter(Boolean);
+};
+
+const hasRoleFragment = (roles, fragment) => {
+    const upperFragment = fragment.toUpperCase();
+    return roles.some((role) => role.includes(upperFragment));
+};
+
+const inferIsPercentageUser = (employee, parsedWorkPercentage) => {
+    const normalizedRoles = normalizeRoleValues(employee?.roles);
+    const roleLabel = typeof employee?.role === 'string' ? employee.role.toUpperCase() : '';
+
+    if (parseBooleanFlag(employee?.isPercentage)) return true;
+    if (hasRoleFragment(normalizedRoles, 'PERCENTAGE')) return true;
+    if (roleLabel.includes('PERCENTAGE') || roleLabel.includes('PROZENT')) return true;
+
+    return Number.isFinite(parsedWorkPercentage)
+        && parsedWorkPercentage > 0
+        && parsedWorkPercentage < 100;
+};
+
+const inferIsHourlyUser = (employee) => {
+    const normalizedRoles = normalizeRoleValues(employee?.roles);
+    const roleLabel = typeof employee?.role === 'string' ? employee.role.toUpperCase() : '';
+
+    if (parseBooleanFlag(employee?.isHourly)) return true;
+    if (hasRoleFragment(normalizedRoles, 'HOURLY')) return true;
+    return roleLabel.includes('HOURLY') || roleLabel.includes('STUNDEN');
+};
+
+const getRoleDisplayLabel = (employee, t) => {
+    if (!employee) return t('role', 'Rolle');
+    if (employee.role) return employee.role;
+    if (employee.isSuperAdmin) return t('roles.superAdmin', 'Super Admin');
+    if (employee.isAdmin) return t('roles.admin', 'Admin');
+    if (employee.isHourly) return t('roles.hourly', 'Stundenlohn');
+    if (employee.isPercentage) return t('roles.percentage', 'Prozentual');
+    return t('role', 'Rolle');
+};
+
+const countVacationDays = (vacations, year, options = {}) => {
+    if (!Array.isArray(vacations) || vacations.length === 0) return 0;
+
+    const {
+        minDate = null,
+        includeDenied = false,
+    } = options;
+
+    return vacations.reduce((sum, vacation) => {
+        if (!vacation || vacation.usesOvertime) return sum;
+        if (!includeDenied && vacation.denied) return sum;
+
+        const start = new Date(`${vacation.startDate}T00:00:00`);
+        const end = new Date(`${vacation.endDate}T00:00:00`);
+        if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return sum;
+
+        let days = 0;
+        for (let cursor = new Date(start); cursor <= end; cursor.setDate(cursor.getDate() + 1)) {
+            const currentDate = new Date(cursor);
+            const currentDateYmd = formatLocalDateYMD(currentDate);
+            if (currentDate.getFullYear() === year && isWorkDay(currentDate)) {
+                if (!minDate || currentDateYmd >= minDate) {
+                    days += vacation.halfDay ? 0.5 : 1;
+                }
+            }
+        }
+        return sum + days;
+    }, 0);
+};
+
+const calculateAnnualVacationEntitlement = (employee, year) => {
+    const configuredAnnualVacationDays = Number(employee?.annualVacationDays) || 25;
+    const fullYearEntitlement = configuredAnnualVacationDays;
+
+    if (!employee?.entryDate) return fullYearEntitlement;
+
+    const entryDate = new Date(`${employee.entryDate}T00:00:00`);
+    if (Number.isNaN(entryDate.getTime())) return fullYearEntitlement;
+
+    const yearStart = new Date(year, 0, 1);
+    const yearEnd = new Date(year, 11, 31);
+    if (entryDate > yearEnd) return 0;
+    if (entryDate <= yearStart) return fullYearEntitlement;
+
+    const msPerDay = 1000 * 60 * 60 * 24;
+    const daysInYear = Math.round((yearEnd - yearStart) / msPerDay) + 1;
+    const activeDays = Math.round((yearEnd - entryDate) / msPerDay) + 1;
+
+    return fullYearEntitlement * (activeDays / daysInYear);
+};
+
+const AdminEmployeeOverviewPage = () => {
+    const { username: encodedUsername } = useParams();
+    const username = decodeURIComponent(encodedUsername || '');
+    const todayYmd = formatLocalDateYMD(new Date());
+    const { t, language } = useTranslation();
+    const { notify } = useNotification();
+    const dateLocale = language === 'en' ? 'en-US' : 'de-DE';
+    const localizedWeekDayLabels = useMemo(() => ({
+        monday: t('daysShort.monday', 'Mo'),
+        tuesday: t('daysShort.tuesday', 'Di'),
+        wednesday: t('daysShort.wednesday', 'Mi'),
+        thursday: t('daysShort.thursday', 'Do'),
+        friday: t('daysShort.friday', 'Fr'),
+        saturday: t('daysShort.saturday', 'Sa'),
+        sunday: t('daysShort.sunday', 'So'),
+    }), [t]);
+
+    const [loading, setLoading] = useState(true);
+    const [users, setUsers] = useState([]);
+    const [dailySummaries, setDailySummaries] = useState([]);
+    const [vacations, setVacations] = useState([]);
+    const [corrections, setCorrections] = useState([]);
+    const [trackingBalances, setTrackingBalances] = useState([]);
+    const [sickLeaves, setSickLeaves] = useState([]);
+    const [holidaysForEmployee, setHolidaysForEmployee] = useState({});
+
+    const [decisionNotes, setDecisionNotes] = useState({});
+
+    const [quickAction, setQuickAction] = useState(null);
+    const [vacationForm, setVacationForm] = useState({ startDate: todayYmd, endDate: todayYmd, halfDay: false });
+    const [sickForm, setSickForm] = useState({ startDate: todayYmd, endDate: todayYmd, halfDay: false, comment: '' });
+
+    const [editModalVisible, setEditModalVisible] = useState(false);
+    const [editDate, setEditDate] = useState(null);
+    const [editDayEntries, setEditDayEntries] = useState([]);
+    const [selectedMonday, setSelectedMonday] = useState(getMondayOfWeek(new Date()));
+    const [selectedMonth, setSelectedMonth] = useState(getMonthStart(new Date()));
+    const [timeRangeMode, setTimeRangeMode] = useState('week');
+    const [problemCursor, setProblemCursor] = useState(-1);
+    const [problemCategoryCursor, setProblemCategoryCursor] = useState({});
+    const [focusedProblemDate, setFocusedProblemDate] = useState('');
+    const timeTrackingSectionRef = useRef(null);
+    const problemDateItemRefs = useRef(new Map());
+
+    const fetchAllData = useCallback(async () => {
+        setLoading(true);
+        try {
+            const [usersRes, summariesRes, vacationsRes, correctionsRes, balancesRes, sickLeaveRes] = await Promise.all([
+                api.get('/api/admin/users'),
+                api.get('/api/admin/timetracking/all-summaries'),
+                api.get('/api/vacation/all'),
+                api.get('/api/correction/all'),
+                api.get('/api/admin/timetracking/admin/tracking-balances'),
+                api.get('/api/sick-leave/company'),
+            ]);
+
+            setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
+            setDailySummaries(Array.isArray(summariesRes.data) ? summariesRes.data : []);
+            setVacations(Array.isArray(vacationsRes.data) ? vacationsRes.data : []);
+            setCorrections(Array.isArray(correctionsRes.data) ? correctionsRes.data : []);
+            setTrackingBalances(Array.isArray(balancesRes.data) ? balancesRes.data : []);
+            setSickLeaves(Array.isArray(sickLeaveRes.data) ? sickLeaveRes.data : []);
+        } catch (error) {
+            console.error('Fehler beim Laden der Mitarbeiter-Übersicht:', error);
+            notify(t('adminEmployeeOverview.fetchError', 'Mitarbeiter-Übersicht konnte nicht geladen werden.'), 'error');
+        } finally {
+            setLoading(false);
+        }
+    }, [notify, t]);
+
+    useEffect(() => {
+        fetchAllData();
+    }, [fetchAllData]);
+
+    const employee = useMemo(
+        () => users.find((user) => user?.username === username) || null,
+        [users, username],
+    );
+    const employeeDisplayName = getUserDisplayName(employee || username, users, username);
+
+    const normalizedEmployeeConfig = useMemo(() => {
+        if (!employee) return null;
+
+        const parsedWorkPercentage = parseWorkPercentageValue(employee.workPercentage);
+        const normalizedIsPercentage = inferIsPercentageUser(employee, parsedWorkPercentage);
+        const normalizedIsHourly = inferIsHourlyUser(employee);
+        const parsedExpectedWorkDays = Number(employee.expectedWorkDays);
+        const parsedDailyWorkHours = Number(employee.dailyWorkHours);
+
+        return {
+            ...employee,
+            isHourly: normalizedIsHourly,
+            isPercentage: normalizedIsPercentage,
+            workPercentage: parsedWorkPercentage,
+            expectedWorkDays: Number.isFinite(parsedExpectedWorkDays) && parsedExpectedWorkDays > 0
+                ? parsedExpectedWorkDays
+                : employee.expectedWorkDays,
+            dailyWorkHours: Number.isFinite(parsedDailyWorkHours) && parsedDailyWorkHours > 0
+                ? parsedDailyWorkHours
+                : employee.dailyWorkHours,
+        };
+    }, [employee]);
+
+    const roleDisplayLabel = useMemo(
+        () => getRoleDisplayLabel(normalizedEmployeeConfig || employee, t),
+        [employee, normalizedEmployeeConfig, t],
+    );
+
+    const employeeSummaries = useMemo(
+        () => dailySummaries
+            .filter((entry) => entry?.username === username)
+            .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0)),
+        [dailySummaries, username],
+    );
+
+    const weekDates = useMemo(
+        () => Array.from({ length: 7 }, (_, index) => formatLocalDateYMD(addDays(selectedMonday, index))),
+        [selectedMonday],
+    );
+
+    const monthDates = useMemo(() => {
+        const start = getMonthStart(selectedMonth);
+        const end = getMonthEnd(selectedMonth);
+        const dates = [];
+        for (let cursor = new Date(start); cursor <= end; cursor = addDays(cursor, 1)) {
+            dates.push(formatLocalDateYMD(cursor));
+        }
+        return dates;
+    }, [selectedMonth]);
+
+    const visibleDates = timeRangeMode === 'month' ? monthDates : weekDates;
+    const accountingVisibleDates = useMemo(
+        () => getDatesUpToReferenceDate(
+            visibleDates.map((dateString) => new Date(`${dateString}T00:00:00`))
+        ).map(formatLocalDateYMD),
+        [visibleDates],
+    );
+
+    useEffect(() => {
+        const fetchHolidayDetails = async () => {
+            if (!employee) {
+                setHolidaysForEmployee({});
+                return;
+            }
+
+            const visibleDateObjects = visibleDates
+                .map((date) => new Date(`${date}T00:00:00`))
+                .filter((date) => !Number.isNaN(date.getTime()));
+
+            const years = visibleDateObjects.map((date) => date.getFullYear());
+            if (years.length === 0) {
+                setHolidaysForEmployee({});
+                return;
+            }
+
+            const minYear = Math.min(...years);
+            const maxYear = Math.max(...years);
+
+            try {
+                const response = await api.get('/api/holidays/details', {
+                    params: {
+                        year: minYear,
+                        cantonAbbreviation: employee.companyCantonAbbreviation || '',
+                        startDate: `${minYear}-01-01`,
+                        endDate: `${maxYear}-12-31`,
+                    },
+                });
+                setHolidaysForEmployee(response?.data && typeof response.data === 'object' ? response.data : {});
+            } catch (error) {
+                console.error('Fehler beim Laden der Feiertage für die Mitarbeiter-Übersicht:', error);
+                setHolidaysForEmployee({});
+            }
+        };
+
+        fetchHolidayDetails();
+    }, [employee, visibleDates]);
+
+    const periodSummaries = useMemo(
+        () => employeeSummaries.filter((entry) => visibleDates.includes(entry?.date)),
+        [employeeSummaries, visibleDates],
+    );
+    const accountingPeriodSummaries = useMemo(
+        () => employeeSummaries.filter((entry) => accountingVisibleDates.includes(entry?.date)),
+        [employeeSummaries, accountingVisibleDates],
+    );
+
+    const periodEntriesOverview = useMemo(
+        () => visibleDates.map((dateString) => {
+            const summary = periodSummaries.find((entry) => entry?.date === dateString);
+            const entries = Array.isArray(summary?.entries)
+                ? [...summary.entries].sort((a, b) => new Date(a?.entryTimestamp || 0) - new Date(b?.entryTimestamp || 0))
+                : [];
+            return {
+                dateString,
+                summary,
+                entries,
+            };
+        }),
+        [visibleDates, periodSummaries],
+    );
+
+    const punchCalendarCells = useMemo(() => {
+        const baseCells = periodEntriesOverview.map((entry) => ({ ...entry, isPlaceholder: false }));
+        if (timeRangeMode !== 'month') return baseCells;
+
+        const firstDayOfMonth = getMonthStart(selectedMonth);
+        const dayIndex = firstDayOfMonth.getDay();
+        const mondayBasedOffset = dayIndex === 0 ? 6 : dayIndex - 1;
+        const placeholderCells = Array.from({ length: mondayBasedOffset }, (_, index) => ({
+            dateString: `placeholder-${index}`,
+            summary: null,
+            entries: [],
+            isPlaceholder: true,
+        }));
+
+        return [...placeholderCells, ...baseCells];
+    }, [periodEntriesOverview, selectedMonth, timeRangeMode]);
+
+    const employeeBalance = useMemo(
+        () => trackingBalances.find((entry) => entry?.username === username) || null,
+        [trackingBalances, username],
+    );
+
+    const employeeVacations = useMemo(
+        () => vacations
+            .filter((vacation) => vacation?.username === username)
+            .sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)),
+        [vacations, username],
+    );
+
+    const employeeCorrections = useMemo(
+        () => corrections
+            .filter((correction) => correction?.username === username)
+            .sort((a, b) => new Date(b.requestDate || 0) - new Date(a.requestDate || 0)),
+        [corrections, username],
+    );
+
+    const groupedEmployeeCorrections = useMemo(() => {
+        const groups = new Map();
+
+        employeeCorrections.forEach((correction) => {
+            const key = `${correction.requestDate || ''}|${correction.reason || ''}|${correction.approved}|${correction.denied}`;
+            if (!groups.has(key)) {
+                groups.set(key, {
+                    ...correction,
+                    requestIds: [correction.id],
+                    groupedEntries: [correction],
+                });
+                return;
+            }
+
+            const existing = groups.get(key);
+            existing.requestIds.push(correction.id);
+            existing.groupedEntries.push(correction);
+        });
+
+        groups.forEach((group) => {
+            group.groupedEntries.sort((a, b) => new Date(a.desiredTimestamp || 0) - new Date(b.desiredTimestamp || 0));
+        });
+
+        return Array.from(groups.values()).sort((a, b) => {
+            const dateDiff = new Date(b.requestDate || 0) - new Date(a.requestDate || 0);
+            if (dateDiff !== 0) return dateDiff;
+            return (b.id || 0) - (a.id || 0);
+        });
+    }, [employeeCorrections]);
+
+    const employeeSickLeaves = useMemo(
+        () => sickLeaves
+            .filter((entry) => entry?.username === username)
+            .sort((a, b) => new Date(b.startDate || 0) - new Date(a.startDate || 0)),
+        [sickLeaves, username],
+    );
+
+    const todaysSummary = useMemo(
+        () => employeeSummaries.find((entry) => entry?.date === todayYmd) || null,
+        [employeeSummaries, todayYmd],
+    );
+
+    const vacationStats = useMemo(() => {
+        const vacationYear = new Date().getFullYear();
+        const approved = employeeVacations.filter((vacation) => vacation?.approved);
+        const pending = employeeVacations.filter((vacation) => !vacation?.approved && !vacation?.denied);
+        const annual = calculateAnnualVacationEntitlement(employee, vacationYear);
+        const takenDays = countVacationDays(approved, vacationYear);
+        const plannedApprovedDays = countVacationDays(approved, vacationYear, { minDate: todayYmd });
+        const plannedPendingDays = countVacationDays(pending, vacationYear, { minDate: todayYmd });
+        const plannedDays = plannedApprovedDays + plannedPendingDays;
+
+        return {
+            year: vacationYear,
+            annual,
+            takenDays,
+            plannedDays,
+            availableDays: Math.max(annual - takenDays - plannedPendingDays, 0),
+        };
+    }, [employee, employeeVacations, todayYmd]);
+
+    const totalWorkedWeekMinutes = useMemo(
+        () => accountingPeriodSummaries.reduce((sum, entry) => sum + (entry?.workedMinutes || 0), 0),
+        [accountingPeriodSummaries],
+    );
+
+    const totalBreakWeekMinutes = useMemo(
+        () => accountingPeriodSummaries.reduce((sum, entry) => sum + (entry?.breakMinutes || 0), 0),
+        [accountingPeriodSummaries],
+    );
+
+    const effectiveConfigForTarget = useMemo(() => {
+        if (!normalizedEmployeeConfig) return normalizedEmployeeConfig;
+        if (normalizedEmployeeConfig.isHourly) return normalizedEmployeeConfig;
+
+        const shouldForcePercentageMode = Number.isFinite(normalizedEmployeeConfig.workPercentage)
+            && normalizedEmployeeConfig.workPercentage > 0
+            && normalizedEmployeeConfig.workPercentage < 100;
+
+        if (!shouldForcePercentageMode || normalizedEmployeeConfig.isPercentage) {
+            return normalizedEmployeeConfig;
+        }
+
+        return {
+            ...normalizedEmployeeConfig,
+            isPercentage: true,
+        };
+    }, [normalizedEmployeeConfig]);
+
+    const periodTargetMinutes = useMemo(
+        () => {
+            if (timeRangeMode === 'week') {
+                const weekDateObjects = weekDates.map((dateString) => new Date(`${dateString}T00:00:00`));
+                const accountingWeekDateObjects = getDatesUpToReferenceDate(weekDateObjects);
+                const workedDateSet = new Set(
+                    accountingPeriodSummaries
+                        .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
+                        .map(summary => summary.date)
+                        .filter(Boolean)
+                );
+                return calculateWeeklyExpectedMinutes(
+                    effectiveConfigForTarget,
+                    accountingWeekDateObjects,
+                    employee?.dailyWorkHours ?? 8.5,
+                    employeeVacations,
+                    employeeSickLeaves,
+                    holidaysForEmployee,
+                    null,
+                    workedDateSet,
+                );
+            }
+
+            const workedDateSet = new Set(
+                accountingPeriodSummaries
+                    .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
+                    .map(summary => summary.date)
+                    .filter(Boolean)
+            );
+
+            return accountingVisibleDates.reduce((sum, dateString) => {
+                const effectiveVacationsForDay = workedDateSet.has(dateString)
+                    ? employeeVacations.filter(vacation => dateString < vacation.startDate || dateString > vacation.endDate)
+                    : employeeVacations;
+                const expectedHours = getExpectedHoursForDay(
+                    new Date(`${dateString}T00:00:00`),
+                    effectiveConfigForTarget,
+                    employee?.dailyWorkHours ?? 8.5,
+                    holidaysForEmployee,
+                    effectiveVacationsForDay,
+                    employeeSickLeaves,
+                    null,
+                );
+                return sum + Math.round(expectedHours * 60);
+            }, 0);
+        },
+        [
+            effectiveConfigForTarget,
+            employee?.dailyWorkHours,
+            employeeSickLeaves,
+            employeeVacations,
+            holidaysForEmployee,
+            timeRangeMode,
+            accountingVisibleDates,
+            accountingPeriodSummaries,
+            weekDates,
+        ],
+    );
+
+    const periodDeltaMinutes = totalWorkedWeekMinutes - periodTargetMinutes;
+
+    const openItemsCount = useMemo(
+        () => employeeVacations.filter((vac) => !vac.approved && !vac.denied).length
+            + employeeCorrections.filter((corr) => !corr.approved && !corr.denied).length,
+        [employeeVacations, employeeCorrections],
+    );
+
+    const currentStatus = useMemo(() => {
+        const todayVacation = employeeVacations.find((vac) => !vac.denied && isDateInRange(todayYmd, vac.startDate, vac.endDate));
+        if (todayVacation) return { key: 'vacation', label: t('onVacation', 'In Urlaub') };
+
+        const todaySick = employeeSickLeaves.find((entry) => isDateInRange(todayYmd, entry.startDate, entry.endDate));
+        if (todaySick) return { key: 'sick', label: t('sickLeave.status.sick', 'Krank') };
+
+        return { key: 'active', label: t('active', 'Aktiv') };
+    }, [employeeSickLeaves, employeeVacations, t, todayYmd]);
+
+    const nextAbsence = useMemo(() => {
+        const upcoming = [
+            ...employeeVacations
+                .filter((item) => !item.denied && item.endDate >= todayYmd)
+                .map((item) => ({
+                    type: t('adminEmployeeOverview.absence.vacation', 'Urlaub'),
+                    startDate: item.startDate,
+                    endDate: item.endDate,
+                })),
+            ...employeeSickLeaves
+                .filter((item) => item.endDate >= todayYmd)
+                .map((item) => ({
+                    type: t('adminEmployeeOverview.absence.sick', 'Krank'),
+                    startDate: item.startDate,
+                    endDate: item.endDate,
+                })),
+        ].sort((a, b) => new Date(a.startDate) - new Date(b.startDate));
+
+        return upcoming[0] || null;
+    }, [employeeSickLeaves, employeeVacations, t, todayYmd]);
+
+    const weeklyAbsenceDays = useMemo(() => {
+        const coveredDays = new Set();
+        weekDates.forEach((dateStr) => {
+            const absent = employeeVacations.some((item) => !item.denied && isDateInRange(dateStr, item.startDate, item.endDate))
+                || employeeSickLeaves.some((item) => isDateInRange(dateStr, item.startDate, item.endDate));
+            if (absent) coveredDays.add(dateStr);
+        });
+        return coveredDays.size;
+    }, [employeeSickLeaves, employeeVacations, weekDates]);
+
+
+    const periodAbsenceDays = useMemo(() => {
+        const coveredDays = new Set();
+        visibleDates.forEach((dateStr) => {
+            const absent = employeeVacations.some((item) => !item.denied && isDateInRange(dateStr, item.startDate, item.endDate))
+                || employeeSickLeaves.some((item) => isDateInRange(dateStr, item.startDate, item.endDate));
+            if (absent) coveredDays.add(dateStr);
+        });
+        return coveredDays.size;
+    }, [employeeSickLeaves, employeeVacations, visibleDates]);
+
+    const problemIndicators = useMemo(() => {
+        const approvedVacations = employeeVacations.filter((vacation) => vacation?.approved);
+        return getDetailedGlobalProblemIndicators(
+            employeeSummaries,
+            approvedVacations,
+            employee,
+            8.5,
+            employeeSickLeaves,
+            holidaysForEmployee,
+            null,
+        );
+    }, [employee, employeeSummaries, employeeSickLeaves, employeeVacations, holidaysForEmployee]);
+
+    const prioritizedProblems = useMemo(() => {
+        return problemIndicators.problematicDays || [];
+    }, [problemIndicators.problematicDays]);
+
+    const problemGroups = useMemo(() => ({
+        missing: prioritizedProblems.filter((problem) => problem.type === 'missing'),
+        incomplete: prioritizedProblems.filter((problem) => problem.type.startsWith('incomplete_')),
+        autoCompleted: prioritizedProblems.filter((problem) => problem.type === 'auto_completed_uncorrected' || problem.type === 'auto_completed_incomplete_uncorrected'),
+        holidayPending: prioritizedProblems.filter((problem) => problem.type === 'holiday_pending_decision'),
+    }), [prioritizedProblems]);
+
+    const problemLabelByType = useMemo(() => ({
+        missing: t('adminDashboard.issueRibbon.missing', 'Fehlende Zeiten'),
+        incomplete_work_end_missing: t('adminDashboard.issueRibbon.incomplete', 'Unvollständig'),
+        incomplete_duplicate_punch_times: t('adminDashboard.issueRibbon.incomplete', 'Unvollständig'),
+        auto_completed_uncorrected: t('adminDashboard.issueRibbon.autoCompleted', 'Auto beendet'),
+        auto_completed_incomplete_uncorrected: t('adminDashboard.issueRibbon.autoCompleted', 'Auto beendet'),
+        holiday_pending_decision: t('adminDashboard.issueRibbon.holidayPending', 'Feiertag offen'),
+    }), [t]);
+
+    const getPunchTypeLabel = useCallback((punchType) => {
+        if (!punchType) return t('adminDashboard.unknownType', 'Unbekannt');
+        return t(`punchTypes.${punchType}`, punchType);
+    }, [t]);
+
+    const renderCorrectionChange = useCallback((correctionGroup) => {
+        if (!correctionGroup) return null;
+
+        const originalLabel = t('adminDashboard.originalTimeLabel', 'Gestempelt');
+        const requestedLabel = t('adminDashboard.requestedTimeLabel', 'Beantragt');
+        const missingLabel = t('adminDashboard.noOriginalTimeLabel', 'Kein ursprünglicher Stempel');
+
+        const correctionsToRender = Array.isArray(correctionGroup.groupedEntries) && correctionGroup.groupedEntries.length > 0
+            ? correctionGroup.groupedEntries
+            : [correctionGroup];
+
+        const firstCorrection = correctionsToRender[0];
+
+        const correctionDate = firstCorrection?.requestDate
+            ? formatLocalDateYMD(new Date(`${firstCorrection.requestDate}T00:00:00`))
+            : null;
+
+        const dayEntries = correctionDate
+            ? (employeeSummaries.find((summary) => summary?.date === correctionDate)?.entries || [])
+            : [];
+
+        const normalizedDayEntries = dayEntries
+            .filter((entry) => entry?.entryTimestamp)
+            .map((entry, index) => ({
+                id: entry?.id ?? `entry-${index}`,
+                entryTimestamp: entry.entryTimestamp,
+                punchType: entry?.punchType,
+            }))
+            .sort((a, b) => new Date(a.entryTimestamp || 0) - new Date(b.entryTimestamp || 0));
+
+        const requestedEntries = normalizedDayEntries.map((entry) => ({ ...entry }));
+        const changedEntryIds = new Set();
+
+        correctionsToRender.forEach((correction) => {
+            const requestTargetId = correction.targetEntryId;
+            const requestOriginalTs = correction.originalTimestamp;
+            const requestOriginalType = correction.originalPunchType;
+
+            const targetIndex = requestedEntries.findIndex((entry) => {
+                if (requestTargetId != null && entry.id === requestTargetId) return true;
+                if (!requestOriginalTs) return false;
+                const sameTs = entry.entryTimestamp === requestOriginalTs;
+                const sameType = !requestOriginalType || entry.punchType === requestOriginalType;
+                return sameTs && sameType;
+            });
+
+            if (targetIndex >= 0) {
+                requestedEntries[targetIndex] = {
+                    ...requestedEntries[targetIndex],
+                    entryTimestamp: correction.desiredTimestamp,
+                    punchType: correction.desiredPunchType,
+                };
+                changedEntryIds.add(requestedEntries[targetIndex].id);
+                return;
+            }
+
+            const syntheticId = `requested-${correction.id || correction.desiredTimestamp || Date.now()}`;
+            requestedEntries.push({
+                id: syntheticId,
+                entryTimestamp: correction.desiredTimestamp,
+                punchType: correction.desiredPunchType,
+            });
+            changedEntryIds.add(syntheticId);
+        });
+
+        requestedEntries.sort((a, b) => new Date(a.entryTimestamp || 0) - new Date(b.entryTimestamp || 0));
+
+        const toSlots = (entries, changedIds = null) => (
+            Array.from({ length: MAX_CORRECTION_PREVIEW_PUNCHES }, (_, index) => {
+                const entry = entries[index] || null;
+                return {
+                    key: `${index}`,
+                    time: entry?.entryTimestamp ? formatTime(entry.entryTimestamp) : null,
+                    type: entry?.punchType ? formatPunchTypeLabel(entry.punchType, t) : null,
+                    changed: Boolean(entry && changedIds?.has(entry.id)),
+                };
+            })
+        );
+
+        const originalSlots = toSlots(normalizedDayEntries);
+        const requestedSlots = toSlots(requestedEntries, changedEntryIds);
+
+        const renderSlots = (slots, variant) => (
+            <div className="entry-slot-list">
+                {slots.map((slot, index) => (
+                    <div key={`${variant}-${slot.key}`} className={`entry-slot${slot.changed ? ' entry-slot--changed' : ''}`}>
+                        <span className="entry-slot-index">#{index + 1}</span>
+                        {slot.time ? (
+                            <>
+                                <span className="entry-time">{slot.time}</span>
+                                {slot.type && <span className="entry-type">{slot.type}</span>}
+                            </>
+                        ) : (
+                            <span className="entry-time entry-time--missing">{missingLabel}</span>
+                        )}
+                    </div>
+                ))}
+            </div>
+        );
+
+        return (
+            <span className="entry-comparison">
+                <span className={`entry-block entry-original${normalizedDayEntries.length > 0 ? '' : ' entry-original--missing'}`}>
+                    <span className="entry-label">{originalLabel}</span>
+                    {renderSlots(originalSlots, 'original')}
+                </span>
+                <span className="entry-arrow">→</span>
+                <span className="entry-block entry-requested">
+                    <span className="entry-label">{requestedLabel}</span>
+                    {renderSlots(requestedSlots, 'requested')}
+                </span>
+            </span>
+        );
+    }, [employeeSummaries, t]);
+
+    const handleApproveVacation = async (id, adminNote = "") => {
+        try {
+            await api.put(`/api/vacation/${id}`, { approved: true, denied: false, adminNote });
+            notify(t('adminDashboard.vacationApprovedMsg', 'Urlaub genehmigt.'), 'success');
+            fetchAllData();
+        } catch (err) {
+            notify(t('adminDashboard.vacationApproveErrorMsg', 'Fehler beim Genehmigen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
+        }
+    };
+
+    const handleDenyVacation = async (id, adminNote = "") => {
+        try {
+            await api.put(`/api/vacation/${id}`, { approved: false, denied: true, adminNote });
+            notify(t('adminDashboard.vacationDeniedMsg', 'Urlaub abgelehnt.'), 'success');
+            fetchAllData();
+        } catch (err) {
+            notify(t('adminDashboard.vacationDenyErrorMsg', 'Fehler beim Ablehnen des Urlaubs: ') + (err.response?.data?.message || err.message), 'error');
+        }
+    };
+
+    const handleApproveCorrection = async (id, comment = '') => {
+        try {
+            await api.post(`/api/correction/approve/${id}`, null, { params: { comment } });
+            notify(`${t('adminDashboard.correctionApprovedMsg', 'Korrektur genehmigt')} #${id}`, 'success');
+            fetchAllData();
+        } catch (err) {
+            notify(`${t('adminDashboard.correctionErrorMsg', 'Fehler bei Korrekturantrag')} #${id}`, 'error');
+        }
+    };
+
+    const handleDenyCorrection = async (id, comment = '') => {
+        try {
+            await api.post(`/api/correction/deny/${id}`, null, { params: { comment } });
+            notify(`${t('adminDashboard.correctionDeniedMsg', 'Korrektur abgelehnt')} #${id}`, 'success');
+            fetchAllData();
+        } catch (err) {
+            notify(`${t('adminDashboard.correctionErrorMsg', 'Fehler bei Korrekturantrag')} #${id}`, 'error');
+        }
+    };
+
+    const handleQuickVacationSave = async (event) => {
+        event.preventDefault();
+        try {
+            await api.post('/api/vacation/adminCreate', null, {
+                params: {
+                    username,
+                    startDate: vacationForm.startDate,
+                    endDate: vacationForm.endDate,
+                    halfDay: vacationForm.halfDay,
+                },
+            });
+            notify(t('adminVacation.createdSuccess', 'Urlaub erfolgreich erstellt und direkt genehmigt'), 'success');
+            setQuickAction(null);
+            fetchAllData();
+        } catch (err) {
+            notify(t('adminVacation.createError', 'Fehler beim Anlegen des Urlaubs') + ': ' + (err.response?.data?.message || err.message), 'error');
+        }
+    };
+
+    const handleQuickSickSave = async (event) => {
+        event.preventDefault();
+        try {
+            await api.post('/api/sick-leave/report', null, {
+                params: {
+                    targetUsername: username,
+                    startDate: sickForm.startDate,
+                    endDate: sickForm.endDate,
+                    halfDay: sickForm.halfDay,
+                    comment: sickForm.comment,
+                },
+            });
+            notify(t('adminSickLeave.reportSuccess', 'Krankmeldung erfolgreich für Benutzer eingetragen.'), 'success');
+            setQuickAction(null);
+            fetchAllData();
+        } catch (err) {
+            notify(t('adminSickLeave.reportError', 'Fehler beim Eintragen der Krankmeldung:') + ' ' + (err.response?.data?.message || err.message), 'error');
+        }
+    };
+
+    const openEditModal = useCallback((targetDateString) => {
+        const dayData = employeeSummaries.find((entry) => entry?.date === targetDateString);
+        setEditDate(new Date(`${targetDateString}T00:00:00`));
+        setEditDayEntries(dayData?.entries || []);
+        setEditModalVisible(true);
+    }, [employeeSummaries]);
+
+    const getDecisionNoteKey = useCallback((tab, id) => `${tab}-${id}`, []);
+
+    const handleRequestNoteChange = useCallback((tab, id, value) => {
+        const key = getDecisionNoteKey(tab, id);
+        setDecisionNotes((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+    }, [getDecisionNoteKey]);
+
+    const getRequestAnchorDate = useCallback((tab, item) => {
+        if (tab === 'vacation') return item?.startDate || null;
+        if (!item?.requestDate) return null;
+        return formatLocalDateYMD(new Date(item.requestDate));
+    }, []);
+
+    const handleOpenRequestDate = useCallback((tab, item) => {
+        const targetDate = getRequestAnchorDate(tab, item);
+        if (!targetDate) return;
+        setTimeRangeMode('week');
+        setSelectedMonday(getMondayOfWeek(new Date(`${targetDate}T00:00:00`)));
+        if (tab !== 'correction') {
+            openEditModal(targetDate);
+        }
+    }, [getRequestAnchorDate, openEditModal]);
+
+    const handleRequestDecision = useCallback(async (tab, item, decision) => {
+        if (!item?.id) return;
+        const key = getDecisionNoteKey(tab, item.id);
+        const note = (decisionNotes[key] || '').trim();
+
+        if (tab === 'vacation') {
+            if (decision === 'approve') await handleApproveVacation(item.id, note);
+            if (decision === 'deny') await handleDenyVacation(item.id, note);
+        }
+
+        if (tab === 'correction') {
+            const requestIds = Array.isArray(item.requestIds) && item.requestIds.length > 0
+                ? item.requestIds
+                : [item.id];
+            if (decision === 'approve') {
+                await Promise.all(requestIds.map((id) => handleApproveCorrection(id, note)));
+            }
+            if (decision === 'deny') {
+                await Promise.all(requestIds.map((id) => handleDenyCorrection(id, note)));
+            }
+        }
+
+        setDecisionNotes((prev) => {
+            const next = { ...prev };
+            delete next[key];
+            return next;
+        });
+    }, [decisionNotes, getDecisionNoteKey, handleApproveCorrection, handleApproveVacation, handleDenyCorrection, handleDenyVacation]);
+
+    const renderRequestList = useCallback((tab, items) => (
+        <div className="compact-list vacation-requests-scroll">
+            {items.map((item) => {
+                const noteKey = getDecisionNoteKey(tab, item.id);
+                const requestDateLabel = tab === 'vacation'
+                    ? `${formatDate(new Date(`${item.startDate}T00:00:00`))} – ${formatDate(new Date(`${item.endDate}T00:00:00`))}`
+                    : (item.requestDate ? formatDate(new Date(item.requestDate)) : '-');
+                const isPending = !item.approved && !item.denied;
+                const vacationTypeLabel = tab === 'vacation'
+                    ? (item.companyVacation
+                        ? t('adminVacation.companyVacationLabel', 'Betriebsurlaub')
+                        : item.usesOvertime
+                            ? t('overtimeVacation', 'Überstundenfrei')
+                            : t('normalVacation', 'Normaler Urlaub'))
+                    : '';
+
+                return (
+                    <article className="compact-list-item request-list-card" key={`${tab}-${item.id}`}>
+                        <button
+                            type="button"
+                            className="request-jump-btn"
+                            onClick={() => handleOpenRequestDate(tab, item)}
+                        >
+                            <div className="request-item-content">
+                                <span className="request-item-main">{requestDateLabel}</span>
+                                {tab === 'vacation' && (
+                                    <span className="request-vacation-type">{t('vacationType', 'Urlaubsart')}: {vacationTypeLabel}</span>
+                                )}
+                                {tab === 'correction' && (
+                                    <div className="request-correction-preview">
+                                        {renderCorrectionChange(item)}
+                                    </div>
+                                )}
+                                {tab === 'vacation' && item.adminNote && (
+                                    <div className="request-correction-preview">
+                                        <strong>{t('userDashboard.adminNote', 'Admin-Notiz')}:</strong> {item.adminNote}
+                                    </div>
+                                )}
+                            </div>
+                            <span className={`status-pill ${getRequestStatusClass(item)}`}>{getRequestStatusLabel(item, t)}</span>
+                        </button>
+
+                        {isPending && (
+                            <div className="request-inline-actions">
+                                <input
+                                    type="text"
+                                    value={decisionNotes[noteKey] || ''}
+                                    onChange={(event) => handleRequestNoteChange(tab, item.id, event.target.value)}
+                                    placeholder="Notiz (optional)"
+                                />
+                                <button
+                                    type="button"
+                                    className="inline-approve"
+                                    onClick={() => handleRequestDecision(tab, item, 'approve')}
+                                >
+                                    {t('approve', 'Genehmigen')}
+                                </button>
+                                <button
+                                    type="button"
+                                    className="inline-deny"
+                                    onClick={() => handleRequestDecision(tab, item, 'deny')}
+                                >
+                                    {t('deny', 'Ablehnen')}
+                                </button>
+                            </div>
+                        )}
+                    </article>
+                );
+            })}
+            {items.length === 0 && <p className="empty-state">{t('adminCorrections.noRequestsFound', 'Keine Anträge vorhanden.')}</p>}
+        </div>
+    ), [decisionNotes, getDecisionNoteKey, handleOpenRequestDate, handleRequestDecision, handleRequestNoteChange, renderCorrectionChange, t]);
+
+    const handleEditSubmit = async (updatedEntriesForDay) => {
+        if (!editDate || !username) return;
+        const formattedDate = formatLocalDateYMD(editDate);
+        try {
+            await api.put(`/api/admin/timetracking/editDay/${username}/${formattedDate}`, updatedEntriesForDay);
+            notify(t('adminDashboard.editSuccessfulMsg', 'Zeiten erfolgreich bearbeitet.'), 'success');
+            setEditModalVisible(false);
+            fetchAllData();
+        } catch (err) {
+            notify(t('adminDashboard.editFailed', 'Fehler beim Bearbeiten') + ': ' + (err.response?.data?.message || err.message), 'error');
+        }
+    };
+
+    const goToPreviousWeek = () => {
+        setSelectedMonday((prev) => addDays(prev, -7));
+        setProblemCursor(-1);
+        setProblemCategoryCursor({});
+        setFocusedProblemDate('');
+    };
+
+    const goToNextWeek = () => {
+        setSelectedMonday((prev) => addDays(prev, 7));
+        setProblemCursor(-1);
+        setProblemCategoryCursor({});
+        setFocusedProblemDate('');
+    };
+
+    const goToCurrentWeek = () => {
+        setSelectedMonday(getMondayOfWeek(new Date()));
+        setProblemCursor(-1);
+        setProblemCategoryCursor({});
+        setFocusedProblemDate('');
+    };
+
+    const goToPreviousMonth = () => {
+        setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+        setFocusedProblemDate('');
+    };
+
+    const goToNextMonth = () => {
+        setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+        setFocusedProblemDate('');
+    };
+
+    const goToCurrentMonth = () => {
+        setSelectedMonth(getMonthStart(new Date()));
+        setFocusedProblemDate('');
+    };
+
+    const jumpToProblemDate = useCallback((targetDateString) => {
+        if (!targetDateString) return;
+        setTimeRangeMode('week');
+        setSelectedMonday(getMondayOfWeek(new Date(`${targetDateString}T00:00:00`)));
+        setFocusedProblemDate(targetDateString);
+    }, []);
+
+    useEffect(() => {
+        if (!focusedProblemDate || !visibleDates.includes(focusedProblemDate)) return;
+        const targetNode = problemDateItemRefs.current.get(focusedProblemDate);
+        if (!targetNode) return;
+
+        requestAnimationFrame(() => {
+            targetNode.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+        });
+    }, [focusedProblemDate, visibleDates]);
+
+    const handleCycleProblem = () => {
+        if (prioritizedProblems.length === 0) return;
+        const nextIndex = (problemCursor + 1) % prioritizedProblems.length;
+        setProblemCursor(nextIndex);
+        jumpToProblemDate(prioritizedProblems[nextIndex].dateIso);
+    };
+
+    const handleProblemCategoryClick = (categoryKey) => {
+        const categoryProblems = problemGroups[categoryKey] || [];
+        if (categoryProblems.length === 0) return;
+
+        setProblemCategoryCursor((prev) => {
+            const currentIndex = Number.isInteger(prev[categoryKey]) ? prev[categoryKey] : -1;
+            const nextIndex = (currentIndex + 1) % categoryProblems.length;
+            jumpToProblemDate(categoryProblems[nextIndex].dateIso);
+            return {
+                ...prev,
+                [categoryKey]: nextIndex,
+            };
+        });
+    };
+
+    return (
+        <div className="employee-overview-page">
+            <Navbar />
+            <main className="employee-overview-main">
+                <section className="employee-overview-header card-style">
+                    <div className="employee-overview-header-main">
+                        <h1>{t('adminEmployeeOverview.title', 'Mitarbeiter-Übersicht')}</h1>
+                        <p className="employee-overview-userline">
+                            <strong>{employeeDisplayName}</strong>
+                        </p>
+                        <div className="employee-meta-chips" aria-label={t('adminEmployeeOverview.employeeMeta', 'Mitarbeiterdetails')}>
+                            <span className="employee-meta-chip">{t('role', 'Rolle')}: {roleDisplayLabel}</span>
+                            {employee?.department ? <span className="employee-meta-chip">{employee.department}</span> : null}
+                            {employee?.team ? <span className="employee-meta-chip">{employee.team}</span> : null}
+                        </div>
+                    </div>
+                    <div className="header-right-actions">
+                        <span className={`status-pill ${currentStatus.key}`}>{currentStatus.label}</span>
+                        <Link className="back-to-dashboard-button" to="/admin/dashboard">{t('adminEmployeeOverview.backToDashboard', 'Zurück zum Dashboard')}</Link>
+                    </div>
+                </section>
+
+                {loading ? (
+                    <section className="employee-overview-skeleton-grid">
+                        {Array.from({ length: 8 }).map((_, idx) => <div key={idx} className="skeleton-card card-style" />)}
+                    </section>
+                ) : !employee ? (
+                    <section className="card-style employee-overview-state">
+                        {t('adminEmployeeOverview.notFound', 'Mitarbeiter nicht gefunden.')}
+                    </section>
+                ) : (
+                    <>
+                        <section className="card-style employee-overview-problem-ribbon">
+                            <div className="card-heading-row">
+                                <h2>{t('adminDashboard.issueRibbon.title', 'Problemfokus')}</h2>
+                                <button type="button" className="text-link-btn" onClick={handleCycleProblem} disabled={prioritizedProblems.length === 0}>
+                                    {prioritizedProblems.length > 0
+                                        ? t('adminEmployeeOverview.nextProblem', 'Zum Problem ({{current}}/{{total}})', {
+                                            current: ((problemCursor + 1) % prioritizedProblems.length) + 1,
+                                            total: prioritizedProblems.length,
+                                        })
+                                        : t('adminEmployeeOverview.noProblemCases', 'Keine Problemfälle')}
+                                </button>
+                            </div>
+                            <div className="problem-ribbon-row" role="list" aria-label={t('adminDashboard.issueFilters.groupLabel', 'Problemtypen filtern')}>
+                                <button type="button" className="problem-ribbon-chip" onClick={() => handleProblemCategoryClick('missing')} disabled={problemGroups.missing.length === 0}>
+                                    {problemLabelByType.missing} ({problemGroups.missing.length})
+                                </button>
+                                <button type="button" className="problem-ribbon-chip" onClick={() => handleProblemCategoryClick('incomplete')} disabled={problemGroups.incomplete.length === 0}>
+                                    {problemLabelByType.incomplete_work_end_missing} ({problemGroups.incomplete.length})
+                                </button>
+                                <button type="button" className="problem-ribbon-chip" onClick={() => handleProblemCategoryClick('autoCompleted')} disabled={problemGroups.autoCompleted.length === 0}>
+                                    {problemLabelByType.auto_completed_uncorrected} ({problemGroups.autoCompleted.length})
+                                </button>
+                                <button type="button" className="problem-ribbon-chip" onClick={() => handleProblemCategoryClick('holidayPending')} disabled={problemGroups.holidayPending.length === 0}>
+                                    {problemLabelByType.holiday_pending_decision} ({problemGroups.holidayPending.length})
+                                </button>
+                            </div>
+                        </section>
+
+                        <section className="employee-overview-kpis">
+                            <article className="card-style kpi-card">
+                                <h3>{t('today', 'Heute')}</h3>
+                                <p><strong>{todaysSummary ? t('adminDashboard.stamped', 'Gestempelt') : t('adminDashboard.noDataShort', 'Keine Daten')}</strong></p>
+                                <p>{todaysSummary ? `${minutesToHHMM(todaysSummary.workedMinutes || 0)} · ${minutesToHHMM(todaysSummary.breakMinutes || 0)}` : t('adminEmployeeOverview.noTrackingData', 'Keine Zeiterfassungen vorhanden.')}</p>
+                            </article>
+                            <article className="card-style kpi-card">
+                                <h3>{t('week', 'Woche')}</h3>
+                                <p>
+                                    {t('expectedTimeShort', 'Soll')} {minutesToHHMM(periodTargetMinutes)} / {t('actualTimeShort', 'Ist')} <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong>
+                                </p>
+                                <p>{t('overtime', 'Überstunden')}: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></p>
+                            </article>
+                            <article className="card-style kpi-card">
+                                <h3>{t('adminEmployeeOverview.pending', 'Offen')}</h3>
+                                <p><strong>{openItemsCount}</strong> {t('adminDashboard.openRequests', 'Anträge')}</p>
+                                <p>{t('balanceTotal', 'Gesamtüberstunden')}: {minutesToHHMM(employeeBalance?.trackingBalance || 0)}</p>
+                            </article>
+                        </section>
+
+                        <section className="employee-overview-grid">
+                            <div className="left-column">
+                                <article className="card-style employee-overview-card" ref={timeTrackingSectionRef}>
+                                    <div className="card-heading-row">
+                                        <h2>{t('timeTracking', 'Zeiterfassung')}</h2>
+                                        <div className="request-tabs">
+                                            <button className={timeRangeMode === 'week' ? 'active' : ''} onClick={() => setTimeRangeMode('week')}>{t('week', 'Woche')}</button>
+                                            <button className={timeRangeMode === 'month' ? 'active' : ''} onClick={() => setTimeRangeMode('month')}>{t('month', 'Monat')}</button>
+                                        </div>
+                                    </div>
+                                    <div className="week-navigation-row">
+                                        {timeRangeMode === 'month' ? (
+                                            <>
+                                                <button type="button" className="text-link-btn" onClick={goToPreviousMonth}>←</button>
+                                                <strong>{selectedMonth.toLocaleDateString(dateLocale, { month: 'long', year: 'numeric' })}</strong>
+                                                <button type="button" className="text-link-btn" onClick={goToNextMonth}>→</button>
+                                                <button type="button" className="text-link-btn" onClick={goToCurrentMonth}>{t('adminEmployeeOverview.currentMonth', 'Dieser Monat')}</button>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <button type="button" className="text-link-btn" onClick={goToPreviousWeek}>←</button>
+                                                <strong>
+                                                    {formatDate(new Date(`${weekDates[0]}T00:00:00`))} – {formatDate(new Date(`${weekDates[6]}T00:00:00`))}
+                                                </strong>
+                                                <button type="button" className="text-link-btn" onClick={goToNextWeek}>→</button>
+                                                <button type="button" className="text-link-btn" onClick={goToCurrentWeek}>{t('adminEmployeeOverview.currentWeek', 'Diese Woche')}</button>
+                                            </>
+                                        )}
+                                    </div>
+                                    <div className="mini-stats-row">
+                                        <span>{t('adminEmployeeOverview.totalHours', 'Gesamtstunden')}: <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></span>
+                                        <span>{t('adminEmployeeOverview.overtimeMinus', 'Überstunden/Minus')}: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></span>
+                                        <span>{t('adminEmployeeOverview.absences', 'Fehlzeiten')}: <strong>{periodAbsenceDays} {t('daysLabel', 'Tage')}</strong></span>
+                                        <span>{t('balanceTotal', 'Gesamtüberstunden')}: <strong>{minutesToHHMM(employeeBalance?.trackingBalance || 0)}</strong></span>
+                                    </div>
+                                    <div className="punch-overview-list">
+                                        <div className="card-heading-row">
+                                            <h3>{t('adminEmployeeOverview.punchedTimes', 'Gestempelte Zeiten')}</h3>
+                                        </div>
+                                        <div className="punch-calendar-grid-wrap">
+                                            <div className="punch-calendar-weekdays">
+                                                {weekDayLabels.map((dayKey) => (
+                                                    <span key={dayKey}>{localizedWeekDayLabels[dayKey]}</span>
+                                                ))}
+                                            </div>
+                                            <div className={`punch-calendar-grid punch-calendar-grid--${timeRangeMode}`}>
+                                                {punchCalendarCells.map(({ dateString, summary, entries, isPlaceholder }) => {
+                                                    if (isPlaceholder) {
+                                                        return <div key={dateString} className="punch-overview-item punch-overview-item--placeholder" aria-hidden="true" />;
+                                                    }
+
+                                                    const holidayNameOnThisDay = holidaysForEmployee?.[dateString];
+                                                    const vacationOnThisDay = employeeVacations.find((vacation) => !vacation.denied && isDateInRange(dateString, vacation.startDate, vacation.endDate));
+                                                    const sickOnThisDay = employeeSickLeaves.find((sickLeave) => isDateInRange(dateString, sickLeave.startDate, sickLeave.endDate));
+
+                                                    return (
+                                                        <div
+                                                            className={`punch-overview-item${focusedProblemDate === dateString ? ' punch-overview-item--focused' : ''}`}
+                                                            key={`punch-${dateString}`}
+                                                            ref={(node) => {
+                                                                if (node) {
+                                                                    problemDateItemRefs.current.set(dateString, node);
+                                                                } else {
+                                                                    problemDateItemRefs.current.delete(dateString);
+                                                                }
+                                                            }}
+                                                        >
+                                                            <div className="punch-overview-header">
+                                                                <strong>{formatDateWithWeekday(new Date(`${dateString}T00:00:00`))}</strong>
+                                                                <button
+                                                                    type="button"
+                                                                    className="text-link-btn"
+                                                                    onClick={() => openEditModal(dateString)}
+                                                                >
+                                                                    {t('adminEmployeeOverview.correctButton', 'Korrigieren')}
+                                                                </button>
+                                                            </div>
+                                                            {(holidayNameOnThisDay || vacationOnThisDay || sickOnThisDay) && (
+                                                                <div className="day-indicator-list">
+                                                                    {holidayNameOnThisDay && (
+                                                                        <p className="day-indicator day-indicator--holiday">🎉 {t('holiday', 'Feiertag')}: {holidayNameOnThisDay}</p>
+                                                                    )}
+                                                                    {vacationOnThisDay && (
+                                                                        <p className="day-indicator day-indicator--vacation">
+                                                                            🏖️ {t('adminDashboard.onVacation', 'Im Urlaub')}
+                                                                            {vacationOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}
+                                                                            {vacationOnThisDay.usesOvertime ? ` (${t('adminDashboard.overtimeVacationShort', 'ÜS')})` : ''}
+                                                                        </p>
+                                                                    )}
+                                                                    {sickOnThisDay && (
+                                                                        <p className="day-indicator day-indicator--sick">
+                                                                            🤒 {t('adminDashboard.onSickLeave', 'Krank gemeldet')}
+                                                                            {sickOnThisDay.halfDay ? ` (${t('adminDashboard.halfDayShort', '½ Tag')})` : ''}
+                                                                        </p>
+                                                                    )}
+                                                                </div>
+                                                            )}
+                                                            {entries.length > 0 ? (
+                                                                <div className="punch-chip-row">
+                                                                    {entries.map((entry, index) => (
+                                                                        <span className="punch-chip" key={`${entry.id || entry.entryTimestamp || dateString}-${index}`}>
+                                                                            {getPunchTypeLabel(entry?.punchType)} · {formatTime(new Date(entry.entryTimestamp))}
+                                                                        </span>
+                                                                    ))}
+                                                                </div>
+                                                            ) : (
+                                                                <p className="empty-state">
+                                                                    {summary
+                                                                        ? t('adminEmployeeOverview.noPunchesForDay', 'Keine einzelnen Stempelungen vorhanden.')
+                                                                        : t('adminDashboard.noDataShort', 'Keine Daten')}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </article>
+
+                                <article className="card-style employee-overview-card vacation-requests-card">
+                                    <div className="card-heading-row">
+                                        <h2>{t('adminDashboard.correctionRequestsTitle', 'Korrekturanträge')}</h2>
+                                    </div>
+                                    {renderRequestList('correction', groupedEmployeeCorrections)}
+                                </article>
+
+                            </div>
+
+                            <div className="right-column">
+                                <article className="card-style employee-overview-card absence-summary-card">
+                                    <h2>{t('adminEmployeeOverview.absenceSummary', 'Abwesenheits-Zusammenfassung')}</h2>
+                                    <div className="absence-summary-list">
+                                        <p><span>{t('remainingVacation', 'Verfügbar')}</span><strong>{vacationStats.availableDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
+                                        <p><span>{t('adminEmployeeOverview.plannedVacation', 'Geplant')}</span><strong>{vacationStats.plannedDays.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
+                                        <p><span>{t('adminEmployeeOverview.annualVacationEntitlement', 'Urlaubstage dieses Jahr')}</span><strong>{vacationStats.annual.toFixed(1)} {t('daysLabel', 'Tage')}</strong></p>
+                                        <p>
+                                            <span>{t('adminEmployeeOverview.nextAbsence', 'Nächste Abwesenheit')}</span>
+                                            <strong>
+                                                {nextAbsence
+                                                    ? `${nextAbsence.type} · ${formatDate(new Date(`${nextAbsence.startDate}T00:00:00`))}`
+                                                    : t('adminEmployeeOverview.nonePlanned', 'Keine geplant')}
+                                            </strong>
+                                        </p>
+                                        <p><span>{t('adminEmployeeOverview.currentStatus', 'Aktueller Status')}</span><strong>{currentStatus.label}</strong></p>
+                                        <p>
+                                            <span>{t('adminEmployeeOverview.currentWeek', 'Diese Woche')}</span>
+                                            <strong>{t('adminEmployeeOverview.weeklyAbsenceDays', '{{count}} Tage abwesend', { count: weeklyAbsenceDays })}</strong>
+                                        </p>
+                                        <p><span>{t('breakTime', 'Pause')} ({t('week', 'Woche')})</span><strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
+                                    </div>
+                                </article>
+                                <section className="calendar-requests-layout">
+                                    <article className="card-style employee-overview-card calendar-card">
+                                        <h2>{t('adminEmployeeOverview.calendarTitle', 'Kalender')}</h2>
+                                        <p className="card-subtitle">{t('adminEmployeeOverview.calendarSubtitle', 'Urlaub/Krank direkt für diesen Mitarbeiter erfassen.')}</p>
+                                        <VacationCalendarAdmin
+                                            vacationRequests={employeeVacations}
+                                            onReloadVacations={fetchAllData}
+                                            companyUsers={users}
+                                            focusUsername={username}
+                                        />
+                                    </article>
+
+                                    <article className="card-style employee-overview-card vacation-requests-card">
+                                        <div className="card-heading-row">
+                                            <h2>{t('adminDashboard.vacationRequestsTitle', 'Urlaubsanträge')}</h2>
+                                        </div>
+                                        {renderRequestList('vacation', employeeVacations)}
+                                    </article>
+                                </section>
+                            </div>
+                        </section>
+                    </>
+                )}
+            </main>
+
+            {quickAction === 'vacation' && (
+                <ModalOverlay visible>
+                    <div className="modal-content employee-quick-modal">
+                        <h3>{t('adminEmployeeOverview.recordVacationFor', 'Urlaub eintragen – {{name}}', { name: employeeDisplayName })}</h3>
+                        <form onSubmit={handleQuickVacationSave} className="quick-form-grid">
+                            <label>{t('from', 'Von')}<input type="date" value={vacationForm.startDate} onChange={(e) => setVacationForm((prev) => ({ ...prev, startDate: e.target.value }))} required /></label>
+                            <label>{t('to', 'Bis')}<input type="date" value={vacationForm.endDate} onChange={(e) => setVacationForm((prev) => ({ ...prev, endDate: e.target.value }))} required /></label>
+                            <label className="checkbox-label"><input type="checkbox" checked={vacationForm.halfDay} onChange={(e) => setVacationForm((prev) => ({ ...prev, halfDay: e.target.checked }))} />{t('halfDay', 'Halbtag')}</label>
+                            <div className="modal-actions">
+                                <button type="button" onClick={() => setQuickAction(null)}>{t('cancel', 'Abbrechen')}</button>
+                                <button type="submit">{t('save', 'Speichern')}</button>
+                            </div>
+                        </form>
+                    </div>
+                </ModalOverlay>
+            )}
+
+            {quickAction === 'sick' && (
+                <ModalOverlay visible>
+                    <div className="modal-content employee-quick-modal">
+                        <h3>{t('adminEmployeeOverview.recordSickLeaveFor', 'Krankmeldung eintragen – {{name}}', { name: employeeDisplayName })}</h3>
+                        <form onSubmit={handleQuickSickSave} className="quick-form-grid">
+                            <label>{t('from', 'Von')}<input type="date" value={sickForm.startDate} onChange={(e) => setSickForm((prev) => ({ ...prev, startDate: e.target.value }))} required /></label>
+                            <label>{t('to', 'Bis')}<input type="date" value={sickForm.endDate} onChange={(e) => setSickForm((prev) => ({ ...prev, endDate: e.target.value }))} required /></label>
+                            <label>{t('note', 'Notiz')}<input type="text" value={sickForm.comment} onChange={(e) => setSickForm((prev) => ({ ...prev, comment: e.target.value }))} /></label>
+                            <label className="checkbox-label"><input type="checkbox" checked={sickForm.halfDay} onChange={(e) => setSickForm((prev) => ({ ...prev, halfDay: e.target.checked }))} />{t('halfDay', 'Halbtag')}</label>
+                            <div className="modal-actions">
+                                <button type="button" onClick={() => setQuickAction(null)}>{t('cancel', 'Abbrechen')}</button>
+                                <button type="submit">{t('save', 'Speichern')}</button>
+                            </div>
+                        </form>
+                    </div>
+                </ModalOverlay>
+            )}
+
+
+            <EditTimeModal
+                t={t}
+                isVisible={editModalVisible}
+                targetDate={editDate}
+                dayEntries={editDayEntries}
+                targetUsername={username}
+                onSubmit={handleEditSubmit}
+                onClose={() => setEditModalVisible(false)}
+                users={users}
+            />
+        </div>
+    );
+};
+
+export default AdminEmployeeOverviewPage;

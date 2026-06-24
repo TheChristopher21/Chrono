@@ -105,13 +105,31 @@ public class WorkScheduleService {
         logger.info("[CHRONO-DEBUG] Für Benutzer: '{}', Datum: {}, berechnete Soll-Stunden: {}", user.getUsername(), date.toString(), baseHours);
         // ======================= ENDE DEBUG-CODE =======================
 
-        if (isHalfDay(user, date)) {
+        boolean companyHoliday = isHolidayForUser(user, date);
+        boolean companyHolidayHalfDay = isHalfDayHolidayForUser(user, date);
+        boolean scheduleHalfDay = isHalfDay(user, date);
+
+        if (!Boolean.TRUE.equals(user.getIsPercentage()) && companyHoliday) {
+            if (!companyHolidayHalfDay) {
+                return 0.0;
+            }
+            baseHours = baseHours / 2.0;
+        } else if (scheduleHalfDay) {
             baseHours = baseHours / 2.0;
         }
 
         return applyPercentage(user, baseHours);
     }
     public int getExpectedWeeklyMinutesForPercentageUser(User user, LocalDate dateInWeek, List<VacationRequest> approvedVacationsInWeek) {
+        return getExpectedWeeklyMinutesForPercentageUser(user, dateInWeek, dateInWeek.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).plusDays(6), approvedVacationsInWeek);
+    }
+
+    public int getExpectedWeeklyMinutesForPercentageUser(User user, LocalDate dateInWeek, LocalDate evaluationEnd, List<VacationRequest> approvedVacationsInWeek) {
+        LocalDate startOfWeek = dateInWeek.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        return getExpectedWeeklyMinutesForPercentageUser(user, dateInWeek, startOfWeek, evaluationEnd, approvedVacationsInWeek);
+    }
+
+    public int getExpectedWeeklyMinutesForPercentageUser(User user, LocalDate dateInWeek, LocalDate evaluationStart, LocalDate evaluationEnd, List<VacationRequest> approvedVacationsInWeek) {
         if (!Boolean.TRUE.equals(user.getIsPercentage()) || user.getWorkPercentage() == null) {
             logger.warn("getExpectedWeeklyMinutesForPercentageUser called for non-percentage user {} or user with no workPercentage.", user.getUsername());
             return 0;
@@ -119,50 +137,32 @@ public class WorkScheduleService {
 
         double baseFullTimeWeeklyHours = BASE_FULL_TIME_WEEKLY_HOURS;
         double percentageWeeklyHours = baseFullTimeWeeklyHours * (user.getWorkPercentage() / 100.0);
-        int expectedWeeklyMinutesTotal = (int) Math.round(percentageWeeklyHours * 60);
 
         int absenceMinutesToDeduct = 0;
+        int expectedMinutesInRange = 0;
         LocalDate startOfWeek = dateInWeek.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
         LocalDate endOfWeek = startOfWeek.plusDays(6);
+        LocalDate effectiveStart = evaluationStart != null && evaluationStart.isAfter(startOfWeek) ? evaluationStart : startOfWeek;
+        LocalDate effectiveEnd = evaluationEnd.isBefore(endOfWeek) ? evaluationEnd : endOfWeek;
+        if (effectiveStart.isAfter(effectiveEnd)) {
+            return 0;
+        }
 
         List<SickLeave> sickLeavesForUser = sickLeaveRepository.findByUser(user);
-        // NEU: Lade die Feiertagsoptionen für die Woche
-        List<UserHolidayOption> holidayOptionsInWeek = userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, startOfWeek, endOfWeek);
+        List<UserHolidayOption> holidayOptionsInWeek = userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, effectiveStart, effectiveEnd);
 
-        Integer expectedWorkDays = user.getExpectedWorkDays();
-        double dailyValueHours;
+        int modeledWorkDays = getModeledWorkDaysForPercentageUser(user, startOfWeek);
+        int dailyValueMinutes = (int) Math.round((percentageWeeklyHours / modeledWorkDays) * 60);
 
-        if (expectedWorkDays != null && expectedWorkDays >= 1 && expectedWorkDays <= 7) {
-            dailyValueHours = percentageWeeklyHours / expectedWorkDays;
-        } else {
-            dailyValueHours = percentageWeeklyHours / 5.0; // Fallback auf 5-Tage-Woche
-            logger.warn("User {} (Percentage: {}%) has invalid or no expectedWorkDays ({}). Using 5-day week for absence calculation within week {}.",
-                    user.getUsername(), user.getWorkPercentage(), expectedWorkDays, startOfWeek);
-        }
-        int dailyValueMinutes = (int) Math.round(dailyValueHours * 60);
-
-        for (LocalDate d = startOfWeek; !d.isAfter(endOfWeek); d = d.plusDays(1)) {
+        for (LocalDate d = effectiveStart; !d.isAfter(effectiveEnd); d = d.plusDays(1)) {
             final LocalDate currentDate = d;
-            DayOfWeek day = d.getDayOfWeek();
 
-            // Wochenenden grundsätzlich ignorieren, es sei denn, der User hat explizit Arbeitstage am Wochenende
-            // in seinem `expectedWorkDays` Modell (was hier vereinfacht als Mo-Fr oder Mo-So angenommen wird).
-            // Eine präzisere Logik bräuchte die exakten Arbeitstage des Users.
-            // Für diese Implementierung: Wenn `expectedWorkDays` > 5, werden Sa/So potenziell als Arbeitstage gewertet.
-            boolean isPotentialWorkDayBasedOnModel = true;
-            if (expectedWorkDays <= 5 && (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY)) {
-                isPotentialWorkDayBasedOnModel = false;
+            if (!isModeledPercentageWorkDay(d, modeledWorkDays)) {
+                continue;
             }
-            if (expectedWorkDays == 6 && day == DayOfWeek.SUNDAY) { // Bei 6-Tage-Modell ist Sonntag frei
-                isPotentialWorkDayBasedOnModel = false;
-            }
-            // Bei 7-Tage-Modell sind alle Tage potenzielle Arbeitstage
 
-            if (!isPotentialWorkDayBasedOnModel) continue;
-
-
-            String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-            boolean isActualHoliday = holidayService.isHoliday(d, cantonAbbreviation);
+            boolean isActualHoliday = isHolidayForUser(user, d);
+            boolean isHalfDayHoliday = isHalfDayHolidayForUser(user, d);
 
             // Abwesenheiten (Urlaub, Krankheit)
             boolean vacationToday = approvedVacationsInWeek.stream()
@@ -187,20 +187,25 @@ public class WorkScheduleService {
                         .map(UserHolidayOption::getHolidayHandlingOption)
                         .orElse(UserHolidayOption.HolidayHandlingOption.PENDING_DECISION); // Default, falls keine explizite Option
 
+                expectedMinutesInRange += dailyValueMinutes;
                 if (handling == UserHolidayOption.HolidayHandlingOption.DEDUCT_FROM_WEEKLY_TARGET) {
-                    absenceMinutesToDeduct += dailyValueMinutes; // Feiertag reduziert Soll
+                    absenceMinutesToDeduct += isHalfDayHoliday ? dailyValueMinutes / 2 : dailyValueMinutes; // Feiertag reduziert Soll
                 } else if (handling == UserHolidayOption.HolidayHandlingOption.DO_NOT_DEDUCT_FROM_WEEKLY_TARGET) {
                     // Feiertag reduziert das Soll NICHT, also keine Änderung an absenceMinutesToDeduct
                 } else { // PENDING_DECISION - hier Standard: Soll NICHT reduzieren, bis Admin entscheidet
                     // Keine Reduktion, da Admin noch entscheiden muss. Arbeit an diesem Tag wäre regulär.
                 }
-            } else if (relevantVacation != null) { // Wenn kein Feiertag, aber Urlaub
+            } else {
+                expectedMinutesInRange += dailyValueMinutes;
+            }
+
+            if (relevantVacation != null && !isActualHoliday) { // Wenn kein Feiertag, aber Urlaub
                 if (relevantVacation.isHalfDay()) {
                     absenceMinutesToDeduct += dailyValueMinutes / 2;
                 } else {
                     absenceMinutesToDeduct += dailyValueMinutes;
                 }
-            } else if (relevantSickLeave != null) { // Wenn kein Feiertag oder Urlaub, aber krank
+            } else if (relevantSickLeave != null && !isActualHoliday) { // Wenn kein Feiertag oder Urlaub, aber krank
                 if (relevantSickLeave.isHalfDay()) {
                     absenceMinutesToDeduct += dailyValueMinutes / 2;
                 } else {
@@ -209,9 +214,9 @@ public class WorkScheduleService {
             }
         }
 
-        int netExpectedMinutes = Math.max(0, expectedWeeklyMinutesTotal - absenceMinutesToDeduct);
-        logger.debug("User: {}, Week starting: {}, Base Expected ({}%): {}min, Total Absence Deduction (Vacation+Sick+Holiday): {}min, Net Expected: {}min",
-                user.getUsername(), startOfWeek, user.getWorkPercentage(), expectedWeeklyMinutesTotal, absenceMinutesToDeduct, netExpectedMinutes);
+        int netExpectedMinutes = Math.max(0, expectedMinutesInRange - absenceMinutesToDeduct);
+        logger.debug("User: {}, Week starting: {}, Effective range: {} to {}, Base Expected in range ({}%): {}min, Total Absence Deduction (Vacation+Sick+Holiday): {}min, Net Expected: {}min",
+                user.getUsername(), startOfWeek, effectiveStart, effectiveEnd, user.getWorkPercentage(), expectedMinutesInRange, absenceMinutesToDeduct, netExpectedMinutes);
         return netExpectedMinutes;
     }
 
@@ -226,6 +231,23 @@ public class WorkScheduleService {
         return total;
     }
 
+    private int getModeledWorkDaysForPercentageUser(User user, LocalDate referenceDate) {
+        Integer expectedWorkDays = user.getExpectedWorkDays();
+        if (expectedWorkDays != null && expectedWorkDays >= 1 && expectedWorkDays <= 7) {
+            return expectedWorkDays;
+        }
+
+        LocalDate startOfWeek = referenceDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+        logger.warn("User {} (Percentage: {}%) has invalid or no expectedWorkDays ({}). Using 5-day week for week {}.",
+                user.getUsername(), user.getWorkPercentage(), expectedWorkDays, startOfWeek);
+        return 5;
+    }
+
+    private boolean isModeledPercentageWorkDay(LocalDate date, int modeledWorkDays) {
+        int dayIndex = date.getDayOfWeek().getValue(); // Monday=1 ... Sunday=7
+        return dayIndex <= modeledWorkDays;
+    }
+
 
     public int computeExpectedWorkMinutes(User user, LocalDate date, List<VacationRequest> approvedVacationsForUser) {
         // Logik für prozentuale Mitarbeiter (Wochenbasis wird im TimeTrackingService gehandhabt)
@@ -233,12 +255,6 @@ public class WorkScheduleService {
         // damit TimeTrackingService.computeDailyWorkDifference dies für die Saldenberechnung nutzen kann,
         // auch wenn prozentuale User wöchentlich saldiert werden.
         if (Boolean.TRUE.equals(user.getIsPercentage())) {
-            // Prüfe, ob der Tag ein Feiertag ist, der das Soll reduziert (gemäß UserHolidayOption)
-            if (isDayOff(user, date)) { // isDayOff berücksichtigt jetzt die Feiertagsoption für %-User
-                // Wenn isDayOff true ist (z.B. Feiertag, der Soll reduziert, oder Wochenende) -> Soll ist 0
-                return 0;
-            }
-
             // Prüfe auf ganztägigen Urlaub für diesen Tag
             for (VacationRequest vr : approvedVacationsForUser) {
                 if (!date.isBefore(vr.getStartDate()) && !date.isAfter(vr.getEndDate())) {
@@ -256,9 +272,22 @@ public class WorkScheduleService {
             // Wenn kein voller freier Tag (Feiertag/Urlaub/Krankheit), berechne den anteiligen Tageswert
             double baseFullTimeWeeklyHours = BASE_FULL_TIME_WEEKLY_HOURS;
             double percentageWeeklyHours = baseFullTimeWeeklyHours * (user.getWorkPercentage() / 100.0);
-            Integer expectedWorkDays = user.getExpectedWorkDays() != null && user.getExpectedWorkDays() > 0 ? user.getExpectedWorkDays() : 5;
-            double dailyValueHours = percentageWeeklyHours / expectedWorkDays;
-            int dailyMinutes = (int) Math.round(dailyValueHours * 60);
+            int modeledWorkDays = getModeledWorkDaysForPercentageUser(user, date);
+            boolean percentageHoliday = isHolidayForUser(user, date);
+            boolean percentageHalfDayHoliday = isHalfDayHolidayForUser(user, date);
+            if (!isModeledPercentageWorkDay(date, modeledWorkDays)) {
+                return 0;
+            }
+            int dailyMinutes = (int) Math.round((percentageWeeklyHours / modeledWorkDays) * 60);
+
+            if (percentageHoliday) {
+                UserHolidayOption.HolidayHandlingOption handling = userHolidayOptionRepository.findByUserAndHolidayDate(user, date)
+                        .map(UserHolidayOption::getHolidayHandlingOption)
+                        .orElse(UserHolidayOption.HolidayHandlingOption.PENDING_DECISION);
+                if (handling == UserHolidayOption.HolidayHandlingOption.DEDUCT_FROM_WEEKLY_TARGET) {
+                    return percentageHalfDayHoliday ? dailyMinutes / 2 : 0;
+                }
+            }
 
             // Halbtägige Abwesenheiten reduzieren dieses Tagessoll
             for (VacationRequest vr : approvedVacationsForUser) {
@@ -349,9 +378,11 @@ public class WorkScheduleService {
     }
 
     public boolean isDayOff(User user, LocalDate date) {
-        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-
-        if (holidayService.isHoliday(date, cantonAbbreviation)) {
+        if (isHolidayForUser(user, date)) {
+            if (isHalfDayHolidayForUser(user, date)) {
+                logger.debug("Date {} is a half-day holiday for user {}. isDayOff returns false.", date, user.getUsername());
+                return false;
+            }
             if (Boolean.TRUE.equals(user.getIsPercentage())) {
                 Optional<UserHolidayOption> holidayOptionOpt = userHolidayOptionRepository.findByUserAndHolidayDate(user, date);
                 UserHolidayOption.HolidayHandlingOption handling = holidayOptionOpt
@@ -384,6 +415,21 @@ public class WorkScheduleService {
         }
 
         logger.trace("Date {} is not a holiday or weekend for user {}. isDayOff returns false.", date, user.getUsername());
+        return false;
+    }
+
+    private boolean isHolidayForUser(User user, LocalDate date) {
+        if (user.getCompany() != null && user.getCompany().isCustomHolidaySelectionEnabled()) {
+            return holidayService.isCompanyHoliday(date, user.getCompany());
+        }
+        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
+        return holidayService.isHoliday(date, cantonAbbreviation);
+    }
+
+    private boolean isHalfDayHolidayForUser(User user, LocalDate date) {
+        if (user.getCompany() != null && user.getCompany().isCustomHolidaySelectionEnabled()) {
+            return holidayService.isHalfDayHoliday(date, user.getCompany());
+        }
         return false;
     }
 

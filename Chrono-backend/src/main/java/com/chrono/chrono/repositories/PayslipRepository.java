@@ -10,6 +10,7 @@ public interface PayslipRepository extends JpaRepository<Payslip, Long> {
     List<Payslip> findByUser(User user);
     List<Payslip> findByUserAndApproved(User user, boolean approved);
     List<Payslip> findByApproved(boolean approved);
+    List<Payslip> findByUser_Company_Id(Long companyId);
     List<Payslip> findByUser_Company_IdAndApproved(Long companyId, boolean approved);
     List<Payslip> findByUserAndPeriodStartAndPeriodEnd(User user, java.time.LocalDate start, java.time.LocalDate end);
 }

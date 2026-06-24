@@ -60,7 +60,7 @@ const AdminProjectReportPage = () => {
           <table>
             <thead>
               <tr>
-                <th>{t('task', 'Aufgabe')}</th>
+                <th>{t('projectReportTask', 'Aufgabe')}</th>
                 <th>{t('budget', 'Budget')}</th>
                 <th>{t('actual', 'Ist')}</th>
                 <th>{t('progress', 'Fortschritt')}</th>

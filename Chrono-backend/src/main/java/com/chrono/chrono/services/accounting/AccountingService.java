@@ -126,17 +126,11 @@ public class AccountingService {
         BigDecimal net = BigDecimal.valueOf(payslip.getNetSalary()).setScale(2, RoundingMode.HALF_UP);
 
         List<JournalEntryLine> lines = new ArrayList<>();
-        lines.add(line(wages, gross, BigDecimal.ZERO, "Payroll " + payslip.getId()));
-        if (employerShare.compareTo(BigDecimal.ZERO) > 0) {
-            lines.add(line(employer, employerShare, BigDecimal.ZERO, "Employer share"));
-        }
-        lines.add(line(bank, BigDecimal.ZERO, net, "Net payout"));
-        if (deductions.compareTo(BigDecimal.ZERO) > 0) {
-            lines.add(line(payrollLiability, BigDecimal.ZERO, deductions, "Employee deductions"));
-        }
-        if (employerShare.compareTo(BigDecimal.ZERO) > 0) {
-            lines.add(line(socialLiability, BigDecimal.ZERO, employerShare, "Employer contributions"));
-        }
+        addSignedLine(lines, wages, gross, true, "Payroll " + payslip.getId());
+        addSignedLine(lines, employer, employerShare, true, "Employer share");
+        addSignedLine(lines, bank, net, false, "Net payout");
+        addSignedLine(lines, payrollLiability, deductions, false, "Employee deductions");
+        addSignedLine(lines, socialLiability, employerShare, false, "Employer contributions");
 
         JournalEntry entry = new JournalEntry();
         entry.setEntryDate(payslip.getPayoutDate() != null ? payslip.getPayoutDate() : LocalDate.now());
@@ -154,6 +148,21 @@ public class AccountingService {
         line.setCredit(credit);
         line.setMemo(memo);
         return line;
+    }
+
+    private void addSignedLine(List<JournalEntryLine> lines, Account account, BigDecimal amount,
+                               boolean debitWhenPositive, String memo) {
+        if (amount == null || amount.compareTo(BigDecimal.ZERO) == 0) {
+            return;
+        }
+        BigDecimal absoluteAmount = amount.abs();
+        boolean useDebit = debitWhenPositive ? amount.signum() > 0 : amount.signum() < 0;
+        lines.add(line(
+                account,
+                useDebit ? absoluteAmount : BigDecimal.ZERO,
+                useDebit ? BigDecimal.ZERO : absoluteAmount,
+                memo
+        ));
     }
 
     public Account ensureAccount(String code, String name, AccountType type) {

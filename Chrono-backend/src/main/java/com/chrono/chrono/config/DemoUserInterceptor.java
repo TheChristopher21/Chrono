@@ -12,6 +12,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.LocalDateTime;
 import java.util.Set;
 
 @Component
@@ -28,6 +29,8 @@ public class DemoUserInterceptor implements HandlerInterceptor {
             "/api/vacation/create",
             "/api/correction/create",
             "/api/sick-leave/report",
+            "/api/timetracking/punch",
+            "/api/timetracking/daily-note",
             "/api/chat"
     );
 
@@ -37,6 +40,13 @@ public class DemoUserInterceptor implements HandlerInterceptor {
         if (auth != null && auth.isAuthenticated()) {
             User user = userRepository.findByUsername(auth.getName()).orElse(null);
             if (user != null && user.isDemo()) {
+                if (user.isDemoExpired(LocalDateTime.now())) {
+                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                    response.setContentType("application/json");
+                    response.getWriter().write("{\"message\":\"Demo session expired\"}");
+                    return false;
+                }
+
                 demoDataService.refreshDemoDataIfOutdated(user);
 
                 if (BLOCKED_METHODS.contains(request.getMethod())) {

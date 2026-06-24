@@ -3,6 +3,8 @@ package com.chrono.chrono.repositories.inventory;
 import com.chrono.chrono.entities.inventory.Product;
 import com.chrono.chrono.entities.inventory.StockLevel;
 import com.chrono.chrono.entities.inventory.Warehouse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -12,4 +14,8 @@ public interface StockLevelRepository extends JpaRepository<StockLevel, Long> {
     Optional<StockLevel> findByProductAndWarehouse(Product product, Warehouse warehouse);
 
     List<StockLevel> findByProduct(Product product);
+
+    List<StockLevel> findAllByProduct_Company_Id(Long companyId);
+
+    Page<StockLevel> findAllByProduct_Company_Id(Long companyId, Pageable pageable);
 }

@@ -7,7 +7,7 @@ import java.time.LocalDate;
 @Table(
         name = "schedule_entries",
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"user_id", "date"})
+                @UniqueConstraint(name = "uk_schedule_entries_user_date_shift", columnNames = {"user_id", "date", "shift"})
         }
 )
 public class ScheduleEntry {
