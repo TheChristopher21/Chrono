@@ -1,6 +1,7 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
+import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.dto.TimeReportDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.entities.TimeTrackingEntry;
@@ -153,6 +154,26 @@ public class TimeTrackingController {
         } else {
              return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+    }
+
+    @GetMapping("/period-summary")
+    public ResponseEntity<TimePeriodSummaryDTO> getPeriodSummary(
+            @RequestParam String username,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Principal principal
+    ) {
+        User requestingUser = userService.getUserByUsername(principal.getName());
+        User targetUser = userService.getUserByUsername(username);
+        boolean canAccess = requestingUser.getId().equals(targetUser.getId()) ||
+                requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
+                (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
+                        requestingUser.getCompany() != null && targetUser.getCompany() != null &&
+                        requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()));
+        if (!canAccess) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(timeTrackingService.getUserPeriodSummary(targetUser, startDate, endDate));
     }
 
     @GetMapping("/report")

@@ -17,6 +17,7 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional; // NEU
@@ -40,6 +41,33 @@ public class WorkScheduleService {
 
     private static final double BASE_FULL_TIME_WEEKLY_HOURS = 42.5;
 
+    public static final class ExpectedWorkContext {
+        private final List<SickLeave> sickLeaves;
+        private final List<UserScheduleRule> scheduleRules;
+        private final Map<LocalDate, UserHolidayOption> holidayOptions;
+
+        private ExpectedWorkContext(
+                List<SickLeave> sickLeaves,
+                List<UserScheduleRule> scheduleRules,
+                Map<LocalDate, UserHolidayOption> holidayOptions
+        ) {
+            this.sickLeaves = sickLeaves;
+            this.scheduleRules = scheduleRules;
+            this.holidayOptions = holidayOptions;
+        }
+    }
+
+    public ExpectedWorkContext loadExpectedWorkContext(User user, LocalDate startDate, LocalDate endDate) {
+        List<SickLeave> sickLeaves = sickLeaveRepository.findByUser(user);
+        List<UserScheduleRule> scheduleRules = ruleRepo.findByUser(user);
+        Map<LocalDate, UserHolidayOption> holidayOptions = new HashMap<>();
+        if (startDate != null && endDate != null && !startDate.isAfter(endDate)) {
+            userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, startDate, endDate)
+                    .forEach(option -> holidayOptions.put(option.getHolidayDate(), option));
+        }
+        return new ExpectedWorkContext(sickLeaves, scheduleRules, holidayOptions);
+    }
+
 
     private double applyPercentage(User user, double hours) {
         if (Boolean.TRUE.equals(user.getIsPercentage())
@@ -52,15 +80,22 @@ public class WorkScheduleService {
     // Bitte DIESE komplette Methode kopieren und die bestehende Methode ersetzen
 
     public double getExpectedWorkHours(User user, LocalDate date) {
+        return getExpectedWorkHours(user, date, null);
+    }
+
+    private double getExpectedWorkHours(User user, LocalDate date, List<UserScheduleRule> preloadedRules) {
+        if (isBeforeEntryDate(user, date)) {
+            return 0.0;
+        }
         // ====================== START DEBUG-CODE ======================
         // Dieser Block schreibt bei jedem Aufruf eine Log-Nachricht.
-        logger.info("[CHRONO-DEBUG] getExpectedWorkHours wird aufgerufen für Benutzer: '{}', isHourly: {}, für Datum: {}",
+        logger.debug("getExpectedWorkHours for user '{}', isHourly: {}, date: {}",
                 user.getUsername(), user.getIsHourly(), date.toString());
         // ======================= ENDE DEBUG-CODE =======================
 
         // Der eigentliche Fix: Prüft, ob der Benutzer auf Stundenbasis arbeitet.
         if (Boolean.TRUE.equals(user.getIsHourly())) {
-            logger.info("[CHRONO-DEBUG] Benutzer '{}' ist 'isHourly'. Erwartete Stunden werden auf 0.0 gesetzt.", user.getUsername());
+            logger.debug("User '{}' is hourly. Expected hours are 0.", user.getUsername());
             return 0.0;
         }
 
@@ -102,12 +137,14 @@ public class WorkScheduleService {
         }
 
         // ====================== START DEBUG-CODE ======================
-        logger.info("[CHRONO-DEBUG] Für Benutzer: '{}', Datum: {}, berechnete Soll-Stunden: {}", user.getUsername(), date.toString(), baseHours);
+        logger.debug("Expected base hours for user '{}' on {}: {}", user.getUsername(), date, baseHours);
         // ======================= ENDE DEBUG-CODE =======================
 
         boolean companyHoliday = isHolidayForUser(user, date);
         boolean companyHolidayHalfDay = isHalfDayHolidayForUser(user, date);
-        boolean scheduleHalfDay = isHalfDay(user, date);
+        boolean scheduleHalfDay = preloadedRules == null
+                ? isHalfDay(user, date)
+                : isHalfDay(user, date, preloadedRules);
 
         if (!Boolean.TRUE.equals(user.getIsPercentage()) && companyHoliday) {
             if (!companyHolidayHalfDay) {
@@ -156,6 +193,10 @@ public class WorkScheduleService {
 
         for (LocalDate d = effectiveStart; !d.isAfter(effectiveEnd); d = d.plusDays(1)) {
             final LocalDate currentDate = d;
+
+            if (isBeforeEntryDate(user, d)) {
+                continue;
+            }
 
             if (!isModeledPercentageWorkDay(d, modeledWorkDays)) {
                 continue;
@@ -250,6 +291,29 @@ public class WorkScheduleService {
 
 
     public int computeExpectedWorkMinutes(User user, LocalDate date, List<VacationRequest> approvedVacationsForUser) {
+        if (isBeforeEntryDate(user, date)) {
+            return 0;
+        }
+        return computeExpectedWorkMinutes(
+                user,
+                date,
+                approvedVacationsForUser,
+                loadExpectedWorkContext(user, date, date)
+        );
+    }
+
+    public int computeExpectedWorkMinutes(
+            User user,
+            LocalDate date,
+            List<VacationRequest> approvedVacationsForUser,
+            ExpectedWorkContext context
+    ) {
+        if (isBeforeEntryDate(user, date)) {
+            return 0;
+        }
+        ExpectedWorkContext safeContext = context != null
+                ? context
+                : loadExpectedWorkContext(user, date, date);
         // Logik für prozentuale Mitarbeiter (Wochenbasis wird im TimeTrackingService gehandhabt)
         // Hier geben wir den "theoretischen" Tageswert zurück, unter Berücksichtigung von Abwesenheiten,
         // damit TimeTrackingService.computeDailyWorkDifference dies für die Saldenberechnung nutzen kann,
@@ -262,7 +326,7 @@ public class WorkScheduleService {
                 }
             }
             // Prüfe auf ganztägige Krankheit
-            List<SickLeave> sickLeaves = sickLeaveRepository.findByUser(user);
+            List<SickLeave> sickLeaves = safeContext.sickLeaves;
             for (SickLeave sick : sickLeaves) {
                 if (!date.isBefore(sick.getStartDate()) && !date.isAfter(sick.getEndDate())) {
                     if (!sick.isHalfDay()) return 0; // Ganzer Tag krank -> 0 Soll
@@ -281,9 +345,10 @@ public class WorkScheduleService {
             int dailyMinutes = (int) Math.round((percentageWeeklyHours / modeledWorkDays) * 60);
 
             if (percentageHoliday) {
-                UserHolidayOption.HolidayHandlingOption handling = userHolidayOptionRepository.findByUserAndHolidayDate(user, date)
-                        .map(UserHolidayOption::getHolidayHandlingOption)
-                        .orElse(UserHolidayOption.HolidayHandlingOption.PENDING_DECISION);
+                UserHolidayOption option = safeContext.holidayOptions.get(date);
+                UserHolidayOption.HolidayHandlingOption handling = option != null
+                        ? option.getHolidayHandlingOption()
+                        : UserHolidayOption.HolidayHandlingOption.PENDING_DECISION;
                 if (handling == UserHolidayOption.HolidayHandlingOption.DEDUCT_FROM_WEEKLY_TARGET) {
                     return percentageHalfDayHoliday ? dailyMinutes / 2 : 0;
                 }
@@ -306,9 +371,9 @@ public class WorkScheduleService {
 
         // Logik für Standard-User (nicht prozentual)
         // 1. Ist der Tag komplett frei (Feiertag, Wochenende ohne geplante Arbeit)?
-        if (isDayOff(user, date)) {
-            if ("Chantale".equals(user.getUsername())) {
-                logger.info("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, isDayOff() ist true -> Soll: 0 Min.", user.getUsername(), date);
+        if (isDayOff(user, date, safeContext)) {
+            if (logger.isTraceEnabled()) {
+                logger.trace("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, isDayOff() ist true -> Soll: 0 Min.", user.getUsername(), date);
             }
             return 0;
         }
@@ -317,8 +382,8 @@ public class WorkScheduleService {
         for (VacationRequest vr : approvedVacationsForUser) {
             if (!date.isBefore(vr.getStartDate()) && !date.isAfter(vr.getEndDate())) {
                 if (!vr.isHalfDay()) { // Ganzer Tag Urlaub
-                    if ("Chantale".equals(user.getUsername())) {
-                        logger.info("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, ganztägiger Urlaub -> Soll: 0 Min.", user.getUsername(), date);
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, ganztägiger Urlaub -> Soll: 0 Min.", user.getUsername(), date);
                     }
                     return 0;
                 }
@@ -326,12 +391,12 @@ public class WorkScheduleService {
         }
 
         // 3. Ganztägige Krankheit?
-        List<SickLeave> sickLeaves = sickLeaveRepository.findByUser(user);
+        List<SickLeave> sickLeaves = safeContext.sickLeaves;
         for (SickLeave sick : sickLeaves) {
             if (!date.isBefore(sick.getStartDate()) && !date.isAfter(sick.getEndDate())) {
                 if (!sick.isHalfDay()) { // Ganzer Tag krank
-                    if ("Chantale".equals(user.getUsername())) {
-                        logger.info("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, ganztägige Krankheit -> Soll: 0 Min.", user.getUsername(), date);
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, ganztägige Krankheit -> Soll: 0 Min.", user.getUsername(), date);
                     }
                     return 0;
                 }
@@ -339,9 +404,9 @@ public class WorkScheduleService {
         }
 
         // 4. Basissoll für den Tag holen (berücksichtigt Wochenplan)
-        double expectedHoursFullDay = getExpectedWorkHours(user, date);
-        if ("Chantale".equals(user.getUsername())) {
-            logger.info("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, Basissoll (getExpectedWorkHours): {}h", user.getUsername(), date, expectedHoursFullDay);
+        double expectedHoursFullDay = getExpectedWorkHours(user, date, safeContext.scheduleRules);
+        if (logger.isTraceEnabled()) {
+            logger.trace("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, Basissoll (getExpectedWorkHours): {}h", user.getUsername(), date, expectedHoursFullDay);
         }
 
 
@@ -350,8 +415,8 @@ public class WorkScheduleService {
             if (!date.isBefore(vr.getStartDate()) && !date.isAfter(vr.getEndDate())) {
                 if (vr.isHalfDay()) {
                     int halfDaySoll = (int) Math.round((expectedHoursFullDay / 2.0) * 60);
-                    if ("Chantale".equals(user.getUsername())) {
-                        logger.info("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, halber Tag Urlaub -> Soll: {} Min.", user.getUsername(), date, halfDaySoll);
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, halber Tag Urlaub -> Soll: {} Min.", user.getUsername(), date, halfDaySoll);
                     }
                     return halfDaySoll;
                 }
@@ -361,8 +426,8 @@ public class WorkScheduleService {
             if (!date.isBefore(sick.getStartDate()) && !date.isAfter(sick.getEndDate())) {
                 if (sick.isHalfDay()) {
                     int halfDaySoll = (int) Math.round((expectedHoursFullDay / 2.0) * 60);
-                    if ("Chantale".equals(user.getUsername())) {
-                        logger.info("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, halber Tag Krankheit -> Soll: {} Min.", user.getUsername(), date, halfDaySoll);
+                    if (logger.isTraceEnabled()) {
+                        logger.trace("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, halber Tag Krankheit -> Soll: {} Min.", user.getUsername(), date, halfDaySoll);
                     }
                     return halfDaySoll;
                 }
@@ -371,23 +436,30 @@ public class WorkScheduleService {
 
         // 6. Wenn keine der obigen Bedingungen zutrifft, volles Tagessoll
         int finalSoll = (int) Math.round(expectedHoursFullDay * 60);
-        if ("Chantale".equals(user.getUsername())) {
-            logger.info("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, reguläres volles Soll -> {} Min.", user.getUsername(), date, finalSoll);
+        if (logger.isTraceEnabled()) {
+            logger.trace("[User: {}] WorkScheduleService.computeExpectedWorkMinutes (Standard): Datum {}, reguläres volles Soll -> {} Min.", user.getUsername(), date, finalSoll);
         }
         return finalSoll;
     }
 
     public boolean isDayOff(User user, LocalDate date) {
+        return isDayOff(user, date, loadExpectedWorkContext(user, date, date));
+    }
+
+    private boolean isDayOff(User user, LocalDate date, ExpectedWorkContext context) {
+        if (isBeforeEntryDate(user, date)) {
+            return true;
+        }
         if (isHolidayForUser(user, date)) {
             if (isHalfDayHolidayForUser(user, date)) {
                 logger.debug("Date {} is a half-day holiday for user {}. isDayOff returns false.", date, user.getUsername());
                 return false;
             }
             if (Boolean.TRUE.equals(user.getIsPercentage())) {
-                Optional<UserHolidayOption> holidayOptionOpt = userHolidayOptionRepository.findByUserAndHolidayDate(user, date);
-                UserHolidayOption.HolidayHandlingOption handling = holidayOptionOpt
-                        .map(UserHolidayOption::getHolidayHandlingOption)
-                        .orElse(UserHolidayOption.HolidayHandlingOption.PENDING_DECISION);
+                UserHolidayOption option = context.holidayOptions.get(date);
+                UserHolidayOption.HolidayHandlingOption handling = option != null
+                        ? option.getHolidayHandlingOption()
+                        : UserHolidayOption.HolidayHandlingOption.PENDING_DECISION;
                 if (handling == UserHolidayOption.HolidayHandlingOption.DEDUCT_FROM_WEEKLY_TARGET) {
                     logger.debug("Date {} is a holiday and DEDUCTS from target for percentage user {}. isDayOff returns true.", date, user.getUsername());
                     return true;
@@ -404,7 +476,7 @@ public class WorkScheduleService {
         DayOfWeek day = date.getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
             if (!Boolean.TRUE.equals(user.getIsPercentage())) {
-                double expectedHoursOnWeekend = getExpectedWorkHours(user, date);
+                double expectedHoursOnWeekend = getExpectedWorkHours(user, date, context.scheduleRules);
                 if (expectedHoursOnWeekend > 0) {
                     logger.trace("Date {} is a weekend, but user {} has scheduled hours. isDayOff returns false.", date, user.getUsername());
                     return false;
@@ -435,7 +507,10 @@ public class WorkScheduleService {
 
 
     public boolean isHalfDay(User user, LocalDate date) {
-        List<UserScheduleRule> rules = ruleRepo.findByUser(user);
+        return isHalfDay(user, date, ruleRepo.findByUser(user));
+    }
+
+    private boolean isHalfDay(User user, LocalDate date, List<UserScheduleRule> rules) {
         for (UserScheduleRule rule : rules) {
             if (rule.getDayMode() == null || !"HALF_DAY".equalsIgnoreCase(rule.getDayMode())) {
                 continue;
@@ -461,5 +536,9 @@ public class WorkScheduleService {
             }
         }
         return false;
+    }
+
+    private boolean isBeforeEntryDate(User user, LocalDate date) {
+        return user != null && date != null && user.getEntryDate() != null && date.isBefore(user.getEntryDate());
     }
 }

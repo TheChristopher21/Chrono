@@ -20,8 +20,6 @@ import {
     formatDate,
     formatTime,
     minutesToHHMM,
-    getDatesUpToReferenceDate,
-    calculateExpectedPercentageMinutesForDates,
     parseHex16,
     sortEntries
 } from './percentageDashUtils';
@@ -31,6 +29,9 @@ import PercentageVacationSection from './PercentageVacationSection';
 import PercentageCorrectionsPanel from './PercentageCorrectionsPanel';
 import CorrectionModal from '../../components/CorrectionModal';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
+import {
+    CALCULATION_STATUS,
+} from '../../components/CalculationStatusNotice.jsx';
 
 // Einheitliche Styles importieren
 import '../../styles/PercentageDashboardScoped.css'; // <— NEU: spezifische Fixes für Percentage
@@ -65,6 +66,8 @@ const PercentageDashboard = () => {
     const [correctionRequests, setCorrectionRequests] = useState([]);
     const [sickLeaves, setSickLeaves] = useState([]);
     const [holidaysForUserCanton, setHolidaysForUserCanton] = useState({ data: {}, year: null, canton: null });
+    const [weekPeriodSummary, setWeekPeriodSummary] = useState(null);
+    const [weekPeriodStatus, setWeekPeriodStatus] = useState(CALCULATION_STATUS.IDLE);
 
     const [showCorrectionsPanel, setShowCorrectionsPanel] = useState(false);
     const [showAllCorrections, setShowAllCorrections] = useState(false);
@@ -155,6 +158,35 @@ const PercentageDashboard = () => {
         }
     }, [userProfile, notify, t]);
 
+    const fetchWeekPeriodSummary = useCallback(async () => {
+        if (!userProfile?.username) {
+            setWeekPeriodSummary(null);
+            setWeekPeriodStatus(CALCULATION_STATUS.IDLE);
+            return;
+        }
+        const startDate = formatLocalDate(selectedMonday);
+        const weekEndDate = formatLocalDate(addDays(selectedMonday, 6));
+        const endDate = [weekEndDate, formatLocalDate(new Date())].sort()[0];
+        if (endDate < startDate) {
+            setWeekPeriodSummary({ workedMinutes: 0, breakMinutes: 0, expectedMinutes: 0, differenceMinutes: 0, dailySummaries: [] });
+            setWeekPeriodStatus(CALCULATION_STATUS.READY);
+            return;
+        }
+        setWeekPeriodSummary(null);
+        setWeekPeriodStatus(CALCULATION_STATUS.LOADING);
+        try {
+            const response = await api.get('/api/timetracking/period-summary', {
+                params: { username: userProfile.username, startDate, endDate }
+            });
+            setWeekPeriodSummary(response.data || null);
+            setWeekPeriodStatus(response.data ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+        } catch (error) {
+            console.error('Fehler beim Laden der Backend-Wochenberechnung (Percentage):', error);
+            setWeekPeriodSummary(null);
+            setWeekPeriodStatus(CALCULATION_STATUS.ERROR);
+        }
+    }, [selectedMonday, userProfile?.username]);
+
     const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
         if (holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
@@ -173,10 +205,11 @@ const PercentageDashboard = () => {
     useEffect(() => {
         if (userProfile) {
             fetchDataForUser();
+            fetchWeekPeriodSummary();
             const cantonAbbr = userProfile.company?.cantonAbbreviation || userProfile.companyCantonAbbreviation;
             fetchHolidaysForUser(selectedMonday.getFullYear(), cantonAbbr || '');
         }
-    }, [userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
+    }, [userProfile, fetchDataForUser, fetchWeekPeriodSummary, fetchHolidaysForUser, selectedMonday]);
 
     useEffect(() => {
         const interval = setInterval(doNfcCheck, 2000);
@@ -222,6 +255,7 @@ const PercentageDashboard = () => {
             const newEntry = response.data;
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.'+newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
             fetchDataForUser();
+            fetchWeekPeriodSummary();
         } catch (error) {
             console.error('Punch Error:', error);
             notify(error.message || t('punchError', 'Fehler beim Stempeln'), 'error');
@@ -327,28 +361,9 @@ const PercentageDashboard = () => {
     }
 
     const weekDatesForOverview = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
-    const weekDatesForTotals = getDatesUpToReferenceDate(weekDatesForOverview);
-    const workedDateSetForWeek = new Set(
-        weekDatesForOverview
-            .map(dayObj => {
-                const isoDate = formatLocalDate(dayObj);
-                const summary = dailySummaries.find(s => s.date === isoDate);
-                return ((summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0) ? isoDate : null;
-            })
-            .filter(Boolean)
-    );
-    const weeklyWorked = weekDatesForTotals.reduce((sum, dayObj) => {
-        const isoDate = formatLocalDate(dayObj);
-        const summary = dailySummaries.find(s => s.date === isoDate);
-        return sum + (summary?.workedMinutes || 0);
-    }, 0);
-    const weeklyExpected = calculateExpectedPercentageMinutesForDates(userProfile, weekDatesForTotals, {
-        holidaysForUserCanton: holidaysForUserCanton?.data || {},
-        vacationRequests,
-        sickLeaves,
-        workedDateSet: workedDateSetForWeek,
-    });
-    const weeklyDiff = weeklyWorked - weeklyExpected;
+    const weeklyWorked = Number.isFinite(weekPeriodSummary?.workedMinutes) ? weekPeriodSummary.workedMinutes : null;
+    const weeklyExpected = Number.isFinite(weekPeriodSummary?.expectedMinutes) ? weekPeriodSummary.expectedMinutes : null;
+    const weeklyDiff = Number.isFinite(weekPeriodSummary?.differenceMinutes) ? weekPeriodSummary.differenceMinutes : null;
     const overtimeBalanceStr = minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0);
 
     if (!userProfile) {
@@ -399,6 +414,7 @@ const PercentageDashboard = () => {
                     weeklyWorked={weeklyWorked}
                     weeklyExpected={weeklyExpected}
                     weeklyDiff={weeklyDiff}
+                    calculationStatus={weekPeriodStatus}
                     handleManualPunch={handleManualPunch}
                     openCorrectionModal={openCorrectionModalForDay}
                     userProfile={userProfile}

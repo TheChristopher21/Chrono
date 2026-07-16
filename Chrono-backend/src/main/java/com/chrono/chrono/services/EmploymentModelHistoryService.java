@@ -30,6 +30,31 @@ public class EmploymentModelHistoryService {
     }
 
     public User resolveUserSnapshotForDate(User user, LocalDate date) {
+        return createUserSnapshot(user, resolveHistoryForDate(user, date).orElse(null));
+    }
+
+    public Map<LocalDate, User> resolveUserSnapshotsForRange(User user, LocalDate startDate, LocalDate endDate) {
+        Map<LocalDate, User> snapshots = new HashMap<>();
+        if (user == null || startDate == null || endDate == null || startDate.isAfter(endDate)) {
+            return snapshots;
+        }
+
+        List<UserEmploymentModelHistory> history = historyRepository.findByUserOrderByEffectiveFromAsc(user);
+        UserEmploymentModelHistory active = history.isEmpty() ? null : history.get(0);
+        int nextIndex = 0;
+
+        for (LocalDate date = startDate; !date.isAfter(endDate); date = date.plusDays(1)) {
+            while (nextIndex < history.size()
+                    && !history.get(nextIndex).getEffectiveFrom().isAfter(date)) {
+                active = history.get(nextIndex);
+                nextIndex++;
+            }
+            snapshots.put(date, createUserSnapshot(user, active));
+        }
+        return snapshots;
+    }
+
+    private User createUserSnapshot(User user, UserEmploymentModelHistory history) {
         User snapshot = new User();
         snapshot.setId(user.getId());
         snapshot.setUsername(user.getUsername());
@@ -46,12 +71,10 @@ public class EmploymentModelHistoryService {
         snapshot.setBreakDuration(user.getBreakDuration());
         snapshot.setAnnualVacationDays(user.getAnnualVacationDays());
 
-        Optional<UserEmploymentModelHistory> historyOpt = resolveHistoryForDate(user, date);
-        if (historyOpt.isEmpty()) {
+        if (history == null) {
             return snapshot;
         }
 
-        UserEmploymentModelHistory history = historyOpt.get();
         snapshot.setIsHourly(history.getModelType() == EmploymentModelType.HOURLY);
         snapshot.setIsPercentage(history.getModelType() == EmploymentModelType.PERCENTAGE);
         snapshot.setWorkPercentage(history.getWorkPercentage());

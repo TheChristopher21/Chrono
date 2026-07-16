@@ -1,6 +1,7 @@
 package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
+import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.Customer;
@@ -38,6 +39,7 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.argThat;
@@ -114,6 +116,62 @@ class TimeTrackingServiceTest {
         assertEquals(LocalTime.of(17, 0), summary.getPrimaryTimes().getLastEndTime());
         assertFalse(summary.getPrimaryTimes().isOpen());
         assertEquals(4, summary.getEntries().size());
+    }
+
+    @Test
+    void getDailySummary_includesExpectedAndDifferenceMinutes() {
+        TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, date.atTime(16, 0), TimeTrackingEntry.PunchType.ENDE);
+
+        when(userRepository.findByUsername("alice")).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date))
+                .thenReturn(List.of(start, end));
+        when(dailyNoteRepository.findByUserAndNoteDate(user, date)).thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), eq(date), any())).thenReturn(480);
+
+        DailyTimeSummaryDTO summary = timeTrackingService.getDailySummary("alice", date);
+
+        assertEquals(480, summary.getExpectedMinutes());
+        assertEquals(-60, summary.getDifferenceMinutes());
+        assertTrue(summary.getHasTrackedEntries());
+    }
+
+    @Test
+    void getUserPeriodSummary_includesEmptyDaysAndAggregatesBackendValues() {
+        LocalDate endDate = date.plusDays(1);
+        TimeTrackingEntry start = entry(user, date.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, date.atTime(16, 0), TimeTrackingEntry.PunchType.ENDE);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(
+                user, date.atStartOfDay(), endDate.plusDays(1).atStartOfDay()))
+                .thenReturn(List.of(start, end));
+        when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class)))
+                .thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), any(LocalDate.class), any()))
+                .thenReturn(480);
+
+        TimePeriodSummaryDTO summary = timeTrackingService.getUserPeriodSummary(user, date, endDate);
+
+        assertEquals(420, summary.getWorkedMinutes());
+        assertEquals(0, summary.getBreakMinutes());
+        assertEquals(960, summary.getExpectedMinutes());
+        assertEquals(-540, summary.getDifferenceMinutes());
+        assertEquals(2, summary.getDailySummaries().size());
+        assertTrue(summary.getDailySummaries().get(0).getHasTrackedEntries());
+        assertFalse(summary.getDailySummaries().get(1).getHasTrackedEntries());
+        assertEquals(480, summary.getDailySummaries().get(1).getExpectedMinutes());
+        assertEquals(-480, summary.getDailySummaries().get(1).getDifferenceMinutes());
+    }
+
+    @Test
+    void getUserPeriodSummary_rejectsRangesLongerThanOneYear() {
+        LocalDate endDate = date.plusDays(366);
+
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> timeTrackingService.getUserPeriodSummary(user, date, endDate)
+        );
     }
 
     @Test

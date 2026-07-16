@@ -2,6 +2,7 @@ package com.chrono.chrono.services;
 
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
 import com.chrono.chrono.dto.TimeReportDTO;
+import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.dto.TimeTrackingImportRowDTO;
 import com.chrono.chrono.entities.TimeTrackingEntry;
@@ -45,6 +46,7 @@ import java.util.Objects;
 @Service
 public class TimeTrackingService {
     private static final Logger logger = LoggerFactory.getLogger(TimeTrackingService.class);
+    private static final long MAX_PERIOD_DAYS = 366;
 
     @Autowired
     private TimeTrackingEntryRepository timeTrackingEntryRepository;
@@ -464,7 +466,10 @@ public class TimeTrackingService {
         List<TimeTrackingEntry> entries = sortEntriesChronologically(
                 timeTrackingEntryRepository.findByUserAndEntryDateOrderByEntryTimestampAsc(user, date)
         );
-        return calculateDailySummaryFromEntries(entries, user, date);
+        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(user);
+        User effectiveUser = resolveEffectiveUserForBalanceDate(user, date, null);
+        WorkScheduleService.ExpectedWorkContext context = workScheduleService.loadExpectedWorkContext(user, date, date);
+        return calculateDailySummaryWithExpected(entries, user, effectiveUser, date, approvedVacations, context);
     }
 
     public List<TimeTrackingEntry> getTimeTrackingEntriesForUserAndDate(User user, LocalDate date) {
@@ -491,6 +496,92 @@ public class TimeTrackingService {
                     return calculateDailySummaryFromEntries(dailyEntriesSortedAsc, user, entry.getKey());
                 })
                 .collect(Collectors.toList()); // Die resultierende Liste ist nach Datum absteigend sortiert wegen TreeMap
+    }
+
+    public List<DailyTimeSummaryDTO> getUserHistory(String username, LocalDate startDate, LocalDate endDate) {
+        User user = loadUserByUsername(username);
+        return getUserHistory(user, startDate, endDate);
+    }
+
+    public List<DailyTimeSummaryDTO> getUserHistory(User user, LocalDate startDate, LocalDate endDate) {
+        if (startDate == null || endDate == null) {
+            return Collections.emptyList();
+        }
+        LocalDate start = startDate.isAfter(endDate) ? endDate : startDate;
+        LocalDate end = endDate.isBefore(startDate) ? startDate : endDate;
+        long periodDays = ChronoUnit.DAYS.between(start, end) + 1;
+        if (periodDays > MAX_PERIOD_DAYS) {
+            throw new IllegalArgumentException("Der angefragte Zeitraum darf maximal 366 Tage umfassen.");
+        }
+        User freshUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + user.getUsername()));
+
+        List<TimeTrackingEntry> entries = timeTrackingEntryRepository
+                .findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(
+                        freshUser,
+                        start.atStartOfDay(),
+                        end.plusDays(1).atStartOfDay()
+                );
+        Map<LocalDate, List<TimeTrackingEntry>> entriesByDate = entries.stream()
+                .filter(entry -> entry.getEntryDate() != null)
+                .collect(Collectors.groupingBy(TimeTrackingEntry::getEntryDate));
+        List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(freshUser);
+        Map<LocalDate, User> effectiveUsers = employmentModelHistoryService != null
+                ? employmentModelHistoryService.resolveUserSnapshotsForRange(freshUser, start, end)
+                : Collections.emptyMap();
+        if (effectiveUsers == null) {
+            effectiveUsers = Collections.emptyMap();
+        }
+        WorkScheduleService.ExpectedWorkContext context = workScheduleService.loadExpectedWorkContext(freshUser, start, end);
+
+        List<DailyTimeSummaryDTO> summaries = new ArrayList<>();
+        for (LocalDate date = start; !date.isAfter(end); date = date.plusDays(1)) {
+            List<TimeTrackingEntry> dailyEntries = sortEntriesChronologically(
+                    entriesByDate.getOrDefault(date, Collections.emptyList())
+            );
+            User effectiveUser = effectiveUsers.getOrDefault(date, freshUser);
+            summaries.add(calculateDailySummaryWithExpected(
+                    dailyEntries,
+                    freshUser,
+                    effectiveUser,
+                    date,
+                    approvedVacations,
+                    context
+            ));
+        }
+        return summaries;
+    }
+
+    public TimePeriodSummaryDTO getUserPeriodSummary(User user, LocalDate startDate, LocalDate endDate) {
+        List<DailyTimeSummaryDTO> summaries = getUserHistory(user, startDate, endDate);
+        int workedMinutes = summaries.stream().mapToInt(DailyTimeSummaryDTO::getWorkedMinutes).sum();
+        int breakMinutes = summaries.stream().mapToInt(DailyTimeSummaryDTO::getBreakMinutes).sum();
+        int expectedMinutes = summaries.stream()
+                .map(DailyTimeSummaryDTO::getExpectedMinutes)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+        int differenceMinutes = summaries.stream()
+                .map(DailyTimeSummaryDTO::getDifferenceMinutes)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .sum();
+        User freshUser = userRepository.findById(user.getId())
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + user.getUsername()));
+        LocalDate start = startDate != null && endDate != null && startDate.isAfter(endDate) ? endDate : startDate;
+        LocalDate end = startDate != null && endDate != null && endDate.isBefore(startDate) ? startDate : endDate;
+
+        return new TimePeriodSummaryDTO(
+                freshUser.getUsername(),
+                start,
+                end,
+                workedMinutes,
+                breakMinutes,
+                expectedMinutes,
+                differenceMinutes,
+                freshUser.getTrackingBalanceInMinutes(),
+                summaries
+        );
     }
 
     private List<TimeTrackingEntry> sortEntriesChronologically(List<TimeTrackingEntry> entries) {
@@ -582,6 +673,63 @@ public class TimeTrackingService {
                 needsCorrection,
                 getPrimaryPunchTimes(orderedEntries)
         );
+    }
+
+    private DailyTimeSummaryDTO calculateDailySummaryWithExpected(
+            List<TimeTrackingEntry> entries,
+            User displayUser,
+            User scheduleUser,
+            LocalDate date,
+            List<VacationRequest> approvedVacations
+    ) {
+        return calculateDailySummaryWithExpected(
+                entries,
+                displayUser,
+                scheduleUser,
+                date,
+                approvedVacations,
+                null
+        );
+    }
+
+    private DailyTimeSummaryDTO calculateDailySummaryWithExpected(
+            List<TimeTrackingEntry> entries,
+            User displayUser,
+            User scheduleUser,
+            LocalDate date,
+            List<VacationRequest> approvedVacations,
+            WorkScheduleService.ExpectedWorkContext context
+    ) {
+        DailyTimeSummaryDTO summary = calculateDailySummaryFromEntries(entries, displayUser, date);
+        List<TimeTrackingEntry> safeEntries = entries != null ? entries : Collections.emptyList();
+        List<VacationRequest> safeVacations = approvedVacations != null ? approvedVacations : Collections.emptyList();
+        boolean hasTrackedEntries = summary.getWorkedMinutes() > 0 || !safeEntries.isEmpty();
+
+        List<VacationRequest> vacationsForExpectedMinutes = safeVacations;
+        if (hasTrackedEntries) {
+            vacationsForExpectedMinutes = safeVacations.stream()
+                    .filter(vr -> date.isBefore(vr.getStartDate()) || date.isAfter(vr.getEndDate()))
+                    .collect(Collectors.toList());
+        }
+
+        User effectiveScheduleUser = scheduleUser != null ? scheduleUser : displayUser;
+        int expectedMinutes = context == null
+                ? workScheduleService.computeExpectedWorkMinutes(
+                    effectiveScheduleUser,
+                    date,
+                    vacationsForExpectedMinutes
+                )
+                : workScheduleService.computeExpectedWorkMinutes(
+                    effectiveScheduleUser,
+                    date,
+                    vacationsForExpectedMinutes,
+                    context
+                );
+
+        summary.setExpectedMinutes(expectedMinutes);
+        summary.setDifferenceMinutes(summary.getWorkedMinutes() - expectedMinutes);
+        summary.setHasTrackedEntries(hasTrackedEntries);
+        return summary;
     }
 
     @Transactional
@@ -713,10 +861,10 @@ public class TimeTrackingService {
                             .stream().sorted(Comparator.comparing(TimeTrackingEntry::getEntryTimestamp)).collect(Collectors.toList());
                     int dailyDifference = computeDailyWorkDifference(effectiveUser, d, approvedVacations, entriesForDay);
                     totalMinutesBalance += dailyDifference;
-                    if ("Chantale".equals(freshUser.getUsername()) || logger.isTraceEnabled()) { // Debugging
+                    if (logger.isTraceEnabled()) {
                         DailyTimeSummaryDTO summary = calculateDailySummaryFromEntries(entriesForDay, effectiveUser, d);
                         int expected = workScheduleService.computeExpectedWorkMinutes(effectiveUser, d, approvedVacations);
-                        logger.info("[User: {}] Saldo Tag {}: Ist: {}min, Soll: {}min, Diff: {}min, Saldo bisher: {}min",
+                        logger.trace("[User: {}] Saldo Tag {}: Ist: {}min, Soll: {}min, Diff: {}min, Saldo bisher: {}min",
                                 freshUser.getUsername(), d, summary.getWorkedMinutes(), expected, dailyDifference, totalMinutesBalance - dailyDifference);
                     }
                     currentBalanceDay = currentBalanceDay.plusDays(1);
@@ -794,18 +942,8 @@ public class TimeTrackingService {
     }
 
     public int computeDailyWorkDifference(User user, LocalDate date, List<VacationRequest> approvedVacations, List<TimeTrackingEntry> entriesForDay) {
-        DailyTimeSummaryDTO summary = calculateDailySummaryFromEntries(entriesForDay, user, date);
-        int workedMinutes = summary.getWorkedMinutes();
-        List<VacationRequest> vacationsForExpectedMinutes = approvedVacations;
-        boolean hasWorkedEntries = workedMinutes > 0 || !entriesForDay.isEmpty();
-        if (hasWorkedEntries) {
-            vacationsForExpectedMinutes = approvedVacations.stream()
-                    .filter(vr -> date.isBefore(vr.getStartDate()) || date.isAfter(vr.getEndDate()))
-                    .collect(Collectors.toList());
-        }
-
-        int adjustedExpectedMinutes = workScheduleService.computeExpectedWorkMinutes(user, date, vacationsForExpectedMinutes);
-        return workedMinutes - adjustedExpectedMinutes;
+        DailyTimeSummaryDTO summary = calculateDailySummaryWithExpected(entriesForDay, user, user, date, approvedVacations);
+        return summary.getDifferenceMinutes() != null ? summary.getDifferenceMinutes() : 0;
     }
 
     private List<VacationRequest> expandVacationsExcludingWorkedDays(List<VacationRequest> vacations,

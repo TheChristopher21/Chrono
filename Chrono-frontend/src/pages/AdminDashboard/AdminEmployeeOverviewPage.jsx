@@ -16,11 +16,13 @@ import {
     getMondayOfWeek,
     addDays,
     minutesToHHMM,
-    getExpectedHoursForDay,
-    calculateWeeklyExpectedMinutes,
     getDetailedGlobalProblemIndicators,
     getDatesUpToReferenceDate,
 } from './adminDashboardUtils';
+import CalculationStatusNotice, {
+    CALCULATION_STATUS,
+    formatCalculatedMinutes,
+} from '../../components/CalculationStatusNotice.jsx';
 import '../../styles/AdminEmployeeOverviewScoped.css';
 
 const isWorkDay = (dateObj) => {
@@ -197,6 +199,8 @@ const AdminEmployeeOverviewPage = () => {
     const [trackingBalances, setTrackingBalances] = useState([]);
     const [sickLeaves, setSickLeaves] = useState([]);
     const [holidaysForEmployee, setHolidaysForEmployee] = useState({});
+    const [backendPeriodSummary, setBackendPeriodSummary] = useState(null);
+    const [backendPeriodStatus, setBackendPeriodStatus] = useState(CALCULATION_STATUS.IDLE);
 
     const [decisionNotes, setDecisionNotes] = useState({});
 
@@ -311,6 +315,40 @@ const AdminEmployeeOverviewPage = () => {
     );
 
     useEffect(() => {
+        if (!employee?.username || accountingVisibleDates.length === 0) {
+            setBackendPeriodSummary(null);
+            setBackendPeriodStatus(CALCULATION_STATUS.IDLE);
+            return undefined;
+        }
+
+        const startDate = accountingVisibleDates[0];
+        const endDate = accountingVisibleDates[accountingVisibleDates.length - 1];
+        let cancelled = false;
+        setBackendPeriodSummary(null);
+        setBackendPeriodStatus(CALCULATION_STATUS.LOADING);
+
+        api.get('/api/timetracking/period-summary', {
+            params: { username: employee.username, startDate, endDate },
+        })
+            .then((response) => {
+                if (cancelled) return;
+                setBackendPeriodSummary(response.data || null);
+                setBackendPeriodStatus(response.data ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.error('Fehler beim Laden der Backend-Zeitraumwerte:', error);
+                    setBackendPeriodSummary(null);
+                    setBackendPeriodStatus(CALCULATION_STATUS.ERROR);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [employee?.username, accountingVisibleDates]);
+
+    useEffect(() => {
         const fetchHolidayDetails = async () => {
             if (!employee) {
                 setHolidaysForEmployee({});
@@ -353,11 +391,6 @@ const AdminEmployeeOverviewPage = () => {
         () => employeeSummaries.filter((entry) => visibleDates.includes(entry?.date)),
         [employeeSummaries, visibleDates],
     );
-    const accountingPeriodSummaries = useMemo(
-        () => employeeSummaries.filter((entry) => accountingVisibleDates.includes(entry?.date)),
-        [employeeSummaries, accountingVisibleDates],
-    );
-
     const periodEntriesOverview = useMemo(
         () => visibleDates.map((dateString) => {
             const summary = periodSummaries.find((entry) => entry?.date === dateString);
@@ -470,94 +503,10 @@ const AdminEmployeeOverviewPage = () => {
         };
     }, [employee, employeeVacations, todayYmd]);
 
-    const totalWorkedWeekMinutes = useMemo(
-        () => accountingPeriodSummaries.reduce((sum, entry) => sum + (entry?.workedMinutes || 0), 0),
-        [accountingPeriodSummaries],
-    );
-
-    const totalBreakWeekMinutes = useMemo(
-        () => accountingPeriodSummaries.reduce((sum, entry) => sum + (entry?.breakMinutes || 0), 0),
-        [accountingPeriodSummaries],
-    );
-
-    const effectiveConfigForTarget = useMemo(() => {
-        if (!normalizedEmployeeConfig) return normalizedEmployeeConfig;
-        if (normalizedEmployeeConfig.isHourly) return normalizedEmployeeConfig;
-
-        const shouldForcePercentageMode = Number.isFinite(normalizedEmployeeConfig.workPercentage)
-            && normalizedEmployeeConfig.workPercentage > 0
-            && normalizedEmployeeConfig.workPercentage < 100;
-
-        if (!shouldForcePercentageMode || normalizedEmployeeConfig.isPercentage) {
-            return normalizedEmployeeConfig;
-        }
-
-        return {
-            ...normalizedEmployeeConfig,
-            isPercentage: true,
-        };
-    }, [normalizedEmployeeConfig]);
-
-    const periodTargetMinutes = useMemo(
-        () => {
-            if (timeRangeMode === 'week') {
-                const weekDateObjects = weekDates.map((dateString) => new Date(`${dateString}T00:00:00`));
-                const accountingWeekDateObjects = getDatesUpToReferenceDate(weekDateObjects);
-                const workedDateSet = new Set(
-                    accountingPeriodSummaries
-                        .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
-                        .map(summary => summary.date)
-                        .filter(Boolean)
-                );
-                return calculateWeeklyExpectedMinutes(
-                    effectiveConfigForTarget,
-                    accountingWeekDateObjects,
-                    employee?.dailyWorkHours ?? 8.5,
-                    employeeVacations,
-                    employeeSickLeaves,
-                    holidaysForEmployee,
-                    null,
-                    workedDateSet,
-                );
-            }
-
-            const workedDateSet = new Set(
-                accountingPeriodSummaries
-                    .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
-                    .map(summary => summary.date)
-                    .filter(Boolean)
-            );
-
-            return accountingVisibleDates.reduce((sum, dateString) => {
-                const effectiveVacationsForDay = workedDateSet.has(dateString)
-                    ? employeeVacations.filter(vacation => dateString < vacation.startDate || dateString > vacation.endDate)
-                    : employeeVacations;
-                const expectedHours = getExpectedHoursForDay(
-                    new Date(`${dateString}T00:00:00`),
-                    effectiveConfigForTarget,
-                    employee?.dailyWorkHours ?? 8.5,
-                    holidaysForEmployee,
-                    effectiveVacationsForDay,
-                    employeeSickLeaves,
-                    null,
-                );
-                return sum + Math.round(expectedHours * 60);
-            }, 0);
-        },
-        [
-            effectiveConfigForTarget,
-            employee?.dailyWorkHours,
-            employeeSickLeaves,
-            employeeVacations,
-            holidaysForEmployee,
-            timeRangeMode,
-            accountingVisibleDates,
-            accountingPeriodSummaries,
-            weekDates,
-        ],
-    );
-
-    const periodDeltaMinutes = totalWorkedWeekMinutes - periodTargetMinutes;
+    const totalWorkedWeekMinutes = Number.isFinite(backendPeriodSummary?.workedMinutes) ? backendPeriodSummary.workedMinutes : null;
+    const totalBreakWeekMinutes = Number.isFinite(backendPeriodSummary?.breakMinutes) ? backendPeriodSummary.breakMinutes : null;
+    const periodTargetMinutes = Number.isFinite(backendPeriodSummary?.expectedMinutes) ? backendPeriodSummary.expectedMinutes : null;
+    const periodDeltaMinutes = Number.isFinite(backendPeriodSummary?.differenceMinutes) ? backendPeriodSummary.differenceMinutes : null;
 
     const openItemsCount = useMemo(
         () => employeeVacations.filter((vac) => !vac.approved && !vac.denied).length
@@ -1132,6 +1081,8 @@ const AdminEmployeeOverviewPage = () => {
                             </div>
                         </section>
 
+                        <CalculationStatusNotice status={backendPeriodStatus} />
+
                         <section className="employee-overview-kpis">
                             <article className="card-style kpi-card">
                                 <h3>{t('today', 'Heute')}</h3>
@@ -1141,9 +1092,9 @@ const AdminEmployeeOverviewPage = () => {
                             <article className="card-style kpi-card">
                                 <h3>{t('week', 'Woche')}</h3>
                                 <p>
-                                    {t('expectedTimeShort', 'Soll')} {minutesToHHMM(periodTargetMinutes)} / {t('actualTimeShort', 'Ist')} <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong>
+                                    {t('expectedTimeShort', 'Soll')} {formatCalculatedMinutes(periodTargetMinutes, backendPeriodStatus, minutesToHHMM)} / {t('actualTimeShort', 'Ist')} <strong>{formatCalculatedMinutes(totalWorkedWeekMinutes, backendPeriodStatus, minutesToHHMM)}</strong>
                                 </p>
-                                <p>{t('overtime', 'Überstunden')}: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></p>
+                                <p>{t('overtime', 'Überstunden')}: <strong>{formatCalculatedMinutes(periodDeltaMinutes, backendPeriodStatus, minutesToHHMM)}</strong></p>
                             </article>
                             <article className="card-style kpi-card">
                                 <h3>{t('adminEmployeeOverview.pending', 'Offen')}</h3>
@@ -1182,8 +1133,8 @@ const AdminEmployeeOverviewPage = () => {
                                         )}
                                     </div>
                                     <div className="mini-stats-row">
-                                        <span>{t('adminEmployeeOverview.totalHours', 'Gesamtstunden')}: <strong>{minutesToHHMM(totalWorkedWeekMinutes)}</strong></span>
-                                        <span>{t('adminEmployeeOverview.overtimeMinus', 'Überstunden/Minus')}: <strong>{minutesToHHMM(periodDeltaMinutes)}</strong></span>
+                                        <span>{t('adminEmployeeOverview.totalHours', 'Gesamtstunden')}: <strong>{formatCalculatedMinutes(totalWorkedWeekMinutes, backendPeriodStatus, minutesToHHMM)}</strong></span>
+                                        <span>{t('adminEmployeeOverview.overtimeMinus', 'Überstunden/Minus')}: <strong>{formatCalculatedMinutes(periodDeltaMinutes, backendPeriodStatus, minutesToHHMM)}</strong></span>
                                         <span>{t('adminEmployeeOverview.absences', 'Fehlzeiten')}: <strong>{periodAbsenceDays} {t('daysLabel', 'Tage')}</strong></span>
                                         <span>{t('balanceTotal', 'Gesamtüberstunden')}: <strong>{minutesToHHMM(employeeBalance?.trackingBalance || 0)}</strong></span>
                                     </div>
@@ -1301,7 +1252,7 @@ const AdminEmployeeOverviewPage = () => {
                                             <span>{t('adminEmployeeOverview.currentWeek', 'Diese Woche')}</span>
                                             <strong>{t('adminEmployeeOverview.weeklyAbsenceDays', '{{count}} Tage abwesend', { count: weeklyAbsenceDays })}</strong>
                                         </p>
-                                        <p><span>{t('breakTime', 'Pause')} ({t('week', 'Woche')})</span><strong>{minutesToHHMM(totalBreakWeekMinutes)}</strong></p>
+                                        <p><span>{t('breakTime', 'Pause')} ({t('week', 'Woche')})</span><strong>{formatCalculatedMinutes(totalBreakWeekMinutes, backendPeriodStatus, minutesToHHMM)}</strong></p>
                                     </div>
                                 </article>
                                 <section className="calendar-requests-layout">

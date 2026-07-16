@@ -16,6 +16,10 @@ import {
 import '../../styles/HourlyDashboardScoped.css';
 import api from "../../utils/api.js";
 import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
+import CalculationStatusNotice, {
+    CALCULATION_STATUS,
+    formatCalculatedMinutes,
+} from '../../components/CalculationStatusNotice.jsx';
 
 const HourlyWeekOverview = ({
                                 t,
@@ -25,6 +29,8 @@ const HourlyWeekOverview = ({
                                 setSelectedMonday,
                                 weeklyTotalMins,
                                 monthlyTotalMins,
+                                weekCalculationStatus,
+                                monthCalculationStatus,
                                 handleManualPunch,
                                 punchMessage,
                                 userProfile,
@@ -67,7 +73,7 @@ const HourlyWeekOverview = ({
         return { date: iso, workedMinutes: summary ? summary.workedMinutes : 0 };
     });
 
-    const weeklyEarnings = userProfile?.hourlyRate
+    const weeklyEarnings = userProfile?.hourlyRate && Number.isFinite(weeklyTotalMins)
         ? (weeklyTotalMins / 60) * userProfile.hourlyRate
         : null;
 
@@ -164,14 +170,20 @@ const HourlyWeekOverview = ({
                 <button onClick={handleNextWeek} className="button-secondary">{t("nextWeek", "Nächste Woche")} →</button>
                 <button onClick={handleCurrentWeek} className="button-secondary">{t('currentWeek', 'Aktuelle Woche')}</button>
             </div>
+            <CalculationStatusNotice status={weekCalculationStatus} />
+            <CalculationStatusNotice status={monthCalculationStatus} />
             <div className="weekly-monthly-totals">
                 <div className="summary-item">
                     <span className="summary-label">{t('weeklyHours', 'Ges. Std. (Woche)')}</span>
-                    <span className="summary-value">{minutesToHHMM(weeklyTotalMins)}</span>
+                    <span className="summary-value">
+                        {formatCalculatedMinutes(weeklyTotalMins, weekCalculationStatus, minutesToHHMM)}
+                    </span>
                 </div>
                 <div className="summary-item">
                     <span className="summary-label">{t('monthlyHours', 'Ges. Std. (Monat)')}</span>
-                    <span className="summary-value">{minutesToHHMM(monthlyTotalMins)}</span>
+                    <span className="summary-value">
+                        {formatCalculatedMinutes(monthlyTotalMins, monthCalculationStatus, minutesToHHMM)}
+                    </span>
                 </div>
                 {weeklyEarnings !== null && (
                     <div className="summary-item">
@@ -360,8 +372,10 @@ HourlyWeekOverview.propTypes = {
     })).isRequired,
     selectedMonday: PropTypes.instanceOf(Date).isRequired,
     setSelectedMonday: PropTypes.func.isRequired,
-    weeklyTotalMins: PropTypes.number.isRequired,
-    monthlyTotalMins: PropTypes.number.isRequired,
+    weeklyTotalMins: PropTypes.number,
+    monthlyTotalMins: PropTypes.number,
+    weekCalculationStatus: PropTypes.oneOf(Object.values(CALCULATION_STATUS)).isRequired,
+    monthCalculationStatus: PropTypes.oneOf(Object.values(CALCULATION_STATUS)).isRequired,
     handleManualPunch: PropTypes.func.isRequired,
     punchMessage: PropTypes.string,
     openCorrectionModal: PropTypes.func.isRequired,

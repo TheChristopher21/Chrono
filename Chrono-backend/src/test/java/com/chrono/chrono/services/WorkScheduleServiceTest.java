@@ -42,6 +42,44 @@ class WorkScheduleServiceTest {
     private WorkScheduleService workScheduleService;
 
     @Test
+    void getExpectedWorkHours_returnsZeroBeforeEntryDate() {
+        User user = new User();
+        user.setEntryDate(LocalDate.of(2026, 5, 1));
+        user.setDailyWorkHours(8.5);
+
+        double hours = workScheduleService.getExpectedWorkHours(user, LocalDate.of(2026, 4, 30));
+
+        assertEquals(0.0, hours);
+    }
+
+    @Test
+    void getExpectedWeeklyMinutesForPercentageUser_skipsDatesBeforeEntry() {
+        User user = new User();
+        user.setUsername("percentage-worker");
+        user.setIsPercentage(true);
+        user.setWorkPercentage(60);
+        user.setExpectedWorkDays(5);
+        user.setEntryDate(LocalDate.of(2026, 3, 25));
+        LocalDate monday = LocalDate.of(2026, 3, 23);
+
+        when(sickLeaveRepository.findByUser(user)).thenReturn(Collections.emptyList());
+        when(userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, monday, monday.plusDays(4)))
+                .thenReturn(Collections.emptyList());
+        for (int i = 2; i <= 4; i++) {
+            when(holidayService.isHoliday(monday.plusDays(i), null)).thenReturn(false);
+        }
+
+        int minutes = workScheduleService.getExpectedWeeklyMinutesForPercentageUser(
+                user,
+                monday,
+                monday.plusDays(4),
+                Collections.emptyList()
+        );
+
+        assertEquals(918, minutes);
+    }
+
+    @Test
     void getExpectedWorkHours_returnsHalfForHalfDayRule() {
         User user = new User();
         user.setDailyWorkHours(8.0);

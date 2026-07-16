@@ -1,6 +1,7 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
+import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.dto.TimeTrackingImportRowDTO;
 import com.chrono.chrono.entities.User;
@@ -201,6 +202,37 @@ public class AdminTimeTrackingController {
             entry.put("color", u.getColor());
             return entry;
         }).collect(Collectors.toList());
+        return ResponseEntity.ok(result);
+    }
+
+    @GetMapping("/admin/period-summary")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<?> getAdminPeriodSummaries(
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Principal principal
+    ) {
+        User adminUser = userRepository.findByUsername(principal.getName()).orElseThrow();
+        userPermissionService.assertPageAccess(
+                adminUser,
+                UserPermissionService.PAGE_ADMIN_DASHBOARD,
+                UserPermissionService.ACCESS_VIEW,
+                "Keine Berechtigung fÃ¼r das Admin-Dashboard."
+        );
+        boolean isSuperAdmin = adminUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        List<User> usersToList;
+        if (isSuperAdmin) {
+            usersToList = userRepository.findTimeOverviewUsersDeletedFalse();
+        } else if (adminUser.getCompany() != null) {
+            usersToList = userRepository.findTimeOverviewUsersByCompanyIdAndDeletedFalse(adminUser.getCompany().getId());
+        } else {
+            logger.warn("Admin {} has no company assigned. Denying period summaries.", principal.getName());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("message", "Admin has no company assigned."));
+        }
+
+        List<TimePeriodSummaryDTO> result = usersToList.stream()
+                .map(user -> timeTrackingService.getUserPeriodSummary(user, startDate, endDate))
+                .collect(Collectors.toList());
         return ResponseEntity.ok(result);
     }
 

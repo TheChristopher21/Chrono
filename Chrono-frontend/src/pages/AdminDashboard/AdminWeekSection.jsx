@@ -19,11 +19,7 @@ import {
     formatLocalDateYMD,
     formatDate, // Your existing formatDate
     formatTime, // <--- HIER HINZUFÜGEN
-    getExpectedHoursForDay,
-    computeDailyDiff,
     minutesToHHMM,
-    calculateWeeklyActualMinutes,
-    calculateWeeklyExpectedMinutes,
     // isLateTime, // isLateTime might be used internally by formatTimeEntryForDisplay or similar
     getDetailedGlobalProblemIndicators,
     getMondayOfWeek,
@@ -34,6 +30,10 @@ import {
 import { parseISO, isValid } from "date-fns"; // Make sure date-fns is installed
 import { sortEntries } from '../../utils/timeUtils';
 import { getUserDisplayName, getUserSearchText } from '../../utils/userDisplay';
+import CalculationStatusNotice, {
+    CALCULATION_STATUS,
+    formatCalculatedMinutes,
+} from '../../components/CalculationStatusNotice.jsx';
 
 const HOLIDAY_OPTIONS_LOCAL_STORAGE_KEY = 'adminDashboard_holidayOptions_v1';
 const HIDDEN_USERS_LOCAL_STORAGE_PREFIX = 'adminDashboard_hiddenUsers_v3';
@@ -412,6 +412,10 @@ const AdminWeekSection = forwardRef(({
     const [issueTypeFilters, setIssueTypeFilters] = useState(() => ({ ...DEFAULT_ISSUE_FILTER_STATE }));
     const [weekJumpInputValue, setWeekJumpInputValue] = useState(() => formatLocalDateYMD(selectedMonday));
     const [flippedAbsenceDayCards, setFlippedAbsenceDayCards] = useState(() => new Set());
+    const [backendWeekPeriodSummaries, setBackendWeekPeriodSummaries] = useState([]);
+    const [backendMonthPeriodSummaries, setBackendMonthPeriodSummaries] = useState([]);
+    const [backendWeekStatus, setBackendWeekStatus] = useState(CALCULATION_STATUS.IDLE);
+    const [backendMonthStatus, setBackendMonthStatus] = useState(CALCULATION_STATUS.IDLE);
 
     useEffect(() => {
         setWeekJumpInputValue(formatLocalDateYMD(selectedMonday));
@@ -720,10 +724,6 @@ const AdminWeekSection = forwardRef(({
     }, [monthRangeStart, monthRangeEnd]);
 
     const monthRangeIsValid = monthRangeDates.length > 0;
-    const accountingWeekDates = useMemo(
-        () => getDatesUpToReferenceDate(weekDates),
-        [weekDates]
-    );
     const accountingMonthRangeDates = useMemo(
         () => getDatesUpToReferenceDate(monthRangeDates),
         [monthRangeDates]
@@ -745,9 +745,92 @@ const AdminWeekSection = forwardRef(({
         return `${formatDate(monthRangeStart)} – ${formatDate(monthRangeEnd)}`;
     }, [monthRangeStart, monthRangeEnd]);
 
+    const weekStartIso = useMemo(() => formatLocalDateYMD(weekDates[0]), [weekDates]);
+    const weekEndIso = useMemo(() => formatLocalDateYMD(weekDates[weekDates.length - 1]), [weekDates]);
+    const accountingMonthStartIso = accountingMonthRangeDates.length > 0
+        ? formatLocalDateYMD(accountingMonthRangeDates[0])
+        : '';
+    const accountingMonthEndIso = accountingMonthRangeDates.length > 0
+        ? formatLocalDateYMD(accountingMonthRangeDates[accountingMonthRangeDates.length - 1])
+        : '';
+
+    useEffect(() => {
+        if (!weekStartIso || !weekEndIso) {
+            setBackendWeekPeriodSummaries([]);
+            setBackendWeekStatus(CALCULATION_STATUS.IDLE);
+            return undefined;
+        }
+        let cancelled = false;
+        setBackendWeekPeriodSummaries([]);
+        setBackendWeekStatus(CALCULATION_STATUS.LOADING);
+        api.get('/api/admin/timetracking/admin/period-summary', {
+            params: { startDate: weekStartIso, endDate: weekEndIso },
+        })
+            .then((response) => {
+                if (!cancelled) {
+                    setBackendWeekPeriodSummaries(Array.isArray(response.data) ? response.data : []);
+                    setBackendWeekStatus(Array.isArray(response.data) ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+                }
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.error('Failed to load backend week period summaries', error);
+                    setBackendWeekPeriodSummaries([]);
+                    setBackendWeekStatus(CALCULATION_STATUS.ERROR);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [weekStartIso, weekEndIso]);
+
+    useEffect(() => {
+        if (!monthRangeIsValid || !accountingMonthStartIso || !accountingMonthEndIso) {
+            setBackendMonthPeriodSummaries([]);
+            setBackendMonthStatus(CALCULATION_STATUS.IDLE);
+            return undefined;
+        }
+        let cancelled = false;
+        setBackendMonthPeriodSummaries([]);
+        setBackendMonthStatus(CALCULATION_STATUS.LOADING);
+        api.get('/api/admin/timetracking/admin/period-summary', {
+            params: { startDate: accountingMonthStartIso, endDate: accountingMonthEndIso },
+        })
+            .then((response) => {
+                if (!cancelled) {
+                    setBackendMonthPeriodSummaries(Array.isArray(response.data) ? response.data : []);
+                    setBackendMonthStatus(Array.isArray(response.data) ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+                }
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.error('Failed to load backend month period summaries', error);
+                    setBackendMonthPeriodSummaries([]);
+                    setBackendMonthStatus(CALCULATION_STATUS.ERROR);
+                }
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, [monthRangeIsValid, accountingMonthStartIso, accountingMonthEndIso]);
+
+    const backendWeekSummaryMap = useMemo(() => {
+        const map = new Map();
+        backendWeekPeriodSummaries.forEach(summary => {
+            if (summary?.username) map.set(summary.username, summary);
+        });
+        return map;
+    }, [backendWeekPeriodSummaries]);
+
+    const backendMonthSummaryMap = useMemo(() => {
+        const map = new Map();
+        backendMonthPeriodSummaries.forEach(summary => {
+            if (summary?.username) map.set(summary.username, summary);
+        });
+        return map;
+    }, [backendMonthPeriodSummaries]);
+
     const userAnalytics = useMemo(() => {
-        const currentWeekIsoDates = weekDates.map(date => formatLocalDateYMD(date));
-        const currentWeekIsoSet = new Set(currentWeekIsoDates);
         const selectedWeekIso = formatLocalDateYMD(selectedMonday);
 
         // dailySummariesForWeekSection is now a list of DailyTimeSummaryDTO
@@ -756,12 +839,18 @@ const AdminWeekSection = forwardRef(({
                 const userConfig = user; // UserDTO from backend
                 // Get all DailyTimeSummaryDTOs for this user (can be for multiple days/weeks if AdminDashboard fetches more)
                 const allUserSummariesList = dailySummariesForWeekSection.filter(s => s.username === user.username);
+                const backendWeekSummary = backendWeekSummaryMap.get(user.username);
+                const backendWeekDailyMap = new Map(
+                    (backendWeekSummary?.dailySummaries || [])
+                        .filter(summary => summary?.date)
+                        .map(summary => [summary.date, summary])
+                );
 
                 // Create a map of summaries for the current display week for easy lookup
                 const userDayMapCurrentWeek = {};
                 weekDates.forEach(date => {
                     const isoDate = formatLocalDateYMD(date);
-                    const summaryForDay = allUserSummariesList.find(s => s.date === isoDate);
+                    const summaryForDay = backendWeekDailyMap.get(isoDate) || allUserSummariesList.find(s => s.date === isoDate);
                     userDayMapCurrentWeek[isoDate] = summaryForDay ||
                         { date: isoDate, username: user.username, entries: [], workedMinutes: 0, breakMinutes: 0, needsCorrection: false, primaryTimes: {isOpen: false, firstStartTime: null, lastEndTime: null}, dailyNote: null };
                 });
@@ -774,33 +863,12 @@ const AdminWeekSection = forwardRef(({
                 const holidaysForThisUserYearObj = allHolidays[userCantonKey] || allHolidays['GENERAL']; // allHolidays is now holidaysByCanton
                 const holidaysForThisUserYear = holidaysForThisUserYearObj?.data || {}; // Ensure data field is accessed
 
-                const summariesForAccountingWeek = accountingWeekDates.map(date => (
-                    userDayMapCurrentWeek[formatLocalDateYMD(date)]
-                ));
-                const weeklyActualMinutes = calculateWeeklyActualMinutes(summariesForAccountingWeek);
+                const weeklyActualMinutes = Number.isFinite(backendWeekSummary?.workedMinutes) ? backendWeekSummary.workedMinutes : null;
 
                 const storedHolidayOptions = holidayOptionsByUser[user.username] || {};
                 const allHolidayOptionsForUser = Object.values(storedHolidayOptions);
-                const holidayOptionsForThisUserInThisWeek = allHolidayOptionsForUser
-                    .filter(opt => opt?.holidayDate && currentWeekIsoSet.has(opt.holidayDate))
-                    .sort((a, b) => a.holidayDate.localeCompare(b.holidayDate));
-
-
-                const workedDateSetForCurrentWeek = new Set(
-                    summariesForAccountingWeek
-                        .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
-                        .map(summary => summary.date)
-                        .filter(Boolean)
-                );
-
-                const weeklyExpectedMinutes = calculateWeeklyExpectedMinutes(
-                    userConfig, accountingWeekDates, defaultExpectedHours,
-                    userApprovedVacations, userCurrentSickLeaves, holidaysForThisUserYear,
-                    holidayOptionsForThisUserInThisWeek,
-                    workedDateSetForCurrentWeek
-                );
-
-                const currentWeekOvertimeMinutes = weeklyActualMinutes - weeklyExpectedMinutes;
+                const weeklyExpectedMinutes = Number.isFinite(backendWeekSummary?.expectedMinutes) ? backendWeekSummary.expectedMinutes : null;
+                const currentWeekOvertimeMinutes = Number.isFinite(backendWeekSummary?.differenceMinutes) ? backendWeekSummary.differenceMinutes : null;
                 // Use rawUserTrackingBalances or fetch/calculate cumulativeBalance differently if needed
                 const cumulativeBalanceRecord = rawUserTrackingBalances.find(b => b.username === user.username);
                 const cumulativeBalanceMinutes = cumulativeBalanceRecord ? cumulativeBalanceRecord.trackingBalance : (userConfig.trackingBalanceInMinutes ?? 0);
@@ -815,6 +883,7 @@ const AdminWeekSection = forwardRef(({
                 );
 
                 const unusualWeeklyDelta = shouldShowWeeklyDeltaIssues
+                    && Number.isFinite(currentWeekOvertimeMinutes)
                     && Math.abs(currentWeekOvertimeMinutes) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES;
                 const weeklyDeltaAlreadyAcknowledged = !!weeklyDeltaAcknowledged?.[user.username]?.[selectedWeekIso];
                 const adjustedProblemIndicators = {
@@ -844,7 +913,7 @@ const AdminWeekSection = forwardRef(({
                     holidayOptions: allHolidayOptionsForUser,
                 };
             });
-    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, accountingWeekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser, selectedMonday, weeklyDeltaAcknowledged, shouldShowWeeklyDeltaIssues]);
+    }, [trackableUsers, dailySummariesForWeekSection, allVacations, allSickLeaves, allHolidays, weekDates, defaultExpectedHours, rawUserTrackingBalances, holidayOptionsByUser, selectedMonday, weeklyDeltaAcknowledged, shouldShowWeeklyDeltaIssues, backendWeekSummaryMap]);
 
     const userAnalyticsMap = useMemo(() => {
         const map = new Map();
@@ -862,43 +931,13 @@ const AdminWeekSection = forwardRef(({
 
         return trackableUsers.map(user => {
             const baseData = userAnalyticsMap.get(user.username) || null;
+            const backendMonthSummary = backendMonthSummaryMap.get(user.username);
             const userConfig = baseData?.userConfig || user;
-            const allUserSummariesList = dailySummariesForWeekSection.filter(summary => summary.username === user.username);
-            const accountingMonthIsoSet = new Set(accountingMonthRangeDates.map(date => formatLocalDateYMD(date)));
-            const monthSummaries = allUserSummariesList.filter(summary => accountingMonthIsoSet.has(summary.date));
-            const monthlyActualMinutes = monthSummaries.reduce((acc, summary) => acc + (summary?.workedMinutes || 0), 0);
+            const monthlyActualMinutes = Number.isFinite(backendMonthSummary?.workedMinutes) ? backendMonthSummary.workedMinutes : null;
 
             const userApprovedVacations = allVacations.filter(vac => vac.username === user.username && vac.approved);
             const userCurrentSickLeaves = allSickLeaves.filter(sl => sl.username === user.username);
-            const userCantonKey = userConfig?.companyCantonAbbreviation || 'GENERAL';
-            const holidaysForThisUserYear = allHolidays[userCantonKey]?.data || allHolidays['GENERAL']?.data || {};
-            const storedHolidayOptions = holidayOptionsByUser[user.username] || {};
-            const allHolidayOptionsForUser = Object.values(storedHolidayOptions);
-
-            const workedDateSetForMonth = new Set(
-                monthSummaries
-                    .filter(summary => (summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
-                    .map(summary => summary.date)
-                    .filter(Boolean)
-            );
-
-            const monthlyExpectedMinutes = accountingMonthRangeDates.reduce((acc, dateObj) => {
-                const isoDate = formatLocalDateYMD(dateObj);
-                const holidayOptionForDay = allHolidayOptionsForUser.find(opt => opt?.holidayDate === isoDate);
-                const effectiveVacationsForDay = workedDateSetForMonth.has(isoDate)
-                    ? userApprovedVacations.filter(vac => isoDate < vac.startDate || isoDate > vac.endDate)
-                    : userApprovedVacations;
-                const expectedHours = getExpectedHoursForDay(
-                    dateObj,
-                    userConfig,
-                    defaultExpectedHours,
-                    holidaysForThisUserYear,
-                    effectiveVacationsForDay,
-                    userCurrentSickLeaves,
-                    holidayOptionForDay
-                );
-                return acc + Math.round((expectedHours || 0) * 60);
-            }, 0);
+            const monthlyExpectedMinutes = Number.isFinite(backendMonthSummary?.expectedMinutes) ? backendMonthSummary.expectedMinutes : null;
 
             const cumulativeBalanceMinutes = baseData?.cumulativeBalanceMinutes ?? (user.trackingBalanceInMinutes ?? 0);
             const problemIndicators = baseData?.problemIndicators || EMPTY_PROBLEM_INDICATORS;
@@ -910,9 +949,9 @@ const AdminWeekSection = forwardRef(({
                     displayName: getUserDisplayName(user),
                     searchText: getUserSearchText(user),
                     userConfig,
-                    weeklyActualMinutes: 0,
-                    weeklyExpectedMinutes: 0,
-                    currentWeekOvertimeMinutes: 0,
+                    weeklyActualMinutes: null,
+                    weeklyExpectedMinutes: null,
+                    currentWeekOvertimeMinutes: null,
                 }),
                 username: user.username,
                 displayName: baseData?.displayName || getUserDisplayName(user),
@@ -924,10 +963,10 @@ const AdminWeekSection = forwardRef(({
                 problemIndicators,
                 monthlyActualMinutes,
                 monthlyExpectedMinutes,
-                monthlyOvertimeMinutes: monthlyActualMinutes - monthlyExpectedMinutes,
+                monthlyOvertimeMinutes: Number.isFinite(backendMonthSummary?.differenceMinutes) ? backendMonthSummary.differenceMinutes : null,
             };
         });
-    }, [trackableUsers, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, accountingMonthRangeDates, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, defaultExpectedHours]);
+    }, [trackableUsers, userAnalyticsMap, monthRangeIsValid, dailySummariesForWeekSection, accountingMonthRangeDates, allVacations, allSickLeaves, allHolidays, holidayOptionsByUser, defaultExpectedHours, backendMonthSummaryMap]);
 
 
     const issueSummary = useMemo(() => {
@@ -1932,6 +1971,8 @@ const AdminWeekSection = forwardRef(({
 
                 {weekNavigationControls}
 
+                <CalculationStatusNotice status={activeTab === 'week' ? backendWeekStatus : backendMonthStatus} />
+
                 {activeTab === 'month' && !monthRangeIsValid ? (
                     <p className="no-data-message italic text-gray-600 p-4 text-center">
                         {t('adminDashboard.monthView.invalidRange', 'Bitte wählen Sie einen gültigen Zeitraum.')}
@@ -1976,9 +2017,9 @@ const AdminWeekSection = forwardRef(({
                                     <React.Fragment key={userData.username}>
                                         <tr className={`user-row ${detailedUser === userData.username ? "user-row-detailed" : ""} ${hiddenUsers.has(userData.username) ? "user-row-hidden" : ""}`}>
                                             <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.displayName || userData.username}</td>
-                                            <td data-label={t('actualHours', 'Ist (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyActualMinutes)}</td>
-                                            <td data-label={t('expectedHours', 'Soll (Wo)')} className="td-numeric">{minutesToHHMM(userData.weeklyExpectedMinutes)}</td>
-                                            <td data-label={t('balanceWeek', 'Saldo (Wo)')} className={`td-numeric ${userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.currentWeekOvertimeMinutes)}</td>
+                                            <td data-label={t('actualHours', 'Ist (Wo)')} className="td-numeric">{formatCalculatedMinutes(userData.weeklyActualMinutes, backendWeekStatus, minutesToHHMM)}</td>
+                                            <td data-label={t('expectedHours', 'Soll (Wo)')} className="td-numeric">{formatCalculatedMinutes(userData.weeklyExpectedMinutes, backendWeekStatus, minutesToHHMM)}</td>
+                                            <td data-label={t('balanceWeek', 'Saldo (Wo)')} className={`td-numeric ${Number.isFinite(userData.currentWeekOvertimeMinutes) && userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{formatCalculatedMinutes(userData.currentWeekOvertimeMinutes, backendWeekStatus, minutesToHHMM)}</td>
                                             <td data-label={t('balanceTotal', 'Gesamtüberstunden')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
                                             <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell td-center">
                                                 {renderProblemIndicatorsCell(userData)}
@@ -2005,7 +2046,7 @@ const AdminWeekSection = forwardRef(({
                                                         <div className="user-weekly-balance-detail text-xs mb-2 font-medium">
                                                             <span>{t('balanceTotal', 'Gesamtüberstunden')}: {minutesToHHMM(userData.cumulativeBalanceMinutes)}</span>
                                                             <span className="mx-2">|</span>
-                                                            <span>{t('balanceWeek', 'Saldo (akt. Woche)')}: {minutesToHHMM(userData.currentWeekOvertimeMinutes)}</span>
+                                                            <span>{t('balanceWeek', 'Saldo (akt. Woche)')}: {formatCalculatedMinutes(userData.currentWeekOvertimeMinutes, backendWeekStatus, minutesToHHMM)}</span>
                                                         </div>
                                                         {shouldShowWeeklyDeltaIssues && Math.abs(userData.currentWeekOvertimeMinutes || 0) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES && (
                                                             <label className="text-xs flex items-center gap-2 mb-2">
@@ -2024,18 +2065,13 @@ const AdminWeekSection = forwardRef(({
                                                                 const userCantonKeyForDay = userData.userConfig.companyCantonAbbreviation || 'GENERAL';
                                                                 const holidaysDataForDay = allHolidays[userCantonKeyForDay]?.data || allHolidays['GENERAL']?.data || {};
                                                                 const holidayNameOnThisDay = holidaysDataForDay[isoDate];
-                                                                const holidayOptionForThisDay = currentUserHolidayOptions.find(opt => opt.holidayDate === isoDate);
-
                                                                 const actualMinsToday = dailySummary?.workedMinutes || 0;
-                                                                const effectiveVacationsForDay = ((dailySummary?.entries?.length || 0) > 0 || actualMinsToday > 0)
-                                                                    ? userData.userApprovedVacations.filter(vac => isoDate < vac.startDate || isoDate > vac.endDate)
-                                                                    : userData.userApprovedVacations;
-                                                                const expectedMinsToday = Math.round(getExpectedHoursForDay(d, userData.userConfig, defaultExpectedHours, holidaysDataForDay, effectiveVacationsForDay, userData.userCurrentSickLeaves, holidayOptionForThisDay) * 60);
+                                                                const expectedMinsToday = Number.isFinite(dailySummary?.expectedMinutes) ? dailySummary.expectedMinutes : null;
                                                                 const isFutureDate = isoDate > todayIsoForAccounting;
                                                                 const hasTrackedEntries = !!(dailySummary?.entries && dailySummary.entries.length > 0);
                                                                 const diffMinsToday = isFutureDate && !hasTrackedEntries && actualMinsToday === 0
                                                                     ? 0
-                                                                    : actualMinsToday - expectedMinsToday;
+                                                                    : (Number.isFinite(dailySummary?.differenceMinutes) ? dailySummary.differenceMinutes : null);
 
                                                                 const isFocused = focusedProblem.username === userData.username && focusedProblem.dateIso === isoDate;
                                                                 let cardClass = `admin-day-card ${isFocused ? (focusedProblem.type.includes('auto_completed') ? 'highlight-autocompleted' : (focusedProblem.type === 'holiday_pending_decision' ? 'highlight-holiday-pending' : 'focused-problem')) : ''}`;
@@ -2050,8 +2086,8 @@ const AdminWeekSection = forwardRef(({
                                                                     <>
                                                                         <div className="admin-day-card-header justify-between items-start mb-1">
                                                                             <div className="text-xs">
-                                                                                {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {minutesToHHMM(expectedMinsToday)})</span>}
-                                                                                {!userData.userConfig.isHourly && <span className={`daily-diff ml-1 ${diffMinsToday < 0 ? 'text-red-600' : 'text-green-600'}`}>({t('diffTimeShort', 'Diff')}: {minutesToHHMM(diffMinsToday)})</span>}
+                                                                                {!userData.userConfig.isHourly && <span className="expected-hours">({t('expectedTimeShort', 'Soll')}: {formatCalculatedMinutes(expectedMinsToday, backendWeekStatus, minutesToHHMM)})</span>}
+                                                                                {!userData.userConfig.isHourly && <span className={`daily-diff ml-1 ${Number.isFinite(diffMinsToday) && diffMinsToday < 0 ? 'text-red-600' : 'text-green-600'}`}>({t('diffTimeShort', 'Diff')}: {formatCalculatedMinutes(diffMinsToday, backendWeekStatus, minutesToHHMM)})</span>}
                                                                                 {dailySummary.needsCorrection && <span className="auto-completed-tag ml-1 text-red-600 font-bold" title={t('adminDashboard.needsCorrectionTooltip', 'Automatisch beendet und unkorrigiert')}>KORR?</span>}
                                                                             </div>
                                                                             <button className="edit-day-button text-xs py-0.5 px-1 bg-gray-200 hover:bg-gray-300 rounded" onClick={() => openEditModal(userData.username, d, dailySummary)}>
@@ -2239,9 +2275,9 @@ const AdminWeekSection = forwardRef(({
                                 {sortedMonthlyUserData.map((userData) => (
                                     <tr key={userData.username} className={`user-row ${hiddenUsers.has(userData.username) ? "user-row-hidden" : ""}`}>
                                         <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.displayName || userData.username}</td>
-                                        <td data-label={t('adminDashboard.monthView.actualHours', 'Ist (Zeitraum)')} className="td-numeric">{minutesToHHMM(userData.monthlyActualMinutes)}</td>
-                                        <td data-label={t('adminDashboard.monthView.expectedHours', 'Soll (Zeitraum)')} className="td-numeric">{minutesToHHMM(userData.monthlyExpectedMinutes)}</td>
-                                        <td data-label={t('adminDashboard.monthView.balanceRange', 'Saldo (Zeitraum)')} className={`td-numeric ${userData.monthlyOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.monthlyOvertimeMinutes)}</td>
+                                        <td data-label={t('adminDashboard.monthView.actualHours', 'Ist (Zeitraum)')} className="td-numeric">{formatCalculatedMinutes(userData.monthlyActualMinutes, backendMonthStatus, minutesToHHMM)}</td>
+                                        <td data-label={t('adminDashboard.monthView.expectedHours', 'Soll (Zeitraum)')} className="td-numeric">{formatCalculatedMinutes(userData.monthlyExpectedMinutes, backendMonthStatus, minutesToHHMM)}</td>
+                                        <td data-label={t('adminDashboard.monthView.balanceRange', 'Saldo (Zeitraum)')} className={`td-numeric ${Number.isFinite(userData.monthlyOvertimeMinutes) && userData.monthlyOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{formatCalculatedMinutes(userData.monthlyOvertimeMinutes, backendMonthStatus, minutesToHHMM)}</td>
                                         <td data-label={t('balanceTotal', 'Gesamtüberstunden')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
                                         <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell td-center">
                                             {renderProblemIndicatorsCell(userData)}

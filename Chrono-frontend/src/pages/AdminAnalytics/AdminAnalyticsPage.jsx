@@ -8,7 +8,6 @@ import {
     getMondayOfWeek,
     addDays,
     formatLocalDateYMD,
-    calculateWeeklyExpectedMinutes,
     getDatesUpToReferenceDate,
     minutesToHHMM,
     selectTrackableUsers,
@@ -26,6 +25,9 @@ import {
     Legend,
     Filler,
 } from 'chart.js';
+import CalculationStatusNotice, {
+    CALCULATION_STATUS,
+} from '../../components/CalculationStatusNotice.jsx';
 import '../../styles/AdminAnalyticsPageScoped.css';
 
 ChartJS.register(
@@ -40,7 +42,6 @@ ChartJS.register(
     Filler,
 );
 
-const DEFAULT_EXPECTED_HOURS = 8.5;
 
 const AdminAnalyticsPage = () => {
     const { t } = useTranslation();
@@ -50,11 +51,11 @@ const AdminAnalyticsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [users, setUsers] = useState([]);
-    const [dailySummaries, setDailySummaries] = useState([]);
     const [allVacations, setAllVacations] = useState([]);
     const [allSickLeaves, setAllSickLeaves] = useState([]);
     const [weeklyBalances, setWeeklyBalances] = useState([]);
-    const [holidaysCache, setHolidaysCache] = useState({});
+    const [backendPeriodSummaries, setBackendPeriodSummaries] = useState([]);
+    const [backendPeriodStatus, setBackendPeriodStatus] = useState(CALCULATION_STATUS.IDLE);
     const [selectedWeeks, setSelectedWeeks] = useState(12);
     const [selectedUsernames, setSelectedUsernames] = useState([]);
 
@@ -98,9 +99,8 @@ const AdminAnalyticsPage = () => {
         const fetchData = async () => {
             setLoading(true);
             try {
-                const [usersRes, summariesRes, vacationsRes, sickRes, balancesRes] = await Promise.all([
+                const [usersRes, vacationsRes, sickRes, balancesRes] = await Promise.all([
                     api.get('/api/admin/users'),
-                    api.get('/api/admin/timetracking/all-summaries'),
                     api.get('/api/vacation/all'),
                     api.get('/api/sick-leave/company'),
                     api.get('/api/admin/timetracking/admin/tracking-balances'),
@@ -109,7 +109,6 @@ const AdminAnalyticsPage = () => {
                     return;
                 }
                 setUsers(Array.isArray(usersRes.data) ? usersRes.data : []);
-                setDailySummaries(Array.isArray(summariesRes.data) ? summariesRes.data : []);
                 setAllVacations(Array.isArray(vacationsRes.data) ? vacationsRes.data : []);
                 setAllSickLeaves(Array.isArray(sickRes.data) ? sickRes.data : []);
                 setWeeklyBalances(Array.isArray(balancesRes.data) ? balancesRes.data : []);
@@ -175,6 +174,42 @@ const AdminAnalyticsPage = () => {
         });
     }, [selectedWeeks]);
 
+    useEffect(() => {
+        if (!analysisWeeks.length) {
+            setBackendPeriodSummaries([]);
+            setBackendPeriodStatus(CALCULATION_STATUS.IDLE);
+            return undefined;
+        }
+        const firstWeek = analysisWeeks[0];
+        const lastWeek = analysisWeeks[analysisWeeks.length - 1];
+        const startDate = formatLocalDateYMD(firstWeek.dates[0]);
+        const endDate = formatLocalDateYMD(lastWeek.dates[lastWeek.dates.length - 1]);
+        let isMounted = true;
+        setBackendPeriodSummaries([]);
+        setBackendPeriodStatus(CALCULATION_STATUS.LOADING);
+
+        api.get('/api/admin/timetracking/admin/period-summary', {
+            params: { startDate, endDate },
+        })
+            .then((response) => {
+                if (isMounted) {
+                    setBackendPeriodSummaries(Array.isArray(response.data) ? response.data : []);
+                    setBackendPeriodStatus(Array.isArray(response.data) ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+                }
+            })
+            .catch((error) => {
+                if (isMounted) {
+                    console.error('Failed to fetch backend analytics period summaries', error);
+                    setBackendPeriodSummaries([]);
+                    setBackendPeriodStatus(CALCULATION_STATUS.ERROR);
+                }
+            });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [analysisWeeks]);
+
     const weekRangeOptions = useMemo(
         () => [
             { value: 4, label: t('adminAnalytics.filters.rangeOption.fourWeeks', 'Letzte 4 Wochen') },
@@ -232,95 +267,14 @@ const AdminAnalyticsPage = () => {
         return `${selectedWeeks} ${t('adminAnalytics.filters.weeksSuffix', 'Wochen')}`;
     }, [currentRangeLabel, selectedWeeks, t]);
 
-    useEffect(() => {
-        if (!analysisWeeks.length) {
-            return;
-        }
-        const cantons = new Set();
-        if (currentUser?.companyCantonAbbreviation) {
-            cantons.add(currentUser.companyCantonAbbreviation);
-        }
-        trackableUsers.forEach(user => {
-            if (user.companyCantonAbbreviation) {
-                cantons.add(user.companyCantonAbbreviation);
-            }
-        });
-        if (cantons.size === 0) {
-            cantons.add('');
-        }
-
-        const years = new Set();
-        analysisWeeks.forEach(({ dates }) => {
-            const first = dates[0];
-            const last = dates[dates.length - 1];
-            years.add(first.getFullYear());
-            years.add(last.getFullYear());
-        });
-
-        const fetchJobs = [];
-        cantons.forEach(canton => {
-            const cacheKey = canton || 'GENERAL';
-            years.forEach(year => {
-                if (holidaysCache[cacheKey]?.[year]) {
-                    return;
-                }
-                fetchJobs.push({ canton, cacheKey, year });
-            });
-        });
-
-        if (!fetchJobs.length) {
-            return;
-        }
-
-        let isMounted = true;
-        (async () => {
-            try {
-                const responses = await Promise.all(
-                    fetchJobs.map(job => {
-                        const startDate = `${job.year}-01-01`;
-                        const endDate = `${job.year}-12-31`;
-                        return api
-                            .get('/api/holidays/details', {
-                                params: {
-                                    cantonAbbreviation: job.canton,
-                                    year: job.year,
-                                    startDate,
-                                    endDate,
-                                },
-                            })
-                            .then(res => ({ job, data: res.data || {} }))
-                            .catch(err => {
-                                console.error('Failed to fetch holidays for analytics', err);
-                                return { job, data: {} };
-                            });
-                    }),
-                );
-                if (!isMounted) {
-                    return;
-                }
-                setHolidaysCache(prev => {
-                    const next = { ...prev };
-                    responses.forEach(({ job, data }) => {
-                        if (!next[job.cacheKey]) {
-                            next[job.cacheKey] = {};
-                        }
-                        next[job.cacheKey] = { ...next[job.cacheKey], [job.year]: data };
-                    });
-                    return next;
-                });
-            } catch (err) {
-                console.error('Unexpected error while preloading holidays', err);
-            }
-        })();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [analysisWeeks, trackableUsers, currentUser, holidaysCache]);
-
     const userSummaryDateMap = useMemo(() => {
         const map = new Map();
-        dailySummaries.forEach(summary => {
+        const backendDailySummaries = backendPeriodSummaries.flatMap(periodSummary => (
+            Array.isArray(periodSummary?.dailySummaries) ? periodSummary.dailySummaries : []
+        ));
+        const sourceSummaries = backendPeriodStatus === CALCULATION_STATUS.READY ? backendDailySummaries : [];
+
+        sourceSummaries.forEach(summary => {
             if (!summary?.username || !summary?.date) {
                 return;
             }
@@ -330,54 +284,10 @@ const AdminAnalyticsPage = () => {
             map.get(summary.username).set(summary.date, summary);
         });
         return map;
-    }, [dailySummaries]);
-
-    const vacationsByUser = useMemo(() => {
-        const map = new Map();
-        allVacations.forEach(vac => {
-            if (!vac?.username) {
-                return;
-            }
-            if (!map.has(vac.username)) {
-                map.set(vac.username, []);
-            }
-            map.get(vac.username).push(vac);
-        });
-        return map;
-    }, [allVacations]);
-
-    const sickLeavesByUser = useMemo(() => {
-        const map = new Map();
-        allSickLeaves.forEach(sick => {
-            if (!sick?.username) {
-                return;
-            }
-            if (!map.has(sick.username)) {
-                map.set(sick.username, []);
-            }
-            map.get(sick.username).push(sick);
-        });
-        return map;
-    }, [allSickLeaves]);
-
-    const holidayLookupForUser = useCallback((userConfig, weekDates) => {
-        const cantonKey = userConfig?.companyCantonAbbreviation || currentUser?.companyCantonAbbreviation || 'GENERAL';
-        const lookup = {};
-        weekDates.forEach(date => {
-            const year = date.getFullYear();
-            const cantonData = holidaysCache[cantonKey]?.[year];
-            const fallbackData = holidaysCache.GENERAL?.[year];
-            if (cantonData) {
-                Object.assign(lookup, cantonData);
-            } else if (fallbackData) {
-                Object.assign(lookup, fallbackData);
-            }
-        });
-        return lookup;
-    }, [holidaysCache, currentUser]);
+    }, [backendPeriodSummaries, backendPeriodStatus]);
 
     const weeklyOvertimeTrend = useMemo(() => {
-        if (!analysisWeeks.length || !trackableUsers.length) {
+        if (backendPeriodStatus !== CALCULATION_STATUS.READY || !analysisWeeks.length || !trackableUsers.length) {
             return { chart: { labels: [], datasets: [] }, series: [] };
         }
         const weekLabels = analysisWeeks.map(week => week.label);
@@ -388,39 +298,13 @@ const AdminAnalyticsPage = () => {
             .filter(user => !user.isHourly)
             .forEach((user, index) => {
                 const summaryMap = userSummaryDateMap.get(user.username) || new Map();
-                const approvedVacations = (vacationsByUser.get(user.username) || []).filter(vac => vac.approved);
-                const sickLeaves = sickLeavesByUser.get(user.username) || [];
-
                 const weekValues = analysisWeeks.map(({ dates }) => {
                     const accountingDates = getDatesUpToReferenceDate(dates);
-                    const workedDateSet = new Set(
-                        accountingDates
-                            .map(date => {
-                                const iso = formatLocalDateYMD(date);
-                                const summary = summaryMap.get(iso);
-                                return ((summary?.entries?.length || 0) > 0 || (summary?.workedMinutes || 0) > 0)
-                                    ? iso
-                                    : null;
-                            })
-                            .filter(Boolean)
-                    );
-                    const actualMinutes = accountingDates.reduce((acc, date) => {
+                    const overtimeMinutes = accountingDates.reduce((acc, date) => {
                         const iso = formatLocalDateYMD(date);
-                        const summary = summaryMap.get(iso);
-                        return acc + (summary?.workedMinutes || 0);
+                        const value = summaryMap.get(iso)?.differenceMinutes;
+                        return acc + (Number.isFinite(value) ? value : 0);
                     }, 0);
-                    const holidayMap = holidayLookupForUser(user, accountingDates);
-                    const expectedMinutes = calculateWeeklyExpectedMinutes(
-                        user,
-                        accountingDates,
-                        DEFAULT_EXPECTED_HOURS,
-                        approvedVacations,
-                        sickLeaves,
-                        holidayMap,
-                        null,
-                        workedDateSet,
-                    );
-                    const overtimeMinutes = actualMinutes - expectedMinutes;
                     return Number((overtimeMinutes / 60).toFixed(2));
                 });
 
@@ -457,12 +341,10 @@ const AdminAnalyticsPage = () => {
 
         return { chart: { labels: weekLabels, datasets }, series: activeSeries };
     }, [
+        backendPeriodStatus,
         analysisWeeks,
         trackableUsers,
         userSummaryDateMap,
-        vacationsByUser,
-        sickLeavesByUser,
-        holidayLookupForUser,
         selectedUsernames,
     ]);
 
@@ -841,6 +723,7 @@ const AdminAnalyticsPage = () => {
                                 )}
                             </div>
                         </div>
+                        <CalculationStatusNotice status={backendPeriodStatus} />
                         <div className="chart-wrapper chart-line">
                             {hasOvertimeData ? (
                                 <Line data={weeklyOvertimeTrend.chart} options={lineOptions} />
