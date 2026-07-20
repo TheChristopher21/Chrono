@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.time.LocalDateTime;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -82,6 +83,39 @@ class AuthServiceTest {
         InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class, () -> authService.login(request));
         assertEquals("Benutzername oder Passwort ist falsch.", ex.getMessage());
         verify(userRepository).findByUsername("unknown");
+    }
+
+    @Test
+    void login_throwsException_whenUserIsDeleted() {
+        AuthRequest request = new AuthRequest("john", "pass");
+        User user = new User();
+        user.setUsername("john");
+        user.setPassword("encoded");
+        user.setDeleted(true);
+
+        when(userRepository.findByUsername("john")).thenReturn(Optional.of(user));
+
+        InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class, () -> authService.login(request));
+        assertEquals("Benutzername oder Passwort ist falsch.", ex.getMessage());
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(jwtUtil, never()).generateTokenWithUser(any(User.class));
+    }
+
+    @Test
+    void login_throwsException_whenDemoUserIsExpired() {
+        AuthRequest request = new AuthRequest("demo_old", "pass");
+        User user = new User();
+        user.setUsername("demo_old");
+        user.setPassword("encoded");
+        user.setDemo(true);
+        user.setDemoExpiresAt(LocalDateTime.now().minusMinutes(1));
+
+        when(userRepository.findByUsername("demo_old")).thenReturn(Optional.of(user));
+
+        InvalidCredentialsException ex = assertThrows(InvalidCredentialsException.class, () -> authService.login(request));
+        assertEquals("Benutzername oder Passwort ist falsch.", ex.getMessage());
+        verify(passwordEncoder, never()).matches(anyString(), anyString());
+        verify(jwtUtil, never()).generateTokenWithUser(any(User.class));
     }
 
     @Test

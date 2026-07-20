@@ -554,14 +554,18 @@ public class TimeTrackingService {
 
     public TimePeriodSummaryDTO getUserPeriodSummary(User user, LocalDate startDate, LocalDate endDate) {
         List<DailyTimeSummaryDTO> summaries = getUserHistory(user, startDate, endDate);
-        int workedMinutes = summaries.stream().mapToInt(DailyTimeSummaryDTO::getWorkedMinutes).sum();
-        int breakMinutes = summaries.stream().mapToInt(DailyTimeSummaryDTO::getBreakMinutes).sum();
-        int expectedMinutes = summaries.stream()
+        LocalDate accountingCutoff = getCurrentBerlinDate();
+        List<DailyTimeSummaryDTO> evaluatedSummaries = summaries.stream()
+                .filter(summary -> summary.getDate() != null && !summary.getDate().isAfter(accountingCutoff))
+                .toList();
+        int workedMinutes = evaluatedSummaries.stream().mapToInt(DailyTimeSummaryDTO::getWorkedMinutes).sum();
+        int breakMinutes = evaluatedSummaries.stream().mapToInt(DailyTimeSummaryDTO::getBreakMinutes).sum();
+        int expectedMinutes = evaluatedSummaries.stream()
                 .map(DailyTimeSummaryDTO::getExpectedMinutes)
                 .filter(Objects::nonNull)
                 .mapToInt(Integer::intValue)
                 .sum();
-        int differenceMinutes = summaries.stream()
+        int differenceMinutes = evaluatedSummaries.stream()
                 .map(DailyTimeSummaryDTO::getDifferenceMinutes)
                 .filter(Objects::nonNull)
                 .mapToInt(Integer::intValue)
@@ -1056,8 +1060,13 @@ public class TimeTrackingService {
     public int getWeeklyBalance(User user, LocalDate monday) {
         User freshUser = userRepository.findById(user.getId()).orElseThrow(() -> new UserNotFoundException("User not found: " + user.getUsername()));
         List<VacationRequest> approvedVacations = vacationRequestRepository.findByUserAndApprovedTrue(freshUser);
+        LocalDate weekEnd = monday.plusDays(6);
+        LocalDate evaluationEnd = weekEnd.isAfter(getCurrentBerlinDate()) ? getCurrentBerlinDate() : weekEnd;
+        if (monday.isAfter(evaluationEnd)) {
+            return 0;
+        }
         LocalDateTime startOfWeekDateTime = monday.atStartOfDay();
-        LocalDateTime endOfWeekDateTime = monday.plusDays(7).atStartOfDay();
+        LocalDateTime endOfWeekDateTime = evaluationEnd.plusDays(1).atStartOfDay();
         List<TimeTrackingEntry> entriesForWeek = timeTrackingEntryRepository.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(freshUser, startOfWeekDateTime, endOfWeekDateTime);
         Map<LocalDate, List<TimeTrackingEntry>> entriesGroupedByDate = entriesForWeek.stream()
                 .filter(e -> e.getEntryDate() != null)
@@ -1065,12 +1074,11 @@ public class TimeTrackingService {
 
         int sum = 0;
         Map<LocalDate, User> effectiveUserCache = new HashMap<>();
-        LocalDate weekEnd = monday.plusDays(6);
         LocalDate currentDate = monday;
-        while (!currentDate.isAfter(weekEnd)) {
+        while (!currentDate.isAfter(evaluationEnd)) {
             User effectiveUser = resolveEffectiveUserForBalanceDate(freshUser, currentDate, effectiveUserCache);
             if (Boolean.TRUE.equals(effectiveUser.getIsPercentage())) {
-                LocalDate segmentEnd = findHistoricalBalanceSegmentEnd(freshUser, currentDate, weekEnd, effectiveUserCache);
+                LocalDate segmentEnd = findHistoricalBalanceSegmentEnd(freshUser, currentDate, evaluationEnd, effectiveUserCache);
                 sum += computeWeeklyWorkDifferenceForPercentageUserInRange(
                         effectiveUser,
                         monday,

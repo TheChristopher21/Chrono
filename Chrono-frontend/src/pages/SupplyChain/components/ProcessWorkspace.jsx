@@ -5,6 +5,7 @@ import DetailDrawer from "./DetailDrawer.jsx";
 import HelpLabel from "./HelpLabel.jsx";
 import HelpTextList from "./HelpTextList.jsx";
 import ReceivingAssistant from "./ReceivingAssistant.jsx";
+import OrderComposer from "./OrderComposer.jsx";
 
 const PAGE_SIZE = 10;
 
@@ -16,11 +17,15 @@ const sortRows = (rows, sortBy, sortDirection) => [...rows].sort((a, b) => {
 
 const initialFilter = { search: "", warehouse: "", site: "", status: "", partner: "", date: "", sku: "", batch: "", owner: "", priority: "" };
 
-const initialQuickEntryForm = { productId: "", warehouseId: "", quantityChange: "1", type: "RECEIPT", reference: "" };
+const initialQuickEntryForm = {
+    productId: "", warehouseId: "", warehouseBinId: "", quantityChange: "1", type: "RECEIPT",
+    reference: "", notes: "", lotNumber: "", serialNumber: "", expirationDate: "", inventoryStatus: "AVAILABLE",
+};
 const initialCreateProductForm = { sku: "", name: "" };
 const initialCreateWarehouseForm = { code: "", name: "", location: "" };
+const initialCreateBinForm = { warehouseId: "", code: "", name: "", zone: "", aisle: "", rack: "", shelf: "", barcode: "" };
 
-const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows, columns, timeline, text, quickEntry, receivingAssistant, workspaceMeta, renderDrawerActions }) => {
+const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows, columns, timeline, text, quickEntry, receivingAssistant, orderComposer, workspaceMeta, renderDrawerActions }) => {
     const [filters, setFilters] = useState(initialFilter);
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [drawerRecord, setDrawerRecord] = useState(null);
@@ -34,11 +39,15 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
     const [quickEntryForm, setQuickEntryForm] = useState(initialQuickEntryForm);
     const [createProductOpen, setCreateProductOpen] = useState(false);
     const [createWarehouseOpen, setCreateWarehouseOpen] = useState(false);
+    const [createBinOpen, setCreateBinOpen] = useState(false);
     const [createProductSubmitting, setCreateProductSubmitting] = useState(false);
     const [createWarehouseSubmitting, setCreateWarehouseSubmitting] = useState(false);
+    const [createBinSubmitting, setCreateBinSubmitting] = useState(false);
     const [createProductForm, setCreateProductForm] = useState(initialCreateProductForm);
     const [createWarehouseForm, setCreateWarehouseForm] = useState(initialCreateWarehouseForm);
+    const [createBinForm, setCreateBinForm] = useState(initialCreateBinForm);
     const [receivingAssistantOpen, setReceivingAssistantOpen] = useState(false);
+    const [orderComposerOpen, setOrderComposerOpen] = useState(false);
     const storageKey = `chrono.supply.savedView.${id}`;
 
     const filteredRows = useMemo(() => rows.filter((row) => {
@@ -128,9 +137,15 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
             : {
                 productId: Number(quickEntryForm.productId),
                 warehouseId: Number(quickEntryForm.warehouseId),
+                warehouseBinId: quickEntryForm.warehouseBinId ? Number(quickEntryForm.warehouseBinId) : null,
                 quantityChange: Number(quickEntryForm.quantityChange),
                 type: quickEntryForm.type,
                 reference: quickEntryForm.reference,
+                notes: quickEntryForm.notes,
+                lotNumber: quickEntryForm.lotNumber || null,
+                serialNumber: quickEntryForm.serialNumber || null,
+                expirationDate: quickEntryForm.expirationDate || null,
+                inventoryStatus: quickEntryForm.inventoryStatus,
             };
         setQuickEntrySubmitting(true);
         try {
@@ -176,6 +191,25 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
             }
         } finally {
             setCreateWarehouseSubmitting(false);
+        }
+    };
+
+    const submitCreateBin = async () => {
+        if (!quickEntry?.createBin?.onSubmit || createBinSubmitting) return;
+        setCreateBinSubmitting(true);
+        try {
+            const ok = await quickEntry.createBin.onSubmit({
+                ...createBinForm,
+                warehouseId: Number(createBinForm.warehouseId),
+                code: createBinForm.code.trim(),
+                name: createBinForm.name.trim(),
+            });
+            if (ok !== false) {
+                setCreateBinForm(initialCreateBinForm);
+                setCreateBinOpen(false);
+            }
+        } finally {
+            setCreateBinSubmitting(false);
         }
     };
 
@@ -229,6 +263,11 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
                             {receivingAssistantOpen ? receivingAssistant.closeLabel : receivingAssistant.openLabel}
                         </button>
                     )}
+                    {orderComposer?.enabled && (
+                        <button type="button" onClick={() => setOrderComposerOpen((prev) => !prev)}>
+                            {orderComposerOpen ? orderComposer.closeLabel : orderComposer.openLabel}
+                        </button>
+                    )}
                     <details className="sc-more-actions">
                         <summary>{text.moreActions}</summary>
                         <div className="sc-more-actions-menu">
@@ -240,6 +279,11 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
                     {quickEntry?.createWarehouse?.enabled && (
                         <button type="button" onClick={() => setCreateWarehouseOpen((prev) => !prev)}>
                             {createWarehouseOpen ? quickEntry.createWarehouse.closeLabel : quickEntry.createWarehouse.openLabel}
+                        </button>
+                    )}
+                    {quickEntry?.createBin?.enabled && (
+                        <button type="button" onClick={() => setCreateBinOpen((prev) => !prev)}>
+                            {createBinOpen ? quickEntry.createBin.closeLabel : quickEntry.createBin.openLabel}
                         </button>
                     )}
                     <button type="button" className="secondary" onClick={saveView}>{text.saveView}</button>
@@ -286,6 +330,15 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
                         {quickEntry.kind !== "cycle-count" && (
                             <>
                                 <label>
+                                    <span>{quickEntry.labels.bin}</span>
+                                    <select value={quickEntryForm.warehouseBinId} onChange={(event) => handleQuickEntryChange("warehouseBinId", event.target.value)}>
+                                        <option value="">{quickEntry.placeholders.bin}</option>
+                                        {(quickEntry.bins ?? []).filter((bin) => String(bin.warehouseId) === String(quickEntryForm.warehouseId)).map((bin) => (
+                                            <option key={bin.id} value={bin.id}>{bin.code} · {bin.name}</option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <label>
                                     <span className="sc-form-label-row">
                                         <HelpLabel label={quickEntry.labels.quantity} help={quickEntry.help?.quantity} />
                                     </span>
@@ -307,6 +360,26 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
                                         ))}
                                     </select>
                                 </label>
+                                <label>
+                                    <span>{quickEntry.labels.status}</span>
+                                    <select value={quickEntryForm.inventoryStatus} onChange={(event) => handleQuickEntryChange("inventoryStatus", event.target.value)}>
+                                        {(quickEntry.inventoryStatuses ?? []).map((option) => (
+                                            <option key={option.value} value={option.value}>{option.label}</option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <label>
+                                    <span>{quickEntry.labels.lot}</span>
+                                    <input type="text" value={quickEntryForm.lotNumber} onChange={(event) => handleQuickEntryChange("lotNumber", event.target.value)} placeholder={quickEntry.placeholders.lot} />
+                                </label>
+                                <label>
+                                    <span>{quickEntry.labels.serial}</span>
+                                    <input type="text" value={quickEntryForm.serialNumber} onChange={(event) => handleQuickEntryChange("serialNumber", event.target.value)} placeholder={quickEntry.placeholders.serial} />
+                                </label>
+                                <label>
+                                    <span>{quickEntry.labels.expiration}</span>
+                                    <input type="date" value={quickEntryForm.expirationDate} onChange={(event) => handleQuickEntryChange("expirationDate", event.target.value)} />
+                                </label>
                                 <label className="sc-quick-entry-span">
                                     <span className="sc-form-label-row">
                                         <HelpLabel label={quickEntry.labels.reference} help={quickEntry.help?.reference} />
@@ -317,6 +390,10 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
                                         onChange={(event) => handleQuickEntryChange("reference", event.target.value)}
                                         placeholder={quickEntry.placeholders.reference}
                                     />
+                                </label>
+                                <label className="sc-quick-entry-span">
+                                    <span>{quickEntry.labels.notes}</span>
+                                    <input type="text" value={quickEntryForm.notes} onChange={(event) => handleQuickEntryChange("notes", event.target.value)} placeholder={quickEntry.placeholders.notes} />
                                 </label>
                             </>
                         )}
@@ -427,13 +504,51 @@ const ProcessWorkspace = ({ id, title, titleHelp, subtitle, subtitleParts, rows,
                 </div>
             )}
 
+            {quickEntry?.createBin?.enabled && createBinOpen && (
+                <div className="sc-inline-form card">
+                    <h4>{quickEntry.createBin.title}</h4>
+                    <div className="sc-quick-entry-grid">
+                        <label>
+                            <span>{quickEntry.createBin.labels.warehouse}</span>
+                            <select value={createBinForm.warehouseId} onChange={(event) => setCreateBinForm((prev) => ({ ...prev, warehouseId: event.target.value }))} required>
+                                <option value="">{quickEntry.createBin.placeholders.warehouse}</option>
+                                {quickEntry.warehouses.map((warehouse) => <option key={warehouse.id} value={warehouse.id}>{warehouse.code} · {warehouse.name}</option>)}
+                            </select>
+                        </label>
+                        {["code", "name", "zone", "aisle", "rack", "shelf", "barcode"].map((field) => (
+                            <label key={field}>
+                                <span>{quickEntry.createBin.labels[field]}</span>
+                                <input value={createBinForm[field]} onChange={(event) => setCreateBinForm((prev) => ({ ...prev, [field]: event.target.value }))} placeholder={quickEntry.createBin.placeholders[field]} required={["code", "name"].includes(field)} />
+                            </label>
+                        ))}
+                        <div className="panel-actions sc-quick-entry-span">
+                            <button type="button" onClick={submitCreateBin} disabled={createBinSubmitting}>
+                                {createBinSubmitting ? quickEntry.createBin.submittingLabel : quickEntry.createBin.submitLabel}
+                            </button>
+                            <button type="button" className="secondary" onClick={() => setCreateBinOpen(false)}>{quickEntry.createBin.closeLabel}</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {receivingAssistant?.enabled && receivingAssistantOpen && (
                 <ReceivingAssistant
                     text={receivingAssistant.text}
                     warehouses={receivingAssistant.warehouses}
+                    bins={receivingAssistant.bins}
                     onPreview={receivingAssistant.onPreview}
                     onPreviewDocument={receivingAssistant.onPreviewDocument}
                     onApply={receivingAssistant.onApply}
+                />
+            )}
+
+            {orderComposer?.enabled && orderComposerOpen && (
+                <OrderComposer
+                    kind={orderComposer.kind}
+                    products={orderComposer.products}
+                    text={orderComposer.text}
+                    onSubmit={orderComposer.onSubmit}
+                    onClose={() => setOrderComposerOpen(false)}
                 />
             )}
 

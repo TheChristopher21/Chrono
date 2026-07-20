@@ -32,11 +32,12 @@ const renderNavbar = (authValue, initialRoute = '/') => {
 };
 
 describe('Navbar', () => {
-    it('shows login and register links when unauthenticated', () => {
+    it('shows login and an honest demo request CTA when unauthenticated', () => {
         mockNavigate.mockReset();
         renderNavbar({ authToken: null, currentUser: null, logout: vi.fn() }, '/login');
         expect(screen.getByText(/Login/i)).toBeInTheDocument();
-        expect(screen.getByText(/Registrieren/i)).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Demo anfragen' })).toHaveAttribute('href', '/register');
+        expect(screen.queryByText('Registrieren')).not.toBeInTheDocument();
         expect(screen.queryByText(/Abmelden/i)).toBeNull();
     });
 

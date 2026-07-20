@@ -2,15 +2,21 @@ package com.chrono.chrono.dto.inventory;
 
 import com.chrono.chrono.entities.inventory.PurchaseOrder;
 import com.chrono.chrono.entities.inventory.PurchaseOrderLine;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMin;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
 import java.util.List;
 
 public class CreatePurchaseOrderRequest {
-    private String orderNumber;
-    private String vendorName;
+    @NotBlank @Size(max = 255) private String orderNumber;
+    @NotBlank @Size(max = 255) private String vendorName;
     private LocalDate expectedDate;
-    private List<CreatePurchaseOrderRequestLine> lines;
+    @NotEmpty @Valid private List<CreatePurchaseOrderRequestLine> lines;
 
     public String getOrderNumber() {
         return orderNumber;
@@ -54,9 +60,9 @@ public class CreatePurchaseOrderRequest {
     }
 
     public static class CreatePurchaseOrderRequestLine {
-        private Long productId;
-        private java.math.BigDecimal quantity;
-        private java.math.BigDecimal unitCost;
+        @NotNull private Long productId;
+        @NotNull @DecimalMin(value = "0.0", inclusive = false) private java.math.BigDecimal quantity;
+        @NotNull @DecimalMin("0.0") private java.math.BigDecimal unitCost;
 
         public Long getProductId() {
             return productId;

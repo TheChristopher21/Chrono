@@ -4,6 +4,8 @@ import com.chrono.chrono.dto.inventory.AutoReplenishPlanDTO;
 import com.chrono.chrono.dto.inventory.AutoReplenishRequest;
 import com.chrono.chrono.dto.inventory.AutoReplenishResponse;
 import com.chrono.chrono.dto.inventory.PlanWavePickRequest;
+import com.chrono.chrono.dto.inventory.ReceivingApplyRequest;
+import com.chrono.chrono.dto.inventory.StockAdjustmentRequest;
 import com.chrono.chrono.dto.inventory.WavePickResponse;
 import com.chrono.chrono.dto.inventory.WavePickWaveDTO;
 import com.chrono.chrono.entities.Company;
@@ -13,6 +15,7 @@ import com.chrono.chrono.entities.inventory.*;
 import com.chrono.chrono.repositories.CompanyRepository;
 import com.chrono.chrono.repositories.accounting.VendorInvoiceRepository;
 import com.chrono.chrono.repositories.inventory.StockLevelRepository;
+import com.chrono.chrono.repositories.inventory.StockReservationRepository;
 import com.chrono.chrono.services.accounting.AccountingService;
 import com.chrono.chrono.services.accounting.AccountsPayableService;
 import com.chrono.chrono.warehouse.service.WarehouseIntelligenceService;
@@ -39,6 +42,9 @@ class SupplyChainServiceTest {
 
     @Autowired
     private StockLevelRepository stockLevelRepository;
+
+    @Autowired
+    private StockReservationRepository stockReservationRepository;
 
     @Autowired
     private VendorInvoiceRepository vendorInvoiceRepository;
@@ -264,6 +270,116 @@ class SupplyChainServiceTest {
     }
 
     @Test
+    void preventsNegativeStockAndMakesRepeatedPostingIdempotent() {
+        Company company = createCompany("Idempotency AG");
+        Product product = new Product();
+        product.setSku("SKU-IDEMPOTENT");
+        product.setName("Safe Posting");
+        product = supplyChainService.saveProduct(product, company);
+        Warehouse warehouse = new Warehouse();
+        warehouse.setCode("SAFE");
+        warehouse.setName("Safe Warehouse");
+        warehouse = supplyChainService.saveWarehouse(warehouse, company);
+
+        StockAdjustmentRequest request = new StockAdjustmentRequest();
+        request.setProductId(product.getId());
+        request.setWarehouseId(warehouse.getId());
+        request.setQuantityChange(new BigDecimal("5"));
+        request.setType(StockMovementType.RECEIPT);
+        request.setIdempotencyKey("scanner-event-4711");
+
+        StockMovement first = supplyChainService.adjustStock(company.getId(), request, "tester");
+        StockMovement repeated = supplyChainService.adjustStock(company.getId(), request, "tester");
+
+        assertThat(repeated.getId()).isEqualTo(first.getId());
+        assertThat(stockLevelRepository.findByProductAndWarehouse(product, warehouse).orElseThrow().getQuantity())
+                .isEqualByComparingTo("5");
+        Product persistedProduct = product;
+        Warehouse persistedWarehouse = warehouse;
+        assertThatThrownBy(() -> supplyChainService.adjustStock(persistedProduct, persistedWarehouse, new BigDecimal("-6"),
+                StockMovementType.ISSUE, "too-much", null, null, null))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("negative");
+    }
+
+    @Test
+    void receivesPurchaseOrderInPartialQuantitiesAndInvoicesOnlyWhenComplete() {
+        Product product = new Product();
+        product.setSku("SKU-PARTIAL");
+        product.setName("Partial Receipt");
+        product = supplyChainService.saveProduct(product);
+        Warehouse warehouse = new Warehouse();
+        warehouse.setCode("PARTIAL");
+        warehouse.setName("Inbound Warehouse");
+        warehouse = supplyChainService.saveWarehouse(warehouse);
+
+        PurchaseOrder order = new PurchaseOrder();
+        order.setOrderNumber("PO-PARTIAL");
+        order.setVendorName("Vendor");
+        PurchaseOrderLine line = new PurchaseOrderLine();
+        line.setProduct(product);
+        line.setQuantity(new BigDecimal("10"));
+        line.setUnitCost(new BigDecimal("2"));
+        order.setLines(new java.util.ArrayList<>(List.of(line)));
+        order = supplyChainService.createPurchaseOrder(order);
+
+        ReceivingApplyRequest firstReceipt = receivingRequest(warehouse.getId(), order.getId(), product.getId(), "4");
+        supplyChainService.applyReceiving(firstReceipt, warehouse);
+        assertThat(order.getStatus()).isEqualTo(PurchaseOrderStatus.PARTIALLY_RECEIVED);
+        assertThat(order.getLines().get(0).getReceivedQuantity()).isEqualByComparingTo("4");
+        assertThat(vendorInvoiceRepository.findAll()).isEmpty();
+
+        ReceivingApplyRequest finalReceipt = receivingRequest(warehouse.getId(), order.getId(), product.getId(), "6");
+        supplyChainService.applyReceiving(finalReceipt, warehouse);
+        assertThat(order.getStatus()).isEqualTo(PurchaseOrderStatus.RECEIVED);
+        assertThat(order.getLines().get(0).getOpenQuantity()).isEqualByComparingTo("0");
+        assertThat(vendorInvoiceRepository.findAll()).hasSize(1);
+    }
+
+    @Test
+    void reservesExpiringStockFirstAndConsumesTheReservationOnFulfillment() {
+        Product product = new Product();
+        product.setSku("SKU-FEFO");
+        product.setName("FEFO Item");
+        product = supplyChainService.saveProduct(product);
+        Warehouse warehouse = new Warehouse();
+        warehouse.setCode("FEFO");
+        warehouse.setName("FEFO Warehouse");
+        warehouse = supplyChainService.saveWarehouse(warehouse);
+
+        LocalDate early = LocalDate.now().plusDays(10);
+        LocalDate late = LocalDate.now().plusDays(40);
+        supplyChainService.adjustStock(product, warehouse, null, new BigDecimal("3"), StockMovementType.RECEIPT,
+                "late", null, "LOT-LATE", null, late, InventoryStatus.AVAILABLE, "tester", null);
+        supplyChainService.adjustStock(product, warehouse, null, new BigDecimal("3"), StockMovementType.RECEIPT,
+                "early", null, "LOT-EARLY", null, early, InventoryStatus.AVAILABLE, "tester", null);
+
+        SalesOrder order = new SalesOrder();
+        order.setOrderNumber("SO-FEFO");
+        order.setCustomerName("Customer");
+        SalesOrderLine line = new SalesOrderLine();
+        line.setProduct(product);
+        line.setQuantity(new BigDecimal("2"));
+        line.setUnitPrice(BigDecimal.ONE);
+        order.setLines(new java.util.ArrayList<>(List.of(line)));
+        order = supplyChainService.createSalesOrder(order);
+
+        supplyChainService.reserveSalesOrder(null, order.getId(), warehouse, "picker");
+        StockReservation reservation = stockReservationRepository
+                .findAllBySalesOrderLine_IdAndStatus(order.getLines().get(0).getId(), StockReservationStatus.ACTIVE)
+                .get(0);
+        assertThat(reservation.getStockLevel().getLotNumber()).isEqualTo("LOT-EARLY");
+
+        supplyChainService.fulfillSalesOrder(order.getId(), warehouse);
+        assertThat(order.getStatus()).isEqualTo(SalesOrderStatus.FULFILLED);
+        assertThat(reservation.getStatus()).isEqualTo(StockReservationStatus.CONSUMED);
+        StockLevel earlyLevel = stockLevelRepository.findByProduct(product).stream()
+                .filter(level -> "LOT-EARLY".equals(level.getLotNumber())).findFirst().orElseThrow();
+        assertThat(earlyLevel.getQuantity()).isEqualByComparingTo("1");
+        assertThat(earlyLevel.getReservedQuantity()).isEqualByComparingTo("0");
+    }
+
+    @Test
     void cycleCountPersistsAndAdjustsStockAfterApproval() {
         Product product = new Product();
         product.setSku("SKU-COUNT");
@@ -409,5 +525,17 @@ class SupplyChainServiceTest {
         Company company = new Company();
         company.setName(name);
         return companyRepository.save(company);
+    }
+
+    private ReceivingApplyRequest receivingRequest(Long warehouseId, Long purchaseOrderId, Long productId, String quantity) {
+        ReceivingApplyRequest request = new ReceivingApplyRequest();
+        request.setWarehouseId(warehouseId);
+        request.setPurchaseOrderId(purchaseOrderId);
+        request.setReference("delivery-note");
+        ReceivingApplyRequest.ReceivingApplyItem item = new ReceivingApplyRequest.ReceivingApplyItem();
+        item.setProductId(productId);
+        item.setQuantity(new BigDecimal(quantity));
+        request.setItems(List.of(item));
+        return request;
     }
 }

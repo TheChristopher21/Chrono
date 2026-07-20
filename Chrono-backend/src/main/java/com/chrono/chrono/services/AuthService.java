@@ -50,6 +50,10 @@ public class AuthService {
         User user = userRepository.findByUsername(request.getUsername())
                 .orElseThrow(() -> new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE));
 
+        if (user.isDeleted() || user.isDemoExpired(LocalDateTime.now())) {
+            throw new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE);
+        }
+
         if (user.getPassword() == null) {
             throw new InvalidCredentialsException(INVALID_CREDENTIALS_MESSAGE);
         }

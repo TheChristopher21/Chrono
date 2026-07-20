@@ -747,6 +747,23 @@ const AdminWeekSection = forwardRef(({
 
     const weekStartIso = useMemo(() => formatLocalDateYMD(weekDates[0]), [weekDates]);
     const weekEndIso = useMemo(() => formatLocalDateYMD(weekDates[weekDates.length - 1]), [weekDates]);
+    const selectedWeekIsCurrent = weekStartIso <= todayIsoForAccounting && todayIsoForAccounting <= weekEndIso;
+    const selectedWeekIsFuture = weekStartIso > todayIsoForAccounting;
+    const weekActualLabel = selectedWeekIsCurrent
+        ? t('adminDashboard.weekView.actualThroughToday', 'Ist (bis heute)')
+        : t('actualHours', 'Ist (Wo)');
+    const weekExpectedLabel = selectedWeekIsCurrent
+        ? t('adminDashboard.weekView.expectedThroughToday', 'Soll (bis heute)')
+        : t('expectedHours', 'Soll (Wo)');
+    const weekBalanceLabel = selectedWeekIsCurrent
+        ? t('adminDashboard.weekView.balanceThroughToday', 'Saldo (bis heute)')
+        : selectedWeekIsFuture
+            ? t('adminDashboard.weekView.balanceOpen', 'Saldo (noch offen)')
+            : t('balanceWeek', 'Saldo (Wo)');
+    const formatWeeklyMinutes = useCallback((value) => {
+        if (selectedWeekIsFuture) return '–';
+        return formatCalculatedMinutes(value, backendWeekStatus, minutesToHHMM);
+    }, [backendWeekStatus, selectedWeekIsFuture]);
     const accountingMonthStartIso = accountingMonthRangeDates.length > 0
         ? formatLocalDateYMD(accountingMonthRangeDates[0])
         : '';
@@ -1972,6 +1989,13 @@ const AdminWeekSection = forwardRef(({
                 {weekNavigationControls}
 
                 <CalculationStatusNotice status={activeTab === 'week' ? backendWeekStatus : backendMonthStatus} />
+                {activeTab === 'week' && (selectedWeekIsCurrent || selectedWeekIsFuture) && (
+                    <p className="week-evaluation-hint" role="status">
+                        {selectedWeekIsFuture
+                            ? t('adminDashboard.weekView.futureHint', 'Diese Woche liegt in der Zukunft und hat deshalb noch keinen Saldo.')
+                            : t('adminDashboard.weekView.currentHint', 'Laufende Woche: Ist, Soll und Saldo werden nur bis heute berechnet.')}
+                    </p>
+                )}
 
                 {activeTab === 'month' && !monthRangeIsValid ? (
                     <p className="no-data-message italic text-gray-600 p-4 text-center">
@@ -1995,13 +2019,13 @@ const AdminWeekSection = forwardRef(({
                                         {t('user', 'Benutzer')} {getSortIndicator('username')}
                                     </th>
                                     <th onClick={() => requestSort('weeklyActualMinutes')} className="sortable-header th-numeric">
-                                        {t('actualHours', 'Ist (Wo)')} {getSortIndicator('weeklyActualMinutes')}
+                                        {weekActualLabel} {getSortIndicator('weeklyActualMinutes')}
                                     </th>
                                     <th onClick={() => requestSort('weeklyExpectedMinutes')} className="sortable-header th-numeric">
-                                        {t('expectedHours', 'Soll (Wo)')} {getSortIndicator('weeklyExpectedMinutes')}
+                                        {weekExpectedLabel} {getSortIndicator('weeklyExpectedMinutes')}
                                     </th>
                                     <th onClick={() => requestSort('currentWeekOvertimeMinutes')} className="sortable-header th-numeric">
-                                        {t('balanceWeek', 'Saldo (Wo)')} {getSortIndicator('currentWeekOvertimeMinutes')}
+                                        {weekBalanceLabel} {getSortIndicator('currentWeekOvertimeMinutes')}
                                     </th>
                                     <th onClick={() => requestSort('cumulativeBalanceMinutes')} className="sortable-header th-numeric">
                                         {t('balanceTotal', 'Gesamtüberstunden')} {getSortIndicator('cumulativeBalanceMinutes')}
@@ -2017,9 +2041,9 @@ const AdminWeekSection = forwardRef(({
                                     <React.Fragment key={userData.username}>
                                         <tr className={`user-row ${detailedUser === userData.username ? "user-row-detailed" : ""} ${hiddenUsers.has(userData.username) ? "user-row-hidden" : ""}`}>
                                             <td data-label={t('user', 'Benutzer')} className="td-user" style={{ borderLeft: `4px solid ${userData.userColor}` }}>{userData.displayName || userData.username}</td>
-                                            <td data-label={t('actualHours', 'Ist (Wo)')} className="td-numeric">{formatCalculatedMinutes(userData.weeklyActualMinutes, backendWeekStatus, minutesToHHMM)}</td>
-                                            <td data-label={t('expectedHours', 'Soll (Wo)')} className="td-numeric">{formatCalculatedMinutes(userData.weeklyExpectedMinutes, backendWeekStatus, minutesToHHMM)}</td>
-                                            <td data-label={t('balanceWeek', 'Saldo (Wo)')} className={`td-numeric ${Number.isFinite(userData.currentWeekOvertimeMinutes) && userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{formatCalculatedMinutes(userData.currentWeekOvertimeMinutes, backendWeekStatus, minutesToHHMM)}</td>
+                                            <td data-label={weekActualLabel} className="td-numeric">{formatWeeklyMinutes(userData.weeklyActualMinutes)}</td>
+                                            <td data-label={weekExpectedLabel} className="td-numeric">{formatWeeklyMinutes(userData.weeklyExpectedMinutes)}</td>
+                                            <td data-label={weekBalanceLabel} className={`td-numeric ${Number.isFinite(userData.currentWeekOvertimeMinutes) && userData.currentWeekOvertimeMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{formatWeeklyMinutes(userData.currentWeekOvertimeMinutes)}</td>
                                             <td data-label={t('balanceTotal', 'Gesamtüberstunden')} className={`td-numeric ${userData.cumulativeBalanceMinutes < 0 ? 'negative-balance' : 'positive-balance'}`}>{minutesToHHMM(userData.cumulativeBalanceMinutes)}</td>
                                             <td data-label={t('issues', 'Probleme')} className="problem-indicators-cell td-center">
                                                 {renderProblemIndicatorsCell(userData)}
@@ -2046,7 +2070,7 @@ const AdminWeekSection = forwardRef(({
                                                         <div className="user-weekly-balance-detail text-xs mb-2 font-medium">
                                                             <span>{t('balanceTotal', 'Gesamtüberstunden')}: {minutesToHHMM(userData.cumulativeBalanceMinutes)}</span>
                                                             <span className="mx-2">|</span>
-                                                            <span>{t('balanceWeek', 'Saldo (akt. Woche)')}: {formatCalculatedMinutes(userData.currentWeekOvertimeMinutes, backendWeekStatus, minutesToHHMM)}</span>
+                                                            <span>{weekBalanceLabel}: {formatWeeklyMinutes(userData.currentWeekOvertimeMinutes)}</span>
                                                         </div>
                                                         {shouldShowWeeklyDeltaIssues && Math.abs(userData.currentWeekOvertimeMinutes || 0) >= UNUSUAL_WEEKLY_DELTA_THRESHOLD_MINUTES && (
                                                             <label className="text-xs flex items-center gap-2 mb-2">

@@ -46,7 +46,7 @@ const readImageSignals = async (file) => {
     }
 };
 
-const ReceivingAssistant = ({ text, warehouses, onPreview, onPreviewDocument, onApply }) => {
+const ReceivingAssistant = ({ text, warehouses, bins = [], onPreview, onPreviewDocument, onApply }) => {
     const [scanValue, setScanValue] = useState("");
     const [warehouseId, setWarehouseId] = useState("");
     const [reference, setReference] = useState("");
@@ -75,6 +75,11 @@ const ReceivingAssistant = ({ text, warehouses, onPreview, onPreviewDocument, on
         setEditableItems((result?.items ?? []).map((item) => ({
             ...item,
             quantity: String(item.quantity ?? "1"),
+            warehouseBinId: "",
+            lotNumber: "",
+            serialNumber: "",
+            expirationDate: "",
+            inventoryStatus: "AVAILABLE",
         })));
         setReference(result?.reference ?? fallbackReference ?? "");
         setCompletePurchaseOrder(Boolean(result?.canCompletePurchaseOrder));
@@ -225,6 +230,12 @@ const ReceivingAssistant = ({ text, warehouses, onPreview, onPreviewDocument, on
         )));
     };
 
+    const handleItemChange = (productId, field, value) => {
+        setEditableItems((prev) => prev.map((item) => (
+            item.productId === productId ? { ...item, [field]: value } : item
+        )));
+    };
+
     const applyPreview = async () => {
         if (!preview?.ready || !warehouseId || busy) {
             return;
@@ -239,7 +250,12 @@ const ReceivingAssistant = ({ text, warehouses, onPreview, onPreviewDocument, on
                 completePurchaseOrder,
                 items: editableItems.map((item) => ({
                     productId: item.productId,
+                    warehouseBinId: item.warehouseBinId ? Number(item.warehouseBinId) : null,
                     quantity: item.quantity === "" ? "0" : item.quantity,
+                    lotNumber: item.lotNumber || null,
+                    serialNumber: item.serialNumber || null,
+                    expirationDate: item.expirationDate || null,
+                    inventoryStatus: item.inventoryStatus,
                 })),
             };
 
@@ -399,6 +415,10 @@ const ReceivingAssistant = ({ text, warehouses, onPreview, onPreviewDocument, on
                                     <span>{text.columns.name}</span>
                                     <span>{text.columns.quantity}</span>
                                     <span>{text.columns.unit}</span>
+                                    <span>{text.columns.bin}</span>
+                                    <span>{text.columns.lot}</span>
+                                    <span>{text.columns.expiration}</span>
+                                    <span>{text.columns.status}</span>
                                 </div>
                                 {editableItems.map((item) => (
                                     <div key={item.productId} className="sc-receiving-item-row">
@@ -412,6 +432,20 @@ const ReceivingAssistant = ({ text, warehouses, onPreview, onPreviewDocument, on
                                             onChange={(event) => handleItemQuantityChange(item.productId, event.target.value)}
                                         />
                                         <span>{item.unitOfMeasure ?? "-"}</span>
+                                        <select value={item.warehouseBinId} onChange={(event) => handleItemChange(item.productId, "warehouseBinId", event.target.value)}>
+                                            <option value="">{text.placeholders.bin}</option>
+                                            {bins.filter((bin) => String(bin.warehouseId) === String(warehouseId)).map((bin) => (
+                                                <option key={bin.id} value={bin.id}>{bin.code}</option>
+                                            ))}
+                                        </select>
+                                        <input type="text" value={item.lotNumber} onChange={(event) => handleItemChange(item.productId, "lotNumber", event.target.value)} placeholder={text.placeholders.lot} />
+                                        <input type="date" value={item.expirationDate} onChange={(event) => handleItemChange(item.productId, "expirationDate", event.target.value)} />
+                                        <select value={item.inventoryStatus} onChange={(event) => handleItemChange(item.productId, "inventoryStatus", event.target.value)}>
+                                            <option value="AVAILABLE">{text.statuses.available}</option>
+                                            <option value="QUALITY_INSPECTION">{text.statuses.quality}</option>
+                                            <option value="QUARANTINE">{text.statuses.quarantine}</option>
+                                            <option value="BLOCKED">{text.statuses.blocked}</option>
+                                        </select>
                                     </div>
                                 ))}
                             </div>

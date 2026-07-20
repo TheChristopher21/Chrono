@@ -6,9 +6,14 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface StockMovementRepository extends JpaRepository<StockMovement, Long> {
     List<StockMovement> findAllByProduct_Company_Id(Long companyId);
 
     Page<StockMovement> findAllByProduct_Company_Id(Long companyId, Pageable pageable);
+
+    Optional<StockMovement> findByIdempotencyKeyAndProduct_Company_Id(String idempotencyKey, Long companyId);
+
+    Optional<StockMovement> findByIdempotencyKey(String idempotencyKey);
 }

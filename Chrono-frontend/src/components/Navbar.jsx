@@ -404,8 +404,14 @@ const Navbar = () => {
                                 </Link>
                             </li>
                             <li>
-                                <Link to="/register" onClick={closeMobileNav} className={`${styles.marketingLink} ${styles.marketingCta}`}>
-                                    {t('navbar.register', 'Registrieren')}
+                                <Link
+                                    to="/register"
+                                    onClick={closeMobileNav}
+                                    className={`${styles.marketingLink} ${styles.marketingCta}`}
+                                    data-analytics-id="navbar_demo_request"
+                                    data-analytics-target="/register"
+                                >
+                                    {t('navbar.register', 'Demo anfragen')}
                                 </Link>
                             </li>
                             <li>

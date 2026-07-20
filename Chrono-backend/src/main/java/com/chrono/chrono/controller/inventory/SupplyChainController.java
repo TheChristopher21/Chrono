@@ -37,6 +37,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
+import jakarta.validation.Valid;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -109,7 +110,7 @@ public class SupplyChainController {
     }
 
     @PostMapping("/products")
-    public ResponseEntity<ProductDTO> createProduct(@RequestBody CreateProductRequest request, Principal principal) {
+    public ResponseEntity<ProductDTO> createProduct(@Valid @RequestBody CreateProductRequest request, Principal principal) {
         Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         Product saved = supplyChainService.saveProduct(request.toEntity(), company);
         return ResponseEntity.created(URI.create("/api/supply-chain/products/" + saved.getId()))
@@ -126,11 +127,28 @@ public class SupplyChainController {
     }
 
     @PostMapping("/warehouses")
-    public ResponseEntity<WarehouseDTO> createWarehouse(@RequestBody CreateWarehouseRequest request, Principal principal) {
+    public ResponseEntity<WarehouseDTO> createWarehouse(@Valid @RequestBody CreateWarehouseRequest request, Principal principal) {
         Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         Warehouse saved = supplyChainService.saveWarehouse(request.toEntity(), company);
         return ResponseEntity.created(URI.create("/api/supply-chain/warehouses/" + saved.getId()))
                 .body(WarehouseDTO.from(saved));
+    }
+
+    @GetMapping("/warehouses/{warehouseId}/bins")
+    public ResponseEntity<List<WarehouseBinDTO>> listWarehouseBins(@PathVariable Long warehouseId,
+                                                                   Principal principal) {
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok(supplyChainService.listWarehouseBins(company.getId(), warehouseId));
+    }
+
+    @PostMapping("/warehouses/{warehouseId}/bins")
+    public ResponseEntity<WarehouseBinDTO> createWarehouseBin(@PathVariable Long warehouseId,
+                                                              @Valid @RequestBody CreateWarehouseBinRequest request,
+                                                              Principal principal) {
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
+        WarehouseBinDTO saved = supplyChainService.createWarehouseBin(company.getId(), warehouseId, request);
+        return ResponseEntity.created(URI.create("/api/supply-chain/warehouses/" + warehouseId + "/bins/" + saved.id()))
+                .body(saved);
     }
 
     @GetMapping("/stock")
@@ -145,13 +163,9 @@ public class SupplyChainController {
     }
 
     @PostMapping("/stock/adjust")
-    public ResponseEntity<StockMovementDTO> adjustStock(@RequestBody StockAdjustmentRequest request, Principal principal) {
+    public ResponseEntity<StockMovementDTO> adjustStock(@Valid @RequestBody StockAdjustmentRequest request, Principal principal) {
         Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
-        Product product = productRepository.findByIdAndCompany_Id(request.getProductId(), company.getId()).orElseThrow();
-        Warehouse warehouse = warehouseRepository.findByIdAndCompany_Id(request.getWarehouseId(), company.getId()).orElseThrow();
-        StockMovement movement = supplyChainService.adjustStock(product, warehouse,
-                request.getQuantityChange(), request.getType(), request.getReference(),
-                request.getLotNumber(), request.getSerialNumber(), request.getExpirationDate());
+        StockMovement movement = supplyChainService.adjustStock(company.getId(), request, principal.getName());
         return ResponseEntity.created(URI.create("/api/supply-chain/stock-movements/" + movement.getId()))
                 .body(StockMovementDTO.from(movement));
     }
@@ -178,7 +192,7 @@ public class SupplyChainController {
     }
 
     @PostMapping("/cycle-counts")
-    public ResponseEntity<CycleCountDTO> createCycleCount(@RequestBody CreateCycleCountRequest request, Principal principal) {
+    public ResponseEntity<CycleCountDTO> createCycleCount(@Valid @RequestBody CreateCycleCountRequest request, Principal principal) {
         Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         Product product = productRepository.findByIdAndCompany_Id(request.getProductId(), company.getId()).orElseThrow();
         Warehouse warehouse = warehouseRepository.findByIdAndCompany_Id(request.getWarehouseId(), company.getId()).orElseThrow();
@@ -189,7 +203,7 @@ public class SupplyChainController {
 
     @PostMapping("/cycle-counts/{id}/submit")
     public ResponseEntity<CycleCountDTO> submitCycleCount(@PathVariable Long id,
-                                                          @RequestBody SubmitCycleCountRequest request,
+                                                          @Valid @RequestBody SubmitCycleCountRequest request,
                                                           Principal principal) {
         Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         CycleCount updated = supplyChainService.submitCycleCount(company.getId(), id, request.getCountedQuantity(),
@@ -199,13 +213,13 @@ public class SupplyChainController {
 
     @PostMapping("/cycle-counts/{id}/approve")
     public ResponseEntity<CycleCountDTO> approveCycleCount(@PathVariable Long id, Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         CycleCount updated = supplyChainService.approveCycleCount(company.getId(), id, principal != null ? principal.getName() : "system");
         return ResponseEntity.ok(CycleCountDTO.from(updated));
     }
 
     @PostMapping("/receiving/preview")
-    public ResponseEntity<ReceivingPreviewResponse> previewReceiving(@RequestBody ReceivingPreviewRequest request,
+    public ResponseEntity<ReceivingPreviewResponse> previewReceiving(@Valid @RequestBody ReceivingPreviewRequest request,
                                                                     Principal principal) {
         Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
         return ResponseEntity.ok(supplyChainService.previewReceiving(company.getId(), request));
@@ -214,7 +228,7 @@ public class SupplyChainController {
     @PostMapping(value = "/receiving/document-preview", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ReceivingPreviewResponse> previewReceivingDocument(@RequestParam("file") MultipartFile file,
                                                                              Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
         ReceivingPreviewRequest request = new ReceivingPreviewRequest();
         request.setFileName(file.getOriginalFilename());
         request.setDocumentText(extractDocumentText(file));
@@ -222,9 +236,9 @@ public class SupplyChainController {
     }
 
     @PostMapping("/receiving/apply")
-    public ResponseEntity<ReceivingApplyResponse> applyReceiving(@RequestBody ReceivingApplyRequest request,
+    public ResponseEntity<ReceivingApplyResponse> applyReceiving(@Valid @RequestBody ReceivingApplyRequest request,
                                                                  Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         Warehouse warehouse = warehouseRepository.findByIdAndCompany_Id(request.getWarehouseId(), company.getId()).orElseThrow();
         return ResponseEntity.ok(supplyChainService.applyReceiving(company.getId(), request, warehouse));
     }
@@ -234,7 +248,7 @@ public class SupplyChainController {
     public ResponseEntity<Page<PurchaseOrderDTO>> listPurchaseOrders(@RequestParam(defaultValue = "0") int page,
                                                                      @RequestParam(defaultValue = "20") int size,
                                                                      Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
         Page<PurchaseOrderDTO> orders = supplyChainService.listPurchaseOrders(company.getId(), pageable)
                 .map(PurchaseOrderDTO::from);
@@ -242,7 +256,7 @@ public class SupplyChainController {
     }
 
     @PostMapping("/purchase-orders")
-    public ResponseEntity<PurchaseOrderDTO> createPurchaseOrder(@RequestBody CreatePurchaseOrderRequest request,
+    public ResponseEntity<PurchaseOrderDTO> createPurchaseOrder(@Valid @RequestBody CreatePurchaseOrderRequest request,
                                                                 Principal principal) {
         Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         List<PurchaseOrderLine> lines = request.getLines() == null ? List.of() : request.getLines().stream()
@@ -261,7 +275,7 @@ public class SupplyChainController {
 
     @PostMapping("/purchase-orders/{id}/receive")
     public ResponseEntity<PurchaseOrderDTO> receivePurchaseOrder(@PathVariable Long id,
-                                                                 @RequestBody WarehouseReferenceRequest ref,
+                                                                 @Valid @RequestBody WarehouseReferenceRequest ref,
                                                                  Principal principal) {
         Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         Warehouse warehouse = warehouseRepository.findByIdAndCompany_Id(ref.getWarehouseId(), company.getId()).orElseThrow();
@@ -271,7 +285,7 @@ public class SupplyChainController {
     @PostMapping("/procurement/auto-replenish")
     public ResponseEntity<AutoReplenishResponse> autoReplenish(@RequestBody AutoReplenishRequest request,
                                                                Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         AutoReplenishResponse response = supplyChainService.autoReplenish(company.getId(), request);
         return ResponseEntity.ok(response);
     }
@@ -279,7 +293,7 @@ public class SupplyChainController {
     @PostMapping("/procurement/replenishment-preview")
     public ResponseEntity<ReplenishmentPreviewResponse> previewReplenishment(@RequestBody AutoReplenishRequest request,
                                                                              Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
         ReplenishmentPreviewResponse response = supplyChainService.previewReplenishment(company.getId(), request);
         return ResponseEntity.ok(response);
     }
@@ -289,7 +303,7 @@ public class SupplyChainController {
     public ResponseEntity<Page<SalesOrderDTO>> listSalesOrders(@RequestParam(defaultValue = "0") int page,
                                                                @RequestParam(defaultValue = "20") int size,
                                                                Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
         Page<SalesOrderDTO> orders = supplyChainService.listSalesOrders(company.getId(), pageable)
                 .map(SalesOrderDTO::from);
@@ -297,7 +311,7 @@ public class SupplyChainController {
     }
 
     @PostMapping("/sales-orders")
-    public ResponseEntity<SalesOrderDTO> createSalesOrder(@RequestBody CreateSalesOrderRequest request,
+    public ResponseEntity<SalesOrderDTO> createSalesOrder(@Valid @RequestBody CreateSalesOrderRequest request,
                                                           Principal principal) {
         Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         List<SalesOrderLine> lines = request.getLines() == null ? List.of() : request.getLines().stream()
@@ -316,17 +330,28 @@ public class SupplyChainController {
 
     @PostMapping("/sales-orders/{id}/fulfill")
     public ResponseEntity<SalesOrderDTO> fulfillSalesOrder(@PathVariable Long id,
-                                                           @RequestBody WarehouseReferenceRequest ref,
+                                                           @Valid @RequestBody WarehouseReferenceRequest ref,
                                                            Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         Warehouse warehouse = warehouseRepository.findByIdAndCompany_Id(ref.getWarehouseId(), company.getId()).orElseThrow();
-        return ResponseEntity.ok(SalesOrderDTO.from(supplyChainService.fulfillSalesOrder(company.getId(), id, warehouse)));
+        return ResponseEntity.ok(SalesOrderDTO.from(supplyChainService.fulfillSalesOrder(company.getId(), id, warehouse,
+                principal.getName())));
+    }
+
+    @PostMapping("/sales-orders/{id}/reserve")
+    public ResponseEntity<SalesOrderDTO> reserveSalesOrder(@PathVariable Long id,
+                                                           @Valid @RequestBody WarehouseReferenceRequest ref,
+                                                           Principal principal) {
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
+        Warehouse warehouse = warehouseRepository.findByIdAndCompany_Id(ref.getWarehouseId(), company.getId()).orElseThrow();
+        return ResponseEntity.ok(SalesOrderDTO.from(supplyChainService.reserveSalesOrder(company.getId(), id, warehouse,
+                principal.getName())));
     }
 
     @PostMapping("/sales-orders/pick-waves")
     public ResponseEntity<WavePickResponse> planWavePicking(@RequestBody PlanWavePickRequest request,
                                                             Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
         return ResponseEntity.ok(supplyChainService.planWavePicking(company.getId(), request));
     }
 
@@ -334,7 +359,7 @@ public class SupplyChainController {
     public ResponseEntity<Page<ProductionOrderDTO>> listProductionOrders(@RequestParam(defaultValue = "0") int page,
                                                                          @RequestParam(defaultValue = "20") int size,
                                                                          Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
         Page<ProductionOrderDTO> orders = supplyChainService.listProductionOrders(company.getId(), pageable)
                 .map(ProductionOrderDTO::from);
@@ -355,7 +380,7 @@ public class SupplyChainController {
     public ResponseEntity<ProductionOrderDTO> updateProductionOrderStatus(@PathVariable Long id,
                                                                           @RequestBody UpdateProductionOrderStatusRequest request,
                                                                           Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
         ProductionOrder updated = supplyChainService.updateProductionOrderStatus(company.getId(), id, request.getStatus(),
                 request.getStartDate(), request.getCompletionDate());
         return ResponseEntity.ok(ProductionOrderDTO.from(updated));
@@ -365,7 +390,7 @@ public class SupplyChainController {
     public ResponseEntity<Page<ServiceRequestDTO>> listServiceRequests(@RequestParam(defaultValue = "0") int page,
                                                                        @RequestParam(defaultValue = "20") int size,
                                                                        Principal principal) {
-        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_MANAGE);
+        Company company = requireAccessibleCompany(principal, UserPermissionService.ACCESS_VIEW);
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
         Page<ServiceRequestDTO> requests = supplyChainService.listServiceRequests(company.getId(), pageable)
                 .map(ServiceRequestDTO::from);

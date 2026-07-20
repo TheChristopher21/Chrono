@@ -6,6 +6,7 @@ import api from "../utils/api";
 import { useNotification } from "../context/NotificationContext";
 import { useTranslation } from "../context/LanguageContext";
 import { BASE_FEATURE, FEATURE_CATALOG } from "../constants/registrationFeatures";
+import { trackAnalyticsSignal } from "../utils/analytics";
 
 const COUNTRY_CODES = ["ch", "de", "other"];
 const BILLING_PERIODS = ["monthly", "yearly"];
@@ -38,6 +39,8 @@ const Registration = () => {
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [configurationStarted, setConfigurationStarted] = useState(false);
+    const [contactFormStarted, setContactFormStarted] = useState(false);
 
     const countryOptions = useMemo(
         () =>
@@ -152,16 +155,31 @@ const Registration = () => {
         "--progress": `${((configuration.employeeCount - 1) / 199) * 100}%`,
     };
 
+    const markConfigurationStarted = () => {
+        if (configurationStarted) return;
+        setConfigurationStarted(true);
+        trackAnalyticsSignal("registration_configurator_started", "/register#configuration");
+    };
+
+    const markContactFormStarted = () => {
+        if (contactFormStarted) return;
+        setContactFormStarted(true);
+        trackAnalyticsSignal("registration_contact_form_started", "/register#contact");
+    };
+
     const handleConfigurationChange = (field, value) => {
+        markConfigurationStarted();
         setConfiguration((prev) => ({ ...prev, [field]: value }));
     };
 
     const handleFormChange = (event) => {
+        markContactFormStarted();
         const { name, value } = event.target;
         setForm((prev) => ({ ...prev, [name]: value }));
     };
 
     const handleConsentChange = (event) => {
+        markContactFormStarted();
         const { name, checked } = event.target;
         setConsents((prev) => ({ ...prev, [name]: checked }));
     };
@@ -172,6 +190,7 @@ const Registration = () => {
             return;
         }
 
+        markConfigurationStarted();
         setSelectedFeatures((prev) =>
             prev.includes(featureKey) ? prev.filter((key) => key !== featureKey) : [...prev, featureKey]
         );
@@ -182,6 +201,7 @@ const Registration = () => {
         setError("");
 
         if (!consents.terms || !consents.contact) {
+            trackAnalyticsSignal("registration_form_validation_error", "consent");
             setError(
                 t(
                     "registration.errors.acceptTerms",
@@ -192,6 +212,7 @@ const Registration = () => {
         }
 
         if (configuration.employeeCount < 1 || configuration.employeeCount > 200) {
+            trackAnalyticsSignal("registration_form_validation_error", "employeeCount");
             setError(
                 t(
                     "registration.errors.employeeRange",
@@ -240,6 +261,7 @@ const Registration = () => {
             };
 
             await api.post("/api/apply", payload);
+            trackAnalyticsSignal("registration_application_success", "/register");
             setSuccess(true);
             notify(
                 t(
@@ -249,6 +271,7 @@ const Registration = () => {
                 "success"
             );
         } catch (submitError) {
+            trackAnalyticsSignal("registration_application_error", "/register");
             console.error("Fehler bei der Übermittlung", submitError);
             const rawMessage =
                 submitError.response?.data?.message ||
@@ -444,7 +467,10 @@ const Registration = () => {
                                                     name='billingPeriod'
                                                     value={option.value}
                                                     checked={billingPeriod === option.value}
-                                                    onChange={(event) => setBillingPeriod(event.target.value)}
+                                                    onChange={(event) => {
+                                                        markConfigurationStarted();
+                                                        setBillingPeriod(event.target.value);
+                                                    }}
                                                 />
                                                 <span>{option.label}</span>
                                             </label>
@@ -689,7 +715,7 @@ const Registration = () => {
                                     onChange={handleFormChange}
                                     placeholder={t(
                                         "registration.contact.phonePlaceholder",
-                                        "+41 71 000 00 00"
+                                        "+41 76 546 79 60"
                                     )}
                                 />
                             </label>
@@ -735,7 +761,13 @@ const Registration = () => {
 
                             {error && <div className="form-error">{error}</div>}
 
-                            <button type="submit" className="primary-button" disabled={isSubmitting}>
+                            <button
+                                type="submit"
+                                className="primary-button"
+                                disabled={isSubmitting}
+                                data-analytics-id="registration_application_submit"
+                                data-analytics-target="/register"
+                            >
                                 {isSubmitting
                                     ? t("registration.contact.sending", "Senden …")
                                     : t("registration.contact.submit", "Unverbindliche Anfrage senden")}

@@ -374,7 +374,8 @@
 .sc-receiving-summary input,
 .sc-receiving-summary select,
 .sc-receiving-upload input[type="file"],
-.sc-receiving-item-row input {
+.sc-receiving-item-row input,
+.sc-receiving-item-row select {
     width: 100%;
     border-radius: 10px;
     border: 1px solid rgba(37, 99, 235, 0.22);
@@ -385,6 +386,111 @@
 
 .sc-receiving-inline-note {
     margin: 0.65rem 0 0;
+}
+
+.sc-drawer-process-actions {
+    display: grid;
+    gap: 0.85rem;
+    margin-top: 1rem;
+    padding: 1rem;
+    border: 1px solid rgba(37, 99, 235, 0.18);
+    border-radius: 14px;
+    background: rgba(239, 246, 255, 0.7);
+}
+
+.sc-drawer-process-actions h3,
+.sc-drawer-process-actions p {
+    margin: 0;
+}
+
+.sc-drawer-process-actions label {
+    display: grid;
+    gap: 0.35rem;
+    font-weight: 600;
+}
+
+.sc-drawer-process-actions select {
+    width: 100%;
+    border: 1px solid rgba(37, 99, 235, 0.24);
+    border-radius: 10px;
+    padding: 0.6rem 0.7rem;
+    background: var(--sc-surface, #fff);
+    color: inherit;
+}
+
+.sc-order-progress {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.5rem;
+}
+
+.sc-order-progress span {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.65rem;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.78);
+    font-size: 0.78rem;
+}
+
+.sc-order-progress strong {
+    font-size: 1.05rem;
+}
+
+.sc-process-error {
+    color: #b91c1c;
+    font-weight: 600;
+}
+
+.sc-order-composer {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    border-color: rgba(37, 99, 235, 0.2);
+}
+
+.sc-order-lines {
+    display: grid;
+    gap: 0.55rem;
+}
+
+.sc-order-line {
+    display: grid;
+    grid-template-columns: minmax(220px, 2fr) minmax(110px, 0.7fr) minmax(130px, 0.8fr) 44px;
+    gap: 0.55rem;
+    align-items: center;
+}
+
+.sc-order-line input,
+.sc-order-line select {
+    min-width: 0;
+    width: 100%;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid rgba(37, 99, 235, 0.2);
+    border-radius: 10px;
+    background: var(--sc-surface, #fff);
+    color: inherit;
+}
+
+.sc-order-line-head {
+    color: var(--sc-text-soft, #64748b);
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.sc-order-composer-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+@media (max-width: 760px) {
+    .sc-order-line {
+        grid-template-columns: 1fr 1fr;
+    }
 }
 
 .sc-receiving-error {
@@ -448,13 +554,14 @@
     margin-top: 1rem;
     border: 1px solid rgba(37, 99, 235, 0.18);
     border-radius: 12px;
-    overflow: hidden;
+    overflow-x: auto;
 }
 
 .sc-receiving-items-head,
 .sc-receiving-item-row {
     display: grid;
-    grid-template-columns: minmax(100px, 0.95fr) minmax(180px, 2fr) minmax(120px, 0.8fr) minmax(90px, 0.7fr);
+    grid-template-columns: minmax(100px, 0.9fr) minmax(170px, 1.5fr) minmax(100px, 0.7fr) minmax(70px, 0.5fr) minmax(110px, 0.8fr) minmax(130px, 0.9fr) minmax(145px, 0.9fr) minmax(150px, 1fr);
+    min-width: 1050px;
     gap: 0.75rem;
     align-items: center;
     padding: 0.75rem 1rem;
@@ -521,7 +628,8 @@
 [data-theme="dark"] .sc-receiving-summary input,
 [data-theme="dark"] .sc-receiving-summary select,
 [data-theme="dark"] .sc-receiving-upload input[type="file"],
-[data-theme="dark"] .sc-receiving-item-row input {
+[data-theme="dark"] .sc-receiving-item-row input,
+[data-theme="dark"] .sc-receiving-item-row select {
     background: rgba(15, 23, 42, 0.88);
     border-color: rgba(148, 163, 184, 0.34);
 }
@@ -2701,7 +2809,7 @@
 
     .sc-receiving-items-head,
     .sc-receiving-item-row {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: repeat(8, minmax(130px, 1fr));
     }
 }
 

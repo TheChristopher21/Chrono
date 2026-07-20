@@ -12,6 +12,9 @@ import com.chrono.chrono.dto.inventory.ReceivingApplyResponse;
 import com.chrono.chrono.dto.inventory.ReceivingPreviewRequest;
 import com.chrono.chrono.dto.inventory.ReceivingPreviewResponse;
 import com.chrono.chrono.dto.inventory.ReplenishmentPreviewResponse;
+import com.chrono.chrono.dto.inventory.CreateWarehouseBinRequest;
+import com.chrono.chrono.dto.inventory.StockAdjustmentRequest;
+import com.chrono.chrono.dto.inventory.WarehouseBinDTO;
 import com.chrono.chrono.dto.inventory.WavePickOrderSummaryDTO;
 import com.chrono.chrono.dto.inventory.WavePickResponse;
 import com.chrono.chrono.dto.inventory.WavePickStopDTO;
@@ -73,6 +76,8 @@ public class SupplyChainService {
     private final WarehouseRepository warehouseRepository;
     private final StockLevelRepository stockLevelRepository;
     private final StockMovementRepository stockMovementRepository;
+    private final WarehouseBinRepository warehouseBinRepository;
+    private final StockReservationRepository stockReservationRepository;
     private final CycleCountRepository cycleCountRepository;
     private final PurchaseOrderRepository purchaseOrderRepository;
     private final SalesOrderRepository salesOrderRepository;
@@ -85,6 +90,8 @@ public class SupplyChainService {
                               WarehouseRepository warehouseRepository,
                               StockLevelRepository stockLevelRepository,
                               StockMovementRepository stockMovementRepository,
+                              WarehouseBinRepository warehouseBinRepository,
+                              StockReservationRepository stockReservationRepository,
                               CycleCountRepository cycleCountRepository,
                               PurchaseOrderRepository purchaseOrderRepository,
                               SalesOrderRepository salesOrderRepository,
@@ -96,6 +103,8 @@ public class SupplyChainService {
         this.warehouseRepository = warehouseRepository;
         this.stockLevelRepository = stockLevelRepository;
         this.stockMovementRepository = stockMovementRepository;
+        this.warehouseBinRepository = warehouseBinRepository;
+        this.stockReservationRepository = stockReservationRepository;
         this.cycleCountRepository = cycleCountRepository;
         this.purchaseOrderRepository = purchaseOrderRepository;
         this.salesOrderRepository = salesOrderRepository;
@@ -125,6 +134,7 @@ public class SupplyChainService {
     public Warehouse saveWarehouse(Warehouse warehouse) {
         ensureUniqueWarehouseCode(warehouse);
         Warehouse saved = warehouseRepository.save(warehouse);
+        ensureDefaultBin(saved);
         warehouseIntelligenceService.registerWarehouse(saved);
         return saved;
     }
@@ -146,35 +156,138 @@ public class SupplyChainService {
                                      String lotNumber,
                                      String serialNumber,
                                      LocalDate expirationDate) {
-        if (quantity == null) {
-            throw new IllegalArgumentException("Quantity change is required");
+        return adjustStock(product, warehouse, null, quantity, type, reference, null, lotNumber,
+                serialNumber, expirationDate, InventoryStatus.AVAILABLE, null, null);
+    }
+
+    @Transactional
+    public StockMovement adjustStock(Product product,
+                                     Warehouse warehouse,
+                                     WarehouseBin warehouseBin,
+                                     BigDecimal quantity,
+                                     StockMovementType type,
+                                     String reference,
+                                     String notes,
+                                     String lotNumber,
+                                     String serialNumber,
+                                     LocalDate expirationDate,
+                                     InventoryStatus inventoryStatus,
+                                     String createdBy,
+                                     String idempotencyKey) {
+        if (product == null || warehouse == null || quantity == null || type == null) {
+            throw new IllegalArgumentException("Product, warehouse, quantity and movement type are required");
         }
-        ensureSameCompany(product != null ? product.getCompany() : null,
-                warehouse != null ? warehouse.getCompany() : null,
+        if (quantity.compareTo(BigDecimal.ZERO) == 0) {
+            throw new IllegalArgumentException("Quantity change cannot be zero");
+        }
+        ensureSameCompany(product.getCompany(), warehouse.getCompany(),
                 "Product and warehouse must belong to the same company");
-        StockLevel level = stockLevelRepository.findByProductAndWarehouse(product, warehouse)
+
+        String normalizedIdempotencyKey = trimToNull(idempotencyKey);
+        WarehouseBin effectiveBin = warehouseBin == null ? ensureDefaultBin(warehouse) : warehouseBin;
+        if (!effectiveBin.isActive() || effectiveBin.getWarehouse() == null
+                || !warehouse.getId().equals(effectiveBin.getWarehouse().getId())) {
+            throw new IllegalArgumentException("Warehouse bin must be active and belong to the selected warehouse");
+        }
+        WarehouseBin lockedBin = warehouseBinRepository.findForUpdate(effectiveBin.getId()).orElseThrow();
+        if (normalizedIdempotencyKey != null) {
+            Optional<StockMovement> existing = product.getCompany() != null && product.getCompany().getId() != null
+                    ? stockMovementRepository.findByIdempotencyKeyAndProduct_Company_Id(normalizedIdempotencyKey, product.getCompany().getId())
+                    : stockMovementRepository.findByIdempotencyKey(normalizedIdempotencyKey);
+            if (existing.isPresent()) {
+                return existing.get();
+            }
+        }
+        InventoryStatus effectiveStatus = inventoryStatus == null ? InventoryStatus.AVAILABLE : inventoryStatus;
+        String normalizedLot = trimToNull(lotNumber);
+        String normalizedSerial = trimToNull(serialNumber);
+        String inventoryKey = inventoryKey(lockedBin, normalizedLot, normalizedSerial, expirationDate, effectiveStatus);
+        StockLevel level = stockLevelRepository.findForUpdate(product, warehouse, inventoryKey)
                 .orElseGet(() -> {
-                    StockLevel sl = new StockLevel();
-                    sl.setProduct(product);
-                    sl.setWarehouse(warehouse);
-                    return stockLevelRepository.save(sl);
+                    StockLevel created = new StockLevel();
+                    created.setProduct(product);
+                    created.setWarehouse(warehouse);
+                    created.setWarehouseBin(lockedBin);
+                    created.setInventoryKey(inventoryKey);
+                    created.setLotNumber(normalizedLot);
+                    created.setSerialNumber(normalizedSerial);
+                    created.setExpirationDate(expirationDate);
+                    created.setInventoryStatus(effectiveStatus);
+                    created.setQuantity(BigDecimal.ZERO);
+                    created.setReservedQuantity(BigDecimal.ZERO);
+                    return stockLevelRepository.saveAndFlush(created);
                 });
-        BigDecimal newQty = level.getQuantity().add(quantity);
+        BigDecimal current = Optional.ofNullable(level.getQuantity()).orElse(BigDecimal.ZERO);
+        BigDecimal newQty = current.add(quantity);
+        BigDecimal reserved = Optional.ofNullable(level.getReservedQuantity()).orElse(BigDecimal.ZERO);
+        if (newQty.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalStateException("Insufficient stock: the posting would create a negative balance");
+        }
+        if (newQty.compareTo(reserved) < 0) {
+            throw new IllegalStateException("Stock is reserved and cannot be issued by this posting");
+        }
         level.setQuantity(newQty);
         stockLevelRepository.save(level);
 
         StockMovement movement = new StockMovement();
         movement.setProduct(product);
         movement.setWarehouse(warehouse);
+        movement.setWarehouseBin(lockedBin);
         movement.setType(type);
         movement.setQuantityChange(quantity);
-        movement.setReference(reference);
-        movement.setLotNumber(lotNumber);
-        movement.setSerialNumber(serialNumber);
+        movement.setReference(trimToNull(reference));
+        movement.setNotes(trimToNull(notes));
+        movement.setLotNumber(normalizedLot);
+        movement.setSerialNumber(normalizedSerial);
         movement.setExpirationDate(expirationDate);
+        movement.setInventoryStatus(effectiveStatus);
+        movement.setCreatedBy(trimToNull(createdBy));
+        movement.setIdempotencyKey(normalizedIdempotencyKey);
         StockMovement savedMovement = stockMovementRepository.save(movement);
         warehouseIntelligenceService.applyStockMovement(product, warehouse, quantity, level.getQuantity());
         return savedMovement;
+    }
+
+    @Transactional
+    public StockMovement adjustStock(Long companyId, StockAdjustmentRequest request, String actor) {
+        if (trimToNull(request.getSerialNumber()) != null
+                && request.getQuantityChange().abs().compareTo(BigDecimal.ONE) != 0) {
+            throw new IllegalArgumentException("Serialized stock must be posted one unit at a time");
+        }
+        Product product = requireProduct(companyId, request.getProductId());
+        Warehouse warehouse = requireWarehouse(companyId, request.getWarehouseId());
+        WarehouseBin bin = request.getWarehouseBinId() == null ? null : requireWarehouseBin(companyId, request.getWarehouseBinId());
+        return adjustStock(product, warehouse, bin, request.getQuantityChange(), request.getType(),
+                request.getReference(), request.getNotes(), request.getLotNumber(), request.getSerialNumber(),
+                request.getExpirationDate(), request.getInventoryStatus(), actor, request.getIdempotencyKey());
+    }
+
+    @Transactional(readOnly = true)
+    public List<WarehouseBinDTO> listWarehouseBins(Long companyId, Long warehouseId) {
+        Warehouse warehouse = requireWarehouse(companyId, warehouseId);
+        return warehouseBinRepository.findAllByWarehouse_IdOrderByPickSequenceAscCodeAsc(warehouse.getId()).stream()
+                .map(WarehouseBinDTO::from).toList();
+    }
+
+    @Transactional
+    public WarehouseBinDTO createWarehouseBin(Long companyId, Long warehouseId, CreateWarehouseBinRequest request) {
+        Warehouse warehouse = requireWarehouse(companyId, warehouseId);
+        String code = request.getCode().trim().toUpperCase(Locale.ROOT);
+        if (warehouseBinRepository.findByWarehouse_IdAndCodeIgnoreCase(warehouseId, code).isPresent()) {
+            throw new IllegalArgumentException("Warehouse bin code already exists in this warehouse");
+        }
+        WarehouseBin bin = new WarehouseBin();
+        bin.setWarehouse(warehouse);
+        bin.setCode(code);
+        bin.setName(request.getName().trim());
+        bin.setZone(trimToNull(request.getZone()));
+        bin.setAisle(trimToNull(request.getAisle()));
+        bin.setRack(trimToNull(request.getRack()));
+        bin.setShelf(trimToNull(request.getShelf()));
+        bin.setBarcode(trimToNull(request.getBarcode()));
+        bin.setPickSequence(Optional.ofNullable(request.getPickSequence()).orElse(0));
+        bin.setCapacityQuantity(request.getCapacityQuantity());
+        return WarehouseBinDTO.from(warehouseBinRepository.save(bin));
     }
 
     @Transactional(readOnly = true)
@@ -288,24 +401,6 @@ public class SupplyChainService {
             reference = "SCAN-RECEIPT";
         }
 
-        if (order != null && request.isCompletePurchaseOrder() && matchesOrderExactly(order, request.getItems())) {
-            PurchaseOrder received = receivePurchaseOrder(companyId, order.getId(), warehouse);
-            BigDecimal totalQuantity = received.getLines() == null ? BigDecimal.ZERO : received.getLines().stream()
-                    .map(PurchaseOrderLine::getQuantity)
-                    .filter(java.util.Objects::nonNull)
-                    .reduce(BigDecimal.ZERO, BigDecimal::add);
-            int bookedItemCount = received.getLines() == null ? 0 : received.getLines().size();
-            return new ReceivingApplyResponse(
-                    "PURCHASE_ORDER",
-                    "Purchase order fully received and stock posted.",
-                    received.getOrderNumber(),
-                    received.getOrderNumber(),
-                    true,
-                    bookedItemCount,
-                    totalQuantity
-            );
-        }
-
         if (request.getItems() == null || request.getItems().isEmpty()) {
             throw new IllegalArgumentException("At least one receiving item is required");
         }
@@ -320,8 +415,26 @@ public class SupplyChainService {
             if (item.getQuantity().compareTo(BigDecimal.ZERO) <= 0) {
                 continue;
             }
+            if (trimToNull(item.getSerialNumber()) != null && item.getQuantity().compareTo(BigDecimal.ONE) != 0) {
+                throw new IllegalArgumentException("Serialized goods receipts must be posted one unit at a time");
+            }
             Product product = requireProduct(companyId, item.getProductId());
-            adjustStock(product, warehouse, item.getQuantity(), StockMovementType.RECEIPT, reference, null, null, null);
+            WarehouseBin bin = item.getWarehouseBinId() == null ? null : requireWarehouseBin(companyId, item.getWarehouseBinId());
+            if (order != null) {
+                PurchaseOrderLine orderLine = order.getLines().stream()
+                        .filter(line -> line.getProduct() != null && product.getId().equals(line.getProduct().getId()))
+                        .findFirst()
+                        .orElseThrow(() -> new IllegalArgumentException("Received product is not part of the purchase order"));
+                BigDecimal openQuantity = orderLine.getOpenQuantity();
+                if (item.getQuantity().compareTo(openQuantity) > 0) {
+                    throw new IllegalArgumentException("Received quantity exceeds the open purchase order quantity for " + product.getSku());
+                }
+                orderLine.setReceivedQuantity(Optional.ofNullable(orderLine.getReceivedQuantity()).orElse(BigDecimal.ZERO)
+                        .add(item.getQuantity()));
+            }
+            adjustStock(product, warehouse, bin, item.getQuantity(), StockMovementType.RECEIPT,
+                    reference, "Goods receipt", item.getLotNumber(), item.getSerialNumber(), item.getExpirationDate(),
+                    item.getInventoryStatus(), null, null);
             totalQuantity = totalQuantity.add(item.getQuantity());
             bookedItemCount++;
         }
@@ -330,14 +443,24 @@ public class SupplyChainService {
             throw new IllegalArgumentException("No positive quantities were provided for receiving");
         }
 
+        boolean completed = false;
+        if (order != null) {
+            completed = order.getLines().stream().allMatch(line -> line.getOpenQuantity().compareTo(BigDecimal.ZERO) == 0);
+            order.setStatus(completed ? PurchaseOrderStatus.RECEIVED : PurchaseOrderStatus.PARTIALLY_RECEIVED);
+            purchaseOrderRepository.save(order);
+            if (completed) {
+                recordPurchaseOrderInvoice(order);
+            }
+        }
+
         return new ReceivingApplyResponse(
-                order != null ? "PURCHASE_ORDER_PARTIAL" : "DIRECT_RECEIPT",
-                order != null
-                        ? "Goods receipt posted. Purchase order remains open until it is fully confirmed."
-                        : "Goods receipt posted from scan/document analysis.",
+                order == null ? "DIRECT_RECEIPT" : (completed ? "PURCHASE_ORDER" : "PURCHASE_ORDER_PARTIAL"),
+                order == null ? "Goods receipt posted from scan/document analysis."
+                        : completed ? "Purchase order fully received and stock posted."
+                        : "Goods receipt posted. Purchase order remains open for the remaining quantity.",
                 reference,
                 order != null ? order.getOrderNumber() : null,
-                false,
+                completed,
                 bookedItemCount,
                 totalQuantity
         );
@@ -365,6 +488,7 @@ public class SupplyChainService {
                 }
                 ensureCompanyOwned(line.getProduct().getCompany(), effectiveCompany, "Purchase order line product");
                 line.setPurchaseOrder(purchaseOrder);
+                line.setReceivedQuantity(Optional.ofNullable(line.getReceivedQuantity()).orElse(BigDecimal.ZERO));
                 BigDecimal lineTotal = line.getUnitCost().multiply(line.getQuantity());
                 total = total.add(lineTotal);
             }
@@ -395,15 +519,25 @@ public class SupplyChainService {
         if (order.getStatus() == PurchaseOrderStatus.CANCELLED) {
             throw new IllegalStateException("Cancelled purchase orders cannot be received");
         }
-        order.setStatus(PurchaseOrderStatus.RECEIVED);
         order.setExpectedDate(LocalDate.now());
-        purchaseOrderRepository.save(order);
         if (order.getLines() != null) {
             for (PurchaseOrderLine line : order.getLines()) {
-                adjustStock(line.getProduct(), warehouse, line.getQuantity(), StockMovementType.RECEIPT,
+                BigDecimal openQuantity = line.getOpenQuantity();
+                if (openQuantity.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+                adjustStock(line.getProduct(), warehouse, openQuantity, StockMovementType.RECEIPT,
                         order.getOrderNumber(), null, null, null);
+                line.setReceivedQuantity(Optional.ofNullable(line.getReceivedQuantity()).orElse(BigDecimal.ZERO).add(openQuantity));
             }
         }
+        order.setStatus(PurchaseOrderStatus.RECEIVED);
+        purchaseOrderRepository.save(order);
+        recordPurchaseOrderInvoice(order);
+        return order;
+    }
+
+    private void recordPurchaseOrderInvoice(PurchaseOrder order) {
         VendorInvoice invoice = new VendorInvoice();
         invoice.setVendorName(order.getVendorName());
         invoice.setInvoiceNumber(order.getOrderNumber());
@@ -412,7 +546,6 @@ public class SupplyChainService {
         invoice.setAmount(order.getTotalAmount());
         invoice.setStatus(InvoiceStatus.OPEN);
         accountsPayableService.recordVendorInvoice(invoice);
-        return order;
     }
 
     @Transactional
@@ -437,6 +570,8 @@ public class SupplyChainService {
                 }
                 ensureCompanyOwned(line.getProduct().getCompany(), effectiveCompany, "Sales order line product");
                 line.setSalesOrder(salesOrder);
+                line.setReservedQuantity(Optional.ofNullable(line.getReservedQuantity()).orElse(BigDecimal.ZERO));
+                line.setFulfilledQuantity(Optional.ofNullable(line.getFulfilledQuantity()).orElse(BigDecimal.ZERO));
                 BigDecimal lineTotal = line.getUnitPrice().multiply(line.getQuantity());
                 total = total.add(lineTotal);
             }
@@ -447,15 +582,65 @@ public class SupplyChainService {
 
     @Transactional
     public SalesOrder fulfillSalesOrder(Long salesOrderId, Warehouse warehouse) {
-        return fulfillSalesOrderInternal(null, salesOrderId, warehouse);
+        return fulfillSalesOrderInternal(null, salesOrderId, warehouse, null);
     }
 
     @Transactional
     public SalesOrder fulfillSalesOrder(Long companyId, Long salesOrderId, Warehouse warehouse) {
-        return fulfillSalesOrderInternal(companyId, salesOrderId, warehouse);
+        return fulfillSalesOrderInternal(companyId, salesOrderId, warehouse, null);
     }
 
-    private SalesOrder fulfillSalesOrderInternal(Long companyId, Long salesOrderId, Warehouse warehouse) {
+    @Transactional
+    public SalesOrder reserveSalesOrder(Long companyId, Long salesOrderId, Warehouse warehouse, String actor) {
+        SalesOrder order = requireSalesOrder(companyId, salesOrderId);
+        ensureSameCompany(order.getCompany(), warehouse != null ? warehouse.getCompany() : null,
+                "Sales order and warehouse must belong to the same company");
+        if (order.getStatus() == SalesOrderStatus.CANCELLED || order.getStatus() == SalesOrderStatus.FULFILLED) {
+            throw new IllegalStateException("This sales order can no longer be reserved");
+        }
+        for (SalesOrderLine line : order.getLines()) {
+            BigDecimal fulfilled = Optional.ofNullable(line.getFulfilledQuantity()).orElse(BigDecimal.ZERO);
+            BigDecimal alreadyReserved = Optional.ofNullable(line.getReservedQuantity()).orElse(BigDecimal.ZERO);
+            BigDecimal required = line.getQuantity().subtract(fulfilled).subtract(alreadyReserved);
+            if (required.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            BigDecimal remaining = required;
+            for (StockLevel level : stockLevelRepository.findAvailableForReservation(line.getProduct(), warehouse)) {
+                BigDecimal allocatable = level.getAvailableQuantity().min(remaining);
+                if (allocatable.compareTo(BigDecimal.ZERO) <= 0) {
+                    continue;
+                }
+                level.setReservedQuantity(Optional.ofNullable(level.getReservedQuantity()).orElse(BigDecimal.ZERO).add(allocatable));
+                stockLevelRepository.save(level);
+                StockReservation reservation = new StockReservation();
+                reservation.setCompany(order.getCompany());
+                reservation.setSalesOrderLine(line);
+                reservation.setStockLevel(level);
+                reservation.setQuantity(allocatable);
+                reservation.setCreatedBy(trimToNull(actor));
+                stockReservationRepository.save(reservation);
+                remaining = remaining.subtract(allocatable);
+                if (remaining.compareTo(BigDecimal.ZERO) == 0) {
+                    break;
+                }
+            }
+            if (remaining.compareTo(BigDecimal.ZERO) > 0) {
+                throw new IllegalStateException("Insufficient available stock for " + line.getProduct().getSku()
+                        + ": missing " + remaining.stripTrailingZeros().toPlainString());
+            }
+            line.setReservedQuantity(alreadyReserved.add(required));
+        }
+        order.setStatus(SalesOrderStatus.RESERVED);
+        return salesOrderRepository.save(order);
+    }
+
+    @Transactional
+    public SalesOrder fulfillSalesOrder(Long companyId, Long salesOrderId, Warehouse warehouse, String actor) {
+        return fulfillSalesOrderInternal(companyId, salesOrderId, warehouse, actor);
+    }
+
+    private SalesOrder fulfillSalesOrderInternal(Long companyId, Long salesOrderId, Warehouse warehouse, String actor) {
         SalesOrder order = requireSalesOrder(companyId, salesOrderId);
         ensureCompanyMatches(companyId, order.getCompany(), "Sales order");
         ensureCompanyMatches(companyId, warehouse != null ? warehouse.getCompany() : null, "Warehouse");
@@ -467,13 +652,36 @@ public class SupplyChainService {
         if (order.getStatus() == SalesOrderStatus.CANCELLED) {
             throw new IllegalStateException("Cancelled sales orders cannot be fulfilled");
         }
+        reserveSalesOrder(companyId, salesOrderId, warehouse, actor);
+        order = requireSalesOrder(companyId, salesOrderId);
         if (order.getLines() != null) {
             for (SalesOrderLine line : order.getLines()) {
-                adjustStock(line.getProduct(), warehouse, line.getQuantity().negate(), StockMovementType.ISSUE,
-                        order.getOrderNumber(), null, null, null);
+                List<StockReservation> reservations = stockReservationRepository
+                        .findAllBySalesOrderLine_IdAndStatus(line.getId(), StockReservationStatus.ACTIVE);
+                BigDecimal fulfilledNow = BigDecimal.ZERO;
+                for (StockReservation reservation : reservations) {
+                    StockLevel level = reservation.getStockLevel();
+                    BigDecimal reserved = Optional.ofNullable(level.getReservedQuantity()).orElse(BigDecimal.ZERO);
+                    if (reserved.compareTo(reservation.getQuantity()) < 0) {
+                        throw new IllegalStateException("Reservation balance is inconsistent; fulfillment stopped");
+                    }
+                    level.setReservedQuantity(reserved.subtract(reservation.getQuantity()));
+                    stockLevelRepository.save(level);
+                    adjustStock(line.getProduct(), warehouse, level.getWarehouseBin(), reservation.getQuantity().negate(),
+                            StockMovementType.ISSUE, order.getOrderNumber(), "Sales order fulfillment",
+                            level.getLotNumber(), level.getSerialNumber(), level.getExpirationDate(),
+                            level.getInventoryStatus(), actor, "SO-" + order.getId() + "-RES-" + reservation.getId());
+                    reservation.setStatus(StockReservationStatus.CONSUMED);
+                    stockReservationRepository.save(reservation);
+                    fulfilledNow = fulfilledNow.add(reservation.getQuantity());
+                }
+                line.setReservedQuantity(BigDecimal.ZERO);
+                line.setFulfilledQuantity(Optional.ofNullable(line.getFulfilledQuantity()).orElse(BigDecimal.ZERO).add(fulfilledNow));
             }
         }
-        order.setStatus(SalesOrderStatus.FULFILLED);
+        boolean fullyFulfilled = order.getLines().stream()
+                .allMatch(line -> line.getOpenQuantity().compareTo(BigDecimal.ZERO) == 0);
+        order.setStatus(fullyFulfilled ? SalesOrderStatus.FULFILLED : SalesOrderStatus.PARTIALLY_FULFILLED);
         order.setDueDate(LocalDate.now());
         return salesOrderRepository.save(order);
     }
@@ -686,9 +894,11 @@ public class SupplyChainService {
             return existing.get();
         }
 
-        BigDecimal expectedQuantity = stockLevelRepository.findByProductAndWarehouse(product, warehouse)
+        BigDecimal expectedQuantity = stockLevelRepository.findByProduct(product).stream()
+                .filter(level -> level.getWarehouse() != null && warehouse.getId().equals(level.getWarehouse().getId()))
                 .map(StockLevel::getQuantity)
-                .orElse(BigDecimal.ZERO);
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         CycleCount cycleCount = new CycleCount();
         cycleCount.setPlanNumber(nextCycleCountPlanNumber(companyId));
@@ -755,8 +965,8 @@ public class SupplyChainService {
         BigDecimal delta = countedQuantity.subtract(expectedQuantity);
 
         if (delta.compareTo(BigDecimal.ZERO) != 0) {
-            adjustStock(cycleCount.getProduct(), cycleCount.getWarehouse(), delta, StockMovementType.ADJUSTMENT,
-                    "Cycle count " + cycleCount.getPlanNumber(), null, null, null);
+            adjustWarehouseAggregate(cycleCount.getProduct(), cycleCount.getWarehouse(), delta,
+                    "Cycle count " + cycleCount.getPlanNumber(), approvedBy);
         }
 
         cycleCount.setApprovedBy(approvedBy);
@@ -764,6 +974,30 @@ public class SupplyChainService {
         cycleCount.setStatus(CycleCountStatus.COMPLETED);
         cycleCount.setExpectedQuantity(countedQuantity);
         return cycleCountRepository.save(cycleCount);
+    }
+
+    private void adjustWarehouseAggregate(Product product, Warehouse warehouse, BigDecimal delta,
+                                          String reference, String actor) {
+        if (delta.compareTo(BigDecimal.ZERO) > 0) {
+            adjustStock(product, warehouse, null, delta, StockMovementType.ADJUSTMENT, reference,
+                    "Approved cycle count variance", null, null, null, InventoryStatus.AVAILABLE, actor, null);
+            return;
+        }
+        BigDecimal remaining = delta.abs();
+        for (StockLevel level : stockLevelRepository.findAllIssuableForUpdate(product, warehouse)) {
+            BigDecimal issue = level.getAvailableQuantity().min(remaining);
+            if (issue.compareTo(BigDecimal.ZERO) <= 0) {
+                continue;
+            }
+            adjustStock(product, warehouse, level.getWarehouseBin(), issue.negate(), StockMovementType.ADJUSTMENT,
+                    reference, "Approved cycle count variance", level.getLotNumber(), level.getSerialNumber(),
+                    level.getExpirationDate(), level.getInventoryStatus(), actor, null);
+            remaining = remaining.subtract(issue);
+            if (remaining.compareTo(BigDecimal.ZERO) == 0) {
+                return;
+            }
+        }
+        throw new IllegalStateException("Cycle count variance exceeds unreserved warehouse stock");
     }
 
     @Transactional
@@ -1416,6 +1650,37 @@ public class SupplyChainService {
         return value == null ? "" : value;
     }
 
+    private String trimToNull(String value) {
+        String normalized = value == null ? null : value.trim();
+        return normalized == null || normalized.isEmpty() ? null : normalized;
+    }
+
+    private WarehouseBin ensureDefaultBin(Warehouse warehouse) {
+        if (warehouse == null || warehouse.getId() == null) {
+            throw new IllegalArgumentException("A persisted warehouse is required");
+        }
+        return warehouseBinRepository.findByWarehouse_IdAndCodeIgnoreCase(warehouse.getId(), WarehouseBin.DEFAULT_CODE)
+                .orElseGet(() -> {
+                    WarehouseBin bin = new WarehouseBin();
+                    bin.setWarehouse(warehouse);
+                    bin.setCode(WarehouseBin.DEFAULT_CODE);
+                    bin.setName("Standardlagerplatz");
+                    bin.setZone("STANDARD");
+                    bin.setPickSequence(Integer.MAX_VALUE);
+                    return warehouseBinRepository.saveAndFlush(bin);
+                });
+    }
+
+    private String inventoryKey(WarehouseBin bin, String lotNumber, String serialNumber,
+                                LocalDate expirationDate, InventoryStatus status) {
+        return String.join("|",
+                String.valueOf(bin.getId()),
+                Optional.ofNullable(lotNumber).orElse("-"),
+                Optional.ofNullable(serialNumber).orElse("-"),
+                expirationDate == null ? "-" : expirationDate.toString(),
+                status.name());
+    }
+
     private Product requireProduct(Long companyId, Long productId) {
         return companyId == null
                 ? productRepository.findById(productId).orElseThrow()
@@ -1426,6 +1691,12 @@ public class SupplyChainService {
         return companyId == null
                 ? warehouseRepository.findById(warehouseId).orElseThrow()
                 : warehouseRepository.findByIdAndCompany_Id(warehouseId, companyId).orElseThrow();
+    }
+
+    private WarehouseBin requireWarehouseBin(Long companyId, Long warehouseBinId) {
+        return companyId == null
+                ? warehouseBinRepository.findById(warehouseBinId).orElseThrow()
+                : warehouseBinRepository.findByIdAndWarehouse_Company_Id(warehouseBinId, companyId).orElseThrow();
     }
 
     private PurchaseOrder requirePurchaseOrder(Long companyId, Long purchaseOrderId) {

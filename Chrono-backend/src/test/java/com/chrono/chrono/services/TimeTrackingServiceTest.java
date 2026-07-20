@@ -165,6 +165,55 @@ class TimeTrackingServiceTest {
     }
 
     @Test
+    void getUserPeriodSummary_doesNotChargeFutureTargetMinutes() {
+        LocalDate today = timeTrackingService.getCurrentBerlinDate();
+        LocalDate startDate = today.minusDays(1);
+        LocalDate endDate = today.plusDays(2);
+        TimeTrackingEntry start = entry(user, today.atTime(9, 0), TimeTrackingEntry.PunchType.START);
+        TimeTrackingEntry end = entry(user, today.atTime(16, 0), TimeTrackingEntry.PunchType.ENDE);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(
+                user, startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay()))
+                .thenReturn(List.of(start, end));
+        when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class)))
+                .thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), any(LocalDate.class), any()))
+                .thenReturn(480);
+
+        TimePeriodSummaryDTO summary = timeTrackingService.getUserPeriodSummary(user, startDate, endDate);
+
+        assertEquals(420, summary.getWorkedMinutes());
+        assertEquals(960, summary.getExpectedMinutes());
+        assertEquals(-540, summary.getDifferenceMinutes());
+        assertEquals(4, summary.getDailySummaries().size());
+        assertEquals(480, summary.getDailySummaries().get(3).getExpectedMinutes());
+        assertEquals(-480, summary.getDailySummaries().get(3).getDifferenceMinutes());
+    }
+
+    @Test
+    void getUserPeriodSummary_returnsNeutralTotalsForFuturePeriod() {
+        LocalDate startDate = timeTrackingService.getCurrentBerlinDate().plusDays(1);
+        LocalDate endDate = startDate.plusDays(1);
+
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+        when(timeTrackingEntryRepository.findByUserAndEntryTimestampBetweenOrderByEntryTimestampAsc(
+                user, startDate.atStartOfDay(), endDate.plusDays(1).atStartOfDay()))
+                .thenReturn(Collections.emptyList());
+        when(dailyNoteRepository.findByUserAndNoteDate(eq(user), any(LocalDate.class)))
+                .thenReturn(Optional.empty());
+        when(workScheduleService.computeExpectedWorkMinutes(eq(user), any(LocalDate.class), any()))
+                .thenReturn(480);
+
+        TimePeriodSummaryDTO summary = timeTrackingService.getUserPeriodSummary(user, startDate, endDate);
+
+        assertEquals(0, summary.getWorkedMinutes());
+        assertEquals(0, summary.getExpectedMinutes());
+        assertEquals(0, summary.getDifferenceMinutes());
+        assertEquals(2, summary.getDailySummaries().size());
+    }
+
+    @Test
     void getUserPeriodSummary_rejectsRangesLongerThanOneYear() {
         LocalDate endDate = date.plusDays(366);
 

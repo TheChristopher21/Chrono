@@ -236,18 +236,18 @@
 }
 
 .landing-page.scoped-landing .lp-hero h1 {
-    max-width: 690px;
-    margin: 20px 0 0;
+    max-width: min(640px, 42vw);
+    margin: 16px 0 0;
     color: var(--lp-text);
-    font-size: clamp(3rem, 5.15vw, 5.05rem);
+    font-size: clamp(3rem, 4.4vw, 4.7rem);
     font-weight: 950;
     letter-spacing: 0;
     line-height: 0.96;
 }
 
 .landing-page.scoped-landing .lp-hero-content > p {
-    max-width: 620px;
-    margin: 24px 0 0;
+    max-width: min(560px, 42vw);
+    margin: 16px 0 0;
     color: var(--lp-muted);
     font-size: clamp(1.05rem, 1.65vw, 1.25rem);
     line-height: 1.68;
@@ -257,7 +257,16 @@
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
-    margin-top: 30px;
+    margin-top: 20px;
+}
+
+.landing-page.scoped-landing .lp-cta-note {
+    max-width: 620px;
+    margin: 12px 0 0;
+    color: var(--lp-muted);
+    font-size: 0.88rem;
+    font-weight: 750;
+    line-height: 1.45;
 }
 
 .landing-page.scoped-landing .lp-proof-line {
@@ -1229,6 +1238,270 @@
     margin-top: 8px;
     color: var(--lp-text);
     font-size: 1rem;
+}
+
+/* Problem-led outcomes */
+.landing-page.scoped-landing .lp-outcomes-section {
+    border-bottom: 1px solid var(--lp-line);
+    background:
+        linear-gradient(120deg, rgba(94, 234, 212, 0.055), transparent 36%),
+        linear-gradient(250deg, rgba(91, 140, 255, 0.065), transparent 34%);
+}
+
+.landing-page.scoped-landing .lp-outcomes-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.landing-page.scoped-landing .lp-outcome-card {
+    position: relative;
+    display: grid;
+    gap: 16px;
+    min-height: 100%;
+    padding: 22px;
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius);
+    background:
+        linear-gradient(150deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+        var(--lp-surface);
+    box-shadow: var(--lp-soft-shadow);
+}
+
+.landing-page.scoped-landing .lp-outcome-code {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    min-height: 32px;
+    border: 1px solid var(--lp-line-strong);
+    border-radius: 999px;
+    color: var(--lp-primary-strong);
+    background: rgba(91, 140, 255, 0.12);
+    font-size: 0.75rem;
+    font-weight: 950;
+}
+
+.landing-page.scoped-landing .lp-outcome-card h3,
+.landing-page.scoped-landing .lp-security-item h3 {
+    margin: 0;
+    color: var(--lp-text);
+    font-size: 1.2rem;
+    line-height: 1.25;
+}
+
+.landing-page.scoped-landing .lp-outcome-card > div {
+    padding: 14px;
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius);
+    background: rgba(255, 255, 255, 0.035);
+}
+
+.landing-page.scoped-landing .lp-outcome-card > div > span {
+    color: var(--lp-muted);
+    font-size: 0.72rem;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.landing-page.scoped-landing .lp-outcome-card > div > p {
+    margin: 8px 0 0;
+    color: var(--lp-muted);
+    line-height: 1.55;
+}
+
+.landing-page.scoped-landing .lp-outcome-card .lp-outcome-after {
+    border-color: rgba(94, 234, 212, 0.24);
+    background: rgba(94, 234, 212, 0.07);
+}
+
+.landing-page.scoped-landing .lp-outcome-card .lp-outcome-after > span {
+    color: var(--lp-cyan);
+}
+
+/* Security proof */
+.landing-page.scoped-landing .lp-security-section {
+    border-block: 1px solid var(--lp-line);
+    background:
+        linear-gradient(135deg, rgba(91, 140, 255, 0.08), transparent 42%),
+        rgba(5, 8, 22, 0.22);
+}
+
+[data-theme="light"] .landing-page.scoped-landing .lp-security-section {
+    background:
+        linear-gradient(135deg, rgba(91, 140, 255, 0.1), transparent 42%),
+        rgba(255, 255, 255, 0.45);
+}
+
+.landing-page.scoped-landing .lp-security-layout {
+    display: grid;
+    grid-template-columns: minmax(280px, 0.78fr) minmax(0, 1.22fr);
+    gap: clamp(26px, 5vw, 70px);
+    align-items: start;
+}
+
+.landing-page.scoped-landing .lp-security-heading {
+    margin-bottom: 0;
+}
+
+.landing-page.scoped-landing .lp-security-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.landing-page.scoped-landing .lp-security-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.landing-page.scoped-landing .lp-security-item {
+    display: grid;
+    grid-template-columns: 38px minmax(0, 1fr);
+    gap: 12px;
+    padding: 18px;
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius);
+    background: var(--lp-surface);
+}
+
+.landing-page.scoped-landing .lp-security-item > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    border-radius: 999px;
+    color: var(--lp-cyan);
+    background: rgba(94, 234, 212, 0.09);
+    font-size: 0.72rem;
+    font-weight: 950;
+}
+
+.landing-page.scoped-landing .lp-security-item p {
+    margin: 8px 0 0;
+    color: var(--lp-muted);
+    font-size: 0.92rem;
+    line-height: 1.55;
+}
+
+/* Savings calculator */
+.landing-page.scoped-landing .lp-calculator-section {
+    border-top: 1px solid var(--lp-line);
+    background:
+        linear-gradient(120deg, rgba(251, 191, 36, 0.07), transparent 36%),
+        linear-gradient(250deg, rgba(94, 234, 212, 0.06), transparent 34%);
+}
+
+.landing-page.scoped-landing .lp-calculator {
+    display: grid;
+    grid-template-columns: minmax(0, 1.15fr) minmax(300px, 0.85fr);
+    gap: clamp(22px, 5vw, 64px);
+    align-items: center;
+    padding: clamp(22px, 4vw, 42px);
+    border: 1px solid var(--lp-line-strong);
+    border-radius: var(--lp-radius);
+    background: var(--lp-surface);
+    box-shadow: var(--lp-soft-shadow);
+}
+
+.landing-page.scoped-landing .lp-calculator-copy h2 {
+    margin: 14px 0 0;
+    color: var(--lp-text);
+    font-size: clamp(2rem, 4vw, 3.1rem);
+    line-height: 1.05;
+}
+
+.landing-page.scoped-landing .lp-calculator-copy > p {
+    margin: 14px 0 0;
+    color: var(--lp-muted);
+    line-height: 1.62;
+}
+
+.landing-page.scoped-landing .lp-calculator-inputs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    margin-top: 24px;
+}
+
+.landing-page.scoped-landing .lp-calculator-inputs label {
+    display: grid;
+    gap: 8px;
+    color: var(--lp-muted);
+    font-size: 0.8rem;
+    font-weight: 800;
+    line-height: 1.35;
+}
+
+.landing-page.scoped-landing .lp-calculator-inputs input {
+    width: 100%;
+    min-height: 46px;
+    padding: 0 12px;
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius);
+    color: var(--lp-text);
+    background: rgba(255, 255, 255, 0.055);
+    font: inherit;
+    font-size: 1rem;
+}
+
+.landing-page.scoped-landing .lp-calculator-inputs input:focus {
+    outline: none;
+    border-color: var(--lp-primary);
+    box-shadow: 0 0 0 4px rgba(91, 140, 255, 0.14);
+}
+
+.landing-page.scoped-landing .lp-calculator-result {
+    display: grid;
+    gap: 10px;
+    padding: 18px;
+    border: 1px solid var(--lp-line);
+    border-radius: var(--lp-radius);
+    background: rgba(255, 255, 255, 0.045);
+}
+
+.landing-page.scoped-landing .lp-calculator-result > div {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 4px 12px;
+    align-items: end;
+    padding: 12px;
+    border-bottom: 1px solid var(--lp-line);
+}
+
+.landing-page.scoped-landing .lp-calculator-result span,
+.landing-page.scoped-landing .lp-calculator-result em {
+    color: var(--lp-muted);
+    font-size: 0.82rem;
+    font-style: normal;
+    font-weight: 750;
+}
+
+.landing-page.scoped-landing .lp-calculator-result strong {
+    grid-row: span 2;
+    color: var(--lp-text);
+    font-size: 1.35rem;
+}
+
+.landing-page.scoped-landing .lp-calculator-result .lp-calculator-difference {
+    border: 1px solid rgba(94, 234, 212, 0.24);
+    border-radius: var(--lp-radius);
+    background: rgba(94, 234, 212, 0.07);
+}
+
+.landing-page.scoped-landing .lp-calculator-difference strong {
+    color: var(--lp-cyan);
+}
+
+.landing-page.scoped-landing .lp-calculator-result > p {
+    margin: 4px 2px 0;
+    color: var(--lp-muted);
+    font-size: 0.76rem;
+    line-height: 1.45;
 }
 
 /* Founder trust */
@@ -3497,6 +3770,11 @@
 
 /* Responsive */
 @media (max-width: 1120px) {
+    .landing-page.scoped-landing .lp-hero h1,
+    .landing-page.scoped-landing .lp-hero-content > p {
+        max-width: 640px;
+    }
+
     .landing-page.scoped-landing .lp-hero-bg {
         width: min(560px, 54vw);
         right: 18px;
@@ -3606,6 +3884,9 @@
     }
 
     .landing-page.scoped-landing .lp-trust-grid,
+    .landing-page.scoped-landing .lp-outcomes-grid,
+    .landing-page.scoped-landing .lp-security-layout,
+    .landing-page.scoped-landing .lp-calculator,
     .landing-page.scoped-landing .lp-about-timeline,
     .landing-page.scoped-landing .lp-pricing-layout,
     .landing-page.scoped-landing .lp-faq-layout,
@@ -3665,10 +3946,12 @@
     }
 
     .landing-page.scoped-landing .lp-hero h1 {
-        font-size: clamp(2.55rem, 13vw, 3.75rem);
+        font-size: clamp(2.45rem, 11.5vw, 3.4rem);
     }
 
     .landing-page.scoped-landing .lp-hero-stats,
+    .landing-page.scoped-landing .lp-security-grid,
+    .landing-page.scoped-landing .lp-calculator-inputs,
     .landing-page.scoped-landing .lp-bento-grid,
     .landing-page.scoped-landing .lp-process-side,
     .landing-page.scoped-landing .lp-process-small-grid,
@@ -3678,6 +3961,15 @@
     .landing-page.scoped-landing .lp-process-metrics,
     .landing-page.scoped-landing .lp-form-row {
         grid-template-columns: 1fr;
+    }
+
+    .landing-page.scoped-landing .lp-security-links {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .landing-page.scoped-landing .lp-calculator {
+        padding: 18px;
     }
 
     .landing-page.scoped-landing .lp-real-module-list div {

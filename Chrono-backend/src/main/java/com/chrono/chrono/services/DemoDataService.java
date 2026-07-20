@@ -85,6 +85,12 @@ public class DemoDataService {
     private StockMovementRepository stockMovementRepository;
 
     @Autowired
+    private StockReservationRepository stockReservationRepository;
+
+    @Autowired
+    private WarehouseBinRepository warehouseBinRepository;
+
+    @Autowired
     private CycleCountRepository cycleCountRepository;
 
     @Autowired
@@ -539,6 +545,7 @@ public class DemoDataService {
         }
 
         cycleCountRepository.deleteAll(cycleCountRepository.findAllByCompany_Id(companyId));
+        stockReservationRepository.deleteAll(stockReservationRepository.findAllByCompany_Id(companyId));
         purchaseOrderRepository.deleteAll(purchaseOrderRepository.findAllByCompany_Id(companyId));
         salesOrderRepository.deleteAll(salesOrderRepository.findAllByCompany_Id(companyId));
         productionOrderRepository.deleteAll(productionOrderRepository.findAllByCompany_Id(companyId));
@@ -546,6 +553,7 @@ public class DemoDataService {
         stockMovementRepository.deleteAll(stockMovementRepository.findAllByProduct_Company_Id(companyId));
         stockLevelRepository.deleteAll(stockLevelRepository.findAllByProduct_Company_Id(companyId));
         productRepository.deleteAll(productRepository.findAllByCompany_Id(companyId));
+        warehouseBinRepository.deleteAll(warehouseBinRepository.findAllByWarehouse_Company_IdOrderByWarehouse_CodeAscPickSequenceAscCodeAsc(companyId));
         warehouseRepository.deleteAll(warehouseRepository.findAllByCompany_Id(companyId));
     }
 
@@ -725,6 +733,8 @@ public class DemoDataService {
                 "DEMO-INIT-SENSOR", "LOT-SN-" + today.getYear(), null, today.plusMonths(12));
         supplyChainService.adjustStock(kit, service, bd("9"), StockMovementType.RECEIPT,
                 "DEMO-INIT-KIT", "LOT-KIT-" + today.getYear(), null, today.plusMonths(9));
+        supplyChainService.adjustStock(sensor, service, bd("6"), StockMovementType.RECEIPT,
+                "DEMO-INIT-SENSOR-SVC", "LOT-SN-" + today.getYear(), null, today.plusMonths(12));
         supplyChainService.adjustStock(sensor, service, bd("-3"), StockMovementType.ISSUE,
                 "DEMO-SO-1007", "LOT-SN-" + today.getYear(), null, today.plusMonths(12));
 

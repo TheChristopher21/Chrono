@@ -52,8 +52,62 @@ public class SupplyChainSchemaMaintenance implements ApplicationRunner {
             return;
         }
 
+        ensureProductionInventorySchema(schema);
         alignExistingCompanyAssignments();
         ensureCompanyIndexes(schema);
+    }
+
+    private void ensureProductionInventorySchema(String schema) {
+        jdbcTemplate.update("""
+                INSERT INTO inv_warehouse_bins
+                    (warehouse_id, code, name, zone, pick_sequence, active, version)
+                SELECT w.id, 'DEFAULT', 'Standardlagerplatz', 'STANDARD', 2147483647, 1, 0
+                FROM inv_warehouses w
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM inv_warehouse_bins b
+                    WHERE b.warehouse_id = w.id AND UPPER(b.code) = 'DEFAULT'
+                )
+                """);
+        jdbcTemplate.update("""
+                UPDATE inv_stock_levels sl
+                JOIN inv_warehouse_bins b ON b.warehouse_id = sl.warehouse_id AND UPPER(b.code) = 'DEFAULT'
+                SET sl.warehouse_bin_id = COALESCE(sl.warehouse_bin_id, b.id),
+                    sl.inventory_status = COALESCE(sl.inventory_status, 'AVAILABLE'),
+                    sl.reserved_quantity = COALESCE(sl.reserved_quantity, 0),
+                    sl.version = COALESCE(sl.version, 0)
+                WHERE sl.warehouse_bin_id IS NULL
+                   OR sl.inventory_status IS NULL
+                   OR sl.reserved_quantity IS NULL
+                   OR sl.version IS NULL
+                """);
+        jdbcTemplate.update("""
+                UPDATE inv_stock_levels
+                SET inventory_key = CONCAT(
+                    warehouse_bin_id, '|',
+                    COALESCE(NULLIF(lot_number, ''), '-'), '|',
+                    COALESCE(NULLIF(serial_number, ''), '-'), '|',
+                    COALESCE(DATE_FORMAT(expiration_date, '%Y-%m-%d'), '-'), '|',
+                    COALESCE(inventory_status, 'AVAILABLE')
+                )
+                WHERE inventory_key IS NULL OR TRIM(inventory_key) = ''
+                """);
+        jdbcTemplate.update("UPDATE scm_purchase_order_lines SET received_quantity = 0 WHERE received_quantity IS NULL");
+        jdbcTemplate.update("UPDATE scm_sales_order_lines SET reserved_quantity = 0 WHERE reserved_quantity IS NULL");
+        jdbcTemplate.update("UPDATE scm_sales_order_lines SET fulfilled_quantity = 0 WHERE fulfilled_quantity IS NULL");
+        jdbcTemplate.update("""
+                UPDATE inv_stock_movements sm
+                JOIN inv_warehouse_bins b ON b.warehouse_id = sm.warehouse_id AND UPPER(b.code) = 'DEFAULT'
+                SET sm.warehouse_bin_id = COALESCE(sm.warehouse_bin_id, b.id),
+                    sm.inventory_status = COALESCE(sm.inventory_status, 'AVAILABLE')
+                WHERE sm.warehouse_bin_id IS NULL OR sm.inventory_status IS NULL
+                """);
+
+        if (indexExists(schema, "inv_stock_levels", "uk_product_warehouse")) {
+            jdbcTemplate.execute("ALTER TABLE inv_stock_levels DROP INDEX uk_product_warehouse");
+        }
+        if (!indexExists(schema, "inv_stock_levels", "uk_inv_stock_levels_inventory_key")) {
+            jdbcTemplate.execute("CREATE UNIQUE INDEX uk_inv_stock_levels_inventory_key ON inv_stock_levels (product_id, warehouse_id, inventory_key)");
+        }
     }
 
     private void alignExistingCompanyAssignments() {

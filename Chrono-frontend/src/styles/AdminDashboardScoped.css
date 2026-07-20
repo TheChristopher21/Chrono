@@ -2458,6 +2458,16 @@
   border-bottom-color: var(--c-border);
 }
 
+.admin-dashboard.scoped-dashboard .week-evaluation-hint {
+  margin: var(--u-gap-sm) 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid color-mix(in srgb, var(--c-pri) 34%, transparent);
+  border-radius: var(--u-radius-sm);
+  background: color-mix(in srgb, var(--c-pri) 10%, transparent);
+  color: var(--c-text);
+  font-size: 0.82rem;
+}
+
 /* Tageskarten in Detailansicht */
 .admin-dashboard.scoped-dashboard .admin-days-grid {
   display: grid;

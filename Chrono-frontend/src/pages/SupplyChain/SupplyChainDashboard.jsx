@@ -7,6 +7,7 @@ import { useNotification } from "../../context/NotificationContext.jsx";
 import "../../styles/SupplyChainDashboardScoped.css";
 import ProcessWorkspace from "./components/ProcessWorkspace.jsx";
 import CycleCountDrawerActions from "./components/CycleCountDrawerActions.jsx";
+import OutboundOrderDrawerActions from "./components/OutboundOrderDrawerActions.jsx";
 import { ACCESS_MANAGE, hasPageAccess } from "../../utils/pageAccess.js";
 import {
     buildExceptionRows,
@@ -29,6 +30,8 @@ const inventoryStatusProgressMap = {
     RESERVED: 88,
     IN_TRANSIT: 64,
     IN_QC: 48,
+    QUALITY_INSPECTION: 48,
+    QUARANTINE: 38,
     RETURNED: 72,
     DAMAGED: 18,
     BLOCKED: 15,
@@ -65,6 +68,10 @@ const CODE_LABELS = {
     AVAILABLE: { de: "Verfügbar", en: "Available" },
     RESERVED: { de: "Reserviert", en: "Reserved" },
     IN_QC: { de: "In QS", en: "In QC" },
+    QUALITY_INSPECTION: { de: "Qualitätsprüfung", en: "Quality inspection" },
+    QUARANTINE: { de: "Quarantäne", en: "Quarantine" },
+    PARTIALLY_RECEIVED: { de: "Teilweise empfangen", en: "Partially received" },
+    PARTIALLY_FULFILLED: { de: "Teilweise ausgeliefert", en: "Partially fulfilled" },
     IN_TRANSIT: { de: "Im Transit", en: "In transit" },
     RECEIVED: { de: "Empfangen", en: "Received" },
     PICKED: { de: "Kommissioniert", en: "Picked" },
@@ -433,6 +440,7 @@ const SupplyChainDashboard = () => {
     const [globalSearch, setGlobalSearch] = useState("");
     const [products, setProducts] = useState([]);
     const [warehouses, setWarehouses] = useState([]);
+    const [warehouseBins, setWarehouseBins] = useState([]);
     const [stock, setStock] = useState([]);
     const [stockMovements, setStockMovements] = useState([]);
     const [inboundOrders, setInboundOrders] = useState([]);
@@ -456,14 +464,14 @@ const SupplyChainDashboard = () => {
             cycleCountRes,
             auditRes,
         ] = await Promise.allSettled([
-            api.get("/api/supply-chain/products"),
+            api.get("/api/supply-chain/products?size=100"),
             api.get("/api/supply-chain/warehouses"),
-            api.get("/api/supply-chain/stock"),
+            api.get("/api/supply-chain/stock?size=100"),
             api.get("/api/supply-chain/stock-movements?size=200"),
-            api.get("/api/supply-chain/purchase-orders"),
-            api.get("/api/supply-chain/sales-orders"),
-            api.get("/api/supply-chain/production-orders"),
-            api.get("/api/supply-chain/service-requests"),
+            api.get("/api/supply-chain/purchase-orders?size=100"),
+            api.get("/api/supply-chain/sales-orders?size=100"),
+            api.get("/api/supply-chain/production-orders?size=100"),
+            api.get("/api/supply-chain/service-requests?size=100"),
             api.get("/api/supply-chain/cycle-counts?size=200"),
             api.get("/api/audit?limit=25"),
         ]);
@@ -471,7 +479,17 @@ const SupplyChainDashboard = () => {
         const pickList = (result) => (result.status === "fulfilled" ? list(result.value?.data) : []);
 
         setProducts(pickList(productRes).map(normalizeProduct));
-        setWarehouses(pickList(warehouseRes).map(normalizeWarehouse));
+        const loadedWarehouses = pickList(warehouseRes).map(normalizeWarehouse);
+        setWarehouses(loadedWarehouses);
+        if (loadedWarehouses.length) {
+            const binResults = await Promise.allSettled(loadedWarehouses.map((warehouse) =>
+                api.get(`/api/supply-chain/warehouses/${warehouse.id}/bins`)
+            ));
+            setWarehouseBins(binResults.flatMap((result) => result.status === "fulfilled" && Array.isArray(result.value?.data)
+                ? result.value.data : []));
+        } else {
+            setWarehouseBins([]);
+        }
         setStock(pickList(stockRes).map(normalizeStock));
         setStockMovements(pickList(movementRes));
         setInboundOrders(pickList(inboundRes).map(normalizeDelivery));
@@ -560,11 +578,15 @@ const SupplyChainDashboard = () => {
             warehouse: warehouse?.name ?? "-",
             site: translateContext(warehouse?.siteName ?? "-"),
             zone: translateContext(warehouse?.zone ?? "-"),
-            bin: warehouse?.bin ?? "-",
+            bin: entry.warehouseBinCode ?? "-",
             status: inventoryStatus.code,
             statusLabel: translateCode(inventoryStatus.code),
             quantity: entry.quantity,
+            available: entry.availableQuantity,
+            reserved: entry.reservedQuantity,
             lot: entry.lotNumber,
+            serial: entry.serialNumber,
+            expirationDate: entry.expirationDate,
             partner: "-",
             owner: l("Bestandsteam", "Inventory team"),
             approvalProgress: inventoryStatus.approvalProgress,
@@ -649,9 +671,10 @@ const SupplyChainDashboard = () => {
         status: entry.status,
         statusLabel: translateCode(entry.status),
         dueDate: entry.dueDate ?? "-",
+        lines: entry.lines ?? [],
         partner: entry.customerName,
         owner: l("Kommissionierung", "Picking team"),
-        approvalProgress: entry.status === "COMPLETED" ? 100 : 58,
+        approvalProgress: entry.status === "FULFILLED" ? 100 : entry.status === "RESERVED" ? 75 : 42,
     })), [l, outboundOrders, translateCode]);
 
     const productionRows = useMemo(() => productionOrders.map((entry) => ({
@@ -1009,7 +1032,7 @@ const SupplyChainDashboard = () => {
     const workspaceDefinitions = [
         { id: "overview", title: l("Übersicht", "Overview"), subtitle: l("Heute, offene Arbeit und Blocker", "Today, open work, and blockers"), rows: overviewRows, columns: [{ key: "priority", label: l("Priorität", "Priority") }, { key: "type", label: l("Typ", "Type") }, { key: "ref", label: l("Referenz", "Reference") }, { key: "area", label: l("Bereich", "Area") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }, { key: "dueDate", label: l("Fälligkeit", "Due") }] },
         { id: "inbound", title: l("Wareneingang", "Inbound"), subtitle: l("ASN, Ankunft, QS und Einlagerung", "ASN, arrival, QC, and putaway"), rows: inboundRows, columns: [{ key: "asn", label: "ASN" }, { key: "supplier", label: l("Lieferant", "Supplier") }, { key: "eta", label: "ETA" }, { key: "status", label: l("Status", "Status") }, { key: "product", label: l("Artikel", "Item") }, { key: "quantity", label: l("Menge", "Quantity") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
-        { id: "inventory", title: l("Bestand", "Inventory"), subtitle: l("Lagerbestand, Plätze, Status und Bestandsqualität", "Stock, locations, status, and quality"), rows: inventoryRows, columns: [{ key: "sku", label: "SKU" }, { key: "product", label: l("Artikel", "Item") }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "bin", label: l("Lagerplatz", "Bin") }, { key: "quantity", label: l("Bestand", "Stock") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
+        { id: "inventory", title: l("Bestand", "Inventory"), subtitle: l("Lagerbestand, Plätze, Status und Bestandsqualität", "Stock, locations, status, and quality"), rows: inventoryRows, columns: [{ key: "sku", label: "SKU" }, { key: "product", label: l("Artikel", "Item") }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "bin", label: l("Lagerplatz", "Bin") }, { key: "quantity", label: l("Bestand", "Stock") }, { key: "available", label: l("Verfügbar", "Available") }, { key: "reserved", label: l("Reserviert", "Reserved") }, { key: "lot", label: l("Charge", "Lot") }, { key: "serial", label: l("Seriennummer", "Serial") }, { key: "expirationDate", label: l("Verfall", "Expiry") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
         { id: "outbound", title: l("Warenausgang", "Outbound"), subtitle: l("Picklisten, Packen, Versand und Fälligkeit", "Pick lists, packing, shipping, and due dates"), rows: outboundRows, columns: [{ key: "order", label: l("Auftrag", "Order") }, { key: "customer", label: l("Kunde", "Customer") }, { key: "priority", label: l("Priorität", "Priority") }, { key: "dueDate", label: l("Fällig am", "Due date") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
         { id: "cycle-count", title: l("Zählungen", "Counts"), subtitle: l("Zykluszählungen, Differenzen und Freigabe", "Cycle counts, variances, and approval"), rows: cycleCountRows, columns: [{ key: "plan", label: l("Plan", "Plan") }, { key: "sku", label: "SKU" }, { key: "warehouse", label: l("Lager", "Warehouse") }, { key: "variance", label: l("Differenz", "Variance") }, { key: "status", label: l("Status", "Status") }, { key: "owner", label: l("Verantwortlich", "Owner") }] },
         { id: "exceptions", title: l("Ausnahmen", "Exceptions"), subtitle: l("Blocker, QS-Fälle und Eskalationen", "Blockers, QC cases, and escalations"), rows: exceptionRows, columns: [{ key: "severity", label: l("Priorität", "Priority") }, { key: "type", label: l("Problem", "Problem") }, { key: "ref", label: l("Referenz", "Reference") }, { key: "owner", label: l("Verantwortlich", "Owner") }, { key: "status", label: l("Status", "Status") }] },
@@ -1302,6 +1325,9 @@ const SupplyChainDashboard = () => {
                 ...payload,
                 type,
                 quantityChange,
+                idempotencyKey: typeof crypto !== "undefined" && crypto.randomUUID
+                    ? crypto.randomUUID()
+                    : `stock-${Date.now()}-${Math.random().toString(16).slice(2)}`,
             });
             notify(l("Bestandsbuchung erfolgreich erfasst.", "Stock entry saved successfully."), "success");
             await loadData();
@@ -1375,8 +1401,64 @@ const SupplyChainDashboard = () => {
         }
     }, [canManageSupplyChain, l, loadData, mapCycleCountToRow, notify, notifyViewOnlySupplyChain]);
 
+    const reserveSalesOrder = useCallback(async (salesOrderId, warehouseId) => {
+        if (!canManageSupplyChain) {
+            notifyViewOnlySupplyChain();
+            return null;
+        }
+        const response = await api.post(`/api/supply-chain/sales-orders/${salesOrderId}/reserve`, { warehouseId });
+        await loadData();
+        notify(l("Bestand wurde verbindlich reserviert.", "Stock was reserved successfully."), "success");
+        return response.data;
+    }, [canManageSupplyChain, l, loadData, notify, notifyViewOnlySupplyChain]);
+
+    const fulfillSalesOrder = useCallback(async (salesOrderId, warehouseId) => {
+        if (!canManageSupplyChain) {
+            notifyViewOnlySupplyChain();
+            return null;
+        }
+        const response = await api.post(`/api/supply-chain/sales-orders/${salesOrderId}/fulfill`, { warehouseId });
+        await loadData();
+        notify(l("Auftrag wurde kommissioniert und ausgebucht.", "Order was picked and fulfilled."), "success");
+        return response.data;
+    }, [canManageSupplyChain, l, loadData, notify, notifyViewOnlySupplyChain]);
+
     const renderDrawerActions = useCallback(({ record, setRecord }) => {
-        if (!canManageSupplyChain || activeDefinition?.id !== "cycle-count" || !record) {
+        if (!canManageSupplyChain || !record) {
+            return null;
+        }
+
+        if (activeDefinition?.id === "outbound") {
+            return (
+                <OutboundOrderDrawerActions
+                    record={record}
+                    warehouses={warehouses}
+                    text={{
+                        title: l("Reservieren & ausliefern", "Reserve & fulfill"),
+                        description: l("Chrono reserviert automatisch nach FEFO und bucht beim Ausliefern exakt die reservierten Bestände aus.", "Chrono reserves automatically by FEFO and issues the exact reserved stock on fulfillment."),
+                        ordered: l("Bestellt", "Ordered"),
+                        reserved: l("Reserviert", "Reserved"),
+                        fulfilled: l("Erfüllt", "Fulfilled"),
+                        warehouse: l("Auslieferungslager", "Fulfillment warehouse"),
+                        selectWarehouse: l("Lager wählen", "Select warehouse"),
+                        reserve: l("Bestand reservieren", "Reserve stock"),
+                        fulfill: l("Kommissionieren & ausbuchen", "Pick & fulfill"),
+                        working: l("Wird verarbeitet…", "Working…"),
+                        failed: l("Aktion konnte nicht ausgeführt werden.", "Action could not be completed."),
+                    }}
+                    onReserve={async (id, warehouseId) => {
+                        const updated = await reserveSalesOrder(id, warehouseId);
+                        if (updated) setRecord((current) => ({ ...current, status: updated.status, lines: updated.lines ?? current.lines }));
+                    }}
+                    onFulfill={async (id, warehouseId) => {
+                        const updated = await fulfillSalesOrder(id, warehouseId);
+                        if (updated) setRecord((current) => ({ ...current, status: updated.status, lines: updated.lines ?? current.lines }));
+                    }}
+                />
+            );
+        }
+
+        if (activeDefinition?.id !== "cycle-count") {
             return null;
         }
 
@@ -1408,7 +1490,7 @@ const SupplyChainDashboard = () => {
                 }}
             />
         );
-    }, [activeDefinition?.id, approveCycleCountResult, canManageSupplyChain, l, submitCycleCountResult]);
+    }, [activeDefinition?.id, approveCycleCountResult, canManageSupplyChain, fulfillSalesOrder, l, reserveSalesOrder, submitCycleCountResult, warehouses]);
 
     const submitCreateProduct = async (payload) => {
         if (!canManageSupplyChain) {
@@ -1461,6 +1543,35 @@ const SupplyChainDashboard = () => {
         }
     };
 
+    const submitCreateWarehouseBin = async (payload) => {
+        if (!canManageSupplyChain) {
+            notifyViewOnlySupplyChain();
+            return false;
+        }
+        if (!payload.warehouseId || !payload.code || !payload.name) {
+            notify(l("Bitte Lager, Platzcode und Bezeichnung ausfüllen.", "Please fill warehouse, bin code, and name."), "warning");
+            return false;
+        }
+        try {
+            await api.post(`/api/supply-chain/warehouses/${payload.warehouseId}/bins`, {
+                code: payload.code,
+                name: payload.name,
+                zone: payload.zone || null,
+                aisle: payload.aisle || null,
+                rack: payload.rack || null,
+                shelf: payload.shelf || null,
+                barcode: payload.barcode || null,
+            });
+            notify(l("Lagerplatz wurde angelegt.", "Warehouse bin was created."), "success");
+            await loadData();
+            return true;
+        } catch (error) {
+            console.error(error);
+            notify(error?.response?.data?.message ?? l("Lagerplatz konnte nicht angelegt werden.", "Could not create warehouse bin."), "error");
+            return false;
+        }
+    };
+
     const submitReceivingPreview = async (payload) => {
         try {
             const response = await api.post("/api/supply-chain/receiving/preview", payload);
@@ -1501,6 +1612,46 @@ const SupplyChainDashboard = () => {
             console.error(error);
             notify(l("Wareneingang konnte nicht übernommen werden.", "Could not post goods receipt."), "error");
             throw error;
+        }
+    };
+
+    const submitPurchaseOrder = async (payload) => {
+        if (!canManageSupplyChain) return false;
+        try {
+            await api.post("/api/supply-chain/purchase-orders", {
+                orderNumber: payload.orderNumber,
+                vendorName: payload.partnerName,
+                expectedDate: payload.dueDate,
+                lines: payload.lines.map((line) => ({
+                    productId: line.productId, quantity: line.quantity, unitCost: line.unitAmount,
+                })),
+            });
+            notify(l("Bestellung wurde angelegt.", "Purchase order was created."), "success");
+            await loadData();
+            return true;
+        } catch (error) {
+            notify(error?.response?.data?.message ?? l("Bestellung konnte nicht angelegt werden.", "Could not create purchase order."), "error");
+            return false;
+        }
+    };
+
+    const submitSalesOrder = async (payload) => {
+        if (!canManageSupplyChain) return false;
+        try {
+            await api.post("/api/supply-chain/sales-orders", {
+                orderNumber: payload.orderNumber,
+                customerName: payload.partnerName,
+                dueDate: payload.dueDate,
+                lines: payload.lines.map((line) => ({
+                    productId: line.productId, quantity: line.quantity, unitPrice: line.unitAmount,
+                })),
+            });
+            notify(l("Verkaufsauftrag wurde angelegt.", "Sales order was created."), "success");
+            await loadData();
+            return true;
+        } catch (error) {
+            notify(error?.response?.data?.message ?? l("Verkaufsauftrag konnte nicht angelegt werden.", "Could not create sales order."), "error");
+            return false;
         }
     };
 
@@ -1713,12 +1864,19 @@ const SupplyChainDashboard = () => {
                                 submittingLabel: activeDefinition.id === "cycle-count" ? l("Wird angelegt…", "Creating…") : l("Wird gebucht…", "Posting…"),
                                 products,
                                 warehouses,
+                                bins: warehouseBins,
                                 labels: {
                                     product: l("Produkt", "Product"),
                                     warehouse: l("Lager", "Warehouse"),
+                                    bin: l("Lagerplatz", "Bin"),
                                     quantity: l("Menge", "Quantity"),
                                     type: l("Buchungstyp", "Entry type"),
+                                    status: l("Bestandsstatus", "Inventory status"),
+                                    lot: l("Charge", "Lot"),
+                                    serial: l("Seriennummer", "Serial number"),
+                                    expiration: l("Verfallsdatum", "Expiration date"),
                                     reference: l("Referenz", "Reference"),
+                                    notes: l("Notiz / Buchungsgrund", "Note / posting reason"),
                                 },
                                 help: {
                                     type: helpContent.entryType,
@@ -1727,8 +1885,19 @@ const SupplyChainDashboard = () => {
                                 placeholders: {
                                     product: l("Bitte Produkt wählen", "Select product"),
                                     warehouse: l("Bitte Lager wählen", "Select warehouse"),
+                                    bin: l("Standardlagerplatz verwenden", "Use default bin"),
+                                    lot: l("z. B. LOT-2026-014", "e.g. LOT-2026-014"),
+                                    serial: l("optional, genau 1 Stück", "optional, exactly 1 unit"),
                                     reference: l("z. B. Buchungsgrund oder Beleg", "e.g. booking reason or reference"),
+                                    notes: l("Warum wird gebucht?", "Why is this posted?"),
                                 },
+                                inventoryStatuses: [
+                                    { value: "AVAILABLE", label: l("Verfügbar", "Available") },
+                                    { value: "QUALITY_INSPECTION", label: l("Qualitätsprüfung", "Quality inspection") },
+                                    { value: "QUARANTINE", label: l("Quarantäne", "Quarantine") },
+                                    { value: "BLOCKED", label: l("Gesperrt", "Blocked") },
+                                    { value: "DAMAGED", label: l("Beschädigt", "Damaged") },
+                                ],
                                 types: [
                                     { value: "RECEIPT", label: l("Wareneingang", "Goods receipt") },
                                     { value: "ISSUE", label: l("Entnahme", "Issue") },
@@ -1779,6 +1948,25 @@ const SupplyChainDashboard = () => {
                                     },
                                     onSubmit: submitCreateWarehouse,
                                 },
+                                createBin: {
+                                    enabled: activeDefinition.id !== "cycle-count" && warehouses.length > 0,
+                                    openLabel: l("+ Lagerplatz anlegen", "+ Add bin"),
+                                    closeLabel: l("Lagerplatz-Form schließen", "Close bin form"),
+                                    title: l("Neuer Lagerplatz", "New warehouse bin"),
+                                    submitLabel: l("Lagerplatz speichern", "Save bin"),
+                                    submittingLabel: l("Speichert…", "Saving…"),
+                                    labels: {
+                                        warehouse: l("Lager", "Warehouse"), code: l("Platzcode", "Bin code"),
+                                        name: l("Bezeichnung", "Name"), zone: l("Zone", "Zone"), aisle: l("Gang", "Aisle"),
+                                        rack: l("Regal", "Rack"), shelf: l("Fach", "Shelf"), barcode: l("Barcode", "Barcode"),
+                                    },
+                                    placeholders: {
+                                        warehouse: l("Lager wählen", "Select warehouse"), code: "A-01-02",
+                                        name: l("Kleinteile A-01-02", "Small parts A-01-02"), zone: "PICK",
+                                        aisle: "A-01", rack: "R-02", shelf: "F-03", barcode: "BIN-A-01-02",
+                                    },
+                                    onSubmit: submitCreateWarehouseBin,
+                                },
                                 onSubmit: activeDefinition.id === "cycle-count" ? submitCreateCycleCountPlan : submitQuickEntry,
                             }}
                             renderDrawerActions={renderDrawerActions}
@@ -1787,6 +1975,7 @@ const SupplyChainDashboard = () => {
                                 openLabel: l("Scannen", "Scan"),
                                 closeLabel: l("Scan schließen", "Close scan"),
                                 warehouses,
+                                bins: warehouseBins,
                                 onPreview: submitReceivingPreview,
                                 onPreviewDocument: submitReceivingDocumentPreview,
                                 onApply: submitReceivingApply,
@@ -1807,6 +1996,8 @@ const SupplyChainDashboard = () => {
                                     },
                                     placeholders: {
                                         warehouse: l("Bitte Lager wählen", "Select warehouse"),
+                                        bin: l("Standard", "Default"),
+                                        lot: l("Charge", "Lot"),
                                         reference: l("z. B. Lieferschein, ASN oder Bestellnummer", "e.g. delivery note, ASN, or purchase order"),
                                     },
                                     actions: {
@@ -1908,14 +2099,47 @@ const SupplyChainDashboard = () => {
                                     warnings: l("Hinweise", "Notes"),
                                     extractedText: l("Gelesener Dokumenttext", "Read document text"),
                                 },
-                                columns: {
-                                    sku: "SKU",
-                                    name: l("Produkt", "Product"),
-                                    quantity: l("Menge", "Quantity"),
-                                    unit: l("Einheit", "Unit"),
+                                    columns: {
+                                        sku: "SKU",
+                                        name: l("Produkt", "Product"),
+                                        quantity: l("Menge", "Quantity"),
+                                        unit: l("Einheit", "Unit"),
+                                        bin: l("Lagerplatz", "Bin"),
+                                        lot: l("Charge", "Lot"),
+                                        expiration: l("Verfall", "Expiry"),
+                                        status: l("Status", "Status"),
+                                    },
+                                    statuses: {
+                                        available: l("Verfügbar", "Available"),
+                                        quality: l("Qualitätsprüfung", "Quality inspection"),
+                                        quarantine: l("Quarantäne", "Quarantine"),
+                                        blocked: l("Gesperrt", "Blocked"),
+                                    },
                                 },
-                            },
-                        }}
+                            }}
+                            orderComposer={{
+                                enabled: canManageSupplyChain && ["inbound", "outbound"].includes(activeDefinition.id),
+                                kind: activeDefinition.id === "inbound" ? "purchase" : "sales",
+                                openLabel: activeDefinition.id === "inbound" ? l("+ Bestellung", "+ Purchase order") : l("+ Verkaufsauftrag", "+ Sales order"),
+                                closeLabel: l("Auftragsformular schließen", "Close order form"),
+                                products,
+                                onSubmit: activeDefinition.id === "inbound" ? submitPurchaseOrder : submitSalesOrder,
+                                text: {
+                                    title: activeDefinition.id === "inbound" ? l("Bestellung anlegen", "Create purchase order") : l("Verkaufsauftrag anlegen", "Create sales order"),
+                                    subtitle: l("Auftrag mit echten Positionen erfassen. Mengenfortschritt und Bestand werden danach automatisch geführt.", "Create an order with real line items. Quantity progress and stock are then tracked automatically."),
+                                    orderNumber: l("Auftragsnummer", "Order number"),
+                                    orderNumberPlaceholder: activeDefinition.id === "inbound" ? "PO-2026-001" : "SO-2026-001",
+                                    partner: activeDefinition.id === "inbound" ? l("Lieferant", "Vendor") : l("Kunde", "Customer"),
+                                    partnerPlaceholder: activeDefinition.id === "inbound" ? l("Lieferant AG", "Vendor Ltd.") : l("Kunde AG", "Customer Ltd."),
+                                    date: activeDefinition.id === "inbound" ? l("Erwartet am", "Expected date") : l("Fällig am", "Due date"),
+                                    product: l("Produkt", "Product"), quantity: l("Menge", "Quantity"),
+                                    unitAmount: activeDefinition.id === "inbound" ? l("Einstandspreis", "Unit cost") : l("Verkaufspreis", "Unit price"),
+                                    selectProduct: l("Produkt wählen", "Select product"), addLine: l("+ Position", "+ Line item"),
+                                    total: l("Gesamt", "Total"), submit: l("Auftrag speichern", "Save order"), close: l("Schließen", "Close"),
+                                    working: l("Speichert…", "Saving…"), required: l("Bitte Kopfdaten und mindestens eine gültige Position ausfüllen.", "Fill the header and at least one valid line item."),
+                                    failed: l("Auftrag konnte nicht gespeichert werden.", "Could not save order."),
+                                },
+                            }}
                     />
                 )}
                     </div>

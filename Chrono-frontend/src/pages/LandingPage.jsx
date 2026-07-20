@@ -7,6 +7,7 @@ import { useTranslation } from "../context/LanguageContext";
 import { useNotification } from "../context/NotificationContext";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
+import { trackAnalyticsSignal } from "../utils/analytics";
 
 const LinkedinIcon = () => (
     <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -626,10 +627,11 @@ const ProcessModuleCard = ({ code, label, title, text, visual, tone = "blue", pr
     </article>
 );
 
-const ModulePill = ({ code, name }) => (
+const ModulePill = ({ code, name, note }) => (
     <li className="lp-module-pill">
         <span>{code}</span>
         <strong>{name}</strong>
+        {note ? <em>{note}</em> : null}
     </li>
 );
 
@@ -670,6 +672,91 @@ const StepCard = ({ n, title, text }) => (
     </article>
 );
 
+const OutcomeCard = ({ code, title, before, after, t }) => (
+    <article className="lp-outcome-card">
+        <span className="lp-outcome-code" aria-hidden="true">{code}</span>
+        <h3>{title}</h3>
+        <div>
+            <span>{t("landing.outcomes.beforeLabel", "Heute")}</span>
+            <p>{before}</p>
+        </div>
+        <div className="lp-outcome-after">
+            <span>{t("landing.outcomes.afterLabel", "Mit Chrono")}</span>
+            <p>{after}</p>
+        </div>
+    </article>
+);
+
+const SecurityItem = ({ code, title, text }) => (
+    <article className="lp-security-item">
+        <span aria-hidden="true">{code}</span>
+        <div>
+            <h3>{title}</h3>
+            <p>{text}</p>
+        </div>
+    </article>
+);
+
+const SavingsCalculator = ({ t }) => {
+    const [employees, setEmployees] = useState(10);
+    const [minutesPerWeek, setMinutesPerWeek] = useState(30);
+    const [hourlyRate, setHourlyRate] = useState(60);
+
+    const normalizedEmployees = Math.max(1, Number(employees) || 0);
+    const normalizedMinutes = Math.max(0, Number(minutesPerWeek) || 0);
+    const normalizedHourlyRate = Math.max(0, Number(hourlyRate) || 0);
+    const monthlyAdminHours = normalizedEmployees * normalizedMinutes * 4.33 / 60;
+    const currentCost = monthlyAdminHours * normalizedHourlyRate;
+    const chronoBaseCost = normalizedEmployees * 5;
+    const difference = Math.max(0, currentCost - chronoBaseCost);
+    const formatMoney = (value) => new Intl.NumberFormat("de-CH", {
+        style: "currency",
+        currency: "CHF",
+        maximumFractionDigits: 0,
+    }).format(value);
+
+    return (
+        <div className="lp-calculator" aria-labelledby="savings-calculator-title">
+            <div className="lp-calculator-copy">
+                <span className="lp-kicker">{t("landing.calculator.kicker", "Aufwand sichtbar machen")}</span>
+                <h2 id="savings-calculator-title">{t("landing.calculator.title", "Was kostet Ihre heutige Administration?")}</h2>
+                <p>{t("landing.calculator.text", "Vergleichen Sie Ihren geschätzten monatlichen Verwaltungsaufwand mit dem Chrono-Basispaket.")}</p>
+                <div className="lp-calculator-inputs">
+                    <label>
+                        <span>{t("landing.calculator.employees", "Mitarbeitende")}</span>
+                        <input type="number" min="1" max="500" value={employees} onChange={(event) => setEmployees(event.target.value)} />
+                    </label>
+                    <label>
+                        <span>{t("landing.calculator.minutes", "Admin-Minuten pro Person/Woche")}</span>
+                        <input type="number" min="0" max="600" step="5" value={minutesPerWeek} onChange={(event) => setMinutesPerWeek(event.target.value)} />
+                    </label>
+                    <label>
+                        <span>{t("landing.calculator.rate", "Interner Stundensatz (CHF)")}</span>
+                        <input type="number" min="0" max="500" step="5" value={hourlyRate} onChange={(event) => setHourlyRate(event.target.value)} />
+                    </label>
+                </div>
+            </div>
+            <aside className="lp-calculator-result" aria-live="polite">
+                <div>
+                    <span>{t("landing.calculator.currentCost", "Geschätzter heutiger Aufwand")}</span>
+                    <strong>{formatMoney(currentCost)}</strong>
+                    <em>{monthlyAdminHours.toFixed(1)} {t("landing.calculator.hours", "Std./Monat")}</em>
+                </div>
+                <div>
+                    <span>{t("landing.calculator.chronoCost", "Chrono Basis ab")}</span>
+                    <strong>{formatMoney(chronoBaseCost)}</strong>
+                    <em>{t("landing.calculator.perMonth", "pro Monat")}</em>
+                </div>
+                <div className="lp-calculator-difference">
+                    <span>{t("landing.calculator.difference", "Rechnerische Differenz")}</span>
+                    <strong>{formatMoney(difference)}</strong>
+                </div>
+                <p>{t("landing.calculator.disclaimer", "Orientierungswert, keine Einspargarantie. Zusatzmodule und Einführungsaufwand sind nicht berücksichtigt.")}</p>
+            </aside>
+        </div>
+    );
+};
+
 const LandingPage = () => {
     const { t } = useTranslation();
     const { notify } = useNotification();
@@ -678,6 +765,8 @@ const LandingPage = () => {
     const navigate = useNavigate();
     const [contact, setContact] = useState({ name: "", email: "", message: "" });
     const [sending, setSending] = useState(false);
+    const [demoLoading, setDemoLoading] = useState(false);
+    const [contactStarted, setContactStarted] = useState(false);
 
     useEffect(() => {
         if (location.pathname !== "/preise") return;
@@ -687,7 +776,31 @@ const LandingPage = () => {
         });
     }, [location.pathname]);
 
-    const onChange = (e) => setContact({ ...contact, [e.target.name]: e.target.value });
+    useEffect(() => {
+        const section = document.getElementById("features");
+        if (!section || typeof IntersectionObserver === "undefined") return undefined;
+
+        const storageKey = "chronoLandingModulesReached";
+        if (sessionStorage.getItem(storageKey) === "true") return undefined;
+
+        const observer = new IntersectionObserver((entries) => {
+            if (!entries.some((entry) => entry.isIntersecting)) return;
+            sessionStorage.setItem(storageKey, "true");
+            trackAnalyticsSignal("landing_module_section_reached", "#features");
+            observer.disconnect();
+        }, { threshold: 0.2 });
+
+        observer.observe(section);
+        return () => observer.disconnect();
+    }, []);
+
+    const onChange = (e) => {
+        if (!contactStarted) {
+            setContactStarted(true);
+            trackAnalyticsSignal("landing_contact_form_started", "#kontakt");
+        }
+        setContact({ ...contact, [e.target.name]: e.target.value });
+    };
 
     const submitContact = async (e) => {
         e.preventDefault();
@@ -695,9 +808,11 @@ const LandingPage = () => {
         setSending(true);
         try {
             await api.post("/api/contact", contact);
+            trackAnalyticsSignal("landing_contact_form_success", "#kontakt");
             notify(t("landing.contact.success", "Nachricht gesendet."), "success");
             setContact({ name: "", email: "", message: "" });
         } catch {
+            trackAnalyticsSignal("landing_contact_form_error", "#kontakt");
             notify(t("landing.contact.error", "Fehler beim Senden."), "error");
         } finally {
             setSending(false);
@@ -705,19 +820,71 @@ const LandingPage = () => {
     };
 
     const handleDemo = async () => {
-        const res = await loginDemo();
-        if (res.success) {
-            navigate("/demo-tour", { replace: true });
-        } else {
-            notify(res.message || t("landing.demoError", "Demo-Anmeldung fehlgeschlagen"), "error");
+        if (demoLoading) return;
+        setDemoLoading(true);
+        try {
+            const res = await loginDemo();
+            if (res.success) {
+                trackAnalyticsSignal("landing_interactive_demo_opened", "/demo-tour");
+                navigate("/demo-tour", { replace: true });
+            } else {
+                trackAnalyticsSignal("landing_interactive_demo_error", "/demo-tour");
+                notify(res.message || t("landing.demoError", "Demo-Anmeldung fehlgeschlagen"), "error");
+            }
+        } finally {
+            setDemoLoading(false);
         }
     };
 
     const trustItems = [
-        { icon: "DE", label: t("landing.trust.serverLabel", "Hosting"), value: t("landing.trust.serverValue", "Deutsche Server") },
-        { icon: "DS", label: t("landing.trust.privacyLabel", "Datenschutz"), value: t("landing.trust.privacyValue", "DSGVO-konform") },
-        { icon: "EU", label: t("landing.trust.marketLabel", "Region"), value: t("landing.trust.marketValue", "CH & DE ready") },
-        { icon: "5", label: t("landing.trust.pricingLabel", "Start"), value: t("landing.trust.pricingValue", "ab 5 CHF / MA") },
+        { icon: "TLS", label: t("landing.trust.transportLabel", "Übertragung"), value: t("landing.trust.transportValue", "TLS & HSTS") },
+        { icon: "RB", label: t("landing.trust.accessLabel", "Zugriff"), value: t("landing.trust.accessValue", "Rollen & Rechte") },
+        { icon: "CH", label: t("landing.trust.privacyLabel", "Datenschutz"), value: t("landing.trust.privacyValue", "revDSG & DSGVO") },
+        { icon: "EX", label: t("landing.trust.exportLabel", "Daten"), value: t("landing.trust.exportValue", "Export geregelt") },
+    ];
+
+    const outcomes = [
+        {
+            code: "ZE",
+            title: t("landing.outcomes.time.title", "Arbeitszeit ohne Excel"),
+            before: t("landing.outcomes.time.before", "Stunden aus Listen, Nachträgen und Rückfragen zusammensuchen."),
+            after: t("landing.outcomes.time.after", "Einmal erfassen und Soll/Ist, Salden sowie Korrekturen zentral prüfen."),
+        },
+        {
+            code: "UR",
+            title: t("landing.outcomes.leave.title", "Urlaub ohne Rückfragen"),
+            before: t("landing.outcomes.leave.before", "Anträge, Resttage und Vertretungen über mehrere Kanäle klären."),
+            after: t("landing.outcomes.leave.after", "Antrag, Übersicht und Freigabe in einem nachvollziehbaren Workflow."),
+        },
+        {
+            code: "LO",
+            title: t("landing.outcomes.payroll.title", "Lohnvorbereitung ohne Doppelerfassung"),
+            before: t("landing.outcomes.payroll.before", "Zeit- und Abwesenheitsdaten für den Lohnlauf erneut übertragen."),
+            after: t("landing.outcomes.payroll.after", "Geprüfte Daten aus demselben System für die Abrechnung weiterverwenden."),
+        },
+    ];
+
+    const securityMeasures = [
+        {
+            code: "01",
+            title: t("landing.security.transport.title", "Verschlüsselte Übertragung"),
+            text: t("landing.security.transport.text", "TLS und HSTS schützen die Verbindung zwischen Browser und Chrono."),
+        },
+        {
+            code: "02",
+            title: t("landing.security.access.title", "Rollenbasierter Zugriff"),
+            text: t("landing.security.access.text", "Rollen, Seitenfreigaben und administrative Zugriffe werden getrennt gesteuert."),
+        },
+        {
+            code: "03",
+            title: t("landing.security.contract.title", "Datenschutz vertraglich geregelt"),
+            text: t("landing.security.contract.text", "revDSG und DSGVO werden berücksichtigt; bei Auftragsverarbeitung ist ein AVV/DPA vorgesehen."),
+        },
+        {
+            code: "04",
+            title: t("landing.security.export.title", "Daten bleiben exportierbar"),
+            text: t("landing.security.export.text", "Der Datenexport während der Vertragslaufzeit und der Umgang nach Vertragsende sind in den AGB beschrieben."),
+        },
     ];
 
     const dashboardPreviews = [
@@ -973,47 +1140,47 @@ const LandingPage = () => {
             title: t("landing.features.map.clusters.core.title", "Zeit & Team"),
             text: t("landing.features.map.clusters.core.text", "Kern"),
             modules: [
-                { code: "ZE", name: t("landing.features.map.modules.timeTracking", "Zeiterfassung"), note: t("landing.features.map.notes.user", "User") },
-                { code: "DI", name: t("landing.features.map.modules.schedule", "Dienstplan"), note: t("landing.features.map.notes.admin", "Admin") },
-                { code: "UR", name: t("landing.features.map.modules.absences", "Urlaub & Abwesenheiten"), note: t("landing.features.map.notes.workflow", "Workflow") },
-                { code: "PE", name: t("landing.features.map.modules.userManagement", "Benutzerverwaltung"), note: t("landing.features.map.notes.permissions", "Rechte") },
+                { code: "ZE", name: t("landing.features.map.modules.timeTracking", "Zeiterfassung"), note: t("landing.features.map.status.base", "Basis") },
+                { code: "DI", name: t("landing.features.map.modules.schedule", "Dienstplan"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
+                { code: "UR", name: t("landing.features.map.modules.absences", "Urlaub & Abwesenheiten"), note: t("landing.features.map.status.available", "Verfügbar") },
+                { code: "PE", name: t("landing.features.map.modules.userManagement", "Benutzerverwaltung"), note: t("landing.features.map.status.available", "Verfügbar") },
             ],
         },
         {
             title: t("landing.features.map.clusters.work.title", "Kunden & Projekte"),
             text: t("landing.features.map.clusters.work.text", "Kundenarbeit"),
             modules: [
-                { code: "PR", name: t("landing.features.map.modules.projects", "Kunden, Projekte & Aufgaben"), note: t("landing.features.map.notes.work", "Arbeit") },
-                { code: "CM", name: t("landing.features.map.modules.crm", "CRM & Marketing"), note: t("landing.features.map.notes.pipeline", "Pipeline") },
-                { code: "BI", name: t("landing.features.map.modules.analytics", "Analytics & Berichte"), note: t("landing.features.map.notes.reports", "Auswertung") },
+                { code: "PR", name: t("landing.features.map.modules.projects", "Kunden, Projekte & Aufgaben"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
+                { code: "CM", name: t("landing.features.map.modules.crm", "CRM & Marketing"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
+                { code: "BI", name: t("landing.features.map.modules.analytics", "Analytics & Berichte"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
             ],
         },
         {
             title: t("landing.features.map.clusters.finance.title", "Lohn & Finanzen"),
             text: t("landing.features.map.clusters.finance.text", "Abschluss"),
             modules: [
-                { code: "LO", name: t("landing.features.map.modules.payslips", "Abrechnungen"), note: t("landing.features.map.notes.documents", "Dokumente") },
-                { code: "FI", name: t("landing.features.map.modules.accounting", "Finanzbuchhaltung"), note: t("landing.features.map.notes.accounting", "Buchung") },
-                { code: "ZA", name: t("landing.features.map.modules.banking", "Zahlungsverkehr"), note: t("landing.features.map.notes.payments", "Zahlung") },
+                { code: "LO", name: t("landing.features.map.modules.payslips", "Abrechnungen"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
+                { code: "FI", name: t("landing.features.map.modules.accounting", "Finanzbuchhaltung"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
+                { code: "ZA", name: t("landing.features.map.modules.banking", "Zahlungsverkehr"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
             ],
         },
         {
             title: t("landing.features.map.clusters.operations.title", "Waren & Betrieb"),
             text: t("landing.features.map.clusters.operations.text", "Warenfluss"),
             modules: [
-                { code: "SC", name: t("landing.features.map.modules.supplyChain", "Supply Chain"), note: t("landing.features.map.notes.stock", "Lager") },
-                { code: "EK", name: t("landing.features.map.modules.purchase", "Einkauf"), note: t("landing.features.map.notes.stockFlow", "Warenfluss") },
-                { code: "VK", name: t("landing.features.map.modules.sales", "Verkauf"), note: t("landing.features.map.notes.stockFlow", "Warenfluss") },
-                { code: "SV", name: t("landing.features.map.modules.service", "Service"), note: t("landing.features.map.notes.process", "Prozess") },
+                { code: "SC", name: t("landing.features.map.modules.supplyChain", "Supply Chain"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
+                { code: "EK", name: t("landing.features.map.modules.purchase", "Einkauf"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
+                { code: "VK", name: t("landing.features.map.modules.sales", "Verkauf"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
+                { code: "SV", name: t("landing.features.map.modules.service", "Service"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
             ],
         },
         {
             title: t("landing.features.map.clusters.setup.title", "Setup & Wissen"),
             text: t("landing.features.map.clusters.setup.text", "Steuerung"),
             modules: [
-                { code: "AD", name: t("landing.features.map.modules.companySettings", "Firmeneinstellungen"), note: t("landing.features.map.notes.setup", "Setup") },
-                { code: "KI", name: t("landing.features.map.modules.companyKnowledge", "Firmenwissen"), note: t("landing.features.map.notes.knowledge", "Wissen") },
-                { code: "C2", name: t("landing.features.map.modules.chronoTwo", "Chrono 2.0"), note: t("landing.features.map.notes.extension", "Erweiterung") },
+                { code: "AD", name: t("landing.features.map.modules.companySettings", "Firmeneinstellungen"), note: t("landing.features.map.status.available", "Verfügbar") },
+                { code: "KI", name: t("landing.features.map.modules.companyKnowledge", "Firmenwissen"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
+                { code: "C2", name: t("landing.features.map.modules.chronoTwo", "Chrono 2.0"), note: t("landing.features.map.status.onRequest", "Auf Anfrage") },
             ],
         },
     ];
@@ -1055,7 +1222,7 @@ const LandingPage = () => {
             question: t("landing.faq.what.question", "Was ist Chrono-Logisch?"),
             answer: t(
                 "landing.faq.what.answer",
-                "Chrono-Logisch ist eine Schweizer Unternehmensplattform für Zeiterfassung, Urlaub, HR, Lohnabrechnung, Finanzen, CRM, Lager und Betriebsprozesse."
+                "Chrono-Logisch ist eine Schweizer Unternehmensplattform für Arbeitszeit, Abwesenheiten und Lohnvorbereitung. Weitere Bereiche werden modular nach Bedarf ergänzt."
             ),
         },
         {
@@ -1077,32 +1244,48 @@ const LandingPage = () => {
                     </div>
                     <div className="lp-hero-content">
                         <span className="lp-hero-badge">
-                            {t("landing.hero.badge", "All-in-One Plattform für Teams in CH & DE")}
+                            {t("landing.hero.badge", "Schweizer Software für KMU")}
                         </span>
-                        <h1>{t("landing.hero.title", "Chrono-Logisch: Zeiterfassung, HR & Lohnabrechnung für KMU")}</h1>
+                        <h1>{t("landing.hero.title", "Arbeitszeit, Abwesenheiten und Lohnprozesse – ohne Excel-Chaos.")}</h1>
                         <p>
                             {t(
                                 "landing.hero.text",
-                                "Chrono hilft Teams in der Schweiz und Deutschland, Arbeitszeiten sauber zu erfassen, Abwesenheiten zu verwalten und Löhne effizient abzurechnen - in einem einzigen System."
+                                "Chrono verbindet Zeiterfassung, Urlaubsfreigaben und Lohnvorbereitung in einer zentralen Plattform. Für Schweizer und deutsche Teams, persönlich eingeführt und modular erweiterbar."
                             )}
                         </p>
                         <div className="lp-cta-buttons">
-                            <Link className="lp-btn lp-primary" to="/register">
-                                {t("landing.cta.try", "Kostenlos testen")}
+                            <Link
+                                className="lp-btn lp-primary"
+                                to="/register"
+                                data-analytics-id="landing_demo_request_hero"
+                                data-analytics-target="/register"
+                            >
+                                {t("landing.cta.try", "Kostenlose Demo anfragen")}
                             </Link>
-                            <button className="lp-btn lp-secondary" type="button" onClick={handleDemo}>
-                                {t("landing.cta.demo", "Live-Demo ansehen")}
+                            <button
+                                className="lp-btn lp-secondary"
+                                type="button"
+                                onClick={handleDemo}
+                                disabled={demoLoading}
+                                aria-busy={demoLoading}
+                                data-analytics-id="landing_interactive_demo_hero"
+                                data-analytics-target="/demo-tour"
+                            >
+                                {demoLoading
+                                    ? t("landing.cta.demoLoading", "Demo wird geöffnet …")
+                                    : t("landing.cta.demo", "Interaktive Produktdemo starten")}
                             </button>
                         </div>
+                        <p className="lp-cta-note">{t("landing.cta.requestHint", "Persönliche Freischaltung · Rückmeldung in der Regel innerhalb eines Werktags")}</p>
                         <div className="lp-proof-line" aria-label={t("landing.hero.proofLabel", "Kurzüberblick")}>
-                            <span>{t("landing.hero.proof1", "Deutsche Server")}</span>
-                            <span>{t("landing.hero.proof2", "DSGVO-konform")}</span>
-                            <span>{t("landing.hero.proof3", "Keine Kreditkarte nötig")}</span>
+                            <span>{t("landing.hero.proof1", "Ab CHF 5 pro Mitarbeitendem")}</span>
+                            <span>{t("landing.hero.proof2", "Keine Kreditkarte im Anfrageprozess")}</span>
+                            <span>{t("landing.hero.proof3", "Entwickelt in der Schweiz")}</span>
                         </div>
                         <div className="lp-hero-stats" aria-label={t("landing.hero.statsLabel", "Chrono Kennzahlen")}>
-                            <div><strong>1</strong><span>{t("landing.hero.stat1", "Plattform")}</span></div>
-                            <div><strong>8+</strong><span>{t("landing.hero.stat2", "Module")}</span></div>
-                            <div><strong>CH/DE</strong><span>{t("landing.hero.stat3", "bereit")}</span></div>
+                            <div><strong>Live</strong><span>{t("landing.hero.stat1", "interaktive Demo")}</span></div>
+                            <div><strong>1</strong><span>{t("landing.hero.stat2", "zentraler Datenfluss")}</span></div>
+                            <div><strong>CH/DE</strong><span>{t("landing.hero.stat3", "persönlich betreut")}</span></div>
                         </div>
                     </div>
                     <FounderCard t={t} />
@@ -1115,6 +1298,19 @@ const LandingPage = () => {
                                 <TrustPill key={item.label} {...item} />
                             ))}
                         </ul>
+                    </div>
+                </section>
+
+                <section className="lp-section lp-outcomes-section" id="outcomes" aria-labelledby="outcomes-title">
+                    <div className="lp-container lp-section-heading">
+                        <span className="lp-kicker">{t("landing.outcomes.kicker", "Drei klare Einstiege")}</span>
+                        <h2 id="outcomes-title">{t("landing.outcomes.title", "Welcher Aufwand kostet Sie heute Zeit?")}</h2>
+                        <p>{t("landing.outcomes.lead", "Chrono startet bei einem konkreten Problem – nicht bei einer möglichst langen Modulliste.")}</p>
+                    </div>
+                    <div className="lp-container lp-outcomes-grid">
+                        {outcomes.map((outcome) => (
+                            <OutcomeCard key={outcome.code} {...outcome} t={t} />
+                        ))}
                     </div>
                 </section>
 
@@ -1137,6 +1333,25 @@ const LandingPage = () => {
                 </section>
 
                 <FounderTrustSection t={t} />
+
+                <section className="lp-section lp-security-section" id="sicherheit" aria-labelledby="security-title">
+                    <div className="lp-container lp-security-layout">
+                        <div className="lp-section-heading lp-security-heading">
+                            <span className="lp-kicker">{t("landing.security.kicker", "Sicherheit & Datenschutz")}</span>
+                            <h2 id="security-title">{t("landing.security.title", "Klare Massnahmen statt pauschaler Versprechen.")}</h2>
+                            <p>{t("landing.security.lead", "Für sensible Personal- und Lohndaten zählt, was technisch und vertraglich nachvollziehbar geregelt ist.")}</p>
+                            <div className="lp-security-links">
+                                <Link className="lp-btn lp-secondary" to="/datenschutz">{t("landing.security.privacyCta", "Datenschutz ansehen")}</Link>
+                                <Link className="lp-btn lp-secondary" to="/agb">{t("landing.security.termsCta", "AGB & Datenexport")}</Link>
+                            </div>
+                        </div>
+                        <div className="lp-security-grid">
+                            {securityMeasures.map((measure) => (
+                                <SecurityItem key={measure.code} {...measure} />
+                            ))}
+                        </div>
+                    </div>
+                </section>
 
                 <section className="lp-section lp-process-section" id="features">
                     <div className="lp-container lp-process-container lp-section-heading">
@@ -1191,7 +1406,14 @@ const LandingPage = () => {
                         </p>
                         <div>
                             <a className="lp-btn lp-secondary" href="#preise">{t("landing.features.modulesCta", "Alle Module ansehen")}</a>
-                            <Link className="lp-btn lp-primary" to="/register">{t("landing.cta.try", "Kostenlos testen")}</Link>
+                            <Link
+                                className="lp-btn lp-primary"
+                                to="/register"
+                                data-analytics-id="landing_demo_request_modules"
+                                data-analytics-target="/register"
+                            >
+                                {t("landing.cta.try", "Kostenlose Demo anfragen")}
+                            </Link>
                         </div>
                     </div>
                 </section>
@@ -1209,6 +1431,12 @@ const LandingPage = () => {
                     </div>
                 </section>
 
+                <section className="lp-section lp-calculator-section" id="rechner">
+                    <div className="lp-container">
+                        <SavingsCalculator t={t} />
+                    </div>
+                </section>
+
                 <section className="lp-pricing-section" id="preise">
                     <div className="lp-container lp-pricing-layout">
                         <div className="lp-pricing-copy">
@@ -1220,7 +1448,12 @@ const LandingPage = () => {
                                     "Sie zahlen nur für die Bereiche, die Ihr Unternehmen wirklich braucht. Weitere Module für Urlaub, Lohn, CRM oder Supply Chain lassen sich später ergänzen."
                                 )}
                             </p>
-                            <Link className="lp-btn lp-primary" to="/register">
+                            <Link
+                                className="lp-btn lp-primary"
+                                to="/register"
+                                data-analytics-id="landing_configurator_start_pricing"
+                                data-analytics-target="/register"
+                            >
                                 {t("landing.pricing.cta", "Preise ansehen & Konfiguration starten")}
                             </Link>
                         </div>
@@ -1237,7 +1470,12 @@ const LandingPage = () => {
                                     <li key={module}>{module}</li>
                                 ))}
                             </ul>
-                            <Link className="lp-btn lp-secondary" to="/register">
+                            <Link
+                                className="lp-btn lp-secondary"
+                                to="/register"
+                                data-analytics-id="landing_configurator_start_card"
+                                data-analytics-target="/register"
+                            >
                                 {t("landing.pricing.cardCta", "Konfiguration starten")}
                             </Link>
                         </aside>
@@ -1279,8 +1517,18 @@ const LandingPage = () => {
                                 )}
                             </p>
                             <div className="lp-contact-actions">
-                                <button className="lp-btn lp-secondary" type="button" onClick={handleDemo}>
-                                    {t("landing.contact.demo", "Zur Live-Demo")}
+                                <button
+                                    className="lp-btn lp-secondary"
+                                    type="button"
+                                    onClick={handleDemo}
+                                    disabled={demoLoading}
+                                    aria-busy={demoLoading}
+                                    data-analytics-id="landing_interactive_demo_contact"
+                                    data-analytics-target="/demo-tour"
+                                >
+                                    {demoLoading
+                                        ? t("landing.cta.demoLoading", "Demo wird geöffnet …")
+                                        : t("landing.contact.demo", "Interaktive Demo starten")}
                                 </button>
                                 <a className="lp-contact-mail" href="mailto:siefertchristopher@chrono-logisch.ch">siefertchristopher@chrono-logisch.ch</a>
                                 <a className="lp-contact-mail" href="tel:+41765467960">+41 76 546 79 60</a>
@@ -1314,7 +1562,13 @@ const LandingPage = () => {
                                 />
                             </label>
                             <div className="lp-form-actions">
-                                <button className="lp-btn lp-primary" type="submit" disabled={sending}>
+                                <button
+                                    className="lp-btn lp-primary"
+                                    type="submit"
+                                    disabled={sending}
+                                    data-analytics-id="landing_contact_form_submit"
+                                    data-analytics-target="#kontakt"
+                                >
                                     {sending ? t("landing.contact.sending", "Wird gesendet...") : t("landing.contact.send", "Nachricht senden")}
                                 </button>
                                 <span>{t("landing.contact.hint", "Antwort meist am selben Werktag.")}</span>
