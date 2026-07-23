@@ -1988,7 +1988,9 @@ const AdminWeekSection = forwardRef(({
 
                 {weekNavigationControls}
 
-                <CalculationStatusNotice status={activeTab === 'week' ? backendWeekStatus : backendMonthStatus} />
+                {(activeTab === 'week' ? backendWeekStatus : backendMonthStatus) === CALCULATION_STATUS.ERROR && (
+                    <CalculationStatusNotice status={CALCULATION_STATUS.ERROR} />
+                )}
                 {activeTab === 'week' && (selectedWeekIsCurrent || selectedWeekIsFuture) && (
                     <p className="week-evaluation-hint" role="status">
                         {selectedWeekIsFuture
