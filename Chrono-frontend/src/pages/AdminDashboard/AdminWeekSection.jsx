@@ -2089,6 +2089,7 @@ const AdminWeekSection = forwardRef(({
                                                                 const userCantonKeyForDay = userData.userConfig.companyCantonAbbreviation || 'GENERAL';
                                                                 const holidaysDataForDay = allHolidays[userCantonKeyForDay]?.data || allHolidays['GENERAL']?.data || {};
                                                                 const holidayNameOnThisDay = holidaysDataForDay[isoDate];
+                                                                const holidayOptionForThisDay = userData.holidayOptions?.find(option => option.holidayDate === isoDate);
                                                                 const actualMinsToday = dailySummary?.workedMinutes || 0;
                                                                 const expectedMinsToday = Number.isFinite(dailySummary?.expectedMinutes) ? dailySummary.expectedMinutes : null;
                                                                 const isFutureDate = isoDate > todayIsoForAccounting;
