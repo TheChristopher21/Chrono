@@ -1,6 +1,7 @@
 // src/pages/AdminUserManagement/AdminUserManagementPage.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
 import api from '../../utils/api';
@@ -11,6 +12,11 @@ import AdminUserList from './AdminUserList';
 import AdminUserForm from './AdminUserForm';
 import DeleteConfirmModal from './DeleteConfirmModal';
 import { STANDARD_COLORS, defaultWeeklySchedule } from './adminUserManagementUtils';
+import {
+    ACCESS_MANAGE,
+    hasPageAccess,
+    normalizePagePermissionsForRole,
+} from '../../utils/pageAccess.js';
 
 const getTodayISOString = () => {
     const today = new Date();
@@ -20,7 +26,166 @@ const getTodayISOString = () => {
     return `${year}-${month}-${day}`;
 };
 
+const createUserFormState = (featureKeys = [], overrides = {}) => {
+    const normalizedFeatureKeys = Array.isArray(featureKeys)
+        ? featureKeys
+        : featureKeys
+            ? Object.values(featureKeys)
+            : [];
+    const roleName = overrides.roles?.[0] || 'ROLE_USER';
+
+    return {
+        username: '',
+        firstName: '',
+        lastName: '',
+        address: '',
+        department: '',
+        birthDate: '',
+        entryDate: '',
+        country: 'DE',
+        taxClass: '',
+        tarifCode: '',
+        canton: '',
+        civilStatus: '',
+        children: 0,
+        religion: '',
+        federalState: '',
+        churchTax: false,
+        gkvAdditionalRate: 0.0125,
+        bankAccount: '',
+        socialSecurityNumber: '',
+        healthInsurance: '',
+        personnelNumber: '',
+        email: '',
+        mobilePhone: '',
+        landlinePhone: '',
+        password: '',
+        roles: [roleName],
+        expectedWorkDays: 5.0,
+        dailyWorkHours: 8.5,
+        breakDuration: 30,
+        annualVacationDays: 25,
+        hourlyWage: null,
+        monthlySalary: null,
+        color: STANDARD_COLORS[0],
+        scheduleCycle: 1,
+        weeklySchedule: [{ ...defaultWeeklySchedule }],
+        scheduleEffectiveDate: getTodayISOString(),
+        isHourly: false,
+        isPercentage: false,
+        employmentModelEffectiveFrom: getTodayISOString(),
+        workPercentage: 100,
+        trackingBalanceInMinutes: 0,
+        includeInTimeTracking: true,
+        companyId: null,
+        companyFeatureKeys: normalizedFeatureKeys,
+        pagePermissions: normalizePagePermissionsForRole(roleName, normalizedFeatureKeys, overrides.pagePermissions),
+        ...overrides,
+    };
+};
+
+const normalizeComparableValue = (value) => {
+    if (value === undefined || value === '') {
+        return null;
+    }
+    if (typeof value === 'number' && Number.isNaN(value)) {
+        return null;
+    }
+    if (Array.isArray(value)) {
+        return value.map(normalizeComparableValue);
+    }
+    if (value && typeof value === 'object') {
+        return Object.keys(value)
+            .sort()
+            .reduce((acc, key) => {
+                acc[key] = normalizeComparableValue(value[key]);
+                return acc;
+            }, {});
+    }
+    return value;
+};
+
+const areComparableValuesEqual = (left, right) => (
+    JSON.stringify(normalizeComparableValue(left)) === JSON.stringify(normalizeComparableValue(right))
+);
+
+const primaryRole = (roles) => (Array.isArray(roles) && roles.length > 0 ? roles[0] : 'ROLE_USER');
+
+const isSuperAdminUser = (user) => Array.isArray(user?.roles) && user.roles.includes('ROLE_SUPERADMIN');
+
+const hasOnlyTimeTrackingVisibilityChanged = (originalUser, nextUser) => {
+    if (!originalUser || !nextUser) {
+        return false;
+    }
+
+    const originalVisibility = originalUser.includeInTimeTracking !== false;
+    const nextVisibility = nextUser.includeInTimeTracking !== false;
+    if (originalVisibility === nextVisibility) {
+        return false;
+    }
+
+    const comparableFields = [
+        'username',
+        'firstName',
+        'lastName',
+        'address',
+        'department',
+        'birthDate',
+        'entryDate',
+        'country',
+        'taxClass',
+        'tarifCode',
+        'canton',
+        'civilStatus',
+        'children',
+        'religion',
+        'federalState',
+        'churchTax',
+        'gkvAdditionalRate',
+        'bankAccount',
+        'socialSecurityNumber',
+        'healthInsurance',
+        'personnelNumber',
+        'email',
+        'mobilePhone',
+        'landlinePhone',
+        'expectedWorkDays',
+        'dailyWorkHours',
+        'breakDuration',
+        'annualVacationDays',
+        'scheduleCycle',
+        'weeklySchedule',
+        'scheduleEffectiveDate',
+        'isHourly',
+        'isPercentage',
+        'workPercentage',
+        'monthlySalary',
+        'hourlyRate',
+        'color',
+    ];
+
+    const originalRole = primaryRole(originalUser.roles);
+    const nextRole = primaryRole(nextUser.roles);
+    const originalPermissions = normalizePagePermissionsForRole(
+        originalRole,
+        originalUser.companyFeatureKeys,
+        originalUser.pagePermissions
+    );
+    const nextPermissions = normalizePagePermissionsForRole(
+        nextRole,
+        nextUser.companyFeatureKeys || originalUser.companyFeatureKeys,
+        nextUser.pagePermissions
+    );
+
+    return comparableFields.every((field) => (
+        areComparableValuesEqual(originalUser[field], nextUser[field])
+    ))
+        && areComparableValuesEqual(originalRole, nextRole)
+        && areComparableValuesEqual(originalPermissions, nextPermissions);
+};
+
 const AdminUserManagementPage = () => {
+    const { currentUser } = useAuth();
     const { notify } = useNotification();
     const { t } = useTranslation();
 
@@ -29,6 +194,19 @@ const AdminUserManagementPage = () => {
     const [isCreatingNewUser, setIsCreatingNewUser] = useState(false);
     const [deleteConfirm, setDeleteConfirm] = useState({ show: false, userId: null, username: '' });
     const [programStatus, setProgramStatus] = useState("");
+    const [programStatusTone, setProgramStatusTone] = useState("info");
+    const baseFeatureKeys = currentUser?.companyFeatureKeys || [];
+    const canManageAdminUsers = hasPageAccess(currentUser, 'adminUsers', ACCESS_MANAGE);
+
+    const notifyAdminUsersReadOnly = useCallback(() => {
+        notify(
+            t(
+                'userManagement.readOnlyPermissions',
+                'Nur Ansicht: Dieser Benutzer darf die Benutzerverwaltung sehen, aber keine Änderungen ausführen.'
+            ),
+            'warning'
+        );
+    }, [notify, t]);
 
     const initialNewUserState = {
         username: '',
@@ -78,11 +256,23 @@ const AdminUserManagementPage = () => {
 
     const [currentUserFormData, setCurrentUserFormData] = useState({ ...initialNewUserState });
 
+    useEffect(() => {
+        setCurrentUserFormData((prev) => ({
+            ...prev,
+            companyFeatureKeys: prev.companyFeatureKeys || baseFeatureKeys,
+            pagePermissions: normalizePagePermissionsForRole(
+                prev.roles?.[0] || 'ROLE_USER',
+                prev.companyFeatureKeys || baseFeatureKeys,
+                prev.pagePermissions
+            ),
+        }));
+    }, [baseFeatureKeys]);
+
     const fetchUsers = useCallback(async () => {
         try {
             const res = await api.get('/api/admin/users');
             const userList = Array.isArray(res.data) ? res.data : [];
-            setUsers(userList.map(user => ({
+            setUsers(userList.filter(user => !isSuperAdminUser(user)).map(user => ({
                 ...user,
                 includeInTimeTracking: user.includeInTimeTracking !== false,
                 scheduleEffectiveDate: user.scheduleEffectiveDate ? user.scheduleEffectiveDate.toString() : getTodayISOString(),
@@ -107,22 +297,32 @@ const AdminUserManagementPage = () => {
                 workPercentage: user.workPercentage !== null && user.workPercentage !== undefined ? user.workPercentage : (user.isPercentage ? 100 : null),
                 expectedWorkDays: user.expectedWorkDays !== null && user.expectedWorkDays !== undefined ? user.expectedWorkDays : (user.isHourly ? null : 5.0), // Default 5.0 if not hourly and not set
                 trackingBalanceInMinutes: user.trackingBalanceInMinutes !== null && user.trackingBalanceInMinutes !== undefined ? user.trackingBalanceInMinutes : 0,
-                roles: user.roles && user.roles.length > 0 ? user.roles : ['ROLE_USER']
+                roles: user.roles && user.roles.length > 0 ? user.roles : ['ROLE_USER'],
+                companyFeatureKeys: user.companyFeatureKeys || baseFeatureKeys,
+                pagePermissions: normalizePagePermissionsForRole(
+                    user.roles?.[0] || 'ROLE_USER',
+                    user.companyFeatureKeys || baseFeatureKeys,
+                    user.pagePermissions
+                )
             })));
         } catch (err) {
             console.error(t("userManagement.errorLoadingUsers", "Fehler beim Laden der Benutzer."), err);
             notify(t("userManagement.errorLoadingUsers", "Fehler beim Laden der Benutzer.") + `: ${err.message || ''}`, "error");
         }
-    }, [t, notify]);
+    }, [baseFeatureKeys, t, notify]);
 
     useEffect(() => {
         fetchUsers();
     }, [fetchUsers]);
 
     const resetAndShowCreateForm = () => {
+        if (!canManageAdminUsers) {
+            notifyAdminUsersReadOnly();
+            return;
+        }
         setEditingUser(null);
         setCurrentUserFormData({
-            ...initialNewUserState,
+            ...createUserFormState(baseFeatureKeys),
             scheduleEffectiveDate: getTodayISOString(),
             color: STANDARD_COLORS[Math.floor(Math.random() * STANDARD_COLORS.length)]
         });
@@ -132,7 +332,7 @@ const AdminUserManagementPage = () => {
     const handleCancelForm = () => {
         setEditingUser(null);
         setIsCreatingNewUser(false);
-        setCurrentUserFormData({ ...initialNewUserState, scheduleEffectiveDate: getTodayISOString() });
+        setCurrentUserFormData({ ...createUserFormState(baseFeatureKeys), scheduleEffectiveDate: getTodayISOString() });
     };
 
     const handleFormChange = (field, value) => {
@@ -146,6 +346,18 @@ const AdminUserManagementPage = () => {
                 } else if (value === 'CH') {
                     newState.taxClass = '';
                 }
+            }
+
+            if (field === 'roles') {
+                const nextRole = Array.isArray(value) && value.length > 0 ? value[0] : 'ROLE_USER';
+                const featureKeys = prev.companyFeatureKeys || baseFeatureKeys;
+                newState.pagePermissions = normalizePagePermissionsForRole(nextRole, featureKeys, prev.pagePermissions);
+            }
+
+            if (field === 'pagePermissions') {
+                const nextRole = newState.roles?.[0] || 'ROLE_USER';
+                const featureKeys = prev.companyFeatureKeys || baseFeatureKeys;
+                newState.pagePermissions = normalizePagePermissionsForRole(nextRole, featureKeys, value);
             }
 
             if (field === 'isHourly') {
@@ -244,6 +456,10 @@ const AdminUserManagementPage = () => {
 
     const handleSubmitForm = async (e) => {
         e.preventDefault();
+        if (!canManageAdminUsers) {
+            notifyAdminUsersReadOnly();
+            return;
+        }
         const dataToSend = { ...currentUserFormData };
 
         if (dataToSend.roles && !Array.isArray(dataToSend.roles) && typeof dataToSend.roles === 'string') {
@@ -254,6 +470,13 @@ const AdminUserManagementPage = () => {
         if (Object.prototype.hasOwnProperty.call(dataToSend, 'role')) {
             delete dataToSend.role;
         }
+        dataToSend.pagePermissions = normalizePagePermissionsForRole(
+            dataToSend.roles?.[0] || 'ROLE_USER',
+            dataToSend.companyFeatureKeys || baseFeatureKeys,
+            dataToSend.pagePermissions
+        );
+        dataToSend.includeInTimeTracking = dataToSend.includeInTimeTracking !== false;
+        delete dataToSend.companyFeatureKeys;
 
         if (Object.prototype.hasOwnProperty.call(dataToSend, 'hourlyWage')) {
             dataToSend.hourlyRate = dataToSend.hourlyWage;
@@ -305,6 +528,16 @@ const AdminUserManagementPage = () => {
         } else if (editingUser) {
             try {
                 const payloadForUpdate = { ...dataToSend, id: editingUser.id };
+                if (hasOnlyTimeTrackingVisibilityChanged(editingUser, payloadForUpdate)) {
+                    await api.patch(`/api/admin/users/${editingUser.id}/time-tracking-visibility`, {
+                        includeInTimeTracking: payloadForUpdate.includeInTimeTracking,
+                    });
+                    notify(t("userManagement.userUpdatedSuccess", "Benutzer erfolgreich aktualisiert!"), "success");
+                    fetchUsers();
+                    handleCancelForm();
+                    return;
+                }
+
                 const modelChanged = Boolean(editingUser.isHourly) !== Boolean(dataToSend.isHourly)
                     || Boolean(editingUser.isPercentage) !== Boolean(dataToSend.isPercentage);
                 const snapshotChanged = editingUser.dailyWorkHours !== dataToSend.dailyWorkHours
@@ -336,13 +569,20 @@ const AdminUserManagementPage = () => {
     };
 
     const handleEditUser = (userToEdit) => {
+        if (!canManageAdminUsers) {
+            notifyAdminUsersReadOnly();
+            return;
+        }
         setEditingUser(userToEdit);
+        const featureKeys = userToEdit.companyFeatureKeys || baseFeatureKeys;
         setCurrentUserFormData({
-            ...initialNewUserState, // Start mit Defaults
+            ...createUserFormState(featureKeys), // Start mit Defaults
             ...userToEdit,          // Überschreibe mit User-Daten
             password: '',           // Passwort nicht vorausfüllen für Bearbeitung
             includeInTimeTracking: userToEdit.includeInTimeTracking !== false,
+            hourlyWage: userToEdit.hourlyRate ?? userToEdit.hourlyWage ?? null,
             roles: userToEdit.roles && userToEdit.roles.length > 0 ? userToEdit.roles : ['ROLE_USER'],
+            companyFeatureKeys: featureKeys,
             scheduleEffectiveDate: userToEdit.scheduleEffectiveDate ? userToEdit.scheduleEffectiveDate.toString() : getTodayISOString(),
             weeklySchedule: userToEdit.weeklySchedule && userToEdit.weeklySchedule.length > 0
                 ? userToEdit.weeklySchedule
@@ -361,19 +601,31 @@ const AdminUserManagementPage = () => {
             workPercentage: userToEdit.workPercentage !== null && userToEdit.workPercentage !== undefined ? userToEdit.workPercentage : (userToEdit.isPercentage ? 100 : null),
             expectedWorkDays: userToEdit.expectedWorkDays !== null && userToEdit.expectedWorkDays !== undefined ? userToEdit.expectedWorkDays : (userToEdit.isHourly ? null : 5.0),
             employmentModelEffectiveFrom: getTodayISOString(),
-            hourlyWage: userToEdit.hourlyRate ?? null,
-            monthlySalary: userToEdit.monthlySalary ?? null
+            monthlySalary: userToEdit.monthlySalary ?? null,
+            pagePermissions: normalizePagePermissionsForRole(
+                userToEdit.roles?.[0] || 'ROLE_USER',
+                featureKeys,
+                userToEdit.pagePermissions
+            )
         });
         setIsCreatingNewUser(false);
     };
 
     const requestDeleteUser = (user) => {
+        if (!canManageAdminUsers) {
+            notifyAdminUsersReadOnly();
+            return;
+        }
         setDeleteConfirm({ show: true, userId: user.id, username: user.username });
     };
     const cancelDelete = () => {
         setDeleteConfirm({ show: false, userId: null, username: '' });
     };
     const confirmDelete = async () => {
+        if (!canManageAdminUsers) {
+            notifyAdminUsersReadOnly();
+            return;
+        }
         if (deleteConfirm.userId) {
             try {
                 await api.delete(`/api/admin/users/${deleteConfirm.userId}`);
@@ -391,6 +643,10 @@ const AdminUserManagementPage = () => {
     };
 
     async function handleProgramCard(user) {
+        if (!canManageAdminUsers) {
+            notifyAdminUsersReadOnly();
+            return;
+        }
         try {
             // Konvertiere Username zu Hex (max 16 ASCII Chars -> 32 Hex Chars)
             // Annahme: stringToHex16 ist korrekt implementiert und verfügbar
@@ -404,6 +660,7 @@ const AdminUserManagementPage = () => {
 
             if (response.data && response.data.id) {
                 setProgramStatus(t("userManagement.nfcProgramStart", "Kartenprogrammierung gestartet. Bitte NFC-Karte auflegen..."));
+                setProgramStatusTone("info");
                 const commandId = response.data.id;
                 let maxTries = 20; // Erhöhte Versuche für längere Wartezeit (20 * 1.5s = 30s)
                 let delay = 1500;
@@ -413,26 +670,36 @@ const AdminUserManagementPage = () => {
                         const res = await api.get(`/api/nfc/command/status/${commandId}`);
                         if (res.data.status === "done") {
                             setProgramStatus(t("userManagement.programCardSuccess", "Karte erfolgreich programmiert!"));
+                            setProgramStatusTone("success");
                             setTimeout(() => setProgramStatus(""), 7000);
                         } else if (res.data.status === "pending" && maxTries-- > 0) {
-                            setProgramStatus(t("userManagement.nfcProgramProgress", `Warte auf NFC-Agent... (${maxTries} Versuche übrig)`));
+                            setProgramStatus(t(
+                                "userManagement.nfcProgramProgress",
+                                "Warte auf NFC-Agent... ({{count}} Versuche übrig)",
+                                { count: maxTries }
+                            ));
+                            setProgramStatusTone("info");
                             setTimeout(pollStatus, delay);
                         } else {
                             setProgramStatus(t("userManagement.programCardErrorTimeout", "Zeitüberschreitung bei Kartenprogrammierung oder Befehl nicht gefunden."));
+                            setProgramStatusTone("error");
                             setTimeout(() => setProgramStatus(""), 7000);
                         }
                     } catch (pollError) {
                         console.error("NFC poll error:", pollError);
                         setProgramStatus(t("userManagement.programCardErrorComm", "Kommunikationsfehler mit NFC-Agent."));
+                        setProgramStatusTone("error");
                         setTimeout(() => setProgramStatus(""), 7000);
                     }
                 };
                 pollStatus();
             } else {
+                setProgramStatusTone("error");
                 notify(t("userManagement.programCardError", "Fehler beim Starten der Kartenprogrammierung."), 'error');
             }
         } catch (err) {
             console.error("Fehler beim Kartenprogrammieren:", err);
+            setProgramStatusTone("error");
             notify(t("userManagement.programCardError", "Fehler beim Kartenprogrammieren.") + `: ${err.response?.data?.message || err.response?.data || err.message}`, 'error');
         }
     }
@@ -443,7 +710,7 @@ const AdminUserManagementPage = () => {
             <Navbar />
 
             {programStatus && (
-                <div className={`nfc-status-message ${programStatus.includes(t("userManagement.programCardSuccess")) ? 'success' : (programStatus.includes("Fehler") || programStatus.includes("error") || programStatus.includes("Zeitüberschreitung") ? 'error' : 'info')}`}>{programStatus}</div>
+                <div className={`nfc-status-message ${programStatusTone}`}>{programStatus}</div>
             )}
 
 
@@ -451,7 +718,16 @@ const AdminUserManagementPage = () => {
                 <h2>{t("userManagement.title")}</h2>
             </header>
 
-            {!isCreatingNewUser && !editingUser && (
+            {!canManageAdminUsers && (
+                <div className="nfc-status-message info">
+                    {t(
+                        'userManagement.readOnlyPermissions',
+                        'Nur Ansicht: Dieser Benutzer darf die Benutzerverwaltung sehen, aber keine Änderungen ausführen.'
+                    )}
+                </div>
+            )}
+
+            {canManageAdminUsers && !isCreatingNewUser && !editingUser && (
                 <div className="add-user-button-container">
                     <button onClick={resetAndShowCreateForm} className="button-primary add-user-button">
                         {t("userManagement.button.addNewUser", "Neuen Benutzer hinzufügen")}
@@ -459,11 +735,12 @@ const AdminUserManagementPage = () => {
                 </div>
             )}
 
-            {(editingUser || isCreatingNewUser) && (
+            {canManageAdminUsers && (editingUser || isCreatingNewUser) && (
                 <AdminUserForm
                     t={t}
                     isEditing={!!editingUser}
                     userData={currentUserFormData}
+                    originalUser={editingUser}
                     setUserData={handleFormChange}
                     onSubmit={handleSubmitForm}
                     onCancel={handleCancelForm}
@@ -478,6 +755,7 @@ const AdminUserManagementPage = () => {
                 handleEditUser={handleEditUser}
                 requestDeleteUser={requestDeleteUser}
                 handleProgramCard={handleProgramCard}
+                canManage={canManageAdminUsers}
             />
 
             <DeleteConfirmModal

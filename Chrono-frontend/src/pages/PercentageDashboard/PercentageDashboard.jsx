@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, Link } from "react-router-dom";
 import Navbar from '../../components/Navbar';
+import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
 import api from '../../utils/api';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -19,8 +20,6 @@ import {
     formatDate,
     formatTime,
     minutesToHHMM,
-    computeTotalWorkedMinutesInRange,
-    expectedDayMinutesForPercentageUser,
     parseHex16,
     sortEntries
 } from './percentageDashUtils';
@@ -30,6 +29,9 @@ import PercentageVacationSection from './PercentageVacationSection';
 import PercentageCorrectionsPanel from './PercentageCorrectionsPanel';
 import CorrectionModal from '../../components/CorrectionModal';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
+import {
+    CALCULATION_STATUS,
+} from '../../components/CalculationStatusNotice.jsx';
 
 // Einheitliche Styles importieren
 import '../../styles/PercentageDashboardScoped.css'; // <— NEU: spezifische Fixes für Percentage
@@ -64,6 +66,8 @@ const PercentageDashboard = () => {
     const [correctionRequests, setCorrectionRequests] = useState([]);
     const [sickLeaves, setSickLeaves] = useState([]);
     const [holidaysForUserCanton, setHolidaysForUserCanton] = useState({ data: {}, year: null, canton: null });
+    const [weekPeriodSummary, setWeekPeriodSummary] = useState(null);
+    const [weekPeriodStatus, setWeekPeriodStatus] = useState(CALCULATION_STATUS.IDLE);
 
     const [showCorrectionsPanel, setShowCorrectionsPanel] = useState(false);
     const [showAllCorrections, setShowAllCorrections] = useState(false);
@@ -154,6 +158,35 @@ const PercentageDashboard = () => {
         }
     }, [userProfile, notify, t]);
 
+    const fetchWeekPeriodSummary = useCallback(async () => {
+        if (!userProfile?.username) {
+            setWeekPeriodSummary(null);
+            setWeekPeriodStatus(CALCULATION_STATUS.IDLE);
+            return;
+        }
+        const startDate = formatLocalDate(selectedMonday);
+        const weekEndDate = formatLocalDate(addDays(selectedMonday, 6));
+        const endDate = [weekEndDate, formatLocalDate(new Date())].sort()[0];
+        if (endDate < startDate) {
+            setWeekPeriodSummary({ workedMinutes: 0, breakMinutes: 0, expectedMinutes: 0, differenceMinutes: 0, dailySummaries: [] });
+            setWeekPeriodStatus(CALCULATION_STATUS.READY);
+            return;
+        }
+        setWeekPeriodSummary(null);
+        setWeekPeriodStatus(CALCULATION_STATUS.LOADING);
+        try {
+            const response = await api.get('/api/timetracking/period-summary', {
+                params: { username: userProfile.username, startDate, endDate }
+            });
+            setWeekPeriodSummary(response.data || null);
+            setWeekPeriodStatus(response.data ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+        } catch (error) {
+            console.error('Fehler beim Laden der Backend-Wochenberechnung (Percentage):', error);
+            setWeekPeriodSummary(null);
+            setWeekPeriodStatus(CALCULATION_STATUS.ERROR);
+        }
+    }, [selectedMonday, userProfile?.username]);
+
     const fetchHolidaysForUser = useCallback(async (year, cantonAbbreviation) => {
         const cantonKey = cantonAbbreviation || 'GENERAL';
         if (holidaysForUserCanton.year === year && holidaysForUserCanton.canton === cantonKey) {
@@ -172,10 +205,11 @@ const PercentageDashboard = () => {
     useEffect(() => {
         if (userProfile) {
             fetchDataForUser();
+            fetchWeekPeriodSummary();
             const cantonAbbr = userProfile.company?.cantonAbbreviation || userProfile.companyCantonAbbreviation;
             fetchHolidaysForUser(selectedMonday.getFullYear(), cantonAbbr || '');
         }
-    }, [userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
+    }, [userProfile, fetchDataForUser, fetchWeekPeriodSummary, fetchHolidaysForUser, selectedMonday]);
 
     useEffect(() => {
         const interval = setInterval(doNfcCheck, 2000);
@@ -184,7 +218,9 @@ const PercentageDashboard = () => {
 
     async function doNfcCheck() {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`);
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`, {
+                headers: { 'X-NFC-Agent-Request': 'true' },
+            });
             if (!response.ok) return;
             const json = await response.json();
             if (json.status !== 'success' || !json.data) return;
@@ -219,6 +255,7 @@ const PercentageDashboard = () => {
             const newEntry = response.data;
             showPunchMessage(`${t("manualPunchMessage")} ${userProfile.username} (${t('punchTypes.'+newEntry.punchType, newEntry.punchType)} @ ${formatTime(new Date(newEntry.entryTimestamp))})`);
             fetchDataForUser();
+            fetchWeekPeriodSummary();
         } catch (error) {
             console.error('Punch Error:', error);
             notify(error.message || t('punchError', 'Fehler beim Stempeln'), 'error');
@@ -323,28 +360,10 @@ const PercentageDashboard = () => {
         doc.save(`Zeitenbericht_Prozent_${userProfile.username}_${printStartDate}_bis_${printEndDate}.pdf`);
     }
 
-    const weekDatesForOverview = Array.from({ length: 5 }, (_, i) => addDays(selectedMonday, i));
-    const weeklyWorked = computeTotalWorkedMinutesInRange(dailySummaries, selectedMonday, addDays(selectedMonday, 4));
-
-    const expectedWorkDaysPerWeek = (userProfile?.expectedWorkDays && userProfile.expectedWorkDays > 0)
-        ? userProfile.expectedWorkDays
-        : 5;
-
-    const weeklyExpected = weekDatesForOverview.reduce((sum, dayObj, index) => {
-        const isoDate = formatLocalDate(dayObj);
-        const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
-        const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
-        const isHoliday = holidaysForUserCanton?.data && holidaysForUserCanton.data[isoDate];
-        let daySoll = index < expectedWorkDaysPerWeek ? expectedDayMinutesForPercentageUser(userProfile) : 0;
-
-        if (isHoliday || (vacationToday && !vacationToday.halfDay) || (sickToday && !sickToday.halfDay)) {
-            daySoll = 0;
-        } else if (vacationToday?.halfDay || sickToday?.halfDay) {
-            daySoll = Math.round(daySoll / 2);
-        }
-        return sum + daySoll;
-    }, 0);
-    const weeklyDiff = weeklyWorked - weeklyExpected;
+    const weekDatesForOverview = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
+    const weeklyWorked = Number.isFinite(weekPeriodSummary?.workedMinutes) ? weekPeriodSummary.workedMinutes : null;
+    const weeklyExpected = Number.isFinite(weekPeriodSummary?.expectedMinutes) ? weekPeriodSummary.expectedMinutes : null;
+    const weeklyDiff = Number.isFinite(weekPeriodSummary?.differenceMinutes) ? weekPeriodSummary.differenceMinutes : null;
     const overtimeBalanceStr = minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0);
 
     if (!userProfile) {
@@ -379,6 +398,12 @@ const PercentageDashboard = () => {
                     </div>
                 </header>
 
+                <AccessiblePagesPanel
+                    context="user"
+                    title="Deine freigegebenen Seiten"
+                    subtitle="Hier findest du alle zusätzlichen Bereiche, die für diesen Benutzer sichtbar sein sollen."
+                />
+
                 {punchMessage && <div className="punch-message">{punchMessage}</div>}
 
                 <PercentageWeekOverview
@@ -389,6 +414,7 @@ const PercentageDashboard = () => {
                     weeklyWorked={weeklyWorked}
                     weeklyExpected={weeklyExpected}
                     weeklyDiff={weeklyDiff}
+                    calculationStatus={weekPeriodStatus}
                     handleManualPunch={handleManualPunch}
                     openCorrectionModal={openCorrectionModalForDay}
                     userProfile={userProfile}

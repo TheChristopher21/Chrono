@@ -1,13 +1,22 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import ModalOverlay from '../../components/ModalOverlay';
 import PropTypes from 'prop-types';
 import { formatDate } from './adminDashboardUtils';
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
+import { getUserDisplayName, getUserSearchText } from '../../utils/userDisplay';
 // Stelle sicher, dass die AdminDashboardScoped.css importiert wird, wenn sie hier benötigt wird,
 // oder dass die Styles global oder von AdminDashboard.jsx geerbt werden.
 // import '../../styles/AdminDashboardScoped.css'; // Ist typischerweise in AdminDashboard.jsx
+
+const isPendingVacation = (vacation) => {
+    const status = String(vacation?.status || '').toLowerCase();
+    if (['pending', 'open', 'ausstehend', 'offen'].includes(status)) {
+        return true;
+    }
+    return !vacation?.approved && !vacation?.denied;
+};
 
 const AdminVacationRequests = ({
                                    t,
@@ -16,6 +25,10 @@ const AdminVacationRequests = ({
                                    handleDenyVacation,
                                    onReloadVacations, // Callback zum Neuladen der Urlaubsdaten
                                    openSignal,
+                                   canManage,
+                                   users,
+                                   focusedRequest,
+                                   onOpenInTimeReview,
                                }) => {
     const { currentUser } = useAuth();
     const { notify } = useNotification();
@@ -26,6 +39,12 @@ const AdminVacationRequests = ({
     // State für das Lösch-Modal
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [vacationToDelete, setVacationToDelete] = useState(null);
+    const [decisionNotes, setDecisionNotes] = useState({});
+    const sectionRef = useRef(null);
+
+    const focusedRequestKey = focusedRequest?.type === 'vacation' && focusedRequest?.id
+        ? `vacation-${focusedRequest.id}`
+        : null;
 
     function toggleExpansion() {
         setIsExpanded(!isExpanded);
@@ -37,11 +56,21 @@ const AdminVacationRequests = ({
         }
     }, [openSignal]);
 
+    useEffect(() => {
+        if (focusedRequestKey) {
+            setIsExpanded(true);
+        }
+    }, [focusedRequestKey]);
+
     function handleSearch(e) {
         setSearchTerm(e.target.value);
     }
 
     const openDeleteModal = (vacation) => {
+        if (!canManage) {
+            notify(t('adminDashboard.readOnlyPermissions', 'Nur Ansicht: Dieser Benutzer darf das Admin-Dashboard sehen, aber keine Freigaben oder Änderungen ausführen.'), 'warning');
+            return;
+        }
         setVacationToDelete(vacation);
         setShowDeleteModal(true);
     };
@@ -75,30 +104,79 @@ const AdminVacationRequests = ({
         }
     };
 
-    const filteredVacations = allVacations.filter((v) =>
-        (v.username || t('adminVacation.unknownUser', 'Unbekannt')).toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (formatDate(v.startDate) || '').includes(searchTerm) ||
-        (formatDate(v.endDate) || '').includes(searchTerm)
-    );
+    const getDecisionNoteKey = useCallback((id) => `vacation-${id}`, []);
+
+    const handleDecisionNoteChange = useCallback((id, value) => {
+        const key = getDecisionNoteKey(id);
+        setDecisionNotes((prev) => ({
+            ...prev,
+            [key]: value,
+        }));
+    }, [getDecisionNoteKey]);
+
+    const filteredVacations = allVacations.filter((v) => {
+        const normalizedSearch = searchTerm.toLowerCase();
+        return getUserSearchText(v.username, users).includes(normalizedSearch) ||
+            (formatDate(v.startDate) || '').includes(searchTerm) ||
+            (formatDate(v.endDate) || '').includes(searchTerm);
+    });
 
     const sortedVacations = [...filteredVacations].sort((a, b) => b.id - a.id);
 
-    const hasPending = allVacations.some(v => !v.approved && !v.denied);
+    const pendingCount = allVacations.filter(isPendingVacation).length;
+    const hasPending = pendingCount > 0;
     const isScrollable = sortedVacations.length >= 10;
+
+    useEffect(() => {
+        if (!focusedRequestKey || !isExpanded) return undefined;
+        const timeoutId = window.setTimeout(() => {
+            const target = sectionRef.current?.querySelector(`[data-request-anchor="${focusedRequestKey}"]`);
+            if (!target) return;
+            target.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            target.focus?.({ preventScroll: true });
+        }, 80);
+        return () => window.clearTimeout(timeoutId);
+    }, [focusedRequestKey, isExpanded, sortedVacations]);
+
+    const openVacationInTimeReview = useCallback((vacation) => {
+        if (!onOpenInTimeReview || !vacation) return;
+        onOpenInTimeReview({
+            type: 'vacation',
+            id: vacation.id,
+            username: vacation.username,
+            dateIso: vacation.startDate,
+            startDate: vacation.startDate,
+            endDate: vacation.endDate,
+        });
+    }, [onOpenInTimeReview]);
 
     return (
         <> {/* Stellt sicher, dass CSS-Variablen verfügbar sind */}
-            <section className={`vacation-section content-section${(!isExpanded && hasPending) ? ' has-pending' : ''}`}> {/* Allgemeine Klasse für Sektionen */}
+            <section ref={sectionRef} className={`vacation-section content-section${!isExpanded ? ' is-collapsed' : ''}${(!isExpanded && hasPending) ? ' has-pending' : ''}`}> {/* Allgemeine Klasse für Sektionen */}
                 <div
                     className="section-header"
                     onClick={toggleExpansion}
                     role="button"
+                    aria-expanded={isExpanded}
                     tabIndex={0}
-                    onKeyPress={(e) => e.key === 'Enter' && toggleExpansion()}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            toggleExpansion();
+                        }
+                    }}
                 >
-                    <h3 className="section-title">
-                        {t('adminDashboard.vacationRequestsTitle', 'Urlaubsanträge')}
-                    </h3>
+                    <div className="section-header-main">
+                        <h3 className="section-title">
+                            {t('adminDashboard.vacationRequestsTitle', 'Urlaubsanträge')}
+                        </h3>
+                        {hasPending && (
+                            <span className="pending-indicator" aria-label={`${pendingCount} ${t('adminDashboard.pendingRequestsOpen', 'offen')}`}>
+                                <span className="pending-dot" aria-hidden="true" />
+                                {pendingCount} {t('adminDashboard.pendingRequestsOpen', 'offen')}
+                            </span>
+                        )}
+                    </div>
                     <span className="toggle-icon">
                         {isExpanded ? '▲' : '▼'}
                     </span>
@@ -119,6 +197,7 @@ const AdminVacationRequests = ({
                             <div className={`vacation-requests-container${isScrollable ? ' scroll-limited' : ''}`}>
                             <ul className="item-list vacation-request-list">
                                 {sortedVacations.map((v) => {
+                                    const isPending = isPendingVacation(v);
                                     const status = v.approved
                                         ? t('adminDashboard.statusApproved', 'Genehmigt')
                                         : v.denied
@@ -126,34 +205,82 @@ const AdminVacationRequests = ({
                                             : t('adminDashboard.statusPending', 'Ausstehend');
                                     const statusClass = v.approved
                                         ? 'status-approved'
-                                        : v.denied
-                                            ? 'status-denied'
-                                            : 'status-pending';
+                                            : v.denied
+                                                ? 'status-denied'
+                                                : 'status-pending';
+                                    const requestAnchor = `vacation-${v.id}`;
+                                    const isFocusedRequest = focusedRequestKey === requestAnchor;
 
                                     return (
-                                        <li key={v.id} className={`list-item vacation-item ${statusClass}`}>
+                                        <li
+                                            key={v.id}
+                                            className={`list-item vacation-item ${statusClass} request-jump-row${isFocusedRequest ? ' is-request-focused' : ''}`}
+                                            data-request-anchor={requestAnchor}
+                                            tabIndex={0}
+                                            role="button"
+                                            onClick={() => openVacationInTimeReview(v)}
+                                            onKeyDown={(event) => {
+                                                if (event.key === 'Enter' || event.key === ' ') {
+                                                    event.preventDefault();
+                                                    openVacationInTimeReview(v);
+                                                }
+                                            }}
+                                            title={t('adminDashboard.openRequestInTimeReview', 'In der ZeitprÃ¼fung Ã¶ffnen')}
+                                        >
                                             <div className="item-info">
-                                                <strong className="username">{v.username || t('adminVacation.unknownUser', 'Unbekannt')}</strong>
+                                                <strong className="username">{getUserDisplayName(v.username, users, t('adminVacation.unknownUser', 'Unbekannt'))}</strong>
                                                 <span>
                                                     {formatDate(v.startDate)} - {formatDate(v.endDate)}
                                                 </span>
                                                 <span className={`status-badge ${statusClass}`}>{status}</span>
                                                 {v.halfDay && <span className="info-badge">{t('adminDashboard.halfDayShort', '½ Tag')}</span>}
                                                 {v.usesOvertime && <span className="info-badge overtime-badge">🌙 {t('adminDashboard.overtimeVacationShort', 'ÜS')}</span>}
+                                                {v.adminNote && (
+                                                    <span>
+                                                        <strong>{t('userDashboard.adminNote', 'Admin-Notiz')}:</strong> {v.adminNote}
+                                                    </span>
+                                                )}
                                             </div>
-                                            <div className="item-actions">
-                                                {!v.approved && !v.denied && (
+                                            <div
+                                                className="item-actions"
+                                                onClick={(event) => event.stopPropagation()}
+                                                onKeyDown={(event) => event.stopPropagation()}
+                                            >
+                                                {canManage && isPending && (
                                                     <>
+                                                        <input
+                                                            type="text"
+                                                            value={decisionNotes[getDecisionNoteKey(v.id)] || ''}
+                                                            onChange={(event) => handleDecisionNoteChange(v.id, event.target.value)}
+                                                            placeholder={t('userDashboard.adminNote', 'Admin-Notiz')}
+                                                            className="vacation-admin-note-input"
+                                                        />
                                                         <button
                                                             className="button-confirm-small"
-                                                            onClick={() => handleApproveVacation(v.id)}
+                                                            onClick={() => {
+                                                                const note = (decisionNotes[getDecisionNoteKey(v.id)] || '').trim();
+                                                                handleApproveVacation(v.id, note);
+                                                                setDecisionNotes((prev) => {
+                                                                    const next = { ...prev };
+                                                                    delete next[getDecisionNoteKey(v.id)];
+                                                                    return next;
+                                                                });
+                                                            }}
                                                             title={t('adminDashboard.approveButtonTitle', 'Urlaubsantrag genehmigen')}
                                                         >
                                                             {t('adminDashboard.approveButton', 'Genehmigen')}
                                                         </button>
                                                         <button
                                                             className="button-deny-small"
-                                                            onClick={() => handleDenyVacation(v.id)}
+                                                            onClick={() => {
+                                                                const note = (decisionNotes[getDecisionNoteKey(v.id)] || '').trim();
+                                                                handleDenyVacation(v.id, note);
+                                                                setDecisionNotes((prev) => {
+                                                                    const next = { ...prev };
+                                                                    delete next[getDecisionNoteKey(v.id)];
+                                                                    return next;
+                                                                });
+                                                            }}
                                                             title={t('adminDashboard.rejectButtonTitle', 'Urlaubsantrag ablehnen')}
                                                         >
                                                             {t('adminDashboard.rejectButton', 'Ablehnen')}
@@ -162,7 +289,8 @@ const AdminVacationRequests = ({
                                                 )}
                                                 <button
                                                     className="button-delete-small"
-                                                    onClick={() => openDeleteModal(v)}
+                                                    onClick={() => canManage ? openDeleteModal(v) : notify(t('adminDashboard.readOnlyPermissions', 'Nur Ansicht: Dieser Benutzer darf das Admin-Dashboard sehen, aber keine Freigaben oder Änderungen ausführen.'), 'warning')}
+                                                    disabled={!canManage}
                                                     title={t('adminVacation.delete.buttonTitle', 'Urlaubsantrag löschen')}
                                                 >
                                                     🗑️ <span className="button-text-mobile-hidden">{t('delete', 'Löschen')}</span>
@@ -185,7 +313,7 @@ const AdminVacationRequests = ({
                         <h3>{t('adminVacation.delete.confirmTitle', 'Urlaub löschen bestätigen')}</h3>
                         <p>
                             {t('adminVacation.delete.confirmMessage', 'Möchten Sie den Urlaubsantrag von')}
-                            <strong> {vacationToDelete.username || t('adminVacation.unknownUser', 'Unbekannt')} </strong>
+                            <strong> {getUserDisplayName(vacationToDelete.username, users, t('adminVacation.unknownUser', 'Unbekannt'))} </strong>
                             ({formatDate(vacationToDelete.startDate)} - {formatDate(vacationToDelete.endDate)}){' '}
                             {t('adminVacation.delete.irreversible', 'wirklich unwiderruflich löschen?')}
                         </p>
@@ -234,10 +362,21 @@ AdminVacationRequests.propTypes = {
     handleDenyVacation: PropTypes.func.isRequired,
     onReloadVacations: PropTypes.func.isRequired, // Wichtig für die Aktualisierung der Liste
     openSignal: PropTypes.number,
+    canManage: PropTypes.bool,
+    users: PropTypes.arrayOf(PropTypes.object),
+    focusedRequest: PropTypes.shape({
+        type: PropTypes.string,
+        id: PropTypes.string,
+    }),
+    onOpenInTimeReview: PropTypes.func,
 };
 
 AdminVacationRequests.defaultProps = {
     openSignal: 0,
+    canManage: true,
+    users: [],
+    focusedRequest: null,
+    onOpenInTimeReview: undefined,
 };
 
 export default AdminVacationRequests;

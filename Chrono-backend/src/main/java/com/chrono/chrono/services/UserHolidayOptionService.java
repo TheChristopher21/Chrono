@@ -44,8 +44,7 @@ public class UserHolidayOptionService {
             throw new IllegalArgumentException("Holiday options are only applicable to percentage-based users.");
         }
 
-        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-        if (!holidayService.isHoliday(date, cantonAbbreviation)) {
+        if (!isHolidayForUser(user, date)) {
             // Keine Option erstellen/zurückgeben, wenn es kein Feiertag ist
             return new UserHolidayOptionDTO(null, user.getId(), username, date, UserHolidayOption.HolidayHandlingOption.PENDING_DECISION);
         }
@@ -75,12 +74,11 @@ public class UserHolidayOptionService {
         List<UserHolidayOption> options = userHolidayOptionRepository.findByUserAndHolidayDateBetween(user, mondayInWeek, endOfWeek);
 
         // Erstelle DTOs für existierende Optionen und füge PENDING_DECISION für fehlende Feiertage hinzu
-        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
         List<UserHolidayOptionDTO> result = options.stream().map(UserHolidayOptionDTO::fromEntity).collect(Collectors.toList());
 
         for (LocalDate date = mondayInWeek; !date.isAfter(endOfWeek); date = date.plusDays(1)) {
             final LocalDate currentDate = date;
-            boolean isRealHoliday = holidayService.isHoliday(currentDate, cantonAbbreviation);
+            boolean isRealHoliday = isHolidayForUser(user, currentDate);
             if (isRealHoliday) {
                 boolean found = result.stream().anyMatch(dto -> dto.getHolidayDate().equals(currentDate));
                 if (!found) {
@@ -106,9 +104,8 @@ public class UserHolidayOptionService {
             throw new IllegalArgumentException("Holiday options are only applicable to percentage-based users.");
         }
 
-        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
-        if (!holidayService.isHoliday(date, cantonAbbreviation)) {
-            throw new IllegalArgumentException("Date " + date + " is not a holiday for user " + username + " in canton " + cantonAbbreviation);
+        if (!isHolidayForUser(user, date)) {
+            throw new IllegalArgumentException("Date " + date + " is not a holiday for user " + username);
         }
 
         // Sicherheitscheck: Admin muss in derselben Firma sein oder SuperAdmin
@@ -129,5 +126,13 @@ public class UserHolidayOptionService {
         timeTrackingService.rebuildUserBalance(user);
 
         return UserHolidayOptionDTO.fromEntity(savedOption);
+    }
+
+    private boolean isHolidayForUser(User user, LocalDate date) {
+        if (user.getCompany() != null && user.getCompany().isCustomHolidaySelectionEnabled()) {
+            return holidayService.isCompanyHoliday(date, user.getCompany());
+        }
+        String cantonAbbreviation = user.getCompany() != null ? user.getCompany().getCantonAbbreviation() : null;
+        return holidayService.isHoliday(date, cantonAbbreviation);
     }
 }

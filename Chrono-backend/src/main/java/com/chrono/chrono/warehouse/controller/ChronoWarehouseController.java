@@ -7,12 +7,14 @@ import com.chrono.chrono.warehouse.model.SensorReading;
 import com.chrono.chrono.warehouse.model.WarehouseLocation;
 import com.chrono.chrono.warehouse.service.WarehouseIntelligenceService;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/chrono2")
+@PreAuthorize("hasRole('SUPERADMIN')")
 public class ChronoWarehouseController {
 
     private final WarehouseIntelligenceService intelligenceService;

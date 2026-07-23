@@ -1,7 +1,9 @@
 package com.chrono.chrono.dto.inventory;
 
+import jakarta.validation.constraints.NotNull;
+
 public class WarehouseReferenceRequest {
-    private Long warehouseId;
+    @NotNull private Long warehouseId;
 
     public Long getWarehouseId() {
         return warehouseId;

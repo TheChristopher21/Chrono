@@ -1,7 +1,9 @@
 // src/pages/UserDashboard/UserDashboard.jsx
 import  { useState, useEffect, useRef, useCallback } from 'react';
 import Navbar from '../../components/Navbar';
+import AccessiblePagesPanel from '../../components/AccessiblePagesPanel.jsx';
 import VacationCalendar from '../../components/VacationCalendar';
+import UserVacationRequestsList from '../../components/UserVacationRequestsList';
 import { useAuth } from '../../context/AuthContext';
 import { useNotification } from '../../context/NotificationContext';
 import { useTranslation } from '../../context/LanguageContext';
@@ -26,7 +28,6 @@ import {
     formatDateWithWeekday,
     formatTime,
     minutesToHHMM,
-    getExpectedHoursForDay,
     isLateTime,
     formatPunchedTimeFromEntry,
     parseHex16,
@@ -37,6 +38,10 @@ import CorrectionModal from '../../components/CorrectionModal';
 import UserCorrectionsPanel from './UserCorrectionsPanel';
 import PrintReportModal from "../../components/PrintReportModal.jsx";
 import CustomerTimeAssignModal from '../../components/CustomerTimeAssignModal';
+import CalculationStatusNotice, {
+    CALCULATION_STATUS,
+    formatCalculatedMinutes,
+} from '../../components/CalculationStatusNotice.jsx';
 
 // HINWEIS: HourlyDashboard und PercentageDashboard Imports bleiben für die Routing-Logik bestehen.
 import HourlyDashboard from '../../pages/HourlyDashboard/HourlyDashboard.jsx';
@@ -49,6 +54,8 @@ function UserDashboard() {
 
     const [userProfile, setUserProfile] = useState(null);
     const [dailySummaries, setDailySummaries] = useState([]);
+    const [backendWeekSummary, setBackendWeekSummary] = useState(null);
+    const [backendWeekStatus, setBackendWeekStatus] = useState(CALCULATION_STATUS.IDLE);
     const [vacationRequests, setVacationRequests] = useState([]);
     const [correctionRequests, setCorrectionRequests] = useState([]);
     const [sickLeaves, setSickLeaves] = useState([]);
@@ -84,11 +91,15 @@ function UserDashboard() {
     const [noteContent, setNoteContent] = useState('');
     const [modalInfo, setModalInfo] = useState({ isVisible: false, day: null, summary: null });
     const isCustomerTrackingEnabled = userProfile?.customerTrackingEnabled || currentUser?.customerTrackingEnabled;
+    const delegatedDashboard = currentUser?.isHourly ? 'hourly' : currentUser?.isPercentage ? 'percentage' : null;
 
 
-    const defaultExpectedHours = userProfile?.dailyWorkHours ?? 8.5;
 
     const loadProfileAndInitialData = useCallback(async () => {
+        if (delegatedDashboard) {
+            return;
+        }
+
         try {
             const profile = await fetchCurrentUser();
             if (profile && Object.keys(profile).length > 0) {
@@ -100,8 +111,8 @@ function UserDashboard() {
                     profile.scheduleCycle = 1;
                 }
                 setUserProfile(profile);
-                if (profile.lastCustomerId && !selectedCustomerId) {
-                    setSelectedCustomerId(String(profile.lastCustomerId));
+                if (profile.lastCustomerId) {
+                    setSelectedCustomerId((prevSelectedCustomerId) => prevSelectedCustomerId || String(profile.lastCustomerId));
                 }
             } else {
                 throw new Error("User profile could not be loaded.");
@@ -110,7 +121,7 @@ function UserDashboard() {
             console.error(t('personalData.errorLoading'), err);
             notify(t('errors.fetchProfileError', 'Fehler beim Laden des Profils.'), 'error');
         }
-    }, [fetchCurrentUser, t, notify, selectedCustomerId]);
+    }, [delegatedDashboard, fetchCurrentUser, t, notify]);
 
     const fetchDataForUser = useCallback(async () => {
         if (!userProfile?.username) return;
@@ -160,10 +171,20 @@ function UserDashboard() {
 
 
     useEffect(() => {
+        if (delegatedDashboard) {
+            return;
+        }
+
         loadProfileAndInitialData();
-    }, [loadProfileAndInitialData]);
+    }, [delegatedDashboard, loadProfileAndInitialData]);
 
     useEffect(() => {
+        if (delegatedDashboard) {
+            setRecentCustomers([]);
+            setProjects([]);
+            return;
+        }
+
         if (isCustomerTrackingEnabled) {
             fetchCustomers();
             api.get('/api/customers/recent')
@@ -176,7 +197,7 @@ function UserDashboard() {
             setRecentCustomers([]);
             setProjects([]);
         }
-    }, [userProfile, currentUser, fetchCustomers, isCustomerTrackingEnabled]);
+    }, [delegatedDashboard, fetchCustomers, isCustomerTrackingEnabled]);
 
     useEffect(() => {
         if (selectedProjectId) {
@@ -206,6 +227,10 @@ function UserDashboard() {
 
 
     useEffect(() => {
+        if (delegatedDashboard) {
+            return;
+        }
+
         if (userProfile) {
             fetchDataForUser();
             const cantonAbbr = userProfile.company?.cantonAbbreviation || userProfile.companyCantonAbbreviation;
@@ -215,18 +240,24 @@ function UserDashboard() {
                 fetchHolidaysForUser(selectedMonday.getFullYear(), '');
             }
         }
-    }, [userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
+    }, [delegatedDashboard, userProfile, fetchDataForUser, fetchHolidaysForUser, selectedMonday]);
 
 
     // Logik für NFC-Check und manuelles Stempeln
     useEffect(() => {
+        if (delegatedDashboard) {
+            return undefined;
+        }
+
         const interval = setInterval(doNfcCheck, 2000);
         return () => clearInterval(interval);
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [delegatedDashboard]); // eslint-disable-line react-hooks/exhaustive-deps
 
     async function doNfcCheck() {
         try {
-            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`);
+            const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/nfc/read/1`, {
+                headers: { 'X-NFC-Agent-Request': 'true' },
+            });
             if (!response.ok) return;
             const json = await response.json();
             if (json.status !== 'success' || !json.data) return;
@@ -287,25 +318,66 @@ function UserDashboard() {
 
 
     const weekDates = Array.from({ length: 7 }, (_, i) => addDays(selectedMonday, i));
+    const todayIso = formatLocalDate(new Date());
 
-    const weeklyExpectedMins = weekDates.reduce((sum, d) => {
-        const expHours = getExpectedHoursForDay(d, userProfile, defaultExpectedHours, holidaysForUserCanton?.data, vacationRequests, sickLeaves);
-        return sum + Math.round((expHours || 0) * 60);
-    }, 0);
+    useEffect(() => {
+        if (delegatedDashboard || !userProfile?.username) {
+            setBackendWeekSummary(null);
+            setBackendWeekStatus(CALCULATION_STATUS.IDLE);
+            return undefined;
+        }
 
-    const weeklyActualWorkedMinutes = weekDates.reduce((acc, date) => {
-        const isoDate = formatLocalDate(date);
-        const summaryForDay = dailySummaries.find(s => s.date === isoDate);
-        return acc + (summaryForDay?.workedMinutes || 0);
-    }, 0);
+        const startDate = formatLocalDate(selectedMonday);
+        const weekEndDate = formatLocalDate(addDays(selectedMonday, 6));
+        const endDate = [weekEndDate, todayIso].sort()[0];
+        if (endDate < startDate) {
+            setBackendWeekSummary({ workedMinutes: 0, breakMinutes: 0, expectedMinutes: 0, differenceMinutes: 0, dailySummaries: [] });
+            setBackendWeekStatus(CALCULATION_STATUS.READY);
+            return undefined;
+        }
+        let cancelled = false;
+        setBackendWeekSummary(null);
+        setBackendWeekStatus(CALCULATION_STATUS.LOADING);
 
-    const weeklyDiffMins = weeklyActualWorkedMinutes - weeklyExpectedMins;
+        api.get('/api/timetracking/period-summary', {
+            params: { username: userProfile.username, startDate, endDate },
+        })
+            .then((response) => {
+                if (!cancelled) {
+                    setBackendWeekSummary(response.data || null);
+                    setBackendWeekStatus(response.data ? CALCULATION_STATUS.READY : CALCULATION_STATUS.ERROR);
+                }
+            })
+            .catch((error) => {
+                if (!cancelled) {
+                    console.error('Fehler beim Laden der Backend-Wochenwerte:', error);
+                    setBackendWeekSummary(null);
+                    setBackendWeekStatus(CALCULATION_STATUS.ERROR);
+                }
+            });
+
+        return () => {
+            cancelled = true;
+        };
+    }, [delegatedDashboard, userProfile?.username, selectedMonday, todayIso, dailySummaries]);
+
+    const isBackendWeekReady = backendWeekStatus === CALCULATION_STATUS.READY && backendWeekSummary;
+    const backendWeekSummaryByDate = (isBackendWeekReady ? backendWeekSummary?.dailySummaries || [] : []).reduce((acc, summary) => {
+        if (summary?.date) {
+            acc[summary.date] = summary;
+        }
+        return acc;
+    }, {});
+
+    const weeklyExpectedMins = Number.isFinite(backendWeekSummary?.expectedMinutes) ? backendWeekSummary.expectedMinutes : null;
+    const weeklyActualWorkedMinutes = Number.isFinite(backendWeekSummary?.workedMinutes) ? backendWeekSummary.workedMinutes : null;
+    const weeklyDiffMins = Number.isFinite(backendWeekSummary?.differenceMinutes) ? backendWeekSummary.differenceMinutes : null;
     const overtimeBalanceStr = minutesToHHMM(userProfile?.trackingBalanceInMinutes || 0);
 
     const chartData = weekDates.map(d => {
         const iso = formatLocalDate(d);
-        const summary = dailySummaries.find(s => s.date === iso);
-        const expectedMins = Math.round(getExpectedHoursForDay(d, userProfile, defaultExpectedHours, holidaysForUserCanton?.data, vacationRequests, sickLeaves) * 60);
+        const summary = backendWeekSummaryByDate[iso] || dailySummaries.find(s => s.date === iso);
+        const expectedMins = Number.isFinite(summary?.expectedMinutes) ? summary.expectedMinutes : 0;
         return { date: iso, workedMinutes: summary ? summary.workedMinutes : 0, expectedMinutes: expectedMins };
     });
 
@@ -443,6 +515,14 @@ function UserDashboard() {
     }
 
     // Lade- und Routing-Logik
+    if (delegatedDashboard === 'hourly') {
+        return <HourlyDashboard />;
+    }
+
+    if (delegatedDashboard === 'percentage') {
+        return <PercentageDashboard />;
+    }
+
     if (!userProfile) {
         return (
             <div className="user-dashboard scoped-dashboard">
@@ -450,10 +530,6 @@ function UserDashboard() {
                 <div className="skeleton-card"></div>
             </div>
         );
-    }
-    if (userProfile?.username && currentUser?.username && userProfile.username === currentUser.username) {
-        if (userProfile.isHourly) return <HourlyDashboard />;
-        if (userProfile.isPercentage) return <PercentageDashboard />;
     }
 
     return (
@@ -475,6 +551,12 @@ function UserDashboard() {
                         {t("printReportButton")}
                     </button>
                 </header>
+
+                <AccessiblePagesPanel
+                    context="user"
+                    title="Deine freigegebenen Seiten"
+                    subtitle="Hier erscheinen genau die Bereiche, die für diesen Benutzer freigeschaltet wurden."
+                />
 
                 {punchMessage && <div className="punch-message">{punchMessage}</div>}
 
@@ -531,18 +613,26 @@ function UserDashboard() {
                         </button>
                     </div>
 
+                    <CalculationStatusNotice status={backendWeekStatus} />
+
                     <div className="weekly-monthly-totals">
                         <div className="summary-item">
                             <span className="summary-label">{t('actualTime')}</span>
-                            <span className="summary-value">{minutesToHHMM(weeklyActualWorkedMinutes)}</span>
+                            <span className="summary-value">
+                                {formatCalculatedMinutes(weeklyActualWorkedMinutes, backendWeekStatus, minutesToHHMM)}
+                            </span>
                         </div>
                         <div className="summary-item">
                             <span className="summary-label">{t('expected')}</span>
-                            <span className="summary-value">{minutesToHHMM(weeklyExpectedMins)}</span>
+                            <span className="summary-value">
+                                {formatCalculatedMinutes(weeklyExpectedMins, backendWeekStatus, minutesToHHMM)}
+                            </span>
                         </div>
                         <div className="summary-item">
                             <span className="summary-label">{t('weekBalance')}</span>
-                            <span className={`summary-value ${weeklyDiffMins < 0 ? 'balance-negative' : 'balance-positive'}`}>{minutesToHHMM(weeklyDiffMins)}</span>
+                            <span className={`summary-value ${Number.isFinite(weeklyDiffMins) && weeklyDiffMins < 0 ? 'balance-negative' : 'balance-positive'}`}>
+                                {formatCalculatedMinutes(weeklyDiffMins, backendWeekStatus, minutesToHHMM)}
+                            </span>
                         </div>
                     </div>
 
@@ -551,11 +641,13 @@ function UserDashboard() {
                     <div className="week-display">
                         {weekDates.map((dayObj) => {
                             const isoDate = formatLocalDate(dayObj);
-                            const summary = dailySummaries.find(s => s.date === isoDate);
+                            const summary = backendWeekSummaryByDate[isoDate] || dailySummaries.find(s => s.date === isoDate);
                             const dayName = dayObj.toLocaleDateString('de-DE', { weekday: 'long' });
                             const formattedDisplayDate = formatDate(dayObj);
 
-                            const vacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
+                            const rawVacationToday = vacationRequests.find(v => v.approved && isoDate >= v.startDate && isoDate <= v.endDate);
+                            const hasWorkedEntries = Boolean(summary?.entries?.length);
+                            const vacationToday = hasWorkedEntries ? null : rawVacationToday;
                             const sickToday = sickLeaves.find(sl => isoDate >= sl.startDate && isoDate <= sl.endDate);
                             const holidayName = holidaysForUserCanton.data?.[isoDate];
 
@@ -579,18 +671,12 @@ function UserDashboard() {
                             if (sickToday) dayClass += ' sick-day';
                             if (holidayName) dayClass += ' holiday-day';
 
-                            let expectedMinsToday = Math.round(getExpectedHoursForDay(
-                                dayObj, userProfile, defaultExpectedHours, holidaysForUserCanton?.data, vacationRequests, sickLeaves
-                            ) * 60);
-                            if (holidayName) {
-                                expectedMinsToday = 0;
-                            } else if (vacationToday) {
-                                expectedMinsToday = vacationToday.halfDay ? expectedMinsToday / 2 : 0;
-                            } else if (sickToday) {
-                                expectedMinsToday = sickToday.halfDay ? expectedMinsToday / 2 : 0;
-                            }
+                            const expectedMinsToday = Number.isFinite(summary?.expectedMinutes) ? summary.expectedMinutes : null;
 
-                            const dailyDiffMinutes = summary ? summary.workedMinutes - expectedMinsToday : (holidayName || vacationToday || sickToday ? 0 : -expectedMinsToday);
+                            const isFutureDate = isoDate > todayIso;
+                            const dailyDiffMinutes = isFutureDate && !(summary?.entries?.length) && (summary?.workedMinutes || 0) === 0
+                                ? 0
+                                : (Number.isFinite(summary?.differenceMinutes) ? summary.differenceMinutes : null);
 
                             return (
                                 <div key={isoDate} className={dayClass}>
@@ -645,11 +731,11 @@ function UserDashboard() {
                                                 </ul>
                                                 <div className="daily-summary-times">
                                                     <p><strong>{t('actualTime')}:</strong> {minutesToHHMM(summary?.workedMinutes ?? 0)}</p>
-                                                    <p><strong>{t('expected')}:</strong> {minutesToHHMM(expectedMinsToday)}</p>
+                                                    <p><strong>{t('expected')}:</strong> {formatCalculatedMinutes(expectedMinsToday, backendWeekStatus, minutesToHHMM)}</p>
                                                     <p>
                                                         <strong>{t('dayBalance')}:</strong>
-                                                        <span className={dailyDiffMinutes < 0 ? 'balance-negative' : 'balance-positive'}>
-                                                            {minutesToHHMM(dailyDiffMinutes)}
+                                                        <span className={Number.isFinite(dailyDiffMinutes) && dailyDiffMinutes < 0 ? 'balance-negative' : 'balance-positive'}>
+                                                            {formatCalculatedMinutes(dailyDiffMinutes, backendWeekStatus, minutesToHHMM)}
                                                         </span>
                                                     </p>
                                                 </div>
@@ -706,6 +792,7 @@ function UserDashboard() {
                         userProfile={userProfile}
                         onRefreshVacations={fetchDataForUser}
                     />
+                    <UserVacationRequestsList vacationRequests={vacationRequests} t={t} />
                 </section>
 
                 <UserCorrectionsPanel

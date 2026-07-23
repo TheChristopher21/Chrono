@@ -25,8 +25,13 @@ public class BankingIntegrationProperties {
 
     public static class Payments {
         private boolean enabled;
+        private Mode mode = Mode.SIMULATED;
         private String endpoint;
         private String apiKey;
+        private String contentType = "application/xml";
+        private String exportDirectory;
+        private String exportChannel = "EBICS";
+        private boolean exportMetadata = true;
 
         public boolean isEnabled() {
             return enabled;
@@ -34,6 +39,14 @@ public class BankingIntegrationProperties {
 
         public void setEnabled(boolean enabled) {
             this.enabled = enabled;
+        }
+
+        public Mode getMode() {
+            return mode;
+        }
+
+        public void setMode(Mode mode) {
+            this.mode = mode;
         }
 
         public String getEndpoint() {
@@ -50,6 +63,44 @@ public class BankingIntegrationProperties {
 
         public void setApiKey(String apiKey) {
             this.apiKey = apiKey;
+        }
+
+        public String getContentType() {
+            return contentType;
+        }
+
+        public void setContentType(String contentType) {
+            this.contentType = contentType;
+        }
+
+        public String getExportDirectory() {
+            return exportDirectory;
+        }
+
+        public void setExportDirectory(String exportDirectory) {
+            this.exportDirectory = exportDirectory;
+        }
+
+        public String getExportChannel() {
+            return exportChannel;
+        }
+
+        public void setExportChannel(String exportChannel) {
+            this.exportChannel = exportChannel;
+        }
+
+        public boolean isExportMetadata() {
+            return exportMetadata;
+        }
+
+        public void setExportMetadata(boolean exportMetadata) {
+            this.exportMetadata = exportMetadata;
+        }
+
+        public enum Mode {
+            SIMULATED,
+            API,
+            BANK_EXPORT
         }
     }
 

@@ -1,8 +1,11 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.exceptions.NfcNoCardException;
+import com.chrono.chrono.services.NfcAgentAuthService;
 import com.chrono.chrono.services.NfcService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.HashMap;
@@ -13,15 +16,20 @@ import java.util.Map;
 public class NfcController {
 
     private final NfcService nfcService;
+    private final NfcAgentAuthService nfcAgentAuthService;
     // Den Agent Token als Konstante – bei Bedarf auch über Properties injizieren.
-    private static final String AGENT_TOKEN = "SUPER-SECRET-AGENT-TOKEN";
 
-    public NfcController(NfcService nfcService) {
+    public NfcController(NfcService nfcService, NfcAgentAuthService nfcAgentAuthService) {
         this.nfcService = nfcService;
+        this.nfcAgentAuthService = nfcAgentAuthService;
     }
 
     @GetMapping("/read/{block}")
-    public ResponseEntity<?> readNfc(@PathVariable int block) {
+    public ResponseEntity<?> readNfc(@PathVariable int block,
+                                     @RequestHeader(value = "X-Agent-Token", required = false) String token,
+                                     @RequestHeader(value = "X-NFC-Agent-Request", required = false) String legacyHeader,
+                                     HttpServletRequest httpRequest) {
+        nfcAgentAuthService.requireAgent(token, legacyHeader, httpRequest);
         try {
             String data = nfcService.readBlock(block);
             Map<String, String> body = new HashMap<>();
@@ -42,6 +50,7 @@ public class NfcController {
     }
 
     @PostMapping("/write")
+    @PreAuthorize("hasAnyRole('ADMIN','SUPERADMIN')")
     public ResponseEntity<?> writeNfc(@RequestBody WriteRequest request) {
         try {
             String result = nfcService.writeBlock(request.getBlock(), request.getData());
@@ -69,11 +78,13 @@ public class NfcController {
     @PostMapping("/write-sector0")
     public ResponseEntity<?> writeSector0(
             @RequestHeader(value = "X-Agent-Token", required = false) String token,
-            @RequestBody WriteSectorRequest request) {
+            @RequestHeader(value = "X-NFC-Agent-Request", required = false) String legacyHeader,
+            @RequestBody WriteSectorRequest request,
+            HttpServletRequest httpRequest) {
 
         Map<String, String> body = new HashMap<>();
         // Prüfe, ob ein Token übermittelt wurde und ob er korrekt ist.
-        if (token == null || !AGENT_TOKEN.equals(token)) {
+        if (!nfcAgentAuthService.isAgentRequest(token, legacyHeader, httpRequest)) {
             body.put("status", "error");
             body.put("message", "Unauthorized: Invalid or missing agent token");
             return ResponseEntity.status(403).body(body);

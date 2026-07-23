@@ -1,6 +1,7 @@
 package com.chrono.chrono.controller;
 
 import com.chrono.chrono.dto.DailyTimeSummaryDTO;
+import com.chrono.chrono.dto.TimePeriodSummaryDTO;
 import com.chrono.chrono.dto.TimeReportDTO;
 import com.chrono.chrono.dto.TimeTrackingEntryDTO;
 import com.chrono.chrono.entities.TimeTrackingEntry;
@@ -8,11 +9,17 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.VacationRequest;
 import com.chrono.chrono.repositories.UserRepository;
 import com.chrono.chrono.repositories.VacationRequestRepository;
+import com.chrono.chrono.services.AccessControlService;
+import com.chrono.chrono.services.NfcAgentAuthService;
 import com.chrono.chrono.services.TimeTrackingService;
 import com.chrono.chrono.services.UserService;
+import com.chrono.chrono.utils.JwtUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.web.bind.annotation.*;
 import java.security.Principal;
 import java.time.LocalDate;
@@ -32,6 +39,14 @@ public class TimeTrackingController {
     private UserRepository userRepository;
     @Autowired
     private VacationRequestRepository vacationRequestRepository;
+    @Autowired
+    private AccessControlService accessControlService;
+    @Autowired
+    private NfcAgentAuthService nfcAgentAuthService;
+    @Autowired
+    private JwtUtil jwtUtil;
+    @Autowired
+    private UserDetailsService userDetailsService;
 
 
     @PostMapping("/punch")
@@ -43,10 +58,13 @@ public class TimeTrackingController {
         @RequestParam(value = "durationMinutes", required = false) Integer durationMinutes,
         @RequestParam(value = "description", required = false) String description,
         Principal principal,
+        @RequestHeader(value = "X-Agent-Token", required = false) String nfcAgentToken,
         @RequestHeader(value = "X-NFC-Agent-Request", required = false) String nfcAgentHeader,
-        @RequestParam(value = "source", required = false) String sourceStr
+        @RequestHeader(value = "Authorization", required = false) String authorizationHeader,
+        @RequestParam(value = "source", required = false) String sourceStr,
+        HttpServletRequest httpRequest
     ) {
-        User requestingUser = (principal != null) ? userService.getUserByUsername(principal.getName()) : null;
+        User requestingUser = resolveRequestingUser(principal, authorizationHeader);
         User targetUser = userService.getUserByUsername(username);
 
         TimeTrackingEntry.PunchSource punchSource;
@@ -63,25 +81,10 @@ public class TimeTrackingController {
         }
         
 
-        boolean isAllowed = false;
-        if (requestingUser != null) {
-            if (requestingUser.getId().equals(targetUser.getId())) {
-                isAllowed = true;
-            } else if (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"))) {
-                isAllowed = true;
-            } else if (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN"))) {
-                if (requestingUser.getCompany() != null && targetUser.getCompany() != null &&
-                    requestingUser.getCompany().getId().equals(targetUser.getCompany().getId())) {
-                    isAllowed = true;
-                }
-            }
-        } else {
-            if (punchSource == TimeTrackingEntry.PunchSource.NFC_SCAN && nfcAgentHeader != null && nfcAgentHeader.equals("true")) {
-                isAllowed = true;
-            } else if (username.equals("nfc-background-service") && punchSource == TimeTrackingEntry.PunchSource.NFC_SCAN) { 
-                isAllowed = true;
-            }
-        }
+        boolean isAllowed = requestingUser != null
+                ? accessControlService.canAccessUser(requestingUser, targetUser)
+                : punchSource == TimeTrackingEntry.PunchSource.NFC_SCAN
+                    && nfcAgentAuthService.isAgentRequest(nfcAgentToken, nfcAgentHeader, httpRequest);
 
         if (!isAllowed) {
              return ResponseEntity.status(HttpStatus.FORBIDDEN).body(null);
@@ -93,6 +96,28 @@ public class TimeTrackingController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
+    }
+
+    private User resolveRequestingUser(Principal principal, String authorizationHeader) {
+        if (principal != null && principal.getName() != null && !principal.getName().isBlank()) {
+            return userService.getUserByUsername(principal.getName());
+        }
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+            return null;
+        }
+
+        String token = authorizationHeader.substring(7);
+        try {
+            String username = jwtUtil.extractUsername(token);
+            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (Boolean.TRUE.equals(jwtUtil.validateToken(token, userDetails))) {
+                return userService.getUserByUsername(username);
+            }
+        } catch (Exception ignored) {
+            return null;
+        }
+        return null;
     }
 
     @GetMapping("/history")
@@ -129,6 +154,26 @@ public class TimeTrackingController {
         } else {
              return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
+    }
+
+    @GetMapping("/period-summary")
+    public ResponseEntity<TimePeriodSummaryDTO> getPeriodSummary(
+            @RequestParam String username,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @org.springframework.format.annotation.DateTimeFormat(iso = org.springframework.format.annotation.DateTimeFormat.ISO.DATE) LocalDate endDate,
+            Principal principal
+    ) {
+        User requestingUser = userService.getUserByUsername(principal.getName());
+        User targetUser = userService.getUserByUsername(username);
+        boolean canAccess = requestingUser.getId().equals(targetUser.getId()) ||
+                requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN")) ||
+                (requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN")) &&
+                        requestingUser.getCompany() != null && targetUser.getCompany() != null &&
+                        requestingUser.getCompany().getId().equals(targetUser.getCompany().getId()));
+        if (!canAccess) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        return ResponseEntity.ok(timeTrackingService.getUserPeriodSummary(targetUser, startDate, endDate));
     }
 
     @GetMapping("/report")
@@ -193,6 +238,9 @@ public class TimeTrackingController {
             @RequestParam(required = false) Long customerId,
             Principal principal) {
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        User requestingUser = accessControlService.requireAuthenticatedUser(principal);
+        User targetUser = accessControlService.requireTargetUser(username);
+        accessControlService.requireCanAccessUser(requestingUser, targetUser);
         try {
             timeTrackingService.assignCustomerForDay(username, LocalDate.parse(date), customerId);
             return ResponseEntity.ok().build();
@@ -203,18 +251,26 @@ public class TimeTrackingController {
 
     @PostMapping("/entry/{id}/approve")
     public ResponseEntity<TimeTrackingEntryDTO> approveEntry(@PathVariable Long id, Principal principal) {
-        User requestingUser = userService.getUserByUsername(principal.getName());
-        boolean allowed = requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
+        User requestingUser = accessControlService.requireAuthenticatedUser(principal);
+        boolean allowed = accessControlService.isAdmin(requestingUser);
         if (!allowed) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        return ResponseEntity.ok(timeTrackingService.approveEntry(id));
+        try {
+            return ResponseEntity.ok(timeTrackingService.approveEntry(id, requestingUser.getUsername()));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     @PostMapping("/entry/{id}/revoke-approval")
     public ResponseEntity<TimeTrackingEntryDTO> revokeApproval(@PathVariable Long id, Principal principal) {
-        User requestingUser = userService.getUserByUsername(principal.getName());
-        boolean allowed = requestingUser.getRoles().stream().anyMatch(r -> r.getRoleName().equals("ROLE_ADMIN") || r.getRoleName().equals("ROLE_SUPERADMIN"));
+        User requestingUser = accessControlService.requireAuthenticatedUser(principal);
+        boolean allowed = accessControlService.isAdmin(requestingUser);
         if (!allowed) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        return ResponseEntity.ok(timeTrackingService.revokeApproval(id));
+        try {
+            return ResponseEntity.ok(timeTrackingService.revokeApproval(id, requestingUser.getUsername()));
+        } catch (SecurityException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
     }
 
     @PutMapping("/range/customer")
@@ -226,6 +282,9 @@ public class TimeTrackingController {
             @RequestParam(required = false) Long customerId,
             Principal principal) {
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        User requestingUser = accessControlService.requireAuthenticatedUser(principal);
+        User targetUser = accessControlService.requireTargetUser(username);
+        accessControlService.requireCanAccessUser(requestingUser, targetUser);
         try {
             timeTrackingService.assignCustomerForTimeRange(
                     username,
@@ -262,6 +321,9 @@ public class TimeTrackingController {
             @RequestParam(required = false) Long projectId,
             Principal principal) {
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        User requestingUser = accessControlService.requireAuthenticatedUser(principal);
+        User targetUser = accessControlService.requireTargetUser(username);
+        accessControlService.requireCanAccessUser(requestingUser, targetUser);
         try {
             timeTrackingService.assignProjectForDay(username, LocalDate.parse(date), projectId);
             return ResponseEntity.ok().build();
@@ -277,6 +339,9 @@ public class TimeTrackingController {
             @RequestBody Map<String, String> body,
             Principal principal) {
         if (principal == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        User requestingUser = accessControlService.requireAuthenticatedUser(principal);
+        User targetUser = accessControlService.requireTargetUser(username);
+        accessControlService.requireCanAccessUser(requestingUser, targetUser);
         String note = body.get("note");
         if (note == null) note = "";
         try {

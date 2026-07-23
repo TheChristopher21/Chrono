@@ -105,12 +105,6 @@ public class PayrollService {
                     : overtimeHours;
             paidOvertimeHours = Math.min(overtimeHours, available);
             manualOvertimePay = paidOvertimeHours * rate * (1 + OVERTIME_BONUS);
-            int minutesToDeduct = (int) Math.round(paidOvertimeHours * 60);
-            int currentBalance = user.getTrackingBalanceInMinutes() != null
-                    ? user.getTrackingBalanceInMinutes()
-                    : 0;
-            user.setTrackingBalanceInMinutes(currentBalance - minutesToDeduct);
-            userRepository.save(user);
         }
 
         double gross = basePay + overtimePay + manualOvertimePay;
@@ -136,7 +130,7 @@ public class PayrollService {
         if (overtimePay > 0) {
             ps.getEarnings().add(new PayComponent("Overtime", overtimePay));
         }
-        if (manualOvertimePay > 0) {
+        if (payoutOvertime && paidOvertimeHours > 0) {
             ps.getEarnings().add(new PayComponent("Overtime payout", manualOvertimePay));
             ps.setOvertimeHours(paidOvertimeHours);
             ps.setPayoutOvertime(true);
@@ -181,6 +175,7 @@ public class PayrollService {
     @Transactional
     public void approvePayslip(Long id, String comment) {
         Payslip ps = payslipRepository.findById(id).orElseThrow();
+        applyOvertimeDeductionIfNeeded(ps);
         ps.setApproved(true);
         ps.setLocked(true);
         String pdf = pdfService.generatePayslipPdf(ps);
@@ -196,6 +191,7 @@ public class PayrollService {
         User user = userRepository.findById(userId).orElseThrow();
         List<Payslip> slips = payslipRepository.findByUser(user);
         for (Payslip ps : slips) {
+            applyOvertimeDeductionIfNeeded(ps);
             ps.setApproved(true);
             ps.setLocked(true);
             String pdf = pdfService.generatePayslipPdf(ps);
@@ -211,6 +207,7 @@ public class PayrollService {
     public void approveAll(String comment) {
         List<Payslip> slips = payslipRepository.findAll();
         for (Payslip ps : slips) {
+            applyOvertimeDeductionIfNeeded(ps);
             ps.setApproved(true);
             ps.setLocked(true);
             String pdf = pdfService.generatePayslipPdf(ps);
@@ -227,7 +224,14 @@ public class PayrollService {
         if (ps.isApproved()) {
             throw new IllegalStateException("Cannot delete approved payslip");
         }
-        if (ps.isPayoutOvertime() && ps.getOvertimeHours() != null && ps.getOvertimeHours() > 0) {
+        payslipAuditRepository.deleteByPayslip(ps);
+        payslipRepository.delete(ps);
+    }
+
+    @Transactional
+    public void reopenPayslip(Long id) {
+        Payslip ps = payslipRepository.findById(id).orElseThrow();
+        if (ps.isApproved() && ps.isPayoutOvertime() && ps.getOvertimeHours() != null && ps.getOvertimeHours() > 0) {
             User user = ps.getUser();
             int minutesToRestore = (int) Math.round(ps.getOvertimeHours() * 60);
             int currentBalance = user.getTrackingBalanceInMinutes() != null
@@ -236,13 +240,6 @@ public class PayrollService {
             user.setTrackingBalanceInMinutes(currentBalance + minutesToRestore);
             userRepository.save(user);
         }
-        payslipAuditRepository.deleteByPayslip(ps);
-        payslipRepository.delete(ps);
-    }
-
-    @Transactional
-    public void reopenPayslip(Long id) {
-        Payslip ps = payslipRepository.findById(id).orElseThrow();
         ps.setApproved(false);
         ps.setLocked(false);
         ps.setPdfPath(null);
@@ -250,8 +247,33 @@ public class PayrollService {
         audit(ps, "REOPENED", "ADMIN", null);
     }
 
+    private void applyOvertimeDeductionIfNeeded(Payslip ps) {
+        if (ps.isApproved() || !ps.isPayoutOvertime() || ps.getOvertimeHours() == null || ps.getOvertimeHours() <= 0) {
+            return;
+        }
+        User user = ps.getUser();
+        int minutesToDeduct = (int) Math.round(ps.getOvertimeHours() * 60);
+        int currentBalance = user.getTrackingBalanceInMinutes() != null
+                ? user.getTrackingBalanceInMinutes()
+                : 0;
+        user.setTrackingBalanceInMinutes(currentBalance - minutesToDeduct);
+        userRepository.save(user);
+    }
+
     public List<Payslip> getAllPayslips() {
         return payslipRepository.findAll();
+    }
+
+    public List<Payslip> getAllPayslips(User requestingAdmin) {
+        boolean isSuperAdmin = requestingAdmin.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        if (isSuperAdmin && requestingAdmin.getCompany() == null) {
+            return payslipRepository.findAll();
+        }
+        if (requestingAdmin.getCompany() == null) {
+            return List.of();
+        }
+        return payslipRepository.findByUser_Company_Id(requestingAdmin.getCompany().getId());
     }
 
     public List<Payslip> getPendingPayslips(User requestingAdmin) {
@@ -375,6 +397,23 @@ public class PayrollService {
             if (!u.isDeleted()) {
                 setPayslipSchedule(u.getId(), dayOfMonth);
             }
+        }
+    }
+
+    @Transactional
+    public void setPayslipScheduleForAll(User requestingAdmin, int dayOfMonth) {
+        boolean isSuperAdmin = requestingAdmin.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().equals("ROLE_SUPERADMIN"));
+        List<User> users;
+        if (isSuperAdmin && requestingAdmin.getCompany() == null) {
+            users = userRepository.findOperationalUsersDeletedFalse();
+        } else if (requestingAdmin.getCompany() != null) {
+            users = userRepository.findOperationalUsersByCompanyIdAndDeletedFalse(requestingAdmin.getCompany().getId());
+        } else {
+            users = List.of();
+        }
+        for (User u : users) {
+            setPayslipSchedule(u.getId(), dayOfMonth);
         }
     }
 }

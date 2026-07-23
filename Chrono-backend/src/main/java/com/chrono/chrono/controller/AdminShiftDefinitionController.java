@@ -18,13 +18,13 @@ public class AdminShiftDefinitionController {
     private ScheduleRuleRepository ruleRepository;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public List<ScheduleRule> getActiveRules() {
         return ruleRepository.findByIsActiveTrueOrderByStartTime();
     }
 
     @GetMapping("/all")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    @PreAuthorize("isAuthenticated()")
     public List<ScheduleRule> getAllRules() {
         return ruleRepository.findAll();
     }
@@ -36,6 +36,9 @@ public class AdminShiftDefinitionController {
             Optional<ScheduleRule> existingRuleOpt = ruleRepository.findById(rule.getId());
             if (existingRuleOpt.isPresent()) {
                 ScheduleRule existingRule = existingRuleOpt.get();
+                if (rule.getShiftKey() != null && !rule.getShiftKey().isBlank()) {
+                    existingRule.setShiftKey(rule.getShiftKey());
+                }
                 existingRule.setLabel(rule.getLabel());
                 existingRule.setStartTime(rule.getStartTime());
                 existingRule.setEndTime(rule.getEndTime());
@@ -48,5 +51,15 @@ public class AdminShiftDefinitionController {
 
         ScheduleRule newRule = ruleRepository.save(rule);
         return ResponseEntity.ok(newRule);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('SUPERADMIN')")
+    public ResponseEntity<Void> deleteRule(@PathVariable Long id) {
+        if (!ruleRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        ruleRepository.deleteById(id);
+        return ResponseEntity.noContent().build();
     }
 }

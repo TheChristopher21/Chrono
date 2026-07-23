@@ -244,9 +244,20 @@
 .admin-page.crm-page .section-header {
     display: flex;
     justify-content: space-between;
-    align-items: center;
+    align-items: flex-start;
     gap: 1rem;
+    flex-wrap: wrap;
     margin-bottom: 1rem;
+}
+
+.admin-page.crm-page .section-header > div {
+    min-width: 0;
+}
+
+.admin-page.crm-page .section-header select {
+    flex: 0 1 280px;
+    width: min(280px, 100%);
+    max-width: 100%;
 }
 
 .admin-page.crm-page .eyebrow {

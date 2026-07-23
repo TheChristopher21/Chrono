@@ -238,6 +238,22 @@ public class CrmService {
         return campaignRepository.findByCompanyAndStatus(company, status);
     }
 
+
+    @Transactional(readOnly = true)
+    public List<CrmLead> getLeadsByStatus(Company company, LeadStatus status) {
+        return getLeads(company, status);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Opportunity> getOpportunitiesByStage(Company company, OpportunityStage stage) {
+        return getOpportunities(company, stage);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Campaign> getCampaignsByStatus(Company company, CampaignStatus status) {
+        return getCampaigns(company, status);
+    }
+
     @Transactional(readOnly = true)
     public List<CustomerContact> listContacts(Customer customer) {
         return customerContactRepository.findByCustomer(customer);

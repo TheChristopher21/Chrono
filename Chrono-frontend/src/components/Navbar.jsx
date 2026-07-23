@@ -7,9 +7,16 @@ import { useAuth } from '../context/AuthContext';
 import { LanguageContext, useTranslation } from '../context/LanguageContext';
 import styles from '../styles/Navbar.module.css';
 import api from '../utils/api';
+import { getUserDisplayName } from '../utils/userDisplay';
+import {
+    getDefaultLandingPage,
+    getRouteForPage,
+    hasPageAccess,
+    isAdminUser,
+    isSuperAdminUser,
+} from '../utils/pageAccess.js';
 import ChangelogModal from './ChangelogModal';
 
-/* --------- Kleine Inline-Icons (SVG) --------- */
 const IconChevronDown = () => (
     <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
@@ -31,18 +38,31 @@ const IconMoon = () => (
         <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="none" stroke="currentColor" strokeWidth="2"/>
     </svg>
 );
-const IconUser = () => (
-    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M20 21a8 8 0 1 0-16 0" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
-        <circle cx="12" cy="7" r="3" fill="none" stroke="currentColor" strokeWidth="2"/>
-    </svg>
-);
 
-/* --------- Hilfs-Hook: Klicks außerhalb schließen --------- */
+const platformItemCodes = {
+    adminUsers: 'PE',
+    adminSchedule: 'DI',
+    adminPayslips: 'LO',
+    adminAccounting: 'FI',
+    banking: 'ZA',
+    adminProjects: 'PR',
+    crm: 'CM',
+    supplyChain: 'SC',
+    adminKnowledge: 'KI',
+    chronoTwo: 'C2',
+    companySettings: 'AD',
+    companyManagement: 'FM',
+};
+
+const getPlatformItemCode = (item) => {
+    if (platformItemCodes[item.key]) return platformItemCodes[item.key];
+    return item.label.slice(0, 2).toUpperCase();
+};
+
 function useClickOutside(ref, onOutside) {
     useEffect(() => {
-        function handle(e) {
-            if (ref.current && !ref.current.contains(e.target)) onOutside?.();
+        function handle(event) {
+            if (ref.current && !ref.current.contains(event.target)) onOutside?.();
         }
         document.addEventListener('mousedown', handle);
         document.addEventListener('touchstart', handle, { passive: true });
@@ -60,40 +80,40 @@ const Navbar = () => {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // Öffentliche Seiten bestimmen (wie gehabt)
-    let publicRoutes = ['/login', '/register'];
-    if (!authToken) publicRoutes.push('/');
+    const isSuperAdmin = isSuperAdminUser(currentUser);
+    const isAdmin = isAdminUser(currentUser);
+
+    const publicRoutes = !authToken ? ['/', '/login', '/register'] : ['/login', '/register'];
     const isPublicPage = publicRoutes.includes(location.pathname);
 
-    // Theme (Light / Dark)
     const [theme, setTheme] = useState(() => localStorage.getItem('theme') || 'light');
     useEffect(() => {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
     }, [theme]);
-    const toggleTheme = () => setTheme(prev => (prev === 'light' ? 'dark' : 'light'));
+    const toggleTheme = () => setTheme((prev) => (prev === 'light' ? 'dark' : 'light'));
 
-    // Changelog
     const [latestChangelog, setLatestChangelog] = useState(null);
     const [showChangelogModal, setShowChangelogModal] = useState(false);
     const [hasNewUpdate, setHasNewUpdate] = useState(false);
+
     useEffect(() => {
         const checkChangelog = async () => {
             if (!authToken) return;
             try {
                 const response = await api.get('/api/changelog/latest');
                 if (response.data) {
-                    const latest = response.data;
-                    setLatestChangelog(latest);
+                    setLatestChangelog(response.data);
                     const seenVersion = localStorage.getItem('seenChangelogVersion');
-                    if (latest.version !== seenVersion) setHasNewUpdate(true);
+                    if (response.data.version !== seenVersion) setHasNewUpdate(true);
                 }
-            } catch (e) {
-                console.error('Konnte Changelog nicht abrufen', e);
+            } catch (error) {
+                console.error('Konnte Changelog nicht abrufen', error);
             }
         };
         checkChangelog();
     }, [authToken]);
+
     const openChangelog = () => {
         setShowChangelogModal(true);
         if (latestChangelog) {
@@ -102,7 +122,6 @@ const Navbar = () => {
         }
     };
 
-    // Dropdown-States
     const [openAdmin, setOpenAdmin] = useState(false);
     const [openUser, setOpenUser] = useState(false);
     const [openLang, setOpenLang] = useState(false);
@@ -110,19 +129,12 @@ const Navbar = () => {
     const adminRef = useRef(null);
     const userRef = useRef(null);
     const langRef = useRef(null);
+    const navToggleRef = useRef(null);
 
     useClickOutside(adminRef, () => setOpenAdmin(false));
     useClickOutside(userRef, () => setOpenUser(false));
     useClickOutside(langRef, () => setOpenLang(false));
 
-    const isSuperAdmin = !!currentUser?.roles?.includes('ROLE_SUPERADMIN');
-    const isAdmin = !!currentUser?.roles?.includes('ROLE_ADMIN');
-    const isPercentage = !!currentUser?.isPercentage;
-
-    const userInitial = currentUser?.username?.[0]?.toUpperCase() || 'U';
-    const onAdminRoute = location.pathname.startsWith('/admin');
-
-    const navToggleRef = useRef(null);
     const closeMobileNav = () => {
         if (navToggleRef.current) navToggleRef.current.checked = false;
         setOpenLang(false);
@@ -131,16 +143,13 @@ const Navbar = () => {
     };
 
     const marketingSections = [
-        { key: '#home', label: t('navbar.home', 'Startseite') },
-        { key: '#features', label: t('navbar.featuresLink', 'Funktionen') },
-        { key: '#start', label: t('navbar.howItWorks', 'So funktioniert es') },
-        { key: '#kontakt', label: t('navbar.contact', 'Kontakt') },
+        { key: '#platform', label: t('navbar.platform', 'Plattform') },
+        { key: '#features', label: t('navbar.solutions', 'Lösungen') },
+        { key: '#preise', label: t('navbar.pricing', 'Preise') },
     ];
 
     const marketingPages = [
-        { to: '/agb', label: t('navbar.terms', 'AGB') },
-        { to: '/impressum', label: t('navbar.imprint', 'Impressum') },
-        { to: '/datenschutz', label: t('navbar.privacy', 'Datenschutz') },
+        { to: '/arbeitszeit-rechner', label: t('navbar.workTimeCalculator', 'Arbeitszeit-Rechner') },
     ];
 
     const activeMarketingSection = location.pathname === '/' ? (location.hash || '#home') : null;
@@ -174,28 +183,183 @@ const Navbar = () => {
         navigate(target);
     };
 
-    const companyFeatureKeys = useMemo(() => {
-        const keys = currentUser?.companyFeatureKeys;
-        if (!keys) return new Set();
-        if (Array.isArray(keys)) return new Set(keys);
-        return new Set(Object.values(keys));
-    }, [currentUser?.companyFeatureKeys]);
-
-    const hasFeature = (featureKey) => {
-        if (!featureKey) return true;
-        if (isSuperAdmin) return true;
-        return companyFeatureKeys.has(featureKey);
+    const handleLogout = () => {
+        closeMobileNav();
+        logout();
+        navigate('/login', { replace: true });
     };
+
+    const canOpenPage = useMemo(() => (pageKey, requiredAccess = 'VIEW') => {
+        if (!currentUser) return false;
+        return hasPageAccess(currentUser, pageKey, requiredAccess);
+    }, [currentUser]);
+
+    const adminMenuItems = useMemo(() => ([
+        { key: 'adminDashboard', to: '/admin/dashboard', label: t('navbar.adminStart', 'Admin-Start') },
+        { key: 'adminUsers', to: '/admin/users', label: t('navbar.userManagement', 'Benutzerverwaltung') },
+        { key: 'adminProjects', to: '/admin/projects', label: t('navbar.workManagement', 'Kunden · Projekte · Aufgaben') },
+        { key: 'adminAccounting', to: '/admin/accounting', label: t('navbar.accounting', 'Finanzbuchhaltung') },
+        { key: 'supplyChain', to: getRouteForPage('supplyChain'), label: t('navbar.supplyChain', 'Supply Chain') },
+        { key: 'chronoTwo', to: '/admin/chrono-two', label: 'Chrono 2.0' },
+        { key: 'crm', to: '/admin/crm', label: t('navbar.crm', 'CRM & Marketing') },
+        { key: 'banking', to: '/admin/banking', label: t('navbar.banking', 'Zahlungsverkehr') },
+        { key: 'adminPayslips', to: '/admin/payslips', label: t('navbar.payslips', 'Abrechnungen') },
+        { key: 'adminSchedule', to: '/admin/schedule', label: t('navbar.schedulePlanner', 'Dienstplan') },
+        { key: 'adminKnowledge', to: '/admin/knowledge', label: t('navbar.knowledge', 'Firmen KI Wissen') },
+        { key: 'companySettings', to: '/admin/company-settings', label: t('navbar.companySettings', 'Firmeneinstellungen') },
+        { key: 'companyManagement', to: '/admin/company', label: t('navbar.companyManagement', 'Firmen') },
+    ]).filter((item) => canOpenPage(item.key)), [canOpenPage, t]);
+
+    const dashboardTarget = getDefaultLandingPage(currentUser);
+    const workspaceMenuItems = useMemo(() => {
+        if (!adminMenuItems.length) {
+            return [];
+        }
+        if (!dashboardTarget || dashboardTarget === '/' || isAdmin || isSuperAdmin) {
+            return adminMenuItems;
+        }
+        if (adminMenuItems.some((item) => item.to === dashboardTarget)) {
+            return adminMenuItems;
+        }
+        return [
+            { key: 'dashboardHome', to: dashboardTarget, label: t('navbar.myDashboard', 'Mein Dashboard') },
+            ...adminMenuItems,
+        ];
+    }, [adminMenuItems, dashboardTarget, isAdmin, isSuperAdmin, t]);
+    const dashboardMenuItem = useMemo(() => {
+        const dashboardItem = workspaceMenuItems.find((item) => item.key === 'dashboardHome' || item.key === 'adminDashboard');
+        if (dashboardItem) {
+            return dashboardItem;
+        }
+        if (dashboardTarget && dashboardTarget !== '/') {
+            return { key: 'dashboardHome', to: dashboardTarget, label: t('navbar.myDashboard', 'Mein Dashboard') };
+        }
+        return null;
+    }, [dashboardTarget, t, workspaceMenuItems]);
+    const platformMenuGroups = useMemo(() => {
+        const itemsByKey = new Map(workspaceMenuItems.map((item) => [item.key, item]));
+        const pick = (keys) => keys.map((key) => itemsByKey.get(key)).filter(Boolean);
+        return [
+            {
+                key: 'timeTeam',
+                title: t('navbar.platformTimeTeam', 'Zeit & Team'),
+                subtitle: t('navbar.platformPeoplePlanning', 'Personal & Planung'),
+                items: pick(['adminUsers', 'adminSchedule', 'adminPayslips']),
+            },
+            {
+                key: 'finance',
+                title: t('navbar.platformPayrollFinance', 'Lohn & Finanzen'),
+                subtitle: t('navbar.platformCashflow', 'Geldfluss'),
+                items: pick(['adminAccounting', 'banking']),
+            },
+            {
+                key: 'growth',
+                title: t('navbar.platformGrowth', 'Wachstum'),
+                subtitle: t('navbar.platformCustomersGoods', 'Kunden & Waren'),
+                items: pick(['adminProjects', 'crm', 'supplyChain']),
+            },
+            {
+                key: 'setup',
+                title: t('navbar.platformSetup', 'Setup'),
+                subtitle: t('navbar.platformAdministration', 'Administration'),
+                items: pick(['adminKnowledge', 'chronoTwo', 'companySettings', 'companyManagement']),
+            },
+        ].filter((group) => group.items.length > 0);
+    }, [t, workspaceMenuItems]);
+    const groupedPlatformItemKeys = useMemo(
+        () => new Set(platformMenuGroups.flatMap((group) => group.items.map((item) => item.key))),
+        [platformMenuGroups]
+    );
+    const fallbackPlatformItems = useMemo(
+        () => workspaceMenuItems.filter((item) => item.key !== dashboardMenuItem?.key && !groupedPlatformItemKeys.has(item.key)),
+        [dashboardMenuItem, groupedPlatformItemKeys, workspaceMenuItems]
+    );
+    const showProfileLink = canOpenPage('personalData');
+    const changePasswordTarget = canOpenPage('adminChangePassword') ? '/admin/change-password' : '/personal-data';
+    const showChangePassword = canOpenPage('adminChangePassword') || canOpenPage('personalData');
+    const userDisplayName = getUserDisplayName(currentUser);
+    const userInitial = userDisplayName?.[0]?.toUpperCase() || currentUser?.username?.[0]?.toUpperCase() || 'U';
+    const workspaceMenuLabel = t('navbar.platform', 'Plattform');
+
+    const toggleWorkspaceMenu = () => {
+        setOpenAdmin((prev) => !prev);
+        setOpenUser(false);
+        setOpenLang(false);
+    };
+
+    const platformMenu = workspaceMenuItems.length > 0 ? (
+        <div className={`${styles['dropdown-menu']} ${styles['platform-menu']}`}>
+            <div className={styles['platform-menu-header']}>
+                <div>
+                    <span className={styles['platform-kicker']}>Chrono</span>
+                    <strong>{t('navbar.switchWorkspace', 'Arbeitsbereich wechseln')}</strong>
+                </div>
+                {dashboardMenuItem && (
+                    <Link
+                        to={dashboardMenuItem.to}
+                        onClick={closeMobileNav}
+                        className={styles['platform-dashboard-link']}
+                    >
+                        {t('navbar.goToDashboard', 'Zum Dashboard')}
+                    </Link>
+                )}
+            </div>
+            <div className={styles['platform-grid']}>
+                {platformMenuGroups.map((group) => (
+                    <section className={styles['platform-group']} key={group.key} aria-label={group.title}>
+                        <span className={styles['platform-group-title']}>{group.title}</span>
+                        <span className={styles['platform-group-subtitle']}>{group.subtitle}</span>
+                        <div className={styles['platform-group-items']}>
+                            {group.items.map((item) => (
+                                <Link
+                                    key={item.key}
+                                    to={item.to}
+                                    onClick={closeMobileNav}
+                                    className={`${styles['platform-item']} ${location.pathname === item.to ? styles.activeLink : ''}`}
+                                >
+                                    <span className={styles['platform-item-code']} aria-hidden="true">
+                                        {getPlatformItemCode(item)}
+                                    </span>
+                                    <span className={styles['platform-item-label']}>{item.label}</span>
+                                </Link>
+                            ))}
+                        </div>
+                    </section>
+                ))}
+            </div>
+            {fallbackPlatformItems.length > 0 && (
+                <div className={styles['platform-extra-items']}>
+                    {fallbackPlatformItems.map((item) => (
+                        <Link
+                            key={item.key}
+                            to={item.to}
+                            onClick={closeMobileNav}
+                            className={styles['platform-item']}
+                        >
+                            <span className={styles['platform-item-code']} aria-hidden="true">
+                                {getPlatformItemCode(item)}
+                            </span>
+                            <span className={styles['platform-item-label']}>{item.label}</span>
+                        </Link>
+                    ))}
+                </div>
+            )}
+        </div>
+    ) : null;
 
     return (
         <div className={styles['scoped-navbar']}>
             <nav className={styles.navbar} aria-label="Hauptnavigation">
-                {/* Logo */}
                 <div className={styles['navbar-brand']}>
-                    <Link to="/" className={styles['navbar-logo']}>Chrono</Link>
+                    <Link to="/" className={styles['navbar-logo']}>
+                        <img
+                            className={styles['navbar-logo-image']}
+                            src="/img/komplettesLogo.png"
+                            alt="Chrono"
+                        />
+                    </Link>
                 </div>
 
-                {/* Hamburger Toggle (mobil) */}
                 <input
                     type="checkbox"
                     id="nav-toggle"
@@ -207,7 +371,6 @@ const Navbar = () => {
                     <span></span><span></span><span></span>
                 </label>
 
-                {/* Links */}
                 <ul className={styles['navbar-links']}>
                     {!authToken || isPublicPage ? (
                         <>
@@ -234,7 +397,6 @@ const Navbar = () => {
                                 </li>
                             ))}
 
-                            {/* Spacer und Controls für ausgeloggten Zustand */}
                             <li className={styles['flex-spacer']} aria-hidden="true"></li>
                             <li>
                                 <Link to="/login" onClick={closeMobileNav} className={styles.marketingLink}>
@@ -242,16 +404,22 @@ const Navbar = () => {
                                 </Link>
                             </li>
                             <li>
-                                <Link to="/register" onClick={closeMobileNav} className={styles.marketingLink}>
-                                    {t('navbar.register', 'Registrieren')}
+                                <Link
+                                    to="/register"
+                                    onClick={closeMobileNav}
+                                    className={`${styles.marketingLink} ${styles.marketingCta}`}
+                                    data-analytics-id="navbar_demo_request"
+                                    data-analytics-target="/register"
+                                >
+                                    {t('navbar.register', 'Demo anfragen')}
                                 </Link>
                             </li>
                             <li>
                                 <button
                                     className={styles['icon-btn']}
                                     onClick={toggleTheme}
-                                    aria-label={theme === 'light' ? t('darkMode','Dark Mode') : t('lightMode','Light Mode')}
-                                    title={theme === 'light' ? t('darkMode','Dark Mode') : t('lightMode','Light Mode')}
+                                    aria-label={theme === 'light' ? t('darkMode', 'Dark Mode') : t('lightMode', 'Light Mode')}
+                                    title={theme === 'light' ? t('darkMode', 'Dark Mode') : t('lightMode', 'Light Mode')}
                                 >
                                     <span className={styles['icon-wrap']}>{theme === 'light' ? <IconMoon/> : <IconSun/>}</span>
                                 </button>
@@ -259,15 +427,15 @@ const Navbar = () => {
                             <li className={`${styles.dropdown} ${openLang ? styles.open : ''}`} ref={langRef}>
                                 <button
                                     className={`${styles['dropdown-trigger']} ${styles.iconish}`}
-                                    onClick={() => setOpenLang(v => !v)}
+                                    onClick={() => setOpenLang((prev) => !prev)}
                                     aria-haspopup="true"
                                     aria-expanded={openLang}
                                 >
                                     🌐 <IconChevronDown/>
                                 </button>
                                 <div className={styles['dropdown-menu']}>
-                                    <button className={`${styles['lang-item']} ${language==='de'?styles.active:''}`} onClick={() => { setLanguage('de'); setOpenLang(false); }}>DE</button>
-                                    <button className={`${styles['lang-item']} ${language==='en'?styles.active:''}`} onClick={() => { setLanguage('en'); setOpenLang(false); }}>EN</button>
+                                    <button className={`${styles['lang-item']} ${language === 'de' ? styles.active : ''}`} onClick={() => { setLanguage('de'); setOpenLang(false); }}>DE</button>
+                                    <button className={`${styles['lang-item']} ${language === 'en' ? styles.active : ''}`} onClick={() => { setLanguage('en'); setOpenLang(false); }}>EN</button>
                                 </div>
                             </li>
                         </>
@@ -275,170 +443,117 @@ const Navbar = () => {
                         <>
                             {currentUser && (
                                 <>
-                                    {isSuperAdmin && onAdminRoute && (
-                                        <li><Link to="/admin/company">{t('navbar.companyManagement','Firmen')}</Link></li>
-                                    )}
+                                    <li>
+                                        <Link
+                                            to="/arbeitszeit-rechner"
+                                            onClick={closeMobileNav}
+                                            className={location.pathname === '/arbeitszeit-rechner' ? styles.activeLink : ''}
+                                        >
+                                            {t('navbar.workTimeCalculator', 'Arbeitszeit-Rechner')}
+                                        </Link>
+                                    </li>
 
-                                    {isAdmin && onAdminRoute ? (
-                                        <li className={`${styles.dropdown} ${openAdmin ? styles.open : ''}`} ref={adminRef}>
-                                            <button
-                                                className={styles['dropdown-trigger']}
-                                                onClick={() => setOpenAdmin(v => !v)}
-                                                aria-haspopup="true"
-                                                aria-expanded={openAdmin}
-                                            >
-                                                {t('navbar.admin','Admin')} <IconChevronDown/>
-                                            </button>
-                                            <div className={styles['dropdown-menu']}>
-                                                <Link to="/admin/dashboard" onClick={() => setOpenAdmin(false)}>
-                                                    {t('navbar.adminStart','Admin-Start')}
-                                                </Link>
-                                                <Link to="/admin/users" onClick={() => setOpenAdmin(false)}>
-                                                    {t('navbar.userManagement','Benutzerverwaltung')}
-                                                </Link>
-                                                {currentUser.customerTrackingEnabled && hasFeature('projects') && (
-                                                    <>
-                                                        <Link to="/admin/projects" onClick={() => setOpenAdmin(false)}>
-                                                            {t('navbar.workManagement','Kunden · Projekte · Aufgaben')}
-                                                        </Link>
-                                                    </>
-                                                )}
-                                                {hasFeature('accounting') && (
-                                                    <Link to="/admin/accounting" onClick={() => setOpenAdmin(false)}>
-                                                        {t('navbar.accounting','Finanzbuchhaltung')}
-                                                    </Link>
-                                                )}
-                                                {hasFeature('supplyChain') && (
-                                                    <Link to="/admin/supply-chain" onClick={() => setOpenAdmin(false)}>
-                                                        {t('navbar.supplyChain','Supply Chain')}
-                                                    </Link>
-                                                )}
-                                                {hasFeature('chrono2') && (
-                                                    <Link to="/admin/chrono-two" onClick={() => setOpenAdmin(false)}>
-                                                        Chrono 2.0
-                                                    </Link>
-                                                )}
-                                                {hasFeature('crm') && (
-                                                    <Link to="/admin/crm" onClick={() => setOpenAdmin(false)}>
-                                                        {t('navbar.crm','CRM & Marketing')}
-                                                    </Link>
-                                                )}
-                                                {hasFeature('banking') && (
-                                                    <Link to="/admin/banking" onClick={() => setOpenAdmin(false)}>
-                                                        {t('navbar.banking','Zahlungsverkehr')}
-                                                    </Link>
-                                                )}
-                                                {hasFeature('payroll') && (
-                                                    <Link to="/admin/payslips" onClick={() => setOpenAdmin(false)}>
-                                                        {t('navbar.payslips','Abrechnungen')}
-                                                    </Link>
-                                                )}
-                                                {hasFeature('roster') && (
-                                                    <Link to="/admin/schedule" onClick={() => setOpenAdmin(false)}>
-                                                        {t('navbar.schedulePlanner','Dienstplan')}
-                                                    </Link>
-                                                )}
-                                                <Link to="/admin/knowledge" onClick={() => setOpenAdmin(false)}>
-                                                    {t('navbar.knowledge','Firmen KI Wissen')}
-                                                </Link>
-                                                <Link to="/admin/company-settings" onClick={() => setOpenAdmin(false)}>
-                                                    {t('navbar.companySettings','Firmeneinstellungen')}
-                                                </Link>
-                                            </div>
+                                    {workspaceMenuItems.length === 0 && (
+                                        <li>
+                                            <Link to={dashboardTarget}>
+                                                {t('navbar.myDashboard', 'Mein Dashboard')}
+                                            </Link>
                                         </li>
-                                    ) : (
-                                        <>
-                                            <li>
-                                                <Link to={(isAdmin || isSuperAdmin) ? "/admin/dashboard" : isPercentage ? "/percentage-punch" : "/dashboard"}>
-                                                    {t('navbar.myDashboard','Mein Dashboard')}
-                                                </Link>
-                                            </li>
-                                        </>
                                     )}
                                 </>
                             )}
 
-                            {/* Flex-Spacer schiebt die Controls nach rechts */}
                             <li className={styles['flex-spacer']} aria-hidden="true"></li>
 
-                            {/* Changelog als Glocke */}
                             <li>
                                 <button
                                     className={styles['icon-btn']}
-                                    aria-label={t('navbar.whatsNew','Was ist neu?')}
+                                    aria-label={t('navbar.whatsNew', 'Was ist neu?')}
                                     onClick={openChangelog}
                                 >
-                                  <span className={styles['icon-wrap']}>
-                                    <IconBell/>
-                                      {hasNewUpdate && <span className={styles['notification-badge']} aria-hidden="true"></span>}
-                                  </span>
+                                    <span className={styles['icon-wrap']}>
+                                        <IconBell/>
+                                        {hasNewUpdate && <span className={styles['notification-badge']} aria-hidden="true"></span>}
+                                    </span>
                                 </button>
                             </li>
 
-                            {/* Theme Toggle */}
                             <li>
                                 <button
                                     className={styles['icon-btn']}
                                     onClick={toggleTheme}
-                                    aria-label={theme === 'light' ? t('darkMode','Dark Mode') : t('lightMode','Light Mode')}
-                                    title={theme === 'light' ? t('darkMode','Dark Mode') : t('lightMode','Light Mode')}
+                                    aria-label={theme === 'light' ? t('darkMode', 'Dark Mode') : t('lightMode', 'Light Mode')}
+                                    title={theme === 'light' ? t('darkMode', 'Dark Mode') : t('lightMode', 'Light Mode')}
                                 >
                                     <span className={styles['icon-wrap']}>{theme === 'light' ? <IconMoon/> : <IconSun/>}</span>
                                 </button>
                             </li>
 
-                            {/* Sprache kompakt */}
                             <li className={`${styles.dropdown} ${openLang ? styles.open : ''}`} ref={langRef}>
                                 <button
                                     className={`${styles['dropdown-trigger']} ${styles.iconish}`}
-                                    onClick={() => setOpenLang(v => !v)}
+                                    onClick={() => setOpenLang((prev) => !prev)}
                                     aria-haspopup="true"
                                     aria-expanded={openLang}
                                 >
                                     🌐 <IconChevronDown/>
                                 </button>
                                 <div className={styles['dropdown-menu']}>
-                                    <button className={`${styles['lang-item']} ${language==='de'?styles.active:''}`} onClick={() => { setLanguage('de'); setOpenLang(false); }}>DE</button>
-                                    <button className={`${styles['lang-item']} ${language==='en'?styles.active:''}`} onClick={() => { setLanguage('en'); setOpenLang(false); }}>EN</button>
+                                    <button className={`${styles['lang-item']} ${language === 'de' ? styles.active : ''}`} onClick={() => { setLanguage('de'); setOpenLang(false); }}>DE</button>
+                                    <button className={`${styles['lang-item']} ${language === 'en' ? styles.active : ''}`} onClick={() => { setLanguage('en'); setOpenLang(false); }}>EN</button>
                                 </div>
                             </li>
 
-                            {/* User-Menü */}
                             <li className={`${styles.dropdown} ${openUser ? styles.open : ''}`} ref={userRef}>
                                 <button
                                     className={`${styles['dropdown-trigger']} ${styles['user-trigger']}`}
-                                    onClick={() => setOpenUser(v => !v)}
+                                    onClick={() => setOpenUser((prev) => !prev)}
                                     aria-haspopup="true"
                                     aria-expanded={openUser}
                                 >
                                     <span className={styles.avatar} aria-hidden="true">{userInitial}</span>
-                                    <span className={styles.username}>{currentUser?.username}</span>
+                                    <span className={styles.username}>{userDisplayName || currentUser?.username}</span>
                                     <IconChevronDown/>
                                 </button>
                                 <div className={styles['dropdown-menu']}>
-                                    {/* Für Nicht-Admin bleibt "Mein Profil" hier; für Admin optional zusätzlich */}
-                                    {!isAdmin && (
+                                    {showProfileLink && (
                                         <Link to="/personal-data" onClick={() => setOpenUser(false)}>
-                                            {t('navbar.profile','Mein Profil')}
+                                            {t('navbar.profile', 'Mein Profil')}
                                         </Link>
                                     )}
                                     <Link to="/whats-new" onClick={() => setOpenUser(false)}>
-                                        {t('navbar.history','Update-Verlauf')}
+                                        {t('navbar.history', 'Update-Verlauf')}
                                     </Link>
-                                    <Link
-                                        to={isAdmin ? '/admin/change-password' : '/personal-data'}
-                                        onClick={() => setOpenUser(false)}
-                                    >
-                                        {t('admin.changePasswordTitle','Passwort ändern')}
-                                    </Link>
-                                    <button className={styles['navbar-logout']} onClick={() => { setOpenUser(false); logout(); }}>
-                                        {t('navbar.logout','Logout')}
+                                    {showChangePassword && (
+                                        <Link to={changePasswordTarget} onClick={() => setOpenUser(false)}>
+                                            {t('admin.changePasswordTitle', 'Passwort ändern')}
+                                        </Link>
+                                    )}
+                                    <button className={styles['navbar-logout']} onClick={handleLogout}>
+                                        {t('navbar.logout', 'Logout')}
                                     </button>
                                 </div>
                             </li>
                         </>
                     )}
                 </ul>
+
+                {authToken && !isPublicPage && currentUser && workspaceMenuItems.length > 0 && (
+                    <div
+                        className={`${styles.dropdown} ${styles['platform-dropdown']} ${styles['navbar-center-launcher']} ${openAdmin ? styles.open : ''}`}
+                        ref={adminRef}
+                    >
+                        <button
+                            className={`${styles['dropdown-trigger']} ${styles['platform-trigger']}`}
+                            onClick={toggleWorkspaceMenu}
+                            aria-haspopup="true"
+                            aria-expanded={openAdmin}
+                        >
+                            {workspaceMenuLabel} <IconChevronDown/>
+                        </button>
+                        {platformMenu}
+                    </div>
+                )}
             </nav>
 
             {showChangelogModal && (

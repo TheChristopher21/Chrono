@@ -13,6 +13,9 @@ public class DailyTimeSummaryDTO {
     private String dailyNote;
     private boolean needsCorrection;
     private PrimaryTimes primaryTimes;
+    private Integer expectedMinutes;
+    private Integer differenceMinutes;
+    private Boolean hasTrackedEntries;
 
     public static class PrimaryTimes {
         private LocalTime firstStartTime;
@@ -39,6 +42,7 @@ public class DailyTimeSummaryDTO {
         this.dailyNote = dailyNote;
         this.needsCorrection = needsCorrection;
         this.primaryTimes = primaryTimes;
+        this.hasTrackedEntries = entries != null && !entries.isEmpty();
     }
 
     // Getter
@@ -50,4 +54,11 @@ public class DailyTimeSummaryDTO {
     public String getDailyNote() { return dailyNote; }
     public boolean isNeedsCorrection() { return needsCorrection; }
     public PrimaryTimes getPrimaryTimes() { return primaryTimes; }
+    public Integer getExpectedMinutes() { return expectedMinutes; }
+    public Integer getDifferenceMinutes() { return differenceMinutes; }
+    public Boolean getHasTrackedEntries() { return hasTrackedEntries; }
+
+    public void setExpectedMinutes(Integer expectedMinutes) { this.expectedMinutes = expectedMinutes; }
+    public void setDifferenceMinutes(Integer differenceMinutes) { this.differenceMinutes = differenceMinutes; }
+    public void setHasTrackedEntries(Boolean hasTrackedEntries) { this.hasTrackedEntries = hasTrackedEntries; }
 }
