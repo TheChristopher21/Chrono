@@ -7,13 +7,12 @@ set "ROOT=C:\Users\siefe\WebstormProjects\Chrono"
 set "FRONTEND=%ROOT%\Chrono-frontend"
 set "BACKEND=%ROOT%\Chrono-backend"
 
-set "FE_IMAGE=chrisubuntu1/chrono-frontend:latest"
-set "BE_IMAGE=chrisubuntu1/chrono-backend:latest"
+set "FE_REPO=chrisubuntu1/chrono-frontend"
+set "BE_REPO=chrisubuntu1/chrono-backend"
 
 REM SSH Ziel (IP)
 set "SSH_TARGET=root@91.99.51.211"
-set "REMOTE_CLEANUP_CMD=cd ~/chrono && echo '[INFO] Sichere Docker-Bereinigung startet (ohne Volumes / ohne MySQL-Daten)...' && docker builder prune -a -f && docker image prune -a -f && docker container prune -f && docker system df"
-set "REMOTE_UPDATE_CMD=cd ~/chrono && ./update.sh"
+set "REMOTE_CLEANUP_CMD=cd ~/chrono && echo '[INFO] Sichere Docker-Bereinigung startet (ohne Volumes / ohne MySQL-Daten)...' && docker builder prune -a -f && docker image prune -f && docker container prune -f && docker system df"
 
 REM Docker CLI helper (Switch Linux Engine)
 set "DOCKERCLI=C:\Program Files\Docker\Docker\DockerCli.exe"
@@ -64,7 +63,13 @@ echo [1/6] Git: switch main + pull + push
 git switch main || goto :error_git
 git pull --ff-only || goto :error_git
 git push || goto :error_git
+for /f "delims=" %%A in ('git rev-parse --short^=12 HEAD') do set "IMAGE_TAG=%%A"
+if not defined IMAGE_TAG goto :error_git
+set "FE_IMAGE=%FE_REPO%:!IMAGE_TAG!"
+set "BE_IMAGE=%BE_REPO%:!IMAGE_TAG!"
+set "REMOTE_UPDATE_CMD=cd ~/chrono && cp .env .env.before-deploy-tag && sed -i 's/^CHRONO_IMAGE_TAG=.*/CHRONO_IMAGE_TAG=!IMAGE_TAG!/' .env && ./update.sh"
 echo [OK]  Git OK
+echo [OK]  Release-Tag: !IMAGE_TAG!
 echo.
 
 REM ====== 3) Docker Buildx bootstrap ======

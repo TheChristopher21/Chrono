@@ -51,8 +51,9 @@ separately from the uploaded file.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\ops\preflight.ps1
-docker compose pull
-docker compose up -d
+docker compose pull --ignore-buildable
+docker compose build mysql-backup alertmanager
+docker compose up -d --remove-orphans --wait --wait-timeout 600
 docker compose ps
 ```
 

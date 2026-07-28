@@ -22,15 +22,29 @@ manifest and the uploaded images.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\ops\preflight.ps1
-docker compose pull
+docker compose pull --ignore-buildable
+docker compose build mysql-backup alertmanager
 docker compose up -d mysql
-docker compose up -d
+docker compose up -d --remove-orphans --wait --wait-timeout 600
 docker compose ps
 ```
 
 Flyway runs as part of backend startup. Apply every migration to staging
 first, start one backend instance, inspect the Flyway log and health result,
 then allow staff or providers to send production traffic.
+
+The production Compose project deliberately keeps the existing Nginx Proxy
+Manager, Ollama and Open WebUI services in the project. Their established
+bind mounts and named volumes must not be replaced during an application
+release.
+
+## Alert delivery
+
+Prometheus evaluates the rules in `ops/monitoring/alerts.yml`. Alertmanager
+groups and de-duplicates matching alerts and sends them to
+`ALERT_EMAIL_TO` through the configured `SPRING_MAIL_*` SMTP account. A
+successful test message is part of the release gate; Alertmanager must not
+be configured with a placeholder recipient.
 
 ## Verification
 

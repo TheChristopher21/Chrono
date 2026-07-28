@@ -29,6 +29,8 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
+      model-puller:
+        condition: service_completed_successfully
     networks: [chrono-app, chrono-data, chrono-monitoring]
     environment:
       SERVER_PORT: "8081"
@@ -55,7 +57,7 @@ services:
       LLM_WARMUP_ENABLED: "${LLM_WARMUP_ENABLED:-false}"
     volumes:
       - ./knowledge_base:/app/knowledge_base:ro
-      - backup_data:/backups:ro
+      - ./data/backups:/backups:ro
     security_opt:
       - no-new-privileges:true
     read_only: true
@@ -76,19 +78,16 @@ services:
     security_opt:
       - no-new-privileges:true
 
-  gateway:
-    image: caddy:${CADDY_IMAGE_TAG:?CADDY_IMAGE_TAG must be pinned}
+  nginx:
+    image: ${NGINX_PROXY_MANAGER_IMAGE:?NGINX_PROXY_MANAGER_IMAGE must be pinned by digest}
     restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-      - "443:443/udp"
-    environment:
-      ACME_EMAIL: "${ACME_EMAIL:?ACME_EMAIL must be set}"
+      - "81:81"
     volumes:
-      - ./ops/gateway/Caddyfile:/etc/caddy/Caddyfile:ro
-      - caddy_data:/data
-      - caddy_config:/config
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
     networks: [chrono-app]
     depends_on:
       frontend:
@@ -117,7 +116,7 @@ services:
       BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-30}"
       BACKUP_MAX_AGE_MINUTES: "${BACKUP_MAX_AGE_MINUTES:-1560}"
     volumes:
-      - backup_data:/backups
+      - ./data/backups:/backups
     networks: [chrono-data]
     healthcheck:
       test: ["CMD-SHELL", "/opt/chrono/check-backup.sh"]
@@ -161,7 +160,7 @@ services:
       MYSQL_PASSWORD: "${RESTORE_TEST_ROOT_PASSWORD:?RESTORE_TEST_ROOT_PASSWORD must be set}"
       RESTORE_MINIMUM_TABLES: "${RESTORE_MINIMUM_TABLES:-20}"
     volumes:
-      - backup_data:/backups:ro
+      - ./data/backups:/backups:ro
     networks: [chrono-restore]
     security_opt:
       - no-new-privileges:true
@@ -175,7 +174,7 @@ services:
       OFFSITE_BACKUP_INTERVAL_SECONDS: "${OFFSITE_BACKUP_INTERVAL_SECONDS:-86400}"
       OFFSITE_BACKUP_RETENTION_DAYS: "${OFFSITE_BACKUP_RETENTION_DAYS:-90}"
     volumes:
-      - backup_data:/backups:ro
+      - ./data/backups:/backups:ro
       - ./ops/backup/offsite-backup.sh:/opt/chrono/offsite-backup.sh:ro
     networks: [chrono-data, chrono-egress]
     security_opt:
@@ -193,7 +192,7 @@ services:
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
       - ./ops/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
-      - prometheus_data:/prometheus
+      - ./prometheus_data:/prometheus
     depends_on:
       - backend
     security_opt:
@@ -206,8 +205,14 @@ services:
         ALERTMANAGER_IMAGE_TAG: "${ALERTMANAGER_IMAGE_TAG:?ALERTMANAGER_IMAGE_TAG must be pinned}"
     image: chrono/alertmanager:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
     restart: unless-stopped
+    env_file: ${CHRONO_ENV_FILE:-.env}
     environment:
-      ALERT_WEBHOOK_URL: "${ALERT_WEBHOOK_URL:?ALERT_WEBHOOK_URL must be set}"
+      ALERT_EMAIL_TO: "${ALERT_EMAIL_TO:?ALERT_EMAIL_TO must be set}"
+      SPRING_MAIL_HOST: "${SPRING_MAIL_HOST:?SPRING_MAIL_HOST must be set}"
+      SPRING_MAIL_PORT: "${SPRING_MAIL_PORT:-587}"
+      SPRING_MAIL_USERNAME: "${SPRING_MAIL_USERNAME:?SPRING_MAIL_USERNAME must be set}"
+      SPRING_MAIL_PASSWORD: "${SPRING_MAIL_PASSWORD:?SPRING_MAIL_PASSWORD must be set}"
+      SPRING_MAIL_SMTP_STARTTLS_ENABLE: "${SPRING_MAIL_SMTP_STARTTLS_ENABLE:-true}"
     networks: [chrono-monitoring, chrono-egress]
     ports:
       - "127.0.0.1:9093:9093"
@@ -232,7 +237,7 @@ services:
     ports:
       - "127.0.0.1:3000:3000"
     volumes:
-      - grafana_data:/var/lib/grafana
+      - ./grafana_data:/var/lib/grafana
       - ./ops/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./ops/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
     depends_on:
@@ -241,12 +246,13 @@ services:
       - no-new-privileges:true
 
   llm:
-    image: ollama/ollama:${OLLAMA_IMAGE_TAG:?OLLAMA_IMAGE_TAG must be pinned}
-    profiles: ["ai"]
+    image: ${OLLAMA_IMAGE:?OLLAMA_IMAGE must be pinned by digest}
     restart: unless-stopped
     volumes:
       - ollama_data:/root/.ollama
     networks: [chrono-app]
+    ports:
+      - "11434:11434"
     environment:
       OLLAMA_KEEP_ALIVE: "-1"
     healthcheck:
@@ -257,8 +263,7 @@ services:
       start_period: 60s
 
   model-puller:
-    image: ollama/ollama:${OLLAMA_IMAGE_TAG:?OLLAMA_IMAGE_TAG must be pinned}
-    profiles: ["ai"]
+    image: ${OLLAMA_IMAGE:?OLLAMA_IMAGE must be pinned by digest}
     restart: "no"
     depends_on:
       llm:
@@ -270,8 +275,27 @@ services:
     entrypoint: ["/bin/sh", "-c"]
     command: ["ollama pull \"$$OLLAMA_MODEL\""]
 
+  open-webui:
+    image: ${OPEN_WEBUI_IMAGE:?OPEN_WEBUI_IMAGE must be pinned by digest}
+    container_name: open-webui
+    restart: unless-stopped
+    depends_on:
+      llm:
+        condition: service_healthy
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./open-webui_data:/app/backend/data
+      - ./knowledge_base:/app/backend/knowledge_base
+    environment:
+      OLLAMA_BASE_URL: "http://llm:11434"
+    networks: [chrono-app]
+    security_opt:
+      - no-new-privileges:true
+
 networks:
   chrono-app:
+    name: chrono_chrono
   chrono-data:
     internal: true
   chrono-monitoring:
@@ -282,9 +306,4 @@ networks:
 
 volumes:
   db_data:
-  backup_data:
-  caddy_data:
-  caddy_config:
-  prometheus_data:
-  grafana_data:
   ollama_data:

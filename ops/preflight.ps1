@@ -44,12 +44,10 @@ function Require-Value {
 foreach ($tag in @(
     "CHRONO_IMAGE_TAG",
     "MYSQL_IMAGE_TAG",
-    "CADDY_IMAGE_TAG",
     "PROMETHEUS_IMAGE_TAG",
     "GRAFANA_IMAGE_TAG",
     "ALERTMANAGER_IMAGE_TAG",
-    "RESTIC_IMAGE_TAG",
-    "OLLAMA_IMAGE_TAG"
+    "RESTIC_IMAGE_TAG"
 )) {
     Require-Value $tag
     if ($values.ContainsKey($tag) -and $values[$tag].ToLowerInvariant() -in @("latest", "main", "local")) {
@@ -65,6 +63,18 @@ foreach ($image in @(
     if ($values.ContainsKey($image) -and
         ($values[$image].Contains(":") -or $values[$image].EndsWith("/"))) {
         $errors.Add("$image must be an untagged repository name; CHRONO_IMAGE_TAG owns the immutable tag.")
+    }
+}
+
+foreach ($image in @(
+    "NGINX_PROXY_MANAGER_IMAGE",
+    "OPEN_WEBUI_IMAGE",
+    "OLLAMA_IMAGE"
+)) {
+    Require-Value $image
+    if ($values.ContainsKey($image) -and
+        $values[$image] -notmatch "^[^@\s]+@sha256:[a-f0-9]{64}$") {
+        $errors.Add("$image must be pinned to an immutable sha256 image digest.")
     }
 }
 
@@ -107,7 +117,6 @@ foreach ($flag in @(
 }
 
 Require-Value "APP_SECURITY_ALLOWED_ORIGINS"
-Require-Value "ACME_EMAIL"
 if ($values.ContainsKey("APP_SECURITY_ALLOWED_ORIGINS")) {
     foreach ($origin in $values["APP_SECURITY_ALLOWED_ORIGINS"].Split(",")) {
         $candidate = $origin.Trim().ToLowerInvariant()
@@ -139,11 +148,17 @@ if (-not $values.ContainsKey("RESTIC_REPOSITORY") -or [string]::IsNullOrWhiteSpa
     $warnings.Add("No encrypted off-site restic repository is configured.")
 }
 
-Require-Value "ALERT_WEBHOOK_URL"
-if ($values.ContainsKey("ALERT_WEBHOOK_URL") -and
-    (-not $values["ALERT_WEBHOOK_URL"].ToLowerInvariant().StartsWith("https://") -or
-     $values["ALERT_WEBHOOK_URL"].ToLowerInvariant().Contains(".invalid"))) {
-    $errors.Add("ALERT_WEBHOOK_URL must be a real HTTPS operations endpoint.")
+foreach ($mailSetting in @(
+    "ALERT_EMAIL_TO",
+    "SPRING_MAIL_HOST",
+    "SPRING_MAIL_PORT",
+    "SPRING_MAIL_USERNAME",
+    "SPRING_MAIL_PASSWORD"
+)) {
+    Require-Value $mailSetting
+}
+if ($values.ContainsKey("ALERT_EMAIL_TO") -and $values["ALERT_EMAIL_TO"] -notmatch "^[^@\s]+@[^@\s]+$") {
+    $errors.Add("ALERT_EMAIL_TO must be a valid e-mail address.")
 }
 
 $previousEnvFile = $env:CHRONO_ENV_FILE
