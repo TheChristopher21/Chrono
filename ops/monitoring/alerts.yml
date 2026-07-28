@@ -1,0 +1,39 @@
+groups:
+  - name: chrono-availability
+    rules:
+      - alert: ChronoBackendDown
+        expr: up{job="chrono-backend"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: Chrono backend is unavailable
+          description: Prometheus could not scrape the Chrono backend for two minutes.
+
+      - alert: ChronoHighServerErrorRate
+        expr: |
+          (
+            sum(rate(http_server_requests_seconds_count{job="chrono-backend",status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_server_requests_seconds_count{job="chrono-backend"}[5m])), 0.001)
+          ) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Chrono has an elevated HTTP 5xx rate
+          description: More than 5 percent of HTTP requests failed for ten minutes.
+
+      - alert: ChronoJvmMemoryPressure
+        expr: |
+          (
+            sum(jvm_memory_used_bytes{job="chrono-backend",area="heap"})
+            /
+            clamp_min(sum(jvm_memory_max_bytes{job="chrono-backend",area="heap"}), 1)
+          ) > 0.90
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Chrono JVM heap usage is high
+          description: Heap usage has stayed above 90 percent for fifteen minutes.

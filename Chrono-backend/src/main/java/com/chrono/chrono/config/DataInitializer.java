@@ -8,6 +8,7 @@ import com.chrono.chrono.services.UserPermissionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.annotation.Order;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
@@ -17,6 +18,7 @@ import java.util.Map;
 import java.util.Optional;
 
 @Component
+@Order(0)
 public class DataInitializer implements CommandLineRunner {
 
     @Autowired
@@ -60,6 +62,8 @@ public class DataInitializer implements CommandLineRunner {
                 adminUser.setFirstName("Default");
                 adminUser.setLastName("Admin");
                 adminUser.setEmail("admin@example.com");
+                adminUser.setCountry("CH");
+                adminUser.setPersonnelNumber("ADMIN");
 
                 Role adminRole = roleRepository.findByRoleName("ROLE_ADMIN")
                         .orElseGet(() -> roleRepository.save(new Role("ROLE_ADMIN")));

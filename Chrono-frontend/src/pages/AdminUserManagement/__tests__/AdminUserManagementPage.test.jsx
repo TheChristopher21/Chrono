@@ -140,4 +140,20 @@ describe('AdminUserManagementPage time tracking visibility', () => {
 
         expect(screen.getByLabelText(/Benutzername/i)).toHaveValue('alice');
     });
+
+    it('uses the visible schedule start as the history effective date', async () => {
+        render(<AdminUserManagementPage />);
+
+        await screen.findByText('team-admin');
+        await userEvent.click(screen.getByRole('button', { name: 'Bearbeiten' }));
+        await userEvent.click(screen.getByRole('tab', { name: 'Arbeitszeit' }));
+
+        fireEvent.change(screen.getByLabelText(/Plan g.ltig ab/i), {
+            target: { value: '2026-05-04' },
+        });
+
+        await userEvent.click(screen.getByRole('tab', { name: 'Payroll' }));
+
+        expect(screen.getByLabelText(/nderung g.ltig ab/i)).toHaveValue('2026-05-04');
+    });
 });

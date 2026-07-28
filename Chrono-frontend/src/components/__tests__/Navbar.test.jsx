@@ -114,4 +114,24 @@ describe('Navbar', () => {
         expect(screen.queryByText(/Mein Dashboard/i)).toBeNull();
     });
 
+    it('shows the PMS button in the user menu only with PMS access', async () => {
+        mockNavigate.mockReset();
+        renderNavbar(
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'Christopher',
+                    roles: ['ROLE_USER'],
+                    pagePermissions: { dashboard: 'VIEW', pms: 'MANAGE' },
+                },
+                logout: vi.fn(),
+            },
+            '/dashboard'
+        );
+
+        await userEvent.click(screen.getByRole('button', { name: /Christopher/i }));
+
+        expect(screen.getByRole('link', { name: 'Hotel PMS' })).toHaveAttribute('href', '/pms');
+    });
+
 });

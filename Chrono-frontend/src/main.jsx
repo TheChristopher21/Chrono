@@ -11,6 +11,32 @@ import { ProjectProvider } from "./context/ProjectContext";
 import { TaskProvider } from "./context/TaskContext";
 import "./styles/global.css";
 
+const structuredData = document.createElement("script");
+structuredData.type = "application/ld+json";
+structuredData.textContent = JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    name: "Chrono-Logisch",
+    alternateName: ["Chrono", "Chrono logisch", "Chrono-logisch"],
+    url: "https://chrono-logisch.ch/",
+    applicationCategory: "BusinessApplication",
+    operatingSystem: "Web, Windows",
+    description: "Schweizer Unternehmenssoftware für Zeiterfassung, Urlaubsfreigaben und Lohnvorbereitung.",
+    areaServed: ["CH", "DE"],
+    creator: {
+        "@type": "Organization",
+        name: "Chrono-Logisch",
+        url: "https://chrono-logisch.ch/",
+        address: {
+            "@type": "PostalAddress",
+            addressLocality: "Mogelsberg",
+            addressRegion: "St. Gallen",
+            addressCountry: "CH",
+        },
+    },
+});
+document.head.appendChild(structuredData);
+
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
     <BrowserRouter>

@@ -77,6 +77,9 @@ public class ChatService {
     @Value("${llama.model:llama3:8b}")
     private String modelName;
 
+    @Value("${llm.warmup.enabled:true}")
+    private boolean llmWarmupEnabled;
+
     private final RestTemplate restTemplate;
     private final RestTemplate longTimeoutRestTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
@@ -101,6 +104,10 @@ public class ChatService {
     @Async
     @EventListener(ApplicationReadyEvent.class)
     public void warmUpLlm() {
+        if (!llmWarmupEnabled) {
+            logger.info("LLM-Warm-up ist deaktiviert.");
+            return;
+        }
         logger.info("Starte LLM-Warm-up im Hintergrund.");
         try {
             String response = askWithTemplate(longTimeoutRestTemplate, "Hallo, initialisiere dich bitte.", List.of(), null, -1);

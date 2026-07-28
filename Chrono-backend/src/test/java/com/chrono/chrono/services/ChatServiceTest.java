@@ -78,6 +78,15 @@ class ChatServiceTest {
     }
 
     @Test
+    void warmUpLlm_doesNotCallProviderWhenDisabled() {
+        ReflectionTestUtils.setField(chatService, "llmWarmupEnabled", false);
+
+        chatService.warmUpLlm();
+
+        verify(longTimeoutRestTemplate, never()).postForObject(anyString(), any(), eq(String.class));
+    }
+
+    @Test
     void ask_returnsDetailedVacationForMentionedUser_whenRequesterIsAdmin() {
         when(userRepository.findByCompany_IdAndDeletedFalse(1L)).thenReturn(List.of(employee));
         when(vacationService.calculateRemainingVacationDays("max", LocalDate.now().getYear())).thenReturn(18.5);

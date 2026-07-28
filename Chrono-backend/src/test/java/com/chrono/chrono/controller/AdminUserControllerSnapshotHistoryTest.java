@@ -129,6 +129,96 @@ class AdminUserControllerSnapshotHistoryTest {
     }
 
     @Test
+    void updateUser_switchToStandard_usesScheduleStartForHistory() {
+        when(principal.getName()).thenReturn("admin");
+
+        Company company = new Company();
+        company.setId(1L);
+
+        User adminUser = new User();
+        adminUser.setId(100L);
+        adminUser.setUsername("admin");
+        adminUser.setCompany(company);
+        adminUser.setRoles(Set.of(new Role("ROLE_ADMIN")));
+
+        User existingUser = new User();
+        existingUser.setId(200L);
+        existingUser.setUsername("worker");
+        existingUser.setCompany(company);
+        existingUser.setRoles(Set.of(new Role("ROLE_USER")));
+        existingUser.setCountry("CH");
+        existingUser.setTarifCode("A0");
+        existingUser.setPersonnelNumber("123");
+        existingUser.setIsHourly(false);
+        existingUser.setIsPercentage(true);
+        existingUser.setWorkPercentage(60);
+        existingUser.setExpectedWorkDays(3);
+        existingUser.setWeeklySchedule(Collections.emptyList());
+
+        User previousPercentageSnapshot = new User();
+        previousPercentageSnapshot.setId(existingUser.getId());
+        previousPercentageSnapshot.setUsername(existingUser.getUsername());
+        previousPercentageSnapshot.setCompany(company);
+        previousPercentageSnapshot.setIsHourly(false);
+        previousPercentageSnapshot.setIsPercentage(true);
+        previousPercentageSnapshot.setWorkPercentage(60);
+        previousPercentageSnapshot.setExpectedWorkDays(3);
+        previousPercentageSnapshot.setWeeklySchedule(Collections.emptyList());
+
+        Map<String, Double> schedule = Map.of(
+                "monday", 8.5,
+                "tuesday", 0.0,
+                "wednesday", 8.5,
+                "thursday", 8.5,
+                "friday", 0.0,
+                "saturday", 0.0,
+                "sunday", 0.0
+        );
+        UserDTO dto = new UserDTO();
+        dto.setId(existingUser.getId());
+        dto.setUsername(existingUser.getUsername());
+        dto.setFirstName("A");
+        dto.setLastName("B");
+        dto.setCountry("CH");
+        dto.setTarifCode("A0");
+        dto.setPersonnelNumber("123");
+        dto.setEmail("a@b.c");
+        dto.setMobilePhone("123");
+        dto.setIsHourly(false);
+        dto.setIsPercentage(false);
+        dto.setDailyWorkHours(8.5);
+        dto.setExpectedWorkDays(3);
+        dto.setScheduleCycle(1);
+        dto.setWeeklySchedule(List.of(schedule));
+        dto.setScheduleEffectiveDate(LocalDate.of(2026, 5, 4));
+        dto.setEmploymentModelEffectiveFrom(LocalDate.of(2026, 5, 6));
+
+        when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+        when(userRepository.findById(existingUser.getId())).thenReturn(Optional.of(existingUser));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(employmentModelHistoryService.resolveUserSnapshotForDate(
+                any(User.class),
+                eq(LocalDate.of(2026, 5, 3))
+        )).thenReturn(previousPercentageSnapshot);
+        when(employmentModelHistoryService.deriveCurrentModel(any(User.class))).thenAnswer(inv -> {
+            User user = inv.getArgument(0);
+            return Boolean.TRUE.equals(user.getIsPercentage())
+                    ? EmploymentModelType.PERCENTAGE
+                    : EmploymentModelType.STANDARD;
+        });
+
+        ResponseEntity<?> response = controller.updateUser(dto, null, principal);
+
+        assertEquals(200, response.getStatusCode().value());
+        verify(employmentModelHistoryService).recordModelChange(
+                any(User.class),
+                eq(EmploymentModelType.STANDARD),
+                eq(LocalDate.of(2026, 5, 4))
+        );
+        verify(timeTrackingService).rebuildUserBalance(existingUser);
+    }
+
+    @Test
     void getAllUsers_withoutCompany_returnsForbiddenInsteadOfAllUsers() {
         when(principal.getName()).thenReturn("admin");
 

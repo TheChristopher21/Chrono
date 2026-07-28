@@ -1,13 +1,17 @@
 global:
-  scrape_interval: 10s # Etwas mehr Zeit zwischen den Abfragen
+  scrape_interval: 30s
+  evaluation_interval: 30s
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: [alertmanager:9093]
 
 scrape_configs:
-  - job_name: 'chrono-backend'
-    metrics_path: '/actuator/prometheus'
-    scrape_interval: 30s # Geben Sie dem Backend nach dem Start mehr Zeit
+  - job_name: chrono-backend
+    metrics_path: /actuator/prometheus
     static_configs:
-      - targets: ['backend:8081'] # Der neue, eindeutige Port für das Backend
-
-  - job_name: 'nginx-web'
-    static_configs:
-      - targets: ['nginx-exporter:9113']
+      - targets: [backend:8081]

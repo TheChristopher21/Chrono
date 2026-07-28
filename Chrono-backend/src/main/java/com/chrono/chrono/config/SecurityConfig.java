@@ -4,52 +4,33 @@ import com.chrono.chrono.services.CustomUserDetailsService;
 import com.chrono.chrono.utils.JwtAuthenticationFilter;
 import com.chrono.chrono.utils.PasswordEncoderConfig;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
 
-// SecurityConfig.java
-
-    // PASST FÜR MOBILE ENTWICKLUNG AN
-    public static final String[] ALLOWED_ORIGINS = {
-            // Produktive URLs
-            "https://chrono-logisch.ch",
-            "https://www.chrono-logisch.ch",
-
-            // KORREKTUR: HINZUFÜGEN DES LOKALEN WEB-APP-PORTS
-            "http://localhost:5173",
-
-            // Lokale IPs und Ports
-            "http://10.0.2.2:5173",
-            "http://10.0.2.2:8080",
-            "http://localhost:8080",
-
-            // NEU: Die Ursprünge des Capacitor WebViews (siehe Log-Fehler!)
-            "capacitor://localhost",   // Standard Capacitor Origin
-            "http://localhost",
-            "https://localhost"        // Die Origin, die in Ihrem Logcat-Fehler aufgetreten ist
-    };
-    // ...
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
 
@@ -60,17 +41,32 @@ public class SecurityConfig {
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.security.allowed-origins:https://chrono-logisch.ch,https://www.chrono-logisch.ch}")
+            String configuredOrigins) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(List.of(ALLOWED_ORIGINS)); // Verwende List.of
-        configuration.setAllowedOrigins(List.of(ALLOWED_ORIGINS)); // Erlaubt nur die definierten Origins
+        configuration.setAllowedOrigins(parseOrigins(configuredOrigins));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "Origin", "X-Agent-Token", "X-NFC-Agent-Request"));
-        configuration.setExposedHeaders(List.of("Authorization")); // Wichtig für das Lesen des Tokens im Frontend
+        configuration.setAllowedHeaders(Arrays.asList(
+                "Authorization", "Content-Type", "Origin", "X-Agent-Token", "X-NFC-Agent-Request"));
+        configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(true);
+        configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    static List<String> parseOrigins(String configuredOrigins) {
+        List<String> origins = Stream.of(configuredOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isBlank())
+                .distinct()
+                .toList();
+        if (origins.isEmpty() || origins.stream().anyMatch(origin -> origin.contains("*"))) {
+            throw new IllegalStateException("CORS origins must be an explicit non-empty list");
+        }
+        return origins;
     }
 
     @Bean
@@ -85,13 +81,19 @@ public class SecurityConfig {
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
-                .cors(Customizer.withDefaults()) // Nutzt die obige corsConfigurationSource Bean
+                .cors(Customizer.withDefaults())
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.deny())
+                        .referrerPolicy(referrer -> referrer.policy(
+                                ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .httpStrictTransportSecurity(hsts -> hsts
+                                .includeSubDomains(true)
+                                .preload(true)
+                                .maxAgeInSeconds(31_536_000)))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
-                    // WICHTIGSTE ÄNDERUNG: Erlaube alle Preflight-Anfragen
                     auth.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll();
 
-                    // Öffentliche Endpunkte
                     auth.requestMatchers("/api/auth/**").permitAll();
                     auth.requestMatchers("/actuator/health", "/actuator/info", "/actuator/prometheus").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/nfc/command").permitAll();
@@ -102,11 +104,12 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.POST, "/api/apply").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/contact").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/public/analytics/**").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/public/pms/guest-registration/**").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/public/pms/webhooks/channels/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/holidays/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/public/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/report/timesheet/ics-feed/**").permitAll();
 
-                    // Admin-Endpunkte
                     auth.requestMatchers("/api/admin/users", "/api/admin/users/**")
                             .hasAnyRole("ADMIN", "SUPERADMIN", "PAYROLL_ADMIN");
                     auth.requestMatchers("/api/admin/company/logo")
@@ -115,7 +118,6 @@ public class SecurityConfig {
                     auth.requestMatchers("/api/supply-chain/**").authenticated();
                     auth.requestMatchers("/api/superadmin/**").hasRole("SUPERADMIN");
 
-                    // Alle anderen Endpunkte erfordern eine gültige Authentifizierung
                     auth.anyRequest().authenticated();
                 })
                 .authenticationProvider(authenticationProvider())

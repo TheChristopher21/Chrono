@@ -46,6 +46,7 @@ vi.mock('../pages/SupplyChain/SupplyChainDashboard.jsx', () => ({ default: () =>
 vi.mock('../pages/ChronoTwo/ChronoTwoDashboard.jsx', () => ({ default: () => <div>Chrono two</div> }));
 vi.mock('../pages/CRM/CrmDashboard.jsx', () => ({ default: () => <div>CRM</div> }));
 vi.mock('../pages/AdminBanking/BankingOperationsPage.jsx', () => ({ default: () => <div>Banking</div> }));
+vi.mock('../pages/Pms/PmsDashboard.jsx', () => ({ default: () => <div>Hotel PMS dashboard</div> }));
 
 import App from '../App.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -92,5 +93,44 @@ describe('App print report routing', () => {
 
         expect(screen.getByText('Print report page')).toBeInTheDocument();
         expect(screen.queryByText('Login page')).not.toBeInTheDocument();
+    });
+});
+
+describe('App PMS routing', () => {
+    it('allows the PMS test user to open the protected PMS route', () => {
+        renderApp(
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'Christopher',
+                    roles: ['ROLE_USER'],
+                    companyFeatureKeys: [],
+                    pagePermissions: { pms: 'MANAGE' },
+                },
+                isAuthLoading: false,
+            },
+            '/pms'
+        );
+
+        expect(screen.getByText('Hotel PMS dashboard')).toBeInTheDocument();
+    });
+
+    it('blocks authenticated users without PMS access', () => {
+        renderApp(
+            {
+                authToken: 'token',
+                currentUser: {
+                    username: 'alice',
+                    roles: ['ROLE_USER'],
+                    companyFeatureKeys: [],
+                    pagePermissions: { pms: 'NONE' },
+                },
+                isAuthLoading: false,
+            },
+            '/pms'
+        );
+
+        expect(screen.getByText('Landing page')).toBeInTheDocument();
+        expect(screen.queryByText('Hotel PMS dashboard')).not.toBeInTheDocument();
     });
 });

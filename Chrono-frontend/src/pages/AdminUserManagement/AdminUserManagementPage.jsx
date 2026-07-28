@@ -339,6 +339,10 @@ const AdminUserManagementPage = () => {
         setCurrentUserFormData(prev => {
             const newState = { ...prev, [field]: value };
 
+            if (field === 'scheduleEffectiveDate' && !prev.isHourly && !prev.isPercentage) {
+                newState.employmentModelEffectiveFrom = value;
+            }
+
             if (field === 'country') {
                 if (value === 'DE') {
                     newState.tarifCode = '';

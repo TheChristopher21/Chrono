@@ -108,7 +108,10 @@ const Navbar = () => {
                     if (response.data.version !== seenVersion) setHasNewUpdate(true);
                 }
             } catch (error) {
-                console.error('Konnte Changelog nicht abrufen', error);
+                // Ein leeres Changelog ist ein normaler Erststartzustand.
+                if (error?.response?.status !== 404) {
+                    console.error('Konnte Changelog nicht abrufen', error);
+                }
             }
         };
         checkChangelog();
@@ -275,6 +278,7 @@ const Navbar = () => {
         [dashboardMenuItem, groupedPlatformItemKeys, workspaceMenuItems]
     );
     const showProfileLink = canOpenPage('personalData');
+    const showPmsLink = canOpenPage('pms');
     const changePasswordTarget = canOpenPage('adminChangePassword') ? '/admin/change-password' : '/personal-data';
     const showChangePassword = canOpenPage('adminChangePassword') || canOpenPage('personalData');
     const userDisplayName = getUserDisplayName(currentUser);
@@ -519,6 +523,11 @@ const Navbar = () => {
                                     {showProfileLink && (
                                         <Link to="/personal-data" onClick={() => setOpenUser(false)}>
                                             {t('navbar.profile', 'Mein Profil')}
+                                        </Link>
+                                    )}
+                                    {showPmsLink && (
+                                        <Link to="/pms" onClick={() => setOpenUser(false)}>
+                                            {t('navbar.pms', 'Hotel PMS')}
                                         </Link>
                                     )}
                                     <Link to="/whats-new" onClick={() => setOpenUser(false)}>

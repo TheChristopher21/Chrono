@@ -54,6 +54,8 @@ import ChronoTwoDashboard from "./pages/ChronoTwo/ChronoTwoDashboard.jsx";
 import CrmDashboard from "./pages/CRM/CrmDashboard.jsx";
 import BankingOperationsPage from "./pages/AdminBanking/BankingOperationsPage.jsx";
 import WorkTimeCalculatorPage from "./pages/WorkTimeCalculator/WorkTimeCalculatorPage.jsx";
+import PmsDashboard from "./pages/Pms/PmsDashboard.jsx";
+import PmsGuestCheckInPage from "./pages/Pms/PmsGuestCheckInPage.jsx";
 
 // Hilfs-Komponenten
 import PrivateRoute from "./components/PrivateRoute.jsx";
@@ -82,6 +84,7 @@ function App() {
                         <Route path="/agb" element={<AGB />} />
                         <Route path="/datenschutz" element={<Datenschutz />} />
                         <Route path="/impressum" element={<Impressum />} />
+                        <Route path="/guest-check-in/:token" element={<PmsGuestCheckInPage />} />
 
                         {/* Geschützte Benutzer-Routen */}
                         <Route path="/dashboard" element={<PrivateRoute requiredPagePermission="dashboard"><UserDashboard /></PrivateRoute>} />
@@ -89,6 +92,7 @@ function App() {
                         <Route path="/personal-data" element={<PrivateRoute requiredPagePermission="personalData"><PersonalDataPage /></PrivateRoute>} />
                         <Route path="/payslips" element={<PrivateRoute requiredPagePermission="payslips"><PayslipsPage /></PrivateRoute>} />
                         <Route path="/demo-tour" element={<PrivateRoute requiredPagePermission="demoTour"><DemoTour /></PrivateRoute>} />
+                        <Route path="/pms" element={<PrivateRoute requiredPagePermission="pms"><PmsDashboard /></PrivateRoute>} />
                         <Route
                             path="/workspace/supply-chain"
                             element={

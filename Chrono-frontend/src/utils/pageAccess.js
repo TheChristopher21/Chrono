@@ -89,6 +89,20 @@ export const PAGE_CATALOG = [
         icon: "SC",
     },
     {
+        key: "pms",
+        label: "Hotel PMS",
+        description: "Reservierungen, Zimmer, Anreisen und Hotelbetrieb zentral steuern.",
+        path: "/pms",
+        userAssignable: true,
+        audiences: ["user", "admin"],
+        dashboardContexts: [],
+        mobileContexts: [],
+        order: 70,
+        supportsManage: true,
+        group: "Module",
+        icon: "PMS",
+    },
+    {
         key: "adminDashboard",
         label: "Admin-Start",
         description: "Teamübersicht, Inbox und Kennzahlen.",
@@ -607,6 +621,7 @@ export const getMobilePagesForContext = (user, context, t) => getDashboardPagesF
 const LANDING_PRIORITY = [
     "adminDashboard",
     "dashboard",
+    "pms",
     "supplyChain",
     "adminProjects",
     "adminProjectReport",

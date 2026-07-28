@@ -1,33 +1,252 @@
+name: chrono
+
 services:
-  # MySQL Database Service
   mysql:
-    image: mysql:8.0
-    restart: always
-    env_file: .env # <-- ANGEPASST: Sucht jetzt im Backend-Ordner
+    image: mysql:${MYSQL_IMAGE_TAG:?MYSQL_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    env_file: ${CHRONO_ENV_FILE:-.env}
     environment:
-      MYSQL_DATABASE: "chrono_db"
-    ports:
-      - "3307:3306"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-chrono_db}"
+      MYSQL_USER: "${MYSQL_USER:?MYSQL_USER must be set}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}"
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?MYSQL_ROOT_PASSWORD must be set}"
     volumes:
       - db_data:/var/lib/mysql
-    networks:
-      - chrono
+    networks: [chrono-data]
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 12
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
 
-  # Ollama KI Service
+  backend:
+    image: ${CHRONO_BACKEND_IMAGE:-chrisubuntu1/chrono-backend}:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks: [chrono-app, chrono-data, chrono-monitoring]
+    environment:
+      SERVER_PORT: "8081"
+      SPRING_PROFILES_ACTIVE: "live"
+      APP_PRODUCTION: "true"
+      APP_DEMO_LOGIN_ENABLED: "false"
+      APP_DEMO_LOGIN_ALLOW_PRODUCTION: "false"
+      APP_PMS_TEST_ACCOUNT_ENABLED: "false"
+      APP_PMS_DEMO_DATA_ENABLED: "false"
+      APP_INITIALIZE_ADMIN: "false"
+      APP_BACKUP_ENABLED: "false"
+      APP_BACKUP_MONITORING_ENABLED: "true"
+      BACKUP_DIR: "/backups"
+      APP_PMS_OUTBOX_ENABLED: "${APP_PMS_OUTBOX_ENABLED:-true}"
+      APP_PMS_ALERTS_ENABLED: "${APP_PMS_ALERTS_ENABLED:-true}"
+      APP_SECURITY_ALLOWED_ORIGINS: "${APP_SECURITY_ALLOWED_ORIGINS:?APP_SECURITY_ALLOWED_ORIGINS must be set}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET must be set}"
+      NFC_AGENT_TOKEN: "${NFC_AGENT_TOKEN:?NFC_AGENT_TOKEN must be set}"
+      REPORT_ICS_FEED_TOKEN: "${REPORT_ICS_FEED_TOKEN:?REPORT_ICS_FEED_TOKEN must be set}"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-chrono_db}?sslMode=DISABLED&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: "${MYSQL_USER:?MYSQL_USER must be set}"
+      SPRING_DATASOURCE_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}"
+      LLM_BASE_URL: "http://llm:11434/api/generate"
+      LLM_WARMUP_ENABLED: "${LLM_WARMUP_ENABLED:-false}"
+    volumes:
+      - ./knowledge_base:/app/knowledge_base:ro
+      - backup_data:/backups:ro
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+
+  frontend:
+    image: ${CHRONO_FRONTEND_IMAGE:-chrisubuntu1/chrono-frontend}:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks: [chrono-app]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/healthz"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    security_opt:
+      - no-new-privileges:true
+
+  gateway:
+    image: caddy:${CADDY_IMAGE_TAG:?CADDY_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    environment:
+      ACME_EMAIL: "${ACME_EMAIL:?ACME_EMAIL must be set}"
+    volumes:
+      - ./ops/gateway/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    networks: [chrono-app]
+    depends_on:
+      frontend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+
+  mysql-backup:
+    build:
+      context: ./ops/backup
+      args:
+        MYSQL_IMAGE_TAG: "${MYSQL_IMAGE_TAG:?MYSQL_IMAGE_TAG must be pinned}"
+    image: chrono/mysql-backup:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: "${MYSQL_DATABASE:-chrono_db}"
+      MYSQL_USER: "${MYSQL_USER:?MYSQL_USER must be set}"
+      MYSQL_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}"
+      BACKUP_INTERVAL_SECONDS: "${BACKUP_INTERVAL_SECONDS:-86400}"
+      BACKUP_RETENTION_DAYS: "${BACKUP_RETENTION_DAYS:-30}"
+      BACKUP_MAX_AGE_MINUTES: "${BACKUP_MAX_AGE_MINUTES:-1560}"
+    volumes:
+      - backup_data:/backups
+    networks: [chrono-data]
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/chrono/check-backup.sh"]
+      interval: 5m
+      timeout: 10s
+      retries: 3
+      start_period: 2m
+    security_opt:
+      - no-new-privileges:true
+
+  mysql-restore-test:
+    image: mysql:${MYSQL_IMAGE_TAG:?MYSQL_IMAGE_TAG must be pinned}
+    profiles: ["restore-test"]
+    environment:
+      MYSQL_DATABASE: chrono_restore
+      MYSQL_ROOT_PASSWORD: "${RESTORE_TEST_ROOT_PASSWORD:?RESTORE_TEST_ROOT_PASSWORD must be set}"
+    networks: [chrono-restore]
+    tmpfs:
+      - /var/lib/mysql:size=2g
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p\"$$MYSQL_ROOT_PASSWORD\" --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
+  backup-restore-test:
+    image: chrono/mysql-backup:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    profiles: ["restore-test"]
+    depends_on:
+      mysql-restore-test:
+        condition: service_healthy
+    entrypoint: ["/opt/chrono/restore-drill.sh"]
+    environment:
+      MYSQL_HOST: mysql-restore-test
+      MYSQL_PORT: "3306"
+      MYSQL_DATABASE: chrono_restore
+      MYSQL_USER: root
+      MYSQL_PASSWORD: "${RESTORE_TEST_ROOT_PASSWORD:?RESTORE_TEST_ROOT_PASSWORD must be set}"
+      RESTORE_MINIMUM_TABLES: "${RESTORE_MINIMUM_TABLES:-20}"
+    volumes:
+      - backup_data:/backups:ro
+    networks: [chrono-restore]
+    security_opt:
+      - no-new-privileges:true
+
+  offsite-backup:
+    image: restic/restic:${RESTIC_IMAGE_TAG:?RESTIC_IMAGE_TAG must be pinned}
+    profiles: ["offsite-backup"]
+    entrypoint: ["/bin/sh", "/opt/chrono/offsite-backup.sh"]
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    environment:
+      OFFSITE_BACKUP_INTERVAL_SECONDS: "${OFFSITE_BACKUP_INTERVAL_SECONDS:-86400}"
+      OFFSITE_BACKUP_RETENTION_DAYS: "${OFFSITE_BACKUP_RETENTION_DAYS:-90}"
+    volumes:
+      - backup_data:/backups:ro
+      - ./ops/backup/offsite-backup.sh:/opt/chrono/offsite-backup.sh:ro
+    networks: [chrono-data, chrono-egress]
+    security_opt:
+      - no-new-privileges:true
+
+  prometheus:
+    image: prom/prometheus:${PROMETHEUS_IMAGE_TAG:?PROMETHEUS_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=30d
+    networks: [chrono-monitoring]
+    ports:
+      - "127.0.0.1:9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./ops/monitoring/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    depends_on:
+      - backend
+    security_opt:
+      - no-new-privileges:true
+
+  alertmanager:
+    build:
+      context: ./ops/monitoring/alertmanager
+      args:
+        ALERTMANAGER_IMAGE_TAG: "${ALERTMANAGER_IMAGE_TAG:?ALERTMANAGER_IMAGE_TAG must be pinned}"
+    image: chrono/alertmanager:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    environment:
+      ALERT_WEBHOOK_URL: "${ALERT_WEBHOOK_URL:?ALERT_WEBHOOK_URL must be set}"
+    networks: [chrono-monitoring, chrono-egress]
+    ports:
+      - "127.0.0.1:9093:9093"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    security_opt:
+      - no-new-privileges:true
+
+  grafana:
+    image: grafana/grafana:${GRAFANA_IMAGE_TAG:?GRAFANA_IMAGE_TAG must be pinned}
+    restart: unless-stopped
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    environment:
+      GF_SECURITY_ADMIN_USER: "${GRAFANA_ADMIN_USER:?GRAFANA_ADMIN_USER must be set}"
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?GRAFANA_ADMIN_PASSWORD must be set}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    networks: [chrono-monitoring]
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./ops/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+    security_opt:
+      - no-new-privileges:true
+
   llm:
-    image: ollama/ollama:latest
-    restart: always
+    image: ollama/ollama:${OLLAMA_IMAGE_TAG:?OLLAMA_IMAGE_TAG must be pinned}
+    profiles: ["ai"]
+    restart: unless-stopped
     volumes:
       - ollama_data:/root/.ollama
-    ports:
-      - "11434:11434"
-    networks:
-      - chrono
+    networks: [chrono-app]
     environment:
       OLLAMA_KEEP_ALIVE: "-1"
     healthcheck:
@@ -37,146 +256,35 @@ services:
       retries: 30
       start_period: 60s
 
-  # One-time service to download the KI model
   model-puller:
-    image: ollama/ollama:latest
+    image: ollama/ollama:${OLLAMA_IMAGE_TAG:?OLLAMA_IMAGE_TAG must be pinned}
+    profiles: ["ai"]
     restart: "no"
     depends_on:
       llm:
         condition: service_healthy
-    networks:
-      - chrono
+    networks: [chrono-app]
     environment:
       OLLAMA_HOST: "http://llm:11434"
-    entrypoint: ""
-    command:
-      - "/bin/sh"
-      - "-c"
-      - |
-        echo "Warte auf den Ollama Server..."
-        until ollama list > /dev/null 2>&1; do sleep 2; done
-        echo "Ollama Server ist bereit. Lade Modell llama3:8b herunter..."
-        ollama pull llama3:8b
-        echo "Modell erfolgreich heruntergeladen."
-  # Your Open WebUI Service
-  open-webui:
-    image: ghcr.io/open-webui/open-webui:main
-    container_name: open-webui
-    restart: always
-    depends_on:
-      llm:
-        condition: service_healthy
-    ports:
-      - "8080:8080"
-    volumes:
-      - ./open-webui_data:/app/backend/data
-      - ./knowledge_base:/app/backend/knowledge_base
-    environment:
-      OLLAMA_BASE_URL: 'http://llm:11434'
-    networks: [chrono]
+      OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3:8b}"
+    entrypoint: ["/bin/sh", "-c"]
+    command: ["ollama pull \"$$OLLAMA_MODEL\""]
 
-  # Your Backend Service
-  backend:
-    image: chrisubuntu1/chrono-backend:latest
-    restart: always
-    env_file: .env # <-- ANGEPASST: Sucht jetzt im Backend-Ordner
-    depends_on:
-      mysql:
-        condition: service_healthy
-      model-puller:
-        condition: service_completed_successfully
-    networks: [chrono]
-    environment:
-      SERVER_PORT: "8081" # <-- NEUE, ENTSCHEIDENDE ZEILE
-      SPRING_PROFILES_ACTIVE: "live"
-      APP_PRODUCTION: "true"
-      APP_DEMO_LOGIN_ENABLED: "true"
-      APP_DEMO_LOGIN_ALLOW_PRODUCTION: "true"
-      APP_INITIALIZE_ADMIN: "false"
-      JWT_SECRET: "${JWT_SECRET}"
-      NFC_AGENT_TOKEN: "${NFC_AGENT_TOKEN}"
-      REPORT_ICS_FEED_TOKEN: "${REPORT_ICS_FEED_TOKEN}"
-      STRIPE_SECRET_KEY: "${STRIPE_SECRET_KEY:-}"
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/chrono_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"
-      SPRING_DATASOURCE_USERNAME: "root"
-      # SPRING_DATASOURCE_PASSWORD is now loaded from the .env file
-      SPRING_MAIL_HOST: smtp.gmail.com
-      SPRING_MAIL_PORT: "587"
-      SPRING_MAIL_USERNAME: siefertchristopher@chrono-logisch.ch
-      # SPRING_MAIL_PASSWORD should also be in your .env file
-      SPRING_MAIL_SMTP_AUTH: "true"
-      SPRING_MAIL_SMTP_STARTTLS_ENABLE: "true"
-      LLM_BASE_URL: "http://llm:11434/api/generate"
-    volumes:
-      - ./data/backups:/backups
-      - ./knowledge_base:/app/knowledge_base
-
-  # Your Frontend Service
-  frontend:
-    image: chrisubuntu1/chrono-frontend:latest
-    restart: always
-    depends_on: [backend]
-    networks: [chrono]
-
-  # Your Nginx Service
-  nginx:
-    image: jc21/nginx-proxy-manager:latest
-    restart: unless-stopped
-    ports:
-      - "81:81"
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./data:/data
-      - ./letsencrypt:/etc/letsencrypt
-    networks: [chrono]
-    depends_on:
-      - frontend
-
-  prometheus:
-    image: prom/prometheus:latest
-    restart: always
-    networks:
-      - chrono
-    ports:
-      - "9090:9090"
-    volumes:
-      - ./prometheus.yml:/etc/prometheus/prometheus.yml
-    depends_on: # Wartet darauf, dass das Backend gestartet ist
-      - backend
-
-  grafana:
-    image: grafana/grafana:latest
-    restart: always
-    networks:
-      - chrono
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./grafana_data:/var/lib/grafana
-      - ./grafana_data/provisioning/dashboards:/etc/grafana/provisioning/dashboards:ro
-      - ./grafana_data/dashboards:/var/lib/grafana/dashboards:ro
-      - ./grafana_data/provisioning/datasources:/etc/grafana/provisioning/datasources:ro
-
-  nginx-exporter:  # Achte auf die korrekte Einrückung hier
-    image: nginx/nginx-prometheus-exporter:1.4.2 # Oder eine neuere Version
-    restart: always
-    networks:
-      - chrono
-    command: [ "-nginx.scrape-uri", "http://nginx:81/stub_status" ]
-    depends_on:
-      - nginx
-
-# Defines the network for all services
 networks:
-  chrono:
-    driver: bridge
+  chrono-app:
+  chrono-data:
+    internal: true
+  chrono-monitoring:
+    internal: true
+  chrono-egress:
+  chrono-restore:
+    internal: true
 
-# Defines the permanent storage volumes
 volumes:
   db_data:
-  ollama_data:
-  open-webui_data:
-  data:
-  letsencrypt:
+  backup_data:
+  caddy_data:
+  caddy_config:
+  prometheus_data:
   grafana_data:
+  ollama_data:

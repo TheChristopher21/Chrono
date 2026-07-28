@@ -75,6 +75,32 @@ class ApiPagePermissionInterceptorTest {
     }
 
     @Test
+    void allowsPmsSetupReadWithPmsViewAccess() {
+        User user = user("reception", "ROLE_USER", Set.of(),
+                Map.of(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_VIEW));
+        authenticate(user);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean allowed = interceptor.preHandle(request("GET", "/api/pms/setup"), response, new Object());
+
+        assertTrue(allowed);
+        assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    void deniesPmsSetupWriteWithPmsViewAccess() {
+        User user = user("reception", "ROLE_USER", Set.of(),
+                Map.of(UserPermissionService.PAGE_PMS, UserPermissionService.ACCESS_VIEW));
+        authenticate(user);
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        boolean allowed = interceptor.preHandle(request("POST", "/api/pms/properties"), response, new Object());
+
+        assertFalse(allowed);
+        assertEquals(403, response.getStatus());
+    }
+
+    @Test
     void allowsUserDashboardToReadOwnSickLeaves() {
         User user = user("worker", "ROLE_USER", Set.of(),
                 Map.of(UserPermissionService.PAGE_DASHBOARD, UserPermissionService.ACCESS_VIEW));

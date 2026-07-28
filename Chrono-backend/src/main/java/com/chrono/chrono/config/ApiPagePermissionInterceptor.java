@@ -24,6 +24,9 @@ public class ApiPagePermissionInterceptor implements HandlerInterceptor {
     private static final Set<String> WRITE_METHODS = Set.of("POST", "PUT", "PATCH", "DELETE");
 
     private static final List<PageRule> RULES = List.of(
+            rule("/api/pms/**",
+                    pages(UserPermissionService.PAGE_PMS),
+                    pages(UserPermissionService.PAGE_PMS)),
             rule("/api/accounting/receivables/open",
                     pages(UserPermissionService.PAGE_ADMIN_ACCOUNTING, UserPermissionService.PAGE_BANKING),
                     pages(UserPermissionService.PAGE_ADMIN_ACCOUNTING)),

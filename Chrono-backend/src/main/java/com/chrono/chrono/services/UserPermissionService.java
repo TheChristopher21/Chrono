@@ -27,6 +27,7 @@ public class UserPermissionService {
     public static final String PAGE_DEMO_TOUR = "demoTour";
     public static final String PAGE_PRINT_REPORT = "printReport";
     public static final String PAGE_SUPPLY_CHAIN = "supplyChain";
+    public static final String PAGE_PMS = "pms";
     public static final String PAGE_ADMIN_DASHBOARD = "adminDashboard";
     public static final String PAGE_ADMIN_USERS = "adminUsers";
     public static final String PAGE_ADMIN_CHANGE_PASSWORD = "adminChangePassword";
@@ -55,6 +56,7 @@ public class UserPermissionService {
             PAGE_DEMO_TOUR,
             PAGE_PRINT_REPORT,
             PAGE_SUPPLY_CHAIN,
+            PAGE_PMS,
             PAGE_ADMIN_DASHBOARD,
             PAGE_ADMIN_USERS,
             PAGE_ADMIN_CHANGE_PASSWORD,

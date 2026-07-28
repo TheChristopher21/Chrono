@@ -1,0 +1,7 @@
+target
+.m2repo
+node_modules
+.git
+.idea
+*.log
+.env*

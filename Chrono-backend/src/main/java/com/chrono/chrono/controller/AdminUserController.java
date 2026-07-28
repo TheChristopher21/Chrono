@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map; // Fehlender Import für Map
+import java.util.Objects;
 import java.util.Optional; // Import für Optional
 import java.util.stream.Collectors;
 
@@ -429,7 +430,7 @@ public class AdminUserController {
         existingUser.setPagePermissions(userPermissionService.resolvePermissionsForPersistence(existingUser, userDTO.getPagePermissions()));
 
 
-        LocalDate requestedEffectiveFrom = userDTO.getEmploymentModelEffectiveFrom();
+        LocalDate requestedEffectiveFrom = resolveHistoryEffectiveFrom(existingUser, userDTO);
         LocalDate effectiveSwitchDate = requestedEffectiveFrom != null
                 ? requestedEffectiveFrom
                 : employmentModelHistoryService.currentBerlinDate();
@@ -514,7 +515,7 @@ public class AdminUserController {
         if (updatedModel != previousModel) {
             LocalDate baselineDate = calculateBaselineDate(updatedUser, effectiveSwitchDate);
             employmentModelHistoryService.ensureBaselineEntry(updatedUser, previousModel, baselineDate, previousStateForHistory);
-            employmentModelHistoryService.recordModelChange(updatedUser, updatedModel, requestedEffectiveFrom);
+            employmentModelHistoryService.recordModelChange(updatedUser, updatedModel, effectiveSwitchDate);
             logger.info("Employment model switch for user {}: {} -> {} (effective from {}).",
                     updatedUser.getUsername(),
                     previousModel,
@@ -526,7 +527,7 @@ public class AdminUserController {
                 if (employmentModelHistoryService.needsBaselineBefore(updatedUser, baselineDate)) {
                     employmentModelHistoryService.ensureBaselineEntry(updatedUser, previousModel, baselineDate, previousStateForHistory);
                 }
-                employmentModelHistoryService.recordSnapshotChange(updatedUser, requestedEffectiveFrom);
+                employmentModelHistoryService.recordSnapshotChange(updatedUser, effectiveSwitchDate);
             } else {
                 employmentModelHistoryService.initializeIfMissing(updatedUser);
             }
@@ -684,6 +685,37 @@ public class AdminUserController {
         }
         User historicalSnapshot = employmentModelHistoryService.resolveUserSnapshotForDate(source, referenceDate);
         return copyUserForHistory(historicalSnapshot != null ? historicalSnapshot : source);
+    }
+
+    private LocalDate resolveHistoryEffectiveFrom(User existingUser, UserDTO userDTO) {
+        LocalDate requestedEffectiveFrom = userDTO.getEmploymentModelEffectiveFrom();
+        if (existingUser == null) {
+            return requestedEffectiveFrom;
+        }
+
+        boolean targetPercentage = userDTO.getIsPercentage() != null
+                ? Boolean.TRUE.equals(userDTO.getIsPercentage())
+                : Boolean.TRUE.equals(existingUser.getIsPercentage());
+        boolean targetHourly = !targetPercentage && (userDTO.getIsHourly() != null
+                ? Boolean.TRUE.equals(userDTO.getIsHourly())
+                : Boolean.TRUE.equals(existingUser.getIsHourly()));
+        boolean targetStandard = !targetPercentage && !targetHourly;
+        boolean currentStandard = !Boolean.TRUE.equals(existingUser.getIsPercentage())
+                && !Boolean.TRUE.equals(existingUser.getIsHourly());
+        boolean switchesToStandard = targetStandard && !currentStandard;
+        boolean standardScheduleChanged = targetStandard && (
+                (userDTO.getScheduleEffectiveDate() != null
+                        && !Objects.equals(existingUser.getScheduleEffectiveDate(), userDTO.getScheduleEffectiveDate()))
+                        || (userDTO.getScheduleCycle() != null
+                        && !Objects.equals(existingUser.getScheduleCycle(), userDTO.getScheduleCycle()))
+                        || (userDTO.getWeeklySchedule() != null
+                        && !Objects.equals(existingUser.getWeeklySchedule(), userDTO.getWeeklySchedule()))
+        );
+
+        if ((switchesToStandard || standardScheduleChanged) && userDTO.getScheduleEffectiveDate() != null) {
+            return userDTO.getScheduleEffectiveDate();
+        }
+        return requestedEffectiveFrom;
     }
 
     private LocalDate calculateBaselineDate(User user, LocalDate effectiveDate) {
