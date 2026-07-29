@@ -1,5 +1,12 @@
 import { test, expect } from '@playwright/test';
 
+const viewportEdgeCases = [
+    { theme: 'light', width: 1440, height: 900, viewport: 'Desktop' },
+    { theme: 'dark', width: 1440, height: 900, viewport: 'Desktop' },
+    { theme: 'light', width: 390, height: 844, viewport: 'Mobile' },
+    { theme: 'dark', width: 390, height: 844, viewport: 'Mobile' },
+] as const;
+
 test('Homepage hat den korrekten Titel', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('link', { name: 'Chrono', exact: true })).toBeVisible();
@@ -11,6 +18,57 @@ test('Loginseite zeigt Loginformular', async ({ page }) => {
     await expect(page.getByLabel('Passwort')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Login' })).toBeVisible();
 });
+
+for (const { theme, width, height, viewport } of viewportEdgeCases) {
+    test(`Loginseite deckt im ${theme === 'dark' ? 'Dark' : 'Light'} Mode den ${viewport}-Viewport ohne Seitenstreifen ab`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await page.addInitScript((selectedTheme) => {
+            window.localStorage.setItem('theme', selectedTheme);
+        }, theme);
+
+        await page.goto('/login');
+        await expect(page.locator('html')).toHaveAttribute('data-theme', theme);
+        await expect(page.getByRole('button', { name: 'Login' })).toBeVisible();
+
+        const layout = await page.evaluate(() => {
+            const root = document.getElementById('root');
+            if (!root) {
+                throw new Error('Der React-Root #root fehlt.');
+            }
+
+            const bodyStyle = window.getComputedStyle(document.body);
+            const bodyRect = document.body.getBoundingClientRect();
+            const rootRect = root.getBoundingClientRect();
+            const viewportWidth = document.documentElement.clientWidth;
+
+            return {
+                margins: {
+                    top: bodyStyle.marginTop,
+                    right: bodyStyle.marginRight,
+                    bottom: bodyStyle.marginBottom,
+                    left: bodyStyle.marginLeft,
+                },
+                edgeGaps: {
+                    bodyLeft: bodyRect.left,
+                    bodyRight: viewportWidth - bodyRect.right,
+                    rootLeft: rootRect.left,
+                    rootRight: viewportWidth - rootRect.right,
+                },
+            };
+        });
+
+        expect(layout.margins).toEqual({
+            top: '0px',
+            right: '0px',
+            bottom: '0px',
+            left: '0px',
+        });
+
+        for (const edgeGap of Object.values(layout.edgeGaps)) {
+            expect(Math.abs(edgeGap)).toBeLessThanOrEqual(1);
+        }
+    });
+}
 
 test('Registrierungsseite zeigt Formularfelder', async ({ page }) => {
     await page.goto('/register');
