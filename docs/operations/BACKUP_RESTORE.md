@@ -1,5 +1,12 @@
 # Backup and restore
 
+The protected application deploy in `update.sh` always creates and validates
+a fresh pre-deploy SQL backup without starting, stopping or recreating MySQL.
+The commands below belong to a separately reviewed infrastructure maintenance
+window. They are not part of a normal frontend/backend release and must not be
+combined with `--remove-orphans`, `down`, volume pruning or volume removal on
+the shared production host.
+
 ## Daily backup
 
 `mysql-backup` connects over the internal data network, creates a

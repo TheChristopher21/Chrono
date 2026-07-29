@@ -45,5 +45,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Validate production compose file
+      - name: Validate infrastructure compose file
         run: CHRONO_ENV_FILE=.env.example docker compose --env-file .env.example config --quiet
+      - name: Validate protected application deployment
+        run: |
+          CHRONO_ENV_FILE=.env.example docker compose \
+            --file docker-compose.production.yml \
+            --env-file .env.example \
+            config --quiet
+          test "$(
+            CHRONO_ENV_FILE=.env.example docker compose \
+              --file docker-compose.production.yml \
+              --env-file .env.example \
+              config --services |
+              sort |
+              paste -sd,
+          )" = "backend,frontend"
+      - name: Validate production deployment shell scripts
+        run: |
+          bash -n update.sh
+          bash -n ops/deploy-production.sh

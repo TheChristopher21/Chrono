@@ -32,7 +32,10 @@ manifest records when either step was skipped.
 
 ## Package contents
 
-- `docker-compose.yml` and the complete `ops/` runtime configuration
+- `docker-compose.production.yml`, the protected `update.sh` and complete
+  `ops/` runtime configuration
+- `docker-compose.yml` only as an explicitly profiled infrastructure
+  reference; it is not an application deployment file
 - `.env.production.template` with the selected immutable image tag
 - monitoring configuration and production runbooks
 - `RELEASE_MANIFEST.json` with commit, dirty-state and image information
@@ -44,19 +47,20 @@ separately from the uploaded file.
 
 ## Deploy the package
 
-1. Extract it into a new versioned directory on the server.
-2. Copy `.env.production.template` to `.env` and replace every placeholder
-   with a unique production secret or endpoint.
-3. Run:
+1. Verify the package checksum and image tag.
+2. Copy only the reviewed release files into the existing production
+   checkout. Preserve the existing `.env`, data paths and Docker volumes.
+3. Run the protected preflight and application deploy:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\ops\preflight.ps1
-docker compose pull --ignore-buildable
-docker compose build mysql-backup alertmanager
-docker compose up -d --remove-orphans --wait --wait-timeout 600
-docker compose ps
+.\update.sh --image-tag <immutable-release-tag>
 ```
 
 For an exported image archive, run
-`docker load --input .\chrono-pms-images.tar` before `docker compose up`.
+`docker load --input .\chrono-pms-images.tar` before `update.sh`.
 Follow `GO_LIVE.md` for backup, restore drill, UAT, verification and rollback.
+
+Do not run the full infrastructure Compose file on a host where
+`chrono_chrono` is shared with other projects. The production application
+compose deliberately has no MySQL, proxy, monitoring or LLM service.

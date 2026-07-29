@@ -6,9 +6,13 @@ param(
 $ErrorActionPreference = "Stop"
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $resolvedEnv = Join-Path $repoRoot $EnvFile
+$productionCompose = Join-Path $repoRoot "docker-compose.production.yml"
 
 if (-not (Test-Path -LiteralPath $resolvedEnv -PathType Leaf)) {
     throw "Environment file not found: $resolvedEnv"
+}
+if (-not (Test-Path -LiteralPath $productionCompose -PathType Leaf)) {
+    throw "Production application compose file not found: $productionCompose"
 }
 
 $values = @{}
@@ -164,9 +168,28 @@ if ($values.ContainsKey("ALERT_EMAIL_TO") -and $values["ALERT_EMAIL_TO"] -notmat
 $previousEnvFile = $env:CHRONO_ENV_FILE
 try {
     $env:CHRONO_ENV_FILE = $EnvFile
-    & docker compose --project-directory $repoRoot --env-file $resolvedEnv config --quiet
+    & docker compose `
+        --project-directory $repoRoot `
+        --file $productionCompose `
+        --env-file $resolvedEnv `
+        config --quiet
     if ($LASTEXITCODE -ne 0) {
-        $errors.Add("docker compose config validation failed.")
+        $errors.Add("Production application compose validation failed.")
+    } else {
+        $services = @(
+            & docker compose `
+                --project-directory $repoRoot `
+                --file $productionCompose `
+                --env-file $resolvedEnv `
+                config --services
+        ) | Sort-Object
+        if ($LASTEXITCODE -ne 0 -or
+            ($services -join ",") -ne "backend,frontend") {
+            $errors.Add(
+                "Production deployment must contain exactly backend and frontend; " +
+                "database and infrastructure services are forbidden."
+            )
+        }
     }
 } finally {
     $env:CHRONO_ENV_FILE = $previousEnvFile

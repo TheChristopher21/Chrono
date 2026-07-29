@@ -16,27 +16,34 @@ A release is eligible for production only when all of the following are true:
 
 ## Deployment
 
-Create and verify the versioned hand-off described in
-`RELEASE_PACKAGE.md`. The image tag in the production `.env` must match the
-manifest and the uploaded images.
+The active production host shares `chrono_chrono` with other company
+projects. An application release must therefore use only
+`docker-compose.production.yml`. That file contains exactly `backend` and
+`frontend`, treats `chrono_chrono` as external, and cannot manage MySQL,
+volumes, Nginx Proxy Manager, monitoring, LLM or unrelated containers.
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\ops\preflight.ps1
-docker compose pull --ignore-buildable
-docker compose build mysql-backup alertmanager
-docker compose up -d mysql
-docker compose up -d --remove-orphans --wait --wait-timeout 600
-docker compose ps
+.\update.sh --image-tag <immutable-release-tag>
 ```
 
-Flyway runs as part of backend startup. Apply every migration to staging
-first, start one backend instance, inspect the Flyway log and health result,
-then allow staff or providers to send production traffic.
+`update.sh` verifies the existing MySQL container and named volume, verifies
+the dedicated application database account, records all other running
+containers, creates and checksum-validates a fresh SQL backup, tags the
+previous app images for rollback, and then replaces only backend and
+frontend. It aborts if MySQL, the shared network, proxy, LLM, Open WebUI,
+free disk space or the protected topology do not match expectations.
 
-The production Compose project deliberately keeps the existing Nginx Proxy
-Manager, Ollama and Open WebUI services in the project. Their established
-bind mounts and named volumes must not be replaced during an application
-release.
+Flyway may add a tested schema migration during backend startup. Every
+migration must be additive, pass staging first and preserve the core row
+counts checked by the deployment. The script never performs an automatic
+database rollback. If application verification fails, only the previous
+application images are restored while the verified SQL backup is retained.
+
+Never use the infrastructure Compose file on the active shared host. In
+particular, never run `docker compose down`, `docker compose down -v`,
+`docker compose up --remove-orphans`, `docker volume prune`,
+`docker system prune --volumes` or `docker volume rm`.
 
 ## Alert delivery
 
@@ -62,8 +69,8 @@ be configured with a placeholder recipient.
 
 1. Stop new staff activity and provider ingestion.
 2. Record the last successful outbox event and business date.
-3. Revert application images to the previous immutable tag. Never downgrade
-   the database automatically.
+3. Let the protected deploy script restore the locally tagged previous
+   application images. Never downgrade the database automatically.
 4. If a database restore is required, preserve the failed database volume,
    restore into a new database and reconcile provider events before reopening.
 5. Resume provider delivery only after reservation and payment totals match.

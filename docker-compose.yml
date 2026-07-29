@@ -2,6 +2,7 @@ name: chrono
 
 services:
   mysql:
+    profiles: ["infrastructure"]
     image: mysql:${MYSQL_IMAGE_TAG:?MYSQL_IMAGE_TAG must be pinned}
     restart: unless-stopped
     env_file: ${CHRONO_ENV_FILE:-.env}
@@ -23,6 +24,7 @@ services:
       - no-new-privileges:true
 
   backend:
+    profiles: ["infrastructure"]
     image: ${CHRONO_BACKEND_IMAGE:-chrisubuntu1/chrono-backend}:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
     restart: unless-stopped
     env_file: ${CHRONO_ENV_FILE:-.env}
@@ -65,20 +67,24 @@ services:
       - /tmp:size=128m,mode=1777
 
   frontend:
+    profiles: ["infrastructure"]
     image: ${CHRONO_FRONTEND_IMAGE:-chrisubuntu1/chrono-frontend}:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
     restart: unless-stopped
     depends_on:
       - backend
     networks: [chrono]
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/healthz"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:80/healthz"]
       interval: 15s
       timeout: 5s
       retries: 5
     security_opt:
       - no-new-privileges:true
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
 
   nginx:
+    profiles: ["infrastructure"]
     image: ${NGINX_PROXY_MANAGER_IMAGE:?NGINX_PROXY_MANAGER_IMAGE must be pinned by digest}
     restart: unless-stopped
     ports:
@@ -96,6 +102,7 @@ services:
       - no-new-privileges:true
 
   mysql-backup:
+    profiles: ["infrastructure"]
     build:
       context: ./ops/backup
       args:
@@ -181,6 +188,7 @@ services:
       - no-new-privileges:true
 
   prometheus:
+    profiles: ["infrastructure"]
     image: prom/prometheus:${PROMETHEUS_IMAGE_TAG:?PROMETHEUS_IMAGE_TAG must be pinned}
     restart: unless-stopped
     command:
@@ -199,6 +207,7 @@ services:
       - no-new-privileges:true
 
   alertmanager:
+    profiles: ["infrastructure"]
     build:
       context: ./ops/monitoring/alertmanager
       args:
@@ -225,6 +234,7 @@ services:
       - no-new-privileges:true
 
   grafana:
+    profiles: ["infrastructure"]
     image: grafana/grafana:${GRAFANA_IMAGE_TAG:?GRAFANA_IMAGE_TAG must be pinned}
     restart: unless-stopped
     env_file: ${CHRONO_ENV_FILE:-.env}
@@ -246,6 +256,7 @@ services:
       - no-new-privileges:true
 
   llm:
+    profiles: ["infrastructure"]
     image: ${OLLAMA_IMAGE:?OLLAMA_IMAGE must be pinned by digest}
     restart: unless-stopped
     volumes:
@@ -263,6 +274,7 @@ services:
       start_period: 60s
 
   model-puller:
+    profiles: ["infrastructure"]
     image: ${OLLAMA_IMAGE:?OLLAMA_IMAGE must be pinned by digest}
     restart: "no"
     depends_on:
@@ -276,6 +288,7 @@ services:
     command: ["ollama pull \"$$OLLAMA_MODEL\""]
 
   open-webui:
+    profiles: ["infrastructure"]
     image: ${OPEN_WEBUI_IMAGE:?OPEN_WEBUI_IMAGE must be pinned by digest}
     container_name: open-webui
     restart: unless-stopped
@@ -295,6 +308,7 @@ services:
 
 networks:
   chrono:
+    external: true
     name: chrono_chrono
   chrono-data:
     internal: true

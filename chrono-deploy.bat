@@ -12,7 +12,6 @@ set "BE_REPO=chrisubuntu1/chrono-backend"
 
 REM SSH Ziel (IP)
 set "SSH_TARGET=root@91.99.51.211"
-set "REMOTE_CLEANUP_CMD=cd ~/chrono && echo '[INFO] Sichere Docker-Bereinigung startet (ohne Volumes / ohne MySQL-Daten)...' && docker builder prune -a -f && docker image prune -f && docker container prune -f && docker system df"
 
 REM Docker CLI helper (Switch Linux Engine)
 set "DOCKERCLI=C:\Program Files\Docker\Docker\DockerCli.exe"
@@ -25,7 +24,7 @@ echo ==========================================
 echo.
 
 REM ====== 0) Docker Check ======
-echo [0/6] Docker: check daemon
+echo [0/5] Docker: check daemon
 docker info >nul 2>&1
 if errorlevel 1 (
   echo [INFO] Docker Daemon nicht erreichbar. Versuche auf Linux Engine zu schalten...
@@ -59,7 +58,7 @@ for /f "delims=" %%A in ('git status --porcelain') do (
 )
 
 REM ====== 2) Git: main + pull + push ======
-echo [1/6] Git: switch main + pull + push
+echo [1/5] Git: switch main + pull + push
 git switch main || goto :error_git
 git pull --ff-only || goto :error_git
 git push || goto :error_git
@@ -67,13 +66,13 @@ for /f "delims=" %%A in ('git rev-parse --short^=12 HEAD') do set "IMAGE_TAG=%%A
 if not defined IMAGE_TAG goto :error_git
 set "FE_IMAGE=%FE_REPO%:!IMAGE_TAG!"
 set "BE_IMAGE=%BE_REPO%:!IMAGE_TAG!"
-set "REMOTE_UPDATE_CMD=cd ~/chrono && cp .env .env.before-deploy-tag && sed -i 's/^CHRONO_IMAGE_TAG=.*/CHRONO_IMAGE_TAG=!IMAGE_TAG!/' .env && ./update.sh"
+set "REMOTE_UPDATE_CMD=cd ~/chrono && ./update.sh --image-tag !IMAGE_TAG!"
 echo [OK]  Git OK
 echo [OK]  Release-Tag: !IMAGE_TAG!
 echo.
 
 REM ====== 3) Docker Buildx bootstrap ======
-echo [2/6] Docker buildx bootstrap
+echo [2/5] Docker buildx bootstrap
 docker buildx inspect --bootstrap >nul 2>&1
 if errorlevel 1 (
   echo [INFO] buildx nicht initialisiert. Lege Builder an...
@@ -84,28 +83,24 @@ echo [OK]  buildx OK
 echo.
 
 REM ====== 4) Frontend build+push ======
-echo [3/6] Frontend: build+push %FE_IMAGE%
+echo [3/5] Frontend: build+push %FE_IMAGE%
 cd /d "%FRONTEND%" || goto :error_fe
 docker buildx build --platform linux/amd64 -t %FE_IMAGE% --push . || goto :error_docker
 echo [OK]  Frontend Image OK
 echo.
 
 REM ====== 5) Backend build+push ======
-echo [4/6] Backend: build+push %BE_IMAGE%
+echo [4/5] Backend: build+push %BE_IMAGE%
 cd /d "%BACKEND%" || goto :error_be
 docker buildx build --platform linux/amd64 -t %BE_IMAGE% --push . || goto :error_docker
 echo [OK]  Backend Image OK
 echo.
 
-REM ====== 6) Remote Cleanup ======
-echo [5/6] Server: sichere Docker-Bereinigung ausfuehren
-ssh -t %SSH_TARGET% "%REMOTE_CLEANUP_CMD%"
-if errorlevel 1 goto :error_ssh
-echo [OK]  Server Cleanup OK
-echo.
-
-REM ====== 7) Remote Update ======
-echo [6/6] Server: update.sh ausfuehren
+REM ====== 6) Remote Update ======
+REM update.sh erstellt und prueft zuerst ein Datenbankbackup. Es aktualisiert
+REM ausschliesslich chrono-backend-1 und chrono-frontend-1. MySQL, Volumes,
+REM Proxy, Monitoring und andere Projekte bleiben unberuehrt.
+echo [5/5] Server: geschuetztes App-Update ausfuehren
 ssh -t %SSH_TARGET% "%REMOTE_UPDATE_CMD%"
 if errorlevel 1 goto :error_ssh
 

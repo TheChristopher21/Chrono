@@ -12,6 +12,6 @@ WORKDIR /app
 
 COPY --from=builder /app/target/*.jar app.jar
 
-EXPOSE 8080
+EXPOSE 8081
 USER nonroot
 ENTRYPOINT ["java","-jar","app.jar"]

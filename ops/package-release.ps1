@@ -111,6 +111,8 @@ if ($PushImages) {
 }
 
 Copy-Item -LiteralPath (Join-Path $repoRootFull "docker-compose.yml") -Destination $stageDirectory
+Copy-Item -LiteralPath (Join-Path $repoRootFull "docker-compose.production.yml") -Destination $stageDirectory
+Copy-Item -LiteralPath (Join-Path $repoRootFull "update.sh") -Destination $stageDirectory
 Copy-Item -LiteralPath (Join-Path $repoRootFull "prometheus.yml") -Destination $stageDirectory
 Copy-Item -LiteralPath (Join-Path $repoRootFull "SECURITY.md") -Destination $stageDirectory
 Copy-Item -LiteralPath (Join-Path $repoRootFull "ops") -Destination $stageDirectory -Recurse

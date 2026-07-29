@@ -1,0 +1,73 @@
+name: chrono
+
+# Application-only production deployment.
+#
+# This file deliberately contains no database, proxy, monitoring, LLM or
+# third-party services. It can only replace the two Chrono application
+# containers and treats the shared production network as external.
+services:
+  backend:
+    image: ${CHRONO_BACKEND_IMAGE:-chrisubuntu1/chrono-backend}:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    restart: always
+    env_file: ${CHRONO_ENV_FILE:-.env}
+    environment:
+      SERVER_PORT: "8081"
+      SPRING_PROFILES_ACTIVE: "live"
+      APP_PRODUCTION: "true"
+      APP_DEMO_LOGIN_ENABLED: "false"
+      APP_DEMO_LOGIN_ALLOW_PRODUCTION: "false"
+      APP_PMS_TEST_ACCOUNT_ENABLED: "false"
+      APP_PMS_DEMO_DATA_ENABLED: "false"
+      APP_INITIALIZE_ADMIN: "false"
+      APP_BACKUP_ENABLED: "false"
+      APP_BACKUP_MONITORING_ENABLED: "true"
+      BACKUP_DIR: "/backups"
+      APP_PMS_OUTBOX_ENABLED: "${APP_PMS_OUTBOX_ENABLED:-true}"
+      APP_PMS_ALERTS_ENABLED: "${APP_PMS_ALERTS_ENABLED:-true}"
+      APP_SECURITY_ALLOWED_ORIGINS: "${APP_SECURITY_ALLOWED_ORIGINS:?APP_SECURITY_ALLOWED_ORIGINS must be set}"
+      JWT_SECRET: "${JWT_SECRET:?JWT_SECRET must be set}"
+      NFC_AGENT_TOKEN: "${NFC_AGENT_TOKEN:?NFC_AGENT_TOKEN must be set}"
+      REPORT_ICS_FEED_TOKEN: "${REPORT_ICS_FEED_TOKEN:?REPORT_ICS_FEED_TOKEN must be set}"
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-chrono_db}?sslMode=DISABLED&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+      SPRING_DATASOURCE_USERNAME: "${MYSQL_USER:?MYSQL_USER must be set}"
+      SPRING_DATASOURCE_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}"
+      LLM_BASE_URL: "http://llm:11434/api/generate"
+      LLM_WARMUP_ENABLED: "${LLM_WARMUP_ENABLED:-false}"
+    volumes:
+      - ./knowledge_base:/app/knowledge_base:ro
+      - ./data/backups:/backups:ro
+    networks:
+      chrono:
+        aliases: [backend]
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+
+  frontend:
+    image: ${CHRONO_FRONTEND_IMAGE:-chrisubuntu1/chrono-frontend}:${CHRONO_IMAGE_TAG:?CHRONO_IMAGE_TAG must be pinned}
+    restart: always
+    networks:
+      chrono:
+        aliases: [frontend]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:80/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+    security_opt:
+      - no-new-privileges:true
+    sysctls:
+      net.ipv4.ip_unprivileged_port_start: "0"
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=32m
+      - /var/run:size=1m
+      - /tmp:size=16m
+
+networks:
+  chrono:
+    external: true
+    name: chrono_chrono
