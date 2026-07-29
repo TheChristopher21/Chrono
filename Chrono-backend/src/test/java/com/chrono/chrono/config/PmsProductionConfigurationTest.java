@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class PmsProductionConfigurationTest {
 
     @Test
-    void liveProfileValidatesSchemaAndDoesNotMutateIt() throws IOException {
+    void liveProfileValidatesSchemaAndKeepsLegacyReadPathsCompatible() throws IOException {
         Properties properties = new Properties();
         try (InputStream input = getClass().getResourceAsStream("/application-live.properties")) {
             assertThat(input).isNotNull();
@@ -19,7 +19,7 @@ class PmsProductionConfigurationTest {
         }
 
         assertThat(properties.getProperty("spring.jpa.hibernate.ddl-auto")).isEqualTo("validate");
-        assertThat(properties.getProperty("spring.jpa.open-in-view")).isEqualTo("false");
+        assertThat(properties.getProperty("spring.jpa.open-in-view")).isEqualTo("true");
         assertThat(properties.getProperty("app.production")).isEqualTo("true");
         assertThat(properties.getProperty("app.security.allowed-origins"))
                 .isEqualTo("${APP_SECURITY_ALLOWED_ORIGINS}");

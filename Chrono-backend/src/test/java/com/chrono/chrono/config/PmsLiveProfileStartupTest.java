@@ -2,8 +2,12 @@ package com.chrono.chrono.config;
 
 import com.chrono.chrono.ChronoApplication;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.core.env.Environment;
 import org.springframework.test.context.ActiveProfiles;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 @ActiveProfiles("live")
 @SpringBootTest(
@@ -40,8 +44,12 @@ import org.springframework.test.context.ActiveProfiles;
 )
 class PmsLiveProfileStartupTest {
 
+    @Autowired
+    private Environment environment;
+
     @Test
     void startsTheLiveApplicationWiringAgainstAFreshMigratedDatabase() {
-        // The application context itself is the assertion.
+        assertThat(environment.getProperty("spring.jpa.open-in-view", Boolean.class))
+                .isTrue();
     }
 }
