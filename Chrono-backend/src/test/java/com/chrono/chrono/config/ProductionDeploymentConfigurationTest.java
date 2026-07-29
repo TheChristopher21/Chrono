@@ -77,6 +77,8 @@ class ProductionDeploymentConfigurationTest {
                 .contains("assert_protected_containers_unchanged")
                 .contains("assert_core_counts_not_decreased")
                 .contains("up -d --no-deps --wait --wait-timeout 180 backend frontend")
+                .contains("Warte auf ${label} (${attempt}/60)")
+                .doesNotContain("--show-error")
                 .contains("MySQL-Volume unverändert")
                 .doesNotContain("--remove-orphans")
                 .doesNotContain("docker compose down")

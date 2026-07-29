@@ -239,13 +239,15 @@ wait_for_url() {
       --fail \
       --insecure \
       --silent \
-      --show-error \
       --output /dev/null \
       --resolve "${host}:443:127.0.0.1" \
       --max-time 5 \
       "${url}"; then
       echo "[OK] ${label} ist erreichbar."
       return 0
+    fi
+    if (( attempt == 1 || attempt % 10 == 0 )); then
+      echo "[INFO] Warte auf ${label} (${attempt}/60) ..."
     fi
     sleep 2
   done

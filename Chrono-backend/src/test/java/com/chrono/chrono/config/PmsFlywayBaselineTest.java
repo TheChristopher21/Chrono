@@ -20,7 +20,7 @@ class PmsFlywayBaselineTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(1);
+        assertThat(result.migrationsExecuted).isEqualTo(2);
 
         try (var connection = DriverManager.getConnection(url, "sa", "")) {
             assertThat(tableExists(connection, "pms_properties")).isTrue();
@@ -33,12 +33,13 @@ class PmsFlywayBaselineTest {
     }
 
     @Test
-    void baselinesAnExistingDatabaseWithoutRecreatingOrDeletingItsData() throws Exception {
+    void baselinesAnExistingDatabaseAndAddsOnlyTheMissingPmsSchema() throws Exception {
         String url = "jdbc:h2:mem:chrono_flyway_existing;MODE=MySQL;"
                 + "DATABASE_TO_LOWER=TRUE;DB_CLOSE_DELAY=-1";
 
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement()) {
+            statement.execute("create table companies (id bigint primary key)");
             statement.execute("create table legacy_marker (id bigint primary key, marker_value varchar(32))");
             statement.execute("insert into legacy_marker (id, marker_value) values (1, 'preserved')");
         }
@@ -51,10 +52,17 @@ class PmsFlywayBaselineTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isZero();
+        assertThat(result.migrationsExecuted).isEqualTo(1);
 
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement()) {
+            assertThat(tableExists(connection, "pms_properties")).isTrue();
+            assertThat(tableExists(connection, "pms_reservations")).isTrue();
+            assertThat(tableExists(connection, "pms_integration_outbox")).isTrue();
+            assertThat(tableExists(connection, "pms_audit_events")).isTrue();
+            assertThat(columnExists(connection, "pms_integration_outbox", "next_attempt_at")).isTrue();
+            assertThat(columnExists(connection, "pms_integration_outbox", "lock_owner")).isTrue();
+
             try (var marker = statement.executeQuery("select marker_value from legacy_marker where id = 1")) {
                 assertThat(marker.next()).isTrue();
                 assertThat(marker.getString("marker_value")).isEqualTo("preserved");
