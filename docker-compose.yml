@@ -31,7 +31,7 @@ services:
         condition: service_healthy
       model-puller:
         condition: service_completed_successfully
-    networks: [chrono-app, chrono-data, chrono-monitoring]
+    networks: [chrono, chrono-data, chrono-monitoring]
     environment:
       SERVER_PORT: "8081"
       SPRING_PROFILES_ACTIVE: "live"
@@ -69,7 +69,7 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
-    networks: [chrono-app]
+    networks: [chrono]
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:8080/healthz"]
       interval: 15s
@@ -88,7 +88,7 @@ services:
     volumes:
       - ./data:/data
       - ./letsencrypt:/etc/letsencrypt
-    networks: [chrono-app]
+    networks: [chrono]
     depends_on:
       frontend:
         condition: service_healthy
@@ -250,7 +250,7 @@ services:
     restart: unless-stopped
     volumes:
       - ollama_data:/root/.ollama
-    networks: [chrono-app]
+    networks: [chrono]
     ports:
       - "11434:11434"
     environment:
@@ -268,7 +268,7 @@ services:
     depends_on:
       llm:
         condition: service_healthy
-    networks: [chrono-app]
+    networks: [chrono]
     environment:
       OLLAMA_HOST: "http://llm:11434"
       OLLAMA_MODEL: "${OLLAMA_MODEL:-llama3:8b}"
@@ -289,12 +289,12 @@ services:
       - ./knowledge_base:/app/backend/knowledge_base
     environment:
       OLLAMA_BASE_URL: "http://llm:11434"
-    networks: [chrono-app]
+    networks: [chrono]
     security_opt:
       - no-new-privileges:true
 
 networks:
-  chrono-app:
+  chrono:
     name: chrono_chrono
   chrono-data:
     internal: true

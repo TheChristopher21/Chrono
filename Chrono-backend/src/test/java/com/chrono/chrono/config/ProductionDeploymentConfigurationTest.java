@@ -48,6 +48,7 @@ class ProductionDeploymentConfigurationTest {
                 .contains("NGINX_PROXY_MANAGER_IMAGE")
                 .contains("./data:/data")
                 .contains("./letsencrypt:/etc/letsencrypt")
+                .contains("networks: [chrono]")
                 .contains("name: chrono_chrono")
                 .contains("open-webui:")
                 .contains("OLLAMA_IMAGE")
