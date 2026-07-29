@@ -1,5 +1,9 @@
 package com.chrono.chrono.services;
 
+import com.chrono.chrono.dto.UserDTO;
+import com.chrono.chrono.entities.Company;
+import com.chrono.chrono.entities.Customer;
+import com.chrono.chrono.entities.Role;
 import com.chrono.chrono.entities.User;
 import com.chrono.chrono.exceptions.UserNotFoundException;
 import com.chrono.chrono.repositories.UserRepository;
@@ -10,7 +14,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -21,6 +28,9 @@ class UserServiceTest {
 
     @Mock
     private UserRepository userRepository;
+
+    @Mock
+    private UserPermissionService userPermissionService;
 
     @InjectMocks
     private UserService userService;
@@ -62,6 +72,54 @@ class UserServiceTest {
 
         assertThrows(UserNotFoundException.class, () -> userService.getUserByUsername("unknown"));
         verify(userRepository).findByUsername("unknown");
+    }
+
+    @Test
+    void getUserProfileByUsername_buildsTheCompleteProfileInsideTheService() {
+        Company company = new Company("Chrono Test");
+        company.setId(7L);
+        company.setCantonAbbreviation("ZH");
+        company.setCustomerTrackingEnabled(true);
+        company.setEnabledFeatures(Set.of("projects", "pms"));
+
+        Customer lastCustomer = new Customer();
+        lastCustomer.setId(11L);
+        lastCustomer.setName("Hotelkunde");
+
+        existingUser.setCompany(company);
+        existingUser.setLastCustomer(lastCustomer);
+        existingUser.setRoles(Set.of(new Role("ROLE_ADMIN")));
+        Map<String, String> permissions = Map.of("pms", "MANAGE");
+
+        when(userRepository.findByUsernameWithProfileContext("john"))
+                .thenReturn(Optional.of(existingUser));
+        when(userPermissionService.resolvePagePermissions(existingUser))
+                .thenReturn(permissions);
+
+        UserDTO profile = userService.getUserProfileByUsername("john");
+
+        assertEquals(7L, profile.getCompanyId());
+        assertEquals("ZH", profile.getCompanyCantonAbbreviation());
+        assertEquals(11L, profile.getLastCustomerId());
+        assertEquals("Hotelkunde", profile.getLastCustomerName());
+        assertTrue(profile.getCompanyFeatureKeys().contains("projects"));
+        assertEquals(List.of("ROLE_ADMIN"), profile.getRoles());
+        assertEquals(permissions, profile.getPagePermissions());
+        verify(userRepository).findByUsernameWithProfileContext("john");
+        verify(userPermissionService).resolvePagePermissions(existingUser);
+    }
+
+    @Test
+    void getUserProfileByUsername_rejectsDeletedUsers() {
+        existingUser.setDeleted(true);
+        when(userRepository.findByUsernameWithProfileContext("john"))
+                .thenReturn(Optional.of(existingUser));
+
+        assertThrows(
+                UserNotFoundException.class,
+                () -> userService.getUserProfileByUsername("john")
+        );
+        verifyNoInteractions(userPermissionService);
     }
 
     @Test

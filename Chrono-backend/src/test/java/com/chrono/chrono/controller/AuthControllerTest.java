@@ -3,18 +3,17 @@ package com.chrono.chrono.controller;
 import com.chrono.chrono.dto.AuthRequest;
 import com.chrono.chrono.dto.AuthResponse;
 import com.chrono.chrono.dto.ErrorResponse;
+import com.chrono.chrono.dto.UserDTO;
 import com.chrono.chrono.exceptions.InvalidCredentialsException;
 import com.chrono.chrono.services.AuthService;
 import com.chrono.chrono.services.DemoLoginRateLimiter;
 import com.chrono.chrono.services.LoginAttemptService;
-import com.chrono.chrono.services.UserPermissionService;
 import com.chrono.chrono.services.UserService;
 import com.chrono.chrono.utils.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -28,6 +27,8 @@ class AuthControllerTest {
     private AuthService authService;
     private LoginAttemptService loginAttemptService;
     private DemoLoginRateLimiter demoLoginRateLimiter;
+    private JwtUtil jwtUtil;
+    private UserService userService;
     private AuthController controller;
     private HttpServletRequest servletRequest;
 
@@ -36,16 +37,15 @@ class AuthControllerTest {
         authService = mock(AuthService.class);
         loginAttemptService = mock(LoginAttemptService.class);
         demoLoginRateLimiter = mock(DemoLoginRateLimiter.class);
+        jwtUtil = mock(JwtUtil.class);
+        userService = mock(UserService.class);
         servletRequest = mock(HttpServletRequest.class);
         controller = new AuthController(
                 authService,
-                mock(JwtUtil.class),
-                mock(UserDetailsService.class),
-                null,
-                mock(UserService.class),
+                jwtUtil,
+                userService,
                 loginAttemptService,
-                demoLoginRateLimiter,
-                mock(UserPermissionService.class)
+                demoLoginRateLimiter
         );
 
         when(servletRequest.getHeader("X-Forwarded-For")).thenReturn(null);
@@ -139,5 +139,33 @@ class AuthControllerTest {
         assertEquals("120", response.getHeaders().getFirst("Retry-After"));
         assertEquals("Zu viele Demo-Starts. Bitte versuche es spaeter erneut.", ((ErrorResponse) response.getBody()).getMessage());
         verify(authService, never()).demoLogin();
+    }
+
+    @Test
+    void getCurrentUser_returnsTheTransactionallyBuiltProfile() {
+        UserDTO profile = new UserDTO();
+        profile.setUsername("john");
+        when(servletRequest.getHeader("Authorization")).thenReturn("Bearer valid-token");
+        when(jwtUtil.extractUsername("valid-token")).thenReturn("john");
+        when(userService.getUserProfileByUsername("john")).thenReturn(profile);
+
+        ResponseEntity<?> response = controller.getCurrentUser(servletRequest);
+
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(profile, response.getBody());
+        verify(userService).getUserProfileByUsername("john");
+    }
+
+    @Test
+    void getCurrentUser_rejectsRequestsWithoutBearerToken() {
+        when(servletRequest.getHeader("Authorization")).thenReturn(null);
+
+        ResponseStatusException exception = assertThrows(
+                ResponseStatusException.class,
+                () -> controller.getCurrentUser(servletRequest)
+        );
+
+        assertEquals(401, exception.getStatusCode().value());
+        verifyNoInteractions(jwtUtil, userService);
     }
 }

@@ -14,6 +14,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByUsername(String username);
     @Query("SELECT DISTINCT u FROM User u LEFT JOIN FETCH u.roles LEFT JOIN FETCH u.company c LEFT JOIN FETCH c.enabledFeatures WHERE u.username = :username")
     Optional<User> findByUsernameWithPermissionContext(@Param("username") String username);
+    @Query("""
+            SELECT DISTINCT u FROM User u
+            LEFT JOIN FETCH u.roles
+            LEFT JOIN FETCH u.company c
+            LEFT JOIN FETCH c.enabledFeatures
+            LEFT JOIN FETCH u.lastCustomer
+            WHERE u.username = :username
+            """)
+    Optional<User> findByUsernameWithProfileContext(@Param("username") String username);
     boolean existsByUsername(String username);
     List<User> findByCompany_Id(Long companyId);
     List<User> findByCompany_IdAndDeletedFalse(Long companyId);
