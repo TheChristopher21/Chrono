@@ -52,7 +52,7 @@ services:
       chrono:
         aliases: [frontend]
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://localhost:80/healthz"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:80/healthz"]
       interval: 5s
       timeout: 3s
       retries: 12

@@ -53,7 +53,7 @@ class ProductionDeploymentConfigurationTest {
                 .contains("name: chrono_chrono")
                 .contains("aliases: [backend]")
                 .contains("aliases: [frontend]")
-                .contains("http://localhost:80/healthz")
+                .contains("http://127.0.0.1:80/healthz")
                 .contains("net.ipv4.ip_unprivileged_port_start: \"0\"")
                 .doesNotContain("\n  mysql:\n")
                 .doesNotContain("\n  nginx:\n")
