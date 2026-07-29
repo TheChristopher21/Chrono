@@ -66,7 +66,7 @@ for /f "delims=" %%A in ('git rev-parse --short^=12 HEAD') do set "IMAGE_TAG=%%A
 if not defined IMAGE_TAG goto :error_git
 set "FE_IMAGE=%FE_REPO%:!IMAGE_TAG!"
 set "BE_IMAGE=%BE_REPO%:!IMAGE_TAG!"
-set "REMOTE_UPDATE_CMD=cd ~/chrono && ./update.sh --image-tag !IMAGE_TAG!"
+set "REMOTE_UPDATE_CMD=cd ~/chrono && git pull --ff-only && bash ./ops/deploy-production.sh --image-tag !IMAGE_TAG!"
 echo [OK]  Git OK
 echo [OK]  Release-Tag: !IMAGE_TAG!
 echo.

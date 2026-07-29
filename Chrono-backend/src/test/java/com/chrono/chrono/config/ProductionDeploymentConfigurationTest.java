@@ -63,6 +63,8 @@ class ProductionDeploymentConfigurationTest {
 
         assertThat(update)
                 .contains("git pull --ff-only")
+                .contains("CHRONO_UPDATE_REEXECUTED")
+                .contains("exec bash ./update.sh")
                 .contains("exec bash ./ops/deploy-production.sh");
         assertThat(deploy)
                 .contains("docker-compose.production.yml")
@@ -85,7 +87,8 @@ class ProductionDeploymentConfigurationTest {
                 .doesNotContain("docker network rm");
         assertThat(desktopDeploy)
                 .contains("git rev-parse --short^=12 HEAD")
-                .contains("REMOTE_UPDATE_CMD=cd ~/chrono && ./update.sh --image-tag !IMAGE_TAG!")
+                .contains("REMOTE_UPDATE_CMD=cd ~/chrono && git pull --ff-only "
+                        + "&& bash ./ops/deploy-production.sh --image-tag !IMAGE_TAG!")
                 .contains("%FE_REPO%:!IMAGE_TAG!")
                 .contains("%BE_REPO%:!IMAGE_TAG!")
                 .doesNotContain(":latest")
