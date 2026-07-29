@@ -86,7 +86,9 @@ public class PmsProviderGatewayTransport implements PmsOutboxTransport {
 
         HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
         if (response.statusCode() < 200 || response.statusCode() >= 300) {
-            throw new IllegalStateException("PMS provider gateway returned HTTP " + response.statusCode());
+            throw new IllegalStateException(
+                    "Die Anbieteranbindung antwortete mit HTTP-Status " + response.statusCode()
+            );
         }
     }
 
@@ -113,22 +115,26 @@ public class PmsProviderGatewayTransport implements PmsOutboxTransport {
 
     static URI parseEndpoint(String endpoint, boolean production) {
         if (endpoint == null || endpoint.isBlank()) {
-            throw new IllegalStateException("PMS provider gateway endpoint is required");
+            throw new IllegalStateException("Für die Anbieteranbindung ist eine Zieladresse erforderlich.");
         }
         URI uri = URI.create(endpoint.trim());
         if (uri.getHost() == null || (!"https".equalsIgnoreCase(uri.getScheme())
                 && (production || !"http".equalsIgnoreCase(uri.getScheme())))) {
-            throw new IllegalStateException("PMS provider gateway endpoint must use HTTPS");
+            throw new IllegalStateException("Die Zieladresse der Anbieteranbindung muss HTTPS verwenden.");
         }
         if (uri.getUserInfo() != null || uri.getFragment() != null) {
-            throw new IllegalStateException("PMS provider gateway endpoint must not contain credentials or fragments");
+            throw new IllegalStateException(
+                    "Die Zieladresse der Anbieteranbindung darf keine Zugangsdaten oder URL-Fragmente enthalten."
+            );
         }
         return uri;
     }
 
     private static String requireSecret(String secret) {
         if (secret == null || secret.length() < 32) {
-            throw new IllegalStateException("PMS provider gateway secret must contain at least 32 characters");
+            throw new IllegalStateException(
+                    "Der geheime Schlüssel der Anbieteranbindung muss mindestens 32 Zeichen enthalten."
+            );
         }
         return secret;
     }

@@ -67,7 +67,7 @@ public class PmsSetupService {
         requireCompany(company);
         String code = normalizeCode(request.code());
         if (propertyRepository.existsByCompany_IdAndCodeIgnoreCase(company.getId(), code)) {
-            throw conflict("A hotel with this code already exists.");
+            throw conflict("Für diesen Hotelbetrieb ist der Code bereits vergeben.");
         }
 
         HotelProperty property = new HotelProperty();
@@ -85,7 +85,7 @@ public class PmsSetupService {
         HotelProperty property = requireProperty(company.getId(), propertyId);
         String code = normalizeCode(request.code());
         if (propertyRepository.existsByCompany_IdAndCodeIgnoreCaseAndIdNot(company.getId(), code, propertyId)) {
-            throw conflict("A hotel with this code already exists.");
+            throw conflict("Für diesen Hotelbetrieb ist der Code bereits vergeben.");
         }
 
         applyProperty(property, request, false);
@@ -102,7 +102,7 @@ public class PmsSetupService {
         validateOccupancy(request);
         String code = normalizeCode(request.code());
         if (roomTypeRepository.existsByProperty_IdAndCodeIgnoreCase(propertyId, code)) {
-            throw conflict("A room type with this code already exists.");
+            throw conflict("Für diesen Hotelbetrieb ist der Zimmertyp-Code bereits vergeben.");
         }
 
         RoomType roomType = new RoomType();
@@ -119,13 +119,13 @@ public class PmsSetupService {
         requireCompany(company);
         validateOccupancy(request);
         RoomType roomType = roomTypeRepository.findByIdAndProperty_Company_Id(roomTypeId, company.getId())
-                .orElseThrow(() -> notFound("Room type not found."));
+                .orElseThrow(() -> notFound("Zimmertyp nicht gefunden."));
         if (roomTypeRepository.existsByProperty_IdAndCodeIgnoreCaseAndIdNot(
                 roomType.getProperty().getId(),
                 normalizeCode(request.code()),
                 roomTypeId
         )) {
-            throw conflict("A room type with this code already exists.");
+            throw conflict("Für diesen Hotelbetrieb ist der Zimmertyp-Code bereits vergeben.");
         }
 
         applyRoomType(roomType, request, false);
@@ -142,7 +142,7 @@ public class PmsSetupService {
         RoomType roomType = requireRoomTypeForProperty(company.getId(), propertyId, request.roomTypeId());
         String roomNumber = cleanRequired(request.number());
         if (roomRepository.existsByProperty_IdAndNumberIgnoreCase(propertyId, roomNumber)) {
-            throw conflict("A room with this number already exists.");
+            throw conflict("Für diesen Hotelbetrieb ist die Zimmernummer bereits vergeben.");
         }
 
         Room room = new Room();
@@ -159,7 +159,7 @@ public class PmsSetupService {
                                        UpsertRoomRequest request) {
         requireCompany(company);
         Room room = roomRepository.findByIdAndProperty_Company_Id(roomId, company.getId())
-                .orElseThrow(() -> notFound("Room not found."));
+                .orElseThrow(() -> notFound("Zimmer nicht gefunden."));
         Long propertyId = room.getProperty().getId();
         RoomType roomType = requireRoomTypeForProperty(company.getId(), propertyId, request.roomTypeId());
         if (roomRepository.existsByProperty_IdAndNumberIgnoreCaseAndIdNot(
@@ -167,7 +167,7 @@ public class PmsSetupService {
                 cleanRequired(request.number()),
                 roomId
         )) {
-            throw conflict("A room with this number already exists.");
+            throw conflict("Für diesen Hotelbetrieb ist die Zimmernummer bereits vergeben.");
         }
 
         room.setRoomType(roomType);
@@ -238,14 +238,17 @@ public class PmsSetupService {
 
     private HotelProperty requireProperty(Long companyId, Long propertyId) {
         return propertyRepository.findByIdAndCompany_Id(propertyId, companyId)
-                .orElseThrow(() -> notFound("Hotel not found."));
+                .orElseThrow(() -> notFound("Hotelbetrieb nicht gefunden."));
     }
 
     private RoomType requireRoomTypeForProperty(Long companyId, Long propertyId, Long roomTypeId) {
         RoomType roomType = roomTypeRepository.findByIdAndProperty_Company_Id(roomTypeId, companyId)
-                .orElseThrow(() -> notFound("Room type not found."));
+                .orElseThrow(() -> notFound("Zimmertyp nicht gefunden."));
         if (!roomType.getProperty().getId().equals(propertyId)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Room type belongs to another hotel.");
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Der gewählte Zimmertyp gehört zu einem anderen Hotelbetrieb."
+            );
         }
         return roomType;
     }
@@ -313,7 +316,7 @@ public class PmsSetupService {
         if (request.maxOccupancy() < request.baseOccupancy()) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "Maximum occupancy must not be lower than base occupancy."
+                    "Die maximale Belegung darf nicht kleiner als die Standardbelegung sein."
             );
         }
     }
@@ -322,18 +325,18 @@ public class PmsSetupService {
         try {
             ZoneId.of(timezone.trim());
         } catch (Exception exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown timezone.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Die Zeitzone ist ungültig.");
         }
         try {
             Currency.getInstance(currencyCode.trim().toUpperCase(Locale.ROOT));
         } catch (Exception exception) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Unknown currency.");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Der Währungscode ist ungültig.");
         }
     }
 
     private void requireCompany(Company company) {
         if (company == null || company.getId() == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "A company assignment is required.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }
     }
 

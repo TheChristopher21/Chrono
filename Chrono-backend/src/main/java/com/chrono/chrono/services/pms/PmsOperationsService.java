@@ -30,8 +30,20 @@ public class PmsOperationsService {
                     ReservationStatus.NO_SHOW,
                     ReservationStatus.CHECKED_OUT
             );
+    private static final Set<ReservationStatus> OPERATIONAL_ARRIVAL_STATUSES =
+            Set.of(ReservationStatus.CONFIRMED, ReservationStatus.CHECKED_IN);
+    private static final Set<ReservationStatus> OPERATIONAL_DEPARTURE_STATUSES =
+            Set.of(ReservationStatus.CHECKED_IN, ReservationStatus.CHECKED_OUT);
+    private static final Set<ReservationStatus> SOLD_ROOM_STATUSES =
+            Set.of(
+                    ReservationStatus.CONFIRMED,
+                    ReservationStatus.CHECKED_IN,
+                    ReservationStatus.CHECKED_OUT
+            );
     private static final Set<ReservationStatus> HOLD_STATUSES =
             Set.of(ReservationStatus.OFFERED, ReservationStatus.TENTATIVE);
+    private static final Set<RoomBlockType> INVENTORY_BLOCKING_ROOM_BLOCK_TYPES =
+            Set.of(RoomBlockType.OUT_OF_ORDER, RoomBlockType.OWNER_USE);
 
     private final HotelPropertyRepository propertyRepository;
     private final RoomTypeRepository roomTypeRepository;
@@ -113,11 +125,11 @@ public class PmsOperationsService {
                 .toList();
         List<PmsOperationsResponse.ReservationView> arrivals = reservationViews.stream()
                 .filter(view -> view.arrivalDate().equals(safeDate))
-                .filter(view -> !NON_INVENTORY_STATUSES.contains(view.status()))
+                .filter(view -> OPERATIONAL_ARRIVAL_STATUSES.contains(view.status()))
                 .toList();
         List<PmsOperationsResponse.ReservationView> departures = reservationViews.stream()
                 .filter(view -> view.departureDate().equals(safeDate))
-                .filter(view -> !NON_INVENTORY_STATUSES.contains(view.status()))
+                .filter(view -> OPERATIONAL_DEPARTURE_STATUSES.contains(view.status()))
                 .toList();
 
         List<GuestProfile> guests = guestRepository.findAllByCompany_IdOrderByLastNameAscFirstNameAsc(company.getId());
@@ -131,19 +143,32 @@ public class PmsOperationsService {
         List<Room> rooms = roomRepository.findAllByProperty_IdOrderByFloorAscNumberAsc(propertyId);
         List<Folio> folios = folioRepository.findAllByReservation_Property_IdOrderByCreatedAtDesc(propertyId);
         List<PmsOperationsResponse.FolioView> folioViews = folios.stream().map(this::toFolioView).toList();
+        List<RoomBlock> roomBlocks = roomBlockRepository
+                .findAllByProperty_IdAndStartDateLessThanAndEndDateGreaterThanOrderByStartDateAsc(
+                        propertyId, rangeEnd, rangeStart);
+        Set<Long> inventoryBlockedRoomIds = roomBlocks.stream()
+                .filter(block -> block.getStatus() == RoomBlockStatus.ACTIVE)
+                .filter(block -> INVENTORY_BLOCKING_ROOM_BLOCK_TYPES.contains(block.getType()))
+                .filter(block -> block.getStartDate().isBefore(safeDate.plusDays(1))
+                        && block.getEndDate().isAfter(safeDate))
+                .map(block -> block.getRoom().getId())
+                .collect(Collectors.toSet());
 
-        long occupiedRooms = reservations.stream()
-                .filter(reservation -> reservation.getStatus() == ReservationStatus.CHECKED_IN)
-                .filter(reservation -> reservation.getRoom() != null)
-                .map(reservation -> reservation.getRoom().getId())
-                .distinct()
+        long soldRooms = reservations.stream()
+                .filter(reservation -> SOLD_ROOM_STATUSES.contains(reservation.getStatus()))
+                .filter(reservation -> !safeDate.isBefore(reservation.getArrivalDate())
+                        && safeDate.isBefore(reservation.getDepartureDate()))
                 .count();
         long totalRooms = rooms.stream()
                 .filter(Room::isActive)
                 .filter(room -> room.getOperationalStatus() == RoomOperationalStatus.IN_SERVICE)
+                .filter(room -> !inventoryBlockedRoomIds.contains(room.getId()))
                 .count();
         long dirtyRooms = rooms.stream()
-                .filter(room -> room.getHousekeepingStatus() != HousekeepingStatus.CLEAN)
+                .filter(Room::isActive)
+                .filter(room -> room.getOperationalStatus() == RoomOperationalStatus.IN_SERVICE)
+                .filter(room -> !inventoryBlockedRoomIds.contains(room.getId()))
+                .filter(room -> room.getHousekeepingStatus() == HousekeepingStatus.DIRTY)
                 .count();
         long openFolios = folioViews.stream().filter(folio -> folio.status() == FolioStatus.OPEN).count();
         BigDecimal openBalance = folioViews.stream()
@@ -153,7 +178,7 @@ public class PmsOperationsService {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
         int occupancyPercent = totalRooms == 0
                 ? 0
-                : (int) Math.round((occupiedRooms * 100.0) / totalRooms);
+                : (int) Math.round((soldRooms * 100.0) / totalRooms);
 
         Map<Long, Reservation> currentByRoom = reservations.stream()
                 .filter(reservation -> reservation.getRoom() != null)
@@ -168,8 +193,8 @@ public class PmsOperationsService {
 
         PmsOperationsResponse.MetricsView metrics = new PmsOperationsResponse.MetricsView(
                 totalRooms,
-                occupiedRooms,
-                Math.max(0, totalRooms - occupiedRooms),
+                soldRooms,
+                Math.max(0, totalRooms - soldRooms),
                 occupancyPercent,
                 reservationRepository.countByProperty_IdAndStatus(propertyId, ReservationStatus.CHECKED_IN),
                 arrivals.size(),
@@ -202,10 +227,7 @@ public class PmsOperationsService {
                         .findFirstByProperty_IdAndStatusOrderByOpenedAtDesc(propertyId, CashShiftStatus.OPEN)
                         .map(this::toCashShiftView)
                         .orElse(null),
-                roomBlockRepository
-                        .findAllByProperty_IdAndStartDateLessThanAndEndDateGreaterThanOrderByStartDateAsc(
-                                propertyId, rangeEnd, rangeStart)
-                        .stream()
+                roomBlocks.stream()
                         .map(this::toRoomBlockView)
                         .toList(),
                 maintenanceWorkOrderRepository.findAllByProperty_IdOrderByReportedAtDesc(propertyId)
@@ -432,7 +454,7 @@ public class PmsOperationsService {
             throw conflict("Nur bestätigte Reservierungen können eingecheckt werden.");
         }
         if (now.isBefore(reservation.getArrivalDate()) || !now.isBefore(reservation.getDepartureDate())) {
-            throw conflict("Der Check-in liegt außerhalb des gebuchten Aufenthalts.");
+            throw conflict("Der Check-in liegt ausserhalb des gebuchten Aufenthalts.");
         }
         Room room = reservation.getRoom();
         if (room == null) {
@@ -472,13 +494,13 @@ public class PmsOperationsService {
         }
         List<Folio> folios = folioRepository.findAllByReservation_IdOrderByIdAsc(reservationId);
         if (folios.isEmpty()) {
-            throw conflict("Zur Reservierung fehlt das Folio.");
+            throw conflict("Zur Reservierung fehlt das Gastkonto.");
         }
         boolean unbalanced = folios.stream()
                 .map(this::toFolioView)
                 .anyMatch(view -> view.balance().abs().compareTo(new BigDecimal("0.01")) >= 0);
         if (unbalanced) {
-            throw conflict("Vor dem Check-out muss das Folio vollständig ausgeglichen werden.");
+            throw conflict("Vor dem Check-out muss das Gastkonto vollständig ausgeglichen werden.");
         }
         transition(reservation, ReservationStatus.CHECKED_OUT, username, "Check-out");
         reservation.setCheckedOutAt(LocalDateTime.now());
@@ -553,12 +575,12 @@ public class PmsOperationsService {
                                             LocalDate businessDate) {
         Reservation reservation = requireReservation(company, reservationId);
         if (reservation.getStatus() != ReservationStatus.CONFIRMED) {
-            throw conflict("Nur bestätigte Reservierungen können als No-show markiert werden.");
+            throw conflict("Nur bestätigte Reservierungen können als nicht angereist (No-Show) markiert werden.");
         }
         if (today(reservation.getProperty()).isBefore(reservation.getArrivalDate())) {
-            throw conflict("Ein No-show kann nicht vor dem Anreisetag gesetzt werden.");
+            throw conflict("Eine Reservierung kann nicht vor dem Anreisetag als nicht angereist (No-Show) markiert werden.");
         }
-        transition(reservation, ReservationStatus.NO_SHOW, username, "No-show");
+        transition(reservation, ReservationStatus.NO_SHOW, username, "Nicht angereist (No-Show)");
         reservation.setNoShowAt(LocalDateTime.now());
         reservationRepository.save(reservation);
         emit(reservation, "reservation.no_show");
@@ -784,7 +806,7 @@ public class PmsOperationsService {
             throw conflict("Nur gebuchte Originalzahlungen können rückerstattet werden.");
         }
         if (original.getFolio().getStatus() != FolioStatus.OPEN) {
-            throw conflict("Rückerstattungen benötigen ein offenes Folio.");
+            throw conflict("Rückerstattungen benötigen ein offenes Gastkonto.");
         }
         BigDecimal refunded = paymentRepository
                 .findAllByOriginalPayment_IdAndStatus(original.getId(), PaymentStatus.POSTED)
@@ -937,19 +959,22 @@ public class PmsOperationsService {
         if (request.blockRoom()) {
             LocalDate start = request.blockStartDate() == null ? today(property) : request.blockStartDate();
             LocalDate end = request.blockEndDate() == null ? start.plusDays(1) : request.blockEndDate();
+            RoomBlockType blockType =
+                    request.blockType() == null ? RoomBlockType.OUT_OF_ORDER : request.blockType();
             validateStay(start, end);
             if (roomBlockRepository.countRoomBlocks(
                     room.getId(), start, end, RoomBlockStatus.ACTIVE) > 0) {
                 throw conflict("Das Zimmer ist in diesem Zeitraum bereits gesperrt.");
             }
-            if (reservationRepository.countOverlappingByRoom(
+            if (INVENTORY_BLOCKING_ROOM_BLOCK_TYPES.contains(blockType)
+                    && reservationRepository.countOverlappingByRoom(
                     room.getId(), start, end, NON_INVENTORY_STATUSES, null) > 0) {
                 throw conflict("Vor der Sperre müssen bestehende Reservierungen umgezogen oder geändert werden.");
             }
             block = new RoomBlock();
             block.setProperty(property);
             block.setRoom(room);
-            block.setType(request.blockType() == null ? RoomBlockType.OUT_OF_ORDER : request.blockType());
+            block.setType(blockType);
             block.setStatus(RoomBlockStatus.ACTIVE);
             block.setStartDate(start);
             block.setEndDate(end);
@@ -1033,11 +1058,6 @@ public class PmsOperationsService {
         }
         Room room = task.getRoom();
         room.setHousekeepingStatus(request.status());
-        if (request.status() == HousekeepingStatus.OUT_OF_SERVICE) {
-            room.setOperationalStatus(RoomOperationalStatus.OUT_OF_ORDER);
-        } else if (room.getOperationalStatus() == RoomOperationalStatus.OUT_OF_ORDER) {
-            room.setOperationalStatus(RoomOperationalStatus.IN_SERVICE);
-        }
         roomRepository.save(room);
         housekeepingTaskRepository.save(task);
         return getOperations(company, propertyId, businessDate, null, null);
@@ -1176,8 +1196,14 @@ public class PmsOperationsService {
         }
         LocalDate date = arrival;
         while (date.isBefore(departure)) {
-            long capacityForDate = Math.max(0, capacity - roomBlockRepository.countBlockedRooms(
-                    propertyId, roomTypeId, date, date.plusDays(1), RoomBlockStatus.ACTIVE));
+            long capacityForDate = Math.max(0, capacity - roomBlockRepository.countInventoryBlockingRooms(
+                    propertyId,
+                    roomTypeId,
+                    date,
+                    date.plusDays(1),
+                    RoomBlockStatus.ACTIVE,
+                    INVENTORY_BLOCKING_ROOM_BLOCK_TYPES
+            ));
             long sold = reservationRepository.countOverlappingByRoomType(
                     propertyId,
                     roomTypeId,
@@ -1223,8 +1249,14 @@ public class PmsOperationsService {
         long minimum = physicalCapacity;
         LocalDate date = arrival;
         while (date.isBefore(departure)) {
-            long blocked = roomBlockRepository.countBlockedRooms(
-                    propertyId, roomTypeId, date, date.plusDays(1), RoomBlockStatus.ACTIVE);
+            long blocked = roomBlockRepository.countInventoryBlockingRooms(
+                    propertyId,
+                    roomTypeId,
+                    date,
+                    date.plusDays(1),
+                    RoomBlockStatus.ACTIVE,
+                    INVENTORY_BLOCKING_ROOM_BLOCK_TYPES
+            );
             long sold = reservationRepository.countOverlappingByRoomType(
                     propertyId, roomTypeId, date, date.plusDays(1), NON_INVENTORY_STATUSES, excludeReservationId);
             minimum = Math.min(minimum, Math.max(0, physicalCapacity - blocked - sold));
@@ -1278,16 +1310,16 @@ public class PmsOperationsService {
         folio.setReservation(reservation);
         folio.setCurrencyCode(reservation.getCurrencyCode());
         folio.setStatus(FolioStatus.OPEN);
-        folio.setLabel("Hauptfolio");
+        folio.setLabel("Hauptkonto");
         folioRepository.save(folio);
         saveRoomChargeItems(folio, reservation);
     }
 
     private void refreshRoomCharges(Reservation reservation) {
         Folio folio = folioRepository.findFirstByReservation_IdOrderByIdAsc(reservation.getId())
-                .orElseThrow(() -> conflict("Zur Reservierung fehlt das Folio."));
+                .orElseThrow(() -> conflict("Zur Reservierung fehlt das Gastkonto."));
         if (folio.getStatus() != FolioStatus.OPEN) {
-            throw conflict("Ein geschlossenes Folio kann nicht aktualisiert werden.");
+            throw conflict("Ein geschlossenes Gastkonto kann nicht aktualisiert werden.");
         }
         folioItemRepository.deleteAllByFolio_IdAndType(folio.getId(), FolioItemType.ROOM);
         saveRoomChargeItems(folio, reservation);
@@ -1586,12 +1618,12 @@ public class PmsOperationsService {
 
     private Folio requireOpenFolio(Company company, Long propertyId, Long folioId) {
         Folio folio = folioRepository.findByIdAndReservation_Property_Company_Id(folioId, company.getId())
-                .orElseThrow(() -> notFound("Folio nicht gefunden."));
+                .orElseThrow(() -> notFound("Gastkonto nicht gefunden."));
         if (!folio.getReservation().getProperty().getId().equals(propertyId)) {
-            throw notFound("Folio nicht gefunden.");
+            throw notFound("Gastkonto nicht gefunden.");
         }
         if (folio.getStatus() != FolioStatus.OPEN) {
-            throw conflict("Das Folio ist bereits geschlossen.");
+            throw conflict("Das Gastkonto ist bereits geschlossen.");
         }
         return folio;
     }
@@ -1630,8 +1662,13 @@ public class PmsOperationsService {
     }
 
     private void ensureRoomNotBlocked(Room room, LocalDate arrival, LocalDate departure) {
-        if (roomBlockRepository.countRoomBlocks(
-                room.getId(), arrival, departure, RoomBlockStatus.ACTIVE) > 0) {
+        if (roomBlockRepository.countInventoryBlockingRoomBlocks(
+                room.getId(),
+                arrival,
+                departure,
+                RoomBlockStatus.ACTIVE,
+                INVENTORY_BLOCKING_ROOM_BLOCK_TYPES
+        ) > 0) {
             throw conflict("Das Zimmer ist im gewählten Zeitraum gesperrt.");
         }
     }
@@ -1673,7 +1710,7 @@ public class PmsOperationsService {
             throw badRequest("Der Zeitraum ist ungültig.");
         }
         if (ChronoUnit.DAYS.between(from, to) > 400) {
-            throw badRequest("Der angefragte Zeitraum ist zu groß.");
+            throw badRequest("Der angefragte Zeitraum ist zu gross.");
         }
     }
 

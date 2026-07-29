@@ -34,6 +34,15 @@ import java.util.Locale;
 @Service
 public class PmsAdvancedService {
 
+    private static final String CH_REGISTRATION_RULE = "CH-MELDESCHEIN";
+    private static final String DE_REGISTRATION_RULE = "DE-MELDESCHEIN";
+    private static final String GLOBAL_REGISTRATION_RULE = "GLOBAL-REGISTRATION";
+    private static final int REGISTRATION_RULE_VERSION = 1;
+    private static final List<String> REGISTRATION_REQUIRED_FIELDS = List.of(
+            "addressLine", "postalCode", "city", "countryCode", "nationalityCode",
+            "documentNumber", "signatureName", "privacyConsent"
+    );
+
     @Value("${app.pms.provider-gateway.enabled:false}")
     private boolean providerGatewayEnabled;
 
@@ -332,16 +341,16 @@ public class PmsAdvancedService {
         if (!source.getReservation().getProperty().getId().equals(propertyId)
                 || !target.getReservation().getProperty().getId().equals(propertyId)
                 || !source.getReservation().getId().equals(target.getReservation().getId())) {
-            throw badRequest("Folio-Positionen können nur innerhalb derselben Reservierung verschoben werden.");
+            throw badRequest("Gastkonto-Positionen können nur innerhalb derselben Reservierung verschoben werden.");
         }
         if (source.getStatus() != FolioStatus.OPEN || target.getStatus() != FolioStatus.OPEN) {
-            throw conflict("Nur offene Folios können aufgeteilt werden.");
+            throw conflict("Nur offene Gastkonten können aufgeteilt werden.");
         }
         for (Long itemId : request.itemIds()) {
             FolioItem item = folioItemRepository.findById(itemId)
-                    .orElseThrow(() -> notFound("Folio-Position nicht gefunden."));
+                    .orElseThrow(() -> notFound("Gastkonto-Position nicht gefunden."));
             if (!item.getFolio().getId().equals(source.getId())) {
-                throw badRequest("Mindestens eine Position gehört nicht zum Quellfolio.");
+                throw badRequest("Mindestens eine Position gehört nicht zum gewählten Ausgangskonto.");
             }
             item.setFolio(target);
             folioItemRepository.save(item);
@@ -357,11 +366,11 @@ public class PmsAdvancedService {
         HotelProperty property = lockProperty(company, propertyId);
         Folio folio = requireFolio(company, request.folioId());
         if (!folio.getReservation().getProperty().getId().equals(propertyId)) {
-            throw notFound("Folio nicht gefunden.");
+            throw notFound("Gastkonto nicht gefunden.");
         }
         List<FolioItem> items = folioItemRepository.findAllByFolio_IdOrderByServiceDateAscIdAsc(folio.getId());
         if (items.isEmpty()) {
-            throw conflict("Eine Rechnung benötigt mindestens eine Folio-Position.");
+            throw conflict("Eine Rechnung benötigt mindestens eine Gastkonto-Position.");
         }
         LocalDate issueDate = effectiveDate(property, businessDate);
         if (request.dueDate().isBefore(issueDate)) {
@@ -821,11 +830,13 @@ public class PmsAdvancedService {
         HotelProperty property = requireProperty(company, propertyId);
         String providerCode = required(request.providerCode()).toUpperCase(Locale.ROOT);
         if (channelConnectionRepository.existsByProperty_IdAndProviderCodeIgnoreCase(propertyId, providerCode)) {
-            throw conflict("Für diesen Provider besteht bereits eine Verbindung.");
+            throw conflict("Für diesen Anbieter besteht bereits eine Verbindung.");
         }
         if (request.environment() == ChannelEnvironment.LIVE
                 && !isValidSecretReference(clean(request.secretReference()))) {
-            throw badRequest("Eine Live-Verbindung benötigt eine Secret-Referenz im Format env:NAME.");
+            throw badRequest(
+                    "Eine Produktivverbindung benötigt eine sichere Server-Variable im Format env:NAME."
+            );
         }
         ChannelConnection connection = new ChannelConnection();
         connection.setProperty(property);
@@ -843,7 +854,7 @@ public class PmsAdvancedService {
             if (!roomType.getProperty().getId().equals(propertyId)
                     || !ratePlan.getProperty().getId().equals(propertyId)
                     || !ratePlan.getRoomType().getId().equals(roomType.getId())) {
-                throw badRequest("Channel-Mapping, Zimmertyp und Rate passen nicht zusammen.");
+                throw badRequest("Schnittstellen-Zuordnung, Zimmertyp und Ratenplan passen nicht zusammen.");
             }
             ChannelMapping value = new ChannelMapping();
             value.setConnection(connection);
@@ -868,18 +879,18 @@ public class PmsAdvancedService {
         HotelProperty property = requireProperty(company, propertyId);
         ChannelConnection connection = channelConnectionRepository
                 .findByIdAndProperty_Company_Id(connectionId, company.getId())
-                .orElseThrow(() -> notFound("Channel-Verbindung nicht gefunden."));
+                .orElseThrow(() -> notFound("Schnittstellen-Verbindung nicht gefunden."));
         if (!connection.getProperty().getId().equals(propertyId)) {
-            throw notFound("Channel-Verbindung nicht gefunden.");
+            throw notFound("Schnittstellen-Verbindung nicht gefunden.");
         }
         if (connection.getEnvironment() == ChannelEnvironment.LIVE && !providerGatewayEnabled) {
-            throw conflict("Der Live-Adapter benötigt ein konfiguriertes Provider-Gateway.");
+            throw conflict("Für den Produktivbetrieb muss eine sichere Anbieteranbindung eingerichtet sein.");
         }
         connection.setStatus(ChannelConnectionStatus.READY);
         connection.setLastSyncAt(LocalDateTime.now());
         connection.setLastSyncMessage(connection.getEnvironment() == ChannelEnvironment.LIVE
-                ? "Live-Snapshot zur signierten Provider-Zustellung eingeplant."
-                : "Sandbox-Snapshot erfolgreich in die Outbox geschrieben.");
+                ? "Produktiver Bestandsabgleich zur sicheren Übertragung eingeplant."
+                : "Testabgleich erfolgreich zur Übertragung eingeplant.");
         channelConnectionRepository.save(connection);
         emit(property, "channel.inventory_snapshot_ready", "channel_connection", connection.getId().toString(),
                 "{\"provider\":\"" + json(connection.getProviderCode()) + "\",\"mappingCount\":"
@@ -927,7 +938,7 @@ public class PmsAdvancedService {
         if (reservation.getStatus() == ReservationStatus.CANCELLED
                 || reservation.getStatus() == ReservationStatus.NO_SHOW
                 || reservation.getStatus() == ReservationStatus.CHECKED_OUT) {
-            throw conflict("Für diese Reservierung kann kein Check-in-Link mehr erstellt werden.");
+            throw conflict("Für diese Reservierung kann kein Link zur Gästeanmeldung mehr erstellt werden.");
         }
         byte[] tokenBytes = new byte[32];
         new SecureRandom().nextBytes(tokenBytes);
@@ -936,7 +947,7 @@ public class PmsAdvancedService {
         GuestRegistration registration = guestRegistrationRepository.findByReservation_Id(reservationId)
                 .orElseGet(GuestRegistration::new);
         if (registration.getStatus() == GuestRegistrationStatus.COMPLETED) {
-            throw conflict("Der Meldeschein wurde bereits abgeschlossen.");
+            throw conflict("Die Gästeanmeldung wurde bereits abgeschlossen.");
         }
         registration.setReservation(reservation);
         registration.setStatus(GuestRegistrationStatus.PENDING);
@@ -945,13 +956,13 @@ public class PmsAdvancedService {
         registration.setInvitedBy(clean(username) == null ? "system" : clean(username));
         registration.setExpiresAt(now.plusDays(7));
         registration.setRuleCode(registrationRuleCode(property));
-        registration.setRuleVersion(1);
+        registration.setRuleVersion(REGISTRATION_RULE_VERSION);
         guestRegistrationRepository.save(registration);
         emit(property, "guest.registration_invited", "guest_registration",
                 registration.getId().toString(), "{\"reservationId\":" + reservationId + "}");
         return new GuestRegistrationInviteResponse(
                 registration.getId(), reservationId, token,
-                "/guest-check-in/" + token, registration.getExpiresAt());
+                "/guest-registration/" + token, registration.getExpiresAt());
     }
 
     @Transactional(readOnly = true)
@@ -965,6 +976,7 @@ public class PmsAdvancedService {
             String token,
             CompleteGuestRegistrationRequest request) {
         GuestRegistration registration = requireValidRegistrationToken(token, true);
+        validateAcknowledgedRegistrationRule(registration, request);
         String documentNumber = required(request.documentNumber());
         applyCompletedRegistration(registration, request, documentNumber, "guest-portal");
         registration.setTokenHash(null);
@@ -995,19 +1007,35 @@ public class PmsAdvancedService {
         registration.setCompletedBy(clean(username) == null ? "system" : clean(username));
         if (clean(registration.getRuleCode()) == null) {
             registration.setRuleCode(registrationRuleCode(property));
-            registration.setRuleVersion(1);
+        }
+        if (registration.getRuleVersion() <= 0) {
+            registration.setRuleVersion(REGISTRATION_RULE_VERSION);
+        }
+    }
+
+    private void validateAcknowledgedRegistrationRule(GuestRegistration registration,
+                                                      CompleteGuestRegistrationRequest request) {
+        String acknowledgedRuleCode = clean(request.acknowledgedRuleCode());
+        if (acknowledgedRuleCode == null
+                || request.acknowledgedRuleVersion() == null
+                || !acknowledgedRuleCode.equals(registration.getRuleCode())
+                || request.acknowledgedRuleVersion() != registration.getRuleVersion()) {
+            throw conflict(
+                    "Die angezeigte Regelversion der Gästeanmeldung ist nicht mehr aktuell. "
+                            + "Bitte lade das Formular neu."
+            );
         }
     }
 
     private GuestRegistration requireValidRegistrationToken(String token, boolean requirePending) {
         String cleaned = required(token);
         GuestRegistration registration = guestRegistrationRepository.findByTokenHash(sha256(cleaned))
-                .orElseThrow(() -> notFound("Check-in-Link ist ungültig."));
+                .orElseThrow(() -> notFound("Der Link zur Gästeanmeldung ist ungültig."));
         if (registration.getExpiresAt() == null || !registration.getExpiresAt().isAfter(LocalDateTime.now())) {
-            throw new ResponseStatusException(HttpStatus.GONE, "Check-in-Link ist abgelaufen.");
+            throw new ResponseStatusException(HttpStatus.GONE, "Der Link zur Gästeanmeldung ist abgelaufen.");
         }
         if (requirePending && registration.getStatus() != GuestRegistrationStatus.PENDING) {
-            throw conflict("Der Meldeschein wurde bereits abgeschlossen.");
+            throw conflict("Die Gästeanmeldung wurde bereits abgeschlossen.");
         }
         return registration;
     }
@@ -1023,16 +1051,23 @@ public class PmsAdvancedService {
     }
 
     private String registrationRuleCode(HotelProperty property) {
-        return switch (country(property.getCountryCode())) {
-            case "CH" -> "CH-MELDESCHEIN";
-            case "DE" -> "DE-MELDESCHEIN";
-            default -> "GLOBAL-REGISTRATION";
+        String propertyCountryCode = clean(property.getCountryCode());
+        if (propertyCountryCode == null) {
+            return GLOBAL_REGISTRATION_RULE;
+        }
+        return switch (propertyCountryCode.toUpperCase(Locale.ROOT)) {
+            case "CH" -> CH_REGISTRATION_RULE;
+            case "DE" -> DE_REGISTRATION_RULE;
+            default -> GLOBAL_REGISTRATION_RULE;
         };
     }
 
     private List<String> registrationRequiredFields(String ruleCode) {
-        return List.of("addressLine", "postalCode", "city", "countryCode", "nationalityCode",
-                "documentNumber", "signatureName", "privacyConsent");
+        return switch (clean(ruleCode) == null ? GLOBAL_REGISTRATION_RULE : ruleCode) {
+            case CH_REGISTRATION_RULE, DE_REGISTRATION_RULE, GLOBAL_REGISTRATION_RULE ->
+                    REGISTRATION_REQUIRED_FIELDS;
+            default -> REGISTRATION_REQUIRED_FIELDS;
+        };
     }
 
     private PmsAdvancedResponse response(Company company, HotelProperty property, LocalDate businessDate) {
@@ -1414,7 +1449,7 @@ public class PmsAdvancedService {
 
     private Folio requireFolio(Company company, Long folioId) {
         return folioRepository.findByIdAndReservation_Property_Company_Id(folioId, company.getId())
-                .orElseThrow(() -> notFound("Folio nicht gefunden."));
+                .orElseThrow(() -> notFound("Gastkonto nicht gefunden."));
     }
 
     private LocalDate effectiveDate(HotelProperty property, LocalDate date) {

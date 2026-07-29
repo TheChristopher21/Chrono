@@ -20,7 +20,7 @@ public class Folio {
     private Reservation reservation;
 
     @Column(nullable = false, length = 120)
-    private String label = "Hauptfolio";
+    private String label = "Hauptkonto";
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organization_id")

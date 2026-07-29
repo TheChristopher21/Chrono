@@ -17,7 +17,7 @@ public record CreateChannelConnectionRequest(
         @Size(max = 180)
         @Pattern(
                 regexp = "^env:[A-Z][A-Z0-9_]{2,100}$",
-                message = "Secret-Referenzen müssen auf eine Umgebungsvariable im Format env:NAME zeigen.")
+                message = "Die Zugangsdaten-Referenz muss eine Server-Variable im Format env:NAME sein.")
         String secretReference,
         @NotEmpty List<@Valid Mapping> mappings
 ) {

@@ -3,6 +3,8 @@ package com.chrono.chrono.services.pms;
 import com.chrono.chrono.entities.pms.IntegrationOutboxEvent;
 import com.chrono.chrono.entities.pms.OutboxStatus;
 import com.chrono.chrono.repositories.pms.IntegrationOutboxRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +15,10 @@ import java.util.List;
 
 @Service
 public class PmsOutboxProcessor {
+    private static final Logger logger = LoggerFactory.getLogger(PmsOutboxProcessor.class);
+    private static final String SAFE_DELIVERY_ERROR =
+            "Übertragung an den externen Anbieter fehlgeschlagen. Ein erneuter Versuch wird automatisch eingeplant.";
+
     private final IntegrationOutboxRepository repository;
     private final List<PmsOutboxTransport> transports;
     private final int maxAttempts;
@@ -72,7 +78,13 @@ public class PmsOutboxProcessor {
                 event.setLastError(null);
                 delivered++;
             } catch (Exception exception) {
-                event.setLastError(errorMessage(exception));
+                logger.warn(
+                        "PMS outbox delivery failed for event {} using transport {}",
+                        event.getId(),
+                        transport.getClass().getName(),
+                        exception
+                );
+                event.setLastError(SAFE_DELIVERY_ERROR);
                 if (attemptNumber >= maxAttempts) {
                     event.setStatus(OutboxStatus.DEAD_LETTER);
                     event.setNextAttemptAt(null);
@@ -115,10 +127,4 @@ public class PmsOutboxProcessor {
         return value == null || value.isBlank() ? "pms-outbox-worker" : value.trim();
     }
 
-    private String errorMessage(Exception exception) {
-        String message = exception.getMessage() == null
-                ? exception.getClass().getSimpleName()
-                : exception.getClass().getSimpleName() + ": " + exception.getMessage();
-        return message.substring(0, Math.min(message.length(), 1000));
-    }
 }

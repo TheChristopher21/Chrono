@@ -101,15 +101,7 @@ class PmsReportingServiceIntegrationTest {
         reservation.setCreatedBy("Christopher");
         reservationRepository.save(reservation);
 
-        RoomBlock block = new RoomBlock();
-        block.setProperty(property);
-        block.setRoom(room102);
-        block.setType(RoomBlockType.OUT_OF_ORDER);
-        block.setStartDate(from.plusDays(1));
-        block.setEndDate(from.plusDays(2));
-        block.setReason("Wartung");
-        block.setCreatedBy("Christopher");
-        roomBlockRepository.save(block);
+        roomBlock(room102, RoomBlockType.OUT_OF_ORDER, from.plusDays(1), from.plusDays(2));
     }
 
     @Test
@@ -156,6 +148,42 @@ class PmsReportingServiceIntegrationTest {
         });
     }
 
+    @Test
+    void outOfServiceRemainsInAvailableInventory() {
+        Room occupiedButSellable = reservationRepository.findAll().get(0).getRoom();
+        roomBlock(occupiedButSellable, RoomBlockType.OUT_OF_SERVICE, from, from.plusDays(2));
+
+        PmsPerformanceReportResponse report = service.performance(
+                company, property.getId(), from, from.plusDays(2));
+        PmsPortfolioResponse portfolio = service.portfolio(company, from);
+
+        assertThat(report.availableRoomNights()).isEqualTo(3);
+        assertThat(report.daily())
+                .extracting(PmsPerformanceReportResponse.DailyPerformance::availableRooms)
+                .containsExactly(2L, 1L);
+        assertThat(portfolio.availableRooms()).isEqualTo(2);
+        assertThat(portfolio.occupancyPercent()).isEqualByComparingTo("50.00");
+    }
+
+    @Test
+    void ownerUseReducesInventoryOnlyUntilItsExclusiveEndDate() {
+        roomBlockRepository.findAll().forEach(block -> {
+            block.setStatus(RoomBlockStatus.COMPLETED);
+            roomBlockRepository.save(block);
+        });
+        roomBlock(room102, RoomBlockType.OWNER_USE, from, from.plusDays(1));
+
+        PmsPerformanceReportResponse report = service.performance(
+                company, property.getId(), from, from.plusDays(2));
+        PmsPortfolioResponse portfolioAfterEnd = service.portfolio(company, from.plusDays(1));
+
+        assertThat(report.availableRoomNights()).isEqualTo(3);
+        assertThat(report.daily())
+                .extracting(PmsPerformanceReportResponse.DailyPerformance::availableRooms)
+                .containsExactly(1L, 2L);
+        assertThat(portfolioAfterEnd.availableRooms()).isEqualTo(2);
+    }
+
     private Room room(RoomType type, String number) {
         Room room = new Room();
         room.setProperty(property);
@@ -165,5 +193,20 @@ class PmsReportingServiceIntegrationTest {
         room.setOperationalStatus(RoomOperationalStatus.IN_SERVICE);
         room.setHousekeepingStatus(HousekeepingStatus.CLEAN);
         return roomRepository.save(room);
+    }
+
+    private RoomBlock roomBlock(Room blockedRoom,
+                                RoomBlockType type,
+                                LocalDate startDate,
+                                LocalDate endDate) {
+        RoomBlock block = new RoomBlock();
+        block.setProperty(property);
+        block.setRoom(blockedRoom);
+        block.setType(type);
+        block.setStartDate(startDate);
+        block.setEndDate(endDate);
+        block.setReason("Wartung");
+        block.setCreatedBy("Christopher");
+        return roomBlockRepository.save(block);
     }
 }

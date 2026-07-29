@@ -13,11 +13,112 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Map;
+
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
     // Verwende einen Logger, um Fehler sicher zu protokollieren
     private static final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+    private static final Map<String, String> VALIDATION_FIELD_LABELS = Map.ofEntries(
+            Map.entry("propertyId", "Hotelbetrieb"),
+            Map.entry("guestId", "Gast"),
+            Map.entry("roomTypeId", "Zimmertyp"),
+            Map.entry("roomId", "Zimmer"),
+            Map.entry("ratePlanId", "Ratenplan"),
+            Map.entry("reservationId", "Reservierung"),
+            Map.entry("folioId", "Gastkonto"),
+            Map.entry("targetFolioId", "Zielkonto"),
+            Map.entry("resourceId", "Hotelressource"),
+            Map.entry("groupBookingId", "Gruppenreservierung"),
+            Map.entry("templateId", "Kommunikationsvorlage"),
+            Map.entry("organizationId", "Geschäftspartner"),
+            Map.entry("contactGuestId", "Hauptansprechperson"),
+            Map.entry("providerCode", "Anbietercode"),
+            Map.entry("displayName", "Bezeichnung"),
+            Map.entry("environment", "Betriebsart"),
+            Map.entry("secretReference", "Zugangsdaten-Referenz"),
+            Map.entry("mappings", "Schnittstellen-Zuordnungen"),
+            Map.entry("externalRoomCode", "Externer Zimmercode"),
+            Map.entry("externalRateCode", "Externer Ratencode"),
+            Map.entry("number", "Zimmernummer"),
+            Map.entry("baseOccupancy", "Standardbelegung"),
+            Map.entry("maxOccupancy", "Maximale Belegung"),
+            Map.entry("bedCount", "Bettenanzahl"),
+            Map.entry("bedType", "Bettenart"),
+            Map.entry("sortOrder", "Sortierung"),
+            Map.entry("countryCode", "Ländercode"),
+            Map.entry("nationalityCode", "Nationalität"),
+            Map.entry("currencyCode", "Währungscode"),
+            Map.entry("languageCode", "Sprachcode"),
+            Map.entry("timezone", "Zeitzone"),
+            Map.entry("checkInTime", "Check-in-Zeit"),
+            Map.entry("checkOutTime", "Check-out-Zeit"),
+            Map.entry("firstName", "Vorname"),
+            Map.entry("lastName", "Nachname"),
+            Map.entry("arrivalDate", "Anreisedatum"),
+            Map.entry("departureDate", "Abreisedatum"),
+            Map.entry("adults", "Erwachsene"),
+            Map.entry("children", "Kinder"),
+            Map.entry("nightlyRate", "Preis pro Nacht"),
+            Map.entry("minStay", "Mindestaufenthalt"),
+            Map.entry("stayDate", "Aufenthaltsdatum"),
+            Map.entry("openingFloat", "Anfangsbestand"),
+            Map.entry("actualCash", "Ist-Bargeld"),
+            Map.entry("amount", "Betrag"),
+            Map.entry("method", "Zahlungsart"),
+            Map.entry("serviceDate", "Leistungsdatum"),
+            Map.entry("quantity", "Menge"),
+            Map.entry("unitPrice", "Einzelpreis"),
+            Map.entry("priority", "Priorität"),
+            Map.entry("estimatedMinutes", "Zeitaufwand"),
+            Map.entry("assignedTo", "Zuständige Person"),
+            Map.entry("resolutionNotes", "Abschlussnotiz"),
+            Map.entry("paymentTermsDays", "Zahlungsziel"),
+            Map.entry("vatRate", "MWST-Satz"),
+            Map.entry("dueDate", "Fälligkeitsdatum"),
+            Map.entry("recipientName", "Rechnungsempfänger"),
+            Map.entry("recipientAddress", "Rechnungsadresse"),
+            Map.entry("recipientPostalCode", "PLZ des Rechnungsempfängers"),
+            Map.entry("recipientCity", "Ort des Rechnungsempfängers"),
+            Map.entry("recipientCountryCode", "Ländercode des Rechnungsempfängers"),
+            Map.entry("creditorIban", "IBAN"),
+            Map.entry("qrReference", "QR-Referenz"),
+            Map.entry("privacyConsent", "Bestätigung"),
+            Map.entry("documentNumber", "Ausweis- oder Passnummer"),
+            Map.entry("signatureName", "Vollständiger Name"),
+            Map.entry("vehiclePlate", "Kennzeichen"),
+            Map.entry("addressLine", "Adresse"),
+            Map.entry("addressLine1", "Adresse"),
+            Map.entry("postalCode", "PLZ"),
+            Map.entry("city", "Ort"),
+            Map.entry("email", "E-Mail-Adresse"),
+            Map.entry("billingEmail", "Rechnungs-E-Mail-Adresse"),
+            Map.entry("phone", "Telefonnummer"),
+            Map.entry("title", "Titel"),
+            Map.entry("organizerName", "Veranstalter"),
+            Map.entry("startAt", "Beginn"),
+            Map.entry("endAt", "Ende"),
+            Map.entry("attendees", "Teilnehmende"),
+            Map.entry("totalAmount", "Gesamtbetrag"),
+            Map.entry("externalThreadId", "Externe Vorgangs-ID"),
+            Map.entry("subject", "Betreff"),
+            Map.entry("body", "Nachricht"),
+            Map.entry("sender", "Absender"),
+            Map.entry("recipient", "Empfänger"),
+            Map.entry("groupCode", "Gruppencode"),
+            Map.entry("rooms", "Zimmerliste"),
+            Map.entry("itemIds", "Positionen"),
+            Map.entry("reason", "Begründung"),
+            Map.entry("reference", "Referenz"),
+            Map.entry("description", "Beschreibung"),
+            Map.entry("notes", "Notiz"),
+            Map.entry("type", "Art"),
+            Map.entry("status", "Status"),
+            Map.entry("code", "Code"),
+            Map.entry("name", "Name"),
+            Map.entry("label", "Bezeichnung")
+    );
 
     @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<ErrorResponse> handleUserNotFound(UserNotFoundException ex) {
@@ -43,7 +144,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     public ResponseEntity<ErrorResponse> handleMaxSize(MaxUploadSizeExceededException ex) {
         logger.error("Dateiupload zu groß", ex);
-        return new ResponseEntity<>(new ErrorResponse("Datei ist zu groß."), HttpStatus.PAYLOAD_TOO_LARGE);
+        return new ResponseEntity<>(new ErrorResponse("Datei ist zu gross."), HttpStatus.PAYLOAD_TOO_LARGE);
     }
 
     @ExceptionHandler(BankingIntegrationException.class)
@@ -70,9 +171,31 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
                 .findFirst()
-                .map(error -> error.getField() + ": " + error.getDefaultMessage())
+                .map(error -> validationMessage(error.getField(), error.getCode()))
                 .orElse("Die Eingabe ist ungültig.");
         return new ResponseEntity<>(new ErrorResponse(message), HttpStatus.BAD_REQUEST);
+    }
+
+    private String validationMessage(String field, String validationCode) {
+        String fieldName = field == null ? "" : field.replaceAll("\\[[0-9]+]", "");
+        int separator = fieldName.lastIndexOf('.');
+        if (separator >= 0) {
+            fieldName = fieldName.substring(separator + 1);
+        }
+        String label = VALIDATION_FIELD_LABELS.getOrDefault(fieldName, "Eingabe");
+        String detail = switch (validationCode == null ? "" : validationCode) {
+            case "NotBlank", "NotEmpty", "NotNull" -> "Dieses Feld ist erforderlich.";
+            case "AssertTrue" -> "Bitte bestätigen.";
+            case "Email" -> "Bitte eine gültige E-Mail-Adresse eingeben.";
+            case "Pattern" -> "Das Format ist ungültig.";
+            case "Size" -> "Die Länge oder Anzahl liegt ausserhalb des zulässigen Bereichs.";
+            case "Min", "DecimalMin", "Positive", "PositiveOrZero" -> "Der Wert ist zu klein.";
+            case "Max", "DecimalMax", "Negative", "NegativeOrZero" -> "Der Wert ist zu gross.";
+            case "Future", "FutureOrPresent" -> "Das Datum muss in der Zukunft liegen.";
+            case "Past", "PastOrPresent" -> "Das Datum darf nicht in der Zukunft liegen.";
+            default -> "Die Eingabe ist ungültig.";
+        };
+        return label + ": " + detail;
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)
@@ -84,7 +207,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ErrorResponse> handleAccessDenied(AccessDeniedException ex) {
         logger.warn("Access denied: {}", ex.getMessage());
-        return new ResponseEntity<>(new ErrorResponse("Keine Berechtigung fuer diese Aktion."), HttpStatus.FORBIDDEN);
+        return new ResponseEntity<>(new ErrorResponse("Keine Berechtigung für diese Aktion."), HttpStatus.FORBIDDEN);
     }
 
     @ExceptionHandler(ResponseStatusException.class)

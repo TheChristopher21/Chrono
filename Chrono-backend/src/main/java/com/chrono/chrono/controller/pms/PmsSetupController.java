@@ -128,20 +128,20 @@ public class PmsSetupController {
 
     private Company requireCompany(Principal principal, String accessLevel) {
         if (principal == null) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required.");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentifizierung erforderlich.");
         }
 
         User user = userRepository.findByUsernameWithPermissionContext(principal.getName())
                 .filter(candidate -> !candidate.isDeleted())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found."));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Benutzer nicht gefunden."));
         userPermissionService.assertPageAccess(
                 user,
                 UserPermissionService.PAGE_PMS,
                 accessLevel,
-                "Missing PMS permission."
+                "Berechtigung für die Hotelverwaltung (PMS) erforderlich."
         );
         if (user.getCompany() == null) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "A company assignment is required.");
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Eine Firmenzuordnung ist erforderlich.");
         }
         return user.getCompany();
     }

@@ -27,7 +27,9 @@ public class SimulatedPmsPaymentGateway implements PmsPaymentGateway {
             BigDecimal amount,
             String providerReference) {
         if (providerReference == null || providerReference.isBlank()) {
-            throw new IllegalArgumentException("A simulated provider reference is required");
+            throw new IllegalArgumentException(
+                    "Für die Testzahlung ist eine Zahlungsreferenz erforderlich."
+            );
         }
         return providerReference.trim();
     }

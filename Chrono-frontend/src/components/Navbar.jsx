@@ -527,7 +527,7 @@ const Navbar = () => {
                                     )}
                                     {showPmsLink && (
                                         <Link to="/pms" onClick={() => setOpenUser(false)}>
-                                            {t('navbar.pms', 'Hotel PMS')}
+                                            {t('navbar.pms', 'Hotelverwaltung (PMS)')}
                                         </Link>
                                     )}
                                     <Link to="/whats-new" onClick={() => setOpenUser(false)}>

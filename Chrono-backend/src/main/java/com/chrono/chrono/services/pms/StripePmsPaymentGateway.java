@@ -29,7 +29,9 @@ public class StripePmsPaymentGateway implements PmsPaymentGateway {
 
     public StripePmsPaymentGateway(@Value("${stripe.secret-key}") String secretKey) {
         if (secretKey == null || secretKey.isBlank()) {
-            throw new IllegalStateException("STRIPE_SECRET_KEY is required for PMS Stripe payments");
+            throw new IllegalStateException(
+                    "Kartenzahlungen sind noch nicht vollständig auf dem Server eingerichtet."
+            );
         }
         this.requestOptions = RequestOptions.builder().setApiKey(secretKey.trim()).build();
     }
@@ -46,22 +48,30 @@ public class StripePmsPaymentGateway implements PmsPaymentGateway {
             BigDecimal amount,
             String providerReference) throws Exception {
         if (providerReference == null || !providerReference.trim().startsWith("pi_")) {
-            throw new IllegalArgumentException("A Stripe PaymentIntent reference is required");
+            throw new IllegalArgumentException(
+                    "Für die Kartenzahlung ist eine gültige Zahlungsreferenz erforderlich."
+            );
         }
         PaymentIntent intent = PaymentIntent.retrieve(providerReference.trim(), requestOptions);
         if (!"succeeded".equals(intent.getStatus())) {
-            throw new IllegalStateException("Stripe PaymentIntent is not captured");
+            throw new IllegalStateException(
+                    "Die Kartenzahlung wurde beim Zahlungsanbieter noch nicht erfolgreich abgeschlossen."
+            );
         }
         if (!String.valueOf(property.getId()).equals(intent.getMetadata().get("chronoPropertyId"))
                 || !String.valueOf(folio.getId()).equals(intent.getMetadata().get("chronoFolioId"))) {
-            throw new IllegalStateException("Stripe PaymentIntent metadata does not match the folio");
+            throw new IllegalStateException("Die Zahlungsreferenz gehört nicht zu diesem Gastkonto.");
         }
         if (!property.getCurrencyCode().equalsIgnoreCase(intent.getCurrency())) {
-            throw new IllegalStateException("Stripe PaymentIntent currency does not match the property");
+            throw new IllegalStateException(
+                    "Die Währung der Kartenzahlung stimmt nicht mit dem Hotelbetrieb überein."
+            );
         }
         long expectedMinorUnits = toMinorUnits(amount, property.getCurrencyCode());
         if (intent.getAmountReceived() == null || intent.getAmountReceived() != expectedMinorUnits) {
-            throw new IllegalStateException("Stripe PaymentIntent amount does not match the folio payment");
+            throw new IllegalStateException(
+                    "Der Betrag der Kartenzahlung stimmt nicht mit der Gastkonto-Zahlung überein."
+            );
         }
         return intent.getId();
     }
@@ -87,7 +97,7 @@ public class StripePmsPaymentGateway implements PmsPaymentGateway {
     static long toMinorUnits(BigDecimal amount, String currencyCode) {
         int digits = Currency.getInstance(currencyCode.toUpperCase()).getDefaultFractionDigits();
         if (digits < 0) {
-            throw new IllegalArgumentException("Unsupported currency");
+            throw new IllegalArgumentException("Die Währung wird für Kartenzahlungen nicht unterstützt.");
         }
         return amount.setScale(digits, RoundingMode.UNNECESSARY)
                 .movePointRight(digits)

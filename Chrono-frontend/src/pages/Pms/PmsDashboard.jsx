@@ -6,39 +6,40 @@ import { ACCESS_MANAGE, hasPageAccess, isAdminUser } from '../../utils/pageAcces
 import { getUserDisplayName } from '../../utils/userDisplay.js';
 import PmsSetupWorkspace from './PmsSetupWorkspace.jsx';
 import PmsOperationsWorkspace from './PmsOperationsWorkspace.jsx';
+import { getPmsEnumLabel } from './pmsTerminology.js';
 import '../../styles/PmsDashboardScoped.css';
 
 const navigationItems = [
     { key: 'overview', code: 'HQ', label: 'Übersicht' },
-    { key: 'portfolio', code: 'MP', label: 'Portfolio' },
+    { key: 'portfolio', code: 'HP', label: 'Hotelportfolio' },
     { key: 'reservations', code: 'RES', label: 'Reservierungen' },
-    { key: 'events', code: 'MICE', label: 'Events & Ressourcen' },
+    { key: 'events', code: 'VER', label: 'Veranstaltungen & Ressourcen' },
     { key: 'room-plan', code: 'ZIM', label: 'Zimmerplan' },
-    { key: 'guests', code: 'GAS', label: 'Gäste' },
-    { key: 'rates', code: 'RAT', label: 'Raten & Verfügbarkeit' },
-    { key: 'housekeeping', code: 'HK', label: 'Housekeeping' },
-    { key: 'folios', code: 'CHF', label: 'Folios & Zahlungen' },
+    { key: 'guests', code: 'GAS', label: 'Gästeprofile' },
+    { key: 'rates', code: 'RAT', label: 'Ratenpläne & Verfügbarkeit' },
+    { key: 'housekeeping', code: 'HK', label: 'Housekeeping & Reinigung' },
+    { key: 'folios', code: 'CHF', label: 'Gastkonten & Zahlungen' },
     { key: 'reports', code: 'KPI', label: 'Berichte' },
-    { key: 'integrations', code: 'SYS', label: 'Integrationen' },
+    { key: 'integrations', code: 'SYS', label: 'Schnittstellen & Integrationen' },
 ];
 
 const quickActions = [
     {
         key: 'reservation',
         label: 'Neue Reservierung',
-        description: 'Einzel-, Gruppen- oder Walk-in-Buchung',
+        description: 'Einzelreservierung oder Walk-in erfassen',
         shortcut: 'Ctrl N',
     },
     {
         key: 'check-in',
-        label: 'Check-in',
-        description: 'Gast suchen und Anreise abschließen',
+        label: 'Einchecken',
+        description: 'Anreise prüfen und Gast einchecken',
         shortcut: 'Ctrl I',
     },
     {
         key: 'check-out',
-        label: 'Check-out',
-        description: 'Folio prüfen und Abreise abschließen',
+        label: 'Auschecken',
+        description: 'Gastkonto prüfen und Gast auschecken',
         shortcut: 'Ctrl O',
     },
     {
@@ -49,8 +50,8 @@ const quickActions = [
     },
     {
         key: 'payment',
-        label: 'Zahlung',
-        description: 'Offene Folios und Zahlungen bearbeiten',
+        label: 'Zahlung erfassen',
+        description: 'Offene Gastkonten und Zahlungen bearbeiten',
         shortcut: 'Ctrl P',
     },
 ];
@@ -59,8 +60,8 @@ const commandItems = [
     { key: 'setup', label: 'Hotel und Zimmer einrichten', hint: 'Ctrl E' },
     { key: 'reservation', label: 'Neue Reservierung anlegen', hint: 'Ctrl N' },
     { key: 'guest-search', label: 'Gast oder Reservierung suchen', hint: 'Ctrl G' },
-    { key: 'check-in', label: 'Check-in starten', hint: 'Ctrl I' },
-    { key: 'check-out', label: 'Check-out starten', hint: 'Ctrl O' },
+    { key: 'check-in', label: 'Gast einchecken', hint: 'Ctrl I' },
+    { key: 'check-out', label: 'Gast auschecken', hint: 'Ctrl O' },
     { key: 'payment', label: 'Zahlung erfassen', hint: 'Ctrl P' },
     { key: 'room-plan', label: 'Zimmerplan öffnen', hint: 'Ctrl R' },
 ];
@@ -95,6 +96,8 @@ const emptyOperations = {
     rooms: [],
     housekeepingTasks: [],
     folios: [],
+    roomBlocks: [],
+    maintenanceWorkOrders: [],
 };
 
 const emptyHealth = {
@@ -152,30 +155,73 @@ const PmsDashboard = () => {
             ?? null,
         [activePropertyId, setup.properties],
     );
-    const activeRoomCount = operations.metrics?.totalRooms
-        ?? activeProperty?.rooms?.filter((room) => room.active).length
-        ?? 0;
-    const blockedRoomCount = operations.rooms?.filter(
-        (room) => room.operationalStatus !== 'IN_SERVICE'
-    ).length ?? 0;
+    const roomStatusSummary = useMemo(() => {
+        const rooms = operations.rooms ?? [];
+        const dateKey = toDateKey(businessDate);
+        const activeRoomBlocks = (operations.roomBlocks ?? [])
+            .filter((block) => block.status === 'ACTIVE')
+            .filter((block) => block.startDate <= dateKey && dateKey < block.endDate);
+        const inventoryBlockingRoomIds = new Set(
+            activeRoomBlocks
+                .filter((block) => ['OUT_OF_ORDER', 'OWNER_USE'].includes(block.type))
+                .map((block) => block.roomId)
+        );
+        const activeRooms = rooms.filter((room) => room.operationalStatus !== 'INACTIVE');
+        const sellableRooms = activeRooms.filter(
+            (room) => room.operationalStatus === 'IN_SERVICE' && !inventoryBlockingRoomIds.has(room.id)
+        );
+        const sellableRoomIds = new Set(sellableRooms.map((room) => room.id));
+        const limitedServiceRoomIds = new Set([
+            ...activeRoomBlocks
+                .filter((block) => block.type === 'OUT_OF_SERVICE')
+                .map((block) => block.roomId),
+            ...sellableRooms
+                .filter((room) => room.housekeepingStatus === 'OUT_OF_SERVICE')
+                .map((room) => room.id),
+        ].filter((roomId) => sellableRoomIds.has(roomId)));
+        const unavailableRoomIds = new Set([
+            ...activeRooms
+                .filter((room) => room.operationalStatus !== 'IN_SERVICE')
+                .map((room) => room.id),
+            ...inventoryBlockingRoomIds,
+        ]);
+        return {
+            total: activeRooms.length || operations.metrics?.totalRooms || 0,
+            cleanAndFree: sellableRooms.filter(
+                (room) => room.housekeepingStatus === 'CLEAN'
+                    && !room.currentReservation
+                    && !limitedServiceRoomIds.has(room.id)
+            ).length,
+            dirty: sellableRooms.filter((room) => room.housekeepingStatus === 'DIRTY').length,
+            cleaning: sellableRooms.filter((room) => room.housekeepingStatus === 'IN_PROGRESS').length,
+            inspection: sellableRooms.filter((room) => room.housekeepingStatus === 'INSPECTION').length,
+            limitedService: limitedServiceRoomIds.size,
+            unavailable: unavailableRoomIds.size,
+        };
+    }, [businessDate, operations.metrics?.totalRooms, operations.roomBlocks, operations.rooms]);
     const metrics = useMemo(() => [
         {
             key: 'occupancy',
             label: 'Auslastung',
             value: `${operations.metrics?.occupancyPercent ?? 0} %`,
-            meta: `${operations.metrics?.occupiedRooms ?? 0} von ${operations.metrics?.totalRooms ?? setup.totalRooms} Zimmern`,
+            meta: `${operations.metrics?.occupiedRooms ?? 0} von ${operations.metrics?.totalRooms ?? setup.totalRooms} Zimmern verkauft oder belegt`,
         },
-        { key: 'in-house', label: 'In-House', value: String(operations.metrics?.inHouse ?? 0), meta: 'Aktive Aufenthalte' },
+        { key: 'in-house', label: 'Gäste im Haus', value: String(operations.metrics?.inHouse ?? 0), meta: 'Eingecheckte Aufenthalte' },
         { key: 'arrivals', label: 'Anreisen', value: String(operations.metrics?.arrivals ?? 0), meta: 'Am Betriebstag' },
         { key: 'departures', label: 'Abreisen', value: String(operations.metrics?.departures ?? 0), meta: 'Am Betriebstag' },
-        { key: 'housekeeping', label: 'Zu reinigen', value: String(operations.metrics?.dirtyRooms ?? 0), meta: `${operations.housekeepingTasks?.length ?? 0} Aufgaben` },
+        {
+            key: 'housekeeping',
+            label: 'Zu reinigen',
+            value: String(operations.rooms?.length ? roomStatusSummary.dirty : operations.metrics?.dirtyRooms ?? 0),
+            meta: `${operations.housekeepingTasks?.length ?? 0} Aufgaben`,
+        },
         {
             key: 'open-folios',
-            label: 'Offene Folios',
+            label: 'Offene Gastkonten',
             value: `${activeProperty?.currencyCode ?? 'CHF'} ${Number(operations.metrics?.openBalance ?? 0).toFixed(2)}`,
-            meta: `${operations.metrics?.openFolios ?? 0} offene Konten`,
+            meta: `${operations.metrics?.openFolios ?? 0} offene Gastkonten`,
         },
-    ], [activeProperty?.currencyCode, operations, setup.totalRooms]);
+    ], [activeProperty?.currencyCode, operations, roomStatusSummary.dirty, setup.totalRooms]);
     const setupSteps = useMemo(() => {
         const hasProperty = setup.totalProperties > 0;
         const hasRoomTypes = setup.totalRoomTypes > 0;
@@ -191,8 +237,8 @@ const PmsDashboard = () => {
                 label: 'Zimmertypen und Zimmer erfassen',
                 state: hasRooms ? 'done' : hasProperty ? 'next' : 'waiting',
             },
-            { key: 'rates', label: 'Raten und Verfügbarkeiten definieren', state: operations.ratePlans?.length ? 'done' : hasRooms ? 'next' : 'waiting' },
-            { key: 'payments', label: 'Folios und Zahlungsarten aktivieren', state: operations.ratePlans?.length ? 'done' : 'waiting' },
+            { key: 'rates', label: 'Ratenpläne und Verfügbarkeiten definieren', state: operations.ratePlans?.length ? 'done' : hasRooms ? 'next' : 'waiting' },
+            { key: 'payments', label: 'Gastkonten und Zahlungsarten aktivieren', state: operations.ratePlans?.length ? 'done' : 'waiting' },
             { key: 'channels', label: 'Buchungskanäle anbinden', state: 'waiting' },
         ];
     }, [operations.ratePlans?.length, setup.totalProperties, setup.totalRoomTypes, setup.totalRooms]);
@@ -405,7 +451,7 @@ const PmsDashboard = () => {
                     >
                         <span className="pms-property-mark" aria-hidden="true">CH</span>
                         <div>
-                            <small>Aktiver Betrieb</small>
+                            <small>Aktives Hotel</small>
                             <strong>
                                 {setupLoading ? 'Hotel wird geladen…' : activeProperty?.name ?? 'Hotel einrichten'}
                             </strong>
@@ -431,8 +477,8 @@ const PmsDashboard = () => {
                     <div className="pms-sidebar-status">
                         <span className="pms-status-dot" aria-hidden="true" />
                         <div>
-                            <strong>Chrono lokal aktiv</strong>
-                            <small>Keine externen Systeme verbunden</small>
+                            <strong>PMS betriebsbereit</strong>
+                            <small>Status- und Schnittstellenprüfung aktiv</small>
                         </div>
                     </div>
                 </aside>
@@ -440,7 +486,7 @@ const PmsDashboard = () => {
                 <main className="pms-main">
                     <header className="pms-topbar">
                         <div>
-                            <span className="pms-eyebrow">Chrono Hotel OS</span>
+                            <span className="pms-eyebrow">Chrono Hotel-PMS</span>
                             <h1>Guten Tag, {displayName}</h1>
                             <p>Deine operative Übersicht für den aktuellen Hotelbetrieb.</p>
                         </div>
@@ -504,8 +550,8 @@ const PmsDashboard = () => {
                                             : operationalHealth.status === 'WARNING'
                                                 ? 'Betriebsprüfung mit Hinweisen'
                                         : setup.foundationComplete
-                                            ? 'Hotelfundament betriebsbereit'
-                                            : 'Hoteleinrichtung offen'}
+                                            ? 'Hoteleinrichtung vollständig'
+                                            : 'Hoteleinrichtung unvollständig'}
                                 </strong>
                             </div>
                         </div>
@@ -554,12 +600,12 @@ const PmsDashboard = () => {
                                 <div>
                                     <strong>{selectedAction}</strong>
                                     <p>
-                                        Dieser Arbeitsbereich ist im Hauptdashboard vorbereitet.
-                                        Die Datenfunktion bauen wir im nächsten PMS-Schritt an.
+                                        Der gewählte Arbeitsbereich konnte nicht geöffnet werden.
+                                        Bitte versuche es erneut oder prüfe deine Berechtigung.
                                     </p>
                                 </div>
                             </div>
-                            <button type="button" onClick={() => setSelectedAction(null)} aria-label="Hinweis schließen">×</button>
+                            <button type="button" onClick={() => setSelectedAction(null)} aria-label="Hinweis schliessen">×</button>
                         </section>
                     )}
 
@@ -611,7 +657,7 @@ const PmsDashboard = () => {
                         <section className="pms-panel pms-arrivals-panel">
                             <div className="pms-panel-header">
                                 <div>
-                                    <span className="pms-eyebrow">Front Office</span>
+                                    <span className="pms-eyebrow">Rezeption</span>
                                     <h2>Anreisen heute</h2>
                                 </div>
                                 <button type="button" onClick={() => openNavigation('reservations')}>Alle anzeigen</button>
@@ -630,9 +676,15 @@ const PmsDashboard = () => {
                                     </div>
                                     <span>{activeProperty?.checkInTime?.slice(0, 5) ?? '15:00'}</span>
                                     <span>{arrival.roomNumber ?? arrival.roomTypeName}</span>
-                                    <button type="button" onClick={() => selectAction('check-in')}>
-                                        {arrival.status === 'CHECKED_IN' ? 'In-House' : 'Check-in'}
-                                    </button>
+                                    {arrival.status === 'CONFIRMED' ? (
+                                        <button type="button" onClick={() => selectAction('check-in')}>
+                                            Einchecken
+                                        </button>
+                                    ) : (
+                                        <span className="pms-arrival-status">
+                                            {getPmsEnumLabel('ReservationStatus', arrival.status)}
+                                        </span>
+                                    )}
                                 </div>
                             )) : (
                                 <div className="pms-empty-row">
@@ -650,20 +702,23 @@ const PmsDashboard = () => {
                             <div className="pms-panel-header">
                                 <div>
                                     <span className="pms-eyebrow">Zimmerstatus</span>
-                                    <h2>Bereitschaft</h2>
+                                    <h2>Zimmerstatus</h2>
                                 </div>
                                 <button type="button" onClick={() => openNavigation('room-plan')}>Zimmerplan</button>
                             </div>
                             <div className="pms-room-state-empty">
-                                <div className="pms-room-ring" aria-label={`${activeRoomCount} Zimmer eingerichtet`}>
-                                    <strong>{activeRoomCount}</strong>
+                                <div className="pms-room-ring" aria-label={`${roomStatusSummary.total} Zimmer eingerichtet`}>
+                                    <strong>{roomStatusSummary.total}</strong>
                                     <span>Zimmer</span>
                                 </div>
                                 <div className="pms-room-legend">
-                                    <span><i className="is-ready" /> Sauber & frei <strong>{operations.rooms?.filter((room) => room.housekeepingStatus === 'CLEAN' && !room.currentReservation).length ?? 0}</strong></span>
-                                    <span><i className="is-dirty" /> Zu reinigen <strong>{operations.metrics?.dirtyRooms ?? 0}</strong></span>
+                                    <span><i className="is-ready" /> Sauber & frei <strong>{roomStatusSummary.cleanAndFree}</strong></span>
+                                    <span><i className="is-dirty" /> Zu reinigen <strong>{roomStatusSummary.dirty}</strong></span>
+                                    <span><i className="is-dirty" /> Reinigung läuft <strong>{roomStatusSummary.cleaning}</strong></span>
+                                    <span><i className="is-ready" /> Zu kontrollieren <strong>{roomStatusSummary.inspection}</strong></span>
                                     <span><i className="is-occupied" /> Belegt <strong>{operations.metrics?.occupiedRooms ?? 0}</strong></span>
-                                    <span><i className="is-blocked" /> Gesperrt <strong>{blockedRoomCount}</strong></span>
+                                    <span><i className="is-limited" /> Eingeschränkter Betrieb (OOS) <strong>{roomStatusSummary.limitedService}</strong></span>
+                                    <span><i className="is-blocked" /> Nicht verkaufbar <strong>{roomStatusSummary.unavailable}</strong></span>
                                 </div>
                             </div>
                         </section>
@@ -671,16 +726,16 @@ const PmsDashboard = () => {
                         <section className="pms-panel pms-departures-panel">
                             <div className="pms-panel-header">
                                 <div>
-                                    <span className="pms-eyebrow">Front Office</span>
-                                    <h2>Abreisen & offene Folios</h2>
+                                    <span className="pms-eyebrow">Rezeption</span>
+                                    <h2>Abreisen & offene Gastkonten</h2>
                                 </div>
-                                <button type="button" onClick={() => openNavigation('folios')}>Folios öffnen</button>
+                                <button type="button" onClick={() => openNavigation('folios')}>Gastkonten öffnen</button>
                             </div>
                             {operations.departures?.length || Number(operations.metrics?.openBalance ?? 0) > 0 ? (
                                 <div className="pms-operational-summary">
                                     <div><span>Abreisen</span><strong>{operations.departures?.length ?? 0}</strong></div>
                                     <div><span>Offener Betrag</span><strong>{activeProperty?.currencyCode ?? 'CHF'} {Number(operations.metrics?.openBalance ?? 0).toFixed(2)}</strong></div>
-                                    <button type="button" onClick={() => openNavigation('folios')}>Folios bearbeiten</button>
+                                    <button type="button" onClick={() => openNavigation('folios')}>Gastkonten bearbeiten</button>
                                 </div>
                             ) : (
                                 <div className="pms-empty-compact">
@@ -722,7 +777,7 @@ const PmsDashboard = () => {
                         <section className="pms-panel pms-system-panel">
                             <div className="pms-panel-header">
                                 <div>
-                                    <span className="pms-eyebrow">Integration Control Center</span>
+                                    <span className="pms-eyebrow">Schnittstellenstatus</span>
                                     <h2>Systeme</h2>
                                 </div>
                                 <button type="button" onClick={() => openNavigation('integrations')}>Details</button>
@@ -751,17 +806,17 @@ const PmsDashboard = () => {
                         <section className="pms-panel pms-ai-panel">
                             <div className="pms-panel-header">
                                 <div>
-                                    <span className="pms-eyebrow">Operations Watch</span>
+                                    <span className="pms-eyebrow">Betriebsprüfungen</span>
                                     <h2>Prüfungen</h2>
                                 </div>
-                                <span className="pms-local-badge">Keine Blackbox</span>
+                                <span className="pms-local-badge">Nachvollziehbar geprüft</span>
                             </div>
                             {operationalHealth.alerts?.length ? (
                                 <div className="pms-record-list">
                                     {operationalHealth.alerts.map((alert) => (
                                         <article className="pms-record" key={alert.code}>
                                             <div>
-                                                <span>{alert.severity}</span>
+                                                <span>{getPmsEnumLabel('OperationalHealthStatus', alert.severity)}</span>
                                                 <strong>{alert.title}</strong>
                                                 <small>{alert.details} · {alert.recommendedAction}</small>
                                             </div>
@@ -773,7 +828,7 @@ const PmsDashboard = () => {
                                     <span className="pms-empty-symbol" aria-hidden="true">✓</span>
                                     <div>
                                         <strong>Keine aktiven Betriebsalarme</strong>
-                                        <p>Datenbank, Integrationsqueue, Audit und Sicherungen werden nachvollziehbar geprüft.</p>
+                                        <p>Datenbank, Übertragungen, Änderungsprotokoll und Sicherungen werden nachvollziehbar geprüft.</p>
                                     </div>
                                 </div>
                             )}
@@ -783,10 +838,10 @@ const PmsDashboard = () => {
                     <section className="pms-setup-panel">
                         <div className="pms-setup-copy">
                             <span className="pms-eyebrow">Ersteinrichtung</span>
-                            <h2>Das Hotelfundament zuerst</h2>
+                            <h2>Hoteleinrichtung abschliessen</h2>
                             <p>
                                 {setup.foundationComplete
-                                    ? `${setup.totalProperties} Hotelbetrieb, ${setup.totalRoomTypes} Zimmertypen und ${setup.totalRooms} Zimmer sind persistent eingerichtet.`
+                                    ? `${setup.totalProperties} Hotel, ${setup.totalRoomTypes} Zimmertypen und ${setup.totalRooms} Zimmer sind eingerichtet.`
                                     : 'Lege Hotelstruktur, Zimmertypen und konkrete Zimmer an. Diese Stammdaten bilden die Grundlage für Verfügbarkeit, Reservierungen und Aufenthalte.'}
                             </p>
                             <button type="button" onClick={() => setSetupOpen(true)}>

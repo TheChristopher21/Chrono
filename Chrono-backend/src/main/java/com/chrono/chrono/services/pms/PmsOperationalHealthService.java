@@ -90,23 +90,24 @@ public class PmsOperationalHealthService {
                 ? HealthStatus.CRITICAL
                 : failed > 0 || overdue ? HealthStatus.WARNING : HealthStatus.OK;
         components.add(new ComponentHealth(
-                "outbox", "Integrationsqueue", outboxStatus,
-                pending + " offen, " + failed + " fehlgeschlagen, " + deadLetter + " Dead-Letter.",
+                "outbox", "Externe Übertragungen", outboxStatus,
+                pending + " offen, " + failed + " fehlgeschlagen, "
+                        + deadLetter + " endgültig fehlgeschlagen.",
                 checkedAt));
         if (deadLetter > 0) {
             alerts.add(new OperationalAlert(
                     "PMS_OUTBOX_DEAD_LETTER", HealthStatus.CRITICAL,
                     "Integrationsereignisse endgültig fehlgeschlagen",
-                    deadLetter + " Ereignis(se) liegen in der Dead-Letter-Queue.",
-                    "Integration Control Center öffnen, Fehler prüfen und Ereignisse erneut einplanen."));
+                    deadLetter + " Übertragung(en) sind endgültig fehlgeschlagen.",
+                    "Schnittstellen & Integrationen öffnen, Fehler prüfen und Übertragungen erneut einplanen."));
         } else if (failed > 0 || overdue) {
             alerts.add(new OperationalAlert(
                     "PMS_OUTBOX_DELAYED", HealthStatus.WARNING,
-                    "Integrationsqueue benötigt Aufmerksamkeit",
+                    "Externe Übertragungen benötigen Aufmerksamkeit",
                     failed > 0
                             ? failed + " Zustellversuch(e) sind fehlgeschlagen."
                             : "Das älteste offene Ereignis überschreitet das Zeitlimit.",
-                    "Providerstatus und ausstehende Ereignisse prüfen."));
+                    "Anbieterverbindung und ausstehende Übertragungen prüfen."));
         }
 
         List<PmsAuditEvent> auditEvents =
@@ -116,14 +117,14 @@ public class PmsOperationalHealthService {
                 .count();
         HealthStatus auditStatus = invalidAuditEvents == 0 ? HealthStatus.OK : HealthStatus.CRITICAL;
         components.add(new ComponentHealth(
-                "audit", "Audit-Integrität", auditStatus,
+                "audit", "Änderungsprotokoll", auditStatus,
                 auditEvents.size() + " letzte Ereignisse geprüft, " + invalidAuditEvents + " ungültig.",
                 checkedAt));
         if (invalidAuditEvents > 0) {
             alerts.add(new OperationalAlert(
                     "PMS_AUDIT_INTEGRITY", HealthStatus.CRITICAL,
-                    "Audit-Integrität verletzt",
-                    invalidAuditEvents + " Audit-Ereignis(se) haben eine ungültige Prüfsumme.",
+                    "Änderungsprotokoll beschädigt",
+                    invalidAuditEvents + " Eintrag/Einträge haben eine ungültige Prüfsumme.",
                     "Schreibzugriffe stoppen und Datenbankprüfung durchführen."));
         }
 

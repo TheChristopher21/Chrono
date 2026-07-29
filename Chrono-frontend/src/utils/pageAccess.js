@@ -90,7 +90,7 @@ export const PAGE_CATALOG = [
     },
     {
         key: "pms",
-        label: "Hotel PMS",
+        label: "Hotelverwaltung (PMS)",
         description: "Reservierungen, Zimmer, Anreisen und Hotelbetrieb zentral steuern.",
         path: "/pms",
         userAssignable: true,

@@ -47,6 +47,8 @@ class PmsOperationsServiceIntegrationTest {
     @Autowired
     private ReservationStatusHistoryRepository reservationStatusHistoryRepository;
     @Autowired
+    private ReservationRepository reservationRepository;
+    @Autowired
     private PaymentRepository paymentRepository;
     @Autowired
     private CashShiftRepository cashShiftRepository;
@@ -306,6 +308,132 @@ class PmsOperationsServiceIntegrationTest {
     }
 
     @Test
+    void dashboardSeparatesOperationalArrivalsFromOptionsAndUsesTheSelectedBusinessDateForOccupancy() {
+        Room checkedInRoom = room("102");
+        Room optionRoom = room("103");
+        LocalDate departure = today.plusDays(3);
+
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, room.getId()),
+                "Christopher",
+                today
+        );
+        PmsOperationsResponse checkedInCreated = service.createReservation(
+                company,
+                reservationRequest(today, departure, checkedInRoom.getId()),
+                "Christopher",
+                today
+        );
+        Long checkedInReservationId = checkedInCreated.reservations().stream()
+                .filter(view -> checkedInRoom.getId().equals(view.roomId()))
+                .map(PmsOperationsResponse.ReservationView::id)
+                .findFirst()
+                .orElseThrow();
+        service.checkIn(company, checkedInReservationId, "Christopher", today);
+
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, optionRoom.getId(), ReservationStatus.TENTATIVE),
+                "Christopher",
+                today
+        );
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, null, ReservationStatus.OFFERED),
+                "Christopher",
+                today
+        );
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, null, ReservationStatus.WAITLISTED),
+                "Christopher",
+                today
+        );
+
+        PmsOperationsResponse todayView =
+                service.getOperations(company, property.getId(), today, null, null);
+        assertThat(todayView.arrivals())
+                .extracting(PmsOperationsResponse.ReservationView::status)
+                .containsExactlyInAnyOrder(ReservationStatus.CONFIRMED, ReservationStatus.CHECKED_IN);
+        assertThat(todayView.metrics().arrivals()).isEqualTo(2);
+        assertThat(todayView.metrics().occupiedRooms()).isEqualTo(2);
+        assertThat(todayView.metrics().availableRooms()).isEqualTo(1);
+        assertThat(todayView.metrics().occupancyPercent()).isEqualTo(67);
+        assertThat(todayView.metrics().inHouse()).isEqualTo(1);
+
+        PmsOperationsResponse nextBusinessDate =
+                service.getOperations(company, property.getId(), today.plusDays(1), null, null);
+        assertThat(nextBusinessDate.arrivals()).isEmpty();
+        assertThat(nextBusinessDate.metrics().occupiedRooms()).isEqualTo(2);
+        assertThat(nextBusinessDate.metrics().availableRooms()).isEqualTo(1);
+        assertThat(nextBusinessDate.metrics().occupancyPercent()).isEqualTo(67);
+        assertThat(nextBusinessDate.metrics().inHouse()).isEqualTo(1);
+    }
+
+    @Test
+    void dashboardDeparturesContainOnlyGuestsInHouseAndCompletedCheckouts() {
+        Room checkedOutRoom = room("102");
+        Room optionRoom = room("103");
+        LocalDate departure = today.plusDays(1);
+
+        PmsOperationsResponse checkedInCreated = service.createReservation(
+                company,
+                reservationRequest(today, departure, room.getId()),
+                "Christopher",
+                today
+        );
+        Long checkedInReservationId = checkedInCreated.reservations().stream()
+                .filter(view -> room.getId().equals(view.roomId()))
+                .map(PmsOperationsResponse.ReservationView::id)
+                .findFirst()
+                .orElseThrow();
+        service.checkIn(company, checkedInReservationId, "Christopher", today);
+
+        PmsOperationsResponse checkedOutCreated = service.createReservation(
+                company,
+                reservationRequest(today, departure, checkedOutRoom.getId(), ReservationStatus.OFFERED),
+                "Christopher",
+                today
+        );
+        Long checkedOutReservationId = checkedOutCreated.reservations().stream()
+                .filter(view -> checkedOutRoom.getId().equals(view.roomId()))
+                .map(PmsOperationsResponse.ReservationView::id)
+                .findFirst()
+                .orElseThrow();
+        Reservation checkedOut = reservationRepository.findById(checkedOutReservationId).orElseThrow();
+        checkedOut.setStatus(ReservationStatus.CHECKED_OUT);
+        checkedOut.setCheckedOutAt(LocalDateTime.now());
+        reservationRepository.save(checkedOut);
+
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, optionRoom.getId(), ReservationStatus.TENTATIVE),
+                "Christopher",
+                today
+        );
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, null, ReservationStatus.OFFERED),
+                "Christopher",
+                today
+        );
+        service.createReservation(
+                company,
+                reservationRequest(today, departure, null, ReservationStatus.WAITLISTED),
+                "Christopher",
+                today
+        );
+
+        PmsOperationsResponse departureView =
+                service.getOperations(company, property.getId(), departure, null, null);
+        assertThat(departureView.departures())
+                .extracting(PmsOperationsResponse.ReservationView::status)
+                .containsExactlyInAnyOrder(ReservationStatus.CHECKED_IN, ReservationStatus.CHECKED_OUT);
+        assertThat(departureView.metrics().departures()).isEqualTo(2);
+    }
+
+    @Test
     void expiresOffersAndKeepsAnAuditableStatusHistory() {
         LocalDateTime expiredAt = LocalDateTime.now().minusMinutes(5);
         UpsertReservationRequest offerRequest = new UpsertReservationRequest(
@@ -486,9 +614,151 @@ class PmsOperationsServiceIntegrationTest {
                 .roomTypes().get(0).availableRooms()).isEqualTo(1);
     }
 
+    @Test
+    void outOfServiceBlockKeepsTheRoomInInventoryAndAssignable() {
+        LocalDate start = today.plusDays(10);
+        LocalDate end = start.plusDays(2);
+
+        service.createMaintenanceWorkOrder(
+                company,
+                property.getId(),
+                new CreateMaintenanceWorkOrderRequest(
+                        room.getId(), "Kosmetischer Mangel", "Kratzer am Nachttisch",
+                        MaintenancePriority.LOW, "Technik", start, true,
+                        RoomBlockType.OUT_OF_SERVICE, start, end
+                ),
+                "Christopher",
+                today
+        );
+
+        assertThat(roomBlockRepository.findAll()).singleElement().satisfies(block -> {
+            assertThat(block.getType()).isEqualTo(RoomBlockType.OUT_OF_SERVICE);
+            assertThat(block.getStatus()).isEqualTo(RoomBlockStatus.ACTIVE);
+        });
+        assertThat(service.getAvailability(company, property.getId(), start, end)
+                .roomTypes().get(0).availableRooms()).isEqualTo(1);
+
+        PmsOperationsResponse reservation = service.createReservation(
+                company,
+                reservationRequest(start, end, room.getId()),
+                "Christopher",
+                today
+        );
+        assertThat(reservation.reservations()).singleElement()
+                 .satisfies(view -> assertThat(view.roomNumber()).isEqualTo("101"));
+    }
+
+    @Test
+    void dashboardInventoryDistinguishesOutOfServiceFromBlockingRoomStatuses() {
+        RoomBlock outOfService = roomBlock(RoomBlockType.OUT_OF_SERVICE, today, today.plusDays(1));
+
+        PmsOperationsResponse withOutOfService =
+                service.getOperations(company, property.getId(), today, null, null);
+        assertThat(withOutOfService.metrics().totalRooms()).isEqualTo(1);
+        assertThat(withOutOfService.metrics().availableRooms()).isEqualTo(1);
+
+        roomBlockRepository.delete(outOfService);
+        roomBlockRepository.flush();
+        room.setHousekeepingStatus(HousekeepingStatus.DIRTY);
+        roomRepository.save(room);
+        roomBlock(RoomBlockType.OUT_OF_ORDER, today, today.plusDays(1));
+
+        PmsOperationsResponse withOutOfOrder =
+                service.getOperations(company, property.getId(), today, null, null);
+        assertThat(withOutOfOrder.metrics().totalRooms()).isZero();
+        assertThat(withOutOfOrder.metrics().availableRooms()).isZero();
+        assertThat(withOutOfOrder.metrics().occupancyPercent()).isZero();
+        assertThat(withOutOfOrder.metrics().dirtyRooms()).isZero();
+
+        roomBlockRepository.deleteAll();
+        roomBlockRepository.flush();
+        roomBlock(RoomBlockType.OWNER_USE, today, today.plusDays(1));
+
+        PmsOperationsResponse withOwnerUse =
+                service.getOperations(company, property.getId(), today, null, null);
+        assertThat(withOwnerUse.metrics().totalRooms()).isZero();
+        assertThat(withOwnerUse.metrics().availableRooms()).isZero();
+    }
+
+    @Test
+    void housekeepingStatusDoesNotChangeTheOperationalRoomStatus() {
+        HousekeepingTask task = new HousekeepingTask();
+        task.setProperty(property);
+        task.setRoom(room);
+        task.setServiceDate(today);
+        task.setType(HousekeepingTaskType.MANUAL);
+        task.setStatus(HousekeepingStatus.DIRTY);
+        task.setPriority(50);
+        task.setEstimatedMinutes(20);
+        task = housekeepingTaskRepository.save(task);
+
+        room.setOperationalStatus(RoomOperationalStatus.OUT_OF_ORDER);
+        roomRepository.save(room);
+
+        service.updateHousekeepingTask(
+                company,
+                property.getId(),
+                task.getId(),
+                new UpdateHousekeepingTaskRequest(
+                        HousekeepingTaskType.INSPECTION,
+                        HousekeepingStatus.CLEAN,
+                        50,
+                        20,
+                        null,
+                        "Housekeeping"
+                ),
+                today
+        );
+
+        Room technicallyBlocked = roomRepository.findById(room.getId()).orElseThrow();
+        assertThat(technicallyBlocked.getHousekeepingStatus()).isEqualTo(HousekeepingStatus.CLEAN);
+        assertThat(technicallyBlocked.getOperationalStatus()).isEqualTo(RoomOperationalStatus.OUT_OF_ORDER);
+
+        technicallyBlocked.setOperationalStatus(RoomOperationalStatus.IN_SERVICE);
+        roomRepository.save(technicallyBlocked);
+
+        service.updateHousekeepingTask(
+                company,
+                property.getId(),
+                task.getId(),
+                new UpdateHousekeepingTaskRequest(
+                        HousekeepingTaskType.MANUAL,
+                        HousekeepingStatus.OUT_OF_SERVICE,
+                        50,
+                        20,
+                        null,
+                        "Housekeeping"
+                ),
+                today
+        );
+
+        Room housekeepingBlocked = roomRepository.findById(room.getId()).orElseThrow();
+        assertThat(housekeepingBlocked.getHousekeepingStatus()).isEqualTo(HousekeepingStatus.OUT_OF_SERVICE);
+        assertThat(housekeepingBlocked.getOperationalStatus()).isEqualTo(RoomOperationalStatus.IN_SERVICE);
+    }
+
+    @Test
+    void dirtyRoomMetricOnlyCountsSellableRoomsAwaitingCleaning() {
+        room.setHousekeepingStatus(HousekeepingStatus.DIRTY);
+        roomRepository.save(room);
+        assertThat(service.getOperations(company, property.getId(), today, null, null)
+                .metrics().dirtyRooms()).isEqualTo(1);
+
+        room.setHousekeepingStatus(HousekeepingStatus.IN_PROGRESS);
+        roomRepository.save(room);
+        assertThat(service.getOperations(company, property.getId(), today, null, null)
+                .metrics().dirtyRooms()).isZero();
+
+        room.setHousekeepingStatus(HousekeepingStatus.DIRTY);
+        room.setOperationalStatus(RoomOperationalStatus.OUT_OF_ORDER);
+        roomRepository.save(room);
+        assertThat(service.getOperations(company, property.getId(), today, null, null)
+                .metrics().dirtyRooms()).isZero();
+    }
+
     private UpsertReservationRequest reservationRequest(LocalDate arrival,
-                                                        LocalDate departure,
-                                                        Long roomId) {
+                                                         LocalDate departure,
+                                                         Long roomId) {
         return new UpsertReservationRequest(
                 property.getId(),
                 guest.getId(),
@@ -503,5 +773,48 @@ class PmsOperationsServiceIntegrationTest {
                 ReservationSource.DIRECT,
                 "Ruhiges Zimmer"
         );
+    }
+
+    private UpsertReservationRequest reservationRequest(LocalDate arrival,
+                                                        LocalDate departure,
+                                                        Long roomId,
+                                                        ReservationStatus status) {
+        return new UpsertReservationRequest(
+                property.getId(),
+                guest.getId(),
+                roomType.getId(),
+                roomId,
+                ratePlan.getId(),
+                arrival,
+                departure,
+                2,
+                0,
+                status,
+                ReservationSource.DIRECT,
+                "Ruhiges Zimmer",
+                ReservationGuaranteeStatus.UNGUARANTEED,
+                null
+        );
+    }
+
+    private Room room(String number) {
+        Room additionalRoom = new Room();
+        additionalRoom.setProperty(property);
+        additionalRoom.setRoomType(roomType);
+        additionalRoom.setNumber(number);
+        additionalRoom.setHousekeepingStatus(HousekeepingStatus.CLEAN);
+        return roomRepository.save(additionalRoom);
+    }
+
+    private RoomBlock roomBlock(RoomBlockType type, LocalDate startDate, LocalDate endDate) {
+        RoomBlock block = new RoomBlock();
+        block.setProperty(property);
+        block.setRoom(room);
+        block.setType(type);
+        block.setStartDate(startDate);
+        block.setEndDate(endDate);
+        block.setReason("Wartung");
+        block.setCreatedBy("Christopher");
+        return roomBlockRepository.save(block);
     }
 }

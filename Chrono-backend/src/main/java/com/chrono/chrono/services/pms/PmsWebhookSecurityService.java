@@ -38,9 +38,9 @@ public class PmsWebhookSecurityService {
                                     String rawBody) {
         ChannelConnection connection = connectionRepository
                 .findByProperty_CodeIgnoreCaseAndProviderCodeIgnoreCase(propertyCode, providerCode)
-                .orElseThrow(() -> unauthorized("Unbekannte Channel-Verbindung."));
+                .orElseThrow(() -> unauthorized("Unbekannte Schnittstellen-Verbindung."));
         if (connection.getStatus() != ChannelConnectionStatus.READY) {
-            throw unauthorized("Channel-Verbindung ist nicht empfangsbereit.");
+            throw unauthorized("Die Schnittstellen-Verbindung ist nicht empfangsbereit.");
         }
         long timestamp;
         try {

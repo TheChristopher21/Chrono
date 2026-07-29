@@ -82,6 +82,30 @@ const advanced = {
         aggregateId: '60',
         integrityHash: '1234567890abcdef',
         createdAt: '2026-07-28T10:00:00',
+    }, {
+        id: 93,
+        actor: 'Christopher',
+        eventType: 'privacy.guest_exported',
+        aggregateType: 'guest',
+        aggregateId: '7',
+        integrityHash: 'abcdef1234567890',
+        createdAt: '2026-07-28T10:10:00',
+    }, {
+        id: 94,
+        actor: 'Christopher',
+        eventType: 'communication.queued',
+        aggregateType: 'guest_communication',
+        aggregateId: '103',
+        integrityHash: 'abcdef1234567891',
+        createdAt: '2026-07-28T10:11:00',
+    }, {
+        id: 95,
+        actor: 'Christopher',
+        eventType: 'integration.outbox_retried',
+        aggregateType: 'outbox',
+        aggregateId: '90',
+        integrityHash: 'abcdef1234567892',
+        createdAt: '2026-07-28T10:12:00',
     }],
     integrationOutbox: [{
         id: 90,
@@ -90,6 +114,7 @@ const advanced = {
         aggregateId: '60',
         status: 'PENDING',
         attemptCount: 0,
+        lastError: 'IllegalStateException: provider token was rejected',
         createdAt: '2026-07-28T10:00:00',
     }],
 };
@@ -109,7 +134,7 @@ const performanceReport = {
     arrivals: 12,
     cancellations: 2,
     noShows: 1,
-    methodology: 'Aufenthaltsdatum, Ende exklusiv.',
+    methodology: 'Auswertung nach Aufenthaltsdatum; der Abreisetag zählt nicht als Übernachtung.',
     daily: [{
         date: '2026-07-28',
         availableRooms: 2,
@@ -180,19 +205,19 @@ describe('PmsAdvancedWorkspace', () => {
 
     it('creates an atomic multi-room group payload from the rooming list', async () => {
         renderWorkspace('groups');
-        await screen.findByText('Gruppenbuchung');
+        await screen.findByRole('heading', { name: 'Gruppenreservierung anlegen' });
 
         await userEvent.type(screen.getByLabelText('Gruppencode'), 'TEAM-26');
-        await userEvent.type(screen.getByLabelText('Name'), 'Team Zürich');
-        await userEvent.selectOptions(screen.getByLabelText('Kontakt'), '7');
+        await userEvent.type(screen.getByLabelText('Gruppenname'), 'Team Zürich');
+        await userEvent.selectOptions(screen.getByLabelText('Hauptansprechperson'), '7');
         await userEvent.selectOptions(screen.getByLabelText('Gast Zimmer 1'), '7');
-        await userEvent.selectOptions(screen.getByLabelText('Rate Zimmer 1'), '20');
+        await userEvent.selectOptions(screen.getByLabelText('Ratenplan Zimmer 1'), '20');
         await userEvent.selectOptions(screen.getByLabelText('Zimmernummer 1'), '30');
         await userEvent.click(screen.getByRole('button', { name: 'Zimmer hinzufügen' }));
         await userEvent.selectOptions(screen.getByLabelText('Gast Zimmer 2'), '8');
-        await userEvent.selectOptions(screen.getByLabelText('Rate Zimmer 2'), '20');
+        await userEvent.selectOptions(screen.getByLabelText('Ratenplan Zimmer 2'), '20');
         await userEvent.selectOptions(screen.getByLabelText('Zimmernummer 2'), '31');
-        await userEvent.click(screen.getByRole('button', { name: 'Gruppe verbindlich anlegen' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Gruppenreservierung anlegen' }));
 
         expect(apiMock.post).toHaveBeenCalledWith(
             '/api/pms/groups?businessDate=2026-07-28',
@@ -211,8 +236,10 @@ describe('PmsAdvancedWorkspace', () => {
     it('creates a Swiss VAT invoice from a selected folio', async () => {
         renderWorkspace('invoices');
         await screen.findByText('Rechnung erstellen');
+        expect(screen.getByRole('option', { name: /Hauptkonto/ })).toBeInTheDocument();
+        expect(screen.queryByRole('option', { name: /Hauptfolio/ })).not.toBeInTheDocument();
 
-        await userEvent.selectOptions(screen.getByLabelText('Folio'), '50');
+        await userEvent.selectOptions(screen.getByLabelText('Gastkonto (Folio)'), '50');
         await userEvent.type(screen.getByLabelText('IBAN'), 'CH9300762011623852957');
         await userEvent.click(screen.getByRole('button', { name: 'Rechnung ausstellen' }));
 
@@ -230,7 +257,16 @@ describe('PmsAdvancedWorkspace', () => {
     it('shows pending integration events and acknowledges them explicitly', async () => {
         renderWorkspace('integrations');
 
-        expect(await screen.findAllByText('reservation.created')).toHaveLength(2);
+        expect(await screen.findAllByText('Reservierung angelegt')).toHaveLength(2);
+        expect(screen.getByText(/Ausstehend · Reservierung #60/)).toBeInTheDocument();
+        expect(screen.queryByText('PENDING')).not.toBeInTheDocument();
+        expect(screen.queryByText('reservation.created')).not.toBeInTheDocument();
+        expect(screen.getByText(/Technische Details stehen im Serverprotokoll/)).toBeInTheDocument();
+        expect(screen.queryByText(/provider token/)).not.toBeInTheDocument();
+        expect(screen.getByText('Gastdaten exportiert')).toBeInTheDocument();
+        expect(screen.getByText(/Gastprofil #7/)).toBeInTheDocument();
+        expect(screen.getByText(/Gästekommunikation #103/)).toBeInTheDocument();
+        expect(screen.getByText(/Übertragung #90/)).toBeInTheDocument();
         await userEvent.click(screen.getByRole('button', { name: 'Bestätigen' }));
 
         await waitFor(() => expect(apiMock.post).toHaveBeenCalledWith(
@@ -239,18 +275,107 @@ describe('PmsAdvancedWorkspace', () => {
         ));
     });
 
+    it('localizes business statuses across the advanced hotel workspaces', async () => {
+        const localizedAdvanced = {
+            ...advanced,
+            groups: [{
+                id: 101,
+                groupCode: 'GRP-1',
+                status: 'IN_HOUSE',
+                name: 'Seminargruppe',
+                arrivalDate: '2026-07-28',
+                departureDate: '2026-07-30',
+                organizationName: 'Beispiel AG',
+                rooms: [],
+            }],
+            invoices: [{
+                id: 102,
+                invoiceNumber: 'RG-102',
+                type: 'CREDIT_NOTE',
+                status: 'CREDITED',
+                recipientName: 'Beispiel AG',
+                netAmount: 100,
+                vatAmount: 8.1,
+                grossAmount: 108.1,
+                currencyCode: 'CHF',
+            }],
+            communications: [{
+                id: 103,
+                direction: 'INBOUND',
+                channel: 'OTA',
+                status: 'RECEIVED',
+                subject: 'Anreise',
+                guestName: 'Gabriela Tschopp',
+                sender: 'Buchungsportal',
+                body: 'Nachricht',
+                readAt: '2026-07-28T12:00:00',
+            }],
+            guestRegistrations: [{
+                id: 104,
+                status: 'PENDING',
+                confirmationCode: 'CHR-TEST',
+                guestName: 'Gabriela Tschopp',
+            }],
+            resourceBookings: [{
+                id: 105,
+                status: 'TENTATIVE',
+                startAt: '2026-07-28T09:00',
+                endAt: '2026-07-28T12:00',
+                title: 'Seminar',
+                resourceName: 'Konferenzraum Zürich',
+                attendees: 12,
+                totalAmount: 360,
+            }],
+        };
+        apiMock.get.mockImplementation((url) => Promise.resolve({
+            data: url === '/api/pms/advanced' ? localizedAdvanced : operations,
+        }));
+
+        const organizationsView = renderWorkspace('organizations');
+        expect((await screen.findAllByText('Firma')).length).toBeGreaterThan(0);
+        expect(screen.queryByText('COMPANY')).not.toBeInTheDocument();
+        organizationsView.unmount();
+
+        const eventsView = renderWorkspace('events');
+        expect(await screen.findByRole('option', { name: 'Tagungsraum' })).toBeInTheDocument();
+        expect(screen.getByText(/Option · 28.07.2026, 09:00 Uhr/)).toBeInTheDocument();
+        expect(screen.queryByText('CONFERENCE_ROOM')).not.toBeInTheDocument();
+        expect(screen.queryByText('TENTATIVE')).not.toBeInTheDocument();
+        eventsView.unmount();
+
+        const groupsView = renderWorkspace('groups');
+        expect(await screen.findByText(/Gruppe im Haus/)).toBeInTheDocument();
+        expect(screen.queryByText('IN_HOUSE')).not.toBeInTheDocument();
+        groupsView.unmount();
+
+        const invoicesView = renderWorkspace('invoices');
+        expect(await screen.findByText(/RG-102 · Gutschrift · Gutgeschrieben/)).toBeInTheDocument();
+        expect(screen.queryByText('CREDITED')).not.toBeInTheDocument();
+        invoicesView.unmount();
+
+        const communicationsView = renderWorkspace('communications');
+        expect(await screen.findByText(/Eingehend · Buchungsportal \(OTA\) · Empfangen/)).toBeInTheDocument();
+        expect(screen.queryByText('RECEIVED')).not.toBeInTheDocument();
+        communicationsView.unmount();
+
+        const registrationView = renderWorkspace('digital-check-in');
+        expect(await screen.findByText(/Noch nicht ausgefüllt · CHR-TEST/)).toBeInTheDocument();
+        expect(screen.queryByText('PENDING')).not.toBeInTheDocument();
+        registrationView.unmount();
+    });
+
     it('creates a live channel using only an external secret reference', async () => {
         renderWorkspace('integrations');
-        await screen.findByText('Integration Control Center');
+        await screen.findByText('Schnittstellen & Integrationen');
 
-        await userEvent.type(screen.getByLabelText('Provider-Code'), 'CHANNEL_GATEWAY');
+        await userEvent.type(screen.getByLabelText('Anbietercode'), 'CHANNEL_GATEWAY');
         await userEvent.type(screen.getByLabelText('Name'), 'Live Channel');
-        await userEvent.selectOptions(screen.getByLabelText('Umgebung'), 'LIVE');
-        await userEvent.type(screen.getByLabelText('Secret-Referenz'), 'env:CHANNEL_PROVIDER_SECRET');
-        await userEvent.selectOptions(screen.getByLabelText('Rate'), '20');
+        await userEvent.selectOptions(screen.getByLabelText('Betriebsart'), 'LIVE');
+        await userEvent.type(screen.getByLabelText('Zugangsdaten-Referenz'), 'env:CHANNEL_PROVIDER_SECRET');
+        await userEvent.selectOptions(screen.getByLabelText('Ratenplan'), '20');
         await userEvent.type(screen.getByLabelText('Externer Zimmercode'), 'DBL');
         await userEvent.type(screen.getByLabelText('Externer Ratencode'), 'BAR');
-        await userEvent.click(screen.getByRole('button', { name: 'Live-Verbindung anlegen' }));
+        await userEvent.click(screen.getByRole('button', { name: 'Produktive Verbindung anlegen' }));
 
         expect(apiMock.post).toHaveBeenCalledWith(
             '/api/pms/properties/5/channel-connections?businessDate=2026-07-28',
@@ -271,7 +396,7 @@ describe('PmsAdvancedWorkspace', () => {
 
     it('records a provider-neutral inbound inbox message', async () => {
         renderWorkspace('communications');
-        await screen.findByText('Unified Inbox');
+        await screen.findByText('Gemeinsamer Posteingang');
 
         await userEvent.selectOptions(screen.getByLabelText('Posteingang Gast'), '7');
         await userEvent.selectOptions(screen.getByLabelText('Posteingang Reservierung'), '60');
@@ -279,7 +404,7 @@ describe('PmsAdvancedWorkspace', () => {
         await userEvent.type(screen.getByLabelText('Posteingang Absender'), 'Gabriela Tschopp');
         await userEvent.type(screen.getByLabelText('Posteingang Betreff'), 'Anreise');
         await userEvent.type(screen.getByLabelText('Posteingang Nachricht'), 'Können wir früher einchecken?');
-        await userEvent.type(screen.getByLabelText('Posteingang Thread-ID'), 'booking-thread-4711');
+        await userEvent.type(screen.getByLabelText('Posteingang Vorgangs-ID'), 'booking-thread-4711');
         await userEvent.click(screen.getByRole('button', { name: 'Eingang erfassen' }));
 
         expect(apiMock.post).toHaveBeenCalledWith(
@@ -300,7 +425,10 @@ describe('PmsAdvancedWorkspace', () => {
         renderWorkspace('reports');
 
         expect(await screen.findAllByText('50.00 %')).toHaveLength(2);
-        expect(screen.getByText('Aufenthaltsdatum, Ende exklusiv.')).toBeInTheDocument();
+        expect(screen.getByText('Auswertung nach Aufenthaltsdatum; der Abreisetag zählt nicht als Übernachtung.')).toBeInTheDocument();
+        expect(screen.getByRole('cell', { name: '28.07.2026' })).toBeInTheDocument();
+        expect(screen.getByRole('columnheader', { name: 'Verkaufskapazität' })).toBeInTheDocument();
+        expect(screen.getByRole('columnheader', { name: 'Noch frei' })).toBeInTheDocument();
         expect(screen.getByRole('columnheader', { name: 'RevPAR' })).toBeInTheDocument();
         expect(apiMock.get).toHaveBeenCalledWith(
             '/api/pms/reports/performance',
@@ -316,7 +444,7 @@ describe('PmsAdvancedWorkspace', () => {
 
     it('creates a conflict-checked MICE resource booking', async () => {
         renderWorkspace('events');
-        await screen.findByText('Hotelressource');
+        await screen.findByRole('heading', { name: 'Ressource anlegen' });
 
         await userEvent.selectOptions(screen.getByLabelText('Buchungsressource'), '91');
         await userEvent.type(screen.getByLabelText('Eventtitel'), 'Strategiemeeting');
@@ -341,8 +469,16 @@ describe('PmsAdvancedWorkspace', () => {
     it('shows a currency-safe multi-property portfolio', async () => {
         renderWorkspace('portfolio');
 
-        expect(await screen.findByText('Multi-Property Control')).toBeInTheDocument();
+        expect(await screen.findByText('Hotelportfolio')).toBeInTheDocument();
         expect(screen.getByText('Chrono Zürich')).toBeInTheDocument();
+        expect(screen.getByText('Verkaufskapazität am Betriebstag')).toBeInTheDocument();
+        expect(screen.getByRole('columnheader', { name: 'Zimmer im Betrieb' })).toBeInTheDocument();
+        expect(screen.getByRole('columnheader', { name: 'Verkaufskapazität' })).toBeInTheDocument();
+        expect(screen.getByRole('columnheader', { name: 'Noch frei' })).toBeInTheDocument();
+        expect(screen.getByText('Portfolio-Auslastung')).toBeInTheDocument();
+        expect(screen.getByText('90 verkauft · 28 noch frei')).toBeInTheDocument();
+        expect(screen.getByRole('columnheader', { name: 'Auslastung' })).toBeInTheDocument();
+        expect(screen.queryByRole('columnheader', { name: 'Belegung' })).not.toBeInTheDocument();
         expect(screen.getByText(/Finanzwerte bleiben absichtlich/)).toBeInTheDocument();
         expect(apiMock.get).toHaveBeenCalledWith(
             '/api/pms/reports/portfolio',

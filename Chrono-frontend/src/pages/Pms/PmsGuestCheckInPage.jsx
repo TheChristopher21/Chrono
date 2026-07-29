@@ -1,14 +1,54 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import api from '../../utils/api.js';
+import { formatPmsDate } from './pmsFormatting.js';
 import '../../styles/PmsDashboardScoped.css';
 
 const errorMessage = (error) => (
     error?.response?.data?.detail
     || error?.response?.data?.message
     || error?.message
-    || 'Der digitale Check-in konnte nicht geladen werden.'
+    || 'Die Gästeanmeldung konnte nicht geladen werden.'
 );
+
+const ALL_REGISTRATION_FIELDS = [
+    'addressLine',
+    'postalCode',
+    'city',
+    'countryCode',
+    'nationalityCode',
+    'documentNumber',
+    'signatureName',
+    'privacyConsent',
+];
+
+const registrationRulePresentation = (ruleCode) => {
+    if (ruleCode === 'CH-MELDESCHEIN') {
+        return {
+            title: 'Digitaler Meldeschein',
+            completedTitle: 'Meldeschein übermittelt',
+            buttonLabel: 'Meldeschein übermitteln',
+            ruleLabel: 'Meldeschein Schweiz',
+            purpose: 'für den Meldeschein Schweiz',
+        };
+    }
+    if (ruleCode === 'DE-MELDESCHEIN') {
+        return {
+            title: 'Digitaler Meldeschein',
+            completedTitle: 'Meldeschein übermittelt',
+            buttonLabel: 'Meldeschein übermitteln',
+            ruleLabel: 'Meldeschein Deutschland',
+            purpose: 'für den Meldeschein Deutschland',
+        };
+    }
+    return {
+        title: 'Digitale Gästeanmeldung',
+        completedTitle: 'Gästeanmeldung übermittelt',
+        buttonLabel: 'Gästeanmeldung übermitteln',
+        ruleLabel: 'Gästeanmeldung',
+        purpose: 'für die Gästeanmeldung',
+    };
+};
 
 const PmsGuestCheckInPage = () => {
     const { token } = useParams();
@@ -19,8 +59,8 @@ const PmsGuestCheckInPage = () => {
         addressLine: '',
         postalCode: '',
         city: '',
-        countryCode: 'CH',
-        nationalityCode: 'CH',
+        countryCode: '',
+        nationalityCode: '',
         documentNumber: '',
         vehiclePlate: '',
         signatureName: '',
@@ -46,7 +86,11 @@ const PmsGuestCheckInPage = () => {
         setBusy(true);
         setError('');
         try {
-            const response = await api.post(`/api/public/pms/guest-registration/${token}`, form);
+            const response = await api.post(`/api/public/pms/guest-registration/${token}`, {
+                ...form,
+                acknowledgedRuleCode: registration.ruleCode,
+                acknowledgedRuleVersion: registration.ruleVersion,
+            });
             setRegistration(response.data);
         } catch (submitError) {
             setError(errorMessage(submitError));
@@ -55,7 +99,18 @@ const PmsGuestCheckInPage = () => {
         }
     };
 
-    if (busy && !registration) return <main className="pms-dashboard"><section className="pms-work-card"><p>Check-in wird geladen…</p></section></main>;
+    if (busy && !registration) return <main className="pms-dashboard"><section className="pms-work-card"><p>Meldeschein wird geladen…</p></section></main>;
+
+    const rule = registrationRulePresentation(registration?.ruleCode);
+    const requiredFields = new Set(
+        Array.isArray(registration?.requiredFields)
+            ? registration.requiredFields
+            : ALL_REGISTRATION_FIELDS,
+    );
+    const isRequired = (fieldName) => requiredFields.has(fieldName);
+    const labelFor = (label, fieldName) => (
+        isRequired(fieldName) ? label : `${label} (optional)`
+    );
 
     return (
         <main className="pms-dashboard">
@@ -64,29 +119,33 @@ const PmsGuestCheckInPage = () => {
                 {registration?.status === 'COMPLETED' ? (
                     <div className="pms-workspace-empty">
                         <span className="pms-eyebrow">{registration.hotelName}</span>
-                        <h1>Check-in vollständig</h1>
-                        <p>Danke, {registration.guestName}. Dein Meldeschein wurde sicher gespeichert.</p>
+                        <h1>{rule.completedTitle}</h1>
+                        <p>Danke, {registration.guestName}. Deine Angaben wurden sicher gespeichert.</p>
+                        <p>Der Check-in und die Zimmerübergabe erfolgen separat durch das Hotel.</p>
                     </div>
                 ) : registration && (
                     <>
                         <div className="pms-work-card-heading">
                             <div>
                                 <span className="pms-eyebrow">{registration.hotelName}</span>
-                                <h1>Digitaler Check-in</h1>
-                                <p>{registration.guestName} · {registration.arrivalDate} bis {registration.departureDate}</p>
+                                <h1>{rule.title}</h1>
+                                <p>{registration.guestName} · {formatPmsDate(registration.arrivalDate)} bis {formatPmsDate(registration.departureDate)}</p>
+                                <p>Diese Anmeldung ersetzt nicht den Check-in und die Zimmerübergabe im Hotel.</p>
+                                <p>Verfahren: {rule.ruleLabel} · Version {registration.ruleVersion}</p>
                             </div>
                         </div>
                         <form className="pms-form-grid" onSubmit={submit}>
-                            <label className="is-wide">Adresse<input value={form.addressLine} onChange={(event) => setForm({ ...form, addressLine: event.target.value })} required /></label>
-                            <label>PLZ<input value={form.postalCode} onChange={(event) => setForm({ ...form, postalCode: event.target.value })} required /></label>
-                            <label>Ort<input value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} required /></label>
-                            <label>Wohnsitzland<input maxLength="2" value={form.countryCode} onChange={(event) => setForm({ ...form, countryCode: event.target.value.toUpperCase() })} required /></label>
-                            <label>Nationalität<input maxLength="2" value={form.nationalityCode} onChange={(event) => setForm({ ...form, nationalityCode: event.target.value.toUpperCase() })} required /></label>
-                            <label className="is-wide">Ausweis- oder Passnummer<input autoComplete="off" value={form.documentNumber} onChange={(event) => setForm({ ...form, documentNumber: event.target.value })} required /></label>
+                            <label className="is-wide">{labelFor('Adresse', 'addressLine')}<input value={form.addressLine} onChange={(event) => setForm({ ...form, addressLine: event.target.value })} required={isRequired('addressLine')} /></label>
+                            <label>{labelFor('PLZ', 'postalCode')}<input value={form.postalCode} onChange={(event) => setForm({ ...form, postalCode: event.target.value })} required={isRequired('postalCode')} /></label>
+                            <label>{labelFor('Ort', 'city')}<input value={form.city} onChange={(event) => setForm({ ...form, city: event.target.value })} required={isRequired('city')} /></label>
+                            <label>{labelFor('Wohnsitzland (ISO-Ländercode, z. B. CH)', 'countryCode')}<input maxLength="2" pattern="[A-Za-z]{2}" title="Zweistelliger ISO-Ländercode, zum Beispiel CH" value={form.countryCode} onChange={(event) => setForm({ ...form, countryCode: event.target.value.toUpperCase() })} required={isRequired('countryCode')} /></label>
+                            <label>{labelFor('Nationalität (ISO-Ländercode, z. B. CH)', 'nationalityCode')}<input maxLength="2" pattern="[A-Za-z]{2}" title="Zweistelliger ISO-Ländercode, zum Beispiel CH" value={form.nationalityCode} onChange={(event) => setForm({ ...form, nationalityCode: event.target.value.toUpperCase() })} required={isRequired('nationalityCode')} /></label>
+                            <label className="is-wide">{labelFor('Ausweis- oder Passnummer', 'documentNumber')}<input autoComplete="off" value={form.documentNumber} onChange={(event) => setForm({ ...form, documentNumber: event.target.value })} required={isRequired('documentNumber')} /></label>
                             <label>Kennzeichen (optional)<input value={form.vehiclePlate} onChange={(event) => setForm({ ...form, vehiclePlate: event.target.value })} /></label>
-                            <label>Unterschrift (Name)<input value={form.signatureName} onChange={(event) => setForm({ ...form, signatureName: event.target.value })} required /></label>
-                            <label className="pms-checkbox is-wide"><input type="checkbox" checked={form.privacyConsent} onChange={(event) => setForm({ ...form, privacyConsent: event.target.checked })} required /> Ich bestätige die Richtigkeit und stimme der Verarbeitung für den gesetzlichen Meldeschein zu.</label>
-                            <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={busy}>Check-in abschließen</button></div>
+                            <label>{labelFor('Bestätigung durch Gast (vollständiger Name)', 'signatureName')}<input value={form.signatureName} onChange={(event) => setForm({ ...form, signatureName: event.target.value })} required={isRequired('signatureName')} /></label>
+                            <label className="pms-checkbox is-wide"><input type="checkbox" checked={form.privacyConsent} onChange={(event) => setForm({ ...form, privacyConsent: event.target.checked })} required={isRequired('privacyConsent')} /> Ich bestätige, dass meine Angaben vollständig und richtig sind. Das Hotel verarbeitet diese Angaben {rule.purpose}.</label>
+                            <p className="is-wide"><a href="/datenschutz" target="_blank" rel="noreferrer">Datenschutzhinweise öffnen</a></p>
+                            <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={busy}>{rule.buttonLabel}</button></div>
                         </form>
                     </>
                 )}

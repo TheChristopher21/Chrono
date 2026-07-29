@@ -1,52 +1,52 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
 import PmsAdvancedWorkspace from './PmsAdvancedWorkspace.jsx';
+import { formatPmsDate } from './pmsFormatting.js';
+import {
+    FOLIO_ITEM_TYPE_LABELS,
+    FOLIO_STATUS_LABELS,
+    HOUSEKEEPING_STATUS_LABELS,
+    HOUSEKEEPING_TASK_TYPE_LABELS,
+    MAINTENANCE_PRIORITY_LABELS,
+    MAINTENANCE_STATUS_LABELS,
+    PAYMENT_KIND_LABELS,
+    PAYMENT_METHOD_LABELS,
+    PAYMENT_STATUS_LABELS,
+    RESERVATION_GUARANTEE_STATUS_LABELS,
+    RESERVATION_SOURCE_LABELS,
+    RESERVATION_STATUS_LABELS,
+    ROOM_BLOCK_TYPE_LABELS,
+    ROOM_OPERATIONAL_STATUS_LABELS,
+    getFolioDisplayLabel,
+    getPmsEnumLabel,
+    getPmsEnumOptions,
+} from './pmsTerminology.js';
 
 const sections = [
-    ['portfolio', 'Multi-Property Portfolio'],
+    ['portfolio', 'Hotelportfolio'],
     ['reservations', 'Reservierungen'],
-    ['groups', 'Gruppen'],
-    ['events', 'Events & Ressourcen'],
+    ['groups', 'Gruppenreservierungen'],
+    ['events', 'Veranstaltungen & Ressourcen'],
     ['room-plan', 'Zimmerplan'],
-    ['guests', 'Gäste'],
-    ['organizations', 'Firmen & Reisebüros'],
-    ['rates', 'Raten & Verfügbarkeit'],
-    ['housekeeping', 'Housekeeping'],
-    ['folios', 'Folios & Zahlungen'],
+    ['guests', 'Gästeprofile'],
+    ['organizations', 'Geschäftspartner'],
+    ['rates', 'Ratenpläne & Verfügbarkeit'],
+    ['housekeeping', 'Housekeeping & Reinigung'],
+    ['folios', 'Gastkonten & Zahlungen'],
     ['invoices', 'Rechnungen'],
     ['audit', 'Tagesabschluss'],
-    ['digital-check-in', 'Digitaler Check-in'],
-    ['communications', 'Kommunikation'],
+    ['digital-check-in', 'Digitale Gästeanmeldung'],
+    ['communications', 'Gästekommunikation'],
     ['reports', 'Berichte & Kennzahlen'],
-    ['integrations', 'Integrationen'],
+    ['integrations', 'Schnittstellen & Integrationen'],
 ];
 
-const reservationStatusLabels = {
-    OFFERED: 'Angebot',
-    TENTATIVE: 'Option',
-    WAITLISTED: 'Warteliste',
-    CONFIRMED: 'Bestätigt',
-    CHECKED_IN: 'Eingecheckt',
-    CHECKED_OUT: 'Ausgecheckt',
-    CANCELLED: 'Storniert',
-    NO_SHOW: 'No-show',
-};
-
-const guaranteeLabels = {
-    UNGUARANTEED: 'Nicht garantiert',
-    CREDIT_CARD: 'Kreditkarte',
-    DEPOSIT_REQUIRED: 'Anzahlung ausstehend',
-    DEPOSIT_PAID: 'Anzahlung bezahlt',
-    COMPANY_GUARANTEE: 'Firmengarantie',
-    OTA_GUARANTEE: 'OTA-Garantie',
-};
-
-const housekeepingLabels = {
-    CLEAN: 'Sauber',
-    DIRTY: 'Zu reinigen',
-    IN_PROGRESS: 'In Arbeit',
-    INSPECTION: 'Kontrolle',
-    OUT_OF_SERVICE: 'Außer Betrieb',
+const housekeepingPriorityLabel = (priority) => {
+    const value = Number(priority ?? 0);
+    if (value >= 80) return 'Dringend';
+    if (value >= 60) return 'Hoch';
+    if (value >= 40) return 'Normal';
+    return 'Niedrig';
 };
 
 const todayKey = () => new Date().toISOString().slice(0, 10);
@@ -67,6 +67,57 @@ const errorMessage = (error) => (
     || error?.message
     || 'Die Aktion konnte nicht abgeschlossen werden.'
 );
+
+const getRoomSalesState = (room, activeBlock) => {
+    if (room.operationalStatus === 'INACTIVE') {
+        return {
+            label: getPmsEnumLabel(ROOM_OPERATIONAL_STATUS_LABELS, room.operationalStatus),
+            availabilityLabel: 'Nicht belegbar und nicht zuweisbar',
+            assignable: false,
+            tone: 'is-room-unavailable',
+        };
+    }
+    if (room.operationalStatus === 'OUT_OF_ORDER') {
+        return {
+            label: getPmsEnumLabel(ROOM_OPERATIONAL_STATUS_LABELS, room.operationalStatus),
+            availabilityLabel: 'Nicht belegbar und nicht zuweisbar',
+            assignable: false,
+            tone: 'is-room-unavailable',
+        };
+    }
+    if (room.operationalStatus !== 'IN_SERVICE') {
+        return {
+            label: getPmsEnumLabel(ROOM_OPERATIONAL_STATUS_LABELS, room.operationalStatus),
+            availabilityLabel: 'Betriebsstatus unbekannt – nicht zuweisbar',
+            assignable: false,
+            tone: 'is-room-unavailable',
+        };
+    }
+    if (activeBlock?.type === 'OUT_OF_ORDER' || activeBlock?.type === 'OWNER_USE') {
+        return {
+            label: getPmsEnumLabel(ROOM_BLOCK_TYPE_LABELS, activeBlock.type),
+            availabilityLabel: activeBlock.type === 'OWNER_USE'
+                ? 'Eigennutzung – nicht zuweisbar'
+                : 'Nicht belegbar und nicht zuweisbar',
+            assignable: false,
+            tone: 'is-room-unavailable',
+        };
+    }
+    if (activeBlock?.type === 'OUT_OF_SERVICE') {
+        return {
+            label: getPmsEnumLabel(ROOM_BLOCK_TYPE_LABELS, activeBlock.type),
+            availabilityLabel: 'Frei · eingeschränkt, aber zuweisbar',
+            assignable: true,
+            tone: 'is-room-limited',
+        };
+    }
+    return {
+        label: getPmsEnumLabel(ROOM_OPERATIONAL_STATUS_LABELS, room.operationalStatus),
+        availabilityLabel: 'Frei und zuweisbar',
+        assignable: true,
+        tone: '',
+    };
+};
 
 const PmsOperationsWorkspace = ({
     section = 'reservations',
@@ -172,7 +223,7 @@ const PmsOperationsWorkspace = ({
         blockStartDate: businessDate,
         blockEndDate: tomorrowKey(),
     });
-    const [splitFolioForm, setSplitFolioForm] = useState({ reservationId: '', label: 'Zusatzfolio' });
+    const [splitFolioForm, setSplitFolioForm] = useState({ reservationId: '', label: 'Zusatzkonto' });
     const [moveItemForm, setMoveItemForm] = useState({ sourceFolioId: '', targetFolioId: '', itemId: '' });
 
     useEffect(() => setActiveSection(section), [section]);
@@ -197,6 +248,22 @@ const PmsOperationsWorkspace = ({
     const folios = operations?.folios ?? [];
     const tasks = operations?.housekeepingTasks ?? [];
     const currency = operations?.currencyCode ?? property?.currencyCode ?? 'CHF';
+    const activeRoomBlocksByRoomId = useMemo(() => {
+        const dateKey = String(businessDate ?? '').slice(0, 10);
+        const blocksByRoomId = new Map();
+        (operations?.roomBlocks ?? [])
+            .filter((block) => block.status === 'ACTIVE')
+            .filter((block) => block.startDate <= dateKey && dateKey < block.endDate)
+            .forEach((block) => {
+                const existingBlock = blocksByRoomId.get(block.roomId);
+                const blocksInventory = ['OUT_OF_ORDER', 'OWNER_USE'].includes(block.type);
+                const existingBlocksInventory = ['OUT_OF_ORDER', 'OWNER_USE'].includes(existingBlock?.type);
+                if (!existingBlock || (blocksInventory && !existingBlocksInventory)) {
+                    blocksByRoomId.set(block.roomId, block);
+                }
+            });
+        return blocksByRoomId;
+    }, [businessDate, operations?.roomBlocks]);
 
     const filteredRates = useMemo(
         () => ratePlans.filter((rate) => String(rate.roomTypeId) === String(reservationForm.roomTypeId) && rate.active),
@@ -483,14 +550,14 @@ const PmsOperationsWorkspace = ({
     const refundPayment = (payment) => runMutation(
         'post',
         `/api/pms/properties/${property.id}/payments/${payment.id}/refund`,
-        { amount: Math.abs(Number(payment.amount)), reason: 'Rückerstattung Front Office' },
+        { amount: Math.abs(Number(payment.amount)), reason: 'Rückerstattung Rezeption' },
         'Zahlung rückerstattet.',
     );
 
     const voidPayment = (payment) => runMutation(
         'post',
         `/api/pms/properties/${property.id}/payments/${payment.id}/void`,
-        { reason: 'Fehlbuchung Front Office' },
+        { reason: 'Fehlbuchung Rezeption' },
         'Zahlung storniert.',
     );
 
@@ -504,7 +571,7 @@ const PmsOperationsWorkspace = ({
                 quantity: Number(chargeForm.quantity),
                 unitPrice: Number(chargeForm.unitPrice),
             },
-            'Folio-Position verbucht.',
+            'Gastkonto-Position verbucht.',
         );
         if (result) {
             setChargeForm({
@@ -529,7 +596,7 @@ const PmsOperationsWorkspace = ({
             notes: task.notes,
             assignedTo: task.assignedTo,
         },
-        `Zimmer ${task.roomNumber} ist jetzt „${housekeepingLabels[status]}“.`,
+        `Zimmer ${task.roomNumber} ist jetzt „${getPmsEnumLabel(HOUSEKEEPING_STATUS_LABELS, status)}“.`,
     );
 
     const submitHousekeepingTask = async (event) => {
@@ -586,9 +653,9 @@ const PmsOperationsWorkspace = ({
                 label: splitFolioForm.label,
                 organizationId: null,
             },
-            'Zusätzliches Folio angelegt.',
+            'Zusätzliches Gastkonto angelegt.',
         );
-        if (result) setSplitFolioForm({ reservationId: '', label: 'Zusatzfolio' });
+        if (result) setSplitFolioForm({ reservationId: '', label: 'Zusatzkonto' });
     };
 
     const submitMoveFolioItem = async (event) => {
@@ -600,7 +667,7 @@ const PmsOperationsWorkspace = ({
                 targetFolioId: Number(moveItemForm.targetFolioId),
                 itemIds: [Number(moveItemForm.itemId)],
             },
-            'Folio-Position verschoben.',
+            'Gastkonto-Position verschoben.',
         );
         if (result) setMoveItemForm({ sourceFolioId: '', targetFolioId: '', itemId: '' });
     };
@@ -608,6 +675,11 @@ const PmsOperationsWorkspace = ({
     const moveReservationToRoom = async (reservationId, room) => {
         const reservation = reservations.find((entry) => String(entry.id) === String(reservationId));
         if (!reservation || String(reservation.roomId) === String(room.id)) return;
+        const roomSalesState = getRoomSalesState(room, activeRoomBlocksByRoomId.get(room.id));
+        if (!roomSalesState.assignable) {
+            setError(`Zimmer ${room.number} ist am gewählten Betriebstag nicht zuweisbar.`);
+            return;
+        }
         if (String(reservation.roomTypeId) !== String(room.roomTypeId)) {
             setError('Die Reservierung kann nur auf ein Zimmer desselben Zimmertyps verschoben werden.');
             return;
@@ -645,11 +717,11 @@ const PmsOperationsWorkspace = ({
             >
                 <header className="pms-workspace-header">
                     <div>
-                        <span className="pms-eyebrow">Chrono Hotel OS · {property.name}</span>
+                        <span className="pms-eyebrow">Chrono Hotel-PMS · {property.name}</span>
                         <h2 id="pms-operations-title">Hotelbetrieb</h2>
-                        <p>Betriebstag {businessDate} · Alle Änderungen werden sofort im lokalen PMS gespeichert.</p>
+                        <p>Betriebstag {formatPmsDate(businessDate)} · Alle Änderungen werden sofort im Hotel-PMS gespeichert.</p>
                     </div>
-                    <button type="button" className="pms-workspace-close" onClick={onClose} aria-label="Arbeitsbereich schließen">×</button>
+                    <button type="button" className="pms-workspace-close" onClick={onClose} aria-label="Arbeitsbereich schliessen">×</button>
                 </header>
 
                 <nav className="pms-workspace-tabs" aria-label="PMS-Arbeitsbereiche">
@@ -691,7 +763,7 @@ const PmsOperationsWorkspace = ({
                             <section className="pms-work-card">
                                 <div className="pms-work-card-heading">
                                     <div>
-                                        <span className="pms-eyebrow">Front Office</span>
+                                        <span className="pms-eyebrow">Rezeption</span>
                                         <h3>{editingReservationId ? 'Reservierung bearbeiten' : 'Neue Reservierung'}</h3>
                                     </div>
                                     {editingReservationId && (
@@ -743,7 +815,7 @@ const PmsOperationsWorkspace = ({
                                     <label>
                                         Ratenplan
                                         <select value={reservationForm.ratePlanId} onChange={(event) => setReservationForm({ ...reservationForm, ratePlanId: event.target.value })} required>
-                                            <option value="">Rate wählen</option>
+                                            <option value="">Ratenplan wählen</option>
                                             {filteredRates.map((rate) => (
                                                 <option key={rate.id} value={rate.id}>{rate.name} · {money(rate.nightlyRate, rate.currencyCode)}</option>
                                             ))}
@@ -754,7 +826,7 @@ const PmsOperationsWorkspace = ({
                                         <select value={reservationForm.roomId} onChange={(event) => setReservationForm({ ...reservationForm, roomId: event.target.value })}>
                                             <option value="">Später zuweisen</option>
                                             {filteredRooms.map((room) => (
-                                                <option key={room.id} value={room.id}>Zimmer {room.number} · {housekeepingLabels[room.housekeepingStatus]}</option>
+                                                <option key={room.id} value={room.id}>Zimmer {room.number} · {getPmsEnumLabel(HOUSEKEEPING_STATUS_LABELS, room.housekeepingStatus)}</option>
                                             ))}
                                         </select>
                                     </label>
@@ -769,12 +841,9 @@ const PmsOperationsWorkspace = ({
                                     <label>
                                         Quelle
                                         <select value={reservationForm.source} onChange={(event) => setReservationForm({ ...reservationForm, source: event.target.value })}>
-                                            <option value="DIRECT">Direkt</option>
-                                            <option value="PHONE">Telefon</option>
-                                            <option value="EMAIL">E-Mail</option>
-                                            <option value="WALK_IN">Walk-in</option>
-                                            <option value="BOOKING_ENGINE">Booking Engine</option>
-                                            <option value="CHANNEL_MANAGER">Channel Manager</option>
+                                            {Object.entries(RESERVATION_SOURCE_LABELS).map(([value, label]) => (
+                                                <option key={value} value={value}>{label}</option>
+                                            ))}
                                         </select>
                                     </label>
                                     <label>
@@ -787,16 +856,16 @@ const PmsOperationsWorkspace = ({
                                         </select>
                                     </label>
                                     <label>
-                                        Garantie
+                                        Garantieart
                                         <select value={reservationForm.guaranteeStatus} onChange={(event) => setReservationForm({ ...reservationForm, guaranteeStatus: event.target.value })}>
-                                            {Object.entries(guaranteeLabels).map(([value, label]) => (
+                                            {Object.entries(RESERVATION_GUARANTEE_STATUS_LABELS).map(([value, label]) => (
                                                 <option key={value} value={value}>{label}</option>
                                             ))}
                                         </select>
                                     </label>
                                     {['OFFERED', 'TENTATIVE'].includes(reservationForm.status) && (
                                         <label>
-                                            Haltefrist
+                                            Optionsfrist
                                             <input
                                                 type="datetime-local"
                                                 value={reservationForm.holdUntil}
@@ -846,11 +915,11 @@ const PmsOperationsWorkspace = ({
                                                 <span>{reservation.confirmationCode}</span>
                                                 <strong>{reservation.guestName}</strong>
                                                 <small>
-                                                    {reservation.arrivalDate} → {reservation.departureDate} · {reservation.roomNumber ? `Zimmer ${reservation.roomNumber}` : reservation.roomTypeName}
+                                                    {formatPmsDate(reservation.arrivalDate)} → {formatPmsDate(reservation.departureDate)} · {reservation.roomNumber ? `Zimmer ${reservation.roomNumber}` : reservation.roomTypeName}
                                                 </small>
-                                                <small>{money(reservation.totalAmount, reservation.currencyCode)} · {reservationStatusLabels[reservation.status]}</small>
+                                                <small>{money(reservation.totalAmount, reservation.currencyCode)} · {getPmsEnumLabel(RESERVATION_STATUS_LABELS, reservation.status)}</small>
                                                 <small>
-                                                    {guaranteeLabels[reservation.guaranteeStatus] ?? reservation.guaranteeStatus}
+                                                    {getPmsEnumLabel(RESERVATION_GUARANTEE_STATUS_LABELS, reservation.guaranteeStatus)}
                                                     {reservation.holdUntil ? ` · Frist ${new Date(reservation.holdUntil).toLocaleString('de-CH')}` : ''}
                                                 </small>
                                                 {!!reservation.history?.length && (
@@ -858,7 +927,7 @@ const PmsOperationsWorkspace = ({
                                                         <summary>Verlauf ({reservation.history.length})</summary>
                                                         {reservation.history.slice(0, 5).map((entry) => (
                                                             <small key={entry.id}>
-                                                                {new Date(entry.changedAt).toLocaleString('de-CH')} · {reservationStatusLabels[entry.toStatus]} · {entry.changedBy}
+                                                                {new Date(entry.changedAt).toLocaleString('de-CH')} · {getPmsEnumLabel(RESERVATION_STATUS_LABELS, entry.toStatus)} · {entry.changedBy}
                                                                 {entry.reason ? ` · ${entry.reason}` : ''}
                                                             </small>
                                                         ))}
@@ -885,7 +954,7 @@ const PmsOperationsWorkspace = ({
                                                     <button type="button" className="is-danger" onClick={() => performReservationAction(reservation.id, 'cancel', 'Reservierung storniert.')} disabled={!canManage || busy}>Stornieren</button>
                                                 )}
                                                 {reservation.status === 'CONFIRMED' && (
-                                                    <button type="button" onClick={() => performReservationAction(reservation.id, 'no-show', 'Reservierung als No-show markiert.')} disabled={!canManage || busy}>No-show</button>
+                                                    <button type="button" onClick={() => performReservationAction(reservation.id, 'no-show', 'Reservierung als nicht angereist markiert.')} disabled={!canManage || busy}>Als nicht angereist (No-Show) markieren</button>
                                                 )}
                                             </div>
                                         </article>
@@ -899,41 +968,59 @@ const PmsOperationsWorkspace = ({
                         <section className="pms-work-card">
                             <div className="pms-work-card-heading">
                                 <div>
-                                    <span className="pms-eyebrow">Live-Zimmerstatus</span>
-                                    <h3>Zimmerplan für {businessDate}</h3>
+                                    <span className="pms-eyebrow">Aktueller Zimmerstatus</span>
+                                    <h3>Zimmerplan für {formatPmsDate(businessDate)}</h3>
                                 </div>
                             </div>
                             <div className="pms-room-plan-grid">
-                                {rooms.map((room) => (
-                                    <article
-                                        key={room.id}
-                                        className={`is-${room.housekeepingStatus.toLowerCase()}`}
-                                        onDragOver={(event) => event.preventDefault()}
-                                        onDrop={(event) => {
-                                            event.preventDefault();
-                                            moveReservationToRoom(event.dataTransfer.getData('text/reservation-id'), room);
-                                        }}
-                                    >
-                                        <span>Zimmer</span>
-                                        <strong>{room.number}</strong>
-                                        <small>{room.roomTypeName} · Etage {room.floor || '–'}</small>
-                                        <div>
-                                            <i /> {housekeepingLabels[room.housekeepingStatus]}
-                                        </div>
-                                        {room.currentReservation ? (
-                                            <button
-                                                type="button"
-                                                draggable={canManage && ['TENTATIVE', 'CONFIRMED', 'CHECKED_IN'].includes(room.currentReservation.status)}
-                                                onDragStart={(event) => event.dataTransfer.setData('text/reservation-id', String(room.currentReservation.id))}
-                                                onClick={() => editReservation(room.currentReservation)}
-                                                title="Zum Verschieben auf ein anderes passendes Zimmer ziehen"
-                                            >
-                                                {room.currentReservation.guestName}
-                                                <small>{reservationStatusLabels[room.currentReservation.status]}</small>
-                                            </button>
-                                        ) : <em>Frei</em>}
-                                    </article>
-                                ))}
+                                {rooms.map((room) => {
+                                    const activeBlock = activeRoomBlocksByRoomId.get(room.id);
+                                    const roomSalesState = getRoomSalesState(room, activeBlock);
+                                    return (
+                                        <article
+                                            key={room.id}
+                                            className={`is-${room.housekeepingStatus.toLowerCase()} ${roomSalesState.tone}`.trim()}
+                                            onDragOver={(event) => {
+                                                if (roomSalesState.assignable) event.preventDefault();
+                                            }}
+                                            onDrop={(event) => {
+                                                if (!roomSalesState.assignable) return;
+                                                event.preventDefault();
+                                                moveReservationToRoom(event.dataTransfer.getData('text/reservation-id'), room);
+                                            }}
+                                        >
+                                            <span>Zimmer</span>
+                                            <strong>{room.number}</strong>
+                                            <small>{room.roomTypeName} · Etage {room.floor || '–'}</small>
+                                            <div className="pms-room-plan-statuses">
+                                                <p>
+                                                    <span>Housekeeping</span>
+                                                    <strong>{getPmsEnumLabel(HOUSEKEEPING_STATUS_LABELS, room.housekeepingStatus)}</strong>
+                                                </p>
+                                                <p>
+                                                    <span>Betriebs-/Verkaufsstatus</span>
+                                                    <strong>{roomSalesState.label}</strong>
+                                                </p>
+                                            </div>
+                                            {room.currentReservation ? (
+                                                <button
+                                                    type="button"
+                                                    draggable={canManage && ['TENTATIVE', 'CONFIRMED', 'CHECKED_IN'].includes(room.currentReservation.status)}
+                                                    onDragStart={(event) => event.dataTransfer.setData('text/reservation-id', String(room.currentReservation.id))}
+                                                    onClick={() => editReservation(room.currentReservation)}
+                                                    title="Zum Verschieben auf ein anderes passendes Zimmer ziehen"
+                                                >
+                                                    {room.currentReservation.guestName}
+                                                    <small>{getPmsEnumLabel(RESERVATION_STATUS_LABELS, room.currentReservation.status)}</small>
+                                                </button>
+                                            ) : (
+                                                <em className={roomSalesState.assignable ? '' : 'is-unavailable'}>
+                                                    {roomSalesState.availabilityLabel}
+                                                </em>
+                                            )}
+                                        </article>
+                                    );
+                                })}
                             </div>
                         </section>
                     )}
@@ -942,15 +1029,15 @@ const PmsOperationsWorkspace = ({
                         <div className="pms-operations-layout">
                             <section className="pms-work-card">
                                 <div className="pms-work-card-heading">
-                                    <div><span className="pms-eyebrow">CRM</span><h3>{editingGuestId ? 'Gast bearbeiten' : 'Gastprofil anlegen'}</h3></div>
+                                    <div><span className="pms-eyebrow">Gästekartei</span><h3>{editingGuestId ? 'Gast bearbeiten' : 'Gastprofil anlegen'}</h3></div>
                                 </div>
                                 <form className="pms-form-grid" onSubmit={submitGuest}>
                                     <label>Vorname<input value={guestForm.firstName} onChange={(event) => setGuestForm({ ...guestForm, firstName: event.target.value })} required /></label>
                                     <label>Nachname<input value={guestForm.lastName} onChange={(event) => setGuestForm({ ...guestForm, lastName: event.target.value })} required /></label>
                                     <label>E-Mail<input type="email" value={guestForm.email} onChange={(event) => setGuestForm({ ...guestForm, email: event.target.value })} /></label>
                                     <label>Telefon<input value={guestForm.phone} onChange={(event) => setGuestForm({ ...guestForm, phone: event.target.value })} /></label>
-                                    <label>Nationalität<input maxLength="2" value={guestForm.nationalityCode} onChange={(event) => setGuestForm({ ...guestForm, nationalityCode: event.target.value.toUpperCase() })} /></label>
-                                    <label>Sprache<input maxLength="8" value={guestForm.languageCode} onChange={(event) => setGuestForm({ ...guestForm, languageCode: event.target.value })} /></label>
+                                    <label>Nationalität (ISO-Ländercode, z. B. CH)<input maxLength="2" pattern="[A-Za-z]{2}" title="Zweistelliger ISO-Ländercode, zum Beispiel CH" value={guestForm.nationalityCode} onChange={(event) => setGuestForm({ ...guestForm, nationalityCode: event.target.value.toUpperCase() })} /></label>
+                                    <label>Sprache (Sprachcode, z. B. de)<input maxLength="8" value={guestForm.languageCode} onChange={(event) => setGuestForm({ ...guestForm, languageCode: event.target.value })} /></label>
                                     <label className="is-wide">Notizen<textarea value={guestForm.notes} onChange={(event) => setGuestForm({ ...guestForm, notes: event.target.value })} /></label>
                                     <label className="pms-checkbox"><input type="checkbox" checked={guestForm.vip} onChange={(event) => setGuestForm({ ...guestForm, vip: event.target.checked })} /> VIP-Gast</label>
                                     <div className="pms-form-actions is-wide">
@@ -1015,7 +1102,7 @@ const PmsOperationsWorkspace = ({
                                             <span className="pms-eyebrow">Datenschutz</span>
                                             <h3>Gast #{privacyGuestId} anonymisieren</h3>
                                             <p>
-                                                Nur abgeschlossene Aufenthalte ohne offene Folios können
+                                                Nur abgeschlossene Aufenthalte ohne offene Gastkonten können
                                                 anonymisiert werden. Rechnungen und Buchungsreferenzen
                                                 bleiben wegen gesetzlicher Pflichten erhalten.
                                             </p>
@@ -1106,13 +1193,13 @@ const PmsOperationsWorkspace = ({
                     {activeSection === 'rates' && (
                         <div className="pms-operations-layout">
                             <section className="pms-work-card">
-                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Rate Management</span><h3>{editingRateId ? 'Ratenplan bearbeiten' : 'Ratenplan anlegen'}</h3></div></div>
+                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Ratenverwaltung</span><h3>{editingRateId ? 'Ratenplan bearbeiten' : 'Ratenplan anlegen'}</h3></div></div>
                                 <form className="pms-form-grid" onSubmit={submitRate}>
                                     <label>Zimmertyp<select value={rateForm.roomTypeId} onChange={(event) => setRateForm({ ...rateForm, roomTypeId: event.target.value })}>{property.roomTypes?.map((type) => <option key={type.id} value={type.id}>{type.name}</option>)}</select></label>
                                     <label>Ratencode<input value={rateForm.code} onChange={(event) => setRateForm({ ...rateForm, code: event.target.value })} required /></label>
                                     <label className="is-wide">Name<input value={rateForm.name} onChange={(event) => setRateForm({ ...rateForm, name: event.target.value })} required /></label>
-                                    <label>Preis pro Nacht<input type="number" min="0" step="0.01" value={rateForm.nightlyRate} onChange={(event) => setRateForm({ ...rateForm, nightlyRate: event.target.value })} required /></label>
-                                    <label>Mindestnächte<input type="number" min="1" value={rateForm.minStay} onChange={(event) => setRateForm({ ...rateForm, minStay: event.target.value })} required /></label>
+                                    <label>Standardpreis pro Zimmer/Nacht<input type="number" min="0" step="0.01" value={rateForm.nightlyRate} onChange={(event) => setRateForm({ ...rateForm, nightlyRate: event.target.value })} required /></label>
+                                    <label>Mindestaufenthalt (Nächte)<input type="number" min="1" value={rateForm.minStay} onChange={(event) => setRateForm({ ...rateForm, minStay: event.target.value })} required /></label>
                                     <label className="pms-checkbox"><input type="checkbox" checked={rateForm.refundable} onChange={(event) => setRateForm({ ...rateForm, refundable: event.target.checked })} /> Stornierbar</label>
                                     <label className="pms-checkbox"><input type="checkbox" checked={rateForm.breakfastIncluded} onChange={(event) => setRateForm({ ...rateForm, breakfastIncluded: event.target.checked })} /> Frühstück inklusive</label>
                                     <div className="pms-form-actions is-wide">
@@ -1123,13 +1210,13 @@ const PmsOperationsWorkspace = ({
                                 <hr />
                                 <h4>Tagespreis und Restriktionen</h4>
                                 <form className="pms-form-grid" onSubmit={submitOverride}>
-                                    <label>Ratenplan<select value={overrideForm.ratePlanId} onChange={(event) => setOverrideForm({ ...overrideForm, ratePlanId: event.target.value })} required><option value="">Rate wählen</option>{ratePlans.map((rate) => <option key={rate.id} value={rate.id}>{rate.name}</option>)}</select></label>
+                                    <label>Ratenplan<select value={overrideForm.ratePlanId} onChange={(event) => setOverrideForm({ ...overrideForm, ratePlanId: event.target.value })} required><option value="">Ratenplan wählen</option>{ratePlans.map((rate) => <option key={rate.id} value={rate.id}>{rate.name}</option>)}</select></label>
                                     <label>Datum<input type="date" value={overrideForm.stayDate} onChange={(event) => setOverrideForm({ ...overrideForm, stayDate: event.target.value })} required /></label>
                                     <label>Tagespreis<input type="number" min="0" step="0.01" value={overrideForm.price} onChange={(event) => setOverrideForm({ ...overrideForm, price: event.target.value })} required /></label>
-                                    <label>Mindestnächte<input type="number" min="1" value={overrideForm.minStay} onChange={(event) => setOverrideForm({ ...overrideForm, minStay: event.target.value })} required /></label>
-                                    <label className="pms-checkbox"><input type="checkbox" checked={overrideForm.closed} onChange={(event) => setOverrideForm({ ...overrideForm, closed: event.target.checked })} /> Verkauf geschlossen</label>
-                                    <label className="pms-checkbox"><input type="checkbox" checked={overrideForm.closedArrival} onChange={(event) => setOverrideForm({ ...overrideForm, closedArrival: event.target.checked })} /> Anreise geschlossen</label>
-                                    <label className="pms-checkbox"><input type="checkbox" checked={overrideForm.closedDeparture} onChange={(event) => setOverrideForm({ ...overrideForm, closedDeparture: event.target.checked })} /> Abreise geschlossen</label>
+                                    <label>Mindestaufenthalt (Nächte)<input type="number" min="1" value={overrideForm.minStay} onChange={(event) => setOverrideForm({ ...overrideForm, minStay: event.target.value })} required /></label>
+                                    <label className="pms-checkbox"><input type="checkbox" checked={overrideForm.closed} onChange={(event) => setOverrideForm({ ...overrideForm, closed: event.target.checked })} /> Verkauf geschlossen (Stop Sell)</label>
+                                    <label className="pms-checkbox"><input type="checkbox" checked={overrideForm.closedArrival} onChange={(event) => setOverrideForm({ ...overrideForm, closedArrival: event.target.checked })} /> Anreise gesperrt (CTA)</label>
+                                    <label className="pms-checkbox"><input type="checkbox" checked={overrideForm.closedDeparture} onChange={(event) => setOverrideForm({ ...overrideForm, closedDeparture: event.target.checked })} /> Abreise gesperrt (CTD)</label>
                                     <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Tagesrate speichern</button></div>
                                 </form>
                             </section>
@@ -1141,7 +1228,7 @@ const PmsOperationsWorkspace = ({
                                             <div>
                                                 <span>{rate.code} · {rate.roomTypeName}</span>
                                                 <strong>{rate.name}</strong>
-                                                <small>{money(rate.nightlyRate, rate.currencyCode)} · min. {rate.minStay} Nacht/Nächte</small>
+                                                <small>{money(rate.nightlyRate, rate.currencyCode)} · mindestens {rate.minStay} {rate.minStay === 1 ? 'Nacht' : 'Nächte'}</small>
                                             </div>
                                             <button type="button" onClick={() => {
                                                 setEditingRateId(rate.id);
@@ -1166,14 +1253,19 @@ const PmsOperationsWorkspace = ({
                     {activeSection === 'housekeeping' && (
                         <div className="pms-operations-layout">
                             <section className="pms-work-card">
-                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Housekeeping</span><h3>Aufgaben am {businessDate}</h3></div></div>
+                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Housekeeping</span><h3>Aufgaben am {formatPmsDate(businessDate)}</h3></div></div>
                                 <div className="pms-housekeeping-board">
                                     {tasks.length ? tasks.map((task) => (
                                         <article key={task.id}>
                                             <div>
                                                 <span>Zimmer {task.roomNumber}</span>
-                                                <strong>{housekeepingLabels[task.status]}</strong>
-                                                <small>{task.type} · {task.estimatedMinutes} Min. · Priorität {task.priority}{task.assignedTo ? ` · ${task.assignedTo}` : ''}</small>
+                                                <strong>{getPmsEnumLabel(HOUSEKEEPING_STATUS_LABELS, task.status)}</strong>
+                                                <small>
+                                                    {getPmsEnumLabel(HOUSEKEEPING_TASK_TYPE_LABELS, task.type)}
+                                                    {' · '}{task.estimatedMinutes} Min.
+                                                    {' · '}{housekeepingPriorityLabel(task.priority)} ({task.priority}/100)
+                                                    {task.assignedTo ? ` · ${task.assignedTo}` : ''}
+                                                </small>
                                             </div>
                                             <div className="pms-record-actions">
                                                 <button type="button" onClick={() => updateTask(task, 'IN_PROGRESS')} disabled={!canManage || busy}>Start</button>
@@ -1189,26 +1281,26 @@ const PmsOperationsWorkspace = ({
                                 <form className="pms-form-grid" onSubmit={submitHousekeepingTask}>
                                     <label>Zimmer<select value={housekeepingForm.roomId} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, roomId: event.target.value })} required><option value="">Zimmer wählen</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.number} · {room.roomTypeName}</option>)}</select></label>
                                     <label>Datum<input type="date" value={housekeepingForm.serviceDate} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, serviceDate: event.target.value })} required /></label>
-                                    <label>Art<select value={housekeepingForm.type} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, type: event.target.value })}><option value="STAYOVER">Stayover</option><option value="CHECKOUT">Abreise-Reinigung</option><option value="DEEP_CLEAN">Grundreinigung</option><option value="INSPECTION">Kontrolle</option><option value="MAINTENANCE">Technik</option></select></label>
+                                    <label>Auftragsart<select value={housekeepingForm.type} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, type: event.target.value })}>{getPmsEnumOptions(HOUSEKEEPING_TASK_TYPE_LABELS).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
                                     <label>Zuständig<input value={housekeepingForm.assignedTo} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, assignedTo: event.target.value })} /></label>
-                                    <label>Priorität<input type="number" min="0" max="100" value={housekeepingForm.priority} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, priority: event.target.value })} /></label>
+                                    <label>Dringlichkeit (0–100)<input type="number" min="0" max="100" value={housekeepingForm.priority} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, priority: event.target.value })} /></label>
                                     <label>Minuten<input type="number" min="1" max="1440" value={housekeepingForm.estimatedMinutes} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, estimatedMinutes: event.target.value })} /></label>
                                     <label className="is-wide">Notizen<textarea value={housekeepingForm.notes} onChange={(event) => setHousekeepingForm({ ...housekeepingForm, notes: event.target.value })} /></label>
                                     <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Aufgabe speichern</button></div>
                                 </form>
                             </section>
                             <section className="pms-work-card">
-                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Technik</span><h3>Wartung & Zimmersperren</h3></div></div>
+                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Technik</span><h3>Wartung & Zimmerverfügbarkeit</h3></div></div>
                                 <form className="pms-form-grid" onSubmit={submitMaintenance}>
                                     <label>Zimmer<select value={maintenanceForm.roomId} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, roomId: event.target.value })} required><option value="">Zimmer wählen</option>{rooms.map((room) => <option key={room.id} value={room.id}>{room.number} · {room.roomTypeName}</option>)}</select></label>
-                                    <label>Priorität<select value={maintenanceForm.priority} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, priority: event.target.value })}><option value="LOW">Niedrig</option><option value="NORMAL">Normal</option><option value="HIGH">Hoch</option><option value="CRITICAL">Kritisch</option></select></label>
+                                    <label>Priorität<select value={maintenanceForm.priority} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, priority: event.target.value })}>{getPmsEnumOptions(MAINTENANCE_PRIORITY_LABELS).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
                                     <label className="is-wide">Titel<input value={maintenanceForm.title} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, title: event.target.value })} required /></label>
                                     <label>Zuständig<input value={maintenanceForm.assignedTo} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, assignedTo: event.target.value })} /></label>
                                     <label>Fällig<input type="date" value={maintenanceForm.dueDate} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, dueDate: event.target.value })} /></label>
-                                    <label className="pms-checkbox"><input type="checkbox" checked={maintenanceForm.blockRoom} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, blockRoom: event.target.checked })} /> Zimmer sperren</label>
+                                    <label className="pms-checkbox"><input type="checkbox" checked={maintenanceForm.blockRoom} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, blockRoom: event.target.checked })} /> Auswirkung auf die Zimmerverfügbarkeit erfassen</label>
                                     {maintenanceForm.blockRoom && (
                                         <>
-                                            <label>Sperrart<select value={maintenanceForm.blockType} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, blockType: event.target.value })}><option value="OUT_OF_ORDER">Out of order</option><option value="OUT_OF_SERVICE">Out of service</option><option value="OWNER_USE">Eigennutzung</option></select></label>
+                                            <label>Auswirkung auf Verfügbarkeit<select value={maintenanceForm.blockType} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, blockType: event.target.value })}>{getPmsEnumOptions(ROOM_BLOCK_TYPE_LABELS).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select><small>OOO und Eigennutzung nehmen das Zimmer aus dem Verkauf. Bei OOS bleibt es im Bestand und kann weiterhin zugewiesen werden.</small></label>
                                             <label>Von<input type="date" value={maintenanceForm.blockStartDate} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, blockStartDate: event.target.value })} required /></label>
                                             <label>Bis<input type="date" value={maintenanceForm.blockEndDate} onChange={(event) => setMaintenanceForm({ ...maintenanceForm, blockEndDate: event.target.value })} required /></label>
                                         </>
@@ -1219,7 +1311,15 @@ const PmsOperationsWorkspace = ({
                                 <div className="pms-record-list">
                                     {operations?.maintenanceWorkOrders?.map((workOrder) => (
                                         <article className="pms-record" key={workOrder.id}>
-                                            <div><span>Zimmer {workOrder.roomNumber} · {workOrder.priority} · {workOrder.status}</span><strong>{workOrder.title}</strong><small>{workOrder.assignedTo || 'Nicht zugeteilt'}{workOrder.roomBlockId ? ' · Zimmer gesperrt' : ''}</small></div>
+                                            <div>
+                                                <span>
+                                                    Zimmer {workOrder.roomNumber}
+                                                    {' · '}{getPmsEnumLabel(MAINTENANCE_PRIORITY_LABELS, workOrder.priority)}
+                                                    {' · '}{getPmsEnumLabel(MAINTENANCE_STATUS_LABELS, workOrder.status)}
+                                                </span>
+                                                <strong>{workOrder.title}</strong>
+                                                <small>{workOrder.assignedTo || 'Nicht zugeteilt'}{workOrder.roomBlockId ? ' · Verfügbarkeitszeitraum erfasst' : ''}</small>
+                                            </div>
                                             {!['RESOLVED', 'CANCELLED'].includes(workOrder.status) && <button type="button" onClick={() => resolveMaintenance(workOrder)} disabled={!canManage || busy}>Erledigt & freigeben</button>}
                                         </article>
                                     ))}
@@ -1241,7 +1341,7 @@ const PmsOperationsWorkspace = ({
                                         </p>
                                         <label>Ist-Bargeld<input type="number" min="0" step="0.01" value={cashShiftForm.actualCash} onChange={(event) => setCashShiftForm({ ...cashShiftForm, actualCash: event.target.value })} required /></label>
                                         <label>Notiz<input value={cashShiftForm.notes} onChange={(event) => setCashShiftForm({ ...cashShiftForm, notes: event.target.value })} /></label>
-                                        <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy}>Kassenschicht abschließen</button></div>
+                                        <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy}>Kassenschicht abschliessen</button></div>
                                     </form>
                                 ) : (
                                     <form className="pms-form-grid" onSubmit={openCashShift}>
@@ -1253,55 +1353,58 @@ const PmsOperationsWorkspace = ({
                                 <hr />
                                 <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Abrechnung</span><h3>Zahlung erfassen</h3></div></div>
                                 <form className="pms-form-grid" onSubmit={submitPayment}>
-                                    <label className="is-wide">Folio<select value={paymentForm.folioId} onChange={(event) => {
+                                    <label className="is-wide">Gastkonto (Folio)<select value={paymentForm.folioId} onChange={(event) => {
                                         const folio = folios.find((entry) => String(entry.id) === event.target.value);
                                         setPaymentForm({ ...paymentForm, folioId: event.target.value, amount: folio?.balance ?? '' });
-                                    }} required><option value="">Folio wählen</option>{folios.filter((folio) => folio.status === 'OPEN' && Number(folio.balance) > 0).map((folio) => <option key={folio.id} value={folio.id}>{folio.confirmationCode} · {folio.guestName} · {money(folio.balance, folio.currencyCode)}</option>)}</select></label>
+                                    }} required><option value="">Gastkonto wählen</option>{folios.filter((folio) => folio.status === 'OPEN' && Number(folio.balance) > 0).map((folio) => <option key={folio.id} value={folio.id}>{folio.confirmationCode} · {folio.guestName} · {money(folio.balance, folio.currencyCode)}</option>)}</select></label>
                                     <label>Betrag<input type="number" min="0.01" step="0.01" value={paymentForm.amount} onChange={(event) => setPaymentForm({ ...paymentForm, amount: event.target.value })} required /></label>
-                                    <label>Zahlart<select value={paymentForm.method} onChange={(event) => setPaymentForm({ ...paymentForm, method: event.target.value })}><option value="CARD">Karte</option><option value="CASH">Bar</option><option value="BANK_TRANSFER">Banküberweisung</option><option value="VOUCHER">Gutschein</option><option value="OTHER">Andere</option></select></label>
+                                    <label>Zahlungsart<select value={paymentForm.method} onChange={(event) => setPaymentForm({ ...paymentForm, method: event.target.value })}>{getPmsEnumOptions(PAYMENT_METHOD_LABELS).map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
                                     <label className="is-wide">Referenz<input value={paymentForm.reference} onChange={(event) => setPaymentForm({ ...paymentForm, reference: event.target.value })} /></label>
                                     <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Zahlung verbuchen</button></div>
                                 </form>
                                 <hr />
                                 <h4>Zusatzleistung verbuchen</h4>
                                 <form className="pms-form-grid" onSubmit={submitCharge}>
-                                    <label className="is-wide">Folio<select value={chargeForm.folioId} onChange={(event) => setChargeForm({ ...chargeForm, folioId: event.target.value })} required><option value="">Folio wählen</option>{folios.filter((folio) => folio.status === 'OPEN').map((folio) => <option key={folio.id} value={folio.id}>{folio.confirmationCode} · {folio.guestName}</option>)}</select></label>
+                                    <label className="is-wide">Gastkonto<select value={chargeForm.folioId} onChange={(event) => setChargeForm({ ...chargeForm, folioId: event.target.value })} required><option value="">Gastkonto wählen</option>{folios.filter((folio) => folio.status === 'OPEN').map((folio) => <option key={folio.id} value={folio.id}>{folio.confirmationCode} · {folio.guestName}</option>)}</select></label>
                                     <label>Datum<input type="date" value={chargeForm.serviceDate} onChange={(event) => setChargeForm({ ...chargeForm, serviceDate: event.target.value })} required /></label>
-                                    <label>Art<select value={chargeForm.type} onChange={(event) => setChargeForm({ ...chargeForm, type: event.target.value })}><option value="SERVICE">Leistung</option><option value="BREAKFAST">Frühstück</option><option value="TAX">Taxe</option><option value="DISCOUNT">Rabatt</option><option value="OTHER">Andere</option></select></label>
+                                    <label>Art<select value={chargeForm.type} onChange={(event) => setChargeForm({ ...chargeForm, type: event.target.value })}>{getPmsEnumOptions(FOLIO_ITEM_TYPE_LABELS).filter(({ value }) => value !== 'ROOM').map(({ value, label }) => <option key={value} value={value}>{label}</option>)}</select></label>
                                     <label className="is-wide">Beschreibung<input value={chargeForm.description} onChange={(event) => setChargeForm({ ...chargeForm, description: event.target.value })} required /></label>
                                     <label>Menge<input type="number" min="0.01" step="0.01" value={chargeForm.quantity} onChange={(event) => setChargeForm({ ...chargeForm, quantity: event.target.value })} required /></label>
                                     <label>Einzelpreis<input type="number" step="0.01" value={chargeForm.unitPrice} onChange={(event) => setChargeForm({ ...chargeForm, unitPrice: event.target.value })} required /></label>
                                     <div className="pms-form-actions is-wide"><button type="submit" className="is-primary" disabled={!canManage || busy}>Position verbuchen</button></div>
                                 </form>
                                 <hr />
-                                <h4>Folio aufteilen</h4>
+                                <h4>Gastkonto aufteilen</h4>
                                 <form className="pms-form-grid" onSubmit={submitSplitFolio}>
                                     <label>Reservierung<select value={splitFolioForm.reservationId} onChange={(event) => setSplitFolioForm({ ...splitFolioForm, reservationId: event.target.value })} required><option value="">Reservierung wählen</option>{reservations.map((reservation) => <option key={reservation.id} value={reservation.id}>{reservation.confirmationCode} · {reservation.guestName}</option>)}</select></label>
                                     <label>Bezeichnung<input value={splitFolioForm.label} onChange={(event) => setSplitFolioForm({ ...splitFolioForm, label: event.target.value })} required /></label>
-                                    <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy}>Zusatzfolio anlegen</button></div>
+                                    <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy}>Zusatzkonto anlegen</button></div>
                                 </form>
                                 <form className="pms-form-grid" onSubmit={submitMoveFolioItem}>
-                                    <label>Quellfolio<select value={moveItemForm.sourceFolioId} onChange={(event) => setMoveItemForm({ sourceFolioId: event.target.value, targetFolioId: '', itemId: '' })} required><option value="">Quelle wählen</option>{folios.filter((folio) => folio.status === 'OPEN' && folio.items.length > 0).map((folio) => <option key={folio.id} value={folio.id}>{folio.label} · {folio.confirmationCode}</option>)}</select></label>
+                                    <label>Ausgangskonto<select value={moveItemForm.sourceFolioId} onChange={(event) => setMoveItemForm({ sourceFolioId: event.target.value, targetFolioId: '', itemId: '' })} required><option value="">Ausgangskonto wählen</option>{folios.filter((folio) => folio.status === 'OPEN' && folio.items.length > 0).map((folio) => <option key={folio.id} value={folio.id}>{getFolioDisplayLabel(folio.label)} · {folio.confirmationCode}</option>)}</select></label>
                                     <label>Position<select value={moveItemForm.itemId} onChange={(event) => setMoveItemForm({ ...moveItemForm, itemId: event.target.value })} required><option value="">Position wählen</option>{folios.find((folio) => String(folio.id) === String(moveItemForm.sourceFolioId))?.items.map((item) => <option key={item.id} value={item.id}>{item.description} · {money(item.totalAmount, currency)}</option>)}</select></label>
-                                    <label className="is-wide">Zielfolio<select value={moveItemForm.targetFolioId} onChange={(event) => setMoveItemForm({ ...moveItemForm, targetFolioId: event.target.value })} required><option value="">Ziel wählen</option>{folios.filter((folio) => {
+                                    <label className="is-wide">Zielkonto<select value={moveItemForm.targetFolioId} onChange={(event) => setMoveItemForm({ ...moveItemForm, targetFolioId: event.target.value })} required><option value="">Zielkonto wählen</option>{folios.filter((folio) => {
                                         const source = folios.find((entry) => String(entry.id) === String(moveItemForm.sourceFolioId));
                                         return source && folio.status === 'OPEN' && folio.id !== source.id && folio.reservationId === source.reservationId;
-                                    }).map((folio) => <option key={folio.id} value={folio.id}>{folio.label}</option>)}</select></label>
+                                    }).map((folio) => <option key={folio.id} value={folio.id}>{getFolioDisplayLabel(folio.label)}</option>)}</select></label>
                                     <div className="pms-form-actions is-wide"><button type="submit" disabled={!canManage || busy}>Position verschieben</button></div>
                                 </form>
                             </section>
                             <section className="pms-work-card">
-                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Folios</span><h3>{folios.length} Konten</h3></div></div>
+                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Gastkonten</span><h3>{folios.length} Konten</h3></div></div>
                                 <div className="pms-record-list">
                                     {folios.map((folio) => (
                                         <article className="pms-record" key={folio.id}>
                                             <div>
-                                                <span>{folio.confirmationCode} · {folio.status === 'OPEN' ? 'Offen' : 'Geschlossen'}</span>
-                                                <strong>{folio.label} · {folio.guestName}</strong>
+                                                <span>{folio.confirmationCode} · {getPmsEnumLabel(FOLIO_STATUS_LABELS, folio.status)}</span>
+                                                <strong>{getFolioDisplayLabel(folio.label)} · {folio.guestName}</strong>
                                                 <small>Leistungen {money(folio.charges, folio.currencyCode)} · Zahlungen {money(folio.payments, folio.currencyCode)}</small>
                                                 {folio.paymentEntries?.map((payment) => (
                                                     <small key={payment.id}>
-                                                        {payment.kind === 'REFUND' ? 'Rückerstattung' : 'Zahlung'} · {payment.method} · {money(payment.amount, folio.currencyCode)} · {payment.status}
+                                                        {getPmsEnumLabel(PAYMENT_KIND_LABELS, payment.kind)}
+                                                        {' · '}{getPmsEnumLabel(PAYMENT_METHOD_LABELS, payment.method)}
+                                                        {' · '}{money(payment.amount, folio.currencyCode)}
+                                                        {' · '}{getPmsEnumLabel(PAYMENT_STATUS_LABELS, payment.status)}
                                                         {payment.status === 'POSTED' && (
                                                             <span className="pms-record-actions">
                                                                 {payment.kind === 'PAYMENT' && <button type="button" onClick={() => refundPayment(payment)} disabled={!canManage || busy}>Erstatten</button>}

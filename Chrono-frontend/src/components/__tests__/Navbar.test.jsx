@@ -131,7 +131,7 @@ describe('Navbar', () => {
 
         await userEvent.click(screen.getByRole('button', { name: /Christopher/i }));
 
-        expect(screen.getByRole('link', { name: 'Hotel PMS' })).toHaveAttribute('href', '/pms');
+        expect(screen.getByRole('link', { name: 'Hotelverwaltung (PMS)' })).toHaveAttribute('href', '/pms');
     });
 
 });

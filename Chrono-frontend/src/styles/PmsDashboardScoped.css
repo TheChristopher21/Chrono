@@ -271,6 +271,17 @@
     font-weight: 750;
 }
 
+.pms-arrival-row > .pms-arrival-status {
+    justify-self: stretch;
+    padding: 8px 10px;
+    border: 1px solid var(--pms-line);
+    border-radius: 8px;
+    background: var(--pms-panel-strong);
+    color: var(--pms-text);
+    font-weight: 750;
+    text-align: center;
+}
+
 .pms-operational-summary {
     display: grid;
     grid-template-columns: 1fr 1.5fr auto;
@@ -479,8 +490,21 @@
 }
 
 .pms-form-grid label.is-wide,
-.pms-form-actions.is-wide {
+.pms-form-actions.is-wide,
+.pms-form-grid p.is-wide {
     grid-column: 1 / -1;
+}
+
+.pms-form-grid p.is-wide {
+    margin: -3px 0 0;
+    color: var(--pms-muted);
+    font-size: 0.72rem;
+}
+
+.pms-form-grid p.is-wide a {
+    color: var(--pms-accent-text);
+    font-weight: 700;
+    text-underline-offset: 2px;
 }
 
 .pms-form-grid input,
@@ -746,6 +770,15 @@
     border-top-color: #ef4444;
 }
 
+.pms-room-plan-grid article.is-room-limited {
+    border-top-color: #f59e0b;
+}
+
+.pms-room-plan-grid article.is-room-unavailable {
+    border-top-color: #ef4444;
+    background: color-mix(in srgb, var(--pms-soft) 88%, #ef4444 12%);
+}
+
 .pms-room-plan-grid article > span,
 .pms-room-plan-grid article > small,
 .pms-room-plan-grid article > div {
@@ -760,6 +793,31 @@
 
 .pms-room-plan-grid article > div {
     margin-top: 9px;
+}
+
+.pms-room-plan-grid .pms-room-plan-statuses {
+    display: grid;
+    gap: 7px;
+    margin-bottom: 10px;
+}
+
+.pms-room-plan-grid .pms-room-plan-statuses p {
+    display: grid;
+    gap: 1px;
+    margin: 0;
+}
+
+.pms-room-plan-grid .pms-room-plan-statuses span {
+    color: var(--pms-muted);
+    font-size: 0.61rem;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.pms-room-plan-grid .pms-room-plan-statuses strong {
+    color: var(--pms-ink);
+    font-size: 0.68rem;
 }
 
 .pms-room-plan-grid article > button {
@@ -785,6 +843,10 @@
     font-size: 0.72rem;
     font-style: normal;
     font-weight: 750;
+}
+
+.pms-room-plan-grid article > em.is-unavailable {
+    color: #ef4444;
 }
 
 .pms-housekeeping-board {
@@ -1454,6 +1516,7 @@
 .pms-room-legend i.is-ready { background: var(--pms-success); }
 .pms-room-legend i.is-dirty { background: #f59e0b; }
 .pms-room-legend i.is-occupied { background: #3b82f6; }
+.pms-room-legend i.is-limited { background: #8b5cf6; }
 .pms-room-legend i.is-blocked { background: #ef4444; }
 
 .pms-capacity-row {

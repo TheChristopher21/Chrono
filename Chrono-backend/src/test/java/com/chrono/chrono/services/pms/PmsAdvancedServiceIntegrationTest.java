@@ -365,7 +365,7 @@ class PmsAdvancedServiceIntegrationTest {
 
         PmsAdvancedResponse synced = service.syncChannelConnection(
                 company, property.getId(), connectionId, today);
-        assertThat(synced.channelConnections().get(0).lastSyncMessage()).contains("Sandbox-Snapshot");
+        assertThat(synced.channelConnections().get(0).lastSyncMessage()).contains("Testabgleich");
         assertThat(synced.integrationOutbox())
                 .extracting(PmsAdvancedResponse.OutboxEventView::eventType)
                 .contains("channel.inventory_snapshot_ready");
@@ -379,7 +379,7 @@ class PmsAdvancedServiceIntegrationTest {
                                 roomType.getId(), ratePlan.getId(), "D", "R"))
                 ),
                 today
-        )).isInstanceOf(ResponseStatusException.class).hasMessageContaining("Secret");
+        )).isInstanceOf(ResponseStatusException.class).hasMessageContaining("Server-Variable");
 
         assertThatThrownBy(() -> service.createChannelConnection(
                 company,
@@ -409,7 +409,7 @@ class PmsAdvancedServiceIntegrationTest {
         assertThatThrownBy(() -> service.syncChannelConnection(
                 company, property.getId(), liveConnectionId, today))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Provider-Gateway");
+                .hasMessageContaining("sichere Anbieteranbindung");
 
         ReflectionTestUtils.setField(service, "providerGatewayEnabled", true);
         PmsAdvancedResponse liveSynced = service.syncChannelConnection(
@@ -417,7 +417,7 @@ class PmsAdvancedServiceIntegrationTest {
         assertThat(liveSynced.channelConnections().stream()
                 .filter(connection -> connection.id().equals(liveConnectionId))
                 .findFirst().orElseThrow().lastSyncMessage())
-                .contains("signierten Provider-Zustellung");
+                .contains("sicheren Übertragung");
     }
 
     @Test
@@ -432,7 +432,8 @@ class PmsAdvancedServiceIntegrationTest {
                 reservationId,
                 new CompleteGuestRegistrationRequest(
                         "Seestrasse 2", "8002", "Zürich", "CH", "CH",
-                        "X123456789", "ZH 12345", "Gabriela Tschopp", true
+                        "X123456789", "ZH 12345", "Gabriela Tschopp", true,
+                        null, null
                 ),
                 "Christopher",
                 today
@@ -457,7 +458,7 @@ class PmsAdvancedServiceIntegrationTest {
                 company, property.getId(), reservationId, "Christopher");
 
         assertThat(invite.token()).isNotBlank();
-        assertThat(invite.portalPath()).isEqualTo("/guest-check-in/" + invite.token());
+        assertThat(invite.portalPath()).isEqualTo("/guest-registration/" + invite.token());
         GuestRegistration pending = guestRegistrationRepository.findByReservation_Id(reservationId).orElseThrow();
         assertThat(pending.getStatus()).isEqualTo(GuestRegistrationStatus.PENDING);
         assertThat(pending.getTokenHash()).hasSize(64).isNotEqualTo(invite.token());
@@ -466,23 +467,88 @@ class PmsAdvancedServiceIntegrationTest {
         PublicGuestRegistrationResponse publicView = service.getPublicGuestRegistration(invite.token());
         assertThat(publicView.status()).isEqualTo(GuestRegistrationStatus.PENDING);
         assertThat(publicView.ruleCode()).isEqualTo("CH-MELDESCHEIN");
+        assertThat(publicView.ruleVersion()).isEqualTo(1);
         assertThat(publicView.requiredFields()).contains("documentNumber", "privacyConsent");
 
         PublicGuestRegistrationResponse completed = service.completePublicGuestRegistration(
                 invite.token(),
                 new CompleteGuestRegistrationRequest(
                         "Seestrasse 2", "8002", "Zürich", "CH", "CH",
-                        "X123456789", "ZH 12345", "Gabriela Tschopp", true
+                        "X123456789", "ZH 12345", "Gabriela Tschopp", true,
+                        publicView.ruleCode(), publicView.ruleVersion()
                 )
         );
 
         assertThat(completed.status()).isEqualTo(GuestRegistrationStatus.COMPLETED);
+        assertThat(completed.ruleCode()).isEqualTo(publicView.ruleCode());
+        assertThat(completed.ruleVersion()).isEqualTo(publicView.ruleVersion());
         GuestRegistration stored = guestRegistrationRepository.findByReservation_Id(reservationId).orElseThrow();
         assertThat(stored.getTokenHash()).isNull();
         assertThat(stored.getDocumentHash()).hasSize(64).doesNotContain("X123456789");
+        assertThat(stored.getRuleCode()).isEqualTo(publicView.ruleCode());
+        assertThat(stored.getRuleVersion()).isEqualTo(publicView.ruleVersion());
+        assertThat(stored.getPrivacyConsentAt()).isNotNull();
         assertThatThrownBy(() -> service.getPublicGuestRegistration(invite.token()))
                 .isInstanceOf(ResponseStatusException.class)
                 .hasMessageContaining("ungültig");
+    }
+
+    @Test
+    void selectsRegistrationRuleFromHotelCountryAndUsesNeutralGlobalFallback() {
+        PmsOperationsResponse created = operationsService.createReservation(
+                company, reservationRequest(), "Christopher", today);
+        Long reservationId = created.reservations().get(0).id();
+
+        GuestRegistrationInviteResponse swissInvite = service.issueGuestRegistrationInvite(
+                company, property.getId(), reservationId, "Christopher");
+        assertThat(service.getPublicGuestRegistration(swissInvite.token()).ruleCode())
+                .isEqualTo("CH-MELDESCHEIN");
+
+        property.setCountryCode("DE");
+        propertyRepository.saveAndFlush(property);
+        GuestRegistrationInviteResponse germanInvite = service.issueGuestRegistrationInvite(
+                company, property.getId(), reservationId, "Christopher");
+        assertThat(service.getPublicGuestRegistration(germanInvite.token()).ruleCode())
+                .isEqualTo("DE-MELDESCHEIN");
+
+        property.setCountryCode("AT");
+        propertyRepository.saveAndFlush(property);
+        GuestRegistrationInviteResponse globalInvite = service.issueGuestRegistrationInvite(
+                company, property.getId(), reservationId, "Christopher");
+        PublicGuestRegistrationResponse globalView =
+                service.getPublicGuestRegistration(globalInvite.token());
+        assertThat(globalView.ruleCode()).isEqualTo("GLOBAL-REGISTRATION");
+        assertThat(globalView.ruleVersion()).isEqualTo(1);
+        assertThat(globalView.requiredFields())
+                .containsExactlyElementsOf(List.of(
+                        "addressLine", "postalCode", "city", "countryCode", "nationalityCode",
+                        "documentNumber", "signatureName", "privacyConsent"
+                ));
+    }
+
+    @Test
+    void rejectsPublicCompletionWhenDisplayedRuleVersionDoesNotMatchInvite() {
+        PmsOperationsResponse created = operationsService.createReservation(
+                company, reservationRequest(), "Christopher", today);
+        Long reservationId = created.reservations().get(0).id();
+        GuestRegistrationInviteResponse invite = service.issueGuestRegistrationInvite(
+                company, property.getId(), reservationId, "Christopher");
+
+        assertThatThrownBy(() -> service.completePublicGuestRegistration(
+                invite.token(),
+                new CompleteGuestRegistrationRequest(
+                        "Seestrasse 2", "8002", "Zürich", "CH", "CH",
+                        "X123456789", null, "Gabriela Tschopp", true,
+                        "GLOBAL-REGISTRATION", 1
+                )
+        )).isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Regelversion")
+                .hasMessageContaining("Formular neu");
+
+        GuestRegistration stored =
+                guestRegistrationRepository.findByReservation_Id(reservationId).orElseThrow();
+        assertThat(stored.getStatus()).isEqualTo(GuestRegistrationStatus.PENDING);
+        assertThat(stored.getPrivacyConsentAt()).isNull();
     }
 
     @Test

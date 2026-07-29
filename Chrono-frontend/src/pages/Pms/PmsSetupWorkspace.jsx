@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
+import {
+    ROOM_OPERATIONAL_STATUS_LABELS,
+    getPmsEnumLabel,
+    getPmsEnumOptions,
+} from './pmsTerminology.js';
 
 const propertyDefaults = {
     code: '',
@@ -207,9 +212,9 @@ const PmsSetupWorkspace = ({
             >
                 <header className="pms-setup-workspace-header">
                     <div>
-                        <span className="pms-eyebrow">PMS-Einrichtung</span>
-                        <h2 id="pms-setup-title">Hotelfundament</h2>
-                        <p>Persistente Stammdaten für Betrieb, Zimmertypen und Zimmer.</p>
+                        <span className="pms-eyebrow">Hoteleinrichtung</span>
+                        <h2 id="pms-setup-title">Hoteleinrichtung</h2>
+                        <p>Grunddaten für Hotel, Zimmertypen und Zimmer.</p>
                     </div>
                     <div className="pms-setup-header-actions">
                         {properties.length > 0 && (
@@ -235,10 +240,10 @@ const PmsSetupWorkspace = ({
                                     setError('');
                                 }}
                             >
-                                Weiteres Hotel
+                                Weiteres Hotel anlegen
                             </button>
                         )}
-                        <button type="button" className="pms-setup-close" onClick={onClose} aria-label="Einrichtung schließen">
+                        <button type="button" className="pms-setup-close" onClick={onClose} aria-label="Einrichtung schliessen">
                             ×
                         </button>
                     </div>
@@ -296,11 +301,11 @@ const PmsSetupWorkspace = ({
                                     <input name="name" required maxLength="160" value={propertyForm.name} onChange={updateForm(setPropertyForm)} />
                                 </label>
                                 <label className="is-wide">
-                                    Rechtlicher Name
+                                    Firmenname / rechtlicher Betreiber
                                     <input name="legalName" maxLength="180" value={propertyForm.legalName} onChange={updateForm(setPropertyForm)} />
                                 </label>
                                 <label>
-                                    Land
+                                    Land (ISO-Code)
                                     <input name="countryCode" required maxLength="2" value={propertyForm.countryCode} onChange={updateForm(setPropertyForm)} />
                                 </label>
                                 <label>
@@ -387,7 +392,7 @@ const PmsSetupWorkspace = ({
                                         <input type="number" name="bedCount" min="1" max="20" value={roomTypeForm.bedCount} onChange={updateForm(setRoomTypeForm)} />
                                     </label>
                                     <label className="is-wide">
-                                        Bettenart
+                                        Bettentyp
                                         <input name="bedType" maxLength="60" placeholder="z. B. Doppelbett" value={roomTypeForm.bedType} onChange={updateForm(setRoomTypeForm)} />
                                     </label>
                                 </div>
@@ -428,7 +433,7 @@ const PmsSetupWorkspace = ({
                                 <div className="pms-setup-form-heading">
                                     <div>
                                         <h3>Zimmer anlegen</h3>
-                                        <p>Physische Einheit für Belegung, Housekeeping und Wartung.</p>
+                                        <p>Konkretes Hotelzimmer für Belegung, Reinigung und Wartung.</p>
                                     </div>
                                 </div>
                                 {selectedProperty.roomTypes.length === 0 ? (
@@ -453,7 +458,7 @@ const PmsSetupWorkspace = ({
                                                 <input name="number" required maxLength="40" value={roomForm.number} onChange={updateForm(setRoomForm)} />
                                             </label>
                                             <label className="is-wide">
-                                                Anzeigename
+                                                Zimmername (optional)
                                                 <input name="name" maxLength="120" placeholder="optional" value={roomForm.name} onChange={updateForm(setRoomForm)} />
                                             </label>
                                             <label>
@@ -461,15 +466,15 @@ const PmsSetupWorkspace = ({
                                                 <input name="floor" maxLength="40" value={roomForm.floor} onChange={updateForm(setRoomForm)} />
                                             </label>
                                             <label className="is-wide">
-                                                Housekeeping-Bereich
+                                                Reinigungsbereich
                                                 <input name="housekeepingSection" maxLength="80" value={roomForm.housekeepingSection} onChange={updateForm(setRoomForm)} />
                                             </label>
                                             <label className="is-wide">
-                                                Betriebsstatus
+                                                Betriebs-/Verkaufsstatus
                                                 <select name="operationalStatus" value={roomForm.operationalStatus} onChange={updateForm(setRoomForm)}>
-                                                    <option value="IN_SERVICE">In Betrieb</option>
-                                                    <option value="OUT_OF_ORDER">Außer Betrieb</option>
-                                                    <option value="INACTIVE">Inaktiv</option>
+                                                    {getPmsEnumOptions(ROOM_OPERATIONAL_STATUS_LABELS).map(({ value, label }) => (
+                                                        <option key={value} value={value}>{label}</option>
+                                                    ))}
                                                 </select>
                                             </label>
                                         </div>
@@ -499,7 +504,7 @@ const PmsSetupWorkspace = ({
                                                     <small>{room.roomTypeCode}{room.floor ? ` · Etage ${room.floor}` : ''}</small>
                                                 </div>
                                                 <i className={`is-${room.operationalStatus.toLowerCase().replaceAll('_', '-')}`}>
-                                                    {room.operationalStatus === 'IN_SERVICE' ? 'In Betrieb' : 'Gesperrt'}
+                                                    {getPmsEnumLabel(ROOM_OPERATIONAL_STATUS_LABELS, room.operationalStatus)}
                                                 </i>
                                             </li>
                                         ))}

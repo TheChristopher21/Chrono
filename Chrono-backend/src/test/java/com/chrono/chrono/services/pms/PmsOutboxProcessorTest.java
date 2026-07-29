@@ -80,7 +80,10 @@ class PmsOutboxProcessorTest {
 
         assertThat(event.getStatus()).isEqualTo(OutboxStatus.DEAD_LETTER);
         assertThat(event.getAttemptCount()).isEqualTo(2);
-        assertThat(event.getLastError()).contains("Provider nicht erreichbar");
+        assertThat(event.getLastError())
+                .isEqualTo("Übertragung an den externen Anbieter fehlgeschlagen. "
+                        + "Ein erneuter Versuch wird automatisch eingeplant.");
+        assertThat(event.getLastError()).doesNotContain("Provider nicht erreichbar");
         assertThat(event.getNextAttemptAt()).isNull();
     }
 

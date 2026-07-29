@@ -27,6 +27,10 @@ public class PmsReportingService {
             ReservationStatus.CHECKED_IN,
             ReservationStatus.CHECKED_OUT
     );
+    private static final Set<RoomBlockType> INVENTORY_BLOCKING_ROOM_BLOCK_TYPES = EnumSet.of(
+            RoomBlockType.OUT_OF_ORDER,
+            RoomBlockType.OWNER_USE
+    );
 
     private final HotelPropertyRepository propertyRepository;
     private final RoomRepository roomRepository;
@@ -61,6 +65,7 @@ public class PmsReportingService {
                 .findAllByProperty_IdAndStartDateLessThanAndEndDateGreaterThanOrderByStartDateAsc(
                         propertyId, toDateExclusive, fromDate).stream()
                 .filter(block -> block.getStatus() == RoomBlockStatus.ACTIVE)
+                .filter(block -> INVENTORY_BLOCKING_ROOM_BLOCK_TYPES.contains(block.getType()))
                 .toList();
         List<Reservation> reservations = reservationRepository
                 .findAllByProperty_IdAndArrivalDateLessThanAndDepartureDateGreaterThanOrderByArrivalDateAsc(
@@ -129,8 +134,9 @@ public class PmsReportingService {
                 availableRoomNights, soldRoomNights, percent(soldRoomNights, availableRoomNights),
                 money(roomRevenue), ratio(roomRevenue, soldRoomNights), ratio(roomRevenue, availableRoomNights),
                 arrivals, cancellations, noShows,
-                "Aufenthaltsdatum, Ende exklusiv. Umsatz wird gleichmäßig auf gebuchte Nächte verteilt; "
-                        + "stornierte, No-show-, Angebots-, Options- und Wartelistenbuchungen zählen nicht als verkauft.",
+                "Auswertung nach Aufenthaltsdatum; der Abreisetag zählt nicht als Übernachtung. "
+                        + "Umsatz wird gleichmässig auf gebuchte Nächte verteilt; "
+                        + "stornierte, nicht angereiste (No-Show), Angebots-, Options- und Wartelistenbuchungen zählen nicht als verkauft.",
                 daily, sources
         );
     }
@@ -169,6 +175,7 @@ public class PmsReportingService {
                 .findAllByProperty_IdAndStartDateLessThanAndEndDateGreaterThanOrderByStartDateAsc(
                         propertyId, businessDate.plusDays(1), businessDate).stream()
                 .filter(block -> block.getStatus() == RoomBlockStatus.ACTIVE)
+                .filter(block -> INVENTORY_BLOCKING_ROOM_BLOCK_TYPES.contains(block.getType()))
                 .filter(block -> roomIds.contains(block.getRoom().getId()))
                 .map(block -> block.getRoom().getId())
                 .distinct()

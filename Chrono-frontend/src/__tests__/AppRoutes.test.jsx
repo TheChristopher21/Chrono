@@ -46,7 +46,8 @@ vi.mock('../pages/SupplyChain/SupplyChainDashboard.jsx', () => ({ default: () =>
 vi.mock('../pages/ChronoTwo/ChronoTwoDashboard.jsx', () => ({ default: () => <div>Chrono two</div> }));
 vi.mock('../pages/CRM/CrmDashboard.jsx', () => ({ default: () => <div>CRM</div> }));
 vi.mock('../pages/AdminBanking/BankingOperationsPage.jsx', () => ({ default: () => <div>Banking</div> }));
-vi.mock('../pages/Pms/PmsDashboard.jsx', () => ({ default: () => <div>Hotel PMS dashboard</div> }));
+vi.mock('../pages/Pms/PmsDashboard.jsx', () => ({ default: () => <div>Hotelverwaltung (PMS)</div> }));
+vi.mock('../pages/Pms/PmsGuestCheckInPage.jsx', () => ({ default: () => <div>Digitaler Meldeschein</div> }));
 
 import App from '../App.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -97,6 +98,32 @@ describe('App print report routing', () => {
 });
 
 describe('App PMS routing', () => {
+    it('opens the digital registration form on its clear public route', () => {
+        renderApp(
+            {
+                authToken: null,
+                currentUser: null,
+                isAuthLoading: false,
+            },
+            '/guest-registration/single-use-token'
+        );
+
+        expect(screen.getByText('Digitaler Meldeschein')).toBeInTheDocument();
+    });
+
+    it('keeps previously issued guest-check-in links compatible', () => {
+        renderApp(
+            {
+                authToken: null,
+                currentUser: null,
+                isAuthLoading: false,
+            },
+            '/guest-check-in/legacy-token'
+        );
+
+        expect(screen.getByText('Digitaler Meldeschein')).toBeInTheDocument();
+    });
+
     it('allows the PMS test user to open the protected PMS route', () => {
         renderApp(
             {
@@ -112,7 +139,7 @@ describe('App PMS routing', () => {
             '/pms'
         );
 
-        expect(screen.getByText('Hotel PMS dashboard')).toBeInTheDocument();
+        expect(screen.getByText('Hotelverwaltung (PMS)')).toBeInTheDocument();
     });
 
     it('blocks authenticated users without PMS access', () => {
@@ -131,6 +158,6 @@ describe('App PMS routing', () => {
         );
 
         expect(screen.getByText('Landing page')).toBeInTheDocument();
-        expect(screen.queryByText('Hotel PMS dashboard')).not.toBeInTheDocument();
+        expect(screen.queryByText('Hotelverwaltung (PMS)')).not.toBeInTheDocument();
     });
 });

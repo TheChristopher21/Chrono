@@ -84,6 +84,7 @@ function App() {
                         <Route path="/agb" element={<AGB />} />
                         <Route path="/datenschutz" element={<Datenschutz />} />
                         <Route path="/impressum" element={<Impressum />} />
+                        <Route path="/guest-registration/:token" element={<PmsGuestCheckInPage />} />
                         <Route path="/guest-check-in/:token" element={<PmsGuestCheckInPage />} />
 
                         {/* Geschützte Benutzer-Routen */}

@@ -64,6 +64,19 @@ class PmsSetupServiceTest {
     }
 
     @Test
+    void reportsDuplicateHotelCodeWithReadableGermanMessage() {
+        when(propertyRepository.existsByCompany_IdAndCodeIgnoreCase(12L, "BASEL-CITY"))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> service.createProperty(
+                company,
+                propertyRequest("basel city", "Hotel Central")
+        ))
+                .isInstanceOf(ResponseStatusException.class)
+                .hasMessageContaining("Code bereits vergeben");
+    }
+
+    @Test
     void rejectsRoomTypeWhenMaximumOccupancyIsLowerThanBaseOccupancy() {
         HotelProperty property = new HotelProperty();
         property.setCompany(company);
@@ -83,7 +96,7 @@ class PmsSetupServiceTest {
 
         assertThatThrownBy(() -> service.createRoomType(company, 5L, request))
                 .isInstanceOf(ResponseStatusException.class)
-                .hasMessageContaining("Maximum occupancy");
+                .hasMessageContaining("maximale Belegung");
     }
 
     @Test

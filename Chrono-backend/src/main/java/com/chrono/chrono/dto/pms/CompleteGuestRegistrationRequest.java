@@ -13,6 +13,8 @@ public record CompleteGuestRegistrationRequest(
         @NotBlank @Size(min = 4, max = 120) String documentNumber,
         @Size(max = 32) String vehiclePlate,
         @NotBlank @Size(max = 180) String signatureName,
-        @AssertTrue boolean privacyConsent
+        @AssertTrue boolean privacyConsent,
+        String acknowledgedRuleCode,
+        Integer acknowledgedRuleVersion
 ) {
 }

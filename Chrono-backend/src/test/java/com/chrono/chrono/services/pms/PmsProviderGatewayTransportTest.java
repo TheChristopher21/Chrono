@@ -74,6 +74,6 @@ class PmsProviderGatewayTransportTest {
         assertThatThrownBy(() -> PmsProviderGatewayTransport.parseEndpoint(
                 "http://provider.example/events", true))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("PMS provider gateway endpoint must use HTTPS");
+                .hasMessage("Die Zieladresse der Anbieteranbindung muss HTTPS verwenden.");
     }
 }

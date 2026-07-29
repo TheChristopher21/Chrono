@@ -46,8 +46,8 @@ test.describe.serial('Chrono PMS local end-to-end', () => {
         await login(page);
 
         await expect(page.getByRole('heading', { name: /Guten Tag/ })).toBeVisible();
-        await expect(page.getByText('Aktive Aufenthalte')).toBeVisible();
-        await expect(page.getByText(/Betriebsprüfung|Bereit für den Hotelbetrieb/)).toBeVisible();
+        await expect(page.getByText('Eingecheckte Aufenthalte')).toBeVisible();
+        await expect(page.getByText(/^(Betriebsprüfung mit Hinweisen|Bereit für den Hotelbetrieb)$/)).toBeVisible();
 
         await page.getByRole('button', { name: 'Zimmerplan' }).first().click();
         await expect(page.getByRole('heading', { name: /Zimmerplan für/ })).toBeVisible();
@@ -58,7 +58,7 @@ test.describe.serial('Chrono PMS local end-to-end', () => {
     test('creates a guest and reservation through the real UI and API', async ({ page }) => {
         await login(page);
 
-        await page.getByRole('button', { name: 'Gäste' }).first().click();
+        await page.getByRole('button', { name: 'Gästeprofile' }).first().click();
         await expect(page.getByRole('heading', { name: 'Gastprofil anlegen' })).toBeVisible();
 
         const firstName = `E2E-${Date.now()}`;
@@ -69,7 +69,7 @@ test.describe.serial('Chrono PMS local end-to-end', () => {
         await page.getByRole('button', { name: 'Gast speichern' }).click();
         await expect(page.getByText(guestName, { exact: true })).toBeVisible();
 
-        await page.getByRole('button', { name: 'Reservierungen' }).last().click();
+        await page.getByRole('button', { name: 'Reservierungen', exact: true }).last().click();
         await expect(page.getByRole('heading', { name: 'Neue Reservierung' })).toBeVisible();
 
         const arrival = new Date();
@@ -96,7 +96,7 @@ test.describe.serial('Chrono PMS local end-to-end', () => {
         await page.setViewportSize({ width: 390, height: 844 });
         await expectNoHorizontalOverflow(page, 'html');
 
-        await page.getByRole('button', { name: 'Reservierungen' }).first().click();
+        await page.getByRole('button', { name: 'Reservierungen', exact: true }).first().click();
         const dialog = page.getByRole('dialog', { name: 'Hotelbetrieb' });
         await expect(dialog).toBeVisible();
         await expectNoHorizontalOverflow(page, '.pms-workspace-body');
@@ -120,7 +120,7 @@ test.describe.serial('Chrono PMS local end-to-end', () => {
         await expectNoHorizontalOverflow(page, 'html');
 
         await page.getByRole('button', { name: 'Einrichtung verwalten' }).click();
-        const dialog = page.getByRole('dialog', { name: 'Hotelfundament' });
+        const dialog = page.getByRole('dialog', { name: 'Hoteleinrichtung' });
         await expect(dialog).toBeVisible();
         await expectNoHorizontalOverflow(page, '.pms-setup-workspace-body');
 

@@ -110,7 +110,7 @@ public class PmsPrivacyService {
         if (folios.stream().anyMatch(folio -> folio.getStatus() != FolioStatus.CLOSED)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Vor der Anonymisierung müssen alle Folios geschlossen sein.");
+                    "Vor der Anonymisierung müssen alle Gastkonten geschlossen sein.");
         }
 
         String anonymizedReference = "GAST-" + guestId;
@@ -181,7 +181,7 @@ public class PmsPrivacyService {
         if (properties.isEmpty()) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
-                    "Datenschutzaktion benötigt mindestens einen eingerichteten Hotelbetrieb für das Audit.");
+                    "Für das Änderungsprotokoll muss mindestens ein Hotelbetrieb eingerichtet sein.");
         }
         return properties;
     }
