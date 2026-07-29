@@ -38,6 +38,7 @@ class ProductionDeploymentConfigurationTest {
     @Test
     void composeKeepsMonitoringPortsOnLoopbackAndHasRestoreDrill() throws IOException {
         String compose = Files.readString(REPOSITORY_ROOT.resolve("docker-compose.yml"));
+        String gitignore = Files.readString(REPOSITORY_ROOT.resolve(".gitignore"));
 
         assertThat(compose)
                 .contains("\"127.0.0.1:9090:9090\"")
@@ -55,6 +56,8 @@ class ProductionDeploymentConfigurationTest {
                 .contains("backup-restore-test:")
                 .contains("profiles: [\"restore-test\"]")
                 .doesNotContain("\"3307:3306\"");
+        assertThat(REPOSITORY_ROOT.resolve("ops/backup/backup.sh")).isRegularFile();
+        assertThat(gitignore).contains("!ops/backup/backup.sh");
     }
 
     @Test
