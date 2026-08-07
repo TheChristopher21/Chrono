@@ -4,6 +4,7 @@ import com.chrono.chrono.entities.User;
 import com.chrono.chrono.entities.UserAudit;
 import com.chrono.chrono.repositories.UserAuditRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 
 import jakarta.persistence.PostLoad;
@@ -18,11 +19,11 @@ public class UserAuditListener {
     private static final Map<User, User> PREVIOUS =
             Collections.synchronizedMap(new WeakHashMap<>());
 
-    private static UserAuditRepository repo;
+    private final ObjectProvider<UserAuditRepository> repositoryProvider;
 
     @Autowired
-    public void init(UserAuditRepository r) {
-        repo = r;
+    public UserAuditListener(ObjectProvider<UserAuditRepository> repositoryProvider) {
+        this.repositoryProvider = repositoryProvider;
     }
 
     @PostLoad
@@ -34,6 +35,7 @@ public class UserAuditListener {
     public void preUpdate(User user) {
         User old = PREVIOUS.get(user);
         if (old != null) {
+            UserAuditRepository repo = repositoryProvider.getObject();
             if (diff(old.getBankAccount(), user.getBankAccount())) {
                 repo.save(new UserAudit(user, "bankAccount", old.getBankAccount(), user.getBankAccount()));
             }

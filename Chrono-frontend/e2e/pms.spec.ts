@@ -50,9 +50,10 @@ test.describe.serial('Chrono PMS local end-to-end', () => {
         await expect(page.getByText(/^(Betriebsprüfung mit Hinweisen|Bereit für den Hotelbetrieb)$/)).toBeVisible();
 
         await page.getByRole('button', { name: 'Zimmerplan' }).first().click();
-        await expect(page.getByRole('heading', { name: /Zimmerplan für/ })).toBeVisible();
-        await expect(page.getByText('101', { exact: true })).toBeVisible();
-        await expect(page.getByText('Gabriela Tschopp')).toBeVisible();
+        const operationsDialog = page.getByRole('dialog', { name: 'Hotelbetrieb' });
+        await expect(operationsDialog.getByRole('heading', { name: /Zimmerplan für/ })).toBeVisible();
+        await expect(operationsDialog.getByText('101', { exact: true })).toBeVisible();
+        await expect(operationsDialog.getByRole('button', { name: /^Gabriela Tschopp/ })).toBeVisible();
     });
 
     test('creates a guest and reservation through the real UI and API', async ({ page }) => {
