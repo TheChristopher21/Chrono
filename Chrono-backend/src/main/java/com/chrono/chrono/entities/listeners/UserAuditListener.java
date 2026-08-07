@@ -7,13 +7,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import jakarta.persistence.PostLoad;
+import jakarta.persistence.PostRemove;
 import jakarta.persistence.PreUpdate;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
+import java.util.WeakHashMap;
 
 @Component
 public class UserAuditListener {
-    private static final Map<Long, User> PREVIOUS = new HashMap<>();
+    private static final Map<User, User> PREVIOUS =
+            Collections.synchronizedMap(new WeakHashMap<>());
 
     private static UserAuditRepository repo;
 
@@ -24,12 +27,12 @@ public class UserAuditListener {
 
     @PostLoad
     public void postLoad(User user) {
-        PREVIOUS.put(user.getId(), copy(user));
+        PREVIOUS.put(user, copy(user));
     }
 
     @PreUpdate
     public void preUpdate(User user) {
-        User old = PREVIOUS.get(user.getId());
+        User old = PREVIOUS.get(user);
         if (old != null) {
             if (diff(old.getBankAccount(), user.getBankAccount())) {
                 repo.save(new UserAudit(user, "bankAccount", old.getBankAccount(), user.getBankAccount()));
@@ -41,7 +44,12 @@ public class UserAuditListener {
                 repo.save(new UserAudit(user, "email", old.getEmail(), user.getEmail()));
             }
         }
-        PREVIOUS.put(user.getId(), copy(user));
+        PREVIOUS.put(user, copy(user));
+    }
+
+    @PostRemove
+    public void postRemove(User user) {
+        PREVIOUS.remove(user);
     }
 
     private boolean diff(String a, String b) {
