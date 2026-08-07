@@ -14,6 +14,11 @@ Never edit the only source export.
 4. Produce counts and money totals for every entity type.
 5. Run the UAT checklist with migrated records.
 
+Use the idempotent migration-batch workflow described in `PMS_EXTENSIONS.md`
+for future reservations and deposits. Re-running the same hotel/batch key must
+not create duplicate guests, reservations or payments. A batch with calculated
+price differences is stored as `RECONCILIATION_REQUIRED` and blocks cutover.
+
 ## Cutover
 
 1. Agree a booking freeze or delta-export window.

@@ -52,7 +52,9 @@ services:
       JWT_SECRET: "${JWT_SECRET:?JWT_SECRET must be set}"
       NFC_AGENT_TOKEN: "${NFC_AGENT_TOKEN:?NFC_AGENT_TOKEN must be set}"
       REPORT_ICS_FEED_TOKEN: "${REPORT_ICS_FEED_TOKEN:?REPORT_ICS_FEED_TOKEN must be set}"
-      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql:3306/${MYSQL_DATABASE:-chrono_db}?sslMode=DISABLED&serverTimezone=UTC&allowPublicKeyRetrieval=true"
+      APP_PMS_DOCUMENT_HMAC_KEY: "${APP_PMS_DOCUMENT_HMAC_KEY:?APP_PMS_DOCUMENT_HMAC_KEY must be set}"
+      APP_PMS_AUDIT_HMAC_KEY: "${APP_PMS_AUDIT_HMAC_KEY:?APP_PMS_AUDIT_HMAC_KEY must be set}"
+      SPRING_DATASOURCE_URL: "${SPRING_DATASOURCE_URL:?SPRING_DATASOURCE_URL with verified MySQL TLS must be set}"
       SPRING_DATASOURCE_USERNAME: "${MYSQL_USER:?MYSQL_USER must be set}"
       SPRING_DATASOURCE_PASSWORD: "${MYSQL_PASSWORD:?MYSQL_PASSWORD must be set}"
       LLM_BASE_URL: "http://llm:11434/api/generate"
@@ -62,6 +64,7 @@ services:
       - ./data/backups:/backups:ro
     security_opt:
       - no-new-privileges:true
+    stop_grace_period: 45s
     read_only: true
     tmpfs:
       - /tmp:size=128m,mode=1777
@@ -166,6 +169,8 @@ services:
       MYSQL_USER: root
       MYSQL_PASSWORD: "${RESTORE_TEST_ROOT_PASSWORD:?RESTORE_TEST_ROOT_PASSWORD must be set}"
       RESTORE_MINIMUM_TABLES: "${RESTORE_MINIMUM_TABLES:-20}"
+      RESTORE_MINIMUM_PMS_TABLES: "${RESTORE_MINIMUM_PMS_TABLES:-41}"
+      RESTORE_EXPECTED_FLYWAY_VERSION: "${RESTORE_EXPECTED_FLYWAY_VERSION:-17}"
     volumes:
       - ./data/backups:/backups:ro
     networks: [chrono-restore]

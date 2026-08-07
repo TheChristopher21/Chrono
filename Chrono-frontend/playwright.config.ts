@@ -1,6 +1,9 @@
 import { defineConfig } from '@playwright/test';
 
 const pmsE2ePassword = process.env.PMS_E2E_PASSWORD || 'chrono-pms-e2e-only';
+const mavenCommand = process.platform === 'win32'
+    ? '.\\mvnw.cmd spring-boot:run'
+    : './mvnw spring-boot:run';
 
 export default defineConfig({
     testDir: 'e2e',
@@ -15,7 +18,7 @@ export default defineConfig({
     },
     webServer: process.env.PLAYWRIGHT_SKIP_WEBSERVER === 'true' ? undefined : [
         {
-            command: '.\\mvnw.cmd spring-boot:run',
+            command: mavenCommand,
             cwd: '../Chrono-backend',
             port: 18084,
             reuseExistingServer: false,

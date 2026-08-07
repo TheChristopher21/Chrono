@@ -31,6 +31,12 @@ docker compose --profile restore-test up --build --abort-on-container-exit backu
 docker compose --profile restore-test down
 ```
 
+The drill rejects markers outside `/backups`, verifies the SHA-256 checksum,
+restores into the isolated database, and requires the configured total-table,
+PMS-table and Flyway-version gates. The production defaults are 20 total
+tables, 41 PMS tables and Flyway version 17; update the expected version with
+every schema release.
+
 Success requires at least `RESTORE_MINIMUM_TABLES` tables. Afterward, perform
 application-level checks in staging: company count, hotel count, reservation
 count, open folio balance and newest audit/outbox timestamps.

@@ -48,8 +48,10 @@ public class SecurityConfig {
         configuration.setAllowedOrigins(parseOrigins(configuredOrigins));
         configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(Arrays.asList(
-                "Authorization", "Content-Type", "Origin", "X-Agent-Token", "X-NFC-Agent-Request"));
-        configuration.setExposedHeaders(List.of("Authorization"));
+                "Authorization", "Content-Type", "Origin", "Idempotency-Key",
+                "X-Agent-Token", "X-NFC-Agent-Request",
+                "X-Chrono-Timestamp", "X-Chrono-Delivery-Id", "X-Chrono-Signature"));
+        configuration.setExposedHeaders(List.of("Authorization", "Retry-After"));
         configuration.setAllowCredentials(true);
         configuration.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
@@ -106,6 +108,7 @@ public class SecurityConfig {
                     auth.requestMatchers(HttpMethod.POST, "/api/public/analytics/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/public/pms/guest-registration/**").permitAll();
                     auth.requestMatchers(HttpMethod.POST, "/api/public/pms/webhooks/channels/**").permitAll();
+                    auth.requestMatchers(HttpMethod.POST, "/api/public/pms/booking/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/holidays/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/public/**").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/api/report/timesheet/ics-feed/**").permitAll();

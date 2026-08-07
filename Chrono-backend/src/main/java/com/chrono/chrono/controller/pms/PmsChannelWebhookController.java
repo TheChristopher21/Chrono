@@ -1,7 +1,7 @@
 package com.chrono.chrono.controller.pms;
 
 import com.chrono.chrono.dto.pms.ExternalBookingRequest;
-import com.chrono.chrono.dto.pms.PmsOperationsResponse;
+import com.chrono.chrono.dto.pms.ChannelWebhookResponse;
 import com.chrono.chrono.entities.pms.ChannelConnection;
 import com.chrono.chrono.services.pms.PmsAdvancedService;
 import com.chrono.chrono.services.pms.PmsPublicRateLimiter;
@@ -40,34 +40,33 @@ public class PmsChannelWebhookController {
         this.validator = validator;
     }
 
-    @PostMapping("/{propertyCode}/{providerCode}/bookings")
-    public ResponseEntity<PmsOperationsResponse> receiveBooking(
-            @PathVariable String propertyCode,
-            @PathVariable String providerCode,
+    @PostMapping("/{webhookKey}/bookings")
+    public ResponseEntity<ChannelWebhookResponse> receiveBooking(
+            @PathVariable String webhookKey,
             @RequestHeader("X-Chrono-Timestamp") String timestamp,
+            @RequestHeader("X-Chrono-Delivery-Id") String deliveryId,
             @RequestHeader("X-Chrono-Signature") String signature,
             @RequestBody String rawBody,
             HttpServletRequest httpRequest) {
         PmsPublicRateLimiter.Decision limit =
-                rateLimiter.check(httpRequest.getRemoteAddr(), "channel-webhook:" + providerCode);
+                rateLimiter.check(httpRequest.getRemoteAddr(), "channel-webhook");
         if (!limit.allowed()) {
             return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
                     .header(HttpHeaders.RETRY_AFTER, String.valueOf(limit.retryAfterSeconds()))
                     .build();
         }
         ChannelConnection connection =
-                securityService.verify(propertyCode, providerCode, timestamp, signature, rawBody);
+                securityService.verify(webhookKey, timestamp, deliveryId, signature, rawBody);
         ExternalBookingRequest request = parse(rawBody);
-        if (!providerCode.equalsIgnoreCase(request.channel())
+        if (!connection.getProviderCode().equalsIgnoreCase(request.channel())
                 || !connection.getProperty().getId().equals(request.reservation().propertyId())) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST, "Webhook-Provider und Hotelzuordnung stimmen nicht überein.");
         }
-        return ResponseEntity.ok(advancedService.importExternalBooking(
+        return ResponseEntity.ok(advancedService.importExternalBookingForWebhook(
                 connection.getProperty().getCompany(),
                 request,
-                "channel:" + connection.getProviderCode(),
-                null));
+                "channel:" + connection.getProviderCode()));
     }
 
     private ExternalBookingRequest parse(String rawBody) {

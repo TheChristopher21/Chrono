@@ -30,6 +30,7 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 @Service
 public class PmsAdvancedService {
@@ -73,6 +74,7 @@ public class PmsAdvancedService {
     private final PmsAuditEventRepository auditEventRepository;
     private final PmsAuditWriter auditWriter;
     private final PmsOperationsService operationsService;
+    private final PmsDocumentFingerprintService documentFingerprintService;
 
     public PmsAdvancedService(HotelPropertyRepository propertyRepository,
                               PmsOrganizationRepository organizationRepository,
@@ -100,7 +102,8 @@ public class PmsAdvancedService {
                               ResourceBookingRepository resourceBookingRepository,
                               PmsAuditEventRepository auditEventRepository,
                               PmsAuditWriter auditWriter,
-                              PmsOperationsService operationsService) {
+                              PmsOperationsService operationsService,
+                              PmsDocumentFingerprintService documentFingerprintService) {
         this.propertyRepository = propertyRepository;
         this.organizationRepository = organizationRepository;
         this.groupRepository = groupRepository;
@@ -128,6 +131,7 @@ public class PmsAdvancedService {
         this.auditEventRepository = auditEventRepository;
         this.auditWriter = auditWriter;
         this.operationsService = operationsService;
+        this.documentFingerprintService = documentFingerprintService;
     }
 
     @Transactional(readOnly = true)
@@ -798,6 +802,22 @@ public class PmsAdvancedService {
                                                        ExternalBookingRequest request,
                                                        String username,
                                                        LocalDate businessDate) {
+        ImportOutcome outcome = importExternalBookingRecord(company, request, username);
+        return operationsService.getOperations(company, outcome.propertyId(), businessDate, null, null);
+    }
+
+    @Transactional
+    public ChannelWebhookResponse importExternalBookingForWebhook(Company company,
+                                                                   ExternalBookingRequest request,
+                                                                   String username) {
+        ImportOutcome outcome = importExternalBookingRecord(company, request, username);
+        return new ChannelWebhookResponse(outcome.duplicate() ? "duplicate" : "accepted",
+                outcome.externalId(), outcome.reservation().getId(), outcome.reservation().getConfirmationCode());
+    }
+
+    private ImportOutcome importExternalBookingRecord(Company company,
+                                                       ExternalBookingRequest request,
+                                                       String username) {
         UpsertReservationRequest booking = request.reservation();
         HotelProperty property = lockProperty(company, booking.propertyId());
         String channel = required(request.channel()).toUpperCase(Locale.ROOT);
@@ -806,7 +826,7 @@ public class PmsAdvancedService {
                 .findByProperty_IdAndChannelCodeIgnoreCaseAndExternalId(property.getId(), channel, externalId)
                 .orElse(null);
         if (existing != null) {
-            return operationsService.getOperations(company, property.getId(), businessDate, null, null);
+            return new ImportOutcome(property.getId(), externalId, existing.getReservation(), true);
         }
         Reservation reservation = operationsService.createReservationRecord(
                 company, booking, clean(username) == null ? "channel:" + channel : username);
@@ -818,8 +838,10 @@ public class PmsAdvancedService {
         externalBookingRepository.save(reference);
         emit(property, "booking.imported", "reservation", reservation.getId().toString(),
                 "{\"channel\":\"" + json(channel) + "\",\"externalId\":\"" + json(externalId) + "\"}");
-        return operationsService.getOperations(company, property.getId(), businessDate, null, null);
+        return new ImportOutcome(property.getId(), externalId, reservation, false);
     }
+
+    private record ImportOutcome(Long propertyId, String externalId, Reservation reservation, boolean duplicate) {}
 
     @Transactional
     public PmsAdvancedResponse createChannelConnection(
@@ -841,6 +863,7 @@ public class PmsAdvancedService {
         ChannelConnection connection = new ChannelConnection();
         connection.setProperty(property);
         connection.setProviderCode(providerCode);
+        connection.setWebhookKey(UUID.randomUUID().toString().replace("-", ""));
         connection.setDisplayName(required(request.displayName()));
         connection.setEnvironment(request.environment());
         connection.setSecretReference(clean(request.secretReference()));
@@ -998,7 +1021,7 @@ public class PmsAdvancedService {
         registration.setCity(required(request.city()));
         registration.setCountryCode(country(request.countryCode()));
         registration.setNationalityCode(country(request.nationalityCode()));
-        registration.setDocumentHash(sha256(documentNumber));
+        registration.setDocumentHash(documentFingerprintService.fingerprint(documentNumber));
         registration.setDocumentLastFour(documentNumber.substring(documentNumber.length() - 4));
         registration.setVehiclePlate(clean(request.vehiclePlate()));
         registration.setSignatureName(required(request.signatureName()));
@@ -1175,7 +1198,7 @@ public class PmsAdvancedService {
 
     private PmsAdvancedResponse.ChannelConnectionView channelConnectionView(ChannelConnection connection) {
         return new PmsAdvancedResponse.ChannelConnectionView(
-                connection.getId(), connection.getProviderCode(), connection.getDisplayName(),
+                connection.getId(), connection.getProviderCode(), connection.getWebhookKey(), connection.getDisplayName(),
                 connection.getEnvironment(), connection.getStatus(), connection.getSecretReference(),
                 connection.getLastSyncAt(), connection.getLastSyncMessage(),
                 channelMappingRepository.findAllByConnection_IdOrderByExternalRoomCodeAsc(connection.getId())

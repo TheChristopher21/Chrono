@@ -20,6 +20,17 @@ Record tester, date, release tag and evidence for every scenario.
 - Reconcile availability after retries, downtime and out-of-order webhooks.
 - Confirm dead-letter alerts and manual replay.
 
+## Direct sales, POS and local integrations
+
+- Search and book the final room through the public booking page under load.
+- Confirm a concurrent front-office/online attempt cannot oversell inventory.
+- Verify terms/privacy consent and the configured guarantee status.
+- Settle a POS ticket directly and post another ticket to a guest folio.
+- Reconcile POS tax and gross totals with an independent calculation.
+- Post tourism tax with adult, child and maximum-night variations exactly once.
+- Issue and revoke a sandbox room credential and reconcile it with the lock provider.
+- Import the accounting CSV into the hotel's staging ledger and reconcile totals.
+
 ## Housekeeping and maintenance
 
 - Generate arrival/departure cleaning tasks.
@@ -46,3 +57,4 @@ Record tester, date, release tag and evidence for every scenario.
 - Confirm queued provider events recover without duplicates.
 - Restore the latest backup into the isolated restore environment.
 - Test a monitoring alarm and the escalation path.
+- Retry booking, POS and access-provider requests after timeouts without duplicates.

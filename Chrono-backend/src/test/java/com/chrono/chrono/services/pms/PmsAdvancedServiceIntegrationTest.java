@@ -24,7 +24,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest(properties = "spring.jpa.hibernate.ddl-auto=create-drop")
-@Import({PmsOperationsService.class, PmsAdvancedService.class, PmsAuditWriter.class})
+@Import({PmsOperationsService.class, PmsAdvancedService.class, PmsAuditWriter.class,
+        PmsDocumentFingerprintService.class})
 @ActiveProfiles("test")
 class PmsAdvancedServiceIntegrationTest {
 

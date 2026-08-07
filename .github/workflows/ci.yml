@@ -41,6 +41,131 @@ jobs:
       - run: npm test
       - run: npm run build:prod
 
+  mysql-migrations:
+    name: MySQL migrations (${{ matrix.mysql_version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        mysql_version: ["8.0.42", "8.4"]
+    services:
+      mysql:
+        image: mysql:${{ matrix.mysql_version }}
+        env:
+          MYSQL_ROOT_PASSWORD: chrono-ci-root
+          MYSQL_DATABASE: chrono_migration_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -pchrono-ci-root"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=12
+    defaults:
+      run:
+        working-directory: Chrono-backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - name: Verify fresh and legacy MySQL migrations
+        run: >-
+          ./mvnw -B
+          -Dchrono.test.mysql.url=jdbc:mysql://127.0.0.1:3306/chrono_migration_test?allowPublicKeyRetrieval=true\&useSSL=false
+          -Dchrono.test.mysql.username=root
+          -Dchrono.test.mysql.password=chrono-ci-root
+          -Dtest=PmsFlywayMySqlIntegrationTest test
+      - name: Verify checksum backup and isolated restore drill
+        if: matrix.mysql_version == '8.0.42'
+        working-directory: .
+        run: |
+          set -euo pipefail
+          backup_dir="$(mktemp -d)"
+          cleanup() {
+            docker rm --force chrono-backup-ci chrono-restore-db-ci >/dev/null 2>&1 || true
+            docker network rm chrono-restore-ci >/dev/null 2>&1 || true
+            rm -rf "${backup_dir}"
+          }
+          trap cleanup EXIT
+
+          docker build \
+            --build-arg MYSQL_IMAGE_TAG=8.0.42 \
+            --tag chrono/mysql-backup:ci \
+            ops/backup
+          docker run --detach \
+            --name chrono-backup-ci \
+            --add-host host.docker.internal:host-gateway \
+            --volume "${backup_dir}:/backups" \
+            --env MYSQL_HOST=host.docker.internal \
+            --env MYSQL_PORT=3306 \
+            --env MYSQL_DATABASE=chrono_migration_fresh \
+            --env MYSQL_USER=root \
+            --env MYSQL_PASSWORD=chrono-ci-root \
+            --env BACKUP_INTERVAL_SECONDS=86400 \
+            chrono/mysql-backup:ci
+          for _ in $(seq 1 60); do
+            test -s "${backup_dir}/latest.ok" && break
+            sleep 1
+          done
+          test -s "${backup_dir}/latest.ok"
+          docker rm --force chrono-backup-ci
+
+          docker network create chrono-restore-ci
+          docker run --detach \
+            --name chrono-restore-db-ci \
+            --network chrono-restore-ci \
+            --env MYSQL_ROOT_PASSWORD=chrono-ci-restore-root \
+            --env MYSQL_DATABASE=chrono_restore \
+            mysql:8.0.42
+          for _ in $(seq 1 60); do
+            if docker exec chrono-restore-db-ci \
+              mysqladmin ping -h 127.0.0.1 -pchrono-ci-restore-root --silent; then
+              break
+            fi
+            sleep 1
+          done
+          docker exec chrono-restore-db-ci \
+            mysqladmin ping -h 127.0.0.1 -pchrono-ci-restore-root --silent
+
+          docker run --rm \
+            --network chrono-restore-ci \
+            --volume "${backup_dir}:/backups:ro" \
+            --entrypoint /opt/chrono/restore-drill.sh \
+            --env MYSQL_HOST=chrono-restore-db-ci \
+            --env MYSQL_PORT=3306 \
+            --env MYSQL_DATABASE=chrono_restore \
+            --env MYSQL_USER=root \
+            --env MYSQL_PASSWORD=chrono-ci-restore-root \
+            --env RESTORE_MINIMUM_TABLES=20 \
+            --env RESTORE_MINIMUM_PMS_TABLES=41 \
+            --env RESTORE_EXPECTED_FLYWAY_VERSION=17 \
+            chrono/mysql-backup:ci
+
+  pms-e2e:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Chrono-frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: maven
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: Chrono-frontend/package-lock.json
+      - run: npm ci --legacy-peer-deps
+      - run: npx playwright install --with-deps chromium
+      - name: Run PMS browser journeys
+        run: npm run e2e
+
   compose:
     runs-on: ubuntu-latest
     steps:

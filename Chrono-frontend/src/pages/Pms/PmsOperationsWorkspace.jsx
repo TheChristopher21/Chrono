@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import api from '../../utils/api.js';
 import PmsAdvancedWorkspace from './PmsAdvancedWorkspace.jsx';
+import PmsExtensionsWorkspace from './PmsExtensionsWorkspace.jsx';
 import { formatPmsDate } from './pmsFormatting.js';
 import {
     FOLIO_ITEM_TYPE_LABELS,
@@ -38,6 +39,7 @@ const sections = [
     ['digital-check-in', 'Digitale Gästeanmeldung'],
     ['communications', 'Gästekommunikation'],
     ['reports', 'Berichte & Kennzahlen'],
+    ['commerce', 'Verkauf & lokale Integrationen'],
     ['integrations', 'Schnittstellen & Integrationen'],
 ];
 
@@ -142,6 +144,8 @@ const PmsOperationsWorkspace = ({
     const [privacyGuestId, setPrivacyGuestId] = useState(null);
     const [privacyReason, setPrivacyReason] = useState('');
     const [privacyConfirmationOpen, setPrivacyConfirmationOpen] = useState(false);
+    const [guestSearch, setGuestSearch] = useState('');
+    const [guestMatches, setGuestMatches] = useState([]);
 
     const emptyGuest = {
         firstName: '',
@@ -241,7 +245,27 @@ const PmsOperationsWorkspace = ({
         }));
     }, [property]);
 
+    useEffect(() => {
+        if (!property?.id || guestSearch.trim().length < 2) {
+            setGuestMatches([]);
+            return undefined;
+        }
+        const timer = window.setTimeout(() => {
+            api.get(`/api/pms/properties/${property.id}/guests/search`, {
+                params: { q: guestSearch.trim(), limit: 50 },
+            }).then((response) => setGuestMatches(response.data ?? []))
+                .catch((searchError) => setError(errorMessage(searchError)));
+        }, 250);
+        return () => window.clearTimeout(timer);
+    }, [guestSearch, property?.id]);
+
     const guests = operations?.guests ?? [];
+    const guestOptions = useMemo(() => {
+        const byId = new Map([...guests, ...guestMatches].map((guest) => [guest.id, guest]));
+        return [...byId.values()].sort((left, right) => (
+            `${left.lastName} ${left.firstName}`.localeCompare(`${right.lastName} ${right.firstName}`, 'de')
+        ));
+    }, [guestMatches, guests]);
     const reservations = operations?.reservations ?? [];
     const ratePlans = operations?.ratePlans ?? [];
     const rooms = operations?.rooms ?? [];
@@ -748,6 +772,15 @@ const PmsOperationsWorkspace = ({
                 {notice && <div className="pms-inline-message is-success" role="status">{notice}</div>}
 
                 <div className="pms-workspace-body">
+                    {activeSection === 'commerce' && (
+                        <PmsExtensionsWorkspace
+                            property={property}
+                            operations={operations}
+                            businessDate={businessDate}
+                            canManage={canManage}
+                            onOperationsChange={onOperationsChange}
+                        />
+                    )}
                     {['portfolio', 'groups', 'events', 'organizations', 'invoices', 'audit', 'digital-check-in', 'communications', 'reports', 'integrations'].includes(activeSection) && (
                         <PmsAdvancedWorkspace
                             section={activeSection}
@@ -775,14 +808,23 @@ const PmsOperationsWorkspace = ({
                                 </div>
                                 <form className="pms-form-grid" onSubmit={submitReservation}>
                                     <label>
+                                        Gast suchen
+                                        <input
+                                            value={guestSearch}
+                                            onChange={(event) => setGuestSearch(event.target.value)}
+                                            placeholder="Name, E-Mail oder Telefon"
+                                        />
+                                    </label>
+                                    <label>
                                         Gast
                                         <select
+                                            aria-label="Gast"
                                             value={reservationForm.guestId}
                                             onChange={(event) => setReservationForm({ ...reservationForm, guestId: event.target.value })}
                                             required
                                         >
                                             <option value="">Gast wählen</option>
-                                            {guests.map((guest) => (
+                                            {guestOptions.map((guest) => (
                                                 <option key={guest.id} value={guest.id}>{guest.firstName} {guest.lastName}</option>
                                             ))}
                                         </select>
@@ -879,7 +921,7 @@ const PmsOperationsWorkspace = ({
                                     </label>
                                     <div className="pms-form-actions is-wide">
                                         <button type="button" onClick={loadAvailability} disabled={busy}>Verfügbarkeit prüfen</button>
-                                        <button type="submit" className="is-primary" disabled={!canManage || busy || !guests.length || !filteredRates.length}>
+                                        <button type="submit" className="is-primary" disabled={!canManage || busy || !guestOptions.length || !filteredRates.length}>
                                             {editingReservationId ? 'Änderungen speichern' : 'Reservierung anlegen'}
                                         </button>
                                     </div>
@@ -1047,7 +1089,7 @@ const PmsOperationsWorkspace = ({
                                 </form>
                             </section>
                             <section className="pms-work-card">
-                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Gästekartei</span><h3>{guests.length} Gäste</h3></div></div>
+                                <div className="pms-work-card-heading"><div><span className="pms-eyebrow">Gästekartei</span><h3>{guests.length} zuletzt geänderte Gäste</h3></div></div>
                                 <div className="pms-record-list">
                                     {guests.map((guest) => (
                                         <article className="pms-record" key={guest.id}>

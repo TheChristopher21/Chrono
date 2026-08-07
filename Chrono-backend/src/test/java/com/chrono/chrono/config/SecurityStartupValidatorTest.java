@@ -95,6 +95,8 @@ class SecurityStartupValidatorTest {
         ReflectionTestUtils.setField(validator, "allowLocalhostLegacy", false);
         ReflectionTestUtils.setField(validator, "publicIcsFeedWithoutToken", false);
         ReflectionTestUtils.setField(validator, "reportIcsFeedToken", "feedtoken0123456789abcdef01234567");
+        ReflectionTestUtils.setField(validator, "pmsDocumentHmacKey", "document0123456789abcdef0123456789");
+        ReflectionTestUtils.setField(validator, "pmsAuditHmacKey", "auditkey0123456789abcdef01234567890");
         return validator;
     }
 }

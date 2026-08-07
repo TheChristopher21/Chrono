@@ -111,10 +111,13 @@ public class PmsOperationalHealthService {
         }
 
         List<PmsAuditEvent> auditEvents =
-                auditRepository.findTop100ByProperty_IdOrderByCreatedAtDesc(propertyId);
+                auditRepository.findTop100ByProperty_IdOrderBySequenceNumberDescCreatedAtDesc(propertyId);
         long invalidAuditEvents = auditEvents.stream()
                 .filter(event -> !auditWriter.hasValidIntegrityHash(event))
                 .count();
+        if (!auditWriter.hasValidChain(auditEvents)) {
+            invalidAuditEvents++;
+        }
         HealthStatus auditStatus = invalidAuditEvents == 0 ? HealthStatus.OK : HealthStatus.CRITICAL;
         components.add(new ComponentHealth(
                 "audit", "Änderungsprotokoll", auditStatus,

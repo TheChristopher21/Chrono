@@ -13,6 +13,7 @@ A release is eligible for production only when all of the following are true:
 6. The hotel has signed off every scenario in `UAT_CHECKLIST.md`.
 7. Migration counts and financial opening balances have been reconciled.
 8. A named go/no-go owner and rollback owner are present.
+9. Every gate in `ENTERPRISE_READINESS.md` is evidenced for the target hotel.
 
 ## Deployment
 
@@ -63,7 +64,13 @@ be configured with a placeholder recipient.
   keys are enabled.
 - Channel inventory and reservation reconciliation returns zero unexplained
   differences.
+- The public booking slug, terms/privacy links and guarantee policy are signed
+  off and a concurrent last-room booking test cannot oversell.
+- POS, tourism-tax, digital-lock and accounting exports are reconciled with the
+  hotel's external systems or explicitly disabled.
 - Grafana receives metrics and alert delivery is tested.
+- The production-like load test meets the hotel-specific latency, error-rate
+  and concurrency targets without pool exhaustion or overselling.
 
 ## Rollback
 

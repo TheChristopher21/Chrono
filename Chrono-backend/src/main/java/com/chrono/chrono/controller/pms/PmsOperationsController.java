@@ -15,6 +15,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.net.URI;
 import java.security.Principal;
 import java.time.LocalDate;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/pms")
@@ -64,6 +65,16 @@ public class PmsOperationsController {
                 arrival,
                 departure
         ));
+    }
+
+    @GetMapping("/properties/{propertyId}/guests/search")
+    public ResponseEntity<List<PmsOperationsResponse.GuestView>> searchGuests(
+            @PathVariable Long propertyId,
+            @RequestParam(defaultValue = "") String q,
+            @RequestParam(defaultValue = "50") int limit,
+            Principal principal) {
+        AccessContext context = requireContext(principal, UserPermissionService.ACCESS_VIEW);
+        return ResponseEntity.ok(operationsService.searchGuests(context.company(), propertyId, q, limit));
     }
 
     @PostMapping("/properties/{propertyId}/guests")

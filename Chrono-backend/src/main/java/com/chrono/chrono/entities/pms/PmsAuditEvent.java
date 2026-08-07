@@ -41,6 +41,15 @@ public class PmsAuditEvent {
     @Column(name = "integrity_hash", nullable = false, length = 64, updatable = false)
     private String integrityHash;
 
+    @Column(name = "sequence_number", updatable = false)
+    private Long sequenceNumber;
+
+    @Column(name = "previous_hash", length = 64, updatable = false)
+    private String previousHash;
+
+    @Column(name = "signature_version", nullable = false, updatable = false)
+    private int signatureVersion = 1;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -55,6 +64,9 @@ public class PmsAuditEvent {
                          String aggregateId,
                          String details,
                          String integrityHash,
+                         Long sequenceNumber,
+                         String previousHash,
+                         int signatureVersion,
                          LocalDateTime createdAt) {
         this.company = company;
         this.property = property;
@@ -64,6 +76,9 @@ public class PmsAuditEvent {
         this.aggregateId = aggregateId;
         this.details = details;
         this.integrityHash = integrityHash;
+        this.sequenceNumber = sequenceNumber;
+        this.previousHash = previousHash;
+        this.signatureVersion = signatureVersion;
         this.createdAt = createdAt;
     }
 
@@ -76,5 +91,8 @@ public class PmsAuditEvent {
     public String getAggregateId() { return aggregateId; }
     public String getDetails() { return details; }
     public String getIntegrityHash() { return integrityHash; }
+    public Long getSequenceNumber() { return sequenceNumber; }
+    public String getPreviousHash() { return previousHash; }
+    public int getSignatureVersion() { return signatureVersion; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 }

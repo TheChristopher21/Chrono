@@ -22,6 +22,24 @@ The signature input is `<timestamp>.<raw request body>`. The gateway must:
 Provider-specific credentials stay in the gateway or an external secret
 manager. Chrono stores only references such as `env:CHANNEL_PROVIDER_SECRET`.
 
+The same gateway transports provider-neutral digital-lock issue/revoke events.
+It must keep the supplied external credential reference opaque and must never
+return or log raw room PINs, mobile-key secrets or lock-provider credentials.
+
+## Inbound channel booking webhooks
+
+Each channel connection exposes a random `webhookKey`. Providers submit to
+`POST /api/public/pms/webhooks/channels/{webhookKey}/bookings` with:
+
+- `X-Chrono-Timestamp: <unix-seconds>`
+- `X-Chrono-Delivery-Id: <provider-unique-id>`
+- `X-Chrono-Signature: sha256=<HMAC-SHA256>`
+
+The signature input is `<timestamp>.<delivery-id>.<raw request body>`. Chrono
+rejects expired timestamps, invalid signatures and a repeated delivery ID.
+Responses contain only the result and reservation identifiers; guest and folio
+data are never returned to the public provider endpoint.
+
 ## Stripe PMS card payments
 
 Enable `APP_PMS_PAYMENTS_STRIPE_ENABLED=true` only after webhook and sandbox

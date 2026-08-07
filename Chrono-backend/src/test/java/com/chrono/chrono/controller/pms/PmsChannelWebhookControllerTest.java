@@ -1,7 +1,7 @@
 package com.chrono.chrono.controller.pms;
 
 import com.chrono.chrono.dto.pms.ExternalBookingRequest;
-import com.chrono.chrono.dto.pms.PmsOperationsResponse;
+import com.chrono.chrono.dto.pms.ChannelWebhookResponse;
 import com.chrono.chrono.entities.Company;
 import com.chrono.chrono.entities.pms.ChannelConnection;
 import com.chrono.chrono.entities.pms.HotelProperty;
@@ -51,40 +51,42 @@ class PmsChannelWebhookControllerTest {
         connection.setProperty(property);
         connection.setProviderCode("CHANNEL_TEST");
         when(servletRequest.getRemoteAddr()).thenReturn("127.0.0.1");
-        when(securityService.verify("ZRH", "CHANNEL_TEST", "100", "signature", validBody()))
+        when(securityService.verify("0123456789abcdef0123456789abcdef", "100", "delivery-00000001", "signature", validBody()))
                 .thenReturn(connection);
-        when(advancedService.importExternalBooking(
+        when(advancedService.importExternalBookingForWebhook(
                 eq(company), any(ExternalBookingRequest.class),
-                eq("channel:CHANNEL_TEST"), eq(null)))
-                .thenReturn(mock(PmsOperationsResponse.class));
+                eq("channel:CHANNEL_TEST")))
+                .thenReturn(new ChannelWebhookResponse("accepted", "booking-4711", 9L, "CHR-1"));
     }
 
     @Test
     void importsVerifiedProviderScopedBooking() {
         var response = controller.receiveBooking(
-                "ZRH", "CHANNEL_TEST", "100", "signature", validBody(), servletRequest);
+                "0123456789abcdef0123456789abcdef", "100", "delivery-00000001", "signature", validBody(), servletRequest);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        verify(advancedService).importExternalBooking(
+        verify(advancedService).importExternalBookingForWebhook(
                 eq(company), any(ExternalBookingRequest.class),
-                eq("channel:CHANNEL_TEST"), eq(null));
+                eq("channel:CHANNEL_TEST"));
+        assertThat(response.getBody()).extracting(ChannelWebhookResponse::externalId)
+                .isEqualTo("booking-4711");
     }
 
     @Test
     void verifiesSignatureBeforeRejectingMalformedJson() {
         when(securityService.verify(
-                "ZRH", "CHANNEL_TEST", "100", "signature", "{not-json"))
+                "0123456789abcdef0123456789abcdef", "100", "delivery-00000002", "signature", "{not-json"))
                 .thenReturn(connection);
 
         assertThatThrownBy(() -> controller.receiveBooking(
-                "ZRH", "CHANNEL_TEST", "100", "signature", "{not-json", servletRequest))
+                "0123456789abcdef0123456789abcdef", "100", "delivery-00000002", "signature", "{not-json", servletRequest))
                 .isInstanceOf(ResponseStatusException.class)
                 .satisfies(error -> assertThat(((ResponseStatusException) error).getStatusCode())
                         .isEqualTo(HttpStatus.BAD_REQUEST));
         verify(securityService).verify(
-                "ZRH", "CHANNEL_TEST", "100", "signature", "{not-json");
-        verify(advancedService, never()).importExternalBooking(
-                any(), any(), any(), any());
+                "0123456789abcdef0123456789abcdef", "100", "delivery-00000002", "signature", "{not-json");
+        verify(advancedService, never()).importExternalBookingForWebhook(
+                any(), any(), any());
     }
 
     private String validBody() {

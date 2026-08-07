@@ -48,6 +48,7 @@ vi.mock('../pages/CRM/CrmDashboard.jsx', () => ({ default: () => <div>CRM</div> 
 vi.mock('../pages/AdminBanking/BankingOperationsPage.jsx', () => ({ default: () => <div>Banking</div> }));
 vi.mock('../pages/Pms/PmsDashboard.jsx', () => ({ default: () => <div>Hotelverwaltung (PMS)</div> }));
 vi.mock('../pages/Pms/PmsGuestCheckInPage.jsx', () => ({ default: () => <div>Digitaler Meldeschein</div> }));
+vi.mock('../pages/Pms/PmsBookingPage.jsx', () => ({ default: () => <div>Direktbuchung</div> }));
 
 import App from '../App.jsx';
 import { AuthContext } from '../context/AuthContext.jsx';
@@ -98,6 +99,11 @@ describe('App print report routing', () => {
 });
 
 describe('App PMS routing', () => {
+    it('opens the public direct-booking route without authentication', () => {
+        renderApp({ authToken: null, currentUser: null, isAuthLoading: false }, '/book/ZRH');
+        expect(screen.getByText('Direktbuchung')).toBeInTheDocument();
+    });
+
     it('opens the digital registration form on its clear public route', () => {
         renderApp(
             {

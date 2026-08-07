@@ -45,7 +45,7 @@ class PmsFlywayMySqlIntegrationTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(1);
+        assertThat(result.migrationsExecuted).isEqualTo(3);
 
         try (var connection = DriverManager.getConnection(url, username, password);
              var statement = connection.createStatement()) {
@@ -63,7 +63,7 @@ class PmsFlywayMySqlIntegrationTest {
                       and left(table_name, 4) = 'pms_'
                     """)) {
                 assertThat(pmsTables.next()).isTrue();
-                assertThat(pmsTables.getInt(1)).isEqualTo(30);
+                assertThat(pmsTables.getInt(1)).isEqualTo(41);
             }
 
             try (var history = statement.executeQuery("""
@@ -77,9 +77,9 @@ class PmsFlywayMySqlIntegrationTest {
             }
         }
 
-        String freshUrl = url.replace(
-                "/chrono_migration_test?",
-                "/chrono_migration_fresh?"
+        String freshUrl = url.replaceFirst(
+                "/chrono_migration_test(?=\\?|$)",
+                "/chrono_migration_fresh"
         );
         assertThat(freshUrl).isNotEqualTo(url);
 
@@ -99,7 +99,7 @@ class PmsFlywayMySqlIntegrationTest {
                 .load()
                 .migrate();
 
-        assertThat(freshResult.migrationsExecuted).isEqualTo(2);
+        assertThat(freshResult.migrationsExecuted).isEqualTo(4);
 
         try (var connection = DriverManager.getConnection(
                 freshUrl,
@@ -114,7 +114,7 @@ class PmsFlywayMySqlIntegrationTest {
                        and left(table_name, 4) = 'pms_'
                      """)) {
             assertThat(pmsTables.next()).isTrue();
-            assertThat(pmsTables.getInt(1)).isEqualTo(30);
+            assertThat(pmsTables.getInt(1)).isEqualTo(41);
         }
     }
 }

@@ -37,7 +37,8 @@ class PmsOperationalHealthServiceTest {
         when(propertyRepository.findByIdAndCompany_Id(7L, 4L))
                 .thenReturn(Optional.of(mock(HotelProperty.class)));
         when(jdbcTemplate.queryForObject("SELECT 1", Integer.class)).thenReturn(1);
-        when(auditRepository.findTop100ByProperty_IdOrderByCreatedAtDesc(7L)).thenReturn(List.of());
+        when(auditRepository.findTop100ByProperty_IdOrderBySequenceNumberDescCreatedAtDesc(7L)).thenReturn(List.of());
+        when(auditWriter.hasValidChain(List.of())).thenReturn(true);
         when(backupVerifier.inspect()).thenReturn(new PmsBackupVerifier.BackupCheck(
                 HealthStatus.OK, "Backup geprüft.", null, true));
         when(restoreDrillService.inspect()).thenReturn(new PmsRestoreDrillService.RestoreCheck(

@@ -28,6 +28,9 @@ public class ChannelConnection {
     @Column(name = "provider_code", nullable = false, length = 60)
     private String providerCode;
 
+    @Column(name = "webhook_key", length = 64, unique = true)
+    private String webhookKey;
+
     @Column(name = "display_name", nullable = false, length = 120)
     private String displayName;
 

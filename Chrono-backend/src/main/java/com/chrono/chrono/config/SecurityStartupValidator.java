@@ -68,6 +68,12 @@ public class SecurityStartupValidator implements ApplicationRunner {
     @Value("${report.ics-feed.token:}")
     private String reportIcsFeedToken;
 
+    @Value("${app.pms.document-hmac-key:}")
+    private String pmsDocumentHmacKey;
+
+    @Value("${app.pms.audit-hmac-key:}")
+    private String pmsAuditHmacKey;
+
     @Override
     public void run(ApplicationArguments args) {
         if (!production) {
@@ -91,6 +97,8 @@ public class SecurityStartupValidator implements ApplicationRunner {
             throw new IllegalStateException("Public ICS feeds without tokens must be disabled in production");
         }
         requireSecret("REPORT_ICS_FEED_TOKEN", reportIcsFeedToken, 32);
+        requireSecret("APP_PMS_DOCUMENT_HMAC_KEY", pmsDocumentHmacKey, 32);
+        requireSecret("APP_PMS_AUDIT_HMAC_KEY", pmsAuditHmacKey, 32);
         validateProductionOrigins(allowedOrigins);
         if (pmsProviderGatewayEnabled) {
             if (pmsProviderGatewayEndpoint == null

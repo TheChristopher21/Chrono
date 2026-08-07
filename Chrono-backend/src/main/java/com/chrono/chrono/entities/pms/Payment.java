@@ -42,6 +42,9 @@ public class Payment {
     @Column(length = 120)
     private String reference;
 
+    @Column(name = "provider_transaction_id", length = 160, unique = true)
+    private String providerTransactionId;
+
     @Column(length = 500)
     private String reason;
 

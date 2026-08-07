@@ -89,6 +89,8 @@ foreach ($secret in @(
     "JWT_SECRET",
     "NFC_AGENT_TOKEN",
     "REPORT_ICS_FEED_TOKEN",
+    "APP_PMS_DOCUMENT_HMAC_KEY",
+    "APP_PMS_AUDIT_HMAC_KEY",
     "GRAFANA_ADMIN_PASSWORD"
 )) {
     Require-Value $secret 24
@@ -96,6 +98,19 @@ foreach ($secret in @(
 
 if ($values.ContainsKey("MYSQL_USER") -and $values["MYSQL_USER"].ToLowerInvariant() -eq "root") {
     $errors.Add("MYSQL_USER must be a dedicated application account, not root.")
+}
+
+Require-Value "SPRING_DATASOURCE_URL"
+if ($values.ContainsKey("SPRING_DATASOURCE_URL")) {
+    $databaseUrl = $values["SPRING_DATASOURCE_URL"]
+    if ($databaseUrl -notmatch "^jdbc:mysql://" -or
+        $databaseUrl -notmatch "(?i)[?&]sslMode=(VERIFY_CA|VERIFY_IDENTITY)(?:&|$)" -or
+        $databaseUrl -match "(?i)[?&]allowPublicKeyRetrieval=true(?:&|$)") {
+        $errors.Add(
+            "SPRING_DATASOURCE_URL must use verified MySQL TLS (VERIFY_CA or VERIFY_IDENTITY) " +
+            "and must not enable allowPublicKeyRetrieval."
+        )
+    }
 }
 
 $databaseSecrets = @("MYSQL_PASSWORD", "MYSQL_ROOT_PASSWORD", "RESTORE_TEST_ROOT_PASSWORD")
@@ -154,6 +169,7 @@ if (-not $values.ContainsKey("RESTIC_REPOSITORY") -or [string]::IsNullOrWhiteSpa
 
 foreach ($mailSetting in @(
     "ALERT_EMAIL_TO",
+    "APP_MAIL_FROM",
     "SPRING_MAIL_HOST",
     "SPRING_MAIL_PORT",
     "SPRING_MAIL_USERNAME",
@@ -163,6 +179,16 @@ foreach ($mailSetting in @(
 }
 if ($values.ContainsKey("ALERT_EMAIL_TO") -and $values["ALERT_EMAIL_TO"] -notmatch "^[^@\s]+@[^@\s]+$") {
     $errors.Add("ALERT_EMAIL_TO must be a valid e-mail address.")
+}
+if ($values.ContainsKey("APP_MAIL_FROM") -and $values["APP_MAIL_FROM"] -notmatch "^[^@\s]+@[^@\s]+$") {
+    $errors.Add("APP_MAIL_FROM must be a valid e-mail address.")
+}
+
+Require-Value "APP_PUBLIC_BASE_URL"
+if ($values.ContainsKey("APP_PUBLIC_BASE_URL") -and
+    (-not $values["APP_PUBLIC_BASE_URL"].ToLowerInvariant().StartsWith("https://") -or
+     $values["APP_PUBLIC_BASE_URL"].Contains("localhost"))) {
+    $errors.Add("APP_PUBLIC_BASE_URL must be the public HTTPS application URL.")
 }
 
 $previousEnvFile = $env:CHRONO_ENV_FILE

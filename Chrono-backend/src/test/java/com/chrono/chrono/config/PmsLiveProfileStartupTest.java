@@ -37,6 +37,8 @@ import static org.assertj.core.api.Assertions.assertThat;
                 "jwt.secret=live-startup-test-jwt-secret-32-characters",
                 "nfc.agent.token=live-startup-test-nfc-token-32-characters",
                 "report.ics-feed.token=live-startup-test-report-token-32-chars",
+                "app.pms.document-hmac-key=live-startup-document-hmac-key-32-chars",
+                "app.pms.audit-hmac-key=live-startup-audit-hmac-key-32-characters",
                 "spring.mail.host=localhost",
                 "spring.mail.port=2525",
                 "spring.mail.password=local-test-only"

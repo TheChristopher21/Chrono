@@ -56,6 +56,7 @@ import BankingOperationsPage from "./pages/AdminBanking/BankingOperationsPage.js
 import WorkTimeCalculatorPage from "./pages/WorkTimeCalculator/WorkTimeCalculatorPage.jsx";
 import PmsDashboard from "./pages/Pms/PmsDashboard.jsx";
 import PmsGuestCheckInPage from "./pages/Pms/PmsGuestCheckInPage.jsx";
+import PmsBookingPage from "./pages/Pms/PmsBookingPage.jsx";
 
 // Hilfs-Komponenten
 import PrivateRoute from "./components/PrivateRoute.jsx";
@@ -86,6 +87,7 @@ function App() {
                         <Route path="/impressum" element={<Impressum />} />
                         <Route path="/guest-registration/:token" element={<PmsGuestCheckInPage />} />
                         <Route path="/guest-check-in/:token" element={<PmsGuestCheckInPage />} />
+                        <Route path="/book/:propertyCode" element={<PmsBookingPage />} />
 
                         {/* Geschützte Benutzer-Routen */}
                         <Route path="/dashboard" element={<PrivateRoute requiredPagePermission="dashboard"><UserDashboard /></PrivateRoute>} />

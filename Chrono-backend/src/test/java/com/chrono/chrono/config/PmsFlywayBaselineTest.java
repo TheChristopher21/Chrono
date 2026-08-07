@@ -20,13 +20,15 @@ class PmsFlywayBaselineTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(2);
+        assertThat(result.migrationsExecuted).isEqualTo(4);
 
         try (var connection = DriverManager.getConnection(url, "sa", "")) {
             assertThat(tableExists(connection, "pms_properties")).isTrue();
             assertThat(tableExists(connection, "pms_reservations")).isTrue();
             assertThat(tableExists(connection, "pms_integration_outbox")).isTrue();
             assertThat(tableExists(connection, "pms_audit_events")).isTrue();
+            assertThat(tableExists(connection, "pms_public_booking_requests")).isTrue();
+            assertThat(tableExists(connection, "pms_public_rate_limits")).isTrue();
             assertThat(columnExists(connection, "pms_integration_outbox", "next_attempt_at")).isTrue();
             assertThat(columnExists(connection, "pms_integration_outbox", "lock_owner")).isTrue();
         }
@@ -52,7 +54,7 @@ class PmsFlywayBaselineTest {
                 .load()
                 .migrate();
 
-        assertThat(result.migrationsExecuted).isEqualTo(1);
+        assertThat(result.migrationsExecuted).isEqualTo(3);
 
         try (var connection = DriverManager.getConnection(url, "sa", "");
              var statement = connection.createStatement()) {
@@ -60,6 +62,8 @@ class PmsFlywayBaselineTest {
             assertThat(tableExists(connection, "pms_reservations")).isTrue();
             assertThat(tableExists(connection, "pms_integration_outbox")).isTrue();
             assertThat(tableExists(connection, "pms_audit_events")).isTrue();
+            assertThat(tableExists(connection, "pms_public_booking_requests")).isTrue();
+            assertThat(tableExists(connection, "pms_public_rate_limits")).isTrue();
             assertThat(columnExists(connection, "pms_integration_outbox", "next_attempt_at")).isTrue();
             assertThat(columnExists(connection, "pms_integration_outbox", "lock_owner")).isTrue();
 

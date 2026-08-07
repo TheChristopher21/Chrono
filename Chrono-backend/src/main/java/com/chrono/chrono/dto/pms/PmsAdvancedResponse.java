@@ -200,6 +200,7 @@ public record PmsAdvancedResponse(
     public record ChannelConnectionView(
             Long id,
             String providerCode,
+            String webhookKey,
             String displayName,
             ChannelEnvironment environment,
             ChannelConnectionStatus status,

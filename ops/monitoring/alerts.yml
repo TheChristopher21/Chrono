@@ -37,3 +37,37 @@ groups:
         annotations:
           summary: Chrono JVM heap usage is high
           description: Heap usage has stayed above 90 percent for fifteen minutes.
+
+      - alert: ChronoDatabasePoolExhausted
+        expr: hikaricp_connections_pending{job="chrono-backend"} > 0
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: Chrono database pool is saturated
+          description: Requests have waited for a database connection for five minutes.
+
+      - alert: ChronoDatabasePoolPressure
+        expr: |
+          hikaricp_connections_active{job="chrono-backend"}
+          /
+          clamp_min(hikaricp_connections_max{job="chrono-backend"}, 1) > 0.85
+        for: 15m
+        labels:
+          severity: warning
+        annotations:
+          summary: Chrono database pool usage is high
+          description: More than 85 percent of database connections are active.
+
+      - alert: ChronoHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (rate(http_server_requests_seconds_bucket{job="chrono-backend"}[5m]))
+          ) > 1
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: Chrono p95 request latency is high
+          description: The 95th percentile response time has exceeded one second for ten minutes.

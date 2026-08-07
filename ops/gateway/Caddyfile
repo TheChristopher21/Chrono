@@ -27,5 +27,7 @@ api.chrono-logisch.ch {
 		X-Content-Type-Options "nosniff"
 		Referrer-Policy "strict-origin-when-cross-origin"
 	}
+	@privateActuator path /actuator/prometheus /actuator/info
+	respond @privateActuator 404
 	reverse_proxy backend:8081
 }
